@@ -119,6 +119,18 @@ export default defineConfig(({ mode }) => {
           target: backendUrl,
           changeOrigin: true
         },
+        '/v1beta': {
+          target: backendUrl,
+          changeOrigin: true
+        },
+        '/antigravity': {
+          target: backendUrl,
+          changeOrigin: true
+        },
+        '/sora': {
+          target: backendUrl,
+          changeOrigin: true
+        },
         '/setup': {
           target: backendUrl,
           changeOrigin: true

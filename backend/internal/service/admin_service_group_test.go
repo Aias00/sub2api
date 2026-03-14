@@ -12,10 +12,18 @@ import (
 
 // groupRepoStubForAdmin 用于测试 AdminService 的 GroupRepository Stub
 type groupRepoStubForAdmin struct {
-	created *Group // 记录 Create 调用的参数
-	updated *Group // 记录 Update 调用的参数
-	getByID *Group // GetByID 返回值
-	getErr  error  // GetByID 返回的错误
+	created  *Group // 记录 Create 调用的参数
+	updated  *Group // 记录 Update 调用的参数
+	getByID  *Group // GetByID 返回值
+	getErr   error  // GetByID 返回的错误
+	liteByID map[int64]*Group
+
+	deleteAccountGroupCalls int
+	deleteAccountGroupID    int64
+	bindAccountsCalls       int
+	bindAccountsGroupID     int64
+	bindAccountsIDs         []int64
+	copiedAccountIDs        []int64
 
 	listWithFiltersCalls       int
 	listWithFiltersParams      pagination.PaginationParams
@@ -45,9 +53,14 @@ func (s *groupRepoStubForAdmin) GetByID(_ context.Context, _ int64) (*Group, err
 	return s.getByID, nil
 }
 
-func (s *groupRepoStubForAdmin) GetByIDLite(_ context.Context, _ int64) (*Group, error) {
+func (s *groupRepoStubForAdmin) GetByIDLite(_ context.Context, id int64) (*Group, error) {
 	if s.getErr != nil {
 		return nil, s.getErr
+	}
+	if s.liteByID != nil {
+		if group, ok := s.liteByID[id]; ok {
+			return group, nil
+		}
 	}
 	return s.getByID, nil
 }
@@ -104,16 +117,21 @@ func (s *groupRepoStubForAdmin) GetAccountCount(_ context.Context, _ int64) (int
 	panic("unexpected GetAccountCount call")
 }
 
-func (s *groupRepoStubForAdmin) DeleteAccountGroupsByGroupID(_ context.Context, _ int64) (int64, error) {
-	panic("unexpected DeleteAccountGroupsByGroupID call")
+func (s *groupRepoStubForAdmin) DeleteAccountGroupsByGroupID(_ context.Context, groupID int64) (int64, error) {
+	s.deleteAccountGroupCalls++
+	s.deleteAccountGroupID = groupID
+	return 0, nil
 }
 
-func (s *groupRepoStubForAdmin) BindAccountsToGroup(_ context.Context, _ int64, _ []int64) error {
-	panic("unexpected BindAccountsToGroup call")
+func (s *groupRepoStubForAdmin) BindAccountsToGroup(_ context.Context, groupID int64, accountIDs []int64) error {
+	s.bindAccountsCalls++
+	s.bindAccountsGroupID = groupID
+	s.bindAccountsIDs = append([]int64{}, accountIDs...)
+	return nil
 }
 
 func (s *groupRepoStubForAdmin) GetAccountIDsByGroupIDs(_ context.Context, _ []int64) ([]int64, error) {
-	panic("unexpected GetAccountIDsByGroupIDs call")
+	return append([]int64{}, s.copiedAccountIDs...), nil
 }
 
 func (s *groupRepoStubForAdmin) UpdateSortOrders(_ context.Context, _ []GroupSortOrderUpdate) error {
@@ -243,6 +261,63 @@ func TestAdminService_UpdateGroup_PartialImagePricing(t *testing.T) {
 	require.NotNil(t, repo.updated.ImagePrice2K)
 	require.InDelta(t, 0.15, *repo.updated.ImagePrice2K, 0.0001) // 原值保持
 	require.Nil(t, repo.updated.ImagePrice4K)
+}
+
+func TestAdminService_CreateGroup_BindsDirectAccounts(t *testing.T) {
+	repo := &groupRepoStubForAdmin{}
+	accountRepo := &accountRepoStubForBulkUpdate{
+		getByIDsAccounts: []*Account{
+			{ID: 11, Name: "claude-1", Platform: PlatformAnthropic, Status: StatusActive},
+			{ID: 12, Name: "ag-mixed", Platform: PlatformAntigravity, Status: StatusActive, Extra: map[string]any{"mixed_scheduling": true}},
+		},
+	}
+	svc := &adminServiceImpl{groupRepo: repo, accountRepo: accountRepo}
+
+	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:           "test-group",
+		Platform:       PlatformAnthropic,
+		RateMultiplier: 1,
+		AccountIDs:     []int64{11, 12, 11},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.True(t, accountRepo.getByIDsCalled)
+	require.ElementsMatch(t, []int64{11, 12}, accountRepo.getByIDsIDs)
+	require.Equal(t, 1, repo.bindAccountsCalls)
+	require.Equal(t, group.ID, repo.bindAccountsGroupID)
+	require.ElementsMatch(t, []int64{11, 12}, repo.bindAccountsIDs)
+}
+
+func TestAdminService_UpdateGroup_ReplacesBindingsWithDirectAndCopiedAccounts(t *testing.T) {
+	existingGroup := &Group{
+		ID:       7,
+		Name:     "existing-group",
+		Platform: PlatformAnthropic,
+		Status:   StatusActive,
+	}
+	repo := &groupRepoStubForAdmin{
+		getByID:          existingGroup,
+		liteByID:         map[int64]*Group{9: {ID: 9, Name: "copy-source", Platform: PlatformAnthropic}},
+		copiedAccountIDs: []int64{31, 32},
+	}
+	accountRepo := &accountRepoStubForBulkUpdate{
+		getByIDsAccounts: []*Account{
+			{ID: 21, Name: "claude-21", Platform: PlatformAnthropic, Status: StatusActive},
+		},
+	}
+	svc := &adminServiceImpl{groupRepo: repo, accountRepo: accountRepo}
+
+	group, err := svc.UpdateGroup(context.Background(), 7, &UpdateGroupInput{
+		AccountIDs:               &[]int64{21},
+		CopyAccountsFromGroupIDs: []int64{9},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.Equal(t, 1, repo.deleteAccountGroupCalls)
+	require.Equal(t, int64(7), repo.deleteAccountGroupID)
+	require.Equal(t, 1, repo.bindAccountsCalls)
+	require.Equal(t, int64(7), repo.bindAccountsGroupID)
+	require.ElementsMatch(t, []int64{21, 31, 32}, repo.bindAccountsIDs)
 }
 
 func TestAdminService_ListGroups_WithSearch(t *testing.T) {

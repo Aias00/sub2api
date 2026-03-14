@@ -126,6 +126,39 @@
         </button>
       </div>
 
+      <div
+        v-if="status === 'error' && verificationActionUrl"
+        class="space-y-2 rounded-xl border border-blue-200 bg-blue-50 px-3 py-3 text-sm text-blue-800 dark:border-blue-700/50 dark:bg-blue-900/20 dark:text-blue-200"
+      >
+        <div class="font-medium">
+          {{ t('admin.accounts.verificationRequiredTitle') }}
+        </div>
+        <div class="text-xs leading-5 text-blue-700/90 dark:text-blue-200/90">
+          {{ t('admin.accounts.verificationRequiredHint') }}
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a
+            :href="verificationActionUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1.5 rounded-md border border-blue-500/40 bg-blue-500/10 px-2.5 py-1 text-xs font-medium text-blue-700 transition hover:border-blue-400 hover:bg-blue-500/20 dark:text-blue-200"
+          >
+            <Icon name="externalLink" size="xs" :stroke-width="2" />
+            {{ verificationActionLabel || t('admin.accounts.openVerificationLink') }}
+          </a>
+          <a
+            v-if="verificationLearnMoreUrl"
+            :href="verificationLearnMoreUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="inline-flex items-center gap-1.5 rounded-md border border-blue-300 bg-white px-2.5 py-1 text-xs font-medium text-blue-700 transition hover:border-blue-400 hover:bg-blue-100 dark:border-blue-700 dark:bg-transparent dark:text-blue-200 dark:hover:bg-blue-900/30"
+          >
+            <Icon name="externalLink" size="xs" :stroke-width="2" />
+            {{ verificationLearnMoreLabel || t('admin.accounts.learnMore') }}
+          </a>
+        </div>
+      </div>
+
       <div v-if="generatedImages.length > 0" class="space-y-2">
         <div class="text-xs font-medium text-gray-600 dark:text-gray-300">
           {{ t('admin.accounts.geminiImagePreview') }}
@@ -257,6 +290,10 @@ const availableModels = ref<ClaudeModel[]>([])
 const selectedModelId = ref('')
 const testPrompt = ref('')
 const loadingModels = ref(false)
+const verificationActionUrl = ref('')
+const verificationActionLabel = ref('')
+const verificationLearnMoreUrl = ref('')
+const verificationLearnMoreLabel = ref('')
 let eventSource: EventSource | null = null
 const isSoraAccount = computed(() => props.account?.platform === 'sora')
 const generatedImages = ref<PreviewImage[]>([])
@@ -342,6 +379,10 @@ const resetState = () => {
   streamingContent.value = ''
   errorMessage.value = ''
   generatedImages.value = []
+  verificationActionUrl.value = ''
+  verificationActionLabel.value = ''
+  verificationLearnMoreUrl.value = ''
+  verificationLearnMoreLabel.value = ''
 }
 
 const handleClose = () => {
@@ -445,6 +486,18 @@ const startTest = async () => {
   }
 }
 
+const applyVerificationLinks = (event: {
+  action_url?: string
+  action_label?: string
+  learn_more_url?: string
+  learn_more_label?: string
+}) => {
+  verificationActionUrl.value = typeof event.action_url === 'string' ? event.action_url : ''
+  verificationActionLabel.value = typeof event.action_label === 'string' ? event.action_label : ''
+  verificationLearnMoreUrl.value = typeof event.learn_more_url === 'string' ? event.learn_more_url : ''
+  verificationLearnMoreLabel.value = typeof event.learn_more_label === 'string' ? event.learn_more_label : ''
+}
+
 const handleEvent = (event: {
   type: string
   text?: string
@@ -453,6 +506,10 @@ const handleEvent = (event: {
   error?: string
   image_url?: string
   mime_type?: string
+  action_url?: string
+  action_label?: string
+  learn_more_url?: string
+  learn_more_label?: string
 }) => {
   switch (event.type) {
     case 'test_start':
@@ -506,6 +563,7 @@ const handleEvent = (event: {
     case 'error':
       status.value = 'error'
       errorMessage.value = event.error || 'Unknown error'
+      applyVerificationLinks(event)
       if (streamingContent.value) {
         addLine(streamingContent.value, 'text-green-300')
         streamingContent.value = ''

@@ -115,6 +115,65 @@ func TestStripThinkingFromClaudeRequest_DoesNotDowngradeTools(t *testing.T) {
 	require.Equal(t, "tool_use", blocks[1]["type"])
 }
 
+func TestInjectIdentityPatchToGeminiRequest_AddsDefaultUserRole(t *testing.T) {
+	body := []byte(`{
+		"contents": [
+			{
+				"parts": [
+					{"text": "hello"}
+				]
+			}
+		]
+	}`)
+
+	got, err := injectIdentityPatchToGeminiRequest(body)
+	require.NoError(t, err)
+
+	var decoded map[string]any
+	require.NoError(t, json.Unmarshal(got, &decoded))
+
+	contents, ok := decoded["contents"].([]any)
+	require.True(t, ok)
+	require.Len(t, contents, 1)
+
+	content, ok := contents[0].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "user", content["role"])
+
+	systemInstruction, ok := decoded["systemInstruction"].(map[string]any)
+	require.True(t, ok)
+	parts, ok := systemInstruction["parts"].([]any)
+	require.True(t, ok)
+	require.NotEmpty(t, parts)
+}
+
+func TestInjectIdentityPatchToGeminiRequest_PreservesExistingRole(t *testing.T) {
+	body := []byte(`{
+		"contents": [
+			{
+				"role": "model",
+				"parts": [
+					{"text": "hello"}
+				]
+			}
+		]
+	}`)
+
+	got, err := injectIdentityPatchToGeminiRequest(body)
+	require.NoError(t, err)
+
+	var decoded map[string]any
+	require.NoError(t, json.Unmarshal(got, &decoded))
+
+	contents, ok := decoded["contents"].([]any)
+	require.True(t, ok)
+	require.Len(t, contents, 1)
+
+	content, ok := contents[0].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "model", content["role"])
+}
+
 func TestIsPromptTooLongError(t *testing.T) {
 	require.True(t, isPromptTooLongError([]byte(`{"error":{"message":"Prompt is too long"}}`)))
 	require.True(t, isPromptTooLongError([]byte(`{"message":"Prompt is too long"}`)))

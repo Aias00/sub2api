@@ -329,6 +329,8 @@ export default {
     dashboard: 'Dashboard',
     announcements: 'Announcements',
     apiKeys: 'API Keys',
+    apiGuide: 'API Guide',
+    apiTest: 'API Test',
     usage: 'Usage',
     redeem: 'Redeem',
     profile: 'Profile',
@@ -528,6 +530,51 @@ export default {
     subscription: 'Sub'
   },
 
+  gateway: {
+    platforms: {
+      anthropic: 'Anthropic / Claude',
+      openai: 'OpenAI',
+      gemini: 'Gemini',
+      antigravity: 'Antigravity',
+      sora: 'Sora'
+    },
+    protocols: {
+      anthropic: 'Anthropic Messages',
+      openai: 'OpenAI Compatible',
+      google: 'Gemini Native'
+    },
+    headerModes: {
+      bearer: 'Authorization: Bearer <API_KEY>',
+      'x-goog-api-key': 'x-goog-api-key: <API_KEY>'
+    },
+    variants: {
+      anthropicMessages: {
+        label: 'Claude Messages',
+        description: 'Best for Claude SDKs, Claude Code, and any Anthropic Messages compatible client.'
+      },
+      openaiChat: {
+        label: 'OpenAI Chat Completions',
+        description: 'Best for most OpenAI SDKs, ChatBox, Open WebUI, and similar clients.'
+      },
+      openaiResponses: {
+        label: 'OpenAI Responses',
+        description: 'Best for the newer OpenAI Responses workflow and unified input/output handling.'
+      },
+      geminiNative: {
+        label: 'Gemini Generate Content',
+        description: 'Uses the native Gemini `v1beta` route for Gemini SDKs, CLI tools, and Google-style requests.'
+      },
+      antigravityMessages: {
+        label: 'Antigravity Claude',
+        description: 'Forces the dedicated Antigravity Claude-compatible route without mixed scheduling.'
+      },
+      antigravityGemini: {
+        label: 'Antigravity Gemini',
+        description: 'Forces the dedicated Antigravity Gemini native route for debugging that exact chain.'
+      }
+    }
+  },
+
   // API Keys
   keys: {
     title: 'API Keys',
@@ -682,6 +729,96 @@ export default {
       quota_exhausted: 'Quota Exhausted',
       expired: 'Expired',
     },
+  },
+
+  apiGuide: {
+    badge: 'Proxy API',
+    title: 'API Guide',
+    description: 'Pick an API key and this page will generate the correct base URL, auth header, and curl examples for the platform currently bound to that key.',
+    openTester: 'Open API Tester',
+    manageKeys: 'Manage API Keys',
+    noKeysTitle: 'No API key available yet',
+    noKeysDescription: 'Create an API key and assign a group before this page can generate gateway instructions and examples.',
+    baseUrl: 'Gateway Base URL',
+    currentKey: 'Current API Key',
+    supportedEndpoints: 'Supported Endpoints',
+    noSelection: 'Not selected',
+    selectKeyHint: 'Choose a grouped API key to generate protocol-specific examples automatically.',
+    noGroupAssigned: 'No group assigned',
+    keySelector: 'Select API Key',
+    keySelectorHint: 'Routing behavior is determined by the group attached to the selected API key. Change the key and the examples update with it.',
+    unassignedTitle: 'This API key has no group yet',
+    unassignedDescription: 'Ungrouped API keys cannot pass through the gateway. Assign it to a group first on the API Keys page.',
+    keySummary: 'Key Summary',
+    groupName: 'Group',
+    platform: 'Platform',
+    authHeaderTitle: 'Auth Header',
+    authHeaderDescription: 'Bearers are recommended for Anthropic / OpenAI compatible routes. Native Gemini routes are clearer with `x-goog-api-key`.',
+    noEndpointVariants: 'No protocol examples are available for this API key yet. Usually that means the key has no group, or the current group platform is not supported here.',
+    endpoint: 'Endpoint',
+    protocol: 'Protocol',
+    defaultModel: 'Default Model',
+    headerMode: 'Auth Mode',
+    curlExample: 'curl Example',
+    copyCurl: 'Copy curl',
+    copyCurlSuccess: 'curl example copied',
+    testThisVariant: 'Test this protocol',
+    defaultPrompt: 'Tell me the model you routed to in one sentence.'
+  },
+
+  apiTest: {
+    badge: 'Live Request',
+    title: 'API Test',
+    description: 'Send a real request through the gateway from this page to verify routing, model names, permissions, and upstream responses.',
+    liveBillingTitle: 'Requests here are real',
+    liveBillingDescription: 'The API tester does not use mock responses and is not billing-free. Successful requests are recorded through the normal gateway path and count toward balance, subscription, and limit statistics.',
+    openGuide: 'Open API Guide',
+    send: 'Send Test Request',
+    sending: 'Sending...',
+    manageKeys: 'Manage API Keys',
+    noKeysTitle: 'No API key available yet',
+    noKeysDescription: 'Create an API key and assign a group before running live gateway tests here.',
+    keySelector: 'Select API Key',
+    protocol: 'Protocol',
+    model: 'Model',
+    modelPlaceholder: 'Enter a model name',
+    modelSearchPlaceholder: 'Search models',
+    modelHint: 'A common default model is prefilled, but you can replace it with the exact model you want to test.',
+    customModelOption: 'Enter model manually',
+    customModelOptionHint: 'Switch to manual input when the dropdown does not include the model you want.',
+    customModel: 'Custom Model',
+    customModelHint: 'The exact model name entered here will be sent to the gateway as-is.',
+    prompt: 'Prompt',
+    promptPlaceholder: 'Enter the content you want to send',
+    promptHint: 'This text is sent directly to the gateway so you can validate the full request path quickly.',
+    stream: 'Enable streaming',
+    streamHint: 'When enabled, the raw response panel will show the SSE event stream instead of a compact JSON payload.',
+    unassignedTitle: 'This API key cannot be tested yet',
+    unassignedDescription: 'It has no group assignment. Ungrouped keys are rejected by the gateway until you assign one on the API Keys page.',
+    copyCurl: 'Copy curl',
+    copyCurlSuccess: 'curl command copied',
+    requestMeta: 'Request Details',
+    platform: 'Group Platform',
+    headerMode: 'Auth Header',
+    notReady: 'Not ready',
+    requestPreview: 'Request Preview',
+    copyRequest: 'Copy Request Body',
+    copyRequestSuccess: 'request body copied',
+    responsePreview: 'Response',
+    statusCode: 'HTTP Status',
+    duration: 'Duration',
+    responseSummary: 'Response Summary',
+    rawResponse: 'Raw Response',
+    responsePending: 'Run a test request and the raw gateway response will appear here.',
+    usageRecordTitle: 'Usage Sync',
+    usageRecordIdle: 'After a successful test, this panel shows whether the request has appeared in usage statistics.',
+    usageRecordSyncing: 'The request has completed successfully. Checking for the corresponding usage record...',
+    usageRecordFound: 'Recorded in usage statistics: {time} · ${cost} · {tokens} tokens',
+    usageRecordPending: 'The request succeeded, but usage records are written asynchronously. If the Usage or Dashboard page is already open, refresh it to see the latest record.',
+    openUsage: 'Open Usage Records',
+    copyResponse: 'Copy Response',
+    copyResponseSuccess: 'response copied',
+    noGroupAssigned: 'No group assigned'
   },
 
   // Usage
@@ -1482,6 +1619,14 @@ export default {
         hint: 'Multiple groups can be selected, accounts will be deduplicated',
         hintEdit: '⚠️ Warning: This will replace all existing account bindings'
       },
+      directAccounts: {
+        title: 'Assign Accounts Directly',
+        tooltip: 'Select accounts from the account pool and bind them to this group directly. Anthropic / Gemini groups can also use Antigravity accounts with mixed scheduling enabled.',
+        searchPlaceholder: 'Search by account name, ID, or platform',
+        hint: 'On save, the final binding set is the union of directly selected accounts and accounts copied from source groups.',
+        empty: 'No compatible accounts are available for this group',
+        mixedScheduling: 'Mixed Scheduling'
+      },
       modelRouting: {
         title: 'Model Routing',
         tooltip: 'Configure specific model requests to be routed to designated accounts. Supports wildcard matching, e.g., claude-opus-* matches all opus models.',
@@ -1721,7 +1866,8 @@ export default {
         rateLimitedAutoResume: 'Auto resumes in {time}',
         modelRateLimitedUntil: '{model} rate limited until {time}',
         overloadedUntil: 'Overloaded until {time}',
-        viewTempUnschedDetails: 'View temp unschedulable details'
+        viewTempUnschedDetails: 'View temp unschedulable details',
+        verifyAccount: 'Verify account'
       },
       columns: {
         name: 'Name',
@@ -2417,6 +2563,10 @@ export default {
       readyToTest: 'Ready to test. Click "Start Test" to begin...',
       connectingToApi: 'Connecting to API...',
       testCompleted: 'Test completed successfully!',
+      openVerificationLink: 'Verify account',
+      learnMore: 'Learn more',
+      verificationRequiredTitle: 'Google account verification required',
+      verificationRequiredHint: 'Google is blocking this account until verification is completed in the browser. Finish verification, then return here and retry.',
       testFailed: 'Test failed',
       connectedToApi: 'Connected to API',
       usingModel: 'Using model: {model}',

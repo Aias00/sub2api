@@ -57,6 +57,18 @@
       </div>
     </div>
 
+    <a
+      v-if="showValidationAction"
+      :href="validationActionUrl"
+      target="_blank"
+      rel="noopener noreferrer"
+      class="inline-flex items-center gap-1 rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 transition hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/40"
+      :title="validationActionLabel"
+    >
+      <Icon name="externalLink" size="xs" :stroke-width="2" />
+      {{ validationActionLabel }}
+    </a>
+
     <!-- Rate Limit Indicator (429) -->
     <div v-if="isRateLimited" class="group relative">
       <span
@@ -229,6 +241,20 @@ const isTempUnschedulable = computed(() => {
 const hasError = computed(() => {
   return props.account.status === 'error'
 })
+
+const validationActionUrl = computed(() => {
+  if (!(hasError.value || isTempUnschedulable.value)) return ''
+  const extra = props.account.extra as Record<string, unknown> | undefined
+  return typeof extra?.google_validation_url === 'string' ? extra.google_validation_url : ''
+})
+
+const validationActionLabel = computed(() => {
+  const extra = props.account.extra as Record<string, unknown> | undefined
+  const value = typeof extra?.google_validation_label === 'string' ? extra.google_validation_label : ''
+  return value || t('admin.accounts.status.verifyAccount')
+})
+
+const showValidationAction = computed(() => validationActionUrl.value !== '')
 
 // Computed: countdown text for rate limit (429)
 const rateLimitCountdown = computed(() => {

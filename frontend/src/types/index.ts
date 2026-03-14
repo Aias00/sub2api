@@ -497,6 +497,7 @@ export interface CreateGroupRequest {
   fallback_group_id_on_invalid_request?: number | null
   mcp_xml_inject?: boolean
   supported_model_scopes?: string[]
+  account_ids?: number[]
   // 从指定分组复制账号
   copy_accounts_from_group_ids?: number[]
 }
@@ -525,6 +526,7 @@ export interface UpdateGroupRequest {
   fallback_group_id_on_invalid_request?: number | null
   mcp_xml_inject?: boolean
   supported_model_scopes?: string[]
+  account_ids?: number[]
   copy_accounts_from_group_ids?: number[]
 }
 

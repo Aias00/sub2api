@@ -150,6 +150,8 @@ type CreateGroupInput struct {
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch bool
 	DefaultMappedModel    string
+	// 直接指定账号绑定（创建分组后在同一事务内绑定）
+	AccountIDs []int64
 	// 从指定分组复制账号（创建分组后在同一事务内绑定）
 	CopyAccountsFromGroupIDs []int64
 }
@@ -189,8 +191,114 @@ type UpdateGroupInput struct {
 	// OpenAI Messages 调度配置（仅 openai 平台使用）
 	AllowMessagesDispatch *bool
 	DefaultMappedModel    *string
+	// 直接指定账号绑定（同步操作：替换当前分组的账号绑定）
+	AccountIDs *[]int64
 	// 从指定分组复制账号（同步操作：先清空当前分组的账号绑定，再绑定源分组的账号）
 	CopyAccountsFromGroupIDs []int64
+}
+
+func dedupePositiveInt64s(ids []int64) []int64 {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	seen := make(map[int64]struct{}, len(ids))
+	result := make([]int64, 0, len(ids))
+	for _, id := range ids {
+		if id <= 0 {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		result = append(result, id)
+	}
+	return result
+}
+
+func isAccountCompatibleWithGroupPlatform(account *Account, groupPlatform string) bool {
+	if account == nil {
+		return false
+	}
+	if account.Platform == groupPlatform {
+		return true
+	}
+	return account.Platform == PlatformAntigravity &&
+		account.IsMixedSchedulingEnabled() &&
+		(groupPlatform == PlatformAnthropic || groupPlatform == PlatformGemini)
+}
+
+func (s *adminServiceImpl) resolveGroupBoundAccountIDs(
+	ctx context.Context,
+	groupPlatform string,
+	directAccountIDs []int64,
+	copySourceGroupIDs []int64,
+	currentGroupID int64,
+) ([]int64, error) {
+	resolved := dedupePositiveInt64s(directAccountIDs)
+
+	if len(resolved) > 0 {
+		if s.accountRepo == nil {
+			return nil, errors.New("account repository not configured")
+		}
+
+		accounts, err := s.accountRepo.GetByIDs(ctx, resolved)
+		if err != nil {
+			return nil, fmt.Errorf("get accounts by ids: %w", err)
+		}
+
+		accountByID := make(map[int64]*Account, len(accounts))
+		for _, account := range accounts {
+			if account != nil {
+				accountByID[account.ID] = account
+			}
+		}
+
+		for _, accountID := range resolved {
+			account := accountByID[accountID]
+			if account == nil {
+				return nil, fmt.Errorf("account %d not found", accountID)
+			}
+			if !isAccountCompatibleWithGroupPlatform(account, groupPlatform) {
+				return nil, fmt.Errorf(
+					"account %d platform mismatch: group platform %s cannot bind account platform %s",
+					accountID,
+					groupPlatform,
+					account.Platform,
+				)
+			}
+		}
+	}
+
+	if len(copySourceGroupIDs) == 0 {
+		return resolved, nil
+	}
+
+	if s.groupRepo == nil {
+		return nil, errors.New("group repository not configured")
+	}
+
+	sourceGroupIDs := dedupePositiveInt64s(copySourceGroupIDs)
+	for _, sourceGroupID := range sourceGroupIDs {
+		if currentGroupID > 0 && sourceGroupID == currentGroupID {
+			return nil, fmt.Errorf("cannot copy accounts from self")
+		}
+		srcGroup, err := s.groupRepo.GetByIDLite(ctx, sourceGroupID)
+		if err != nil {
+			return nil, fmt.Errorf("source group %d not found: %w", sourceGroupID, err)
+		}
+		if srcGroup.Platform != groupPlatform {
+			return nil, fmt.Errorf("source group %d platform mismatch: expected %s, got %s", sourceGroupID, groupPlatform, srcGroup.Platform)
+		}
+	}
+
+	copiedAccountIDs, err := s.groupRepo.GetAccountIDsByGroupIDs(ctx, sourceGroupIDs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get accounts from source groups: %w", err)
+	}
+
+	return dedupePositiveInt64s(append(resolved, copiedAccountIDs...)), nil
 }
 
 type CreateAccountInput struct {
@@ -866,36 +974,9 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		mcpXMLInject = *input.MCPXMLInject
 	}
 
-	// 如果指定了复制账号的源分组，先获取账号 ID 列表
-	var accountIDsToCopy []int64
-	if len(input.CopyAccountsFromGroupIDs) > 0 {
-		// 去重源分组 IDs
-		seen := make(map[int64]struct{})
-		uniqueSourceGroupIDs := make([]int64, 0, len(input.CopyAccountsFromGroupIDs))
-		for _, srcGroupID := range input.CopyAccountsFromGroupIDs {
-			if _, exists := seen[srcGroupID]; !exists {
-				seen[srcGroupID] = struct{}{}
-				uniqueSourceGroupIDs = append(uniqueSourceGroupIDs, srcGroupID)
-			}
-		}
-
-		// 校验源分组的平台是否与新分组一致
-		for _, srcGroupID := range uniqueSourceGroupIDs {
-			srcGroup, err := s.groupRepo.GetByIDLite(ctx, srcGroupID)
-			if err != nil {
-				return nil, fmt.Errorf("source group %d not found: %w", srcGroupID, err)
-			}
-			if srcGroup.Platform != platform {
-				return nil, fmt.Errorf("source group %d platform mismatch: expected %s, got %s", srcGroupID, platform, srcGroup.Platform)
-			}
-		}
-
-		// 获取所有源分组的账号（去重）
-		var err error
-		accountIDsToCopy, err = s.groupRepo.GetAccountIDsByGroupIDs(ctx, uniqueSourceGroupIDs)
-		if err != nil {
-			return nil, fmt.Errorf("failed to get accounts from source groups: %w", err)
-		}
+	accountIDsToBind, err := s.resolveGroupBoundAccountIDs(ctx, platform, input.AccountIDs, input.CopyAccountsFromGroupIDs, 0)
+	if err != nil {
+		return nil, err
 	}
 
 	group := &Group{
@@ -930,12 +1011,12 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		return nil, err
 	}
 
-	// 如果有需要复制的账号，绑定到新分组
-	if len(accountIDsToCopy) > 0 {
-		if err := s.groupRepo.BindAccountsToGroup(ctx, group.ID, accountIDsToCopy); err != nil {
+	// 如果指定了账号绑定，创建后立即关联到新分组
+	if len(accountIDsToBind) > 0 {
+		if err := s.groupRepo.BindAccountsToGroup(ctx, group.ID, accountIDsToBind); err != nil {
 			return nil, fmt.Errorf("failed to bind accounts to new group: %w", err)
 		}
-		group.AccountCount = int64(len(accountIDsToCopy))
+		group.AccountCount = int64(len(accountIDsToBind))
 	}
 
 	return group, nil
@@ -1150,51 +1231,26 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 		return nil, err
 	}
 
-	// 如果指定了复制账号的源分组，同步绑定（替换当前分组的账号）
-	if len(input.CopyAccountsFromGroupIDs) > 0 {
-		// 去重源分组 IDs
-		seen := make(map[int64]struct{})
-		uniqueSourceGroupIDs := make([]int64, 0, len(input.CopyAccountsFromGroupIDs))
-		for _, srcGroupID := range input.CopyAccountsFromGroupIDs {
-			// 校验：源分组不能是自身
-			if srcGroupID == id {
-				return nil, fmt.Errorf("cannot copy accounts from self")
-			}
-			// 去重
-			if _, exists := seen[srcGroupID]; !exists {
-				seen[srcGroupID] = struct{}{}
-				uniqueSourceGroupIDs = append(uniqueSourceGroupIDs, srcGroupID)
-			}
+	// 显式提供 account_ids，或指定了复制来源分组时，替换当前分组账号绑定。
+	if input.AccountIDs != nil || len(input.CopyAccountsFromGroupIDs) > 0 {
+		directAccountIDs := []int64(nil)
+		if input.AccountIDs != nil {
+			directAccountIDs = *input.AccountIDs
 		}
-
-		// 校验源分组的平台是否与当前分组一致
-		for _, srcGroupID := range uniqueSourceGroupIDs {
-			srcGroup, err := s.groupRepo.GetByIDLite(ctx, srcGroupID)
-			if err != nil {
-				return nil, fmt.Errorf("source group %d not found: %w", srcGroupID, err)
-			}
-			if srcGroup.Platform != group.Platform {
-				return nil, fmt.Errorf("source group %d platform mismatch: expected %s, got %s", srcGroupID, group.Platform, srcGroup.Platform)
-			}
-		}
-
-		// 获取所有源分组的账号（去重）
-		accountIDsToCopy, err := s.groupRepo.GetAccountIDsByGroupIDs(ctx, uniqueSourceGroupIDs)
+		accountIDsToBind, err := s.resolveGroupBoundAccountIDs(ctx, group.Platform, directAccountIDs, input.CopyAccountsFromGroupIDs, id)
 		if err != nil {
-			return nil, fmt.Errorf("failed to get accounts from source groups: %w", err)
+			return nil, err
 		}
 
-		// 先清空当前分组的所有账号绑定
 		if _, err := s.groupRepo.DeleteAccountGroupsByGroupID(ctx, id); err != nil {
 			return nil, fmt.Errorf("failed to clear existing account bindings: %w", err)
 		}
-
-		// 再绑定源分组的账号
-		if len(accountIDsToCopy) > 0 {
-			if err := s.groupRepo.BindAccountsToGroup(ctx, id, accountIDsToCopy); err != nil {
+		if len(accountIDsToBind) > 0 {
+			if err := s.groupRepo.BindAccountsToGroup(ctx, id, accountIDsToBind); err != nil {
 				return nil, fmt.Errorf("failed to bind accounts to group: %w", err)
 			}
 		}
+		group.AccountCount = int64(len(accountIDsToBind))
 	}
 
 	if s.authCacheInvalidator != nil {

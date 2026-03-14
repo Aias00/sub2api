@@ -476,6 +476,7 @@
 
 <script setup lang="ts">
 import { ref, computed, reactive, onMounted } from 'vue'
+import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { usageAPI, keysAPI } from '@/api'
@@ -495,6 +496,7 @@ import { getUsageServiceTierLabel } from '@/utils/usageServiceTier'
 import { resolveUsageRequestType } from '@/utils/usageRequestType'
 
 const { t } = useI18n()
+const route = useRoute()
 const appStore = useAppStore()
 
 let abortController: AbortController | null = null
@@ -549,13 +551,22 @@ const formatLocalDate = (date: Date): string => {
 const now = new Date()
 const weekAgo = new Date(now)
 weekAgo.setDate(weekAgo.getDate() - 6)
+const routeStartDate = typeof route.query.start_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(route.query.start_date)
+  ? route.query.start_date
+  : null
+const routeEndDate = typeof route.query.end_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(route.query.end_date)
+  ? route.query.end_date
+  : null
+const routeAPIKeyID = typeof route.query.api_key_id === 'string'
+  ? Number(route.query.api_key_id)
+  : null
 
 // Date range state
-const startDate = ref(formatLocalDate(weekAgo))
-const endDate = ref(formatLocalDate(now))
+const startDate = ref(routeStartDate || formatLocalDate(weekAgo))
+const endDate = ref(routeEndDate || formatLocalDate(now))
 
 const filters = ref<UsageQueryParams>({
-  api_key_id: undefined,
+  api_key_id: Number.isFinite(routeAPIKeyID) && routeAPIKeyID && routeAPIKeyID > 0 ? routeAPIKeyID : undefined,
   start_date: undefined,
   end_date: undefined
 })

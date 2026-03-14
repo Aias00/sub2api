@@ -582,14 +582,14 @@ func (h *GatewayHandler) handleGeminiFailoverExhausted(c *gin.Context, failoverE
 				c.Set(service.OpsSkipPassthroughKey, true)
 			}
 
-			googleError(c, respCode, msg)
+			googleErrorWithValidation(c, respCode, msg, service.ExtractGoogleValidationRequired(responseBody))
 			return
 		}
 	}
 
 	// 使用默认的错误映射
 	status, message := mapGeminiUpstreamError(statusCode)
-	googleError(c, status, message)
+	googleErrorWithValidation(c, status, message, service.ExtractGoogleValidationRequired(responseBody))
 }
 
 func mapGeminiUpstreamError(statusCode int) (int, string) {
@@ -614,12 +614,27 @@ type pathParseError struct{ msg string }
 func (e *pathParseError) Error() string { return e.msg }
 
 func googleError(c *gin.Context, status int, message string) {
+	googleErrorWithValidation(c, status, message, nil)
+}
+
+func googleErrorWithValidation(c *gin.Context, status int, message string, info *service.GoogleValidationRequiredInfo) {
+	errorObj := gin.H{
+		"code":    status,
+		"message": message,
+		"status":  googleapi.HTTPStatusToGoogleStatus(status),
+	}
+	if info != nil {
+		errorObj["action_url"] = info.ValidationURL
+		errorObj["action_label"] = info.ValidationLabel
+		if info.LearnMoreURL != "" {
+			errorObj["learn_more_url"] = info.LearnMoreURL
+		}
+		if info.LearnMoreLabel != "" {
+			errorObj["learn_more_label"] = info.LearnMoreLabel
+		}
+	}
 	c.JSON(status, gin.H{
-		"error": gin.H{
-			"code":    status,
-			"message": message,
-			"status":  googleapi.HTTPStatusToGoogleStatus(status),
-		},
+		"error": errorObj,
 	})
 }
 

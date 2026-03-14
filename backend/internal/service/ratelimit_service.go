@@ -118,6 +118,9 @@ func (s *RateLimitService) HandleUpstreamError(ctx context.Context, account *Acc
 		return false
 	}
 
+	// Persist Google validation links so the admin UI can offer a direct "verify account" action.
+	_ = persistGoogleValidationRequired(ctx, s.accountRepo, account, responseBody)
+
 	// apikey 类型账号：检查自定义错误码配置
 	// 如果启用且错误码不在列表中，则不处理（不停止调度、不标记限流/过载）
 	if !account.ShouldHandleErrorCode(statusCode) {

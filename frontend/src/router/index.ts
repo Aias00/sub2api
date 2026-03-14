@@ -142,6 +142,30 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/gateway-guide',
+    name: 'ApiGuide',
+    component: () => import('@/views/user/ApiGuideView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'API Guide',
+      titleKey: 'apiGuide.title',
+      descriptionKey: 'apiGuide.description'
+    }
+  },
+  {
+    path: '/gateway-test',
+    name: 'ApiTest',
+    component: () => import('@/views/user/ApiTestView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'API Tester',
+      titleKey: 'apiTest.title',
+      descriptionKey: 'apiTest.description'
+    }
+  },
+  {
     path: '/usage',
     name: 'Usage',
     component: () => import('@/views/user/UsageView.vue'),

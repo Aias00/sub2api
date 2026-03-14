@@ -329,6 +329,8 @@ export default {
     dashboard: '仪表盘',
     announcements: '公告',
     apiKeys: 'API 密钥',
+    apiGuide: '调用说明',
+    apiTest: '调用测试',
     usage: '使用记录',
     redeem: '兑换',
     profile: '个人资料',
@@ -528,6 +530,51 @@ export default {
     subscription: '订阅'
   },
 
+  gateway: {
+    platforms: {
+      anthropic: 'Anthropic / Claude',
+      openai: 'OpenAI',
+      gemini: 'Gemini',
+      antigravity: 'Antigravity',
+      sora: 'Sora'
+    },
+    protocols: {
+      anthropic: 'Anthropic Messages',
+      openai: 'OpenAI Compatible',
+      google: 'Gemini Native'
+    },
+    headerModes: {
+      bearer: 'Authorization: Bearer <API_KEY>',
+      'x-goog-api-key': 'x-goog-api-key: <API_KEY>'
+    },
+    variants: {
+      anthropicMessages: {
+        label: 'Claude Messages',
+        description: '适合 Claude SDK、Claude Code 和所有兼容 Anthropic Messages 的客户端。'
+      },
+      openaiChat: {
+        label: 'OpenAI Chat Completions',
+        description: '适合大多数 OpenAI SDK、ChatBox、Open WebUI 等客户端。'
+      },
+      openaiResponses: {
+        label: 'OpenAI Responses',
+        description: '适合新版 OpenAI Responses API 工作流和需要统一输入输出结构的场景。'
+      },
+      geminiNative: {
+        label: 'Gemini Generate Content',
+        description: '走原生 Gemini `v1beta` 路径，适合 Gemini SDK、CLI 和 Google 风格请求。'
+      },
+      antigravityMessages: {
+        label: 'Antigravity Claude',
+        description: '强制使用 Antigravity 的 Claude 兼容端点，不和其它平台混合调度。'
+      },
+      antigravityGemini: {
+        label: 'Antigravity Gemini',
+        description: '强制使用 Antigravity 的 Gemini 原生端点，适合需要固定走该链路的调试场景。'
+      }
+    }
+  },
+
   // API Keys
   keys: {
     title: 'API 密钥',
@@ -687,6 +734,96 @@ export default {
       quota_exhausted: '额度耗尽',
       expired: '已过期'
     }
+  },
+
+  apiGuide: {
+    badge: 'Proxy API',
+    title: '调用说明',
+    description: '选择一个 API Key，页面会按该 Key 当前绑定的分组平台生成可直接复制的调用地址、鉴权头和 curl 示例。',
+    openTester: '打开调用测试',
+    manageKeys: '管理 API 密钥',
+    noKeysTitle: '还没有可用的 API Key',
+    noKeysDescription: '先创建一个 API Key 并分配分组，这里才会生成对应的调用说明和示例。',
+    baseUrl: '网关地址',
+    currentKey: '当前 API Key',
+    supportedEndpoints: '可用端点数',
+    noSelection: '未选择',
+    selectKeyHint: '选择一个已经分配分组的 API Key 后，这里会自动生成对应协议示例。',
+    noGroupAssigned: '未分配分组',
+    keySelector: '选择 API Key',
+    keySelectorHint: '调用能力由 API Key 绑定的分组决定；换一个 Key，下面的调用示例也会随之切换。',
+    unassignedTitle: '这个 API Key 还没有分组',
+    unassignedDescription: '未分组的 API Key 不能通过网关转发请求。请先回到“API 密钥”页为它分配分组。',
+    keySummary: '当前密钥信息',
+    groupName: '所属分组',
+    platform: '平台',
+    authHeaderTitle: '鉴权头',
+    authHeaderDescription: 'Anthropic / OpenAI 兼容端点推荐使用 Bearer 鉴权；Gemini 原生端点使用 `x-goog-api-key` 更直观。',
+    noEndpointVariants: '当前 API Key 还没有可用的调用协议。通常是因为它没有分组，或者分组平台暂不支持在这里生成示例。',
+    endpoint: '端点',
+    protocol: '协议',
+    defaultModel: '默认模型',
+    headerMode: '鉴权方式',
+    curlExample: 'curl 示例',
+    copyCurl: '复制 curl',
+    copyCurlSuccess: 'curl 示例已复制',
+    testThisVariant: '测试这个协议',
+    defaultPrompt: '请用一句话介绍一下你当前命中的模型。'
+  },
+
+  apiTest: {
+    badge: 'Live Request',
+    title: '调用测试',
+    description: '直接在当前页面用你的 API Key 向网关发请求，方便确认路由、模型名、权限和上游响应是否正常。',
+    liveBillingTitle: '这里发出的是真实请求',
+    liveBillingDescription: '调用测试不会走 mock，也不会免计费。请求成功后会按正常网关链路记录用量并参与余额、订阅或限额统计。',
+    openGuide: '查看调用说明',
+    send: '发送测试请求',
+    sending: '请求发送中...',
+    manageKeys: '管理 API 密钥',
+    noKeysTitle: '还没有可用的 API Key',
+    noKeysDescription: '先创建一个 API Key 并分配分组，才能在这里直接发起测试调用。',
+    keySelector: '选择 API Key',
+    protocol: '调用协议',
+    model: '模型名',
+    modelPlaceholder: '输入模型名',
+    modelSearchPlaceholder: '搜索模型',
+    modelHint: '默认会填入一个常用模型，你也可以手动改成自己的目标模型。',
+    customModelOption: '手动输入模型名',
+    customModelOptionHint: '如果下拉里没有你要的模型，可以切换到手动输入。',
+    customModel: '自定义模型名',
+    customModelHint: '这里会直接使用你输入的精确模型名发起请求。',
+    prompt: '测试提示词',
+    promptPlaceholder: '输入你想发给模型的内容',
+    promptHint: '这里会直接作为请求体发送到网关，用来快速验证链路是否通畅。',
+    stream: '开启流式输出',
+    streamHint: '开启后，请求会按 SSE 文本返回，原始响应区域会显示完整事件流。',
+    unassignedTitle: '这个 API Key 不能直接测试',
+    unassignedDescription: '因为它还没有分组。未分组 Key 会被网关拒绝，请先回到“API 密钥”页完成分配。',
+    copyCurl: '复制 curl',
+    copyCurlSuccess: 'curl 命令已复制',
+    requestMeta: '请求信息',
+    platform: '分组平台',
+    headerMode: '鉴权头',
+    notReady: '未就绪',
+    requestPreview: '请求体预览',
+    copyRequest: '复制请求体',
+    copyRequestSuccess: '请求体已复制',
+    responsePreview: '响应结果',
+    statusCode: 'HTTP 状态',
+    duration: '耗时',
+    responseSummary: '响应摘要',
+    rawResponse: '原始响应',
+    responsePending: '点击“发送测试请求”后，这里会显示网关返回的原始响应和摘要。',
+    usageRecordTitle: '用量记录同步',
+    usageRecordIdle: '测试请求成功后，这里会提示它是否已经进入“用量统计”。',
+    usageRecordSyncing: '请求已成功返回，正在同步对应的用量记录...',
+    usageRecordFound: '已写入用量统计：{time} · ${cost} · {tokens} Tokens',
+    usageRecordPending: '请求已经成功返回，但用量记录采用异步写入。如果你已经打开“用量统计”或仪表盘，请刷新页面后查看。',
+    openUsage: '查看用量记录',
+    copyResponse: '复制响应',
+    copyResponseSuccess: '响应内容已复制',
+    noGroupAssigned: '未分配分组'
   },
 
   // Usage
@@ -1569,6 +1706,14 @@ export default {
         hint: '可选多个分组，账号会自动去重',
         hintEdit: '⚠️ 注意：这会替换当前分组的所有账号绑定'
       },
+      directAccounts: {
+        title: '直接分配账号',
+        tooltip: '直接从账号池选择要绑定到当前分组的账号。Anthropic / Gemini 分组也可以选择已开启 mixed scheduling 的 Antigravity 账号。',
+        searchPlaceholder: '搜索账号名称、ID 或平台',
+        hint: '保存后会按“直接分配账号 + 从分组复制账号”的并集更新该分组的账号绑定。',
+        empty: '当前没有可分配的兼容账号',
+        mixedScheduling: 'Mixed Scheduling'
+      },
       modelRouting: {
         title: '模型路由配置',
         tooltip:
@@ -1889,7 +2034,8 @@ export default {
         rateLimitedAutoResume: '{time} 自动恢复',
         modelRateLimitedUntil: '{model} 限流至 {time}',
         overloadedUntil: '负载过重，重置时间：{time}',
-        viewTempUnschedDetails: '查看临时不可调度详情'
+        viewTempUnschedDetails: '查看临时不可调度详情',
+        verifyAccount: '去验证'
       },
       tempUnschedulable: {
         title: '临时不可调度',
@@ -2547,6 +2693,10 @@ export default {
       readyToTest: '准备测试。点击"开始测试"按钮开始...',
       connectingToApi: '连接 API 中...',
       testCompleted: '测试完成！',
+      openVerificationLink: '去验证',
+      learnMore: '了解详情',
+      verificationRequiredTitle: '需要先完成 Google 账号验证',
+      verificationRequiredHint: '当前账号被 Google 拦截，需要先在浏览器完成验证，验证后再回到这里重试。',
       connectedToApi: '已连接到 API',
       usingModel: '使用模型：{model}',
       sendingTestMessage: '发送测试消息："hi"',

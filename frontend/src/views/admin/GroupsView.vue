@@ -252,6 +252,37 @@
           />
           <p class="input-hint">{{ t('admin.groups.platformHint') }}</p>
         </div>
+        <div>
+          <div class="mb-1.5 flex items-center gap-1">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {{ t('admin.groups.directAccounts.title') }}
+            </label>
+            <div class="group relative inline-flex">
+              <Icon
+                name="questionCircle"
+                size="sm"
+                :stroke-width="2"
+                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
+              />
+              <div class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
+                <div class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800">
+                  <p class="text-xs leading-relaxed text-gray-300">
+                    {{ t('admin.groups.directAccounts.tooltip') }}
+                  </p>
+                  <div class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <AccountBindingSelector
+            v-model="createForm.account_ids"
+            :accounts="createAssignableAccounts"
+            :loading="createAssignableAccountsLoading"
+            :placeholder="t('admin.groups.directAccounts.searchPlaceholder')"
+            :empty-text="t('admin.groups.directAccounts.empty')"
+          />
+          <p class="input-hint">{{ t('admin.groups.directAccounts.hint') }}</p>
+        </div>
         <!-- 从分组复制账号 -->
         <div v-if="copyAccountsGroupOptions.length > 0">
           <div class="mb-1.5 flex items-center gap-1">
@@ -979,6 +1010,37 @@
             data-tour="group-form-platform"
           />
           <p class="input-hint">{{ t('admin.groups.platformNotEditable') }}</p>
+        </div>
+        <div>
+          <div class="mb-1.5 flex items-center gap-1">
+            <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+              {{ t('admin.groups.directAccounts.title') }}
+            </label>
+            <div class="group relative inline-flex">
+              <Icon
+                name="questionCircle"
+                size="sm"
+                :stroke-width="2"
+                class="cursor-help text-gray-400 transition-colors hover:text-primary-500 dark:text-gray-500 dark:hover:text-primary-400"
+              />
+              <div class="pointer-events-none absolute bottom-full left-0 z-50 mb-2 w-72 opacity-0 transition-all duration-200 group-hover:pointer-events-auto group-hover:opacity-100">
+                <div class="rounded-lg bg-gray-900 p-3 text-white shadow-lg dark:bg-gray-800">
+                  <p class="text-xs leading-relaxed text-gray-300">
+                    {{ t('admin.groups.directAccounts.tooltip') }}
+                  </p>
+                  <div class="absolute -bottom-1.5 left-3 h-3 w-3 rotate-45 bg-gray-900 dark:bg-gray-800"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <AccountBindingSelector
+            v-model="editForm.account_ids"
+            :accounts="editAssignableAccounts"
+            :loading="editAssignableAccountsLoading"
+            :placeholder="t('admin.groups.directAccounts.searchPlaceholder')"
+            :empty-text="t('admin.groups.directAccounts.empty')"
+          />
+          <p class="input-hint">{{ t('admin.groups.directAccounts.hint') }}</p>
         </div>
         <!-- 从分组复制账号（编辑时） -->
         <div v-if="copyAccountsGroupOptionsForEdit.length > 0">
@@ -1784,10 +1846,11 @@ import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { useOnboardingStore } from '@/stores/onboarding'
 import { adminAPI } from '@/api/admin'
-import type { AdminGroup, GroupPlatform, SubscriptionType } from '@/types'
+import type { Account, AccountPlatform, AdminGroup, GroupPlatform, SubscriptionType } from '@/types'
 import type { Column } from '@/components/common/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
+import AccountBindingSelector from '@/components/common/AccountBindingSelector.vue'
 import DataTable from '@/components/common/DataTable.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import BaseDialog from '@/components/common/BaseDialog.vue'
@@ -1945,6 +2008,89 @@ const copyAccountsGroupOptionsForEdit = computed(() => {
   }))
 })
 
+interface AssignableGroupAccount {
+  id: number
+  name: string
+  platform: AccountPlatform
+  status: 'active' | 'inactive' | 'error'
+  mixedScheduling: boolean
+}
+
+const createAssignableAccounts = ref<AssignableGroupAccount[]>([])
+const editAssignableAccounts = ref<AssignableGroupAccount[]>([])
+const createAssignableAccountsLoading = ref(false)
+const editAssignableAccountsLoading = ref(false)
+
+const getCompatibleAccountPlatforms = (platform: GroupPlatform): AccountPlatform[] => {
+  switch (platform) {
+    case 'anthropic':
+      return ['anthropic', 'antigravity']
+    case 'gemini':
+      return ['gemini', 'antigravity']
+    default:
+      return [platform]
+  }
+}
+
+const isMixedSchedulingEnabled = (account: Account): boolean => {
+  return account.platform === 'antigravity' && account.extra?.mixed_scheduling === true
+}
+
+const isAccountCompatibleWithGroupPlatform = (account: Account, platform: GroupPlatform): boolean => {
+  if (account.platform === platform) {
+    return true
+  }
+  return account.platform === 'antigravity' &&
+    isMixedSchedulingEnabled(account) &&
+    (platform === 'anthropic' || platform === 'gemini')
+}
+
+const toAssignableGroupAccount = (account: Account): AssignableGroupAccount => ({
+  id: account.id,
+  name: account.name,
+  platform: account.platform,
+  status: account.status,
+  mixedScheduling: isMixedSchedulingEnabled(account)
+})
+
+const mergeAssignableAccounts = (lists: AssignableGroupAccount[][]): AssignableGroupAccount[] => {
+  const byId = new Map<number, AssignableGroupAccount>()
+  for (const list of lists) {
+    for (const account of list) {
+      byId.set(account.id, account)
+    }
+  }
+  return Array.from(byId.values()).sort((left, right) => left.name.localeCompare(right.name))
+}
+
+const retainSelectedAccountIds = (selected: number[], available: AssignableGroupAccount[]): number[] => {
+  const allowed = new Set(available.map(account => account.id))
+  return selected.filter(id => allowed.has(id))
+}
+
+const fetchAssignableAccounts = async (platform: GroupPlatform, currentGroupId?: number): Promise<AssignableGroupAccount[]> => {
+  const platformRequests = getCompatibleAccountPlatforms(platform).map((accountPlatform) => {
+    return adminAPI.accounts.list(1, 200, { platform: accountPlatform })
+  })
+
+  const results = await Promise.all(platformRequests)
+  const compatibleAccounts = results.flatMap(result =>
+    result.items
+      .filter(account => isAccountCompatibleWithGroupPlatform(account, platform))
+      .map(toAssignableGroupAccount)
+  )
+
+  if (!currentGroupId) {
+    return mergeAssignableAccounts([compatibleAccounts])
+  }
+
+  const currentGroupAccounts = await adminAPI.accounts.list(1, 200, { group: String(currentGroupId) })
+  return mergeAssignableAccounts([
+    compatibleAccounts,
+    currentGroupAccounts.items.map(toAssignableGroupAccount)
+  ])
+}
+
 const groups = ref<AdminGroup[]>([])
 const loading = ref(false)
 const searchQuery = ref('')
@@ -2005,6 +2151,8 @@ const createForm = reactive({
   supported_model_scopes: ['claude', 'gemini_text', 'gemini_image'] as string[],
   // MCP XML 协议注入开关（仅 antigravity 平台）
   mcp_xml_inject: true,
+  // 直接指定绑定账号
+  account_ids: [] as number[],
   // 从分组复制账号
   copy_accounts_from_group_ids: [] as number[]
 })
@@ -2249,6 +2397,8 @@ const editForm = reactive({
   supported_model_scopes: ['claude', 'gemini_text', 'gemini_image'] as string[],
   // MCP XML 协议注入开关（仅 antigravity 平台）
   mcp_xml_inject: true,
+  // 直接指定绑定账号
+  account_ids: [] as number[],
   // 从分组复制账号
   copy_accounts_from_group_ids: [] as number[]
 })
@@ -2293,6 +2443,34 @@ const loadGroups = async () => {
     if (abortController === currentController && !signal.aborted) {
       loading.value = false
     }
+  }
+}
+
+const loadCreateAssignableAccounts = async () => {
+  createAssignableAccountsLoading.value = true
+  try {
+    const accounts = await fetchAssignableAccounts(createForm.platform)
+    createAssignableAccounts.value = accounts
+    createForm.account_ids = retainSelectedAccountIds(createForm.account_ids, accounts)
+  } catch (error) {
+    console.error('Error loading assignable accounts for group creation:', error)
+    appStore.showError(t('admin.accounts.failedToLoad'))
+  } finally {
+    createAssignableAccountsLoading.value = false
+  }
+}
+
+const loadEditAssignableAccounts = async (groupId: number, platform: GroupPlatform) => {
+  editAssignableAccountsLoading.value = true
+  try {
+    const accounts = await fetchAssignableAccounts(platform, groupId)
+    editAssignableAccounts.value = accounts
+    editForm.account_ids = retainSelectedAccountIds(editForm.account_ids, accounts)
+  } catch (error) {
+    console.error('Error loading assignable accounts for group editing:', error)
+    appStore.showError(t('admin.accounts.failedToLoad'))
+  } finally {
+    editAssignableAccountsLoading.value = false
   }
 }
 
@@ -2346,7 +2524,9 @@ const closeCreateModal = () => {
   createForm.default_mapped_model = 'gpt-5.4'
   createForm.supported_model_scopes = ['claude', 'gemini_text', 'gemini_image']
   createForm.mcp_xml_inject = true
+  createForm.account_ids = []
   createForm.copy_accounts_from_group_ids = []
+  createAssignableAccounts.value = []
   createModelRoutingRules.value = []
 }
 
@@ -2362,6 +2542,7 @@ const handleCreateGroup = async () => {
     const requestData = {
       ...createRest,
       sora_storage_quota_bytes: createQuotaGb ? Math.round(createQuotaGb * 1024 * 1024 * 1024) : 0,
+      account_ids: createForm.account_ids,
       model_routing: convertRoutingRulesToApiFormat(createModelRoutingRules.value)
     }
     await adminAPI.groups.create(requestData)
@@ -2409,10 +2590,22 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.model_routing_enabled = group.model_routing_enabled || false
   editForm.supported_model_scopes = group.supported_model_scopes || ['claude', 'gemini_text', 'gemini_image']
   editForm.mcp_xml_inject = group.mcp_xml_inject ?? true
-  editForm.copy_accounts_from_group_ids = [] // 复制账号字段每次编辑时重置为空
-  // 加载模型路由规则（异步加载账号名称）
-  editModelRoutingRules.value = await convertApiFormatToRoutingRules(group.model_routing)
-  showEditModal.value = true
+  editForm.copy_accounts_from_group_ids = []
+  editForm.account_ids = []
+
+  try {
+    const [routingRules, groupAccountsResponse] = await Promise.all([
+      convertApiFormatToRoutingRules(group.model_routing),
+      adminAPI.accounts.list(1, 200, { group: String(group.id) })
+    ])
+    editModelRoutingRules.value = routingRules
+    editForm.account_ids = groupAccountsResponse.items.map(account => account.id)
+    await loadEditAssignableAccounts(group.id, group.platform)
+    showEditModal.value = true
+  } catch (error) {
+    console.error('Error preparing group edit modal:', error)
+    appStore.showError(t('admin.groups.failedToLoad'))
+  }
 }
 
 const closeEditModal = () => {
@@ -2423,7 +2616,9 @@ const closeEditModal = () => {
   showEditModal.value = false
   editingGroup.value = null
   editModelRoutingRules.value = []
+  editForm.account_ids = []
   editForm.copy_accounts_from_group_ids = []
+  editAssignableAccounts.value = []
 }
 
 const handleUpdateGroup = async () => {
@@ -2445,6 +2640,7 @@ const handleUpdateGroup = async () => {
         editForm.fallback_group_id_on_invalid_request === null
           ? 0
           : editForm.fallback_group_id_on_invalid_request,
+      account_ids: editForm.account_ids,
       model_routing: convertRoutingRulesToApiFormat(editModelRoutingRules.value)
     }
     await adminAPI.groups.update(editingGroup.value.id, payload)
@@ -2458,6 +2654,20 @@ const handleUpdateGroup = async () => {
     submitting.value = false
   }
 }
+
+watch(showCreateModal, (visible) => {
+  if (!visible) {
+    return
+  }
+  loadCreateAssignableAccounts()
+})
+
+watch(() => createForm.platform, () => {
+  if (!showCreateModal.value) {
+    return
+  }
+  loadCreateAssignableAccounts()
+})
 
 const handleDelete = (group: AdminGroup) => {
   deletingGroup.value = group

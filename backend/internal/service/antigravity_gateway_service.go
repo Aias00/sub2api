@@ -1184,6 +1184,24 @@ func injectIdentityPatchToGeminiRequest(body []byte) ([]byte, error) {
 		return nil, fmt.Errorf("解析 Gemini 请求失败: %w", err)
 	}
 
+	// Google 的 v1internal 端点在存在 systemInstruction 时会更严格校验 contents.role。
+	// 原生 Gemini 请求允许省略 role，此时默认语义等价于 user；这里显式补齐，
+	// 保持代理注入身份提示词后的兼容性。
+	if contents, ok := request["contents"].([]any); ok {
+		for _, content := range contents {
+			contentMap, ok := content.(map[string]any)
+			if !ok {
+				continue
+			}
+			if role, ok := contentMap["role"].(string); ok && strings.TrimSpace(role) != "" {
+				continue
+			}
+			if _, hasParts := contentMap["parts"]; hasParts {
+				contentMap["role"] = "user"
+			}
+		}
+	}
+
 	// 检查现有 systemInstruction 是否已包含身份提示词
 	if sysInst, ok := request["systemInstruction"].(map[string]any); ok {
 		if parts, ok := sysInst["parts"].([]any); ok {

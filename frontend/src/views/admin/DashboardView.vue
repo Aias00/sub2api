@@ -227,7 +227,7 @@
                   <Select
                     v-model="granularity"
                     :options="granularityOptions"
-                    @change="loadChartData"
+                    @change="handleGranularityChange"
                   />
                 </div>
               </div>
@@ -265,7 +265,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { useIntervalFn } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 
@@ -310,6 +311,11 @@ const stats = ref<DashboardStats | null>(null)
 const loading = ref(false)
 const chartsLoading = ref(false)
 const userTrendLoading = ref(false)
+const statsRefreshLoading = ref(false)
+
+const DASHBOARD_STATS_REFRESH_INTERVAL_MS = 15_000
+const DASHBOARD_CHARTS_REFRESH_INTERVAL_MS = 60_000
+const DASHBOARD_RESUME_REFRESH_COOLDOWN_MS = 5_000
 
 // Chart data
 const trendData = ref<TrendDataPoint[]>([])
@@ -317,6 +323,8 @@ const modelStats = ref<ModelStat[]>([])
 const userTrend = ref<UserUsageTrendPoint[]>([])
 let chartLoadSeq = 0
 let usersTrendLoadSeq = 0
+let lastChartsRefreshAt = 0
+let lastResumeRefreshAt = 0
 
 // Helper function to format date in local timezone
 const formatLocalDate = (date: Date): string => {
@@ -523,13 +531,27 @@ const onDateRangeChange = (range: {
   loadChartData()
 }
 
+const handleGranularityChange = () => {
+  void loadChartData()
+}
+
+type DashboardLoadOptions = {
+  silent?: boolean
+}
+
 // Load data
-const loadDashboardSnapshot = async (includeStats: boolean) => {
+const loadDashboardSnapshot = async (
+  includeStats: boolean,
+  options: DashboardLoadOptions = {}
+) => {
   const currentSeq = ++chartLoadSeq
-  if (includeStats && !stats.value) {
+  const silent = options.silent === true
+  if (!silent && includeStats && !stats.value) {
     loading.value = true
   }
-  chartsLoading.value = true
+  if (!silent) {
+    chartsLoading.value = true
+  }
   try {
     const response = await adminAPI.dashboard.getSnapshotV2({
       start_date: startDate.value,
@@ -549,19 +571,26 @@ const loadDashboardSnapshot = async (includeStats: boolean) => {
     modelStats.value = response.models || []
   } catch (error) {
     if (currentSeq !== chartLoadSeq) return
-    appStore.showError(t('admin.dashboard.failedToLoad'))
+    if (!silent) {
+      appStore.showError(t('admin.dashboard.failedToLoad'))
+    }
     console.error('Error loading dashboard snapshot:', error)
   } finally {
     if (currentSeq === chartLoadSeq) {
-      loading.value = false
-      chartsLoading.value = false
+      if (!silent) {
+        loading.value = false
+        chartsLoading.value = false
+      }
     }
   }
 }
 
-const loadUsersTrend = async () => {
+const loadUsersTrend = async (options: DashboardLoadOptions = {}) => {
   const currentSeq = ++usersTrendLoadSeq
-  userTrendLoading.value = true
+  const silent = options.silent === true
+  if (!silent) {
+    userTrendLoading.value = true
+  }
   try {
     const response = await adminAPI.dashboard.getUserUsageTrend({
       start_date: startDate.value,
@@ -576,24 +605,86 @@ const loadUsersTrend = async () => {
     console.error('Error loading users trend:', error)
     userTrend.value = []
   } finally {
-    if (currentSeq === usersTrendLoadSeq) {
+    if (!silent && currentSeq === usersTrendLoadSeq) {
       userTrendLoading.value = false
     }
   }
 }
 
-const loadDashboardStats = async () => {
-  await loadDashboardSnapshot(true)
-  void loadUsersTrend()
+const loadDashboardStatsOnly = async () => {
+  if (statsRefreshLoading.value) return
+  statsRefreshLoading.value = true
+  try {
+    stats.value = await adminAPI.dashboard.getStats()
+  } catch (error) {
+    console.error('Error refreshing dashboard stats:', error)
+  } finally {
+    statsRefreshLoading.value = false
+  }
 }
 
-const loadChartData = async () => {
-  await loadDashboardSnapshot(false)
-  void loadUsersTrend()
+const loadDashboardStats = async (options: DashboardLoadOptions = {}) => {
+  await loadDashboardSnapshot(true, options)
+  void loadUsersTrend(options)
+  lastChartsRefreshAt = Date.now()
 }
+
+const loadChartData = async (options: DashboardLoadOptions = {}) => {
+  await loadDashboardSnapshot(false, options)
+  void loadUsersTrend(options)
+  lastChartsRefreshAt = Date.now()
+}
+
+const refreshDashboardSilently = async () => {
+  if (document.hidden) return
+  if (loading.value || chartsLoading.value || userTrendLoading.value || statsRefreshLoading.value) return
+
+  await loadDashboardStatsOnly()
+  if (Date.now() - lastChartsRefreshAt >= DASHBOARD_CHARTS_REFRESH_INTERVAL_MS) {
+    await loadChartData({ silent: true })
+  }
+}
+
+const refreshDashboardOnResume = async () => {
+  const nowMs = Date.now()
+  if (nowMs - lastResumeRefreshAt < DASHBOARD_RESUME_REFRESH_COOLDOWN_MS) return
+  lastResumeRefreshAt = nowMs
+
+  if (loading.value || chartsLoading.value || userTrendLoading.value || statsRefreshLoading.value) return
+
+  await loadDashboardStatsOnly()
+  await loadChartData({ silent: true })
+}
+
+const handleWindowFocus = () => {
+  void refreshDashboardOnResume()
+}
+
+const handleVisibilityChange = () => {
+  if (!document.hidden) {
+    void refreshDashboardOnResume()
+  }
+}
+
+const { pause: pauseAutoRefresh, resume: resumeAutoRefresh } = useIntervalFn(
+  () => {
+    void refreshDashboardSilently()
+  },
+  DASHBOARD_STATS_REFRESH_INTERVAL_MS,
+  { immediate: false }
+)
 
 onMounted(() => {
-  loadDashboardStats()
+  void loadDashboardStats()
+  resumeAutoRefresh()
+  window.addEventListener('focus', handleWindowFocus)
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+})
+
+onUnmounted(() => {
+  pauseAutoRefresh()
+  window.removeEventListener('focus', handleWindowFocus)
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 })
 </script>
 

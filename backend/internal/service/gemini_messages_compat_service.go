@@ -1651,9 +1651,20 @@ func (s *GeminiMessagesCompatService) writeGeminiMappedError(c *gin.Context, acc
 		"upstream_error",
 		"Upstream request failed",
 	); matched {
+		errorObj := gin.H{"type": errType, "message": errMsg}
+		if info := ExtractGoogleValidationRequired(body); info != nil {
+			errorObj["action_url"] = info.ValidationURL
+			errorObj["action_label"] = info.ValidationLabel
+			if info.LearnMoreURL != "" {
+				errorObj["learn_more_url"] = info.LearnMoreURL
+			}
+			if info.LearnMoreLabel != "" {
+				errorObj["learn_more_label"] = info.LearnMoreLabel
+			}
+		}
 		c.JSON(status, gin.H{
 			"type":  "error",
-			"error": gin.H{"type": errType, "message": errMsg},
+			"error": errorObj,
 		})
 		if upstreamMsg == "" {
 			upstreamMsg = errMsg
@@ -1767,9 +1778,20 @@ func (s *GeminiMessagesCompatService) writeGeminiMappedError(c *gin.Context, acc
 		}
 	}
 
+	errorObj := gin.H{"type": errType, "message": errMsg}
+	if info := ExtractGoogleValidationRequired(body); info != nil {
+		errorObj["action_url"] = info.ValidationURL
+		errorObj["action_label"] = info.ValidationLabel
+		if info.LearnMoreURL != "" {
+			errorObj["learn_more_url"] = info.LearnMoreURL
+		}
+		if info.LearnMoreLabel != "" {
+			errorObj["learn_more_label"] = info.LearnMoreLabel
+		}
+	}
 	c.JSON(statusCode, gin.H{
 		"type":  "error",
-		"error": gin.H{"type": errType, "message": errMsg},
+		"error": errorObj,
 	})
 	if upstreamMsg == "" {
 		return fmt.Errorf("upstream error: %d", upstreamStatus)
