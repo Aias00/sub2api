@@ -1,21 +1,31 @@
 <template>
-  <header class="glass sticky top-0 z-30 border-b border-gray-200/50 dark:border-dark-700/50">
-    <div class="flex h-16 items-center justify-between px-4 md:px-6">
+  <header class="sticky top-0 z-30 px-3 pt-3 md:px-6 md:pt-4">
+    <div class="glass relative mx-auto flex h-16 max-w-[1680px] items-center justify-between rounded-[26px] border border-white/80 px-4 shadow-glass dark:border-white/10 md:h-[74px] md:px-6">
+      <div class="pointer-events-none absolute inset-x-8 bottom-0 h-px bg-gradient-to-r from-transparent via-primary-400/45 to-transparent"></div>
+      <div class="pointer-events-none absolute right-10 top-[-3.5rem] h-24 w-24 rounded-full bg-primary-300/30 blur-3xl dark:bg-primary-500/14"></div>
       <!-- Left: Mobile Menu Toggle + Page Title -->
-      <div class="flex items-center gap-4">
+      <div class="flex min-w-0 items-center gap-3 md:gap-4">
         <button
           @click="toggleMobileSidebar"
-          class="btn-ghost btn-icon lg:hidden"
+          class="btn-ghost btn-icon shrink-0 lg:hidden"
           aria-label="Toggle Menu"
         >
           <Icon name="menu" size="md" />
         </button>
 
-        <div class="hidden lg:block">
-          <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
+        <div class="min-w-0">
+          <div class="mb-1 flex items-center gap-2">
+            <span class="hidden rounded-full border border-white/80 bg-gradient-to-r from-white via-blue-50 to-[#f4eedf] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary-800 shadow-sm dark:border-white/10 dark:bg-gradient-to-r dark:from-primary-500/16 dark:to-[#caac5e]/12 dark:text-primary-100 sm:inline-flex">
+              {{ appStore.siteName }}
+            </span>
+            <span v-if="docUrl" class="hidden text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-dark-500 lg:inline">
+              {{ t('nav.docs') }}
+            </span>
+          </div>
+          <h1 class="truncate text-base font-semibold text-gray-900 dark:text-white lg:text-lg">
             {{ pageTitle }}
           </h1>
-          <p v-if="pageDescription" class="text-xs text-gray-500 dark:text-dark-400">
+          <p v-if="pageDescription" class="hidden max-w-[36rem] truncate text-xs text-gray-500 dark:text-dark-400 lg:block">
             {{ pageDescription }}
           </p>
         </div>
@@ -32,10 +42,10 @@
           :href="docUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
+          class="hidden items-center gap-1.5 rounded-xl border border-white/80 bg-gradient-to-r from-white/90 via-blue-50/80 to-[#f4eedf]/85 px-3 py-2 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:text-gray-900 dark:border-white/10 dark:bg-gradient-to-r dark:from-white/[0.04] dark:to-primary-500/[0.08] dark:text-dark-300 dark:hover:text-white md:inline-flex"
         >
           <Icon name="book" size="sm" />
-          <span class="hidden sm:inline">{{ t('nav.docs') }}</span>
+          <span>{{ t('nav.docs') }}</span>
         </a>
 
         <!-- Language Switcher -->
@@ -47,7 +57,7 @@
         <!-- Balance Display -->
         <div
           v-if="user"
-          class="hidden items-center gap-2 rounded-xl bg-primary-50 px-3 py-1.5 dark:bg-primary-900/20 sm:flex"
+          class="hidden items-center gap-2 rounded-2xl border border-primary-100/90 bg-gradient-to-r from-white/[0.94] via-blue-50/[0.84] to-[#f4eedf]/90 px-3 py-2 shadow-sm dark:border-primary-500/20 dark:bg-gradient-to-r dark:from-primary-500/[0.12] dark:to-[#caac5e]/[0.08] sm:flex"
         >
           <svg
             class="h-4 w-4 text-primary-600 dark:text-primary-400"
@@ -62,7 +72,7 @@
               d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
             />
           </svg>
-          <span class="text-sm font-semibold text-primary-700 dark:text-primary-300">
+          <span class="text-sm font-semibold tabular-nums text-primary-700 dark:text-primary-300">
             ${{ user.balance?.toFixed(2) || '0.00' }}
           </span>
         </div>
@@ -71,15 +81,15 @@
         <div v-if="user" class="relative" ref="dropdownRef">
           <button
             @click="toggleDropdown"
-            class="flex items-center gap-2 rounded-xl p-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-dark-800"
+            class="flex items-center gap-2 rounded-2xl border border-white/80 bg-gradient-to-r from-white/[0.94] via-blue-50/[0.84] to-[#f4eedf]/90 p-1.5 shadow-sm transition-colors hover:bg-white dark:border-white/10 dark:bg-gradient-to-r dark:from-white/[0.04] dark:to-primary-500/[0.08] dark:hover:bg-white/[0.06]"
             aria-label="User Menu"
           >
             <div
-              class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-medium text-white shadow-sm"
+              class="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 via-primary-600 to-[#caac5e] text-sm font-medium text-white shadow-sm"
             >
               {{ userInitials }}
             </div>
-            <div class="hidden text-left md:block">
+            <div class="hidden min-w-0 text-left md:block">
               <div class="text-sm font-medium text-gray-900 dark:text-white">
                 {{ displayName }}
               </div>
@@ -325,7 +335,7 @@ onBeforeUnmount(() => {
 <style scoped>
 .dropdown-enter-active,
 .dropdown-leave-active {
-  transition: all 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .dropdown-enter-from,

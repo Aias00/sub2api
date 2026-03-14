@@ -8,17 +8,30 @@
   >
     <!-- Logo/Brand -->
     <div class="sidebar-header">
+      <div class="absolute inset-x-4 top-0 h-px bg-gradient-to-r from-transparent via-primary-400/30 to-transparent"></div>
+
       <!-- Custom Logo or Default Logo -->
-      <div class="flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-glow">
-        <img v-if="settingsLoaded" :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+      <div class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/80 bg-gradient-to-br from-white via-blue-50 to-[#f4eedf] shadow-glow dark:border-white/10 dark:bg-gradient-to-br dark:from-primary-500/20 dark:via-white/[0.03] dark:to-[#caac5e]/14">
+        <img
+          v-if="settingsLoaded"
+          :src="siteLogo || '/logo.png'"
+          alt="Logo"
+          class="h-full w-full object-contain"
+          width="44"
+          height="44"
+        />
       </div>
       <transition name="fade">
-        <div v-if="!sidebarCollapsed" class="flex flex-col">
-          <span class="text-lg font-bold text-gray-900 dark:text-white">
-            {{ siteName }}
-          </span>
-          <!-- Version Badge -->
-          <VersionBadge :version="siteVersion" />
+        <div v-if="!sidebarCollapsed" class="min-w-0 flex-1">
+          <div class="flex items-center gap-2">
+            <span class="truncate text-lg font-bold text-gray-900 dark:text-white">
+              {{ siteName }}
+            </span>
+            <VersionBadge :version="siteVersion" />
+          </div>
+          <p class="mt-1 truncate text-xs text-gray-500 dark:text-dark-400">
+            {{ siteSubtitle }}
+          </p>
         </div>
       </transition>
     </div>
@@ -34,7 +47,7 @@
             :key="item.path"
             :to="item.path"
             class="sidebar-link mb-1"
-            :class="{ 'sidebar-link-active': isActive(item.path) }"
+            :class="[{ 'sidebar-link-active': isActive(item.path) }, sidebarCollapsed ? 'justify-center px-0' : '']"
             :title="sidebarCollapsed ? item.label : undefined"
             :id="
               item.path === '/admin/accounts'
@@ -47,10 +60,15 @@
             "
             @click="handleMenuItemClick(item.path)"
           >
-            <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
-            <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
+            <span class="sidebar-link-icon">
+              <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
+              <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
+            </span>
             <transition name="fade">
-              <span v-if="!sidebarCollapsed">{{ item.label }}</span>
+              <span v-if="!sidebarCollapsed" class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+            </transition>
+            <transition name="fade">
+              <span v-if="!sidebarCollapsed && isActive(item.path)" class="h-1.5 w-1.5 rounded-full bg-current opacity-75"></span>
             </transition>
           </router-link>
         </div>
@@ -67,15 +85,20 @@
             :key="item.path"
             :to="item.path"
             class="sidebar-link mb-1"
-            :class="{ 'sidebar-link-active': isActive(item.path) }"
+            :class="[{ 'sidebar-link-active': isActive(item.path) }, sidebarCollapsed ? 'justify-center px-0' : '']"
             :title="sidebarCollapsed ? item.label : undefined"
             :data-tour="item.path === '/keys' ? 'sidebar-my-keys' : undefined"
             @click="handleMenuItemClick(item.path)"
           >
-            <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
-            <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
+            <span class="sidebar-link-icon">
+              <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
+              <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
+            </span>
             <transition name="fade">
-              <span v-if="!sidebarCollapsed">{{ item.label }}</span>
+              <span v-if="!sidebarCollapsed" class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+            </transition>
+            <transition name="fade">
+              <span v-if="!sidebarCollapsed && isActive(item.path)" class="h-1.5 w-1.5 rounded-full bg-current opacity-75"></span>
             </transition>
           </router-link>
         </div>
@@ -89,15 +112,20 @@
             :key="item.path"
             :to="item.path"
             class="sidebar-link mb-1"
-            :class="{ 'sidebar-link-active': isActive(item.path) }"
+            :class="[{ 'sidebar-link-active': isActive(item.path) }, sidebarCollapsed ? 'justify-center px-0' : '']"
             :title="sidebarCollapsed ? item.label : undefined"
             :data-tour="item.path === '/keys' ? 'sidebar-my-keys' : undefined"
             @click="handleMenuItemClick(item.path)"
           >
-            <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
-            <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
+            <span class="sidebar-link-icon">
+              <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
+              <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
+            </span>
             <transition name="fade">
-              <span v-if="!sidebarCollapsed">{{ item.label }}</span>
+              <span v-if="!sidebarCollapsed" class="min-w-0 flex-1 truncate">{{ item.label }}</span>
+            </transition>
+            <transition name="fade">
+              <span v-if="!sidebarCollapsed && isActive(item.path)" class="h-1.5 w-1.5 rounded-full bg-current opacity-75"></span>
             </transition>
           </router-link>
         </div>
@@ -105,7 +133,7 @@
     </nav>
 
     <!-- Bottom Section -->
-    <div class="mt-auto border-t border-gray-100 p-3 dark:border-dark-800">
+    <div class="mt-auto border-t border-white/60 p-3 dark:border-white/5">
       <!-- Theme Toggle -->
       <button
         @click="toggleTheme"
@@ -179,6 +207,7 @@ const isDark = ref(document.documentElement.classList.contains('dark'))
 const siteName = computed(() => appStore.siteName)
 const siteLogo = computed(() => appStore.siteLogo)
 const siteVersion = computed(() => appStore.siteVersion)
+const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || 'Digital wealth gateway')
 const settingsLoaded = computed(() => appStore.publicSettingsLoaded)
 
 // SVG Icon Components

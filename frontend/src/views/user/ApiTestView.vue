@@ -1,18 +1,18 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <section class="card overflow-hidden">
-        <div class="border-b border-gray-100 px-6 py-6 dark:border-dark-700">
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div class="space-y-2">
-              <div class="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200">
-                <Icon name="beaker" size="sm" />
-                <span>{{ t('apiTest.badge') }}</span>
-              </div>
-              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+      <section class="page-hero">
+        <div class="page-hero-grid">
+          <div class="space-y-4">
+            <div class="page-kicker">
+              <Icon name="beaker" size="sm" />
+              <span>{{ t('apiTest.badge') }}</span>
+            </div>
+            <div class="space-y-3">
+              <h1 class="max-w-3xl text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
                 {{ t('apiTest.title') }}
               </h1>
-              <p class="max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-300">
+              <p class="max-w-3xl text-sm leading-7 text-gray-600 dark:text-gray-300">
                 {{ t('apiTest.description') }}
               </p>
             </div>
@@ -24,6 +24,65 @@
               <button class="btn btn-primary" :disabled="sending || !canSend" @click="runTest">
                 {{ sending ? t('apiTest.sending') : t('apiTest.send') }}
               </button>
+            </div>
+          </div>
+
+          <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            <div class="metric-panel">
+              <div class="flex items-start gap-3">
+                <div class="metric-icon">
+                  <Icon name="key" size="sm" />
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    {{ t('apiTest.keySelector') }}
+                  </div>
+                  <p class="mt-2 truncate text-sm font-semibold text-gray-900 dark:text-white">
+                    {{ selectedKey?.name || t('apiTest.noSelection') }}
+                  </p>
+                  <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
+                    {{ selectedKey ? maskKey(selectedKey.key) : t('apiTest.noGroupAssigned') }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="metric-panel">
+              <div class="flex items-start gap-3">
+                <div class="metric-icon">
+                  <Icon name="chat" size="sm" />
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    {{ t('apiTest.protocol') }}
+                  </div>
+                  <p class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
+                    {{ selectedVariantLabel }}
+                  </p>
+                  <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
+                    {{ selectedPlatformLabel }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="metric-panel">
+              <div class="flex items-start gap-3">
+                <div class="metric-icon">
+                  <Icon name="sparkles" size="sm" />
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    {{ t('apiTest.model') }}
+                  </div>
+                  <p class="mt-2 truncate text-sm font-semibold text-gray-900 dark:text-white">
+                    {{ selectedModelLabel }}
+                  </p>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {{ stream && selectedVariant?.supportsStream ? t('apiTest.stream') : t('apiTest.requestMeta') }}
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -45,9 +104,9 @@
         </template>
       </EmptyState>
 
-      <div v-else class="grid gap-6 xl:grid-cols-[360px,minmax(0,1fr)]">
-        <aside class="space-y-4">
-          <div class="card space-y-4 p-5">
+      <div v-else class="grid gap-6 xl:grid-cols-[380px,minmax(0,1fr)]">
+        <aside class="sticky-panel space-y-4 self-start">
+          <div class="surface-panel-strong space-y-4">
             <div>
               <label class="input-label mb-1.5 block">{{ t('apiTest.keySelector') }}</label>
               <Select
@@ -102,9 +161,9 @@
 
             <label
               v-if="selectedVariant?.supportsStream"
-              class="flex items-start gap-3 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm dark:border-dark-600 dark:bg-dark-800/60"
+              class="surface-panel-muted flex items-start gap-3 text-sm"
             >
-              <input v-model="stream" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500" />
+              <input v-model="stream" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-500 focus-visible:ring-2 focus-visible:ring-primary-500" />
               <div>
                 <div class="font-medium text-gray-900 dark:text-white">{{ t('apiTest.stream') }}</div>
                 <div class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
@@ -115,14 +174,14 @@
 
             <div
               v-if="selectedKey && !selectedKey.group"
-              class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"
+              class="surface-panel border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
             >
               <div class="font-semibold">{{ t('apiTest.unassignedTitle') }}</div>
               <div class="mt-1 text-xs leading-5">{{ t('apiTest.unassignedDescription') }}</div>
             </div>
 
             <div
-              class="rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-100"
+              class="surface-panel border-sky-200/80 bg-sky-50/90 px-4 py-3 text-sm text-sky-900 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-100"
             >
               <div class="font-semibold">{{ t('apiTest.liveBillingTitle') }}</div>
               <div class="mt-1 text-xs leading-5">{{ t('apiTest.liveBillingDescription') }}</div>
@@ -138,7 +197,7 @@
             </div>
           </div>
 
-          <div class="card space-y-3 p-5">
+          <div class="surface-panel space-y-3">
             <div class="flex items-center justify-between">
               <div>
                 <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('apiTest.requestMeta') }}</div>
@@ -164,7 +223,7 @@
         </aside>
 
         <section class="space-y-4">
-          <div class="card p-5">
+          <div class="surface-panel">
             <div class="mb-3 flex items-center justify-between gap-3">
               <div>
                 <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('apiTest.requestPreview') }}</div>
@@ -174,16 +233,19 @@
                 {{ t('apiTest.copyRequest') }}
               </button>
             </div>
-            <pre class="overflow-x-auto rounded-2xl bg-gray-950 p-4 text-xs leading-6 text-gray-100">{{ requestBodyPreview }}</pre>
+            <pre class="code-surface">{{ requestBodyPreview }}</pre>
           </div>
 
-          <div class="card p-5">
+          <div class="surface-panel min-h-[28rem]">
             <div class="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
                 <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('apiTest.responsePreview') }}</div>
-                <div class="mt-1 flex flex-wrap items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                  <span>{{ t('apiTest.statusCode') }}: <strong class="text-gray-900 dark:text-white">{{ responseStatusLabel }}</strong></span>
-                  <span>{{ t('apiTest.duration') }}: <strong class="text-gray-900 dark:text-white">{{ responseDurationLabel }}</strong></span>
+                <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  <span class="badge badge-gray">{{ t('apiTest.statusCode') }} · {{ responseStatusLabel }}</span>
+                  <span class="badge badge-gray">{{ t('apiTest.duration') }} · {{ responseDurationLabel }}</span>
+                  <span v-if="stream && selectedVariant?.supportsStream" class="badge badge-primary">
+                    {{ t('apiTest.stream') }}
+                  </span>
                 </div>
               </div>
 
@@ -194,8 +256,9 @@
 
             <div
               v-if="responsePreview"
+              aria-live="polite"
               :class="[
-                'mb-4 rounded-2xl border px-4 py-3 text-sm',
+                'mb-4 rounded-[24px] border px-4 py-3 text-sm',
                 responseStatus && responseStatus >= 200 && responseStatus < 300
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-100'
                   : 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
@@ -207,6 +270,7 @@
 
             <div
               v-if="showUsageRecordNotice"
+              aria-live="polite"
               class="mb-4 rounded-2xl border border-sky-200 bg-sky-50 px-4 py-3 text-sm text-sky-900 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-100"
             >
               <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
@@ -224,7 +288,7 @@
               <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 {{ t('apiTest.rawResponse') }}
               </div>
-              <pre class="overflow-x-auto rounded-2xl bg-gray-950 p-4 text-xs leading-6 text-gray-100">{{ formattedResponseText }}</pre>
+              <pre class="code-surface">{{ formattedResponseText }}</pre>
             </div>
 
             <div
@@ -304,6 +368,17 @@ const availableVariants = computed(() => getGatewayVariantsForApiKey(selectedKey
 const selectedVariant = computed<GatewayVariant | null>(() => {
   if (!selectedVariantId.value) return null
   return availableVariants.value.find(variant => variant.id === selectedVariantId.value) ?? null
+})
+const selectedVariantLabel = computed(() => {
+  return selectedVariant.value ? t(`${selectedVariant.value.translationKey}.label`) : t('apiTest.notReady')
+})
+const selectedPlatformLabel = computed(() => {
+  return selectedKey.value?.group ? t(`gateway.platforms.${selectedKey.value.group.platform}`) : t('apiTest.notReady')
+})
+const selectedModelLabel = computed(() => {
+  const selectedModel = model.value.trim()
+  if (selectedModel) return selectedModel
+  return selectedVariant.value?.defaultModel || '-'
 })
 
 const keyOptions = computed(() => keys.value.map(key => ({

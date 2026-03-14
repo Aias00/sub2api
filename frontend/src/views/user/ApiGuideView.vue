@@ -1,18 +1,18 @@
 <template>
   <AppLayout>
     <div class="space-y-6">
-      <section class="card overflow-hidden">
-        <div class="border-b border-gray-100 px-6 py-6 dark:border-dark-700">
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-            <div class="space-y-2">
-              <div class="inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold text-primary-700 dark:bg-primary-500/10 dark:text-primary-200">
-                <Icon name="book" size="sm" />
-                <span>{{ t('apiGuide.badge') }}</span>
-              </div>
-              <h1 class="text-2xl font-bold text-gray-900 dark:text-white">
+      <section class="page-hero">
+        <div class="page-hero-grid">
+          <div class="space-y-4">
+            <div class="page-kicker">
+              <Icon name="book" size="sm" />
+              <span>{{ t('apiGuide.badge') }}</span>
+            </div>
+            <div class="space-y-3">
+              <h1 class="max-w-3xl text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
                 {{ t('apiGuide.title') }}
               </h1>
-              <p class="max-w-3xl text-sm leading-6 text-gray-600 dark:text-gray-300">
+              <p class="max-w-3xl text-sm leading-7 text-gray-600 dark:text-gray-300">
                 {{ t('apiGuide.description') }}
               </p>
             </div>
@@ -26,39 +26,61 @@
               </router-link>
             </div>
           </div>
-        </div>
 
-        <div class="grid gap-4 px-6 py-6 md:grid-cols-3">
-          <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60">
-            <div class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
-              <Icon name="server" size="sm" />
-              <span>{{ t('apiGuide.baseUrl') }}</span>
+          <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+            <div class="metric-panel">
+              <div class="flex items-start gap-3">
+                <div class="metric-icon">
+                  <Icon name="server" size="sm" />
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    {{ t('apiGuide.baseUrl') }}
+                  </div>
+                  <code class="mt-2 block break-all text-sm font-medium text-primary-700 dark:text-primary-200">
+                    {{ gatewayBaseUrl }}
+                  </code>
+                </div>
+              </div>
             </div>
-            <code class="break-all text-sm text-primary-700 dark:text-primary-200">{{ gatewayBaseUrl }}</code>
-          </div>
 
-          <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60">
-            <div class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
-              <Icon name="key" size="sm" />
-              <span>{{ t('apiGuide.currentKey') }}</span>
+            <div class="metric-panel">
+              <div class="flex items-start gap-3">
+                <div class="metric-icon">
+                  <Icon name="key" size="sm" />
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    {{ t('apiGuide.currentKey') }}
+                  </div>
+                  <p class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
+                    {{ selectedKey?.name || t('apiGuide.noSelection') }}
+                  </p>
+                  <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
+                    {{ selectedKey ? maskKey(selectedKey.key) : t('apiGuide.selectKeyHint') }}
+                  </p>
+                </div>
+              </div>
             </div>
-            <p class="text-sm font-medium text-gray-900 dark:text-white">
-              {{ selectedKey?.name || t('apiGuide.noSelection') }}
-            </p>
-            <p class="mt-1 break-all text-xs text-gray-500 dark:text-gray-400">
-              {{ selectedKey ? maskKey(selectedKey.key) : t('apiGuide.selectKeyHint') }}
-            </p>
-          </div>
 
-          <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60">
-            <div class="mb-2 flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-200">
-              <Icon name="grid" size="sm" />
-              <span>{{ t('apiGuide.supportedEndpoints') }}</span>
+            <div class="metric-panel">
+              <div class="flex items-start gap-3">
+                <div class="metric-icon">
+                  <Icon name="grid" size="sm" />
+                </div>
+                <div class="min-w-0">
+                  <div class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
+                    {{ t('apiGuide.supportedEndpoints') }}
+                  </div>
+                  <p class="mt-2 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">
+                    {{ variants.length }}
+                  </p>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {{ selectedKey?.group ? platformLabel(selectedKey.group.platform) : t('apiGuide.noGroupAssigned') }}
+                  </p>
+                </div>
+              </div>
             </div>
-            <p class="text-2xl font-bold text-gray-900 dark:text-white">{{ variants.length }}</p>
-            <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-              {{ selectedKey?.group ? platformLabel(selectedKey.group.platform) : t('apiGuide.noGroupAssigned') }}
-            </p>
           </div>
         </div>
       </section>
@@ -79,9 +101,17 @@
         </template>
       </EmptyState>
 
-      <div v-else class="grid gap-6 xl:grid-cols-[320px,minmax(0,1fr)]">
-        <aside class="card space-y-5 p-5">
-          <div>
+      <div v-else class="grid gap-6 xl:grid-cols-[340px,minmax(0,1fr)]">
+        <aside class="sticky-panel space-y-4 self-start">
+          <div class="surface-panel-strong space-y-5">
+            <div class="space-y-2">
+              <div class="text-xs font-semibold uppercase tracking-[0.18em] text-primary-700 dark:text-primary-200">
+                {{ t('apiGuide.keySelector') }}
+              </div>
+              <p class="text-sm leading-6 text-gray-600 dark:text-gray-300">
+                {{ t('apiGuide.keySelectorHint') }}
+              </p>
+            </div>
             <label class="input-label mb-1.5 block">{{ t('apiGuide.keySelector') }}</label>
             <Select
               v-model="selectedKeyId"
@@ -89,14 +119,11 @@
               :placeholder="t('apiGuide.keySelector')"
               searchable
             />
-            <p class="mt-2 text-xs leading-5 text-gray-500 dark:text-gray-400">
-              {{ t('apiGuide.keySelectorHint') }}
-            </p>
           </div>
 
           <div
             v-if="selectedKey && !selectedKey.group"
-            class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"
+            class="surface-panel border-amber-200/80 bg-amber-50/90 text-sm text-amber-800 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100"
           >
             <div class="mb-1 font-semibold">{{ t('apiGuide.unassignedTitle') }}</div>
             <p class="text-xs leading-5">{{ t('apiGuide.unassignedDescription') }}</p>
@@ -104,9 +131,9 @@
 
           <div
             v-else-if="selectedKey"
-            class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60"
+            class="surface-panel space-y-4"
           >
-            <div class="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
+            <div class="text-sm font-semibold text-gray-800 dark:text-gray-100">
               {{ t('apiGuide.keySummary') }}
             </div>
             <dl class="space-y-3 text-sm">
@@ -139,7 +166,7 @@
             <p class="text-xs leading-5 text-blue-700 dark:text-blue-100/90">
               {{ t('apiGuide.authHeaderDescription') }}
             </p>
-            <code class="mt-3 block break-all rounded-xl bg-white px-3 py-2 text-xs text-blue-800 shadow-sm dark:bg-dark-900 dark:text-blue-100">
+            <code class="mt-3 block break-all rounded-2xl bg-white/90 px-3 py-3 text-xs text-blue-800 shadow-sm dark:bg-dark-900 dark:text-blue-100">
               {{ authHeaderPreview }}
             </code>
           </div>
@@ -156,14 +183,23 @@
           <article
             v-for="variant in variants"
             :key="variant.id"
-            class="card overflow-hidden rounded-3xl border border-gray-200 dark:border-dark-600"
+            class="surface-panel overflow-hidden"
           >
-            <div class="border-b border-gray-100 bg-gray-50/80 px-6 py-5 dark:border-dark-700 dark:bg-dark-800/60">
+            <div class="border-b border-gray-200/70 bg-white/[0.35] px-6 py-5 dark:border-white/5 dark:bg-white/[0.02]">
               <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                 <div class="space-y-2">
+                  <div class="flex flex-wrap items-center gap-2">
+                    <div class="page-kicker">
+                      <Icon :name="variant.protocol === 'google' ? 'sparkles' : variant.protocol === 'openai' ? 'cpu' : 'chat'" size="sm" />
+                      <span>{{ t(`${variant.translationKey}.label`) }}</span>
+                    </div>
+                    <span class="badge badge-gray">{{ protocolLabel(variant.protocol) }}</span>
+                    <span class="badge badge-primary">{{ headerModeLabel(variant.headerMode) }}</span>
+                    <span v-if="variant.supportsStream" class="badge badge-success">{{ t('apiTest.stream') }}</span>
+                  </div>
                   <div class="inline-flex items-center gap-2 rounded-full bg-white px-3 py-1 text-xs font-semibold text-gray-700 shadow-sm dark:bg-dark-900 dark:text-gray-200">
                     <Icon :name="variant.protocol === 'google' ? 'sparkles' : variant.protocol === 'openai' ? 'cpu' : 'chat'" size="sm" />
-                    <span>{{ t(`${variant.translationKey}.label`) }}</span>
+                    <span>{{ buildGatewayRelativePath(variant.id, variant.defaultModel) }}</span>
                   </div>
                   <p class="text-sm leading-6 text-gray-600 dark:text-gray-300">
                     {{ t(`${variant.translationKey}.description`) }}
@@ -181,7 +217,7 @@
 
             <div class="space-y-5 px-6 py-6">
               <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60">
+                <div class="metric-panel">
                   <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                     {{ t('apiGuide.endpoint') }}
                   </div>
@@ -190,7 +226,7 @@
                   </code>
                 </div>
 
-                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60">
+                <div class="metric-panel">
                   <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                     {{ t('apiGuide.protocol') }}
                   </div>
@@ -199,7 +235,7 @@
                   </div>
                 </div>
 
-                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60">
+                <div class="metric-panel">
                   <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                     {{ t('apiGuide.defaultModel') }}
                   </div>
@@ -208,7 +244,7 @@
                   </code>
                 </div>
 
-                <div class="rounded-2xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-600 dark:bg-dark-800/60">
+                <div class="metric-panel">
                   <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
                     {{ t('apiGuide.headerMode') }}
                   </div>
@@ -234,7 +270,7 @@
                   </button>
                 </div>
 
-                <pre class="overflow-x-auto rounded-2xl bg-gray-950 p-4 text-xs leading-6 text-gray-100">{{ buildCurl(variant) }}</pre>
+                <pre class="code-surface">{{ buildCurl(variant) }}</pre>
               </div>
             </div>
           </article>
