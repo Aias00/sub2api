@@ -98,7 +98,15 @@ if not found:
     raise SystemExit("hostname block not found")
 PY
 
-  "$CLOUDFLARED_BIN" tunnel --config "$CONFIG_FILE" ingress validate >/dev/null
+  if ! "$CLOUDFLARED_BIN" tunnel --config "$CONFIG_FILE" ingress validate >/dev/null; then
+    err "ingress validate failed after updating config; restoring backup"
+    cp "$backup" "$CONFIG_FILE"
+    if ! "$CLOUDFLARED_BIN" tunnel --config "$CONFIG_FILE" ingress validate >/dev/null; then
+      err "failed to restore a valid config from backup: $backup"
+    fi
+    return 1
+  fi
+
   echo "$backup"
 }
 
@@ -168,7 +176,7 @@ wait_health_ok() {
         log "$label OK: $url => $out"
         return 0
       fi
-      log "$label hint-miss($i/$tries): expect hint , got => ${out:-<no response>}"
+      log "$label hint-miss($i/$tries): expect hint ${expected_hint}, got => ${out:-<no response>}"
     else
       log "$label wait($i/$tries): $url => ${out:-<no response>}"
     fi
@@ -193,7 +201,7 @@ health_hint_for_port() {
     printf %s "$STAGING_HEALTH_HINT"
     return
   fi
-  printf 
+  printf ''
 }
 
 status_check() {
