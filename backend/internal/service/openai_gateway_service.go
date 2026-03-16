@@ -1634,7 +1634,14 @@ func (s *OpenAIGatewayService) shouldFailoverOpenAIUpstreamResponse(statusCode i
 }
 
 func (s *OpenAIGatewayService) handleFailoverSideEffects(ctx context.Context, resp *http.Response, account *Account) {
-	body, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	if s == nil || s.rateLimitService == nil || resp == nil {
+		return
+	}
+
+	body := []byte(nil)
+	if resp.Body != nil {
+		body, _ = io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	}
 	s.rateLimitService.HandleUpstreamError(ctx, account, resp.StatusCode, resp.Header, body)
 }
 
@@ -1660,6 +1667,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 	originalModel := reqModel
 
 	isCodexCLI := openai.IsCodexOfficialClientByHeaders(c.GetHeader("User-Agent"), c.GetHeader("originator")) || (s.cfg != nil && s.cfg.Gateway.ForceCodexCLI)
+	passthroughEnabled := account.IsOpenAIPassthroughEnabled()
 	wsDecision := s.getOpenAIWSProtocolResolver().Resolve(account)
 	clientTransport := GetOpenAIClientTransport(c)
 	// 仅允许 WS 入站请求走 WS 上游，避免出现 HTTP -> WS 协议混用。
@@ -1680,7 +1688,7 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		)
 	}
 	// 当前仅支持 WSv2；WSv1 命中时直接返回错误，避免出现“配置可开但行为不确定”。
-	if wsDecision.Transport == OpenAIUpstreamTransportResponsesWebsocket {
+	if wsDecision.Transport == OpenAIUpstreamTransportResponsesWebsocket && !passthroughEnabled {
 		if c != nil {
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": gin.H{
@@ -1691,7 +1699,6 @@ func (s *OpenAIGatewayService) Forward(ctx context.Context, c *gin.Context, acco
 		}
 		return nil, errors.New("openai ws v1 is temporarily unsupported; use ws v2")
 	}
-	passthroughEnabled := account.IsOpenAIPassthroughEnabled()
 	if passthroughEnabled {
 		// 透传分支只需要轻量提取字段，避免热路径全量 Unmarshal。
 		reasoningEffort := extractOpenAIReasoningEffortFromBody(body, reqModel)
