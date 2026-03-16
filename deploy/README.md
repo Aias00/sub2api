@@ -611,3 +611,63 @@ gateway:
 **Cipher Suites (TLS 1.2):** `49195`, `49196`, `49199`, `49200` (ECDHE variants)
 
 **Curves:** `29` (X25519), `23` (P-256), `24` (P-384), `25` (P-521)
+
+## Traffic Switch (Prod/Staging)
+
+Use this helper to switch `sub2api.airflow.eu.org` between local prod (`65530`) and staging (`65531`) without touching app containers.
+
+```bash
+cd deploy
+./switch_sub2api_traffic.sh --status
+./switch_sub2api_traffic.sh --dry-run-report
+./switch_sub2api_traffic.sh --to staging
+./switch_sub2api_traffic.sh --to prod
+```
+
+Notes:
+- It edits `~/.cloudflared/config.yml` (or `CLOUDFLARED_CONFIG`) with a timestamped backup.
+- It validates ingress before reloading `cloudflared`.
+- It acquires a lock file (`/tmp/sub2api-traffic-switch.lock.d`) to avoid concurrent switch operations.
+- It performs strict local/public health checks and auto-rolls back to previous config on failure.
+- `--dry-run-report` prints a non-invasive readiness/drill report and does not change traffic.
+- It now verifies post-switch hostname mapping (`sub2api.airflow.eu.org -> expected localhost port`) before declaring success.
+- For safer production switching, make prod/staging `/health` payloads distinguishable (for example include `env=prod` / `env=staging`) so manual/automated checks can detect misrouting.
+- You can enforce strong routing verification by setting `PROD_HEALTH_HINT` / `STAGING_HEALTH_HINT`; switch only succeeds when health responses contain the expected hint.
+
+Optional env overrides example:
+
+```bash
+HOSTNAME_TARGET="sub2api.example.com" \
+STAGING_HOSTNAME_TARGET="sub2api-staging.example.com" \
+PROD_PORT="18080" \
+STAGING_PORT="18081" \
+PROD_HEALTH_HINT="env=prod" \
+STAGING_HEALTH_HINT="env=staging" \
+./switch_sub2api_traffic.sh --dry-run-report
+```
+
+## New Version Optimization (Precheck)
+
+Before traffic switching, run a full non-invasive precheck:
+
+```bash
+cd deploy
+./optimize_new_version.sh
+```
+
+What it verifies:
+- Required commands (`docker`, `curl`, `cloudflared`, `python3`)
+- Prod/Staging deploy paths and cloudflared config presence
+- Prod/Staging containers running and healthy (configurable via `PROD_CONTAINERS` / `STAGING_CONTAINERS`)
+- Local/public health endpoints for prod (`65530`) and staging (`65531`)
+- Cloudflared hostname-to-port mapping consistency
+
+Optional env overrides example:
+
+```bash
+PROD_CONTAINERS="sub2api,sub2api-postgres,sub2api-redis" \
+STAGING_CONTAINERS="sub2api-staging,sub2api-staging-postgres,sub2api-staging-redis" \
+./optimize_new_version.sh
+```
+
+If any check fails, script exits with non-zero status.

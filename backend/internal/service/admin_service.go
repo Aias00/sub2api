@@ -1900,14 +1900,92 @@ func (s *adminServiceImpl) GetProxiesByIDs(ctx context.Context, ids []int64) ([]
 	return s.proxyRepo.ListByIDs(ctx, ids)
 }
 
+func normalizeProxyFields(protocol, host, username, password string) (string, string, string, string) {
+	return strings.ToLower(strings.TrimSpace(protocol)), strings.ToLower(strings.TrimSpace(host)), strings.TrimSpace(username), strings.TrimSpace(password)
+}
+
+func validateProxyFields(protocol, host string, port int, status string) error {
+	switch protocol {
+	case "http", "https", "socks5", "socks5h":
+	default:
+		return infraerrors.BadRequest("PROXY_INVALID_PROTOCOL", "proxy protocol must be one of http/https/socks5/socks5h")
+	}
+
+	if host == "" {
+		return infraerrors.BadRequest("PROXY_INVALID_HOST", "proxy host is required")
+	}
+	if strings.ContainsAny(host, " \t\r\n") {
+		return infraerrors.BadRequest("PROXY_INVALID_HOST", "proxy host cannot contain spaces")
+	}
+
+	if port < 1 || port > 65535 {
+		return infraerrors.BadRequest("PROXY_INVALID_PORT", "proxy port must be between 1 and 65535")
+	}
+
+	if status != "" && status != StatusActive && status != "inactive" {
+		return infraerrors.BadRequest("PROXY_INVALID_STATUS", "proxy status must be active/inactive")
+	}
+
+	return nil
+}
+
+func (s *adminServiceImpl) proxyExistsExcludingID(ctx context.Context, protocol, host string, port int, username, password string, excludeID int64) (bool, error) {
+	page := 1
+	const pageSize = 500
+
+	for {
+		items, result, err := s.proxyRepo.List(ctx, pagination.PaginationParams{Page: page, PageSize: pageSize})
+		if err != nil {
+			return false, err
+		}
+		if len(items) == 0 {
+			return false, nil
+		}
+
+		for i := range items {
+			candidate := items[i]
+			if excludeID != 0 && candidate.ID == excludeID {
+				continue
+			}
+
+			candidateProtocol, candidateHost, candidateUsername, candidatePassword := normalizeProxyFields(candidate.Protocol, candidate.Host, candidate.Username, candidate.Password)
+			if candidateProtocol == protocol &&
+				candidateHost == host &&
+				candidate.Port == port &&
+				candidateUsername == username &&
+				candidatePassword == password {
+				return true, nil
+			}
+		}
+
+		if result == nil || int64(page*pageSize) >= result.Total {
+			return false, nil
+		}
+		page++
+	}
+}
+
 func (s *adminServiceImpl) CreateProxy(ctx context.Context, input *CreateProxyInput) (*Proxy, error) {
+	protocol, host, username, password := normalizeProxyFields(input.Protocol, input.Host, input.Username, input.Password)
+	if err := validateProxyFields(protocol, host, input.Port, StatusActive); err != nil {
+		return nil, err
+	}
+
+	exists, err := s.proxyExistsExcludingID(ctx, protocol, host, input.Port, username, password, 0)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, ErrProxyDuplicate
+	}
+
 	proxy := &Proxy{
 		Name:     input.Name,
-		Protocol: input.Protocol,
-		Host:     input.Host,
+		Protocol: protocol,
+		Host:     host,
 		Port:     input.Port,
-		Username: input.Username,
-		Password: input.Password,
+		Username: username,
+		Password: password,
 		Status:   StatusActive,
 	}
 	if err := s.proxyRepo.Create(ctx, proxy); err != nil {
@@ -1944,6 +2022,19 @@ func (s *adminServiceImpl) UpdateProxy(ctx context.Context, id int64, input *Upd
 	}
 	if input.Status != "" {
 		proxy.Status = input.Status
+	}
+
+	proxy.Protocol, proxy.Host, proxy.Username, proxy.Password = normalizeProxyFields(proxy.Protocol, proxy.Host, proxy.Username, proxy.Password)
+	if err := validateProxyFields(proxy.Protocol, proxy.Host, proxy.Port, proxy.Status); err != nil {
+		return nil, err
+	}
+
+	exists, err := s.proxyExistsExcludingID(ctx, proxy.Protocol, proxy.Host, proxy.Port, proxy.Username, proxy.Password, proxy.ID)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, ErrProxyDuplicate
 	}
 
 	if err := s.proxyRepo.Update(ctx, proxy); err != nil {

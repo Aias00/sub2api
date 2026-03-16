@@ -2,15 +2,20 @@ package routes
 
 import (
 	"net/http"
+	"os"
+	"strings"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/gin-gonic/gin"
 )
 
 // RegisterCommonRoutes 注册通用路由（健康检查、状态等）
-func RegisterCommonRoutes(r *gin.Engine) {
+func RegisterCommonRoutes(r *gin.Engine, cfg *config.Config) {
+	healthEnv := resolveHealthEnvMarker(cfg)
+
 	// 健康检查
 	r.GET("/health", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		c.JSON(http.StatusOK, gin.H{"status": "ok", "env": healthEnv})
 	})
 
 	// Claude Code 遥测日志（忽略，直接返回200）
@@ -29,4 +34,24 @@ func RegisterCommonRoutes(r *gin.Engine) {
 			},
 		})
 	})
+}
+
+func resolveHealthEnvMarker(cfg *config.Config) string {
+	if marker := strings.TrimSpace(os.Getenv("HEALTH_ENV_MARKER")); marker != "" {
+		return marker
+	}
+
+	if cfg == nil {
+		return "unknown"
+	}
+
+	if cfg.Log.Environment != "" {
+		return cfg.Log.Environment
+	}
+
+	if cfg.RunMode != "" {
+		return cfg.RunMode
+	}
+
+	return "unknown"
 }
