@@ -15,7 +15,7 @@
 
         <div class="min-w-0">
           <div class="mb-1 flex items-center gap-2">
-            <span class="hidden rounded-full border border-white/80 bg-gradient-to-r from-white via-blue-50 to-[#f4eedf] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary-800 shadow-sm dark:border-white/10 dark:bg-gradient-to-r dark:from-primary-500/16 dark:to-[#caac5e]/12 dark:text-primary-100 sm:inline-flex">
+            <span class="hidden rounded-full border border-white/70 bg-gradient-to-r from-white/80 via-blue-100/60 to-[#f4eedf]/70 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-primary-800 shadow-sm dark:border-white/10 dark:from-primary-500/16 dark:via-white/[0.02] dark:to-[#caac5e]/12 dark:text-primary-100 sm:inline-flex">
               {{ appStore.siteName }}
             </span>
             <span v-if="docUrl" class="hidden text-[11px] font-medium uppercase tracking-[0.18em] text-gray-400 dark:text-dark-500 lg:inline">
