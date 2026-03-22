@@ -45,20 +45,16 @@ const (
 
 // TestEvent represents a SSE event for account testing
 type TestEvent struct {
-	Type           string `json:"type"`
-	Text           string `json:"text,omitempty"`
-	Model          string `json:"model,omitempty"`
-	Status         string `json:"status,omitempty"`
-	Code           string `json:"code,omitempty"`
-	ImageURL       string `json:"image_url,omitempty"`
-	MimeType       string `json:"mime_type,omitempty"`
-	ActionURL      string `json:"action_url,omitempty"`
-	ActionLabel    string `json:"action_label,omitempty"`
-	LearnMoreURL   string `json:"learn_more_url,omitempty"`
-	LearnMoreLabel string `json:"learn_more_label,omitempty"`
-	Data           any    `json:"data,omitempty"`
-	Success        bool   `json:"success,omitempty"`
-	Error          string `json:"error,omitempty"`
+	Type     string `json:"type"`
+	Text     string `json:"text,omitempty"`
+	Model    string `json:"model,omitempty"`
+	Status   string `json:"status,omitempty"`
+	Code     string `json:"code,omitempty"`
+	ImageURL string `json:"image_url,omitempty"`
+	MimeType string `json:"mime_type,omitempty"`
+	Data     any    `json:"data,omitempty"`
+	Success  bool   `json:"success,omitempty"`
+	Error    string `json:"error,omitempty"`
 }
 
 const (
@@ -312,10 +308,14 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		if info := persistGoogleValidationRequired(ctx, s.accountRepo, account, body); info != nil {
-			return s.sendErrorAndEnd(c, fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body)), info)
+		errMsg := fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body))
+
+		// 403 表示账号被上游封禁，标记为 error 状态
+		if resp.StatusCode == http.StatusForbidden {
+			_ = s.accountRepo.SetError(ctx, account.ID, errMsg)
 		}
-		return s.sendErrorAndEnd(c, fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body)))
+
+		return s.sendErrorAndEnd(c, errMsg)
 	}
 
 	// Process SSE stream
@@ -1356,8 +1356,7 @@ func (s *AccountTestService) testAntigravityAccountConnection(c *gin.Context, ac
 	// 调用 AntigravityGatewayService.TestConnection（复用协议转换逻辑）
 	result, err := s.antigravityGatewayService.TestConnection(ctx, account, testModelID)
 	if err != nil {
-		info := persistGoogleValidationRequiredFromText(ctx, s.accountRepo, account, err.Error())
-		return s.sendErrorAndEnd(c, err.Error(), info)
+		return s.sendErrorAndEnd(c, err.Error())
 	}
 
 	// 发送响应内容
@@ -1751,23 +1750,9 @@ func (s *AccountTestService) sendEvent(c *gin.Context, event TestEvent) {
 }
 
 // sendErrorAndEnd sends an error event and ends the stream
-func (s *AccountTestService) sendErrorAndEnd(c *gin.Context, errorMsg string, info ...*GoogleValidationRequiredInfo) error {
+func (s *AccountTestService) sendErrorAndEnd(c *gin.Context, errorMsg string) error {
 	log.Printf("Account test error: %s", errorMsg)
-	event := TestEvent{Type: "error", Error: errorMsg}
-	var validationInfo *GoogleValidationRequiredInfo
-	if len(info) > 0 {
-		validationInfo = info[0]
-	}
-	if validationInfo == nil {
-		validationInfo = ExtractGoogleValidationRequiredFromText(errorMsg)
-	}
-	if validationInfo != nil {
-		event.ActionURL = validationInfo.ValidationURL
-		event.ActionLabel = validationInfo.ValidationLabel
-		event.LearnMoreURL = validationInfo.LearnMoreURL
-		event.LearnMoreLabel = validationInfo.LearnMoreLabel
-	}
-	s.sendEvent(c, event)
+	s.sendEvent(c, TestEvent{Type: "error", Error: errorMsg})
 	return fmt.Errorf("%s", errorMsg)
 }
 

@@ -1456,6 +1456,9 @@ export default {
       searchUsers: 'Search by email, username, notes, or API key...',
       allRoles: 'All Roles',
       allStatus: 'All Status',
+      allGroups: 'All Groups',
+      searchGroups: 'Search groups...',
+      fuzzySearch: 'Fuzzy search',
       admin: 'Admin',
       user: 'User',
       disabled: 'Disabled',
@@ -1480,6 +1483,7 @@ export default {
         username: 'Username',
         notes: 'Notes',
         role: 'Role',
+        groups: 'Groups',
         subscriptions: 'Subscriptions',
         balance: 'Balance',
         usage: 'Usage',
@@ -1491,6 +1495,9 @@ export default {
       today: 'Today',
       total: 'Total',
       noSubscription: 'No subscription',
+      publicGroupCount: '+{count} public',
+      exclusiveLabel: 'exclusive',
+      publicLabel: 'public',
       daysRemaining: '{days}d',
       expired: 'Expired',
       disable: 'Disable',
@@ -1546,6 +1553,14 @@ export default {
       useDefaultRate: 'Use Default',
       customRatePlaceholder: 'Leave empty for default',
       groupConfigUpdated: 'Group configuration updated successfully',
+      replaceGroup: 'Replace Group',
+      clickToReplace: 'Click to replace',
+      replaceGroupTitle: 'Replace Exclusive Group',
+      replaceGroupHint: 'Select a new group to replace "{old}". Keys will be migrated and permissions updated automatically.',
+      replaceGroupConfirm: 'Confirm Replace',
+      replaceGroupSuccess: 'Group replaced successfully, {count} key(s) migrated',
+      selectNewGroup: 'Select target group',
+      noOtherGroups: 'No other exclusive groups available',
       deposit: 'Deposit',
       withdraw: 'Withdraw',
       depositAmount: 'Deposit Amount',
@@ -2019,6 +2034,7 @@ export default {
       allTypes: 'All Types',
       allStatus: 'All Status',
       allGroups: 'All Groups',
+      ungroupedGroup: 'Ungrouped',
       oauthType: 'OAuth',
       setupToken: 'Setup Token',
       apiKey: 'API Key',
@@ -2930,7 +2946,9 @@ export default {
         gemini3Pro: 'G3P',
         gemini3Flash: 'G3F',
         gemini3Image: 'G31FI',
-        claude: 'Claude'
+        claude: 'Claude',
+        passiveSampled: 'Passive',
+        activeQuery: 'Query'
       },
       tier: {
         free: 'Free',
@@ -4286,7 +4304,11 @@ export default {
         minVersion: 'Minimum Version',
         minVersionPlaceholder: 'e.g. 2.1.63',
         minVersionHint:
-          'Reject Claude Code clients below this version (semver format). Leave empty to disable version check.'
+          'Reject Claude Code clients below this version (semver format). Leave empty to disable version check.',
+        maxVersion: 'Maximum Version',
+        maxVersionPlaceholder: 'e.g. 2.5.0',
+        maxVersionHint:
+          'Reject Claude Code clients above this version (semver format). Leave empty to allow any version.'
       },
       scheduling: {
         title: 'Gateway Scheduling Settings',
