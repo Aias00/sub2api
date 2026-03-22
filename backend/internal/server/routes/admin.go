@@ -198,7 +198,6 @@ func registerDashboardRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		dashboard.GET("/users-ranking", h.Admin.Dashboard.GetUserSpendingRanking)
 		dashboard.POST("/users-usage", h.Admin.Dashboard.GetBatchUsersUsage)
 		dashboard.POST("/api-keys-usage", h.Admin.Dashboard.GetBatchAPIKeysUsage)
-		dashboard.GET("/user-breakdown", h.Admin.Dashboard.GetUserBreakdown)
 		dashboard.POST("/aggregation/backfill", h.Admin.Dashboard.BackfillAggregation)
 	}
 }
@@ -227,8 +226,6 @@ func registerGroupRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 	{
 		groups.GET("", h.Admin.Group.List)
 		groups.GET("/all", h.Admin.Group.GetAll)
-		groups.GET("/usage-summary", h.Admin.Group.GetUsageSummary)
-		groups.GET("/capacity-summary", h.Admin.Group.GetCapacitySummary)
 		groups.PUT("/sort-order", h.Admin.Group.UpdateSortOrder)
 		groups.GET("/:id", h.Admin.Group.GetByID)
 		groups.POST("", h.Admin.Group.Create)
@@ -264,6 +261,9 @@ func registerAccountRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		accounts.POST("/today-stats/batch", h.Admin.Account.GetBatchTodayStats)
 		accounts.POST("/:id/clear-rate-limit", h.Admin.Account.ClearRateLimit)
 		accounts.POST("/:id/reset-quota", h.Admin.Account.ResetQuota)
+		accounts.POST("/:id/gemini-web/start", h.Admin.Account.StartGeminiWebLogin)
+		accounts.GET("/:id/gemini-web/status", h.Admin.Account.GetGeminiWebLoginStatus)
+		accounts.POST("/:id/gemini-web/import-cookies", h.Admin.Account.ImportGeminiWebCookies)
 		accounts.GET("/:id/temp-unschedulable", h.Admin.Account.GetTempUnschedulable)
 		accounts.DELETE("/:id/temp-unschedulable", h.Admin.Account.ClearTempUnschedulable)
 		accounts.POST("/:id/schedulable", h.Admin.Account.SetSchedulable)
@@ -402,9 +402,6 @@ func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		adminSettings.GET("/admin-api-key", h.Admin.Setting.GetAdminAPIKey)
 		adminSettings.POST("/admin-api-key/regenerate", h.Admin.Setting.RegenerateAdminAPIKey)
 		adminSettings.DELETE("/admin-api-key", h.Admin.Setting.DeleteAdminAPIKey)
-		// 529过载冷却配置
-		adminSettings.GET("/overload-cooldown", h.Admin.Setting.GetOverloadCooldownSettings)
-		adminSettings.PUT("/overload-cooldown", h.Admin.Setting.UpdateOverloadCooldownSettings)
 		// 流超时处理配置
 		adminSettings.GET("/stream-timeout", h.Admin.Setting.GetStreamTimeoutSettings)
 		adminSettings.PUT("/stream-timeout", h.Admin.Setting.UpdateStreamTimeoutSettings)

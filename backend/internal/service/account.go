@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"hash/fnv"
+	"os"
 	"reflect"
 	"sort"
 	"strconv"
@@ -567,6 +568,31 @@ func (a *Account) GetGeminiBaseURL(defaultBaseURL string) string {
 		return strings.TrimRight(baseURL, "/") + "/antigravity"
 	}
 	return baseURL
+}
+
+// GetGeminiWebBaseURL 返回 Gemini Web 代理入口地址。
+// 默认值使用本机 8000 端口，便于最小化集成落地。
+func (a *Account) GetGeminiWebBaseURL() string {
+	baseURL := strings.TrimSpace(a.GetCredential("base_url"))
+	if baseURL == "" {
+		baseURL = strings.TrimSpace(os.Getenv("GEMINI_WEB_GATEWAY_BASE_URL"))
+	}
+	if baseURL == "" {
+		return "http://127.0.0.1:8000"
+	}
+	return baseURL
+}
+
+// GetGeminiWebAPIKey 返回 Gemini Web 代理鉴权密钥。
+// 优先使用 api_key，其次兼容 access_token。
+func (a *Account) GetGeminiWebAPIKey() string {
+	if apiKey := strings.TrimSpace(a.GetCredential("api_key")); apiKey != "" {
+		return apiKey
+	}
+	if accessToken := strings.TrimSpace(a.GetCredential("access_token")); accessToken != "" {
+		return accessToken
+	}
+	return strings.TrimSpace(os.Getenv("GEMINI_WEB_GATEWAY_API_KEY"))
 }
 
 func (a *Account) GetExtraString(key string) string {

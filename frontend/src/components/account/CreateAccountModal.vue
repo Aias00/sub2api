@@ -6,7 +6,7 @@
     @close="handleClose"
   >
     <!-- Step Indicator for OAuth accounts -->
-    <div v-if="isOAuthFlow" class="mb-6 flex items-center justify-center">
+    <div v-if="isTwoStepFlow" class="mb-6 flex items-center justify-center">
       <div class="flex items-center space-x-4">
         <div class="flex items-center">
           <div
@@ -32,7 +32,7 @@
             2
           </div>
           <span class="ml-2 text-sm font-medium text-gray-700 dark:text-gray-300">{{
-            oauthStepTitle
+            currentWizardStepTitle
           }}</span>
         </div>
       </div>
@@ -175,7 +175,7 @@
       <!-- Account Type Selection (Sora) -->
       <div v-if="form.platform === 'sora'">
         <label class="input-label">{{ t('admin.accounts.accountType') }}</label>
-        <div class="mt-2 grid grid-cols-2 gap-3" data-tour="account-form-type">
+        <div class="mt-2 grid grid-cols-3 gap-3" data-tour="account-form-type">
           <button
             type="button"
             @click="soraAccountType = 'oauth'; accountCategory = 'oauth-based'; addMethod = 'oauth'"
@@ -381,6 +381,7 @@
               <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.accounts.types.responsesApi') }}</span>
             </div>
           </button>
+
         </div>
       </div>
 
@@ -399,7 +400,7 @@
             {{ t('admin.accounts.gemini.helpButton') }}
           </button>
         </div>
-        <div class="mt-2 grid grid-cols-2 gap-3" data-tour="account-form-type">
+        <div class="mt-2 grid grid-cols-3 gap-3" data-tour="account-form-type">
           <button
             type="button"
             @click="accountCategory = 'oauth-based'"
@@ -471,6 +472,48 @@
               </span>
             </div>
           </button>
+
+          <button
+            type="button"
+            @click="accountCategory = 'gemini-web'"
+            :class="[
+              'flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all',
+              accountCategory === 'gemini-web'
+                ? 'border-cyan-500 bg-cyan-50 dark:bg-cyan-900/20'
+                : 'border-gray-200 hover:border-cyan-300 dark:border-dark-600 dark:hover:border-cyan-700'
+            ]"
+          >
+            <div
+              :class="[
+                'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                accountCategory === 'gemini-web'
+                  ? 'bg-cyan-500 text-white'
+                  : 'bg-gray-100 text-gray-500 dark:bg-dark-600 dark:text-gray-400'
+              ]"
+            >
+              <svg
+                class="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="1.5"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="M12 3.75c-4.556 0-8.25 3.694-8.25 8.25s3.694 8.25 8.25 8.25 8.25-3.694 8.25-8.25S16.556 3.75 12 3.75zm0 0c2.485 2.273 3.75 5.035 3.75 8.25S14.485 17.977 12 20.25m0-16.5c-2.485 2.273-3.75 5.035-3.75 8.25s1.265 5.977 3.75 8.25m-7.5-8.25h15"
+                />
+              </svg>
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-900 dark:text-white">
+                {{ t('admin.accounts.gemini.accountType.webTitle') }}
+              </span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">
+                {{ t('admin.accounts.gemini.accountType.webDesc') }}
+              </span>
+            </div>
+          </button>
         </div>
 
         <div
@@ -488,6 +531,13 @@
               {{ t('admin.accounts.gemini.accountType.apiKeyLink') }}
             </a>
           </div>
+        </div>
+
+        <div
+          v-if="accountCategory === 'gemini-web'"
+          class="mt-3 rounded-lg border border-cyan-200 bg-cyan-50 px-3 py-2 text-xs text-cyan-800 dark:border-cyan-800/40 dark:bg-cyan-900/20 dark:text-cyan-200"
+        >
+          <p>{{ t('admin.accounts.gemini.accountType.webNote') }}</p>
         </div>
 
         <!-- OAuth Type Selection (only show when oauth-based is selected) -->
@@ -2490,7 +2540,104 @@
 
     </form>
 
-    <!-- Step 2: OAuth Authorization -->
+    <!-- Step 2: Authorization -->
+    <div v-else-if="isGeminiWebFlow" class="space-y-5">
+      <section class="rounded-2xl border border-cyan-200/70 bg-cyan-50/80 p-5 dark:border-cyan-900/40 dark:bg-cyan-950/20">
+        <h3 class="text-base font-semibold text-gray-900 dark:text-white">
+          {{ t('admin.accounts.oauth.geminiWeb.title') }}
+        </h3>
+        <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+          {{ t('admin.accounts.oauth.geminiWeb.description') }}
+        </p>
+      </section>
+
+      <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-900">
+        <div class="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <div class="flex flex-wrap items-center gap-3">
+              <span
+                class="inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold"
+                :class="geminiWebStatusClass(geminiWebSession?.status)"
+              >
+                {{ geminiWebSession?.status || 'idle' }}
+              </span>
+              <span class="text-xs text-gray-500 dark:text-dark-400">
+                {{ t('admin.accounts.oauth.geminiWeb.browserAutoClose') }}
+              </span>
+            </div>
+            <p class="mt-3 text-sm text-gray-700 dark:text-gray-200">
+              {{ geminiWebSession?.message || t('admin.accounts.oauth.geminiWeb.waiting') }}
+            </p>
+            <div class="mt-3 space-y-1 text-xs text-gray-500 dark:text-dark-400">
+              <p>{{ t('admin.accounts.oauth.geminiWeb.statusHint') }}</p>
+              <p v-if="geminiWebCreatedAccountId">
+                {{ t('admin.accounts.oauth.geminiWeb.accountIdLabel') }}: {{ geminiWebCreatedAccountId }}
+              </p>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              type="button"
+              class="btn btn-primary"
+              :disabled="geminiWebBusy || geminiWebSession?.status === 'pending'"
+              @click="handleGeminiWebStartLogin"
+            >
+              {{ geminiWebCreatedAccountId ? t('admin.accounts.oauth.geminiWeb.retryLogin') : t('admin.accounts.oauth.geminiWeb.startLogin') }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              :disabled="geminiWebBusy || !geminiWebCreatedAccountId"
+              @click="refreshGeminiWebSession(true)"
+            >
+              {{ t('admin.accounts.oauth.geminiWeb.refreshStatus') }}
+            </button>
+            <button
+              type="button"
+              class="btn btn-secondary"
+              :disabled="!geminiWebSession?.login_url"
+              @click="openGeminiWebLoginUrl"
+            >
+              {{ t('admin.accounts.oauth.geminiWeb.openFallbackPage') }}
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="rounded-2xl border border-gray-200 bg-white p-5 dark:border-dark-700 dark:bg-dark-900">
+        <label class="text-sm font-medium text-gray-900 dark:text-white">
+          {{ t('admin.accounts.oauth.geminiWeb.cookiesLabel') }}
+        </label>
+        <textarea
+          v-model="geminiWebCookiesInput"
+          rows="7"
+          class="mt-3 w-full rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm text-gray-800 outline-none transition focus:border-blue-400 focus:bg-white dark:border-dark-700 dark:bg-dark-950 dark:text-dark-100 dark:focus:border-blue-500"
+          :placeholder="t('admin.accounts.oauth.geminiWeb.cookiesPlaceholder')"
+        ></textarea>
+        <div class="mt-3 flex flex-wrap items-center justify-between gap-3">
+          <p class="text-xs text-gray-500 dark:text-dark-400">
+            {{ t('admin.accounts.oauth.geminiWeb.cookiesHint') }}
+          </p>
+          <button
+            type="button"
+            class="btn btn-secondary"
+            :disabled="geminiWebBusy || !geminiWebCreatedAccountId || !geminiWebCookiesInput.trim()"
+            @click="handleGeminiWebImportCookies"
+          >
+            {{ t('admin.accounts.oauth.geminiWeb.importCookies') }}
+          </button>
+        </div>
+      </section>
+
+      <section class="rounded-2xl border border-dashed border-gray-300 bg-white p-5 dark:border-dark-700 dark:bg-dark-900">
+        <ol class="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+          <li>1. {{ t('admin.accounts.oauth.geminiWeb.flowStepLaunch') }}</li>
+          <li>2. {{ t('admin.accounts.oauth.geminiWeb.flowStepLogin') }}</li>
+          <li>3. {{ t('admin.accounts.oauth.geminiWeb.flowStepFinish') }}</li>
+        </ol>
+      </section>
+    </div>
+
     <div v-else class="space-y-5">
       <OAuthAuthorizationFlow
         ref="oauthFlowRef"
@@ -2550,12 +2697,17 @@
             ></path>
           </svg>
           {{
-            isOAuthFlow
+            isTwoStepFlow
               ? t('common.next')
               : submitting
                 ? t('admin.accounts.creating')
                 : t('common.create')
           }}
+        </button>
+      </div>
+      <div v-else-if="isGeminiWebFlow" class="flex justify-end gap-3">
+        <button type="button" class="btn btn-secondary" @click="handleClose">
+          {{ t('common.close') }}
         </button>
       </div>
       <div v-else class="flex justify-between gap-3">
@@ -2830,7 +2982,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
+import { ref, reactive, computed, watch, onBeforeUnmount } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import {
@@ -2858,7 +3010,8 @@ import type {
   AccountPlatform,
   AccountType,
   CheckMixedChannelResponse,
-  CreateAccountRequest
+  CreateAccountRequest,
+  GeminiWebSessionResponse
 } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -2987,7 +3140,7 @@ interface TempUnschedRuleForm {
 // State
 const step = ref(1)
 const submitting = ref(false)
-const accountCategory = ref<'oauth-based' | 'apikey' | 'bedrock'>('oauth-based') // UI selection for account category
+const accountCategory = ref<'oauth-based' | 'apikey' | 'bedrock' | 'gemini-web'>('oauth-based') // UI selection for account category
 const addMethod = ref<AddMethod>('oauth') // For oauth-based: 'oauth' or 'setup-token'
 const apiKeyBaseUrl = ref('https://api.anthropic.com')
 const apiKeyValue = ref('')
@@ -3044,6 +3197,13 @@ const getAntigravityModelMappingKey = createStableObjectKeyResolver<ModelMapping
 const getTempUnschedRuleKey = createStableObjectKeyResolver<TempUnschedRuleForm>('create-temp-unsched-rule')
 const geminiOAuthType = ref<'code_assist' | 'google_one' | 'ai_studio'>('google_one')
 const geminiAIStudioOAuthEnabled = ref(false)
+const GEMINI_WEB_POLL_INTERVAL_MS = 2000
+const geminiWebSession = ref<GeminiWebSessionResponse | null>(null)
+const geminiWebCreatedAccountId = ref<number | null>(null)
+const geminiWebBusy = ref(false)
+const geminiWebCompleted = ref(false)
+const geminiWebPollTimer = ref<number | null>(null)
+const geminiWebCookiesInput = ref('')
 
 function buildAntigravityExtra(): Record<string, unknown> | undefined {
   const extra: Record<string, unknown> = {}
@@ -3203,6 +3363,7 @@ const form = reactive({
 })
 
 // Helper to check if current type needs OAuth flow
+const isGeminiWebFlow = computed(() => form.platform === 'gemini' && accountCategory.value === 'gemini-web')
 const isOAuthFlow = computed(() => {
   // Antigravity upstream 类型不需要 OAuth 流程
   if (form.platform === 'antigravity' && antigravityAccountType.value === 'upstream') {
@@ -3214,6 +3375,10 @@ const isOAuthFlow = computed(() => {
   }
   return accountCategory.value === 'oauth-based'
 })
+const isTwoStepFlow = computed(() => isOAuthFlow.value || isGeminiWebFlow.value)
+const currentWizardStepTitle = computed(() =>
+  isGeminiWebFlow.value ? t('admin.accounts.oauth.geminiWeb.title') : oauthStepTitle.value
+)
 
 const isManualInputMethod = computed(() => {
   return oauthFlowRef.value?.inputMethod === 'manual'
@@ -3269,6 +3434,10 @@ watch(
 watch(
   [accountCategory, addMethod, antigravityAccountType, soraAccountType],
   ([category, method, agType, soraType]) => {
+    if (form.platform === 'gemini' && category === 'gemini-web') {
+      form.type = 'gemini-web'
+      return
+    }
     // Antigravity upstream 类型（实际创建为 apikey）
     if (form.platform === 'antigravity' && agType === 'upstream') {
       form.type = 'apikey'
@@ -3394,6 +3563,234 @@ const handleSelectGeminiOAuthType = (oauthType: 'code_assist' | 'google_one' | '
     return
   }
   geminiOAuthType.value = oauthType
+}
+
+const geminiWebStatusClass = (status?: string) => {
+  if (status === 'ready') {
+    return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
+  }
+  if (status === 'pending') {
+    return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300'
+  }
+  if (status === 'error') {
+    return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+  }
+  return 'bg-gray-100 text-gray-700 dark:bg-dark-700 dark:text-dark-200'
+}
+
+const clearGeminiWebPollTimer = () => {
+  if (geminiWebPollTimer.value !== null) {
+    window.clearTimeout(geminiWebPollTimer.value)
+    geminiWebPollTimer.value = null
+  }
+}
+
+const cleanupGeminiWebDraftAccount = async () => {
+  const accountId = geminiWebCreatedAccountId.value
+  if (!accountId || geminiWebCompleted.value) {
+    return
+  }
+
+  try {
+    await adminAPI.accounts.delete(accountId)
+  } catch (error) {
+    console.warn('Failed to delete provisional Gemini Web account', error)
+  } finally {
+    geminiWebCreatedAccountId.value = null
+  }
+}
+
+const finishGeminiWebAccountCreation = async () => {
+  if (geminiWebCompleted.value) {
+    return
+  }
+
+  geminiWebCompleted.value = true
+  clearGeminiWebPollTimer()
+  appStore.showSuccess(t('admin.accounts.oauth.geminiWeb.accountReady'))
+  emit('created')
+  await closeModal({ skipGeminiWebCleanup: true })
+}
+
+const scheduleGeminiWebStatusPoll = () => {
+  clearGeminiWebPollTimer()
+  if (
+    !geminiWebCreatedAccountId.value ||
+    geminiWebCompleted.value ||
+    geminiWebSession.value?.status !== 'pending'
+  ) {
+    return
+  }
+
+  geminiWebPollTimer.value = window.setTimeout(() => {
+    void refreshGeminiWebSession()
+  }, GEMINI_WEB_POLL_INTERVAL_MS)
+}
+
+const createGeminiWebDraftAccount = async () => {
+  if (geminiWebCreatedAccountId.value) {
+    return geminiWebCreatedAccountId.value
+  }
+
+  const account = await adminAPI.accounts.create({
+    name: form.name.trim(),
+    notes: form.notes,
+    platform: 'gemini',
+    type: 'gemini-web',
+    credentials: {},
+    proxy_id: form.proxy_id,
+    concurrency: form.concurrency,
+    load_factor: form.load_factor ?? undefined,
+    priority: form.priority,
+    rate_multiplier: form.rate_multiplier,
+    group_ids: form.group_ids,
+    expires_at: form.expires_at,
+    auto_pause_on_expired: autoPauseOnExpired.value
+  })
+  geminiWebCreatedAccountId.value = account.id
+  return account.id
+}
+
+const refreshGeminiWebSession = async (showToast: boolean = false) => {
+  if (!geminiWebCreatedAccountId.value) {
+    if (showToast) {
+      appStore.showError(t('admin.accounts.oauth.geminiWeb.accountCreateFailed'))
+    }
+    return
+  }
+
+  geminiWebBusy.value = true
+  clearGeminiWebPollTimer()
+
+  try {
+    const session = await adminAPI.accounts.getGeminiWebLoginStatus(geminiWebCreatedAccountId.value)
+    geminiWebSession.value = session
+
+    if (session.status === 'ready') {
+      await finishGeminiWebAccountCreation()
+      return
+    }
+
+    if (showToast && session.message) {
+      appStore.showInfo(session.message)
+    }
+
+    if (session.status === 'pending') {
+      scheduleGeminiWebStatusPoll()
+    }
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      t('admin.accounts.oauth.geminiWeb.loginStartFailed')
+    geminiWebSession.value = {
+      account_id: geminiWebCreatedAccountId.value,
+      login_id: geminiWebSession.value?.login_id || '',
+      status: 'error',
+      message
+    }
+    if (showToast) {
+      appStore.showError(message)
+    }
+  } finally {
+    geminiWebBusy.value = false
+  }
+}
+
+const handleGeminiWebStartLogin = async () => {
+  if (!form.name.trim()) {
+    appStore.showError(t('admin.accounts.pleaseEnterAccountName'))
+    return
+  }
+
+  const loginWindow = window.open('about:blank', '_blank')
+  geminiWebBusy.value = true
+  clearGeminiWebPollTimer()
+
+  try {
+    const accountId = await createGeminiWebDraftAccount()
+    const session = await adminAPI.accounts.startGeminiWebLogin(accountId, { login_mode: 'remote' })
+    geminiWebSession.value = session
+
+    if (session.status === 'ready') {
+      loginWindow?.close()
+      await finishGeminiWebAccountCreation()
+      return
+    }
+
+    if (session.login_url) {
+      if (loginWindow) {
+        loginWindow.location.href = session.login_url
+      } else {
+        window.open(session.login_url, '_blank', 'noopener,noreferrer')
+      }
+    } else {
+      loginWindow?.close()
+    }
+
+    appStore.showInfo(session.message || t('admin.accounts.oauth.geminiWeb.startingLogin'))
+
+    if (session.status === 'pending') {
+      scheduleGeminiWebStatusPoll()
+    }
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      t('admin.accounts.oauth.geminiWeb.loginStartFailed')
+    geminiWebSession.value = {
+      account_id: geminiWebCreatedAccountId.value || undefined,
+      login_id: geminiWebSession.value?.login_id || '',
+      status: 'error',
+      message
+    }
+    loginWindow?.close()
+    appStore.showError(message)
+  } finally {
+    geminiWebBusy.value = false
+  }
+}
+
+const openGeminiWebLoginUrl = () => {
+  const loginUrl = geminiWebSession.value?.login_url
+  if (!loginUrl) {
+    appStore.showError(t('admin.accounts.oauth.geminiWeb.loginStartFailed'))
+    return
+  }
+  window.open(loginUrl, '_blank', 'noopener,noreferrer')
+}
+
+const handleGeminiWebImportCookies = async () => {
+  const accountId = geminiWebCreatedAccountId.value
+  const cookiesJSON = geminiWebCookiesInput.value.trim()
+  if (!accountId || !cookiesJSON) {
+    appStore.showError(t('admin.accounts.oauth.geminiWeb.cookiesRequired'))
+    return
+  }
+
+  geminiWebBusy.value = true
+  clearGeminiWebPollTimer()
+
+  try {
+    const session = await adminAPI.accounts.importGeminiWebCookies(accountId, cookiesJSON)
+    geminiWebSession.value = session
+    appStore.showSuccess(t('admin.accounts.oauth.geminiWeb.importSuccess'))
+
+    if (session.status === 'ready') {
+      await finishGeminiWebAccountCreation()
+      return
+    }
+
+    await refreshGeminiWebSession()
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      t('admin.accounts.oauth.geminiWeb.importFailed')
+    appStore.showError(message)
+  } finally {
+    geminiWebBusy.value = false
+  }
 }
 
 // Auto-fill related models when switching to whitelist mode or changing platform
@@ -3685,6 +4082,7 @@ const submitCreateAccount = async (payload: CreateAccountRequest) => {
 
 // Methods
 const resetForm = () => {
+  clearGeminiWebPollTimer()
   step.value = 1
   form.name = ''
   form.notes = ''
@@ -3758,6 +4156,11 @@ const resetForm = () => {
   geminiTierGoogleOne.value = 'google_one_free'
   geminiTierGcp.value = 'gcp_standard'
   geminiTierAIStudio.value = 'aistudio_free'
+  geminiWebSession.value = null
+  geminiWebCookiesInput.value = ''
+  geminiWebCreatedAccountId.value = null
+  geminiWebBusy.value = false
+  geminiWebCompleted.value = false
   oauth.resetState()
   openaiOAuth.resetState()
   soraOAuth.resetState()
@@ -3768,10 +4171,18 @@ const resetForm = () => {
   clearMixedChannelDialog()
 }
 
-const handleClose = () => {
+const closeModal = async (options?: { skipGeminiWebCleanup?: boolean }) => {
   antigravityMixedChannelConfirmed.value = false
   clearMixedChannelDialog()
+  clearGeminiWebPollTimer()
+  if (!options?.skipGeminiWebCleanup) {
+    await cleanupGeminiWebDraftAccount()
+  }
   emit('close')
+}
+
+const handleClose = () => {
+  void closeModal()
 }
 
 const buildOpenAIExtra = (base?: Record<string, unknown>): Record<string, unknown> | undefined => {
@@ -3903,6 +4314,16 @@ const handleSubmit = async () => {
       return
     }
     step.value = 2
+    return
+  }
+
+  if (isGeminiWebFlow.value) {
+    if (!form.name.trim()) {
+      appStore.showError(t('admin.accounts.pleaseEnterAccountName'))
+      return
+    }
+    step.value = 2
+    await handleGeminiWebStartLogin()
     return
   }
 
@@ -4076,6 +4497,7 @@ const handleSubmit = async () => {
 
 const goBackToBasicInfo = () => {
   step.value = 1
+  clearGeminiWebPollTimer()
   oauth.resetState()
   openaiOAuth.resetState()
   soraOAuth.resetState()
@@ -4083,6 +4505,10 @@ const goBackToBasicInfo = () => {
   antigravityOAuth.resetState()
   oauthFlowRef.value?.reset()
 }
+
+onBeforeUnmount(() => {
+  clearGeminiWebPollTimer()
+})
 
 const handleGenerateUrl = async () => {
   if (form.platform === 'openai' || form.platform === 'sora') {

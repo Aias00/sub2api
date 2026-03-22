@@ -10,6 +10,12 @@ export default {
     login: 'Login',
     getStarted: 'Get Started',
     goToDashboard: 'Go to Dashboard',
+    geminiGateway: {
+      title: 'Gemini Web Login Entry',
+      description: 'Expose gemini-command-gateway startup, session import, and status checks directly from the main entry page. Admins can jump into the login center and activate Gemini Web with exported browser cookies.',
+      button: 'Open Gemini Web Login',
+      manageAccounts: 'Manage Gemini Web Accounts'
+    },
     // User-focused value proposition
     heroSubtitle: 'One Key, All AI Models',
     heroDescription: 'No need to manage multiple subscriptions. Access Claude, GPT, Gemini and more with a single API key',
@@ -218,7 +224,7 @@ export default {
       email: 'Email',
       password: 'Password',
       confirmPassword: 'Confirm Password',
-      passwordPlaceholder: 'Min 8 characters',
+      passwordPlaceholder: 'Min 6 characters',
       confirmPasswordPlaceholder: 'Confirm password',
       passwordMismatch: 'Passwords do not match'
     },
@@ -245,6 +251,7 @@ export default {
   // Common
   common: {
     loading: 'Loading...',
+    notSet: 'Not set',
     justNow: 'just now',
     save: 'Save',
     cancel: 'Cancel',
@@ -621,7 +628,7 @@ export default {
     groupRequired: 'Please select a group',
     usage: 'Usage',
     today: 'Today',
-    total: 'Last 30d',
+    total: 'Total',
     quota: 'Quota',
     lastUsedAt: 'Last Used',
     useKey: 'Use Key',
@@ -756,12 +763,16 @@ export default {
     authHeaderDescription: 'Bearers are recommended for Anthropic / OpenAI compatible routes. Native Gemini routes are clearer with `x-goog-api-key`.',
     noEndpointVariants: 'No protocol examples are available for this API key yet. Usually that means the key has no group, or the current group platform is not supported here.',
     endpoint: 'Endpoint',
+    streamEndpoint: 'Stream Endpoint',
     protocol: 'Protocol',
     defaultModel: 'Default Model',
     headerMode: 'Auth Mode',
     curlExample: 'curl Example',
+    streamCurlExample: 'Streaming curl Example',
     copyCurl: 'Copy curl',
     copyCurlSuccess: 'curl example copied',
+    copyStreamCurl: 'Copy streaming curl',
+    copyStreamCurlSuccess: 'streaming curl example copied',
     testThisVariant: 'Test this protocol',
     defaultPrompt: 'Tell me the model you routed to in one sentence.'
   },
@@ -855,14 +866,11 @@ export default {
     exporting: 'Exporting...',
     preparingExport: 'Preparing export...',
     model: 'Model',
-    requestedModel: 'Requested',
-    upstreamModel: 'Upstream',
     reasoningEffort: 'Reasoning Effort',
     endpoint: 'Endpoint',
     endpointDistribution: 'Endpoint Distribution',
     inbound: 'Inbound',
     upstream: 'Upstream',
-    mapping: 'Mapping',
     path: 'Path',
     inboundEndpoint: 'Inbound Endpoint',
     upstreamEndpoint: 'Upstream Endpoint',
@@ -1060,7 +1068,6 @@ export default {
     lastWeek: 'Last Week',
     thisMonth: 'This Month',
     lastMonth: 'Last Month',
-    last24Hours: 'Last 24 Hours',
     last7Days: 'Last 7 Days',
     last14Days: 'Last 14 Days',
     last30Days: 'Last 30 Days',
@@ -1125,6 +1132,39 @@ export default {
       tokensShort: 'Tok',
       failedToLoad: 'Failed to load dashboard statistics'
     },
+    geminiWebLogin: {
+      title: 'Gemini Web Login Center',
+      description: 'Manage gemini-command-gateway sessions in one place. The default flow opens Gemini in the same browser that is currently visiting Sub2API, then imports cookies JSON back into the remote gateway session.',
+      refreshAll: 'Refresh All',
+      manageAccounts: 'Manage Accounts',
+      workflowTitle: 'Workflow',
+      workflowStepCreate: 'Keep or create a gemini-web account in Account Management so the system has a gateway login target.',
+      workflowStepOpen: 'Click "Start Login" to open Gemini in the browser that is currently accessing this page, and complete sign-in on the client machine directly.',
+      workflowStepImport: 'After sign-in, export cookies JSON with Cookie-Editor or a similar tool, then import it below so the server-side gateway can reuse the session.',
+      emptyTitle: 'No Gemini Web accounts yet',
+      emptyDescription: 'There is no gemini-web account available for gemini-command-gateway right now. Create one first so the login entry and session state can be managed here.',
+      goCreateAccount: 'Create Account',
+      gatewayUrl: 'Gateway URL',
+      loginId: 'Login Session ID',
+      updatedAt: 'Last Updated',
+      loginMode: 'Login Mode',
+      notStarted: 'Login has not started yet.',
+      startLogin: 'Start Login',
+      refreshStatus: 'Refresh Status',
+      openLoginPage: 'Open Gemini Login Page',
+      cookiesLabel: 'Cookies JSON',
+      cookiesPlaceholder: 'Paste browser-exported cookies JSON',
+      cookiesHint: 'After remote sign-in, export the `gemini.google.com` / `google.com` cookies. The server cannot read the login state from your local browser directly.',
+      importCookies: 'Import Cookies',
+      loadFailed: 'Failed to load Gemini Web accounts',
+      statusRefreshed: 'Status refreshed',
+      statusFailed: 'Failed to refresh Gemini Web status',
+      startSuccess: 'Remote Gemini Web login flow started and the current browser will open the sign-in page',
+      startFailed: 'Failed to start Gemini Web login',
+      cookiesRequired: 'Paste cookies JSON first',
+      importSuccess: 'Cookies imported successfully',
+      importFailed: 'Failed to import cookies'
+    },
 
     backup: {
       title: 'Database Backup',
@@ -1166,12 +1206,7 @@ export default {
         createBackup: 'Create Backup',
         backing: 'Backing up...',
         backupCreated: 'Backup created successfully',
-        expireDays: 'Expire Days',
-        alreadyInProgress: 'A backup is already in progress',
-        backupRunning: 'Backup in progress...',
-        backupFailed: 'Backup failed',
-        restoreRunning: 'Restore in progress...',
-        restoreFailed: 'Restore failed',
+        expireDays: 'Expire Days'
       },
       columns: {
         status: 'Status',
@@ -1187,11 +1222,6 @@ export default {
         running: 'Running',
         completed: 'Completed',
         failed: 'Failed'
-      },
-      progress: {
-        pending: 'Preparing',
-        dumping: 'Dumping database',
-        uploading: 'Uploading',
       },
       trigger: {
         manual: 'Manual',
@@ -1459,7 +1489,7 @@ export default {
         actions: 'Actions'
       },
       today: 'Today',
-      total: 'Last 30d',
+      total: 'Total',
       noSubscription: 'No subscription',
       daysRemaining: '{days}d',
       expired: 'Expired',
@@ -1645,8 +1675,6 @@ export default {
         rateMultiplier: 'Rate Multiplier',
         type: 'Type',
         accounts: 'Accounts',
-        capacity: 'Capacity',
-        usage: 'Usage',
         status: 'Status',
         actions: 'Actions',
         billingType: 'Billing Type',
@@ -1655,12 +1683,6 @@ export default {
         userNotes: 'Notes',
         userStatus: 'Status'
       },
-      usageToday: 'Today',
-      usageTotal: 'Total',
-      accountsAvailable: 'Avail:',
-      accountsRateLimited: 'Limited:',
-      accountsTotal: 'Total:',
-      accountsUnit: '',
       rateAndAccounts: '{rate}x rate · {count} accounts',
       accountsCount: '{count} accounts',
       form: {
@@ -1850,7 +1872,6 @@ export default {
       revokeSubscription: 'Revoke Subscription',
       allStatus: 'All Status',
       allGroups: 'All Groups',
-      allPlatforms: 'All Platforms',
       daily: 'Daily',
       weekly: 'Weekly',
       monthly: 'Monthly',
@@ -1916,37 +1937,7 @@ export default {
       pleaseSelectGroup: 'Please select a group',
       validityDaysRequired: 'Please enter a valid number of days (at least 1)',
       revokeConfirm:
-        "Are you sure you want to revoke the subscription for '{user}'? This action cannot be undone.",
-      guide: {
-        title: 'Subscription Management Guide',
-        subtitle: 'Subscription mode lets you assign time-based usage quotas to users, with daily/weekly/monthly limits. Follow these steps to get started.',
-        showGuide: 'Usage Guide',
-        step1: {
-          title: 'Create a Subscription Group',
-          line1: 'Go to "Group Management" page, click "Create Group"',
-          line2: 'Set billing type to "Subscription", configure daily/weekly/monthly quota limits',
-          line3: 'Save the group and ensure its status is "Active"',
-          link: 'Go to Group Management'
-        },
-        step2: {
-          title: 'Assign Subscription to User',
-          line1: 'Click the "Assign Subscription" button in the top right',
-          line2: 'Search for a user by email and select them',
-          line3: 'Choose a subscription group, set validity days, then click "Assign"'
-        },
-        step3: {
-          title: 'Manage Existing Subscriptions'
-        },
-        actions: {
-          adjust: 'Adjust',
-          adjustDesc: 'Extend or shorten the subscription validity period',
-          resetQuota: 'Reset Quota',
-          resetQuotaDesc: 'Reset daily/weekly/monthly usage to zero',
-          revoke: 'Revoke',
-          revokeDesc: 'Immediately terminate the subscription (irreversible)'
-        },
-        tip: 'Tip: Only groups with billing type "Subscription" and status "Active" appear in the group dropdown. If no options are available, create one in Group Management first.'
-      }
+        "Are you sure you want to revoke the subscription for '{user}'? This action cannot be undone."
     },
 
     // Accounts
@@ -2654,7 +2645,33 @@ export default {
 	            'AI Studio OAuth is not configured: set GEMINI_OAUTH_CLIENT_ID / GEMINI_OAUTH_CLIENT_SECRET and add Redirect URI: http://localhost:1455/auth/callback (Consent screen scopes must include https://www.googleapis.com/auth/generative-language.retriever)',
 	          aiStudioNotConfigured:
 	            'AI Studio OAuth is not configured: set GEMINI_OAUTH_CLIENT_ID / GEMINI_OAUTH_CLIENT_SECRET and add Redirect URI: http://localhost:1455/auth/callback'
-	        },
+        },
+        geminiWeb: {
+          title: 'Gemini Web Login',
+          description: 'The system creates a Gemini Web account first, then opens Gemini in the browser currently visiting this page. After sign-in, import the cookies back so the server-side gateway can reuse that session.',
+          browserAutoClose: 'The sign-in page opens in a new tab of your current browser',
+          waiting: 'Click "Start Login" to open Gemini in your current browser, then finish the flow by importing cookies.',
+          statusHint: 'If no tab opens automatically, use "Open Fallback Page" to open Gemini manually.',
+          accountIdLabel: 'Account ID',
+          startLogin: 'Start Login',
+          retryLogin: 'Retry Login',
+          refreshStatus: 'Refresh Status',
+          openFallbackPage: 'Open Fallback Page',
+          flowStepLaunch: 'Open the Gemini / Google sign-in page in the browser currently visiting Sub2API.',
+          flowStepLogin: 'Complete sign-in there, then export the related Gemini cookies JSON.',
+          flowStepFinish: 'Paste the cookies back into this dialog so the server-side gateway can mark the account as ready.',
+          cookiesLabel: 'Cookies JSON',
+          cookiesPlaceholder: 'Paste cookies JSON exported from your browser extension',
+          cookiesHint: 'Cookie-Editor is recommended for exporting `gemini.google.com` / `google.com` cookies.',
+          importCookies: 'Import Cookies',
+          cookiesRequired: 'Paste cookies JSON first',
+          startingLogin: 'Starting the remote Gemini Web login flow...',
+          accountReady: 'Gemini Web account is ready',
+          accountCreateFailed: 'Failed to create the provisional Gemini Web account',
+          loginStartFailed: 'Failed to start Gemini Web login',
+          importSuccess: 'Cookies imported successfully',
+          importFailed: 'Failed to import cookies'
+        },
         // Antigravity specific
         antigravity: {
           title: 'Antigravity Account Authorization',
@@ -2720,8 +2737,11 @@ export default {
           oauthDesc: 'Authorize with your Google account and choose an OAuth type.',
           apiKeyTitle: 'API Key (AI Studio)',
           apiKeyDesc: 'Fastest setup. Use an AIza API key.',
+          webTitle: 'Gemini Web',
+          webDesc: 'Launch the browser and capture a Gemini Web session automatically.',
           apiKeyNote:
             'Best for light testing. Free tier has strict rate limits and data may be used for training.',
+          webNote: 'Use this when the Gemini website already works for your account. After you click Next, a browser window opens for sign-in and the flow completes automatically after the session is captured.',
           apiKeyLink: 'Get API Key',
           quotaLink: 'Quota guide'
         },
@@ -4511,16 +4531,6 @@ export default {
           testSuccess: 'Google Drive storage test passed (upload, access, delete all OK)',
           testFailed: 'Google Drive storage test failed'
         }
-      },
-      overloadCooldown: {
-        title: '529 Overload Cooldown',
-        description: 'Configure account scheduling pause strategy when upstream returns 529 (overloaded)',
-        enabled: 'Enable Overload Cooldown',
-        enabledHint: 'Pause account scheduling on 529 errors, auto-recover after cooldown',
-        cooldownMinutes: 'Cooldown Duration (minutes)',
-        cooldownMinutesHint: 'Duration to pause account scheduling (1-120 minutes)',
-        saved: 'Overload cooldown settings saved',
-        saveFailed: 'Failed to save overload cooldown settings'
       },
       streamTimeout: {
         title: 'Stream Timeout Handling',

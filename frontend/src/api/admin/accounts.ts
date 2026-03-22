@@ -17,7 +17,8 @@ import type {
   AdminDataPayload,
   AdminDataImportResult,
   CheckMixedChannelRequest,
-  CheckMixedChannelResponse
+  CheckMixedChannelResponse,
+  GeminiWebSessionResponse
 } from '@/types'
 
 /**
@@ -432,6 +433,32 @@ export async function getAvailableModels(id: number): Promise<ClaudeModel[]> {
   return data
 }
 
+export async function startGeminiWebLogin(
+  id: number,
+  payload?: { login_mode?: 'auto' | 'remote' | 'local' }
+): Promise<GeminiWebSessionResponse> {
+  const { data } = await apiClient.post<GeminiWebSessionResponse>(
+    `/admin/accounts/${id}/gemini-web/start`,
+    payload ?? {}
+  )
+  return data
+}
+
+export async function getGeminiWebLoginStatus(id: number): Promise<GeminiWebSessionResponse> {
+  const { data } = await apiClient.get<GeminiWebSessionResponse>(`/admin/accounts/${id}/gemini-web/status`)
+  return data
+}
+
+export async function importGeminiWebCookies(
+  id: number,
+  cookiesJSON: string
+): Promise<GeminiWebSessionResponse> {
+  const { data } = await apiClient.post<GeminiWebSessionResponse>(`/admin/accounts/${id}/gemini-web/import-cookies`, {
+    cookies_json: cookiesJSON
+  })
+  return data
+}
+
 export interface CRSPreviewAccount {
   crs_account_id: string
   kind: string
@@ -641,6 +668,9 @@ export const accountsAPI = {
   resetTempUnschedulable,
   setSchedulable,
   getAvailableModels,
+  startGeminiWebLogin,
+  getGeminiWebLoginStatus,
+  importGeminiWebCookies,
   generateAuthUrl,
   exchangeCode,
   refreshOpenAIToken,

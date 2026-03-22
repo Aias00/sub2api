@@ -10,6 +10,12 @@ export default {
     login: '登录',
     getStarted: '立即开始',
     goToDashboard: '进入控制台',
+    geminiGateway: {
+      title: 'Gemini Web 登录入口',
+      description: '把 gemini-command-gateway 的启动、会话导入和状态检查直接挂到主入口。管理员登录后可一键进入登录中心，导入浏览器 cookies 激活 Gemini Web。',
+      button: '进入 Gemini Web 登录',
+      manageAccounts: '管理 Gemini Web 账号'
+    },
     // 新增：面向用户的价值主张
     heroSubtitle: '一个密钥，畅用多个 AI 模型',
     heroDescription: '无需管理多个订阅账号，一站式接入 Claude、GPT、Gemini 等主流 AI 服务',
@@ -218,7 +224,7 @@ export default {
       email: '邮箱',
       password: '密码',
       confirmPassword: '确认密码',
-      passwordPlaceholder: '至少 8 个字符',
+      passwordPlaceholder: '至少 6 个字符',
       confirmPasswordPlaceholder: '确认密码',
       passwordMismatch: '密码不匹配'
     },
@@ -245,6 +251,7 @@ export default {
   // Common
   common: {
     loading: '加载中...',
+    notSet: '未设置',
     justNow: '刚刚',
     save: '保存',
     cancel: '取消',
@@ -621,7 +628,7 @@ export default {
     groupRequired: '请选择分组',
     usage: '用量',
     today: '今日',
-    total: '近30天',
+    total: '累计',
     quota: '额度',
     lastUsedAt: '上次使用时间',
     useKey: '使用密钥',
@@ -761,12 +768,16 @@ export default {
     authHeaderDescription: 'Anthropic / OpenAI 兼容端点推荐使用 Bearer 鉴权；Gemini 原生端点使用 `x-goog-api-key` 更直观。',
     noEndpointVariants: '当前 API Key 还没有可用的调用协议。通常是因为它没有分组，或者分组平台暂不支持在这里生成示例。',
     endpoint: '端点',
+    streamEndpoint: '流式端点',
     protocol: '协议',
     defaultModel: '默认模型',
     headerMode: '鉴权方式',
     curlExample: 'curl 示例',
+    streamCurlExample: '流式 curl 示例',
     copyCurl: '复制 curl',
     copyCurlSuccess: 'curl 示例已复制',
+    copyStreamCurl: '复制流式 curl',
+    copyStreamCurlSuccess: '流式 curl 示例已复制',
     testThisVariant: '测试这个协议',
     defaultPrompt: '请用一句话介绍一下你当前命中的模型。'
   },
@@ -860,14 +871,11 @@ export default {
     exporting: '导出中...',
     preparingExport: '正在准备导出...',
     model: '模型',
-    requestedModel: '请求',
-    upstreamModel: '上游',
     reasoningEffort: '推理强度',
     endpoint: '端点',
     endpointDistribution: '端点分布',
     inbound: '入站',
     upstream: '上游',
-    mapping: '映射',
     path: '路径',
     inboundEndpoint: '入站端点',
     upstreamEndpoint: '上游端点',
@@ -1065,7 +1073,6 @@ export default {
     lastWeek: '上周',
     thisMonth: '本月',
     lastMonth: '上月',
-    last24Hours: '近24小时',
     last7Days: '近 7 天',
     last14Days: '近 14 天',
     last30Days: '近 30 天',
@@ -1147,6 +1154,39 @@ export default {
       configureSystem: '配置系统设置',
       failedToLoad: '加载仪表盘数据失败'
     },
+    geminiWebLogin: {
+      title: 'Gemini Web 登录中心',
+      description: '集中管理 gemini-command-gateway 的登录态。默认在你当前访问 Sub2API 的浏览器里打开 Gemini 登录页，再通过 cookies JSON 导入完成远程机器登录。',
+      refreshAll: '刷新全部',
+      manageAccounts: '管理账号',
+      workflowTitle: '接入流程',
+      workflowStepCreate: '先在“账号管理”中保留或创建 gemini-web 账号，系统会把它作为 gateway 登录入口。',
+      workflowStepOpen: '点击“启动登录”后，会在当前访问页面的浏览器里打开 Gemini 标签页，直接在客户端机器完成登录。',
+      workflowStepImport: '登录完成后，用 Cookie-Editor 等工具导出 cookies JSON，粘贴到下方导入，session 就会同步到服务器侧 gateway。',
+      emptyTitle: '还没有 Gemini Web 账号',
+      emptyDescription: '当前没有可用于 gemini-command-gateway 的 gemini-web 账号。先创建账号，系统才能显示登录入口和 session 状态。',
+      goCreateAccount: '前往创建账号',
+      gatewayUrl: 'Gateway 地址',
+      loginId: '登录会话 ID',
+      updatedAt: '最近更新时间',
+      loginMode: '登录模式',
+      notStarted: '登录尚未开始。',
+      startLogin: '启动登录',
+      refreshStatus: '刷新状态',
+      openLoginPage: '打开 Gemini 登录页',
+      cookiesLabel: 'Cookies JSON',
+      cookiesPlaceholder: '粘贴从浏览器导出的 cookies JSON',
+      cookiesHint: '远程登录完成后，请导出 `gemini.google.com` / `google.com` 的 cookies。服务端无法直接读取你本机浏览器里的登录态。',
+      importCookies: '导入 Cookies',
+      loadFailed: '加载 Gemini Web 账号失败',
+      statusRefreshed: '状态已刷新',
+      statusFailed: '刷新 Gemini Web 状态失败',
+      startSuccess: '已启动远程 Gemini Web 登录流程，当前浏览器会打开登录页',
+      startFailed: '启动 Gemini Web 登录失败',
+      cookiesRequired: '请先粘贴 cookies JSON',
+      importSuccess: 'Cookies 导入成功',
+      importFailed: 'Cookies 导入失败'
+    },
 
     backup: {
       title: '数据库备份',
@@ -1188,12 +1228,7 @@ export default {
         createBackup: '创建备份',
         backing: '备份中...',
         backupCreated: '备份创建成功',
-        expireDays: '过期天数',
-        alreadyInProgress: '已有备份正在进行中',
-        backupRunning: '备份进行中...',
-        backupFailed: '备份失败',
-        restoreRunning: '恢复进行中...',
-        restoreFailed: '恢复失败',
+        expireDays: '过期天数'
       },
       columns: {
         status: '状态',
@@ -1209,11 +1244,6 @@ export default {
         running: '执行中',
         completed: '已完成',
         failed: '失败'
-      },
-      progress: {
-        pending: '准备中',
-        dumping: '导出数据库',
-        uploading: '上传中',
       },
       trigger: {
         manual: '手动',
@@ -1486,7 +1516,7 @@ export default {
         actions: '操作'
       },
       today: '今日',
-      total: '近30天',
+      total: '累计',
       noSubscription: '暂无订阅',
       daysRemaining: '{days}天',
       expired: '已过期',
@@ -1701,8 +1731,6 @@ export default {
         priority: '优先级',
         apiKeys: 'API 密钥数',
         accounts: '账号数',
-        capacity: '容量',
-        usage: '用量',
         status: '状态',
         actions: '操作',
         billingType: '计费类型',
@@ -1711,12 +1739,6 @@ export default {
         userNotes: '备注',
         userStatus: '状态'
       },
-      usageToday: '今日',
-      usageTotal: '累计',
-      accountsAvailable: '可用:',
-      accountsRateLimited: '限流:',
-      accountsTotal: '总量:',
-      accountsUnit: '个账号',
       form: {
         name: '名称',
         description: '描述',
@@ -1930,7 +1952,6 @@ export default {
       revokeSubscription: '撤销订阅',
       allStatus: '全部状态',
       allGroups: '全部分组',
-      allPlatforms: '全部平台',
       daily: '每日',
       weekly: '每周',
       monthly: '每月',
@@ -1995,37 +2016,7 @@ export default {
       pleaseSelectUser: '请选择用户',
       pleaseSelectGroup: '请选择分组',
       validityDaysRequired: '请输入有效的天数（至少1天）',
-      revokeConfirm: "确定要撤销 '{user}' 的订阅吗？此操作无法撤销。",
-      guide: {
-        title: '订阅管理教程',
-        subtitle: '订阅模式允许你按时间周期为用户分配使用额度，支持日/周/月配额限制。按照以下步骤即可完成配置。',
-        showGuide: '使用指南',
-        step1: {
-          title: '创建订阅分组',
-          line1: '前往「分组管理」页面，点击「创建分组」',
-          line2: '将计费类型设为「订阅」，配置日/周/月额度限制',
-          line3: '保存分组，确保状态为「正常」',
-          link: '前往分组管理'
-        },
-        step2: {
-          title: '分配订阅给用户',
-          line1: '点击本页右上角「分配订阅」按钮',
-          line2: '在弹窗中搜索用户邮箱并选择目标用户',
-          line3: '选择订阅分组、设置有效期天数，点击「分配」'
-        },
-        step3: {
-          title: '管理已有订阅'
-        },
-        actions: {
-          adjust: '调整',
-          adjustDesc: '延长或缩短订阅有效期',
-          resetQuota: '重置配额',
-          resetQuotaDesc: '将日/周/月用量归零，重新开始计算',
-          revoke: '撤销',
-          revokeDesc: '立即终止该用户的订阅，不可恢复'
-        },
-        tip: '提示：订阅分组下拉列表中只会显示计费类型为「订阅」且状态为「正常」的分组。如果没有可选项，请先到分组管理中创建。'
-      }
+      revokeConfirm: "确定要撤销 '{user}' 的订阅吗？此操作无法撤销。"
     },
 
     // Accounts Management
@@ -2787,6 +2778,32 @@ export default {
           aiStudioNotConfigured:
             'AI Studio OAuth 未配置：请先设置 GEMINI_OAUTH_CLIENT_ID / GEMINI_OAUTH_CLIENT_SECRET，并在 Google OAuth Client 添加 Redirect URI：http://localhost:1455/auth/callback'
         },
+        geminiWeb: {
+          title: 'Gemini Web 登录',
+          description: '系统会先创建一个 Gemini Web 账号，然后在你当前访问页面的浏览器中打开 Gemini 登录页。登录后把 cookies 导入回来，服务器侧 gateway 就能复用这份登录态。',
+          browserAutoClose: '登录页会在当前浏览器新标签页打开',
+          waiting: '点击“启动登录”后，会在当前浏览器打开 Gemini，并等待你导入 cookies 完成收口。',
+          statusHint: '如果新标签页没有自动打开，可手动点“打开备用页面”访问 Gemini。',
+          accountIdLabel: '账号 ID',
+          startLogin: '启动登录',
+          retryLogin: '重新登录',
+          refreshStatus: '刷新状态',
+          openFallbackPage: '打开备用页面',
+          flowStepLaunch: '在当前访问 Sub2API 的浏览器里打开 Gemini / Google 登录页。',
+          flowStepLogin: '在该浏览器中完成登录，然后导出 Gemini 相关 cookies JSON。',
+          flowStepFinish: '把 cookies 导回当前弹窗，系统会导入到服务器侧 gateway 并把账号置为 ready。',
+          cookiesLabel: 'Cookies JSON',
+          cookiesPlaceholder: '粘贴从浏览器扩展导出的 cookies JSON',
+          cookiesHint: '推荐使用 Cookie-Editor 导出 `gemini.google.com` / `google.com` cookies。',
+          importCookies: '导入 Cookies',
+          cookiesRequired: '请先粘贴 cookies JSON',
+          startingLogin: '正在启动 Gemini Web 远程登录流程...',
+          accountReady: 'Gemini Web 账号已就绪',
+          accountCreateFailed: 'Gemini Web 临时账号创建失败',
+          loginStartFailed: '启动 Gemini Web 登录失败',
+          importSuccess: 'Cookies 导入成功',
+          importFailed: 'Cookies 导入失败'
+        },
         // Antigravity specific
         antigravity: {
           title: 'Antigravity 账户授权',
@@ -2852,7 +2869,10 @@ export default {
           oauthDesc: '使用 Google 账号授权，并选择 OAuth 子类型。',
           apiKeyTitle: 'API 密钥（AI Studio）',
           apiKeyDesc: '最快接入方式，使用 AIza API Key。',
+          webTitle: 'Gemini Web',
+          webDesc: '拉起浏览器登录并自动读取 Web 会话。',
           apiKeyNote: '适合轻量测试。免费层限流严格，数据可能用于训练。',
+          webNote: '适合已经能正常打开 Gemini 网页的账号。点击下一步后会弹出浏览器登录，读取成功后自动完成。',
           apiKeyLink: '获取 API Key',
           quotaLink: '配额说明'
         },
@@ -4676,16 +4696,6 @@ export default {
           testSuccess: 'Google Drive 存储测试成功（上传、访问、删除均正常）',
           testFailed: 'Google Drive 存储测试失败'
         }
-      },
-      overloadCooldown: {
-        title: '529 过载冷却',
-        description: '配置上游返回 529（过载）时的账号调度暂停策略',
-        enabled: '启用过载冷却',
-        enabledHint: '收到 529 错误时暂停该账号的调度，冷却后自动恢复',
-        cooldownMinutes: '冷却时长（分钟）',
-        cooldownMinutesHint: '账号暂停调度的持续时间（1-120 分钟）',
-        saved: '过载冷却设置保存成功',
-        saveFailed: '保存过载冷却设置失败'
       },
       streamTimeout: {
         title: '流超时处理',

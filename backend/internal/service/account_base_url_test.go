@@ -158,3 +158,78 @@ func TestGetGeminiBaseURL(t *testing.T) {
 		})
 	}
 }
+
+func TestGetGeminiWebBaseURL(t *testing.T) {
+	tests := []struct {
+		name     string
+		account  Account
+		expected string
+	}{
+		{
+			name: "uses default localhost when base_url missing",
+			account: Account{
+				Type:        AccountTypeGeminiWeb,
+				Platform:    PlatformGemini,
+				Credentials: map[string]any{},
+			},
+			expected: "http://127.0.0.1:8000",
+		},
+		{
+			name: "uses configured base_url when present",
+			account: Account{
+				Type:        AccountTypeGeminiWeb,
+				Platform:    PlatformGemini,
+				Credentials: map[string]any{"base_url": "https://gemini-web.example.com"},
+			},
+			expected: "https://gemini-web.example.com",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.account.GetGeminiWebBaseURL()
+			if result != tt.expected {
+				t.Errorf("GetGeminiWebBaseURL() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}
+
+func TestGetGeminiWebAPIKey(t *testing.T) {
+	tests := []struct {
+		name     string
+		account  Account
+		expected string
+	}{
+		{
+			name: "prefers api_key",
+			account: Account{
+				Credentials: map[string]any{"api_key": "gw-key", "access_token": "legacy-token"},
+			},
+			expected: "gw-key",
+		},
+		{
+			name: "falls back to access_token",
+			account: Account{
+				Credentials: map[string]any{"access_token": "legacy-token"},
+			},
+			expected: "legacy-token",
+		},
+		{
+			name: "returns empty when both missing",
+			account: Account{
+				Credentials: map[string]any{},
+			},
+			expected: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.account.GetGeminiWebAPIKey()
+			if result != tt.expected {
+				t.Errorf("GetGeminiWebAPIKey() = %q, want %q", result, tt.expected)
+			}
+		})
+	}
+}

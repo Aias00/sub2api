@@ -20,6 +20,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/ctxkey"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/gemini"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/geminicli"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/googleapi"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
@@ -569,6 +570,10 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 		mappedModel = account.GetMappedModel(req.Model)
 	}
 
+	if account.Type == AccountTypeGeminiWeb {
+		return s.forwardGeminiWeb(ctx, c, account, body, originalModel, req.Stream, startTime)
+	}
+
 	geminiReq, err := convertClaudeMessagesToGeminiGenerateContent(body)
 	if err != nil {
 		return nil, s.writeClaudeError(c, http.StatusBadRequest, "invalid_request_error", err.Error())
@@ -1039,6 +1044,115 @@ func (s *GeminiMessagesCompatService) Forward(ctx context.Context, c *gin.Contex
 	}, nil
 }
 
+func (s *GeminiMessagesCompatService) forwardGeminiWeb(
+	ctx context.Context,
+	c *gin.Context,
+	account *Account,
+	body []byte,
+	originalModel string,
+	stream bool,
+	startTime time.Time,
+) (*ForwardResult, error) {
+	apiKey := account.GetGeminiWebAPIKey()
+	if apiKey == "" {
+		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "gemini-web api_key not configured")
+	}
+
+	baseURL := account.GetGeminiWebBaseURL()
+	validatedURL, err := s.validateUpstreamBaseURL(baseURL)
+	if err != nil {
+		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", err.Error())
+	}
+
+	fullURL := strings.TrimRight(validatedURL, "/") + "/v1/messages"
+	upstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fullURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to build upstream request")
+	}
+	upstreamReq.Header.Set("Content-Type", "application/json")
+	upstreamReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+	proxyURL := ""
+	if account.ProxyID != nil && account.Proxy != nil {
+		proxyURL = account.Proxy.URL()
+	}
+
+	if c != nil {
+		c.Set(OpsUpstreamRequestBodyKey, string(body))
+	}
+
+	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
+	if err != nil {
+		safeErr := sanitizeUpstreamErrorMessage(strings.TrimSpace(err.Error()))
+		if safeErr == "" {
+			safeErr = "upstream request failed"
+		}
+		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", safeErr)
+	}
+	defer resp.Body.Close()
+
+	requestID := strings.TrimSpace(resp.Header.Get("x-request-id"))
+	if requestID == "" {
+		requestID = strings.TrimSpace(resp.Header.Get("request-id"))
+	}
+	if requestID != "" {
+		c.Header("x-request-id", requestID)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		errBody, _ := io.ReadAll(resp.Body)
+		if len(errBody) == 0 {
+			return nil, s.writeClaudeError(c, resp.StatusCode, "upstream_error", "Upstream request failed")
+		}
+		contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
+		if contentType == "" {
+			contentType = "application/json"
+		}
+		c.Data(resp.StatusCode, contentType, errBody)
+		return nil, fmt.Errorf("gemini-web upstream error: status=%d", resp.StatusCode)
+	}
+
+	if stream {
+		contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
+		if contentType == "" {
+			contentType = "text/event-stream"
+		}
+		c.Header("Content-Type", contentType)
+		_, _ = io.Copy(c.Writer, resp.Body)
+		return &ForwardResult{
+			RequestID: requestID,
+			Usage:     ClaudeUsage{},
+			Model:     originalModel,
+			Stream:    true,
+			Duration:  time.Since(startTime),
+		}, nil
+	}
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", "Failed to read upstream response")
+	}
+
+	contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
+	if contentType == "" {
+		contentType = "application/json"
+	}
+	c.Data(resp.StatusCode, contentType, bodyBytes)
+
+	usage := parseClaudeUsageFromResponseBody(bodyBytes)
+	if usage == nil {
+		usage = &ClaudeUsage{}
+	}
+
+	return &ForwardResult{
+		RequestID: requestID,
+		Usage:     *usage,
+		Model:     originalModel,
+		Stream:    false,
+		Duration:  time.Since(startTime),
+	}, nil
+}
+
 func isGeminiSignatureRelatedError(respBody []byte) bool {
 	msg := strings.ToLower(strings.TrimSpace(extractAntigravityErrorMessage(respBody)))
 	if msg == "" {
@@ -1075,6 +1189,10 @@ func (s *GeminiMessagesCompatService) ForwardNative(ctx context.Context, c *gin.
 	// Some Gemini upstreams validate tool call parts strictly; ensure any `functionCall` part includes a
 	// `thoughtSignature` to avoid frequent INVALID_ARGUMENT 400s.
 	body = ensureGeminiFunctionCallThoughtSignatures(body)
+
+	if account.Type == AccountTypeGeminiWeb {
+		return s.forwardGeminiWebNative(ctx, c, account, originalModel, action, stream, body, startTime)
+	}
 
 	mappedModel := originalModel
 	if account.Type == AccountTypeAPIKey {
@@ -2568,6 +2686,25 @@ func (s *GeminiMessagesCompatService) ForwardAIStudioGET(ctx context.Context, ac
 	if path == "" || !strings.HasPrefix(path, "/") {
 		return nil, errors.New("invalid path")
 	}
+	if account.Type == AccountTypeGeminiWeb {
+		var body []byte
+		switch {
+		case path == "/v1beta/models":
+			body, _ = json.Marshal(gemini.FallbackModelsList())
+		case strings.HasPrefix(path, "/v1beta/models/"):
+			modelName := strings.TrimSpace(strings.TrimPrefix(path, "/v1beta/models/"))
+			body, _ = json.Marshal(gemini.FallbackModel(modelName))
+		default:
+			return nil, fmt.Errorf("unsupported gemini-web path: %s", path)
+		}
+		return &UpstreamHTTPResult{
+			StatusCode: http.StatusOK,
+			Headers: http.Header{
+				"Content-Type": []string{"application/json"},
+			},
+			Body: body,
+		}, nil
+	}
 
 	baseURL := account.GetGeminiBaseURL(geminicli.AIStudioBaseURL)
 	normalizedBaseURL, err := s.validateUpstreamBaseURL(baseURL)
@@ -2735,6 +2872,391 @@ func asInt(v any) (int, bool) {
 	default:
 		return 0, false
 	}
+}
+
+func (s *GeminiMessagesCompatService) forwardGeminiWebNative(
+	ctx context.Context,
+	c *gin.Context,
+	account *Account,
+	originalModel string,
+	action string,
+	stream bool,
+	body []byte,
+	startTime time.Time,
+) (*ForwardResult, error) {
+	if action == "countTokens" {
+		estimated := estimateGeminiCountTokens(body)
+		c.JSON(http.StatusOK, map[string]any{"totalTokens": estimated})
+		return &ForwardResult{
+			Usage:    ClaudeUsage{},
+			Model:    originalModel,
+			Stream:   false,
+			Duration: time.Since(startTime),
+		}, nil
+	}
+
+	apiKey := account.GetGeminiWebAPIKey()
+	if apiKey == "" {
+		return nil, s.writeGoogleError(c, http.StatusBadGateway, "gemini-web api_key not configured")
+	}
+
+	baseURL := account.GetGeminiWebBaseURL()
+	validatedURL, err := s.validateUpstreamBaseURL(baseURL)
+	if err != nil {
+		return nil, s.writeGoogleError(c, http.StatusBadGateway, err.Error())
+	}
+
+	upstreamBody, promptTokens, err := buildGeminiWebChatCompletionsRequest(body, originalModel, stream)
+	if err != nil {
+		return nil, s.writeGoogleError(c, http.StatusBadRequest, "Failed to convert Gemini request for gemini-web: "+err.Error())
+	}
+
+	fullURL := strings.TrimRight(validatedURL, "/") + "/v1/chat/completions"
+	upstreamReq, err := http.NewRequestWithContext(ctx, http.MethodPost, fullURL, bytes.NewReader(upstreamBody))
+	if err != nil {
+		return nil, s.writeGoogleError(c, http.StatusBadGateway, "Failed to build upstream request")
+	}
+	upstreamReq.Header.Set("Content-Type", "application/json")
+	upstreamReq.Header.Set("Authorization", "Bearer "+apiKey)
+
+	proxyURL := ""
+	if account.ProxyID != nil && account.Proxy != nil {
+		proxyURL = account.Proxy.URL()
+	}
+	if c != nil {
+		c.Set(OpsUpstreamRequestBodyKey, string(upstreamBody))
+	}
+
+	resp, err := s.httpUpstream.Do(upstreamReq, proxyURL, account.ID, account.Concurrency)
+	if err != nil {
+		safeErr := sanitizeUpstreamErrorMessage(strings.TrimSpace(err.Error()))
+		if safeErr == "" {
+			safeErr = "upstream request failed"
+		}
+		return nil, s.writeGoogleError(c, http.StatusBadGateway, "Upstream request failed: "+safeErr)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	requestID := strings.TrimSpace(resp.Header.Get("x-request-id"))
+	if requestID == "" {
+		requestID = strings.TrimSpace(resp.Header.Get("request-id"))
+	}
+	if requestID != "" {
+		c.Header("x-request-id", requestID)
+	}
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		errBody, _ := io.ReadAll(resp.Body)
+		contentType := strings.TrimSpace(resp.Header.Get("Content-Type"))
+		if contentType == "" {
+			contentType = "application/json"
+		}
+		responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
+		c.Data(resp.StatusCode, contentType, errBody)
+		return nil, fmt.Errorf("gemini-web upstream error: status=%d", resp.StatusCode)
+	}
+
+	if stream {
+		usage, firstTokenMs, err := s.handleGeminiWebNativeStreamingResponse(c, resp, startTime, promptTokens)
+		if err != nil {
+			return nil, err
+		}
+		return &ForwardResult{
+			RequestID:    requestID,
+			Usage:        usage,
+			Model:        originalModel,
+			Stream:       true,
+			Duration:     time.Since(startTime),
+			FirstTokenMs: firstTokenMs,
+		}, nil
+	}
+
+	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return nil, s.writeGoogleError(c, http.StatusBadGateway, "Failed to read upstream response")
+	}
+
+	convertedBody, usage, err := convertGeminiWebChatCompletionsToGeminiResponse(respBody, originalModel, promptTokens)
+	if err != nil {
+		return nil, s.writeGoogleError(c, http.StatusBadGateway, "Failed to convert gemini-web response")
+	}
+	c.Data(http.StatusOK, "application/json", convertedBody)
+
+	return &ForwardResult{
+		RequestID: requestID,
+		Usage:     usage,
+		Model:     originalModel,
+		Stream:    false,
+		Duration:  time.Since(startTime),
+	}, nil
+}
+
+func buildGeminiWebChatCompletionsRequest(body []byte, originalModel string, stream bool) ([]byte, int, error) {
+	var payload map[string]any
+	if err := json.Unmarshal(body, &payload); err != nil {
+		return nil, 0, err
+	}
+
+	messages := make([]map[string]any, 0)
+	if systemInstruction, ok := payload["systemInstruction"].(map[string]any); ok {
+		if systemText := flattenGeminiPartsToText(systemInstruction["parts"]); systemText != "" {
+			messages = append(messages, map[string]any{
+				"role":    "system",
+				"content": systemText,
+			})
+		}
+	}
+
+	if contents, ok := payload["contents"].([]any); ok {
+		for _, rawContent := range contents {
+			contentMap, ok := rawContent.(map[string]any)
+			if !ok {
+				continue
+			}
+			text := flattenGeminiPartsToText(contentMap["parts"])
+			if strings.TrimSpace(text) == "" {
+				continue
+			}
+			role := strings.ToLower(strings.TrimSpace(fmt.Sprintf("%v", contentMap["role"])))
+			mappedRole := "user"
+			if role == "model" {
+				mappedRole = "assistant"
+			}
+			messages = append(messages, map[string]any{
+				"role":    mappedRole,
+				"content": text,
+			})
+		}
+	}
+
+	if len(messages) == 0 {
+		return nil, 0, errors.New("request has no text content")
+	}
+
+	out := map[string]any{
+		"model":    originalModel,
+		"messages": messages,
+		"stream":   stream,
+	}
+
+	if generationConfig, ok := payload["generationConfig"].(map[string]any); ok {
+		if temperature, ok := generationConfig["temperature"]; ok {
+			out["temperature"] = temperature
+		}
+		if maxOutputTokens, ok := generationConfig["maxOutputTokens"]; ok {
+			out["max_tokens"] = maxOutputTokens
+		}
+	}
+
+	requestBody, err := json.Marshal(out)
+	if err != nil {
+		return nil, 0, err
+	}
+	return requestBody, estimateGeminiCountTokens(body), nil
+}
+
+func flattenGeminiPartsToText(parts any) string {
+	partsSlice, ok := parts.([]any)
+	if !ok || len(partsSlice) == 0 {
+		return ""
+	}
+
+	fragments := make([]string, 0, len(partsSlice))
+	for _, rawPart := range partsSlice {
+		partMap, ok := rawPart.(map[string]any)
+		if !ok {
+			continue
+		}
+		if text, ok := partMap["text"].(string); ok && strings.TrimSpace(text) != "" {
+			fragments = append(fragments, text)
+			continue
+		}
+		if functionCall, ok := partMap["functionCall"].(map[string]any); ok {
+			name, _ := functionCall["name"].(string)
+			argsJSON, _ := json.Marshal(functionCall["args"])
+			fragments = append(fragments, fmt.Sprintf("[functionCall:%s] %s", strings.TrimSpace(name), strings.TrimSpace(string(argsJSON))))
+			continue
+		}
+		if functionResponse, ok := partMap["functionResponse"].(map[string]any); ok {
+			name, _ := functionResponse["name"].(string)
+			respJSON, _ := json.Marshal(functionResponse["response"])
+			fragments = append(fragments, fmt.Sprintf("[functionResponse:%s] %s", strings.TrimSpace(name), strings.TrimSpace(string(respJSON))))
+			continue
+		}
+		if inlineData, ok := partMap["inlineData"].(map[string]any); ok {
+			mimeType, _ := inlineData["mimeType"].(string)
+			if mimeType == "" {
+				mimeType = "application/octet-stream"
+			}
+			fragments = append(fragments, fmt.Sprintf("[inlineData:%s omitted]", mimeType))
+			continue
+		}
+	}
+
+	return strings.TrimSpace(strings.Join(fragments, "\n"))
+}
+
+func mapOpenAIFinishReasonToGemini(reason string) string {
+	switch strings.ToLower(strings.TrimSpace(reason)) {
+	case "length":
+		return "MAX_TOKENS"
+	case "content_filter":
+		return "SAFETY"
+	default:
+		return "STOP"
+	}
+}
+
+func convertGeminiWebChatCompletionsToGeminiResponse(respBody []byte, originalModel string, promptTokens int) ([]byte, ClaudeUsage, error) {
+	text := gjson.GetBytes(respBody, "choices.0.message.content").String()
+	finishReason := mapOpenAIFinishReasonToGemini(gjson.GetBytes(respBody, "choices.0.finish_reason").String())
+
+	completionTokens := int(gjson.GetBytes(respBody, "usage.completion_tokens").Int())
+	if completionTokens <= 0 {
+		completionTokens = estimateTokensForText(text)
+	}
+	if promptTokens < 0 {
+		promptTokens = 0
+	}
+
+	responsePayload := map[string]any{
+		"candidates": []any{
+			map[string]any{
+				"content": map[string]any{
+					"role":  "model",
+					"parts": []any{map[string]any{"text": text}},
+				},
+				"finishReason": finishReason,
+			},
+		},
+		"usageMetadata": map[string]any{
+			"promptTokenCount":     promptTokens,
+			"candidatesTokenCount": completionTokens,
+		},
+		"modelVersion": originalModel,
+	}
+
+	b, err := json.Marshal(responsePayload)
+	if err != nil {
+		return nil, ClaudeUsage{}, err
+	}
+	return b, ClaudeUsage{
+		InputTokens:  promptTokens,
+		OutputTokens: completionTokens,
+	}, nil
+}
+
+func (s *GeminiMessagesCompatService) handleGeminiWebNativeStreamingResponse(
+	c *gin.Context,
+	resp *http.Response,
+	startTime time.Time,
+	promptTokens int,
+) (ClaudeUsage, *int, error) {
+	responseheaders.WriteFilteredHeaders(c.Writer.Header(), resp.Header, s.responseHeaderFilter)
+	c.Status(resp.StatusCode)
+	c.Header("Cache-Control", "no-cache")
+	c.Header("Connection", "keep-alive")
+	c.Header("X-Accel-Buffering", "no")
+	c.Header("Content-Type", "text/event-stream; charset=utf-8")
+
+	flusher, ok := c.Writer.(http.Flusher)
+	if !ok {
+		return ClaudeUsage{}, nil, errors.New("streaming not supported")
+	}
+
+	reader := bufio.NewReader(resp.Body)
+	var firstTokenMs *int
+	var fullText strings.Builder
+	finishReason := "STOP"
+	completionTokens := 0
+
+	for {
+		line, err := reader.ReadString('\n')
+		if len(line) > 0 {
+			trimmed := strings.TrimRight(line, "\r\n")
+			if strings.HasPrefix(trimmed, "data:") {
+				payload := strings.TrimSpace(strings.TrimPrefix(trimmed, "data:"))
+				switch payload {
+				case "", "[DONE]":
+					if payload == "[DONE]" {
+						finalPayload := map[string]any{
+							"candidates": []any{
+								map[string]any{
+									"finishReason": finishReason,
+								},
+							},
+							"usageMetadata": map[string]any{
+								"promptTokenCount":     promptTokens,
+								"candidatesTokenCount": completionTokens,
+							},
+						}
+						b, _ := json.Marshal(finalPayload)
+						_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", b)
+						flusher.Flush()
+						return ClaudeUsage{
+							InputTokens:  promptTokens,
+							OutputTokens: completionTokens,
+						}, firstTokenMs, nil
+					}
+				default:
+					delta := gjson.Get(payload, "choices.0.delta.content").String()
+					if delta != "" {
+						fullText.WriteString(delta)
+						completionTokens = estimateTokensForText(fullText.String())
+						if firstTokenMs == nil {
+							ms := int(time.Since(startTime).Milliseconds())
+							firstTokenMs = &ms
+						}
+						eventPayload := map[string]any{
+							"candidates": []any{
+								map[string]any{
+									"content": map[string]any{
+										"role":  "model",
+										"parts": []any{map[string]any{"text": delta}},
+									},
+								},
+							},
+						}
+						b, _ := json.Marshal(eventPayload)
+						_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", b)
+						flusher.Flush()
+					}
+
+					if upstreamFinish := gjson.Get(payload, "choices.0.finish_reason").String(); strings.TrimSpace(upstreamFinish) != "" {
+						finishReason = mapOpenAIFinishReasonToGemini(upstreamFinish)
+					}
+				}
+			}
+		}
+
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			return ClaudeUsage{}, firstTokenMs, err
+		}
+	}
+
+	finalPayload := map[string]any{
+		"candidates": []any{
+			map[string]any{
+				"finishReason": finishReason,
+			},
+		},
+		"usageMetadata": map[string]any{
+			"promptTokenCount":     promptTokens,
+			"candidatesTokenCount": completionTokens,
+		},
+	}
+	b, _ := json.Marshal(finalPayload)
+	_, _ = fmt.Fprintf(c.Writer, "data: %s\n\n", b)
+	flusher.Flush()
+
+	return ClaudeUsage{
+		InputTokens:  promptTokens,
+		OutputTokens: completionTokens,
+	}, firstTokenMs, nil
 }
 
 func (s *GeminiMessagesCompatService) handleGeminiUpstreamError(ctx context.Context, account *Account, statusCode int, headers http.Header, body []byte) {

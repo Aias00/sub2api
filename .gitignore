@@ -133,3 +133,10 @@ frontend/coverage/
 aicodex
 output/
 
+
+# Runtime artifacts for local gateway/session
+*.pid
+deploy/__pycache__/
+deploy/gemini_gateway_session/
+tools/gemini-command-gateway/__pycache__/
+tools/gemini-command-gateway/session/
