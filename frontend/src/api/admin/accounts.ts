@@ -37,6 +37,7 @@ export async function list(
     status?: string
     group?: string
     search?: string
+    privacy_mode?: string
     lite?: string
   },
   options?: {
@@ -69,6 +70,7 @@ export async function listWithEtag(
     status?: string
     group?: string
     search?: string
+    privacy_mode?: string
     lite?: string
   },
   options?: {
@@ -577,13 +579,17 @@ export async function getAntigravityDefaultModelMapping(): Promise<Record<string
 export async function refreshOpenAIToken(
   refreshToken: string,
   proxyId?: number | null,
-  endpoint: string = '/admin/openai/refresh-token'
+  endpoint: string = '/admin/openai/refresh-token',
+  clientId?: string
 ): Promise<Record<string, unknown>> {
-  const payload: { refresh_token: string; proxy_id?: number } = {
+  const payload: { refresh_token: string; proxy_id?: number; client_id?: string } = {
     refresh_token: refreshToken
   }
   if (proxyId) {
     payload.proxy_id = proxyId
+  }
+  if (clientId) {
+    payload.client_id = clientId
   }
   const { data } = await apiClient.post<Record<string, unknown>>(endpoint, payload)
   return data
