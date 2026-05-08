@@ -220,7 +220,8 @@ func TestGeminiWebLoginStart_UsesGatewayStartEndpoint(t *testing.T) {
 
 	var resp map[string]any
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
-	data := resp["data"].(map[string]any)
+	data, ok := resp["data"].(map[string]any)
+	require.True(t, ok)
 	require.Equal(t, "open_login_url", data["action"])
 	require.Equal(t, "remote", data["login_mode"])
 }
