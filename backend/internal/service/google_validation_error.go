@@ -200,23 +200,6 @@ func persistGoogleValidationRequired(ctx context.Context, repo AccountRepository
 	return info
 }
 
-func persistGoogleValidationRequiredFromText(ctx context.Context, repo AccountRepository, account *Account, text string) *GoogleValidationRequiredInfo {
-	if repo == nil || account == nil || account.Platform == "" {
-		return nil
-	}
-	info := ExtractGoogleValidationRequiredFromText(text)
-	if info == nil {
-		return nil
-	}
-	updates := googleValidationExtraUpdates(info)
-	if len(updates) == 0 {
-		return info
-	}
-	_ = repo.UpdateExtra(ctx, account.ID, updates)
-	mergeAccountExtra(account, updates)
-	return info
-}
-
 func googleValidationExtraUpdates(info *GoogleValidationRequiredInfo) map[string]any {
 	if info == nil || strings.TrimSpace(info.ValidationURL) == "" {
 		return nil

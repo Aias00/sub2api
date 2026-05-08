@@ -186,7 +186,8 @@ func TestGeminiWebLoginStart_UsesGatewayStartEndpoint(t *testing.T) {
 		require.NoError(t, json.NewDecoder(r.Body).Decode(&payload))
 		require.Equal(t, "remote", payload["login_mode"])
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"data":{"login_id":"gw-remote","status":"pending","message":"scan qr","login_url":"https://example.com/login","login_mode":"remote"}}`))
+		_, err := w.Write([]byte(`{"data":{"login_id":"gw-remote","status":"pending","message":"scan qr","login_url":"https://example.com/login","login_mode":"remote"}}`))
+		require.NoError(t, err)
 	}))
 	defer gateway.Close()
 
@@ -229,7 +230,8 @@ func TestGeminiWebLoginStatus_UsesGatewayStatusEndpoint(t *testing.T) {
 		require.Equal(t, "/auth/status", r.URL.Path)
 		require.Equal(t, "gw-local", r.URL.Query().Get("login_id"))
 		w.Header().Set("Content-Type", "application/json")
-		_, _ = w.Write([]byte(`{"status":"ready","message":"ok","updated_at":"2026-03-16T12:00:00Z"}`))
+		_, err := w.Write([]byte(`{"status":"ready","message":"ok","updated_at":"2026-03-16T12:00:00Z"}`))
+		require.NoError(t, err)
 	}))
 	defer gateway.Close()
 

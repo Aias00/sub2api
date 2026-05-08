@@ -2527,9 +2527,12 @@ func callGeminiWebGatewayJSON(ctx context.Context, method, endpoint string, acco
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
-	rawBody, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	rawBody, err := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	if err != nil {
+		return nil, err
+	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("gateway status %d", resp.StatusCode)
 	}

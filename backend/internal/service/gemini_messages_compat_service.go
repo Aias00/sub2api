@@ -1140,7 +1140,7 @@ func (s *GeminiMessagesCompatService) forwardGeminiWeb(
 		}
 		return nil, s.writeClaudeError(c, http.StatusBadGateway, "upstream_error", safeErr)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	requestID := strings.TrimSpace(resp.Header.Get("x-request-id"))
 	if requestID == "" {
@@ -3287,7 +3287,7 @@ func (s *GeminiMessagesCompatService) handleGeminiWebNativeStreamingResponse(
 				default:
 					delta := gjson.Get(payload, "choices.0.delta.content").String()
 					if delta != "" {
-						fullText.WriteString(delta)
+						_, _ = fullText.WriteString(delta)
 						completionTokens = estimateTokensForText(fullText.String())
 						if firstTokenMs == nil {
 							ms := int(time.Since(startTime).Milliseconds())
