@@ -2845,14 +2845,79 @@ func (s *adminServiceImpl) GetProxiesByIDs(ctx context.Context, ids []int64) ([]
 	return s.proxyRepo.ListByIDs(ctx, ids)
 }
 
+func normalizeProxyIdentity(protocol, host, username, password string) (string, string, string, string) {
+	return strings.ToLower(strings.TrimSpace(protocol)),
+		strings.ToLower(strings.TrimSpace(host)),
+		strings.TrimSpace(username),
+		strings.TrimSpace(password)
+}
+
+func validateProxyPort(port int) error {
+	if port <= 0 || port > 65535 {
+		return infraerrors.BadRequest("PROXY_INVALID_PORT", "proxy port must be between 1 and 65535")
+	}
+	return nil
+}
+
+func (s *adminServiceImpl) findDuplicateProxyID(
+	ctx context.Context,
+	excludeID int64,
+	protocol, host string,
+	port int,
+	username, password string,
+) (int64, bool, error) {
+	page := 1
+	pageSize := 500
+	for {
+		items, result, err := s.proxyRepo.List(ctx, pagination.PaginationParams{
+			Page:      page,
+			PageSize:  pageSize,
+			SortBy:    "id",
+			SortOrder: "asc",
+		})
+		if err != nil {
+			return 0, false, err
+		}
+
+		for i := range items {
+			item := items[i]
+			if item.ID == excludeID {
+				continue
+			}
+			itemProtocol, itemHost, itemUsername, itemPassword := normalizeProxyIdentity(item.Protocol, item.Host, item.Username, item.Password)
+			if item.Protocol == "" && itemHost == "" && item.Port == 0 {
+				continue
+			}
+			if itemProtocol == protocol && itemHost == host && item.Port == port && itemUsername == username && itemPassword == password {
+				return item.ID, true, nil
+			}
+		}
+
+		if result == nil || int64(page*pageSize) >= result.Total || len(items) < pageSize {
+			return 0, false, nil
+		}
+		page++
+	}
+}
+
 func (s *adminServiceImpl) CreateProxy(ctx context.Context, input *CreateProxyInput) (*Proxy, error) {
+	protocol, host, username, password := normalizeProxyIdentity(input.Protocol, input.Host, input.Username, input.Password)
+	if err := validateProxyPort(input.Port); err != nil {
+		return nil, err
+	}
+	if _, exists, err := s.findDuplicateProxyID(ctx, 0, protocol, host, input.Port, username, password); err != nil {
+		return nil, err
+	} else if exists {
+		return nil, ErrProxyDuplicate
+	}
+
 	proxy := &Proxy{
-		Name:     input.Name,
-		Protocol: input.Protocol,
-		Host:     input.Host,
+		Name:     strings.TrimSpace(input.Name),
+		Protocol: protocol,
+		Host:     host,
 		Port:     input.Port,
-		Username: input.Username,
-		Password: input.Password,
+		Username: username,
+		Password: password,
 		Status:   StatusActive,
 	}
 	if err := s.proxyRepo.Create(ctx, proxy); err != nil {
@@ -2879,6 +2944,9 @@ func (s *adminServiceImpl) UpdateProxy(ctx context.Context, id int64, input *Upd
 		proxy.Host = input.Host
 	}
 	if input.Port != 0 {
+		if err := validateProxyPort(input.Port); err != nil {
+			return nil, err
+		}
 		proxy.Port = input.Port
 	}
 	if input.Username != "" {
@@ -2889,6 +2957,20 @@ func (s *adminServiceImpl) UpdateProxy(ctx context.Context, id int64, input *Upd
 	}
 	if input.Status != "" {
 		proxy.Status = input.Status
+	}
+
+	proxy.Name = strings.TrimSpace(proxy.Name)
+	proxy.Protocol, proxy.Host, proxy.Username, proxy.Password = normalizeProxyIdentity(
+		proxy.Protocol,
+		proxy.Host,
+		proxy.Username,
+		proxy.Password,
+	)
+
+	if _, exists, err := s.findDuplicateProxyID(ctx, id, proxy.Protocol, proxy.Host, proxy.Port, proxy.Username, proxy.Password); err != nil {
+		return nil, err
+	} else if exists {
+		return nil, ErrProxyDuplicate
 	}
 
 	if err := s.proxyRepo.Update(ctx, proxy); err != nil {
@@ -2948,7 +3030,8 @@ func (s *adminServiceImpl) GetProxyAccounts(ctx context.Context, proxyID int64) 
 }
 
 func (s *adminServiceImpl) CheckProxyExists(ctx context.Context, host string, port int, username, password string) (bool, error) {
-	return s.proxyRepo.ExistsByHostPortAuth(ctx, host, port, username, password)
+	_, normalizedHost, normalizedUsername, normalizedPassword := normalizeProxyIdentity("", host, username, password)
+	return s.proxyRepo.ExistsByHostPortAuth(ctx, normalizedHost, port, normalizedUsername, normalizedPassword)
 }
 
 // Redeem code management implementations
