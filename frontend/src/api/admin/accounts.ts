@@ -16,6 +16,8 @@ import type {
   TempUnschedulableStatus,
   AdminDataPayload,
   AdminDataImportResult,
+  CodexSessionImportRequest,
+  CodexSessionImportResult,
   CheckMixedChannelRequest,
   CheckMixedChannelResponse,
   GeminiWebSessionResponse
@@ -39,6 +41,8 @@ export async function list(
     search?: string
     privacy_mode?: string
     lite?: string
+    sort_by?: string
+    sort_order?: 'asc' | 'desc'
   },
   options?: {
     signal?: AbortSignal
@@ -72,6 +76,8 @@ export async function listWithEtag(
     search?: string
     privacy_mode?: string
     lite?: string
+    sort_by?: string
+    sort_order?: 'asc' | 'desc'
   },
   options?: {
     signal?: AbortSignal
@@ -367,8 +373,8 @@ export async function batchUpdateCredentials(request: {
  * @returns Success confirmation
  */
 export async function bulkUpdate(
-  accountIds: number[],
-  updates: Record<string, unknown>
+  accountIdsOrPayload: number[] | Record<string, unknown>,
+  updates?: Record<string, unknown>
 ): Promise<{
   success: number
   failed: number
@@ -376,16 +382,19 @@ export async function bulkUpdate(
   failed_ids?: number[]
   results: Array<{ account_id: number; success: boolean; error?: string }>
   }> {
+  const payload = Array.isArray(accountIdsOrPayload)
+    ? {
+        account_ids: accountIdsOrPayload,
+        ...(updates ?? {})
+      }
+    : accountIdsOrPayload
   const { data } = await apiClient.post<{
     success: number
     failed: number
     success_ids?: number[]
     failed_ids?: number[]
     results: Array<{ account_id: number; success: boolean; error?: string }>
-  }>('/admin/accounts/bulk-update', {
-    account_ids: accountIds,
-    ...updates
-  })
+  }>('/admin/accounts/bulk-update', payload)
   return data
 }
 
@@ -527,7 +536,11 @@ export async function exportData(options?: {
     platform?: string
     type?: string
     status?: string
+    group?: string
+    privacy_mode?: string
     search?: string
+    sort_by?: string
+    sort_order?: 'asc' | 'desc'
   }
   includeProxies?: boolean
 }): Promise<AdminDataPayload> {
@@ -535,11 +548,15 @@ export async function exportData(options?: {
   if (options?.ids && options.ids.length > 0) {
     params.ids = options.ids.join(',')
   } else if (options?.filters) {
-    const { platform, type, status, search } = options.filters
+    const { platform, type, status, group, privacy_mode, search, sort_by, sort_order } = options.filters
     if (platform) params.platform = platform
     if (type) params.type = type
     if (status) params.status = status
+    if (group) params.group = group
+    if (privacy_mode) params.privacy_mode = privacy_mode
     if (search) params.search = search
+    if (sort_by) params.sort_by = sort_by
+    if (sort_order) params.sort_order = sort_order
   }
   if (options?.includeProxies === false) {
     params.include_proxies = 'false'
@@ -556,6 +573,11 @@ export async function importData(payload: {
     data: payload.data,
     skip_default_group_bind: payload.skip_default_group_bind
   })
+  return data
+}
+
+export async function importCodexSession(payload: CodexSessionImportRequest): Promise<CodexSessionImportResult> {
+  const { data } = await apiClient.post<CodexSessionImportResult>('/admin/accounts/import/codex-session', payload)
   return data
 }
 
@@ -590,28 +612,6 @@ export async function refreshOpenAIToken(
   }
   if (clientId) {
     payload.client_id = clientId
-  }
-  const { data } = await apiClient.post<Record<string, unknown>>(endpoint, payload)
-  return data
-}
-
-/**
- * Validate Sora session token and exchange to access token
- * @param sessionToken - Sora session token
- * @param proxyId - Optional proxy ID
- * @param endpoint - API endpoint path
- * @returns Token information including access_token
- */
-export async function validateSoraSessionToken(
-  sessionToken: string,
-  proxyId?: number | null,
-  endpoint: string = '/admin/sora/st2at'
-): Promise<Record<string, unknown>> {
-  const payload: { session_token: string; proxy_id?: number } = {
-    session_token: sessionToken
-  }
-  if (proxyId) {
-    payload.proxy_id = proxyId
   }
   const { data } = await apiClient.post<Record<string, unknown>>(endpoint, payload)
   return data
@@ -654,6 +654,16 @@ export async function batchRefresh(accountIds: number[]): Promise<BatchOperation
   return data
 }
 
+/**
+ * Set privacy for an Antigravity OAuth account
+ * @param id - Account ID
+ * @returns Updated account
+ */
+export async function setPrivacy(id: number): Promise<Account> {
+  const { data } = await apiClient.post<Account>(`/admin/accounts/${id}/set-privacy`)
+  return data
+}
+
 export const accountsAPI = {
   list,
   listWithEtag,
@@ -683,7 +693,6 @@ export const accountsAPI = {
   generateAuthUrl,
   exchangeCode,
   refreshOpenAIToken,
-  validateSoraSessionToken,
   batchCreate,
   batchUpdateCredentials,
   bulkUpdate,
@@ -691,9 +700,11 @@ export const accountsAPI = {
   syncFromCrs,
   exportData,
   importData,
+  importCodexSession,
   getAntigravityDefaultModelMapping,
   batchClearError,
-  batchRefresh
+  batchRefresh,
+  setPrivacy
 }
 
 export default accountsAPI

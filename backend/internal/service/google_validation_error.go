@@ -270,15 +270,6 @@ func normalizeHTTPSURL(raw string) string {
 	return parsed.String()
 }
 
-func firstNonEmpty(values ...string) string {
-	for _, value := range values {
-		if trimmed := strings.TrimSpace(value); trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
-}
-
 func extractRegexGroup(re *regexp.Regexp, text string) string {
 	if re == nil || text == "" {
 		return ""

@@ -57,18 +57,6 @@
       </div>
     </div>
 
-    <a
-      v-if="showValidationAction"
-      :href="validationActionUrl"
-      target="_blank"
-      rel="noopener noreferrer"
-      class="inline-flex items-center gap-1 rounded bg-blue-100 px-1.5 py-0.5 text-xs font-medium text-blue-700 transition hover:bg-blue-200 dark:bg-blue-900/30 dark:text-blue-300 dark:hover:bg-blue-900/40"
-      :title="validationActionLabel"
-    >
-      <Icon name="externalLink" size="xs" :stroke-width="2" />
-      {{ validationActionLabel }}
-    </a>
-
     <!-- Rate Limit Indicator (429) -->
     <div v-if="isRateLimited" class="group relative">
       <span
@@ -296,19 +284,15 @@ const hasError = computed(() => {
   return props.account.status === 'error'
 })
 
-const validationActionUrl = computed(() => {
-  if (!(hasError.value || isTempUnschedulable.value)) return ''
-  const extra = props.account.extra as Record<string, unknown> | undefined
-  return typeof extra?.google_validation_url === 'string' ? extra.google_validation_url : ''
+const isQuotaExceeded = computed(() => {
+  const exceeded = (used?: number | null, limit?: number | null) =>
+    typeof limit === 'number' && limit > 0 && typeof used === 'number' && used >= limit
+  return (
+    exceeded(props.account.quota_used, props.account.quota_limit) ||
+    exceeded(props.account.quota_daily_used, props.account.quota_daily_limit) ||
+    exceeded(props.account.quota_weekly_used, props.account.quota_weekly_limit)
+  )
 })
-
-const validationActionLabel = computed(() => {
-  const extra = props.account.extra as Record<string, unknown> | undefined
-  const value = typeof extra?.google_validation_label === 'string' ? extra.google_validation_label : ''
-  return value || t('admin.accounts.status.verifyAccount')
-})
-
-const showValidationAction = computed(() => validationActionUrl.value !== '')
 
 // Computed: countdown text for rate limit (429)
 const rateLimitCountdown = computed(() => {
@@ -333,19 +317,16 @@ const statusClass = computed(() => {
   if (isTempUnschedulable.value) {
     return 'badge-warning'
   }
+  if (props.account.status !== 'active') {
+    return props.account.status === 'error' ? 'badge-danger' : 'badge-gray'
+  }
+  if (isQuotaExceeded.value) {
+    return 'badge-warning'
+  }
   if (!props.account.schedulable) {
     return 'badge-gray'
   }
-  switch (props.account.status) {
-    case 'active':
-      return 'badge-success'
-    case 'inactive':
-      return 'badge-gray'
-    case 'error':
-      return 'badge-danger'
-    default:
-      return 'badge-gray'
-  }
+  return 'badge-success'
 })
 
 // Computed: status text
@@ -355,6 +336,12 @@ const statusText = computed(() => {
   }
   if (isTempUnschedulable.value) {
     return t('admin.accounts.status.tempUnschedulable')
+  }
+  if (props.account.status !== 'active') {
+    return t(`admin.accounts.status.${props.account.status}`)
+  }
+  if (isQuotaExceeded.value) {
+    return t('admin.accounts.status.quotaExceeded')
   }
   if (!props.account.schedulable) {
     return t('admin.accounts.status.paused')

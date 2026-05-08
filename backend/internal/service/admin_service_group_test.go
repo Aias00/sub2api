@@ -10,20 +10,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func ptrString[T ~string](v T) *string {
+	s := string(v)
+	return &s
+}
+
 // groupRepoStubForAdmin 用于测试 AdminService 的 GroupRepository Stub
 type groupRepoStubForAdmin struct {
-	created  *Group // 记录 Create 调用的参数
-	updated  *Group // 记录 Update 调用的参数
-	getByID  *Group // GetByID 返回值
-	getErr   error  // GetByID 返回的错误
-	liteByID map[int64]*Group
-
-	deleteAccountGroupCalls int
-	deleteAccountGroupID    int64
-	bindAccountsCalls       int
-	bindAccountsGroupID     int64
-	bindAccountsIDs         []int64
-	copiedAccountIDs        []int64
+	created *Group // 记录 Create 调用的参数
+	updated *Group // 记录 Update 调用的参数
+	getByID *Group // GetByID 返回值
+	getErr  error  // GetByID 返回的错误
 
 	listWithFiltersCalls       int
 	listWithFiltersParams      pagination.PaginationParams
@@ -53,14 +50,9 @@ func (s *groupRepoStubForAdmin) GetByID(_ context.Context, _ int64) (*Group, err
 	return s.getByID, nil
 }
 
-func (s *groupRepoStubForAdmin) GetByIDLite(_ context.Context, id int64) (*Group, error) {
+func (s *groupRepoStubForAdmin) GetByIDLite(_ context.Context, _ int64) (*Group, error) {
 	if s.getErr != nil {
 		return nil, s.getErr
-	}
-	if s.liteByID != nil {
-		if group, ok := s.liteByID[id]; ok {
-			return group, nil
-		}
 	}
 	return s.getByID, nil
 }
@@ -117,25 +109,36 @@ func (s *groupRepoStubForAdmin) GetAccountCount(_ context.Context, _ int64) (int
 	panic("unexpected GetAccountCount call")
 }
 
-func (s *groupRepoStubForAdmin) DeleteAccountGroupsByGroupID(_ context.Context, groupID int64) (int64, error) {
-	s.deleteAccountGroupCalls++
-	s.deleteAccountGroupID = groupID
-	return 0, nil
+func (s *groupRepoStubForAdmin) DeleteAccountGroupsByGroupID(_ context.Context, _ int64) (int64, error) {
+	panic("unexpected DeleteAccountGroupsByGroupID call")
 }
 
-func (s *groupRepoStubForAdmin) BindAccountsToGroup(_ context.Context, groupID int64, accountIDs []int64) error {
-	s.bindAccountsCalls++
-	s.bindAccountsGroupID = groupID
-	s.bindAccountsIDs = append([]int64{}, accountIDs...)
-	return nil
+func (s *groupRepoStubForAdmin) BindAccountsToGroup(_ context.Context, _ int64, _ []int64) error {
+	panic("unexpected BindAccountsToGroup call")
 }
 
 func (s *groupRepoStubForAdmin) GetAccountIDsByGroupIDs(_ context.Context, _ []int64) ([]int64, error) {
-	return append([]int64{}, s.copiedAccountIDs...), nil
+	panic("unexpected GetAccountIDsByGroupIDs call")
 }
 
 func (s *groupRepoStubForAdmin) UpdateSortOrders(_ context.Context, _ []GroupSortOrderUpdate) error {
 	return nil
+}
+
+func TestAdminService_ListGroups_PassesSortParams(t *testing.T) {
+	repo := &groupRepoStubForAdmin{
+		listWithFiltersGroups: []Group{{ID: 1, Name: "g1"}},
+	}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	_, _, err := svc.ListGroups(context.Background(), 3, 25, PlatformOpenAI, StatusActive, "needle", nil, "account_count", "ASC")
+	require.NoError(t, err)
+	require.Equal(t, pagination.PaginationParams{
+		Page:      3,
+		PageSize:  25,
+		SortBy:    "account_count",
+		SortOrder: "ASC",
+	}, repo.listWithFiltersParams)
 }
 
 // TestAdminService_CreateGroup_WithImagePricing 测试创建分组时 ImagePrice 字段正确传递
@@ -263,61 +266,183 @@ func TestAdminService_UpdateGroup_PartialImagePricing(t *testing.T) {
 	require.Nil(t, repo.updated.ImagePrice4K)
 }
 
-func TestAdminService_CreateGroup_BindsDirectAccounts(t *testing.T) {
-	repo := &groupRepoStubForAdmin{}
-	accountRepo := &accountRepoStubForBulkUpdate{
-		getByIDsAccounts: []*Account{
-			{ID: 11, Name: "claude-1", Platform: PlatformAnthropic, Status: StatusActive},
-			{ID: 12, Name: "ag-mixed", Platform: PlatformAntigravity, Status: StatusActive, Extra: map[string]any{"mixed_scheduling": true}},
-		},
+func TestAdminService_UpdateGroup_PreservesImageGenerationControlsWhenOmitted(t *testing.T) {
+	imageMultiplier := 0.5
+	existingGroup := &Group{
+		ID:                   1,
+		Name:                 "existing-group",
+		Platform:             PlatformOpenAI,
+		Status:               StatusActive,
+		AllowImageGeneration: true,
+		ImageRateIndependent: true,
+		ImageRateMultiplier:  imageMultiplier,
 	}
-	svc := &adminServiceImpl{groupRepo: repo, accountRepo: accountRepo}
+	repo := &groupRepoStubForAdmin{getByID: existingGroup}
+	svc := &adminServiceImpl{groupRepo: repo}
 
-	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
-		Name:           "test-group",
-		Platform:       PlatformAnthropic,
-		RateMultiplier: 1,
-		AccountIDs:     []int64{11, 12, 11},
+	group, err := svc.UpdateGroup(context.Background(), 1, &UpdateGroupInput{
+		Description: "updated",
 	})
 	require.NoError(t, err)
 	require.NotNil(t, group)
-	require.True(t, accountRepo.getByIDsCalled)
-	require.ElementsMatch(t, []int64{11, 12}, accountRepo.getByIDsIDs)
-	require.Equal(t, 1, repo.bindAccountsCalls)
-	require.Equal(t, group.ID, repo.bindAccountsGroupID)
-	require.ElementsMatch(t, []int64{11, 12}, repo.bindAccountsIDs)
+	require.NotNil(t, repo.updated)
+	require.True(t, repo.updated.AllowImageGeneration)
+	require.True(t, repo.updated.ImageRateIndependent)
+	require.InDelta(t, 0.5, repo.updated.ImageRateMultiplier, 1e-12)
 }
 
-func TestAdminService_UpdateGroup_ReplacesBindingsWithDirectAndCopiedAccounts(t *testing.T) {
+func TestAdminService_UpdateGroup_RejectsNegativeImageRateMultiplier(t *testing.T) {
 	existingGroup := &Group{
-		ID:       7,
+		ID:                  1,
+		Name:                "existing-group",
+		Platform:            PlatformOpenAI,
+		Status:              StatusActive,
+		ImageRateMultiplier: 1,
+	}
+	repo := &groupRepoStubForAdmin{getByID: existingGroup}
+	svc := &adminServiceImpl{groupRepo: repo}
+	negative := -0.1
+
+	_, err := svc.UpdateGroup(context.Background(), 1, &UpdateGroupInput{
+		ImageRateMultiplier: &negative,
+	})
+	require.Error(t, err)
+	require.Nil(t, repo.updated)
+}
+
+func TestAdminService_UpdateGroup_InvalidatesAuthCacheOnRPMLimitChange(t *testing.T) {
+	existingGroup := &Group{
+		ID:       1,
 		Name:     "existing-group",
 		Platform: PlatformAnthropic,
 		Status:   StatusActive,
+		RPMLimit: 10,
 	}
-	repo := &groupRepoStubForAdmin{
-		getByID:          existingGroup,
-		liteByID:         map[int64]*Group{9: {ID: 9, Name: "copy-source", Platform: PlatformAnthropic}},
-		copiedAccountIDs: []int64{31, 32},
+	repo := &groupRepoStubForAdmin{getByID: existingGroup}
+	invalidator := &authCacheInvalidatorStub{}
+	svc := &adminServiceImpl{
+		groupRepo:            repo,
+		authCacheInvalidator: invalidator,
 	}
-	accountRepo := &accountRepoStubForBulkUpdate{
-		getByIDsAccounts: []*Account{
-			{ID: 21, Name: "claude-21", Platform: PlatformAnthropic, Status: StatusActive},
-		},
-	}
-	svc := &adminServiceImpl{groupRepo: repo, accountRepo: accountRepo}
 
-	group, err := svc.UpdateGroup(context.Background(), 7, &UpdateGroupInput{
-		AccountIDs:               &[]int64{21},
-		CopyAccountsFromGroupIDs: []int64{9},
+	rpmLimit := 60
+	group, err := svc.UpdateGroup(context.Background(), 1, &UpdateGroupInput{
+		RPMLimit: &rpmLimit,
 	})
 	require.NoError(t, err)
 	require.NotNil(t, group)
-	require.Equal(t, 1, repo.deleteAccountGroupCalls)
-	require.Equal(t, int64(7), repo.deleteAccountGroupID)
-	require.Equal(t, 1, repo.bindAccountsCalls)
-	require.Equal(t, int64(7), repo.bindAccountsGroupID)
-	require.ElementsMatch(t, []int64{21, 31, 32}, repo.bindAccountsIDs)
+	require.Equal(t, 60, repo.updated.RPMLimit)
+	require.Equal(t, []int64{1}, invalidator.groupIDs, "分组 RPMLimit 写入 auth snapshot，变更后必须失效 API Key 认证缓存")
+}
+
+func TestAdminService_CreateGroup_NormalizesMessagesDispatchModelConfig(t *testing.T) {
+	repo := &groupRepoStubForAdmin{}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:           "dispatch-group",
+		Description:    "dispatch config",
+		Platform:       PlatformOpenAI,
+		RateMultiplier: 1.0,
+		MessagesDispatchModelConfig: OpenAIMessagesDispatchModelConfig{
+			OpusMappedModel:   " gpt-5.4-high ",
+			SonnetMappedModel: " gpt-5.3-codex ",
+			HaikuMappedModel:  " gpt-5.4-mini-medium ",
+			ExactModelMappings: map[string]string{
+				" claude-sonnet-4-5-20250929 ": " gpt-5.2-high ",
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.created)
+	require.Equal(t, OpenAIMessagesDispatchModelConfig{
+		OpusMappedModel:   "gpt-5.4",
+		SonnetMappedModel: "gpt-5.3-codex",
+		HaikuMappedModel:  "gpt-5.4-mini",
+		ExactModelMappings: map[string]string{
+			"claude-sonnet-4-5-20250929": "gpt-5.2",
+		},
+	}, repo.created.MessagesDispatchModelConfig)
+}
+
+func TestAdminService_UpdateGroup_NormalizesMessagesDispatchModelConfig(t *testing.T) {
+	existingGroup := &Group{
+		ID:       1,
+		Name:     "existing-group",
+		Platform: PlatformOpenAI,
+		Status:   StatusActive,
+	}
+	repo := &groupRepoStubForAdmin{getByID: existingGroup}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	group, err := svc.UpdateGroup(context.Background(), 1, &UpdateGroupInput{
+		MessagesDispatchModelConfig: &OpenAIMessagesDispatchModelConfig{
+			SonnetMappedModel: " gpt-5.4-medium ",
+			ExactModelMappings: map[string]string{
+				" claude-haiku-4-5-20251001 ": " gpt-5.4-mini-high ",
+			},
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.updated)
+	require.Equal(t, OpenAIMessagesDispatchModelConfig{
+		SonnetMappedModel: "gpt-5.4",
+		ExactModelMappings: map[string]string{
+			"claude-haiku-4-5-20251001": "gpt-5.4-mini",
+		},
+	}, repo.updated.MessagesDispatchModelConfig)
+}
+
+func TestAdminService_CreateGroup_ClearsMessagesDispatchFieldsForNonOpenAIPlatform(t *testing.T) {
+	repo := &groupRepoStubForAdmin{}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
+		Name:                  "anthropic-group",
+		Description:           "non-openai",
+		Platform:              PlatformAnthropic,
+		RateMultiplier:        1.0,
+		AllowMessagesDispatch: true,
+		DefaultMappedModel:    "gpt-5.4",
+		MessagesDispatchModelConfig: OpenAIMessagesDispatchModelConfig{
+			OpusMappedModel: "gpt-5.4",
+		},
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.created)
+	require.False(t, repo.created.AllowMessagesDispatch)
+	require.Empty(t, repo.created.DefaultMappedModel)
+	require.Equal(t, OpenAIMessagesDispatchModelConfig{}, repo.created.MessagesDispatchModelConfig)
+}
+
+func TestAdminService_UpdateGroup_ClearsMessagesDispatchFieldsWhenPlatformChangesAwayFromOpenAI(t *testing.T) {
+	existingGroup := &Group{
+		ID:                    1,
+		Name:                  "existing-openai-group",
+		Platform:              PlatformOpenAI,
+		Status:                StatusActive,
+		AllowMessagesDispatch: true,
+		DefaultMappedModel:    "gpt-5.4",
+		MessagesDispatchModelConfig: OpenAIMessagesDispatchModelConfig{
+			SonnetMappedModel: "gpt-5.3-codex",
+		},
+	}
+	repo := &groupRepoStubForAdmin{getByID: existingGroup}
+	svc := &adminServiceImpl{groupRepo: repo}
+
+	group, err := svc.UpdateGroup(context.Background(), 1, &UpdateGroupInput{
+		Platform: PlatformAnthropic,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, group)
+	require.NotNil(t, repo.updated)
+	require.Equal(t, PlatformAnthropic, repo.updated.Platform)
+	require.False(t, repo.updated.AllowMessagesDispatch)
+	require.Empty(t, repo.updated.DefaultMappedModel)
+	require.Equal(t, OpenAIMessagesDispatchModelConfig{}, repo.updated.MessagesDispatchModelConfig)
 }
 
 func TestAdminService_ListGroups_WithSearch(t *testing.T) {
@@ -333,7 +458,7 @@ func TestAdminService_ListGroups_WithSearch(t *testing.T) {
 		}
 		svc := &adminServiceImpl{groupRepo: repo}
 
-		groups, total, err := svc.ListGroups(context.Background(), 1, 20, "", "", "alpha", nil)
+		groups, total, err := svc.ListGroups(context.Background(), 1, 20, "", "", "alpha", nil, "", "")
 		require.NoError(t, err)
 		require.Equal(t, int64(1), total)
 		require.Equal(t, []Group{{ID: 1, Name: "alpha"}}, groups)
@@ -351,7 +476,7 @@ func TestAdminService_ListGroups_WithSearch(t *testing.T) {
 		}
 		svc := &adminServiceImpl{groupRepo: repo}
 
-		groups, total, err := svc.ListGroups(context.Background(), 2, 10, "", "", "", nil)
+		groups, total, err := svc.ListGroups(context.Background(), 2, 10, "", "", "", nil, "", "")
 		require.NoError(t, err)
 		require.Empty(t, groups)
 		require.Equal(t, int64(0), total)
@@ -370,7 +495,7 @@ func TestAdminService_ListGroups_WithSearch(t *testing.T) {
 		}
 		svc := &adminServiceImpl{groupRepo: repo}
 
-		groups, total, err := svc.ListGroups(context.Background(), 3, 50, PlatformAntigravity, StatusActive, "beta", &isExclusive)
+		groups, total, err := svc.ListGroups(context.Background(), 3, 50, PlatformAntigravity, StatusActive, "beta", &isExclusive, "", "")
 		require.NoError(t, err)
 		require.Equal(t, int64(42), total)
 		require.Equal(t, []Group{{ID: 2, Name: "beta"}}, groups)
@@ -565,6 +690,7 @@ func TestAdminService_CreateGroup_InvalidRequestFallbackRejectsUnsupportedPlatfo
 	_, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
 		Name:                            "g1",
 		Platform:                        PlatformOpenAI,
+		RateMultiplier:                  1.0,
 		SubscriptionType:                SubscriptionTypeStandard,
 		FallbackGroupIDOnInvalidRequest: &fallbackID,
 	})
@@ -585,6 +711,7 @@ func TestAdminService_CreateGroup_InvalidRequestFallbackRejectsSubscription(t *t
 	_, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
 		Name:                            "g1",
 		Platform:                        PlatformAnthropic,
+		RateMultiplier:                  1.0,
 		SubscriptionType:                SubscriptionTypeSubscription,
 		FallbackGroupIDOnInvalidRequest: &fallbackID,
 	})
@@ -639,6 +766,7 @@ func TestAdminService_CreateGroup_InvalidRequestFallbackRejectsFallbackGroup(t *
 			_, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
 				Name:                            "g1",
 				Platform:                        PlatformAnthropic,
+				RateMultiplier:                  1.0,
 				SubscriptionType:                SubscriptionTypeStandard,
 				FallbackGroupIDOnInvalidRequest: &fallbackID,
 			})
@@ -657,6 +785,7 @@ func TestAdminService_CreateGroup_InvalidRequestFallbackNotFound(t *testing.T) {
 	_, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
 		Name:                            "g1",
 		Platform:                        PlatformAnthropic,
+		RateMultiplier:                  1.0,
 		SubscriptionType:                SubscriptionTypeStandard,
 		FallbackGroupIDOnInvalidRequest: &fallbackID,
 	})
@@ -677,6 +806,7 @@ func TestAdminService_CreateGroup_InvalidRequestFallbackAllowsAntigravity(t *tes
 	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
 		Name:                            "g1",
 		Platform:                        PlatformAntigravity,
+		RateMultiplier:                  1.0,
 		SubscriptionType:                SubscriptionTypeStandard,
 		FallbackGroupIDOnInvalidRequest: &fallbackID,
 	})
@@ -694,6 +824,7 @@ func TestAdminService_CreateGroup_InvalidRequestFallbackClearsOnZero(t *testing.
 	group, err := svc.CreateGroup(context.Background(), &CreateGroupInput{
 		Name:                            "g1",
 		Platform:                        PlatformAnthropic,
+		RateMultiplier:                  1.0,
 		SubscriptionType:                SubscriptionTypeStandard,
 		FallbackGroupIDOnInvalidRequest: &zero,
 	})

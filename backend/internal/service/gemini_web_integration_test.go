@@ -11,6 +11,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/gemini"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/tlsfingerprint"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -21,7 +22,7 @@ func (s *geminiWebHTTPUpstreamStub) Do(req *http.Request, _ string, _ int64, _ i
 	return http.DefaultClient.Do(req)
 }
 
-func (s *geminiWebHTTPUpstreamStub) DoWithTLS(req *http.Request, _ string, _ int64, _ int, _ bool) (*http.Response, error) {
+func (s *geminiWebHTTPUpstreamStub) DoWithTLS(req *http.Request, _ string, _ int64, _ int, _ *tlsfingerprint.Profile) (*http.Response, error) {
 	return http.DefaultClient.Do(req)
 }
 
