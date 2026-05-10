@@ -172,7 +172,7 @@ func (h *AuthHandler) emailOAuthCallbackWithProfile(
 	if shouldCreate, err := h.emailOAuthShouldCreatePendingRegistration(c.Request.Context(), input); err != nil {
 		redirectOAuthError(c, frontendCallback, infraerrors.Reason(err), infraerrors.Message(err), "")
 		return
-	} else if shouldCreate {
+	} else if shouldCreate && h.emailOAuthRequiresManualCompletion(c.Request.Context(), provider) {
 		if pendingErr := h.createEmailOAuthRegistrationPendingSession(c, provider, frontendCallback, redirectTo, profile); pendingErr != nil {
 			redirectOAuthError(c, frontendCallback, infraerrors.Reason(pendingErr), infraerrors.Message(pendingErr), "")
 			return
@@ -206,6 +206,16 @@ func (h *AuthHandler) emailOAuthCallbackWithProfile(
 	fragment.Set("token_type", "Bearer")
 	fragment.Set("redirect", redirectTo)
 	redirectWithFragment(c, frontendCallback, fragment)
+}
+
+func (h *AuthHandler) emailOAuthRequiresManualCompletion(ctx context.Context, provider string) bool {
+	if !strings.EqualFold(strings.TrimSpace(provider), "google") {
+		return true
+	}
+	if h == nil || h.settingSvc == nil {
+		return true
+	}
+	return h.settingSvc.IsInvitationCodeEnabled(ctx)
 }
 
 func (h *AuthHandler) emailOAuthShouldCreatePendingRegistration(ctx context.Context, input service.EmailOAuthIdentityInput) (bool, error) {
