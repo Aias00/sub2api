@@ -23,7 +23,7 @@
       </div>
 
       <div
-        v-for="item in providerItems"
+        v-for="item in visibleProviderItems"
         :key="item.provider"
         :class="rowClass"
       >
@@ -455,6 +455,15 @@ const providerItems = computed(() => [
     details: getBindingDetails('wechat'),
   },
 ])
+
+const visibleProviderItems = computed(() =>
+  providerItems.value.filter((item) => {
+    if (item.provider === 'email') {
+      return true
+    }
+    return item.bound || item.canBind || item.canUnbind
+  })
+)
 
 function providerInitial(provider: UserAuthProvider): string {
   if (provider === 'linuxdo') {

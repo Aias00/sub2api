@@ -197,6 +197,34 @@ func TestParsePaymentConfig(t *testing.T) {
 			t.Fatalf("expected empty EnabledTypes for empty string, got %v", cfg.EnabledTypes)
 		}
 	})
+
+	t.Run("recharge products are parsed from JSON", func(t *testing.T) {
+		t.Parallel()
+		vals := map[string]string{
+			SettingRechargeProducts: `[{"id":"starter","name":"体验","description":"适合初次体验","amount":30,"badge":"推荐","recommended":true,"features":["获得 $30 额度","永不过期"],"sort_order":10}]`,
+			SettingBalanceRechargeMult: "1.50",
+		}
+		cfg := svc.parsePaymentConfig(vals)
+		if len(cfg.RechargeProducts) != 1 {
+			t.Fatalf("RechargeProducts len = %d, want 1", len(cfg.RechargeProducts))
+		}
+		product := cfg.RechargeProducts[0]
+		if product.ID != "starter" {
+			t.Fatalf("RechargeProducts[0].ID = %q, want starter", product.ID)
+		}
+		if product.Name != "体验" {
+			t.Fatalf("RechargeProducts[0].Name = %q, want 体验", product.Name)
+		}
+		if product.Amount != 30 {
+			t.Fatalf("RechargeProducts[0].Amount = %v, want 30", product.Amount)
+		}
+		if product.CreditedAmount != 45 {
+			t.Fatalf("RechargeProducts[0].CreditedAmount = %v, want 45", product.CreditedAmount)
+		}
+		if len(product.Features) != 2 {
+			t.Fatalf("RechargeProducts[0].Features len = %d, want 2", len(product.Features))
+		}
+	})
 }
 
 func TestGetBasePaymentType(t *testing.T) {

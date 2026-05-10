@@ -15,7 +15,7 @@
           <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
             {{ pageTitle }}
           </h1>
-          <p v-if="pageDescription" class="text-xs text-gray-500 dark:text-dark-400">
+          <p v-if="pageDescription" class="text-xs text-gray-500 dark:text-slate-300/90">
             {{ pageDescription }}
           </p>
         </div>
@@ -116,18 +116,20 @@
               </div>
 
               <div class="py-1">
-                <router-link to="/profile" @click="closeDropdown" class="dropdown-item">
-                  <Icon name="user" size="sm" />
-                  {{ t('nav.profile') }}
-                </router-link>
+                <template v-if="showDropdownAccountLinks">
+                  <router-link to="/profile" @click="closeDropdown" class="dropdown-item">
+                    <Icon name="user" size="sm" />
+                    {{ t('nav.profile') }}
+                  </router-link>
 
-                <router-link to="/keys" @click="closeDropdown" class="dropdown-item">
-                  <Icon name="key" size="sm" />
-                  {{ t('nav.apiKeys') }}
-                </router-link>
+                  <router-link to="/keys" @click="closeDropdown" class="dropdown-item">
+                    <Icon name="key" size="sm" />
+                    {{ t('nav.apiKeys') }}
+                  </router-link>
+                </template>
 
                 <a
-                  v-if="authStore.isAdmin"
+                  v-if="showGithubLink"
                   href="https://github.com/Wei-Shaw/sub2api"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -237,6 +239,8 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => appStore.docUrl)
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
+const showDropdownAccountLinks = computed(() => user.value?.role === 'admin')
+const showGithubLink = computed(() => user.value?.role === 'admin')
 
 // 只在标准模式的管理员下显示新手引导按钮
 const showOnboardingButton = computed(() => {

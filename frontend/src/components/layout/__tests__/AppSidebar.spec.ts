@@ -8,6 +8,8 @@ const componentPath = resolve(dirname(fileURLToPath(import.meta.url)), '../AppSi
 const componentSource = readFileSync(componentPath, 'utf8')
 const stylePath = resolve(dirname(fileURLToPath(import.meta.url)), '../../../style.css')
 const styleSource = readFileSync(stylePath, 'utf8')
+const userGuideStepsPath = resolve(dirname(fileURLToPath(import.meta.url)), '../../../components/Guide/steps.ts')
+const userGuideStepsSource = readFileSync(userGuideStepsPath, 'utf8')
 
 describe('AppSidebar custom SVG styles', () => {
   it('does not override uploaded SVG fill or stroke colors', () => {
@@ -28,5 +30,21 @@ describe('AppSidebar header styles', () => {
     expect(sidebarBrandBlockMatch).not.toBeNull()
     expect(sidebarHeaderBlockMatch?.[0]).not.toContain('@apply overflow-hidden;')
     expect(sidebarBrandBlockMatch?.[0]).not.toContain('overflow: hidden;')
+  })
+})
+
+describe('AppSidebar regular user navigation', () => {
+  it('keeps profile and api key entries in the regular user sidebar', () => {
+    expect(componentSource).not.toContain(
+      ".filter((item) => item.path !== '/keys' && item.path !== '/profile')"
+    )
+  })
+})
+
+describe('Regular user onboarding key entry point', () => {
+  it('keeps regular users onboarding anchored to the sidebar key entry', () => {
+    const userStepsSection = userGuideStepsSource.split('export const getUserSteps')[1] ?? ''
+    expect(userStepsSection).toContain('element: \'[data-tour="sidebar-my-keys"]\'')
+    expect(userStepsSection).not.toContain('element: \'[data-tour="dashboard-create-key-shortcut"]\'')
   })
 })

@@ -61,6 +61,7 @@ export interface CheckoutInfoResponse {
   methods: Record<string, MethodLimit>
   global_min: number
   global_max: number
+  recharge_products: RechargeProduct[]
   plans: SubscriptionPlan[]
   balance_disabled: boolean
   balance_recharge_multiplier: number
@@ -68,6 +69,18 @@ export interface CheckoutInfoResponse {
   help_text: string
   help_image_url: string
   stripe_publishable_key: string
+}
+
+export interface RechargeProduct {
+  id: string
+  name: string
+  description: string
+  amount: number
+  credited_amount: number
+  badge: string
+  recommended: boolean
+  features: string[]
+  sort_order: number
 }
 
 // ==================== Orders ====================

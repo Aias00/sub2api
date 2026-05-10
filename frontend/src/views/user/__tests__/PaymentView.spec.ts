@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import PaymentView from '../PaymentView.vue'
 import { PAYMENT_RECOVERY_STORAGE_KEY } from '@/components/payment/paymentFlow'
+
+const paymentViewSource = readFileSync(resolve(process.cwd(), 'src/views/user/PaymentView.vue'), 'utf8')
 
 const routeState = vi.hoisted(() => ({
   path: '/purchase',
@@ -100,6 +104,7 @@ function checkoutInfoFixture() {
       },
       global_min: 0,
       global_max: 0,
+      recharge_products: [],
       plans: [],
       balance_disabled: false,
       balance_recharge_multiplier: 1,
@@ -410,5 +415,50 @@ describe('PaymentView WeChat JSAPI flow', () => {
     expect(showWarning).toHaveBeenCalledWith('payment.errors.mobilePaymentFallbackToQr')
     expect(showError).not.toHaveBeenCalled()
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toContain('weixin://wxpay/bizpayurl?pr=fallback-native')
+  })
+})
+
+describe('PaymentView configurable recharge catalog', () => {
+  beforeEach(() => {
+    routeState.path = '/purchase'
+    routeState.query = {}
+    routerReplace.mockReset().mockResolvedValue(undefined)
+    routerPush.mockReset().mockResolvedValue(undefined)
+    getCheckoutInfo.mockReset().mockResolvedValue({
+      data: {
+        ...checkoutInfoFixture().data,
+        recharge_products: [
+          {
+            id: 'starter',
+            name: '体验',
+            description: '适合初次体验',
+            amount: 30,
+            credited_amount: 30,
+            badge: '',
+            recommended: false,
+            features: ['获得 $30 额度', '永不过期'],
+            sort_order: 10,
+          },
+          {
+            id: 'standard',
+            name: '标准',
+            description: '开发者常用',
+            amount: 100,
+            credited_amount: 100,
+            badge: '推荐',
+            recommended: true,
+            features: ['获得 $100 额度', '永不过期'],
+            sort_order: 20,
+          },
+        ],
+      },
+    })
+  })
+
+  it('renders recharge products instead of the legacy quick-amount matrix when products are configured', async () => {
+    expect(paymentViewSource).toContain('<template v-if="rechargeProducts.length > 0">')
+    expect(paymentViewSource).toContain('<RechargeProductCard')
+    expect(paymentViewSource).toContain('<div v-else class="card p-6">')
+    expect(paymentViewSource).toContain('<AmountInput')
   })
 })

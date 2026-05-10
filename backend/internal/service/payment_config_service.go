@@ -2,8 +2,10 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"math"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -27,6 +29,7 @@ const (
 	SettingRechargeFeeRate     = "RECHARGE_FEE_RATE"
 	SettingProductNamePrefix   = "PRODUCT_NAME_PREFIX"
 	SettingProductNameSuffix   = "PRODUCT_NAME_SUFFIX"
+	SettingRechargeProducts    = "PAYMENT_RECHARGE_PRODUCTS"
 	SettingHelpImageURL        = "PAYMENT_HELP_IMAGE_URL"
 	SettingHelpText            = "PAYMENT_HELP_TEXT"
 	SettingCancelRateLimitOn   = "CANCEL_RATE_LIMIT_ENABLED"
@@ -44,22 +47,23 @@ const (
 
 // PaymentConfig holds the payment system configuration.
 type PaymentConfig struct {
-	Enabled                   bool     `json:"enabled"`
-	MinAmount                 float64  `json:"min_amount"`
-	MaxAmount                 float64  `json:"max_amount"`
-	DailyLimit                float64  `json:"daily_limit"`
-	OrderTimeoutMin           int      `json:"order_timeout_minutes"`
-	MaxPendingOrders          int      `json:"max_pending_orders"`
-	EnabledTypes              []string `json:"enabled_payment_types"`
-	BalanceDisabled           bool     `json:"balance_disabled"`
-	BalanceRechargeMultiplier float64  `json:"balance_recharge_multiplier"`
-	RechargeFeeRate           float64  `json:"recharge_fee_rate"`
-	LoadBalanceStrategy       string   `json:"load_balance_strategy"`
-	ProductNamePrefix         string   `json:"product_name_prefix"`
-	ProductNameSuffix         string   `json:"product_name_suffix"`
-	HelpImageURL              string   `json:"help_image_url"`
-	HelpText                  string   `json:"help_text"`
-	StripePublishableKey      string   `json:"stripe_publishable_key,omitempty"`
+	Enabled                   bool              `json:"enabled"`
+	MinAmount                 float64           `json:"min_amount"`
+	MaxAmount                 float64           `json:"max_amount"`
+	DailyLimit                float64           `json:"daily_limit"`
+	OrderTimeoutMin           int               `json:"order_timeout_minutes"`
+	MaxPendingOrders          int               `json:"max_pending_orders"`
+	EnabledTypes              []string          `json:"enabled_payment_types"`
+	BalanceDisabled           bool              `json:"balance_disabled"`
+	BalanceRechargeMultiplier float64           `json:"balance_recharge_multiplier"`
+	RechargeFeeRate           float64           `json:"recharge_fee_rate"`
+	LoadBalanceStrategy       string            `json:"load_balance_strategy"`
+	ProductNamePrefix         string            `json:"product_name_prefix"`
+	ProductNameSuffix         string            `json:"product_name_suffix"`
+	RechargeProducts          []RechargeProduct `json:"recharge_products"`
+	HelpImageURL              string            `json:"help_image_url"`
+	HelpText                  string            `json:"help_text"`
+	StripePublishableKey      string            `json:"stripe_publishable_key,omitempty"`
 
 	// Cancel rate limit settings
 	CancelRateLimitEnabled bool   `json:"cancel_rate_limit_enabled"`
@@ -69,23 +73,36 @@ type PaymentConfig struct {
 	CancelRateLimitMode    string `json:"cancel_rate_limit_window_mode"`
 }
 
+type RechargeProduct struct {
+	ID             string   `json:"id"`
+	Name           string   `json:"name"`
+	Description    string   `json:"description"`
+	Amount         float64  `json:"amount"`
+	CreditedAmount float64  `json:"credited_amount"`
+	Badge          string   `json:"badge"`
+	Recommended    bool     `json:"recommended"`
+	Features       []string `json:"features"`
+	SortOrder      int      `json:"sort_order"`
+}
+
 // UpdatePaymentConfigRequest contains fields to update payment configuration.
 type UpdatePaymentConfigRequest struct {
-	Enabled                   *bool    `json:"enabled"`
-	MinAmount                 *float64 `json:"min_amount"`
-	MaxAmount                 *float64 `json:"max_amount"`
-	DailyLimit                *float64 `json:"daily_limit"`
-	OrderTimeoutMin           *int     `json:"order_timeout_minutes"`
-	MaxPendingOrders          *int     `json:"max_pending_orders"`
-	EnabledTypes              []string `json:"enabled_payment_types"`
-	BalanceDisabled           *bool    `json:"balance_disabled"`
-	BalanceRechargeMultiplier *float64 `json:"balance_recharge_multiplier"`
-	RechargeFeeRate           *float64 `json:"recharge_fee_rate"`
-	LoadBalanceStrategy       *string  `json:"load_balance_strategy"`
-	ProductNamePrefix         *string  `json:"product_name_prefix"`
-	ProductNameSuffix         *string  `json:"product_name_suffix"`
-	HelpImageURL              *string  `json:"help_image_url"`
-	HelpText                  *string  `json:"help_text"`
+	Enabled                   *bool              `json:"enabled"`
+	MinAmount                 *float64           `json:"min_amount"`
+	MaxAmount                 *float64           `json:"max_amount"`
+	DailyLimit                *float64           `json:"daily_limit"`
+	OrderTimeoutMin           *int               `json:"order_timeout_minutes"`
+	MaxPendingOrders          *int               `json:"max_pending_orders"`
+	EnabledTypes              []string           `json:"enabled_payment_types"`
+	BalanceDisabled           *bool              `json:"balance_disabled"`
+	BalanceRechargeMultiplier *float64           `json:"balance_recharge_multiplier"`
+	RechargeFeeRate           *float64           `json:"recharge_fee_rate"`
+	LoadBalanceStrategy       *string            `json:"load_balance_strategy"`
+	ProductNamePrefix         *string            `json:"product_name_prefix"`
+	ProductNameSuffix         *string            `json:"product_name_suffix"`
+	RechargeProducts          *[]RechargeProduct `json:"recharge_products"`
+	HelpImageURL              *string            `json:"help_image_url"`
+	HelpText                  *string            `json:"help_text"`
 
 	// Cancel rate limit settings
 	CancelRateLimitEnabled *bool   `json:"cancel_rate_limit_enabled"`
@@ -197,7 +214,7 @@ func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentCo
 		SettingPaymentEnabled, SettingMinRechargeAmount, SettingMaxRechargeAmount,
 		SettingDailyRechargeLimit, SettingOrderTimeoutMinutes, SettingMaxPendingOrders,
 		SettingEnabledPaymentTypes, SettingBalancePayDisabled, SettingBalanceRechargeMult, SettingRechargeFeeRate, SettingLoadBalanceStrategy,
-		SettingProductNamePrefix, SettingProductNameSuffix,
+		SettingProductNamePrefix, SettingProductNameSuffix, SettingRechargeProducts,
 		SettingHelpImageURL, SettingHelpText,
 		SettingCancelRateLimitOn, SettingCancelRateLimitMax,
 		SettingCancelWindowSize, SettingCancelWindowUnit, SettingCancelWindowMode,
@@ -228,6 +245,7 @@ func (s *PaymentConfigService) parsePaymentConfig(vals map[string]string) *Payme
 		LoadBalanceStrategy:       vals[SettingLoadBalanceStrategy],
 		ProductNamePrefix:         vals[SettingProductNamePrefix],
 		ProductNameSuffix:         vals[SettingProductNameSuffix],
+		RechargeProducts:          parseRechargeProducts(vals[SettingRechargeProducts], normalizeBalanceRechargeMultiplier(pcParseFloat(vals[SettingBalanceRechargeMult], defaultBalanceRechargeMultiplier))),
 		HelpImageURL:              vals[SettingHelpImageURL],
 		HelpText:                  vals[SettingHelpText],
 
@@ -293,6 +311,18 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 			return infraerrors.BadRequest("INVALID_RECHARGE_FEE_RATE", "recharge fee rate allows at most 2 decimal places")
 		}
 	}
+	var serializedRechargeProducts string
+	if req.RechargeProducts != nil {
+		normalizedProducts, err := normalizeRechargeProducts(*req.RechargeProducts, req.BalanceRechargeMultiplier)
+		if err != nil {
+			return err
+		}
+		payload, err := json.Marshal(normalizedProducts)
+		if err != nil {
+			return fmt.Errorf("marshal recharge products: %w", err)
+		}
+		serializedRechargeProducts = string(payload)
+	}
 	m := map[string]string{
 		SettingPaymentEnabled:                    formatBoolOrEmpty(req.Enabled),
 		SettingMinRechargeAmount:                 formatPositiveFloat(req.MinAmount),
@@ -323,7 +353,74 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 	} else {
 		m[SettingEnabledPaymentTypes] = ""
 	}
+	if req.RechargeProducts != nil {
+		m[SettingRechargeProducts] = serializedRechargeProducts
+	}
 	return s.settingRepo.SetMultiple(ctx, m)
+}
+
+func parseRechargeProducts(raw string, multiplier float64) []RechargeProduct {
+	if strings.TrimSpace(raw) == "" {
+		return []RechargeProduct{}
+	}
+	var products []RechargeProduct
+	if err := json.Unmarshal([]byte(raw), &products); err != nil {
+		return []RechargeProduct{}
+	}
+	normalized, err := normalizeRechargeProducts(products, &multiplier)
+	if err != nil {
+		return []RechargeProduct{}
+	}
+	return normalized
+}
+
+func normalizeRechargeProducts(products []RechargeProduct, multiplier *float64) ([]RechargeProduct, error) {
+	if len(products) == 0 {
+		return []RechargeProduct{}, nil
+	}
+	resolvedMultiplier := defaultBalanceRechargeMultiplier
+	if multiplier != nil {
+		resolvedMultiplier = normalizeBalanceRechargeMultiplier(*multiplier)
+	}
+	seenIDs := make(map[string]struct{}, len(products))
+	normalized := make([]RechargeProduct, 0, len(products))
+	for _, product := range products {
+		product.ID = strings.TrimSpace(product.ID)
+		product.Name = strings.TrimSpace(product.Name)
+		product.Description = strings.TrimSpace(product.Description)
+		product.Badge = strings.TrimSpace(product.Badge)
+		if product.ID == "" {
+			return nil, infraerrors.BadRequest("INVALID_RECHARGE_PRODUCT_ID", "recharge product id is required")
+		}
+		if _, exists := seenIDs[product.ID]; exists {
+			return nil, infraerrors.BadRequest("DUPLICATE_RECHARGE_PRODUCT_ID", "recharge product ids must be unique")
+		}
+		if product.Name == "" {
+			return nil, infraerrors.BadRequest("INVALID_RECHARGE_PRODUCT_NAME", "recharge product name is required")
+		}
+		if math.IsNaN(product.Amount) || math.IsInf(product.Amount, 0) || product.Amount <= 0 {
+			return nil, infraerrors.BadRequest("INVALID_RECHARGE_PRODUCT_AMOUNT", "recharge product amount must be greater than 0")
+		}
+		product.Amount = math.Round(product.Amount*100) / 100
+		product.CreditedAmount = calculateCreditedBalance(product.Amount, resolvedMultiplier)
+		cleanFeatures := make([]string, 0, len(product.Features))
+		for _, feature := range product.Features {
+			feature = strings.TrimSpace(feature)
+			if feature != "" {
+				cleanFeatures = append(cleanFeatures, feature)
+			}
+		}
+		product.Features = cleanFeatures
+		seenIDs[product.ID] = struct{}{}
+		normalized = append(normalized, product)
+	}
+	sort.SliceStable(normalized, func(i, j int) bool {
+		if normalized[i].SortOrder == normalized[j].SortOrder {
+			return normalized[i].Name < normalized[j].Name
+		}
+		return normalized[i].SortOrder < normalized[j].SortOrder
+	})
+	return normalized, nil
 }
 
 func formatBoolOrEmpty(v *bool) string {

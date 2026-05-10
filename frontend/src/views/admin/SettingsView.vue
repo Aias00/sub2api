@@ -5376,6 +5376,104 @@
                     </p>
                   </div>
                 </div>
+                <div class="space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div>
+                      <label class="font-medium text-gray-900 dark:text-white">
+                        {{ localText("充值商品列表", "Recharge products") }}
+                      </label>
+                      <p class="text-sm text-gray-500 dark:text-gray-400">
+                        {{
+                          localText(
+                            "配置一个就展示一个；为空时用户端回退到旧版自定义金额输入。",
+                            "Each configured product appears on the recharge tab. Leave empty to fall back to the legacy custom amount input.",
+                          )
+                        }}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-sm"
+                      @click="addRechargeProduct"
+                    >
+                      {{ localText("添加商品", "Add product") }}
+                    </button>
+                  </div>
+
+                  <div
+                    v-if="form.payment_recharge_products.length === 0"
+                    class="rounded-xl border border-dashed border-gray-300 bg-gray-50/70 px-4 py-4 text-sm text-gray-500 dark:border-dark-600 dark:bg-dark-800/50 dark:text-gray-400"
+                  >
+                    {{
+                      localText(
+                        "当前未配置充值商品，用户端将继续显示旧版快捷金额输入。",
+                        "No recharge products configured. The user page will continue showing the legacy quick amount input.",
+                      )
+                    }}
+                  </div>
+
+                  <div
+                    v-for="(product, index) in form.payment_recharge_products"
+                    :key="product.id"
+                    class="space-y-3 rounded-2xl border border-gray-200 bg-gray-50/70 p-4 dark:border-dark-700 dark:bg-dark-800/50"
+                  >
+                    <div class="flex items-center justify-between">
+                      <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                        {{ product.name || localText("未命名商品", "Untitled product") }}
+                      </div>
+                      <button
+                        type="button"
+                        class="btn btn-secondary btn-sm"
+                        @click="removeRechargeProduct(index)"
+                      >
+                        {{ t("common.delete") }}
+                      </button>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                      <div>
+                        <label class="input-label">{{ localText("商品名称", "Product name") }}</label>
+                        <input v-model="product.name" type="text" class="input" />
+                      </div>
+                      <div>
+                        <label class="input-label">{{ localText("副标题", "Subtitle") }}</label>
+                        <input v-model="product.description" type="text" class="input" />
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-3">
+                      <div>
+                        <label class="input-label">{{ localText("金额", "Amount") }}</label>
+                        <input v-model.number="product.amount" type="number" min="0" step="0.01" class="input" />
+                      </div>
+                      <div>
+                        <label class="input-label">{{ localText("角标", "Badge") }}</label>
+                        <input v-model="product.badge" type="text" class="input" :placeholder="localText('推荐', 'Recommended')" />
+                      </div>
+                      <div>
+                        <label class="input-label">{{ t("payment.admin.sortOrder") }}</label>
+                        <input v-model.number="product.sort_order" type="number" min="0" step="1" class="input" />
+                      </div>
+                      <div>
+                        <label class="input-label">{{ localText("推荐卡", "Featured") }}</label>
+                        <div class="flex h-[42px] items-center">
+                          <Toggle v-model="product.recommended" />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label class="input-label">{{ localText("卖点列表", "Feature list") }}</label>
+                      <textarea
+                        :value="product.features.join('\n')"
+                        rows="3"
+                        class="input"
+                        :placeholder="localText('每行一个卖点', 'One feature per line')"
+                        @input="updateRechargeProductFeatures(index, ($event.target as HTMLTextAreaElement).value)"
+                      ></textarea>
+                    </div>
+                  </div>
+                </div>
                 <!-- Row 3: Pending orders + load balance + cancel rate limit (all in one row) -->
                 <div class="flex flex-wrap items-end gap-4">
                   <div class="w-28">
@@ -6084,6 +6182,7 @@ import type {
   Proxy,
 } from "@/types";
 import type { ProviderInstance } from "@/types/payment";
+import type { RechargeProduct } from "@/types/payment";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import Icon from "@/components/icons/Icon.vue";
 import Select from "@/components/common/Select.vue";
@@ -6355,6 +6454,7 @@ const form = reactive<SettingsForm>({
   payment_balance_disabled: false,
   payment_balance_recharge_multiplier: 1,
   payment_recharge_fee_rate: 0,
+  payment_recharge_products: [] as RechargeProduct[],
   payment_enabled_types: [],
   payment_help_image_url: "",
   payment_help_text: "",
@@ -7077,6 +7177,58 @@ function parseTablePageSizeOptionsInput(raw: string): number[] | null {
   return deduped;
 }
 
+function normalizeRechargeProducts(
+  products: RechargeProduct[] | null | undefined,
+): RechargeProduct[] {
+  if (!Array.isArray(products)) {
+    return [];
+  }
+  return products.map((product, index) => ({
+    id: product.id || `recharge-${index + 1}`,
+    name: product.name || "",
+    description: product.description || "",
+    amount: Number(product.amount) || 0,
+    credited_amount: Number(product.credited_amount) || 0,
+    badge: product.badge || "",
+    recommended: Boolean(product.recommended),
+    features: Array.isArray(product.features) ? product.features.filter(Boolean) : [],
+    sort_order: Number(product.sort_order) || (index + 1) * 10,
+  }));
+}
+
+function createRechargeProductDraft(): RechargeProduct {
+  const nextSortOrder =
+    form.payment_recharge_products.length > 0
+      ? Math.max(...form.payment_recharge_products.map((item) => item.sort_order || 0)) + 10
+      : 10;
+  return {
+    id: `recharge-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    name: "",
+    description: "",
+    amount: 0,
+    credited_amount: 0,
+    badge: "",
+    recommended: false,
+    features: [],
+    sort_order: nextSortOrder,
+  };
+}
+
+function addRechargeProduct() {
+  form.payment_recharge_products.push(createRechargeProductDraft());
+}
+
+function removeRechargeProduct(index: number) {
+  form.payment_recharge_products.splice(index, 1);
+}
+
+function updateRechargeProductFeatures(index: number, raw: string) {
+  form.payment_recharge_products[index].features = raw
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 async function loadSettings() {
   loading.value = true;
   loadFailed.value = false;
@@ -7090,6 +7242,9 @@ async function loadSettings() {
         (form as Record<string, unknown>)[key] = value;
       }
     }
+    form.payment_recharge_products = normalizeRechargeProducts(
+      settings.payment_recharge_products,
+    );
     form.login_agreement_mode =
       settings.login_agreement_mode === "checkbox" ? "checkbox" : "modal";
     form.login_agreement_updated_at =
@@ -7566,6 +7721,7 @@ async function saveSettings() {
       payment_balance_recharge_multiplier:
         Number(form.payment_balance_recharge_multiplier) || 1,
       payment_recharge_fee_rate: Number(form.payment_recharge_fee_rate) || 0,
+      payment_recharge_products: form.payment_recharge_products,
       payment_enabled_types: form.payment_enabled_types,
       payment_load_balance_strategy: form.payment_load_balance_strategy,
       payment_product_name_prefix: form.payment_product_name_prefix,

@@ -6837,6 +6837,11 @@ export default {
     amountTooHigh: '最高金额为 {max}',
     amountNoMethod: '该金额没有可用的支付方式',
     rechargeRatePreview: '当前倍率：1 CNY = {usd} USD',
+    rechargeProducts: {
+      recommended: '推荐',
+      creditLine: '获得 ${amount} 额度',
+      cta: '立即充值',
+    },
     refundReason: '退款原因',
     refundReasonPlaceholder: '请描述您的退款原因',
     stripeLoadFailed: '支付组件加载失败，请刷新页面重试',

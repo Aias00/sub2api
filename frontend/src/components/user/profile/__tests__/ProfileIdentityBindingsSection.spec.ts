@@ -628,4 +628,58 @@ describe('ProfileIdentityBindingsSection', () => {
     expect(wrapper.find('[data-testid="profile-binding-linuxdo-action"]').exists()).toBe(false)
     expect(wrapper.find('[data-testid="profile-binding-oidc-action"]').exists()).toBe(false)
   })
+
+  it('hides unconfigured and unbound third-party providers entirely', () => {
+    const wrapper = mount(ProfileIdentityBindingsSection, {
+      global: {
+        plugins: [pinia],
+      },
+      props: {
+        user: createUser({
+          auth_bindings: {
+            linuxdo: { bound: false, can_bind: true },
+            oidc: { bound: false, can_bind: true },
+            wechat: { bound: false, can_bind: true },
+          } as any,
+        }),
+        linuxdoEnabled: false,
+        oidcEnabled: false,
+        wechatEnabled: false,
+      },
+    })
+
+    expect(wrapper.find('[data-testid="profile-binding-linuxdo-status"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="profile-binding-oidc-status"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="profile-binding-wechat-status"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('LinuxDo')
+    expect(wrapper.text()).not.toContain('OIDC')
+    expect(wrapper.text()).not.toContain('WeChat')
+  })
+
+  it('keeps already bound third-party providers visible even when the source is not currently configured', () => {
+    const wrapper = mount(ProfileIdentityBindingsSection, {
+      global: {
+        plugins: [pinia],
+      },
+      props: {
+        user: createUser({
+          linuxdo_bound: true,
+          auth_bindings: {
+            linuxdo: {
+              bound: true,
+              display_name: 'linuxdo-handle',
+              can_unbind: true,
+            },
+          } as any,
+        }),
+        linuxdoEnabled: false,
+        oidcEnabled: false,
+        wechatEnabled: false,
+      },
+    })
+
+    expect(wrapper.get('[data-testid="profile-binding-linuxdo-status"]').text()).toBe('Bound')
+    expect(wrapper.text()).toContain('LinuxDo')
+    expect(wrapper.find('[data-testid="profile-binding-linuxdo-unbind"]').exists()).toBe(true)
+  })
 })

@@ -11,7 +11,7 @@
                 <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary-700 dark:text-primary-300">
                   {{ t('dashboard.title') }}
                 </p>
-                <h2 class="max-w-3xl text-3xl font-semibold tracking-tight text-gray-950 dark:text-white md:text-4xl">
+                <h2 class="max-w-3xl text-2xl font-semibold tracking-tight text-gray-950 dark:text-white md:text-3xl">
                   <span class="text-gradient">{{ t('dashboard.welcomeMessage') }}</span>
                 </h2>
                 <p class="max-w-2xl text-sm leading-7 text-gray-600 dark:text-gray-300">

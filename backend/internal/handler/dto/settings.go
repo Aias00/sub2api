@@ -176,21 +176,22 @@ type SystemSettings struct {
 	OpenAIAdvancedSchedulerEnabled bool `json:"openai_advanced_scheduler_enabled"`
 
 	// Payment configuration
-	PaymentEnabled                   bool     `json:"payment_enabled"`
-	PaymentMinAmount                 float64  `json:"payment_min_amount"`
-	PaymentMaxAmount                 float64  `json:"payment_max_amount"`
-	PaymentDailyLimit                float64  `json:"payment_daily_limit"`
-	PaymentOrderTimeoutMin           int      `json:"payment_order_timeout_minutes"`
-	PaymentMaxPendingOrders          int      `json:"payment_max_pending_orders"`
-	PaymentEnabledTypes              []string `json:"payment_enabled_types"`
-	PaymentBalanceDisabled           bool     `json:"payment_balance_disabled"`
-	PaymentBalanceRechargeMultiplier float64  `json:"payment_balance_recharge_multiplier"`
-	PaymentRechargeFeeRate           float64  `json:"payment_recharge_fee_rate"`
-	PaymentLoadBalanceStrat          string   `json:"payment_load_balance_strategy"`
-	PaymentProductNamePrefix         string   `json:"payment_product_name_prefix"`
-	PaymentProductNameSuffix         string   `json:"payment_product_name_suffix"`
-	PaymentHelpImageURL              string   `json:"payment_help_image_url"`
-	PaymentHelpText                  string   `json:"payment_help_text"`
+	PaymentEnabled                   bool                    `json:"payment_enabled"`
+	PaymentMinAmount                 float64                 `json:"payment_min_amount"`
+	PaymentMaxAmount                 float64                 `json:"payment_max_amount"`
+	PaymentDailyLimit                float64                 `json:"payment_daily_limit"`
+	PaymentOrderTimeoutMin           int                     `json:"payment_order_timeout_minutes"`
+	PaymentMaxPendingOrders          int                     `json:"payment_max_pending_orders"`
+	PaymentEnabledTypes              []string                `json:"payment_enabled_types"`
+	PaymentBalanceDisabled           bool                    `json:"payment_balance_disabled"`
+	PaymentBalanceRechargeMultiplier float64                 `json:"payment_balance_recharge_multiplier"`
+	PaymentRechargeFeeRate           float64                 `json:"payment_recharge_fee_rate"`
+	PaymentRechargeProducts          []RechargeProductConfig `json:"payment_recharge_products"`
+	PaymentLoadBalanceStrat          string                  `json:"payment_load_balance_strategy"`
+	PaymentProductNamePrefix         string                  `json:"payment_product_name_prefix"`
+	PaymentProductNameSuffix         string                  `json:"payment_product_name_suffix"`
+	PaymentHelpImageURL              string                  `json:"payment_help_image_url"`
+	PaymentHelpText                  string                  `json:"payment_help_text"`
 
 	// Cancel rate limit
 	PaymentCancelRateLimitEnabled bool   `json:"payment_cancel_rate_limit_enabled"`
@@ -226,6 +227,18 @@ type SystemSettings struct {
 type DefaultSubscriptionSetting struct {
 	GroupID      int64 `json:"group_id"`
 	ValidityDays int   `json:"validity_days"`
+}
+
+type RechargeProductConfig struct {
+	ID             string   `json:"id"`
+	Name           string   `json:"name"`
+	Description    string   `json:"description"`
+	Amount         float64  `json:"amount"`
+	CreditedAmount float64  `json:"credited_amount"`
+	Badge          string   `json:"badge"`
+	Recommended    bool     `json:"recommended"`
+	Features       []string `json:"features"`
+	SortOrder      int      `json:"sort_order"`
 }
 
 type PublicSettings struct {

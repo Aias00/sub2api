@@ -52,6 +52,48 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+func dtoRechargeProducts(products []service.RechargeProduct) []dto.RechargeProductConfig {
+	if len(products) == 0 {
+		return []dto.RechargeProductConfig{}
+	}
+	result := make([]dto.RechargeProductConfig, 0, len(products))
+	for _, product := range products {
+		result = append(result, dto.RechargeProductConfig{
+			ID:             product.ID,
+			Name:           product.Name,
+			Description:    product.Description,
+			Amount:         product.Amount,
+			CreditedAmount: product.CreditedAmount,
+			Badge:          product.Badge,
+			Recommended:    product.Recommended,
+			Features:       append([]string(nil), product.Features...),
+			SortOrder:      product.SortOrder,
+		})
+	}
+	return result
+}
+
+func serviceRechargeProducts(products *[]dto.RechargeProductConfig) *[]service.RechargeProduct {
+	if products == nil {
+		return nil
+	}
+	result := make([]service.RechargeProduct, 0, len(*products))
+	for _, product := range *products {
+		result = append(result, service.RechargeProduct{
+			ID:             product.ID,
+			Name:           product.Name,
+			Description:    product.Description,
+			Amount:         product.Amount,
+			CreditedAmount: product.CreditedAmount,
+			Badge:          product.Badge,
+			Recommended:    product.Recommended,
+			Features:       append([]string(nil), product.Features...),
+			SortOrder:      product.SortOrder,
+		})
+	}
+	return &result
+}
+
 // SettingHandler 系统设置处理器
 type SettingHandler struct {
 	settingService       *service.SettingService
@@ -246,6 +288,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		PaymentBalanceDisabled:                 paymentCfg.BalanceDisabled,
 		PaymentBalanceRechargeMultiplier:       paymentCfg.BalanceRechargeMultiplier,
 		PaymentRechargeFeeRate:                 paymentCfg.RechargeFeeRate,
+		PaymentRechargeProducts:                dtoRechargeProducts(paymentCfg.RechargeProducts),
 		PaymentLoadBalanceStrat:                paymentCfg.LoadBalanceStrategy,
 		PaymentProductNamePrefix:               paymentCfg.ProductNamePrefix,
 		PaymentProductNameSuffix:               paymentCfg.ProductNameSuffix,
@@ -533,21 +576,22 @@ type UpdateSettingsRequest struct {
 	AccountQuotaNotifyEmails    *[]dto.NotifyEmailEntry `json:"account_quota_notify_emails"`
 
 	// Payment configuration (integrated into settings, full replace)
-	PaymentEnabled                   *bool    `json:"payment_enabled"`
-	PaymentMinAmount                 *float64 `json:"payment_min_amount"`
-	PaymentMaxAmount                 *float64 `json:"payment_max_amount"`
-	PaymentDailyLimit                *float64 `json:"payment_daily_limit"`
-	PaymentOrderTimeoutMin           *int     `json:"payment_order_timeout_minutes"`
-	PaymentMaxPendingOrders          *int     `json:"payment_max_pending_orders"`
-	PaymentEnabledTypes              []string `json:"payment_enabled_types"`
-	PaymentBalanceDisabled           *bool    `json:"payment_balance_disabled"`
-	PaymentBalanceRechargeMultiplier *float64 `json:"payment_balance_recharge_multiplier"`
-	PaymentRechargeFeeRate           *float64 `json:"payment_recharge_fee_rate"`
-	PaymentLoadBalanceStrat          *string  `json:"payment_load_balance_strategy"`
-	PaymentProductNamePrefix         *string  `json:"payment_product_name_prefix"`
-	PaymentProductNameSuffix         *string  `json:"payment_product_name_suffix"`
-	PaymentHelpImageURL              *string  `json:"payment_help_image_url"`
-	PaymentHelpText                  *string  `json:"payment_help_text"`
+	PaymentEnabled                   *bool                        `json:"payment_enabled"`
+	PaymentMinAmount                 *float64                     `json:"payment_min_amount"`
+	PaymentMaxAmount                 *float64                     `json:"payment_max_amount"`
+	PaymentDailyLimit                *float64                     `json:"payment_daily_limit"`
+	PaymentOrderTimeoutMin           *int                         `json:"payment_order_timeout_minutes"`
+	PaymentMaxPendingOrders          *int                         `json:"payment_max_pending_orders"`
+	PaymentEnabledTypes              []string                     `json:"payment_enabled_types"`
+	PaymentBalanceDisabled           *bool                        `json:"payment_balance_disabled"`
+	PaymentBalanceRechargeMultiplier *float64                     `json:"payment_balance_recharge_multiplier"`
+	PaymentRechargeFeeRate           *float64                     `json:"payment_recharge_fee_rate"`
+	PaymentRechargeProducts          *[]dto.RechargeProductConfig `json:"payment_recharge_products"`
+	PaymentLoadBalanceStrat          *string                      `json:"payment_load_balance_strategy"`
+	PaymentProductNamePrefix         *string                      `json:"payment_product_name_prefix"`
+	PaymentProductNameSuffix         *string                      `json:"payment_product_name_suffix"`
+	PaymentHelpImageURL              *string                      `json:"payment_help_image_url"`
+	PaymentHelpText                  *string                      `json:"payment_help_text"`
 
 	// Cancel rate limit
 	PaymentCancelRateLimitEnabled *bool   `json:"payment_cancel_rate_limit_enabled"`
@@ -1579,6 +1623,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			BalanceDisabled:           req.PaymentBalanceDisabled,
 			BalanceRechargeMultiplier: req.PaymentBalanceRechargeMultiplier,
 			RechargeFeeRate:           req.PaymentRechargeFeeRate,
+			RechargeProducts:          serviceRechargeProducts(req.PaymentRechargeProducts),
 			LoadBalanceStrategy:       req.PaymentLoadBalanceStrat,
 			ProductNamePrefix:         req.PaymentProductNamePrefix,
 			ProductNameSuffix:         req.PaymentProductNameSuffix,
@@ -1767,6 +1812,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PaymentBalanceDisabled:                 updatedPaymentCfg.BalanceDisabled,
 		PaymentBalanceRechargeMultiplier:       updatedPaymentCfg.BalanceRechargeMultiplier,
 		PaymentRechargeFeeRate:                 updatedPaymentCfg.RechargeFeeRate,
+		PaymentRechargeProducts:                dtoRechargeProducts(updatedPaymentCfg.RechargeProducts),
 		PaymentLoadBalanceStrat:                updatedPaymentCfg.LoadBalanceStrategy,
 		PaymentProductNamePrefix:               updatedPaymentCfg.ProductNamePrefix,
 		PaymentProductNameSuffix:               updatedPaymentCfg.ProductNameSuffix,
@@ -1802,6 +1848,7 @@ func hasPaymentFields(req UpdateSettingsRequest) bool {
 		req.PaymentOrderTimeoutMin != nil || req.PaymentMaxPendingOrders != nil ||
 		req.PaymentEnabledTypes != nil || req.PaymentBalanceDisabled != nil ||
 		req.PaymentBalanceRechargeMultiplier != nil || req.PaymentRechargeFeeRate != nil ||
+		req.PaymentRechargeProducts != nil ||
 		req.PaymentLoadBalanceStrat != nil || req.PaymentProductNamePrefix != nil ||
 		req.PaymentProductNameSuffix != nil || req.PaymentHelpImageURL != nil ||
 		req.PaymentHelpText != nil || req.PaymentCancelRateLimitEnabled != nil ||

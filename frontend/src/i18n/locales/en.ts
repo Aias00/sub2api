@@ -6652,6 +6652,11 @@ export default {
     amountTooHigh: 'Maximum amount is {max}',
     amountNoMethod: 'No payment method available for this amount',
     rechargeRatePreview: 'Current rate: 1 CNY = {usd} USD',
+    rechargeProducts: {
+      recommended: 'Recommended',
+      creditLine: 'Get ${amount} balance',
+      cta: 'Top up now',
+    },
     refundReason: 'Refund Reason',
     refundReasonPlaceholder: 'Please describe your refund reason',
     stripeLoadFailed: 'Failed to load payment component. Please refresh and try again.',

@@ -64,6 +64,7 @@ describe('ProfileView', () => {
       contact_info: '',
       balance_low_notify_enabled: false,
       balance_low_notify_threshold: 0,
+      totp_enabled: false,
       linuxdo_oauth_enabled: true,
       wechat_oauth_enabled: true,
       wechat_oauth_open_enabled: true,
@@ -94,6 +95,39 @@ describe('ProfileView', () => {
     expect(wrapper.get('[data-testid="profile-shell"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="profile-shell"]').html()).toContain('profile-info-card')
     expect(wrapper.get('[data-testid="profile-shell"]').html()).toContain('profile-password-form')
+    expect(wrapper.get('[data-testid="profile-shell"]').html()).not.toContain('profile-totp-card')
+  })
+
+  it('renders the TOTP card only when the feature is enabled in public settings', async () => {
+    fetchPublicSettingsMock.mockResolvedValue({
+      contact_info: '',
+      balance_low_notify_enabled: false,
+      balance_low_notify_threshold: 0,
+      totp_enabled: true,
+      linuxdo_oauth_enabled: true,
+      wechat_oauth_enabled: true,
+      wechat_oauth_open_enabled: true,
+      wechat_oauth_mp_enabled: false,
+      oidc_oauth_enabled: true,
+      oidc_oauth_provider_name: 'OIDC'
+    })
+
+    const wrapper = mount(ProfileView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          StatCard: { template: '<div class="stat-card" />' },
+          ProfileInfoCard: { template: '<div data-testid="profile-info-card" />' },
+          ProfileBalanceNotifyCard: { template: '<div data-testid="profile-balance-notify-card" />' },
+          ProfilePasswordForm: { template: '<div data-testid="profile-password-form" />' },
+          ProfileTotpCard: { template: '<div data-testid="profile-totp-card" />' },
+          Icon: true
+        }
+      }
+    })
+
+    await flushPromises()
+
     expect(wrapper.get('[data-testid="profile-shell"]').html()).toContain('profile-totp-card')
   })
 })
