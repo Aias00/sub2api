@@ -18,6 +18,7 @@ import (
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/bcrypt"
 )
 
 // --- mock: UserRepository ---
@@ -850,4 +851,58 @@ func TestGetProfile_HydratesAvatarFromRepository(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "https://cdn.example.com/profile.png", user.AvatarURL)
 	require.Equal(t, "remote_url", user.AvatarSource)
+}
+
+func TestChangePassword_AllowsSettingPasswordWithoutCurrentPasswordWhenEmailIdentityMissing(t *testing.T) {
+	repo := &mockUserRepo{
+		getByIDUser: &User{
+			ID:           88,
+			Email:        "google@example.com",
+			PasswordHash: "$2a$10$ABCDEFGHIJKLMNOPQRSTUu0M9D0n7NjVwKQz1w1v5rcC0JxqfN8i",
+		},
+		identities: []UserAuthIdentityRecord{
+			{
+				ProviderType:    "google",
+				ProviderKey:     "google",
+				ProviderSubject: "google-user-88",
+			},
+		},
+	}
+	svc := NewUserService(repo, nil, nil, nil)
+
+	err := svc.ChangePassword(context.Background(), 88, ChangePasswordRequest{
+		CurrentPassword: "",
+		NewPassword:     "new-password",
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, 1, repo.updateCalls)
+}
+
+func TestChangePassword_StillRequiresCurrentPasswordWhenEmailIdentityExists(t *testing.T) {
+	passwordHashBytes, err := bcrypt.GenerateFromPassword([]byte("current-password"), bcrypt.DefaultCost)
+	require.NoError(t, err)
+
+	repo := &mockUserRepo{
+		getByIDUser: &User{
+			ID:           89,
+			Email:        "bound@example.com",
+			PasswordHash: string(passwordHashBytes),
+		},
+		identities: []UserAuthIdentityRecord{
+			{
+				ProviderType:    "email",
+				ProviderKey:     "email",
+				ProviderSubject: "bound@example.com",
+			},
+		},
+	}
+	svc := NewUserService(repo, nil, nil, nil)
+
+	err = svc.ChangePassword(context.Background(), 89, ChangePasswordRequest{
+		CurrentPassword: "",
+		NewPassword:     "new-password",
+	})
+
+	require.ErrorIs(t, err, ErrPasswordIncorrect)
 }

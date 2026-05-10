@@ -921,9 +921,11 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, req Chan
 		return fmt.Errorf("get user: %w", err)
 	}
 
-	// 验证当前密码
-	if !user.CheckPassword(req.CurrentPassword) {
-		return ErrPasswordIncorrect
+	emailBound := s.userHasBoundEmailIdentity(ctx, userID)
+	if emailBound {
+		if !user.CheckPassword(req.CurrentPassword) {
+			return ErrPasswordIncorrect
+		}
 	}
 
 	if err := user.SetPassword(req.NewPassword); err != nil {
@@ -939,6 +941,22 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, req Chan
 	}
 
 	return nil
+}
+
+func (s *UserService) userHasBoundEmailIdentity(ctx context.Context, userID int64) bool {
+	if s == nil || s.userRepo == nil || userID <= 0 {
+		return true
+	}
+	records, err := s.userRepo.ListUserAuthIdentities(ctx, userID)
+	if err != nil {
+		return true
+	}
+	for _, record := range records {
+		if record.ProviderType == "email" && record.ProviderKey == "email" {
+			return true
+		}
+	}
+	return false
 }
 
 // GetByID 根据ID获取用户（管理员功能）

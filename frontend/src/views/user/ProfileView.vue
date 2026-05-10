@@ -31,7 +31,7 @@
         </div>
       </div>
 
-      <ProfilePasswordForm />
+      <ProfilePasswordForm :email-bound="user?.email_bound ?? true" />
 
       <ProfileBalanceNotifyCard
         v-if="user && balanceLowNotifyEnabled"

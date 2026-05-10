@@ -15,7 +15,7 @@
             {{ t('profile.changePassword') }}
           </p>
         </div>
-        <div>
+        <div v-if="requiresCurrentPassword">
           <label for="old_password" class="input-label">
             {{ t('profile.currentPassword') }}
           </label>
@@ -28,6 +28,9 @@
             class="input"
           />
         </div>
+        <p v-else class="text-sm text-gray-500 dark:text-dark-400">
+          {{ t('profile.setPasswordHint') }}
+        </p>
 
         <div>
           <label for="new_password" class="input-label">
@@ -71,7 +74,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { userAPI } from '@/api'
@@ -80,9 +83,13 @@ const { t } = useI18n()
 const appStore = useAppStore()
 const props = withDefaults(defineProps<{
   embedded?: boolean
+  emailBound?: boolean
 }>(), {
   embedded: false,
+  emailBound: true,
 })
+
+const requiresCurrentPassword = computed(() => props.emailBound)
 
 const loading = ref(false)
 const form = ref({

@@ -1486,7 +1486,7 @@ export interface UpdateUserRequest {
 }
 
 export interface ChangePasswordRequest {
-  old_password: string
+  old_password?: string
   new_password: string
 }
 

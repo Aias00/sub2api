@@ -53,8 +53,10 @@ export async function changePassword(
   newPassword: string
 ): Promise<{ message: string }> {
   const payload: ChangePasswordRequest = {
-    old_password: oldPassword,
     new_password: newPassword
+  }
+  if (oldPassword) {
+    payload.old_password = oldPassword
   }
 
   const { data } = await apiClient.put<{ message: string }>('/user/password', payload)

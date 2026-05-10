@@ -33,6 +33,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
           'profile.newPassword': 'New Password',
           'profile.confirmNewPassword': 'Confirm New Password',
           'profile.passwordHint': 'Password must be at least 8 characters long',
+          'profile.setPasswordHint': 'Set a password for email sign-in later',
           'profile.changingPassword': 'Changing...',
           'profile.changePasswordButton': 'Change Password',
           'profile.passwordsNotMatch': 'New passwords do not match',
@@ -75,5 +76,22 @@ describe('ProfilePasswordForm', () => {
     expect(changePasswordMock).toHaveBeenCalledWith('old-password', 'new-password')
     expect(showErrorMock).toHaveBeenCalledWith('backend failure')
     expect(wrapper.find('.input-error-text').exists()).toBe(false)
+  })
+
+  it('supports password setup mode for oauth-only users without asking for the current password', async () => {
+    const wrapper = mount(ProfilePasswordForm, {
+      props: {
+        emailBound: false,
+      },
+    })
+
+    expect(wrapper.find('#old_password').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Set a password for email sign-in later')
+
+    await wrapper.get('#new_password').setValue('new-password')
+    await wrapper.get('#confirm_password').setValue('new-password')
+    await wrapper.get('form').trigger('submit.prevent')
+
+    expect(changePasswordMock).toHaveBeenCalledWith('', 'new-password')
   })
 })
