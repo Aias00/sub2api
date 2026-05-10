@@ -209,6 +209,15 @@ func (m *mockUserRepo) ListUserAuthIdentities(context.Context, int64) ([]UserAut
 	copy(out, m.identities)
 	return out, nil
 }
+func (m *mockUserRepo) MarkEmailIdentitySupportsSignIn(_ context.Context, _ int64, email string, source string) error {
+	m.identities = append(m.identities, UserAuthIdentityRecord{
+		ProviderType:    "email",
+		ProviderKey:     "email",
+		ProviderSubject: email,
+		Metadata:        map[string]any{"source": source},
+	})
+	return nil
+}
 func (m *mockUserRepo) GetLatestUsedAtByUserIDs(context.Context, []int64) (map[int64]*time.Time, error) {
 	return map[int64]*time.Time{}, nil
 }
@@ -453,6 +462,37 @@ func TestGetProfileIdentitySummaries_DoesNotTreatCompatBackfilledEmailIdentityAs
 	_, err = svc.UnbindUserAuthProvider(context.Background(), 11, "wechat")
 	require.ErrorIs(t, err, ErrIdentityUnbindLastMethod)
 	require.Empty(t, repo.unboundProviders)
+}
+
+func TestGetProfileIdentitySummaries_DoesNotTreatOAuthRepoCreatedEmailIdentityAsEmailBound(t *testing.T) {
+	repo := &mockUserRepo{
+		getByIDUser: &User{
+			ID:           14,
+			Email:        "google-only@example.com",
+			SignupSource: "google",
+		},
+		identities: []UserAuthIdentityRecord{
+			{
+				ProviderType:    "email",
+				ProviderKey:     "email",
+				ProviderSubject: "google-only@example.com",
+				Metadata: map[string]any{
+					"source": "user_repo_create",
+				},
+			},
+			{
+				ProviderType:    "google",
+				ProviderKey:     "google",
+				ProviderSubject: "google-user-14",
+			},
+		},
+	}
+	svc := NewUserService(repo, nil, nil, nil)
+
+	summaries, err := svc.GetProfileIdentitySummaries(context.Background(), 14, repo.getByIDUser)
+
+	require.NoError(t, err)
+	require.False(t, summaries.Email.Bound)
 }
 
 func TestUnbindUserAuthProviderRemovesProviderAndReturnsUpdatedProfile(t *testing.T) {
@@ -858,6 +898,7 @@ func TestChangePassword_AllowsSettingPasswordWithoutCurrentPasswordWhenEmailIden
 		getByIDUser: &User{
 			ID:           88,
 			Email:        "google@example.com",
+			SignupSource: "google",
 			PasswordHash: "$2a$10$ABCDEFGHIJKLMNOPQRSTUu0M9D0n7NjVwKQz1w1v5rcC0JxqfN8i",
 		},
 		identities: []UserAuthIdentityRecord{

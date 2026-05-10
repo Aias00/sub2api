@@ -80,6 +80,9 @@ func (s *userRepoStubForGroupUpdate) RemoveGroupFromAllowedGroups(context.Contex
 func (s *userRepoStubForGroupUpdate) UpdateTotpSecret(context.Context, int64, *string) error {
 	panic("unexpected")
 }
+func (s *userRepoStubForGroupUpdate) MarkEmailIdentitySupportsSignIn(context.Context, int64, string, string) error {
+	panic("unexpected")
+}
 func (s *userRepoStubForGroupUpdate) EnableTotp(context.Context, int64) error  { panic("unexpected") }
 func (s *userRepoStubForGroupUpdate) DisableTotp(context.Context, int64) error { panic("unexpected") }
 func (s *userRepoStubForGroupUpdate) ListUserAuthIdentities(context.Context, int64) ([]UserAuthIdentityRecord, error) {

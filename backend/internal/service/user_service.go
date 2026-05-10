@@ -619,6 +619,9 @@ func (s *UserService) buildEmailIdentitySummary(user *User, records []UserAuthId
 
 	filtered := filterUserAuthIdentities(records, "email")
 	if len(filtered) > 0 {
+		if !s.canUseEmailAsSignInMethod(user, records) {
+			return summary
+		}
 		primary := selectPrimaryUserAuthIdentity(filtered)
 		email := strings.TrimSpace(firstStringIdentityValue(primary.Metadata, "email"))
 		if email == "" {
@@ -642,7 +645,7 @@ func (s *UserService) buildEmailIdentitySummary(user *User, records []UserAuthId
 
 	// Compatibility fallback for legacy normal-email users that predate auth_identities backfill.
 	email := strings.TrimSpace(user.Email)
-	if email == "" || isReservedEmail(email) {
+	if email == "" || isReservedEmail(email) || !emailSignupSourceAllowsLogin(user.SignupSource) {
 		return summary
 	}
 	summary.Bound = true
@@ -739,7 +742,7 @@ func emailSignupSourceAllowsLogin(signupSource string) bool {
 func emailIdentitySupportsSignIn(record UserAuthIdentityRecord) bool {
 	source := strings.TrimSpace(firstStringIdentityValue(record.Metadata, "source"))
 	switch source {
-	case "auth_service_email_bind", "auth_service_login_backfill", "auth_service_dual_write":
+	case "auth_service_email_bind", "auth_service_login_backfill", "auth_service_dual_write", "user_service_password_set":
 		return true
 	default:
 		return false
@@ -921,8 +924,13 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, req Chan
 		return fmt.Errorf("get user: %w", err)
 	}
 
-	emailBound := s.userHasBoundEmailIdentity(ctx, userID)
-	if emailBound {
+	records, err := s.listUserAuthIdentities(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("list user auth identities: %w", err)
+	}
+
+	requiresCurrentPassword := s.canUseEmailAsSignInMethod(user, records)
+	if requiresCurrentPassword {
 		if !user.CheckPassword(req.CurrentPassword) {
 			return ErrPasswordIncorrect
 		}
@@ -940,23 +948,17 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, req Chan
 		return fmt.Errorf("update user: %w", err)
 	}
 
-	return nil
-}
-
-func (s *UserService) userHasBoundEmailIdentity(ctx context.Context, userID int64) bool {
-	if s == nil || s.userRepo == nil || userID <= 0 {
-		return true
-	}
-	records, err := s.userRepo.ListUserAuthIdentities(ctx, userID)
-	if err != nil {
-		return true
-	}
-	for _, record := range records {
-		if record.ProviderType == "email" && record.ProviderKey == "email" {
-			return true
+	if !requiresCurrentPassword {
+		if marker, ok := s.userRepo.(interface {
+			MarkEmailIdentitySupportsSignIn(context.Context, int64, string, string) error
+		}); ok {
+			if err := marker.MarkEmailIdentitySupportsSignIn(ctx, user.ID, user.Email, "user_service_password_set"); err != nil {
+				return fmt.Errorf("mark email identity supports sign in: %w", err)
+			}
 		}
 	}
-	return false
+
+	return nil
 }
 
 // GetByID 根据ID获取用户（管理员功能）

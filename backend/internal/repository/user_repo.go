@@ -305,6 +305,39 @@ func ensureEmailAuthIdentityWithClient(ctx context.Context, client *dbent.Client
 	return nil
 }
 
+func (r *userRepository) MarkEmailIdentitySupportsSignIn(ctx context.Context, userID int64, email string, source string) error {
+	client := clientFromContext(ctx, r.client)
+	if client == nil || userID <= 0 {
+		return nil
+	}
+
+	subject := normalizeEmailAuthIdentitySubject(email)
+	if subject == "" {
+		return nil
+	}
+
+	metadata := map[string]any{"source": strings.TrimSpace(source)}
+
+	if err := client.AuthIdentity.Create().
+		SetUserID(userID).
+		SetProviderType("email").
+		SetProviderKey("email").
+		SetProviderSubject(subject).
+		SetVerifiedAt(time.Now().UTC()).
+		SetMetadata(metadata).
+		OnConflictColumns(
+			authidentity.FieldProviderType,
+			authidentity.FieldProviderKey,
+			authidentity.FieldProviderSubject,
+		).
+		UpdateNewValues().
+		Exec(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func replaceEmailAuthIdentityWithClient(ctx context.Context, client *dbent.Client, userID int64, oldEmail, newEmail string, source string) error {
 	newSubject := normalizeEmailAuthIdentitySubject(newEmail)
 	if err := ensureEmailAuthIdentityWithClient(ctx, client, userID, newEmail, source); err != nil {
