@@ -7,6 +7,8 @@ import (
 	"encoding/hex"
 	"fmt"
 	"log/slog"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/pquerna/otp/totp"
@@ -85,11 +87,11 @@ type TotpSetupResponse struct {
 }
 
 const (
-	totpSetupTTL    = 5 * time.Minute
-	totpLoginTTL    = 5 * time.Minute
-	totpAttemptsTTL = 15 * time.Minute
-	maxTotpAttempts = 5
-	totpIssuer      = "Sub2API"
+	totpSetupTTL      = 5 * time.Minute
+	totpLoginTTL      = 5 * time.Minute
+	totpAttemptsTTL   = 15 * time.Minute
+	maxTotpAttempts   = 5
+	defaultTotpIssuer = "Sub2API"
 )
 
 // TotpService handles TOTP operations
@@ -119,6 +121,23 @@ func NewTotpService(
 		emailService:      emailService,
 		emailQueueService: emailQueueService,
 	}
+}
+
+func (s *TotpService) issuer(ctx context.Context) string {
+	if s.settingService != nil {
+		if frontendURL := strings.TrimSpace(s.settingService.GetFrontendURL(ctx)); frontendURL != "" {
+			if parsedURL, err := url.Parse(frontendURL); err == nil {
+				if host := strings.TrimSpace(parsedURL.Hostname()); host != "" {
+					return host
+				}
+			}
+		}
+		if siteName := strings.TrimSpace(s.settingService.GetSiteName(ctx)); siteName != "" {
+			return siteName
+		}
+	}
+
+	return defaultTotpIssuer
 }
 
 // GetStatus returns the TOTP status for a user
@@ -176,7 +195,7 @@ func (s *TotpService) InitiateSetup(ctx context.Context, userID int64, emailCode
 
 	// Generate a new TOTP key
 	key, err := totp.Generate(totp.GenerateOpts{
-		Issuer:      totpIssuer,
+		Issuer:      s.issuer(ctx),
 		AccountName: user.Email,
 	})
 	if err != nil {
