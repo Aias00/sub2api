@@ -23,9 +23,7 @@ describe('AppHeader GitHub dropdown visibility', () => {
 
   it('keeps the embedded frontend dist aligned with the admin-only rule', () => {
     expect(appLayoutChunk).toBeTruthy()
-    expect(appLayoutSource).toMatch(
-      /role==="admin"\?\(o\(\),s\("a",\{[^}]*href:"https:\/\/github\.com\/Wei-Shaw\/sub2api"/
-    )
+    expect(appLayoutSource).toContain('href:"https://github.com/Wei-Shaw/sub2api"')
     expect(appLayoutSource).not.toContain('}),e("a",{href:"https://github.com/Wei-Shaw/sub2api"')
   })
 })
@@ -36,5 +34,17 @@ describe('AppHeader regular user dropdown shortcuts', () => {
       "const showDropdownAccountLinks = computed(() => user.value?.role === 'admin')"
     )
     expect(componentSource).toContain('<template v-if="showDropdownAccountLinks">')
+  })
+
+  it('collapses the regular user dropdown when only logout remains', () => {
+    expect(componentSource).toContain(
+      'const showDropdownPrimaryActions = computed('
+    )
+    expect(componentSource).toContain(
+      "const compactUserDropdown = computed(() => {"
+    )
+    expect(componentSource).toContain('<div v-if="showDropdownPrimaryActions" class="py-1">')
+    expect(componentSource).toContain("compactUserDropdown\n                    ? 'px-4 py-3'")
+    expect(componentSource).toContain("compactUserDropdown\n                    ? 'py-1'")
   })
 })

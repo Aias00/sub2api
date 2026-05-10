@@ -14,4 +14,10 @@ describe('Dashboard hero typography', () => {
       'class="max-w-3xl text-3xl font-semibold tracking-tight text-gray-950 dark:text-white md:text-4xl"'
     )
   })
+
+  it('keeps the hero copy focused on the welcome headline', () => {
+    expect(dashboardSource).toContain('<span class="page-kicker">{{ appStore.siteName }}</span>')
+    expect(dashboardSource).not.toContain("{{ t('dashboard.title') }}")
+    expect(dashboardSource).not.toContain('{{ user?.email || appStore.siteName }}')
+  })
 })

@@ -7,17 +7,9 @@
           <div class="page-hero-grid items-start">
             <div class="space-y-5">
               <span class="page-kicker">{{ appStore.siteName }}</span>
-              <div class="space-y-3">
-                <p class="text-xs font-semibold uppercase tracking-[0.22em] text-primary-700 dark:text-primary-300">
-                  {{ t('dashboard.title') }}
-                </p>
-                <h2 class="max-w-3xl text-2xl font-semibold tracking-tight text-gray-950 dark:text-white md:text-3xl">
-                  <span class="text-gradient">{{ t('dashboard.welcomeMessage') }}</span>
-                </h2>
-                <p class="max-w-2xl text-sm leading-7 text-gray-600 dark:text-gray-300">
-                  {{ user?.email || appStore.siteName }}
-                </p>
-              </div>
+              <h2 class="max-w-3xl text-2xl font-semibold tracking-tight text-gray-950 dark:text-white md:text-3xl">
+                <span class="text-gradient">{{ t('dashboard.welcomeMessage') }}</span>
+              </h2>
             </div>
 
             <div class="grid gap-3 sm:grid-cols-3 xl:grid-cols-1">

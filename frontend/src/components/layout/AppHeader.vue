@@ -98,7 +98,13 @@
           <transition name="dropdown">
             <div v-if="dropdownOpen" class="dropdown right-0 mt-2 w-56">
               <!-- User Info -->
-              <div class="border-b border-gray-100 px-4 py-3 dark:border-dark-700">
+              <div
+                :class="
+                  compactUserDropdown
+                    ? 'px-4 py-3'
+                    : 'border-b border-gray-100 px-4 py-3 dark:border-dark-700'
+                "
+              >
                 <div class="text-sm font-medium text-gray-900 dark:text-white">
                   {{ displayName }}
                 </div>
@@ -115,7 +121,7 @@
                 </div>
               </div>
 
-              <div class="py-1">
+              <div v-if="showDropdownPrimaryActions" class="py-1">
                 <template v-if="showDropdownAccountLinks">
                   <router-link to="/profile" @click="closeDropdown" class="dropdown-item">
                     <Icon name="user" size="sm" />
@@ -185,7 +191,13 @@
                 </button>
               </div>
 
-              <div class="border-t border-gray-100 py-1 dark:border-dark-700">
+              <div
+                :class="
+                  compactUserDropdown
+                    ? 'py-1'
+                    : 'border-t border-gray-100 py-1 dark:border-dark-700'
+                "
+              >
                 <button
                   @click="handleLogout"
                   class="dropdown-item w-full text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
@@ -241,10 +253,17 @@ const docUrl = computed(() => appStore.docUrl)
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
 const showDropdownAccountLinks = computed(() => user.value?.role === 'admin')
 const showGithubLink = computed(() => user.value?.role === 'admin')
+const showDropdownPrimaryActions = computed(
+  () => showDropdownAccountLinks.value || showGithubLink.value
+)
 
 // 只在标准模式的管理员下显示新手引导按钮
 const showOnboardingButton = computed(() => {
   return !authStore.isSimpleMode && user.value?.role === 'admin'
+})
+
+const compactUserDropdown = computed(() => {
+  return !showDropdownPrimaryActions.value && !contactInfo.value && !showOnboardingButton.value
 })
 
 const userInitials = computed(() => {
