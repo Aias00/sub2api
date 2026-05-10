@@ -201,7 +201,7 @@ func TestParsePaymentConfig(t *testing.T) {
 	t.Run("recharge products are parsed from JSON", func(t *testing.T) {
 		t.Parallel()
 		vals := map[string]string{
-			SettingRechargeProducts: `[{"id":"starter","name":"体验","description":"适合初次体验","amount":30,"badge":"推荐","recommended":true,"features":["获得 $30 额度","永不过期"],"sort_order":10}]`,
+			SettingRechargeProducts:    `[{"id":"starter","name":"体验","description":"适合初次体验","amount":30,"badge":"推荐","recommended":true,"features":["获得 $30 额度","永不过期"],"sort_order":10}]`,
 			SettingBalanceRechargeMult: "1.50",
 		}
 		cfg := svc.parsePaymentConfig(vals)
