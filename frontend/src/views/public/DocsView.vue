@@ -253,13 +253,13 @@ onBeforeUnmount(() => {
   width: 17rem !important;
   height: calc(100vh - 12rem) !important;
   border-right: 1px solid rgba(148, 163, 184, 0.18);
-  padding: 1.5rem 1rem 2rem !important;
+  padding: 0.75rem 1rem 2rem !important;
   overflow-y: auto;
   background: transparent;
   z-index: 1;
 }
 
-.docsify-shell :deep(.sidebar > h1) {
+.docsify-shell :deep(.sidebar .app-name) {
   display: none !important;
 }
 
