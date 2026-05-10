@@ -95,7 +95,7 @@ describe('ProfileView', () => {
     expect(wrapper.get('[data-testid="profile-shell"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="profile-shell"]').html()).toContain('profile-info-card')
     expect(wrapper.get('[data-testid="profile-shell"]').html()).toContain('profile-password-form')
-    expect(wrapper.get('[data-testid="profile-shell"]').text()).toContain('true')
+    expect(wrapper.get('[data-testid="profile-shell"]').text()).toContain('false')
     expect(wrapper.get('[data-testid="profile-shell"]').html()).not.toContain('profile-totp-card')
   })
 
@@ -136,6 +136,29 @@ describe('ProfileView', () => {
     authState.user = {
       ...authState.user,
       email_bound: false,
+    }
+
+    const wrapper = mount(ProfileView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          ProfileInfoCard: { template: '<div data-testid="profile-info-card" />' },
+          ProfileBalanceNotifyCard: { template: '<div data-testid="profile-balance-notify-card" />' },
+          ProfilePasswordForm: { props: ['emailBound'], template: '<div data-testid="profile-password-form">{{ emailBound }}</div>' },
+          ProfileTotpCard: { template: '<div data-testid="profile-totp-card" />' },
+          Icon: true
+        }
+      }
+    })
+
+    await flushPromises()
+    expect(wrapper.get('[data-testid="profile-password-form"]').text()).toContain('false')
+  })
+
+  it('defaults missing email_bound to password setup mode until profile metadata is loaded', async () => {
+    authState.user = {
+      ...authState.user,
+      email_bound: undefined,
     }
 
     const wrapper = mount(ProfileView, {
