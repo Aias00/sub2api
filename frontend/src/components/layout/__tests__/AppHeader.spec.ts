@@ -47,4 +47,11 @@ describe('AppHeader regular user dropdown shortcuts', () => {
     expect(componentSource).toContain("compactUserDropdown\n                    ? 'px-4 py-3'")
     expect(componentSource).toContain("compactUserDropdown\n                    ? 'py-1'")
   })
+
+  it('uses an icon-only docs shortcut and removes the desktop balance pill', () => {
+    expect(componentSource).toContain(":aria-label=\"t('nav.docs')\"")
+    expect(componentSource).toContain("group-hover:opacity-100")
+    expect(componentSource).not.toContain("`${{ user.balance?.toFixed(2) || '0.00' }}`")
+    expect(componentSource).not.toContain("class=\"hidden items-center gap-2 rounded-xl bg-primary-50 px-3 py-1.5 dark:bg-primary-900/20 sm:flex\"")
+  })
 })
