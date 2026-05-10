@@ -38,8 +38,8 @@ cloudbase 把多个上游 AI 服务统一成一个可控网关。
 
 ## 推荐阅读顺序
 
-1. [快速开始](#/getting-started/quick-start)
-2. [API 密钥](#/guides/api-keys)
-3. [网关调用](#/guides/gateway)
-4. [充值与订阅](#/guides/billing)
-5. [账号与安全](#/guides/security)
+1. [快速开始](getting-started/quick-start)
+2. [API 密钥](guides/api-keys)
+3. [网关调用](guides/gateway)
+4. [充值与订阅](guides/billing)
+5. [账号与安全](guides/security)
