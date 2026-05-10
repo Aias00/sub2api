@@ -22,6 +22,8 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).toContain('position: sticky !important')
     expect(docsViewSource).toContain(".docsify-shell :deep(.content)")
     expect(docsViewSource).toContain('margin-left: 17rem !important')
+    expect(docsViewSource).toContain(".docsify-shell :deep(.sidebar > h1)")
+    expect(docsViewSource).toContain('display: none !important;')
     expect(docsViewSource).toContain('body.docs-page-body #app')
     expect(docsViewSource).toContain('margin: 0 !important')
   })

@@ -260,9 +260,7 @@ onBeforeUnmount(() => {
 }
 
 .docsify-shell :deep(.sidebar > h1) {
-  margin: 0 0 1rem !important;
-  padding: 0 0.75rem;
-  text-align: left !important;
+  display: none !important;
 }
 
 .docsify-shell :deep(.sidebar-nav) {
