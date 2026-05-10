@@ -14,4 +14,13 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).not.toContain('findDocsPage(')
     expect(docsViewSource).not.toContain('marked.parse(')
   })
+
+  it('overrides Docsify default fixed layout so the product header stays pinned', () => {
+    expect(docsViewSource).toContain(".docsify-shell :deep(main)")
+    expect(docsViewSource).toContain('display: flex')
+    expect(docsViewSource).toContain(".docsify-shell :deep(.sidebar)")
+    expect(docsViewSource).toContain('position: sticky !important')
+    expect(docsViewSource).toContain(".docsify-shell :deep(.content)")
+    expect(docsViewSource).toContain('margin-left: 17rem !important')
+  })
 })

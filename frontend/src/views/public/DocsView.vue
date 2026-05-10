@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen bg-slate-50 text-gray-900 dark:bg-slate-950 dark:text-white">
+  <div class="docs-page min-h-screen bg-slate-50 text-gray-900 dark:bg-slate-950 dark:text-white">
     <header class="sticky top-0 z-40 border-b border-gray-200/80 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80">
       <div class="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 md:px-6">
         <div class="flex min-w-0 items-center gap-3">
@@ -204,6 +204,8 @@ watch(locale, () => {
 })
 
 onMounted(async () => {
+  document.body.classList.add('docs-page-body')
+
   if (!appStore.publicSettingsLoaded) {
     await appStore.fetchPublicSettings()
   }
@@ -219,26 +221,66 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  document.body.classList.remove('docs-page-body')
   delete window.$docsify
 })
 </script>
 
 <style scoped>
+.docs-page {
+  min-height: 100vh;
+}
+
 .docsify-shell :deep(section.cover) {
   display: none;
 }
 
+.docsify-shell :deep(main) {
+  position: relative !important;
+  display: flex;
+  width: 100% !important;
+  min-height: 70vh;
+  height: auto !important;
+}
+
 .docsify-shell :deep(.sidebar) {
+  position: sticky !important;
+  top: 0 !important;
+  left: auto !important;
+  bottom: auto !important;
+  flex: 0 0 17rem;
+  width: 17rem !important;
+  height: calc(100vh - 12rem) !important;
   border-right: 1px solid rgba(148, 163, 184, 0.18);
+  padding: 1.5rem 1rem 2rem !important;
+  overflow-y: auto;
   background: transparent;
+  z-index: 1;
+}
+
+.docsify-shell :deep(.sidebar > h1) {
+  margin: 0 0 1rem !important;
+  padding: 0 0.75rem;
+  text-align: left !important;
+}
+
+.docsify-shell :deep(.sidebar-nav) {
+  padding-bottom: 0 !important;
 }
 
 .docsify-shell :deep(.content) {
-  padding-top: 0;
+  position: relative !important;
+  left: auto !important;
+  right: auto !important;
+  margin-left: 17rem !important;
+  padding-top: 0 !important;
+  width: calc(100% - 17rem) !important;
 }
 
 .docsify-shell :deep(.markdown-section) {
   max-width: 920px;
+  min-height: 70vh;
+  margin: 0 auto;
   padding: 1.5rem 2.5rem 3rem;
 }
 
@@ -273,8 +315,38 @@ onBeforeUnmount(() => {
 }
 
 @media (max-width: 960px) {
+  .docsify-shell :deep(main) {
+    display: block;
+  }
+
+  .docsify-shell :deep(.sidebar) {
+    position: relative !important;
+    width: 100% !important;
+    height: auto !important;
+    flex-basis: auto;
+    border-right: 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+  }
+
+  .docsify-shell :deep(.content) {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
   .docsify-shell :deep(.markdown-section) {
     padding: 1rem 1.25rem 2rem;
   }
+}
+</style>
+
+<style>
+body.docs-page-body {
+  position: static !important;
+  top: auto !important;
+}
+
+body.docs-page-body.sticky .sidebar,
+body.docs-page-body.sticky .sidebar-toggle {
+  position: sticky !important;
 }
 </style>
