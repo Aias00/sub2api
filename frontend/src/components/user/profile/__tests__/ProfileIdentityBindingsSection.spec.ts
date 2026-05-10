@@ -45,6 +45,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
         if (key === 'profile.authBindings.description') return 'Manage bound providers'
         if (key === 'profile.authBindings.status.bound') return 'Bound'
         if (key === 'profile.authBindings.status.notBound') return 'Not bound'
+        if (key === 'profile.authBindings.status.passwordNotSet') return 'Password not set'
         if (key === 'profile.authBindings.providers.email') return 'Email'
         if (key === 'profile.authBindings.providers.linuxdo') return 'LinuxDo'
         if (key === 'profile.authBindings.providers.wechat') return 'WeChat'
@@ -358,7 +359,7 @@ describe('ProfileIdentityBindingsSection', () => {
       },
     })
 
-    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Not bound')
+    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Password not set')
     expect(wrapper.get('[data-testid="profile-binding-email-input"]').exists()).toBe(true)
   })
 
@@ -382,7 +383,7 @@ describe('ProfileIdentityBindingsSection', () => {
     })
 
     expect(wrapper.text()).not.toContain('legacy-user@linuxdo-connect.invalid')
-    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Not bound')
+    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Password not set')
   })
 
   it('does not show a synthetic oauth-only email when only fallback auth bindings mark email as unbound', () => {
@@ -404,7 +405,7 @@ describe('ProfileIdentityBindingsSection', () => {
     })
 
     expect(wrapper.text()).not.toContain('legacy-user@wechat-connect.invalid')
-    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Not bound')
+    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Password not set')
   })
 
   it('shows the bound email only once and localizes the email management note', () => {

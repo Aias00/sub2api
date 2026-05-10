@@ -54,7 +54,9 @@
                   {{
                     item.bound
                       ? t('profile.authBindings.status.bound')
-                      : t('profile.authBindings.status.notBound')
+                      : item.provider === 'email'
+                        ? t('profile.authBindings.status.passwordNotSet')
+                        : t('profile.authBindings.status.notBound')
                   }}
                 </span>
               </div>

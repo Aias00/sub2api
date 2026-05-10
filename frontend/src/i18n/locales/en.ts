@@ -1381,6 +1381,7 @@ export default {
       status: {
         bound: 'Bound',
         notBound: 'Not bound',
+        passwordNotSet: 'Password not set',
       },
       providers: {
         email: 'Email',

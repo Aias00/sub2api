@@ -1385,6 +1385,7 @@ export default {
       status: {
         bound: '已绑定',
         notBound: '未绑定',
+        passwordNotSet: '未设置密码',
       },
       providers: {
         email: '邮箱',
