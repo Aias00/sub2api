@@ -935,6 +935,9 @@ func (s *UserService) ChangePassword(ctx context.Context, userID int64, req Chan
 			return ErrPasswordIncorrect
 		}
 	}
+	if err := validatePasswordMinLength(req.NewPassword, passwordMinLengthFromRepository(ctx, s.settingRepo)); err != nil {
+		return err
+	}
 
 	if err := user.SetPassword(req.NewPassword); err != nil {
 		return fmt.Errorf("set password: %w", err)

@@ -192,6 +192,7 @@ export interface PublicSettings {
   registration_email_suffix_whitelist: string[]
   promo_code_enabled: boolean
   password_reset_enabled: boolean
+  password_min_length: number
   invitation_code_enabled: boolean
   totp_enabled: boolean
   login_agreement_enabled?: boolean

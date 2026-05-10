@@ -1524,6 +1524,26 @@
                 </p>
               </div>
 
+              <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
+                <label
+                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
+                  {{ t("admin.settings.registration.passwordMinLength") }}
+                </label>
+                <input
+                  v-model.number="form.password_min_length"
+                  type="number"
+                  min="8"
+                  max="128"
+                  step="1"
+                  class="input max-w-[180px]"
+                  placeholder="8"
+                />
+                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                  {{ t("admin.settings.registration.passwordMinLengthHint") }}
+                </p>
+              </div>
+
               <!-- TOTP 2FA -->
               <div
                 class="flex items-center justify-between border-t border-gray-100 pt-4 dark:border-dark-700"
@@ -6420,6 +6440,7 @@ const form = reactive<SettingsForm>({
   promo_code_enabled: true,
   invitation_code_enabled: false,
   password_reset_enabled: false,
+  password_min_length: 8,
   totp_enabled: false,
   totp_encryption_key_configured: false,
   login_agreement_enabled: false,
@@ -7506,6 +7527,10 @@ async function saveSettings() {
     form.login_agreement_mode =
       form.login_agreement_mode === "checkbox" ? "checkbox" : "modal";
     form.login_agreement_documents = normalizedLoginAgreementDocuments;
+    form.password_min_length = Math.max(
+      8,
+      Math.min(128, Math.floor(Number(form.password_min_length) || 8)),
+    );
 
     const normalizedDefaultSubscriptions = normalizeDefaultSubscriptionSettings(
       form.default_subscriptions,
@@ -7583,6 +7608,7 @@ async function saveSettings() {
       promo_code_enabled: form.promo_code_enabled,
       invitation_code_enabled: form.invitation_code_enabled,
       password_reset_enabled: form.password_reset_enabled,
+      password_min_length: form.password_min_length,
       totp_enabled: form.totp_enabled,
       login_agreement_enabled: form.login_agreement_enabled,
       login_agreement_mode: form.login_agreement_mode,

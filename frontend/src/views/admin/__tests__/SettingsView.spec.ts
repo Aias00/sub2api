@@ -286,6 +286,7 @@ const baseSettingsResponse = {
   promo_code_enabled: true,
   invitation_code_enabled: false,
   password_reset_enabled: false,
+  password_min_length: 8,
   totp_enabled: false,
   totp_encryption_key_configured: false,
   default_balance: 0,

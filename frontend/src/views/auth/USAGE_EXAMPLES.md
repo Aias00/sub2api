@@ -189,11 +189,11 @@ async function register() {
 ```typescript
 // Valid inputs
 ✅ Username: "john_doe" (3+ chars)
-✅ Password: "SecurePass123" (6+ chars)
+✅ Password: "SecurePass123" (8+ chars)
 
 // Invalid inputs
 ❌ Username: "jo" → Error: "Username must be at least 3 characters"
-❌ Password: "12345" → Error: "Password must be at least 6 characters"
+❌ Password: "1234567" → Error: "Password must be at least 8 characters"
 ❌ Username: "" → Error: "Username is required"
 ❌ Password: "" → Error: "Password is required"
 ```

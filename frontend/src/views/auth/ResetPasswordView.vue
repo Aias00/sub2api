@@ -207,6 +207,7 @@ import { AuthLayout } from '@/components/layout'
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores'
 import { resetPassword } from '@/api/auth'
+import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
 
 const { t } = useI18n()
 
@@ -222,6 +223,9 @@ const isSuccess = ref<boolean>(false)
 const errorMessage = ref<string>('')
 const showPassword = ref<boolean>(false)
 const showConfirmPassword = ref<boolean>(false)
+const passwordMinLength = computed(() =>
+  resolvePasswordMinLength(appStore.cachedPublicSettings)
+)
 
 // URL parameters
 const email = ref<string>('')
@@ -274,8 +278,8 @@ function validateForm(): boolean {
   if (!formData.password) {
     errors.password = t('auth.passwordRequired')
     isValid = false
-  } else if (formData.password.length < 6) {
-    errors.password = t('auth.passwordMinLength')
+  } else if (formData.password.length < passwordMinLength.value) {
+    errors.password = t('auth.passwordMinLength', { count: passwordMinLength.value })
     isValid = false
   }
 

@@ -672,6 +672,13 @@ func (s *adminServiceImpl) CreateUser(ctx context.Context, input *CreateUserInpu
 		Status:        StatusActive,
 		AllowedGroups: input.AllowedGroups,
 	}
+	minLength := DefaultPasswordMinLength
+	if s.settingService != nil {
+		minLength = s.settingService.GetPasswordMinLength(ctx)
+	}
+	if err := validatePasswordMinLength(input.Password, minLength); err != nil {
+		return nil, err
+	}
 	if err := user.SetPassword(input.Password); err != nil {
 		return nil, err
 	}
@@ -728,6 +735,13 @@ func (s *adminServiceImpl) UpdateUser(ctx context.Context, id int64, input *Upda
 		user.Email = input.Email
 	}
 	if input.Password != "" {
+		minLength := DefaultPasswordMinLength
+		if s.settingService != nil {
+			minLength = s.settingService.GetPasswordMinLength(ctx)
+		}
+		if err := validatePasswordMinLength(input.Password, minLength); err != nil {
+			return nil, err
+		}
 		if err := user.SetPassword(input.Password); err != nil {
 			return nil, err
 		}

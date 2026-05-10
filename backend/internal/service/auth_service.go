@@ -190,6 +190,9 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	if existsEmail {
 		return "", nil, ErrEmailExists
 	}
+	if err := validatePasswordMinLength(password, s.settingService.GetPasswordMinLength(ctx)); err != nil {
+		return "", nil, err
+	}
 
 	// 密码哈希
 	hashedPassword, err := s.HashPassword(password)
@@ -1304,6 +1307,9 @@ func (s *AuthService) ResetPassword(ctx context.Context, email, token, newPasswo
 	// Check if user is active
 	if !user.IsActive() {
 		return ErrUserNotActive
+	}
+	if err := validatePasswordMinLength(newPassword, s.settingService.GetPasswordMinLength(ctx)); err != nil {
+		return err
 	}
 
 	// Hash new password

@@ -35,7 +35,7 @@ func NewUserHandler(adminService service.AdminService, concurrencyService *servi
 // CreateUserRequest represents admin create user request
 type CreateUserRequest struct {
 	Email         string  `json:"email" binding:"required,email"`
-	Password      string  `json:"password" binding:"required,min=6"`
+	Password      string  `json:"password" binding:"required"`
 	Username      string  `json:"username"`
 	Notes         string  `json:"notes"`
 	Balance       float64 `json:"balance"`
@@ -48,7 +48,7 @@ type CreateUserRequest struct {
 // 使用指针类型来区分"未提供"和"设置为0"
 type UpdateUserRequest struct {
 	Email         string   `json:"email" binding:"omitempty,email"`
-	Password      string   `json:"password" binding:"omitempty,min=6"`
+	Password      string   `json:"password"`
 	Username      *string  `json:"username"`
 	Notes         *string  `json:"notes"`
 	Balance       *float64 `json:"balance"`

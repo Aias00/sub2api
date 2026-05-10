@@ -71,7 +71,7 @@
       :data-testid="`${testIdPrefix}-create-account-submit`"
       type="button"
       class="btn btn-primary w-full"
-      :disabled="isSubmitting || !email.trim() || password.length < 6 || (invitationCodeEnabled && !invitationCode.trim())"
+      :disabled="isSubmitting || !email.trim() || password.length < passwordMinLength || (invitationCodeEnabled && !invitationCode.trim())"
       @click="handleSubmit"
     >
       {{ isSubmitting ? t('common.processing') : t('auth.createAccount') }}
@@ -93,6 +93,7 @@ import { useI18n } from 'vue-i18n'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { getPublicSettings, sendPendingOAuthVerifyCode } from '@/api/auth'
 import { useAppStore } from '@/stores'
+import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
 
 export type PendingOAuthCreateAccountPayload = {
   email: string
@@ -129,6 +130,7 @@ const turnstileEnabled = ref(false)
 const turnstileSiteKey = ref('')
 const turnstileToken = ref('')
 const turnstileRef = ref<InstanceType<typeof TurnstileWidget> | null>(null)
+const passwordMinLength = ref(8)
 
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
@@ -240,7 +242,7 @@ async function handleSendCode() {
 
 function handleSubmit() {
   const trimmedEmail = email.value.trim()
-  if (!trimmedEmail || password.value.length < 6) {
+  if (!trimmedEmail || password.value.length < passwordMinLength.value) {
     return
   }
 
@@ -262,10 +264,12 @@ onMounted(async () => {
     invitationCodeEnabled.value = settings.invitation_code_enabled === true
     turnstileEnabled.value = settings.turnstile_enabled === true
     turnstileSiteKey.value = settings.turnstile_site_key || ''
+    passwordMinLength.value = resolvePasswordMinLength(settings)
   } catch {
     invitationCodeEnabled.value = false
     turnstileEnabled.value = false
     turnstileSiteKey.value = ''
+    passwordMinLength.value = 8
   }
 })
 

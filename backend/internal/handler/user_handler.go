@@ -41,7 +41,7 @@ func NewUserHandler(
 // ChangePasswordRequest represents the change password request payload
 type ChangePasswordRequest struct {
 	OldPassword string `json:"old_password"`
-	NewPassword string `json:"new_password" binding:"required,min=6"`
+	NewPassword string `json:"new_password" binding:"required"`
 }
 
 // UpdateProfileRequest represents the update profile request payload

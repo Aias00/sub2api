@@ -181,6 +181,7 @@ import {
   loadOAuthAffiliateCode,
   oauthAffiliatePayload
 } from '@/utils/oauthAffiliate'
+import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
 
 const route = useRoute()
 const router = useRouter()
@@ -229,17 +230,20 @@ const registrationHint = computed(() =>
     ? t('auth.oidc.invitationRequired', { providerName: providerName.value })
     : t('auth.oidc.completeRegistration')
 )
+const passwordMinLength = computed(() =>
+  resolvePasswordMinLength(appStore.cachedPublicSettings)
+)
 const passwordOptional = computed(() => pendingProvider.value === 'google')
 const canSubmitRegistration = computed(() => {
   if (!registrationEmail.value.trim()) return false
   if (invitationRequired.value && !invitationCode.value.trim()) return false
   if (!passwordOptional.value) {
-    if (password.value.length < 6) return false
+    if (password.value.length < passwordMinLength.value) return false
     if (password.value !== confirmPassword.value) return false
     return true
   }
   if (!password.value && !confirmPassword.value) return true
-  if (password.value.length < 6) return false
+  if (password.value.length < passwordMinLength.value) return false
   if (password.value !== confirmPassword.value) return false
   return true
 })
@@ -358,8 +362,8 @@ async function handleSubmitRegistration() {
   }
   const needsPasswordValidation = !passwordOptional.value || !!password.value || !!confirmPassword.value
   if (needsPasswordValidation) {
-    if (password.value.length < 6) {
-      registrationError.value = t('auth.passwordMinLength')
+    if (password.value.length < passwordMinLength.value) {
+      registrationError.value = t('auth.passwordMinLength', { count: passwordMinLength.value })
       return
     }
     if (password.value !== confirmPassword.value) {

@@ -316,6 +316,7 @@ export interface SystemSettings {
   registration_email_suffix_whitelist: string[];
   promo_code_enabled: boolean;
   password_reset_enabled: boolean;
+  password_min_length: number;
   frontend_url: string;
   invitation_code_enabled: boolean;
   totp_enabled: boolean; // TOTP 双因素认证
@@ -536,6 +537,7 @@ export interface UpdateSettingsRequest {
   registration_email_suffix_whitelist?: string[];
   promo_code_enabled?: boolean;
   password_reset_enabled?: boolean;
+  password_min_length?: number;
   frontend_url?: string;
   invitation_code_enabled?: boolean;
   totp_enabled?: boolean; // TOTP 双因素认证

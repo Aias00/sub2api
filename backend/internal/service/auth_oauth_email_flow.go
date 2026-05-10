@@ -154,6 +154,9 @@ func (s *AuthService) RegisterOAuthEmailAccount(
 	if existsEmail {
 		return nil, nil, ErrEmailExists
 	}
+	if err := validatePasswordMinLength(password, s.settingService.GetPasswordMinLength(ctx)); err != nil {
+		return nil, nil, err
+	}
 
 	hashedPassword, err := s.HashPassword(password)
 	if err != nil {
@@ -221,6 +224,11 @@ func (s *AuthService) RegisterVerifiedOAuthEmailAccount(
 	resolvedPassword, err := s.resolveOAuthRegistrationPassword(signupSource, password)
 	if err != nil {
 		return nil, nil, err
+	}
+	if trimmedPassword := strings.TrimSpace(password); trimmedPassword != "" {
+		if err := validatePasswordMinLength(trimmedPassword, s.settingService.GetPasswordMinLength(ctx)); err != nil {
+			return nil, nil, err
+		}
 	}
 	if _, err := s.validateOAuthRegistrationInvitation(ctx, invitationCode); err != nil {
 		return nil, nil, err

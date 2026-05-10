@@ -41,7 +41,7 @@
             class="input"
           />
           <p class="input-hint">
-            {{ t('profile.passwordHint') }}
+            {{ t('profile.passwordHint', { count: passwordMinLength }) }}
           </p>
         </div>
 
@@ -74,6 +74,7 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { userAPI } from '@/api'
+import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -86,6 +87,9 @@ const props = withDefaults(defineProps<{
 })
 
 const requiresCurrentPassword = computed(() => props.emailBound)
+const passwordMinLength = computed(() =>
+  resolvePasswordMinLength(appStore.cachedPublicSettings)
+)
 
 const loading = ref(false)
 const form = ref({
@@ -100,8 +104,8 @@ const handleChangePassword = async () => {
     return
   }
 
-  if (form.value.new_password.length < 8) {
-    appStore.showError(t('profile.passwordTooShort'))
+  if (form.value.new_password.length < passwordMinLength.value) {
+    appStore.showError(t('profile.passwordTooShort', { count: passwordMinLength.value }))
     return
   }
 

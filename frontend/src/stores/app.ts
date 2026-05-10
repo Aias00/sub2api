@@ -324,6 +324,7 @@ export const useAppStore = defineStore('app', () => {
         registration_email_suffix_whitelist: [],
         promo_code_enabled: true,
         password_reset_enabled: false,
+        password_min_length: 8,
         invitation_code_enabled: false,
         totp_enabled: false,
         turnstile_enabled: false,

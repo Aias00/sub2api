@@ -212,6 +212,7 @@ import {
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore, useAuthStore } from '@/stores'
 import type { User, UserAuthBindingStatus, UserAuthProvider } from '@/types'
+import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
 
 type BindableProvider = Exclude<UserAuthProvider, 'email'>
 
@@ -243,6 +244,9 @@ const { t } = useI18n()
 const route = useRoute()
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const passwordMinLength = computed(() =>
+  resolvePasswordMinLength(appStore.cachedPublicSettings)
+)
 
 const localUser = ref<User | null>(null)
 const isSendingEmailCode = ref(false)
@@ -593,8 +597,8 @@ function validateEmailBindingForm(requireCode: boolean): boolean {
     appStore.showError(t('auth.passwordRequired'))
     return false
   }
-  if (requireCode && !emailBound.value && emailBindingForm.password.length < 6) {
-    appStore.showError(t('auth.passwordMinLength'))
+  if (requireCode && !emailBound.value && emailBindingForm.password.length < passwordMinLength.value) {
+    appStore.showError(t('auth.passwordMinLength', { count: passwordMinLength.value }))
     return false
   }
   return true

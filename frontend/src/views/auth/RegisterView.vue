@@ -83,7 +83,7 @@
             </button>
           </div>
           <p class="input-hint">
-            {{ t('auth.passwordHint') }}
+            {{ t('auth.passwordHint', { count: passwordMinLength }) }}
           </p>
         </div>
 
@@ -326,6 +326,7 @@ import {
   loadAffiliateReferralCode,
   resolveAffiliateReferralCode
 } from '@/utils/oauthAffiliate'
+import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
 import type { LoginAgreementDocument } from '@/types'
 
 const { t, locale } = useI18n()
@@ -352,6 +353,7 @@ const promoCodeEnabled = ref<boolean>(true)
 const invitationCodeEnabled = ref<boolean>(false)
 const turnstileEnabled = ref<boolean>(false)
 const turnstileSiteKey = ref<string>('')
+const passwordMinLength = ref<number>(8)
 const siteName = ref<string>('Sub2API')
 const linuxdoOAuthEnabled = ref<boolean>(false)
 const wechatOAuthEnabled = ref<boolean>(false)
@@ -460,6 +462,7 @@ onMounted(async () => {
     invitationCodeEnabled.value = settings.invitation_code_enabled
     turnstileEnabled.value = settings.turnstile_enabled
     turnstileSiteKey.value = settings.turnstile_site_key || ''
+    passwordMinLength.value = resolvePasswordMinLength(settings)
     siteName.value = settings.site_name || 'Sub2API'
     linuxdoOAuthEnabled.value = settings.linuxdo_oauth_enabled
     wechatOAuthEnabled.value = isWeChatWebOAuthEnabled(settings)
@@ -778,8 +781,8 @@ function validateForm(): boolean {
   if (!formData.password) {
     errors.password = t('auth.passwordRequired')
     isValid = false
-  } else if (formData.password.length < 6) {
-    errors.password = t('auth.passwordMinLength')
+  } else if (formData.password.length < passwordMinLength.value) {
+    errors.password = t('auth.passwordMinLength', { count: passwordMinLength.value })
     isValid = false
   }
 
