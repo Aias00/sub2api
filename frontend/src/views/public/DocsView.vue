@@ -92,6 +92,7 @@ const dashboardPath = computed(() => (authStore.isAdmin ? '/admin/dashboard' : '
 const docsHash = computed(() => normalizeDocsHashPath(route.params.pathMatch as string | string[] | undefined))
 
 let docsifyLoaded = false
+const docsifyResourceIds = ['docsify-theme', 'docsify-runtime', 'docsify-search-plugin', 'docsify-zoom-image-plugin']
 
 function ensureStylesheet(id: string, href: string) {
   if (document.getElementById(id)) return
@@ -209,6 +210,18 @@ onMounted(async () => {
 })
 
 onBeforeUnmount(() => {
+  docsifyLoaded = false
+  docsifyResourceIds.forEach((id) => {
+    document.getElementById(id)?.remove()
+  })
+  document.querySelectorAll('body > .progress').forEach((node) => node.remove())
+  document.querySelectorAll('body > iframe').forEach((node) => {
+    const iframe = node as HTMLIFrameElement
+    if (iframe.src === 'about:blank') {
+      iframe.remove()
+    }
+  })
+  document.body.classList.remove('ready', 'sticky', 'close')
   document.body.classList.remove('docs-page-body')
   delete window.$docsify
 })

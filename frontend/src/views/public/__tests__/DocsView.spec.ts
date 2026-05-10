@@ -30,4 +30,10 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).not.toContain("{{ t('docs.frameworkHint') }}")
     expect(docsViewSource).not.toContain("{{ t('nav.docs') }}\n          </h2>")
   })
+
+  it('cleans up Docsify global resources when leaving the docs route', () => {
+    expect(docsViewSource).toContain("const docsifyResourceIds = ['docsify-theme', 'docsify-runtime', 'docsify-search-plugin', 'docsify-zoom-image-plugin']")
+    expect(docsViewSource).toContain("document.body.classList.remove('ready', 'sticky', 'close')")
+    expect(docsViewSource).toContain("document.querySelectorAll('body > .progress').forEach((node) => node.remove())")
+  })
 })
