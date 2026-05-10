@@ -340,6 +340,13 @@ onBeforeUnmount(() => {
 </style>
 
 <style>
+body.docs-page-body #app {
+  margin: 0 !important;
+  text-align: initial !important;
+  font-size: inherit !important;
+  font-weight: inherit !important;
+}
+
 body.docs-page-body {
   position: static !important;
   top: auto !important;
