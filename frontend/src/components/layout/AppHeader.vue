@@ -27,16 +27,14 @@
         <AnnouncementBell v-if="user" />
 
         <!-- Docs Link -->
-        <a
+        <DocsLink
           v-if="docUrl"
-          :href="docUrl"
-          target="_blank"
-          rel="noopener noreferrer"
+          :doc-url="docUrl"
           class="flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-sm font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
         >
           <Icon name="book" size="sm" />
           <span class="hidden sm:inline">{{ t('nav.docs') }}</span>
-        </a>
+        </DocsLink>
 
         <!-- Language Switcher -->
         <LocaleSwitcher />
@@ -235,6 +233,7 @@ import { useAdminSettingsStore } from '@/stores/adminSettings'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
+import DocsLink from '@/components/common/DocsLink.vue'
 import Icon from '@/components/icons/Icon.vue'
 
 const router = useRouter()

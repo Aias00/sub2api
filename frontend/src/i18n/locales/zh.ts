@@ -393,6 +393,13 @@ export default {
     channelStatus: '渠道状态',
     riskControl: '风控中心',
   },
+  docs: {
+    navigation: '导航',
+    searchPlaceholder: '搜索文档',
+    onThisPage: '本页目录',
+    previousPage: '上一页',
+    nextPage: '下一页'
+  },
 
   // Auth
   auth: {

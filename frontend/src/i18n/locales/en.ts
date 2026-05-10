@@ -393,6 +393,13 @@ export default {
     channelStatus: 'Channel Status',
     riskControl: 'Risk Control',
   },
+  docs: {
+    navigation: 'Navigation',
+    searchPlaceholder: 'Search docs',
+    onThisPage: 'On this page',
+    previousPage: 'Previous',
+    nextPage: 'Next'
+  },
 
   // Auth
   auth: {

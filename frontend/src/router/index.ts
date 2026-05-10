@@ -145,6 +145,16 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/docs/:pathMatch(.*)*',
+    name: 'Docs',
+    component: () => import('@/views/public/DocsView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Docs',
+      titleKey: 'nav.docs'
+    }
+  },
+  {
     path: '/legal/:documentId',
     name: 'LegalDocument',
     component: () => import('@/views/public/LegalDocumentView.vue'),
