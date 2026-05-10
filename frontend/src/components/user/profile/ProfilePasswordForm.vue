@@ -28,10 +28,6 @@
             class="input"
           />
         </div>
-        <p v-else class="text-sm text-gray-500 dark:text-dark-400">
-          {{ t('profile.setPasswordHint') }}
-        </p>
-
         <div>
           <label for="new_password" class="input-label">
             {{ t('profile.newPassword') }}
