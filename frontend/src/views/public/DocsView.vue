@@ -51,19 +51,7 @@
 
     <main class="mx-auto max-w-[1600px] px-4 py-6 md:px-6">
       <div class="rounded-[32px] border border-white/75 bg-white/92 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.35)] dark:border-white/10 dark:bg-slate-900/70">
-        <div class="border-b border-gray-200/80 px-6 py-5 dark:border-white/10 md:px-8">
-          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-600 dark:text-primary-300">
-            {{ siteName }}
-          </p>
-          <h2 class="mt-2 text-3xl font-semibold tracking-tight text-gray-950 dark:text-white">
-            {{ t('nav.docs') }}
-          </h2>
-          <p class="mt-3 max-w-3xl text-sm leading-7 text-gray-600 dark:text-slate-300">
-            {{ t('docs.frameworkHint') }}
-          </p>
-        </div>
-
-        <div class="docsify-shell px-2 py-4 md:px-4">
+        <div class="docsify-shell px-2 py-3 md:px-4">
           <div id="docsify-app" ref="docsifyRoot" class="min-h-[70vh]"></div>
         </div>
       </div>

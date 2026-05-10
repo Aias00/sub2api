@@ -25,4 +25,9 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).toContain('body.docs-page-body #app')
     expect(docsViewSource).toContain('margin: 0 !important')
   })
+
+  it('does not render the extra docs intro banner above the Docsify shell', () => {
+    expect(docsViewSource).not.toContain("{{ t('docs.frameworkHint') }}")
+    expect(docsViewSource).not.toContain("{{ t('nav.docs') }}\n          </h2>")
+  })
 })
