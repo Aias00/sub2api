@@ -31,7 +31,15 @@
             />
           </div>
           <div>
-            <label class="input-label">{{ t('auth.passwordLabel') }}</label>
+            <label class="input-label">
+              {{ t('auth.passwordLabel') }}
+              <span
+                v-if="passwordOptional"
+                class="ml-1 text-xs font-normal text-gray-400 dark:text-gray-500"
+              >
+                ({{ t('common.optional') }})
+              </span>
+            </label>
             <input
               v-model="password"
               type="password"
@@ -41,9 +49,20 @@
               autocomplete="new-password"
               @keyup.enter="handleSubmitRegistration"
             />
+            <p v-if="passwordOptional" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              {{ t('auth.emailOAuth.passwordOptionalHint', { providerName }) }}
+            </p>
           </div>
           <div>
-            <label class="input-label">{{ t('auth.confirmPassword') }}</label>
+            <label class="input-label">
+              {{ t('auth.confirmPassword') }}
+              <span
+                v-if="passwordOptional"
+                class="ml-1 text-xs font-normal text-gray-400 dark:text-gray-500"
+              >
+                ({{ t('common.optional') }})
+              </span>
+            </label>
             <input
               v-model="confirmPassword"
               type="password"
@@ -210,11 +229,18 @@ const registrationHint = computed(() =>
     ? t('auth.oidc.invitationRequired', { providerName: providerName.value })
     : t('auth.oidc.completeRegistration')
 )
+const passwordOptional = computed(() => pendingProvider.value === 'google')
 const canSubmitRegistration = computed(() => {
   if (!registrationEmail.value.trim()) return false
+  if (invitationRequired.value && !invitationCode.value.trim()) return false
+  if (!passwordOptional.value) {
+    if (password.value.length < 6) return false
+    if (password.value !== confirmPassword.value) return false
+    return true
+  }
+  if (!password.value && !confirmPassword.value) return true
   if (password.value.length < 6) return false
   if (password.value !== confirmPassword.value) return false
-  if (invitationRequired.value && !invitationCode.value.trim()) return false
   return true
 })
 
@@ -330,22 +356,27 @@ async function handleSubmitRegistration() {
     registrationError.value = t('auth.emailRequired')
     return
   }
-  if (password.value.length < 6) {
-    registrationError.value = t('auth.passwordMinLength')
-    return
-  }
-  if (password.value !== confirmPassword.value) {
-    registrationError.value = t('auth.passwordsDoNotMatch')
-    return
+  const needsPasswordValidation = !passwordOptional.value || !!password.value || !!confirmPassword.value
+  if (needsPasswordValidation) {
+    if (password.value.length < 6) {
+      registrationError.value = t('auth.passwordMinLength')
+      return
+    }
+    if (password.value !== confirmPassword.value) {
+      registrationError.value = t('auth.passwordsDoNotMatch')
+      return
+    }
   }
   const code = invitationCode.value.trim()
   if (invitationRequired.value && !code) return
 
   isSubmitting.value = true
   try {
-    const payload: { password: string; invitation_code?: string; aff_code?: string } = {
-      password: password.value,
+    const payload: { password?: string; invitation_code?: string; aff_code?: string } = {
       ...oauthAffiliatePayload(loadOAuthAffiliateCode())
+    }
+    if (password.value.trim()) {
+      payload.password = password.value
     }
     if (invitationRequired.value) {
       payload.invitation_code = code

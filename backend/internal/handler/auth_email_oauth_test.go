@@ -300,6 +300,52 @@ func TestCompleteEmailOAuthRegistrationRequiresPassword(t *testing.T) {
 	require.Zero(t, userCount)
 }
 
+func TestCompleteEmailOAuthRegistrationAllowsGoogleWithoutPassword(t *testing.T) {
+	handler, client := newOAuthPendingFlowTestHandler(t, false)
+	ctx := context.Background()
+
+	session, err := client.PendingAuthSession.Create().
+		SetSessionToken("email-oauth-google-passwordless-session-token").
+		SetIntent(oauthIntentLogin).
+		SetProviderType("google").
+		SetProviderKey("google").
+		SetProviderSubject("google-passwordless-user").
+		SetResolvedEmail("google-passwordless@example.com").
+		SetRedirectTo("/dashboard").
+		SetBrowserSessionKey("browser-google-passwordless-key").
+		SetUpstreamIdentityClaims(map[string]any{
+			"email":            "google-passwordless@example.com",
+			"email_verified":   true,
+			"username":         "google-passwordless",
+			"provider":         "google",
+			"provider_key":     "google",
+			"provider_subject": "google-passwordless-user",
+		}).
+		SetLocalFlowState(map[string]any{
+			"step":  oauthPendingChoiceStep,
+			"error": "registration_completion_required",
+		}).
+		SetExpiresAt(time.Now().UTC().Add(10 * time.Minute)).
+		Save(ctx)
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/google/complete-registration", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
+	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("browser-google-passwordless-key")})
+	c.Request = req
+
+	handler.completeEmailOAuthRegistration(c, "google")
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	user, err := client.User.Query().Where(dbuser.EmailEQ("google-passwordless@example.com")).Only(ctx)
+	require.NoError(t, err)
+	require.NotEmpty(t, user.PasswordHash)
+	require.NotEqual(t, "google-passwordless-user", user.PasswordHash)
+}
+
 func TestParseGitHubOAuthProfileRejectsPublicEmailWhenEmailsEndpointFails(t *testing.T) {
 	emailServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "missing scope", http.StatusForbidden)

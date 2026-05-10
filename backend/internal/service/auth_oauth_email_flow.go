@@ -25,6 +25,25 @@ func normalizeOAuthSignupSource(signupSource string) string {
 	}
 }
 
+func oauthProviderAllowsPasswordlessRegistration(signupSource string) bool {
+	return normalizeOAuthSignupSource(signupSource) == "google"
+}
+
+func (s *AuthService) resolveOAuthRegistrationPassword(signupSource string, password string) (string, error) {
+	trimmedPassword := strings.TrimSpace(password)
+	if trimmedPassword != "" {
+		return trimmedPassword, nil
+	}
+	if !oauthProviderAllowsPasswordlessRegistration(signupSource) {
+		return "", infraerrors.BadRequest("PASSWORD_REQUIRED", "password is required")
+	}
+	randomPassword, err := randomHexString(32)
+	if err != nil {
+		return "", fmt.Errorf("generate oauth fallback password: %w", err)
+	}
+	return randomPassword, nil
+}
+
 // SendPendingOAuthVerifyCode sends a local verification code for pending OAuth
 // account-creation flows without relying on the public registration gate.
 func (s *AuthService) SendPendingOAuthVerifyCode(ctx context.Context, email string) (*SendVerifyCodeResult, error) {
@@ -198,8 +217,10 @@ func (s *AuthService) RegisterVerifiedOAuthEmailAccount(
 	if err := s.validateRegistrationEmailPolicy(ctx, email); err != nil {
 		return nil, nil, err
 	}
-	if strings.TrimSpace(password) == "" {
-		return nil, nil, infraerrors.BadRequest("PASSWORD_REQUIRED", "password is required")
+	signupSource = normalizeOAuthSignupSource(signupSource)
+	resolvedPassword, err := s.resolveOAuthRegistrationPassword(signupSource, password)
+	if err != nil {
+		return nil, nil, err
 	}
 	if _, err := s.validateOAuthRegistrationInvitation(ctx, invitationCode); err != nil {
 		return nil, nil, err
@@ -213,12 +234,11 @@ func (s *AuthService) RegisterVerifiedOAuthEmailAccount(
 		return nil, nil, ErrEmailExists
 	}
 
-	hashedPassword, err := s.HashPassword(password)
+	hashedPassword, err := s.HashPassword(resolvedPassword)
 	if err != nil {
 		return nil, nil, fmt.Errorf("hash password: %w", err)
 	}
 
-	signupSource = normalizeOAuthSignupSource(signupSource)
 	grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
 	var defaultRPMLimit int
 	if s.settingService != nil {

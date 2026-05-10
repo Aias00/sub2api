@@ -223,4 +223,30 @@ describe('OAuthCallbackView', () => {
     expect(apiPostMock.mock.calls[0][1]).not.toHaveProperty('email')
     expect(setTokenMock).toHaveBeenCalledWith('token-2')
   })
+
+  it('allows google oauth registration completion without setting a password', async () => {
+    routeState.path = '/auth/oauth/callback'
+    exchangePendingOAuthCompletionMock.mockResolvedValue({
+      error: 'registration_completion_required',
+      provider: 'google',
+      redirect: '/dashboard',
+      resolved_email: 'google-only@example.com',
+      invitation_required: false,
+    })
+    apiPostMock.mockResolvedValue({
+      data: {
+        access_token: 'token-3',
+      },
+    })
+
+    const wrapper = mount(OAuthCallbackView)
+    await vi.dynamicImportSettled()
+
+    const submitButton = wrapper.findAll('button').at(0)
+    expect(submitButton?.attributes('disabled')).toBeUndefined()
+    await submitButton?.trigger('click')
+
+    expect(apiPostMock).toHaveBeenCalledWith('/auth/oauth/google/complete-registration', {})
+    expect(setTokenMock).toHaveBeenCalledWith('token-3')
+  })
 })

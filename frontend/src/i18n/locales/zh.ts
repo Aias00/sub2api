@@ -493,7 +493,8 @@ export default {
       completeRegistrationFailed: '注册失败，请检查邀请码后重试。'
     },
     emailOAuth: {
-      signIn: '使用 {providerName} 登录'
+      signIn: '使用 {providerName} 登录',
+      passwordOptionalHint: '{providerName} 登录可留空，稍后可在个人资料中补充设置密码。'
     },
     oidc: {
       signIn: '使用 {providerName} 登录',

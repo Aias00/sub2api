@@ -494,7 +494,8 @@ export default {
       completeRegistrationFailed: 'Registration failed. Please check your invitation code and try again.'
     },
     emailOAuth: {
-      signIn: 'Continue with {providerName}'
+      signIn: 'Continue with {providerName}',
+      passwordOptionalHint: 'You can leave this blank for {providerName} sign-in and set a password later from your profile.'
     },
     oidc: {
       signIn: 'Continue with {providerName}',
