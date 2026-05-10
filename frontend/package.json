@@ -46,6 +46,8 @@
     "@vitest/coverage-v8": "^2.1.9",
     "@vue/test-utils": "^2.4.6",
     "autoprefixer": "^10.4.16",
+    "docsify": "4.13.1",
+    "docsify-cli": "^4.4.4",
     "eslint": "^8.57.0",
     "eslint-plugin-vue": "^9.25.0",
     "jsdom": "^24.1.3",

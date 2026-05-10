@@ -398,7 +398,8 @@ export default {
     searchPlaceholder: 'Search docs',
     onThisPage: 'On this page',
     previousPage: 'Previous',
-    nextPage: 'Next'
+    nextPage: 'Next',
+    frameworkHint: 'Documentation is now powered by Docsify for lighter Markdown maintenance.'
   },
 
   // Auth

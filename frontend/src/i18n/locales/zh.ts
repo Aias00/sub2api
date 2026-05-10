@@ -398,7 +398,8 @@ export default {
     searchPlaceholder: '搜索文档',
     onThisPage: '本页目录',
     previousPage: '上一页',
-    nextPage: '下一页'
+    nextPage: '下一页',
+    frameworkHint: '文档现在由 Docsify 驱动，支持更轻量的 Markdown 维护方式。'
   },
 
   // Auth

@@ -1,21 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import {
-  defaultDocsSlug,
-  docsPages,
-  docsSections,
-  findDocsPage,
-  resolveDocsLink,
-} from '../docs'
-
-describe('docs registry', () => {
-  it('exposes a non-empty default page and grouped sections', () => {
-    expect(defaultDocsSlug).toBeTruthy()
-    expect(docsPages.length).toBeGreaterThanOrEqual(5)
-    expect(docsSections.length).toBeGreaterThanOrEqual(2)
-    expect(findDocsPage(defaultDocsSlug)?.content.length).toBeGreaterThan(20)
-  })
-})
+import { resolveDocsLink } from '../docs'
 
 describe('resolveDocsLink', () => {
   it('routes same-origin landing URLs to the internal docs page', () => {
