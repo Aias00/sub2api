@@ -6,6 +6,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { resolveCSPNonce } from '@/utils/cspNonce'
 
 interface TurnstileRenderOptions {
   sitekey: string
@@ -73,6 +74,11 @@ const loadScript = (): Promise<void> => {
     script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad'
     script.async = true
     script.defer = true
+    const nonce = resolveCSPNonce(document)
+    if (nonce) {
+      script.nonce = nonce
+      script.setAttribute('nonce', nonce)
+    }
 
     window.onTurnstileLoad = () => {
       scriptLoaded.value = true

@@ -57,6 +57,26 @@
 - Finish the in-flight frontend/backend builds.
 - If green, deploy to the server and verify that plain password login works without Turnstile while register/forgot-password still require it.
 
+## 2026-05-12 Turnstile CSP Nonce Propagation
+### Done
+- Narrowed the likely root cause of the remaining register/forgot-password Turnstile instability:
+  - the page is served with a CSP nonce
+  - the frontend `TurnstileWidget` was dynamically injecting `api.js` without reusing that nonce
+- Added a small CSP nonce resolver utility on the frontend.
+- Updated `TurnstileWidget` so the dynamically inserted Turnstile script copies the existing page nonce before appending.
+- Added a focused frontend regression test for nonce discovery.
+- Confirmed the server-side \"build on server\" path is close but not yet the default:
+  - Node and pnpm are available on the server
+  - the missing piece is `frontend/node_modules` / install step, not the toolchain binary itself
+
+### Failures
+- None yet for this nonce propagation patch; live re-validation is still pending.
+
+### Next
+- Finish the in-flight frontend test/typecheck/build runs.
+- Deploy the nonce propagation patch and re-check the register / forgot-password Turnstile behavior.
+- If that stabilizes, switch the deployment workflow to server-side frontend builds instead of uploading `dist`.
+
 ## Done
 - Confirmed GitHub Actions run 25547187360 failed in golangci-lint.
 - Retrieved the failing annotations from the job page.
