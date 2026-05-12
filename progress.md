@@ -4,12 +4,14 @@
 - Routed Docsify content by active locale, keeping Chinese at `/docs-content/` and adding English docs under `/docs-content/en/`.
 - Capped the mobile Docsify sidebar height and reduced its padding so the table of contents no longer consumes the whole first screen.
 - Kept the mobile dashboard CTA compact by showing the shorter dashboard label on small screens.
+- Deployed commit `ffaaf999` to the Google server with server-side frontend and backend builds.
+- Verified live docs in Chinese and English on mobile, plus dashboard, purchase, and profile desktop pages for overflow, raw i18n keys, and console errors.
 
 ### Failures
 - None; local verification passed.
 
 ### Next
-- Deploy the patch to the server and verify docs mobile/desktop plus language switching on the live site.
+- Continue lower-priority frontend style and interaction review after the current high-priority docs pass.
 
 ## 2026-05-10 Global Password Minimum Length
 ### Done
