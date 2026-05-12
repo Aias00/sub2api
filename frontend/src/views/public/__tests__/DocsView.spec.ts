@@ -10,9 +10,17 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).toContain('docsify/lib/docsify.min.js?url')
     expect(docsViewSource).toContain("docsify/lib/themes/vue.css?url")
     expect(docsViewSource).toContain('window.$docsify')
-    expect(docsViewSource).toContain("basePath: '/docs-content/'")
+    expect(docsViewSource).toContain('basePath: docsBasePath.value')
     expect(docsViewSource).not.toContain('findDocsPage(')
     expect(docsViewSource).not.toContain('marked.parse(')
+  })
+
+  it('exposes the shared locale switcher and routes Docsify content by locale', () => {
+    expect(docsViewSource).toContain('import LocaleSwitcher')
+    expect(docsViewSource).toContain('<LocaleSwitcher />')
+    expect(docsViewSource).toContain("locale.value === 'en' ? '/docs-content/en/' : '/docs-content/'")
+    expect(docsViewSource).toContain('const docsSidebarPath = computed')
+    expect(docsViewSource).toContain('window.location.reload()')
   })
 
   it('overrides Docsify default fixed layout so the product header stays pinned', () => {
@@ -24,7 +32,10 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).toContain('margin-left: 17rem !important')
     expect(docsViewSource).toContain(".docsify-shell :deep(.sidebar .app-name)")
     expect(docsViewSource).toContain('display: none !important;')
-    expect(docsViewSource).toContain("padding: 0.75rem 1rem 2rem !important;")
+    expect(docsViewSource).toContain("padding: 0.5rem 0.75rem 1rem !important;")
+    expect(docsViewSource).toContain('max-height: 16rem !important;')
+    expect(docsViewSource).toContain('padding-top: 0 !important;')
+    expect(docsViewSource).toContain('py-4 md:px-6 md:py-6')
     expect(docsViewSource).toContain('body.docs-page-body #app')
     expect(docsViewSource).toContain('margin: 0 !important')
   })

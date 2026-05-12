@@ -1,3 +1,16 @@
+## 2026-05-13 Docs Mobile and i18n Follow-Up
+### Done
+- Added the shared language switcher to the public Docsify docs header.
+- Routed Docsify content by active locale, keeping Chinese at `/docs-content/` and adding English docs under `/docs-content/en/`.
+- Capped the mobile Docsify sidebar height and reduced its padding so the table of contents no longer consumes the whole first screen.
+- Kept the mobile dashboard CTA compact by showing the shorter dashboard label on small screens.
+
+### Failures
+- None; local verification passed.
+
+### Next
+- Deploy the patch to the server and verify docs mobile/desktop plus language switching on the live site.
+
 ## 2026-05-10 Global Password Minimum Length
 ### Done
 - Added a shared backend password policy setting `password_min_length` with a hard floor of `8` and a default of `8`.

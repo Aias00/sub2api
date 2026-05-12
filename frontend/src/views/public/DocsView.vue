@@ -31,17 +31,19 @@
         </div>
 
         <div class="flex items-center gap-2">
+          <LocaleSwitcher />
           <router-link
             v-if="isAuthenticated"
             :to="dashboardPath"
-            class="inline-flex items-center rounded-xl bg-gray-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 dark:bg-primary-500 dark:text-slate-950 dark:hover:bg-primary-400"
+            class="inline-flex items-center rounded-xl bg-gray-950 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-800 sm:px-4 dark:bg-primary-500 dark:text-slate-950 dark:hover:bg-primary-400"
           >
-            {{ t('home.goToDashboard') }}
+            <span class="hidden sm:inline">{{ t('home.goToDashboard') }}</span>
+            <span class="sm:hidden">{{ t('nav.dashboard') }}</span>
           </router-link>
           <router-link
             v-else
             to="/login"
-            class="inline-flex items-center rounded-xl bg-gray-950 px-4 py-2 text-sm font-medium text-white transition hover:bg-gray-800 dark:bg-primary-500 dark:text-slate-950 dark:hover:bg-primary-400"
+            class="inline-flex items-center rounded-xl bg-gray-950 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-800 sm:px-4 dark:bg-primary-500 dark:text-slate-950 dark:hover:bg-primary-400"
           >
             {{ t('home.login') }}
           </router-link>
@@ -49,7 +51,7 @@
       </div>
     </header>
 
-    <main class="mx-auto max-w-[1600px] px-4 py-6 md:px-6">
+    <main class="mx-auto max-w-[1600px] px-4 py-4 md:px-6 md:py-6">
       <div class="rounded-[32px] border border-white/75 bg-white/92 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.35)] dark:border-white/10 dark:bg-slate-900/70">
         <div class="docsify-shell px-2 py-3 md:px-4">
           <div id="docsify-app" ref="docsifyRoot" class="min-h-[70vh]"></div>
@@ -65,6 +67,7 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
+import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import docsifyScriptUrl from 'docsify/lib/docsify.min.js?url'
 import docsifySearchPluginUrl from 'docsify/lib/plugins/search.min.js?url'
 import docsifyZoomImagePluginUrl from 'docsify/lib/plugins/zoom-image.min.js?url'
@@ -88,6 +91,8 @@ const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appS
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const dashboardPath = computed(() => (authStore.isAdmin ? '/admin/dashboard' : '/dashboard'))
+const docsBasePath = computed(() => (locale.value === 'en' ? '/docs-content/en/' : '/docs-content/'))
+const docsSidebarPath = computed(() => `${docsBasePath.value}_sidebar.md`)
 
 const docsHash = computed(() => normalizeDocsHashPath(route.params.pathMatch as string | string[] | undefined))
 
@@ -140,7 +145,7 @@ function configureDocsify() {
     el: '#docsify-app',
     name: siteName.value,
     nameLink: '/home',
-    basePath: '/docs-content/',
+    basePath: docsBasePath.value,
     homepage: 'README.md',
     loadSidebar: true,
     subMaxLevel: 3,
@@ -154,7 +159,7 @@ function configureDocsify() {
       depth: 4,
     },
     alias: {
-      '/.*/_sidebar.md': '/docs-content/_sidebar.md',
+      '/.*/_sidebar.md': docsSidebarPath.value,
     },
   }
 }
@@ -188,8 +193,7 @@ watch(
 
 watch(locale, () => {
   if (!docsifyLoaded) return
-  configureDocsify()
-  syncHash(true)
+  window.location.reload()
 })
 
 onMounted(async () => {
@@ -321,10 +325,22 @@ onBeforeUnmount(() => {
   .docsify-shell :deep(.sidebar) {
     position: relative !important;
     width: 100% !important;
+    max-height: 16rem !important;
     height: auto !important;
     flex-basis: auto;
     border-right: 0;
     border-bottom: 1px solid rgba(148, 163, 184, 0.18);
+    padding: 0.5rem 0.75rem 1rem !important;
+    overflow-y: auto;
+  }
+
+  .docsify-shell :deep(.sidebar-nav) {
+    padding-top: 0 !important;
+  }
+
+  .docsify-shell :deep(.sidebar-nav > ul),
+  .docsify-shell :deep(.sidebar-nav > ul > li:first-child) {
+    margin-top: 0 !important;
   }
 
   .docsify-shell :deep(.content) {
