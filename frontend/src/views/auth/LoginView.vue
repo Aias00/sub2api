@@ -78,21 +78,10 @@
           </div>
         </div>
 
-        <!-- Turnstile Widget -->
-        <div v-if="turnstileEnabled && turnstileSiteKey">
-          <TurnstileWidget
-            ref="turnstileRef"
-            :site-key="turnstileSiteKey"
-            @verify="onTurnstileVerify"
-            @expire="onTurnstileExpire"
-            @error="onTurnstileError"
-          />
-        </div>
-
         <!-- Submit Button -->
         <button
           type="submit"
-          :disabled="authActionDisabled || (turnstileEnabled && !turnstileToken)"
+          :disabled="authActionDisabled"
           class="btn btn-primary w-full"
         >
           <svg
@@ -204,7 +193,6 @@ import EmailOAuthButtons from '@/components/auth/EmailOAuthButtons.vue'
 import LoginAgreementPrompt from '@/components/auth/LoginAgreementPrompt.vue'
 import TotpLoginModal from '@/components/auth/TotpLoginModal.vue'
 import Icon from '@/components/icons/Icon.vue'
-import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { useAuthStore, useAppStore } from '@/stores'
 import { getPublicSettings, isTotp2FARequired, isWeChatWebOAuthEnabled } from '@/api/auth'
 import type { LoginAgreementDocument, TotpLoginResponse } from '@/types'
@@ -228,8 +216,6 @@ const showPassword = ref<boolean>(false)
 const publicSettingsLoaded = ref<boolean>(false)
 
 // Public settings
-const turnstileEnabled = ref<boolean>(false)
-const turnstileSiteKey = ref<string>('')
 const linuxdoOAuthEnabled = ref<boolean>(false)
 const wechatOAuthEnabled = ref<boolean>(false)
 const backendModeEnabled = ref<boolean>(false)
@@ -247,9 +233,6 @@ const agreementAccepted = ref<boolean>(false)
 const showAgreementModal = ref<boolean>(false)
 
 // Turnstile
-const turnstileRef = ref<InstanceType<typeof TurnstileWidget> | null>(null)
-const turnstileToken = ref<string>('')
-
 // 2FA state
 const show2FAModal = ref<boolean>(false)
 const totpTempToken = ref<string>('')
@@ -263,12 +246,11 @@ const formData = reactive({
 
 const errors = reactive({
   email: '',
-  password: '',
-  turnstile: ''
+  password: ''
 })
 
 const validationToastMessage = computed(
-  () => errors.email || errors.password || errors.turnstile || ''
+  () => errors.email || errors.password || ''
 )
 
 const agreementGateActive = computed(
@@ -308,8 +290,6 @@ onMounted(async () => {
 
   try {
     const settings = await getPublicSettings()
-    turnstileEnabled.value = settings.turnstile_enabled
-    turnstileSiteKey.value = settings.turnstile_site_key || ''
     linuxdoOAuthEnabled.value = settings.linuxdo_oauth_enabled
     wechatOAuthEnabled.value = isWeChatWebOAuthEnabled(settings)
     backendModeEnabled.value = settings.backend_mode_enabled
@@ -391,30 +371,12 @@ function rejectLoginAgreement(): void {
   appStore.showWarning('未同意最新条款前，无法输入账号密码或使用快捷登录。')
 }
 
-// ==================== Turnstile Handlers ====================
-
-function onTurnstileVerify(token: string): void {
-  turnstileToken.value = token
-  errors.turnstile = ''
-}
-
-function onTurnstileExpire(): void {
-  turnstileToken.value = ''
-  errors.turnstile = t('auth.turnstileExpired')
-}
-
-function onTurnstileError(): void {
-  turnstileToken.value = ''
-  errors.turnstile = t('auth.turnstileFailed')
-}
-
 // ==================== Validation ====================
 
 function validateForm(): boolean {
   // Reset errors
   errors.email = ''
   errors.password = ''
-  errors.turnstile = ''
 
   let isValid = true
 
@@ -441,12 +403,6 @@ function validateForm(): boolean {
     isValid = false
   }
 
-  // Turnstile validation
-  if (turnstileEnabled.value && !turnstileToken.value) {
-    errors.turnstile = t('auth.completeVerification')
-    isValid = false
-  }
-
   return isValid
 }
 
@@ -468,7 +424,6 @@ async function handleLogin(): Promise<void> {
     const response = await authStore.login({
       email: formData.email,
       password: formData.password,
-      turnstile_token: turnstileEnabled.value ? turnstileToken.value : undefined
     })
 
     // Check if 2FA is required
@@ -489,12 +444,6 @@ async function handleLogin(): Promise<void> {
     const redirectTo = (router.currentRoute.value.query.redirect as string) || '/dashboard'
     await router.push(redirectTo)
   } catch (error: unknown) {
-    // Reset Turnstile on error
-    if (turnstileRef.value) {
-      turnstileRef.value.reset()
-      turnstileToken.value = ''
-    }
-
     errorMessage.value = extractI18nErrorMessage(error, t, 'auth.errors', t('auth.loginFailed'))
 
     // Also show error toast

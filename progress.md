@@ -32,6 +32,31 @@
 - Finish the in-flight `go test -tags unit ...` rerun after the assertion fix.
 - If green, run the final default Go test pass, then deploy the rebuilt frontend/backend to the live server.
 
+## 2026-05-12 Login Turnstile Scope
+### Done
+- Traced the live login flow and confirmed the current behavior:
+  - frontend rendered Turnstile on the password-login page whenever `turnstile_enabled=true`
+  - the login button stayed disabled until a Turnstile token existed
+  - backend `/api/v1/auth/login` also hard-required `turnstile_token`
+- Confirmed the live site currently produces Turnstile/CSP/Trusted Types console errors on the login page, making the password-login chain too brittle.
+- Narrowed Turnstile scope so it no longer blocks standard email/password login.
+- Kept Turnstile on higher-friction flows that still benefit from it:
+  - register
+  - forgot password
+  - verification-code sending
+  - pending OAuth account creation code send
+- Updated admin Turnstile copy to reflect the new scope instead of still claiming it protects login.
+- Added a focused LoginView regression test to lock:
+  - no Turnstile widget on password login even when public settings report it enabled
+  - login submission no longer sends `turnstile_token`
+
+### Failures
+- None during the code change itself; the original issue was reproducible in live QA rather than in unit tests.
+
+### Next
+- Finish the in-flight frontend/backend builds.
+- If green, deploy to the server and verify that plain password login works without Turnstile while register/forgot-password still require it.
+
 ## Done
 - Confirmed GitHub Actions run 25547187360 failed in golangci-lint.
 - Retrieved the failing annotations from the job page.

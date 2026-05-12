@@ -5550,9 +5550,9 @@ export default {
       },
       turnstile: {
         title: 'Cloudflare Turnstile',
-        description: '登录和注册的机器人防护',
+        description: '注册、找回密码和验证码发送的人机校验',
         enableTurnstile: '启用 Turnstile',
-        enableTurnstileHint: '需要 Cloudflare Turnstile 验证',
+        enableTurnstileHint: '开启后，注册、找回密码和验证码发送会要求通过 Cloudflare Turnstile 验证',
         siteKey: '站点密钥',
         secretKey: '私密密钥',
         siteKeyHint: '从 Cloudflare Dashboard 获取',

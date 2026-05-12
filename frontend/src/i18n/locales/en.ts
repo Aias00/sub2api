@@ -5387,9 +5387,9 @@ export default {
       },
       turnstile: {
         title: 'Cloudflare Turnstile',
-        description: 'Bot protection for login and registration',
+        description: 'Human verification for registration, password recovery, and verification-code sending',
         enableTurnstile: 'Enable Turnstile',
-        enableTurnstileHint: 'Require Cloudflare Turnstile verification',
+        enableTurnstileHint: 'When enabled, registration, password recovery, and verification-code sending require Cloudflare Turnstile verification',
         siteKey: 'Site Key',
         secretKey: 'Secret Key',
         siteKeyHint: 'Get this from your Cloudflare Dashboard',
