@@ -11,6 +11,11 @@ export interface OnboardingOptions {
   autoStart?: boolean
 }
 
+export function shouldAutoStartAdminOnboarding(pathname: string): boolean {
+  const normalized = pathname.trim().replace(/\/+$/, '') || '/'
+  return normalized === '/dashboard' || normalized === '/admin/dashboard'
+}
+
 export function useOnboardingTour(options: OnboardingOptions) {
   const { t } = useI18n()
   const userStore = useUserStore()
@@ -536,9 +541,13 @@ export function useOnboardingTour(options: OnboardingOptions) {
       return
     }
 
-    // 只在管理员+标准模式下自动启动
+    // 只在管理员+标准模式下自动启动，并且仅限仪表盘入口。
+    // 避免首次进入配置页/列表页时被引导遮罩直接拦住操作。
     const isAdmin = userStore.user?.role === 'admin'
     if (!isAdmin) {
+      return
+    }
+    if (typeof window !== 'undefined' && !shouldAutoStartAdminOnboarding(window.location.pathname)) {
       return
     }
 

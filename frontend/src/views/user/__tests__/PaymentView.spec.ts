@@ -461,4 +461,9 @@ describe('PaymentView configurable recharge catalog', () => {
     expect(paymentViewSource).toContain('<div v-else class="card p-6">')
     expect(paymentViewSource).toContain('<AmountInput')
   })
+
+  it('shows a select-amount prompt instead of a fake zero-yuan submit label before recharge selection', async () => {
+    expect(paymentViewSource).toContain('rechargeButtonLabel')
+    expect(paymentViewSource).toContain("t('payment.selectAmountFirst')")
+  })
 })

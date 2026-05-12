@@ -6663,6 +6663,7 @@ export default {
     amountTooLow: 'Minimum amount is {min}',
     amountTooHigh: 'Maximum amount is {max}',
     amountNoMethod: 'No payment method available for this amount',
+    selectAmountFirst: 'Select an amount first',
     rechargeRatePreview: 'Current rate: 1 CNY = {usd} USD',
     rechargeProducts: {
       recommended: 'Recommended',

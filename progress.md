@@ -77,6 +77,27 @@
 - Deploy the nonce propagation patch and re-check the register / forgot-password Turnstile behavior.
 - If that stabilizes, switch the deployment workflow to server-side frontend builds instead of uploading `dist`.
 
+## 2026-05-12 Server-side Frontend Build + UI Anomalies
+### Done
+- Installed the frontend build toolchain on the server:
+  - `nodejs`
+  - `npm`
+  - global `pnpm`
+- Installed server-side frontend dependencies under `/home/aias94coffee/sub2api-work/sub2api-main/frontend/node_modules`.
+- Verified the server can now run:
+  - `pnpm install --frozen-lockfile`
+  - `pnpm exec vite build`
+  - backend `go build -tags embed`
+- Narrowed admin onboarding auto-start so it only launches automatically from dashboard entry routes, not arbitrary admin pages like settings or plan management.
+- Updated the recharge page CTA so it no longer shows a misleading `¥0.00` payment label before the user has selected an amount.
+
+### Failures
+- None for these two UI changes; both passed local targeted tests and typecheck.
+
+### Next
+- Deploy the onboarding + recharge CTA adjustments with the server-side build flow.
+- Continue the remaining anomaly sweep after those are live.
+
 ## Done
 - Confirmed GitHub Actions run 25547187360 failed in golangci-lint.
 - Retrieved the failing annotations from the job page.
