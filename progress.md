@@ -461,3 +461,19 @@
 
 ### Next
 - Deploy the Stripe event ACK fix to the server and verify the exact `capability.updated` payload now returns `200`; separately confirm the Stripe provider has the live endpoint signing secret configured for real payment events.
+
+## 2026-05-13 Frontend Purchase Flow Follow-Up
+### Done
+- Ran a live UI sweep across `/dashboard`, `/purchase`, `/profile`, `/docs`, and auth pages on `https://cloudbase.eu.org`.
+- Confirmed no current horizontal overflow, raw i18n key leak, or console error on the refreshed page sweep.
+- Found that `/purchase` still falls back to the legacy quick amount/custom amount UI when no recharge products are configured, contradicting the product-card catalog direction.
+- Updated the user purchase page so recharge now only renders configured product cards; an empty product catalog shows a proper empty state instead of legacy amount inputs.
+- Updated the admin settings copy so an empty recharge product list describes the new empty-catalog behavior.
+- Verified the change with the focused `PaymentView` test suite, `vue-tsc --noEmit`, a production Vite build, and a local Vite preview proxied to the live API.
+
+### Failures
+- The Codex in-app browser automation channel timed out twice, so the sweep used the available Playwright browser context instead.
+- A temporary rendered component assertion was removed because `PaymentView`'s existing shallow `AppLayout` stubbing does not render default slots reliably; the existing source regression plus browser preview covered the behavior instead.
+
+### Next
+- Commit, push, deploy to the server, then re-check live `/purchase` for the empty catalog state.

@@ -456,10 +456,10 @@ describe('PaymentView configurable recharge catalog', () => {
   })
 
   it('renders recharge products instead of the legacy quick-amount matrix when products are configured', async () => {
-    expect(paymentViewSource).toContain('<template v-if="rechargeProducts.length > 0">')
+    expect(paymentViewSource).toContain('rechargeProducts.length === 0')
+    expect(paymentViewSource).toContain("t('payment.noRechargeProducts')")
     expect(paymentViewSource).toContain('<RechargeProductCard')
-    expect(paymentViewSource).toContain('<div v-else class="card p-6">')
-    expect(paymentViewSource).toContain('<AmountInput')
+    expect(paymentViewSource).not.toContain('<AmountInput')
   })
 
   it('shows a select-amount prompt instead of a fake zero-yuan submit label before recharge selection', async () => {

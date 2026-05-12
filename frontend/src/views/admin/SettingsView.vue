@@ -5405,8 +5405,8 @@
                       <p class="text-sm text-gray-500 dark:text-gray-400">
                         {{
                           localText(
-                            "配置一个就展示一个；为空时用户端回退到旧版自定义金额输入。",
-                            "Each configured product appears on the recharge tab. Leave empty to fall back to the legacy custom amount input.",
+                            "配置一个就展示一个；为空时用户端显示暂无可用充值商品。",
+                            "Each configured product appears on the recharge tab. Leave empty to show an empty recharge catalog.",
                           )
                         }}
                       </p>
@@ -5426,8 +5426,8 @@
                   >
                     {{
                       localText(
-                        "当前未配置充值商品，用户端将继续显示旧版快捷金额输入。",
-                        "No recharge products configured. The user page will continue showing the legacy quick amount input.",
+                        "当前未配置充值商品，用户端将显示暂无可用充值商品。",
+                        "No recharge products configured. The user page will show an empty recharge catalog.",
                       )
                     }}
                   </div>

@@ -6842,6 +6842,7 @@ export default {
     tabTopUp: '充值',
     tabSubscribe: '订阅',
     noPlans: '暂无可用订阅套餐',
+    noRechargeProducts: '暂无可用充值商品',
     notAvailable: '充值功能暂未开放',
     confirmSubscription: '确认订阅',
     confirmCancel: '确定要取消此订单吗？',
