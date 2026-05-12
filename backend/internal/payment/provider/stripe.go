@@ -142,6 +142,10 @@ func (s *Stripe) QueryOrder(ctx context.Context, tradeNo string) (*payment.Query
 
 // VerifyNotification verifies a Stripe webhook event.
 func (s *Stripe) VerifyNotification(_ context.Context, rawBody string, headers map[string]string) (*payment.PaymentNotification, error) {
+	if eventType, ok := stripeEventTypeFromRaw(rawBody); ok && !isStripePaymentEvent(eventType) {
+		return nil, nil
+	}
+
 	s.ensureInit()
 
 	webhookSecret := s.config["webhookSecret"]
@@ -167,6 +171,22 @@ func (s *Stripe) VerifyNotification(_ context.Context, rawBody string, headers m
 	}
 
 	return nil, nil
+}
+
+type stripeEventEnvelope struct {
+	Type string `json:"type"`
+}
+
+func stripeEventTypeFromRaw(rawBody string) (string, bool) {
+	var envelope stripeEventEnvelope
+	if err := json.Unmarshal([]byte(rawBody), &envelope); err != nil || envelope.Type == "" {
+		return "", false
+	}
+	return envelope.Type, true
+}
+
+func isStripePaymentEvent(eventType string) bool {
+	return eventType == stripeEventPaymentSuccess || eventType == stripeEventPaymentFailed
 }
 
 func parseStripePaymentIntent(event *stripe.Event, status string, rawBody string) (*payment.PaymentNotification, error) {
