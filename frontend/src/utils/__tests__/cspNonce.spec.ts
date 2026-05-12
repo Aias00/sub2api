@@ -12,6 +12,17 @@ describe('resolveCSPNonce', () => {
     expect(resolveCSPNonce(doc)).toBe('nonce-123')
   })
 
+  it('scans all scripts and returns the first non-empty nonce', () => {
+    const doc = document.implementation.createHTMLDocument('nonce')
+    const scriptWithoutNonce = doc.createElement('script')
+    doc.head.appendChild(scriptWithoutNonce)
+    const scriptWithNonce = doc.createElement('script')
+    scriptWithNonce.nonce = 'runtime-nonce'
+    doc.head.appendChild(scriptWithNonce)
+
+    expect(resolveCSPNonce(doc)).toBe('runtime-nonce')
+  })
+
   it('falls back to a csp-nonce meta tag when no script nonce exists', () => {
     const doc = document.implementation.createHTMLDocument('nonce')
     const meta = doc.createElement('meta')
