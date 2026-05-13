@@ -1,3 +1,22 @@
+## 2026-05-13 Docs Content Rewrite
+### Done
+- Replaced the small built-in docs set with a DragonCode-inspired information architecture:
+  - site introduction
+  - environment preparation
+  - quickstarts
+  - advanced guides
+- Rewrote the content for cloudbase instead of copying third-party wording verbatim.
+- Updated all project URLs in the docs to `https://cloudbase.eu.org`.
+- Added matching English docs so the existing docs i18n switch remains useful.
+- Removed stale `getting-started` / `guides` docs that were no longer linked.
+- Fixed Docsify sidebar loading so localized docs load `_sidebar.md` from the active `basePath`.
+
+### Failures
+- Local Vite preview reports `/setup/status` and `/api/v1/settings/public` proxy errors because no backend is attached to the preview server; docs content itself renders normally.
+
+### Next
+- Commit, push, build on the server, restart the service, and verify the live `/docs` page.
+
 ## 2026-05-13 Docs Mobile and i18n Follow-Up
 ### Done
 - Added the shared language switcher to the public Docsify docs header.

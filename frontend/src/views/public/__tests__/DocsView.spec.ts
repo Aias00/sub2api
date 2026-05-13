@@ -19,7 +19,9 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).toContain('import LocaleSwitcher')
     expect(docsViewSource).toContain('<LocaleSwitcher />')
     expect(docsViewSource).toContain("locale.value === 'en' ? '/docs-content/en/' : '/docs-content/'")
-    expect(docsViewSource).toContain('const docsSidebarPath = computed')
+    expect(docsViewSource).toContain("loadSidebar: '_sidebar.md'")
+    expect(docsViewSource).not.toContain('const docsSidebarPath = computed')
+    expect(docsViewSource).not.toContain("'/.*/_sidebar.md'")
     expect(docsViewSource).toContain('window.location.reload()')
   })
 

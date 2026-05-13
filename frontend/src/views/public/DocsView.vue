@@ -92,7 +92,6 @@ const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appS
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const dashboardPath = computed(() => (authStore.isAdmin ? '/admin/dashboard' : '/dashboard'))
 const docsBasePath = computed(() => (locale.value === 'en' ? '/docs-content/en/' : '/docs-content/'))
-const docsSidebarPath = computed(() => `${docsBasePath.value}_sidebar.md`)
 
 const docsHash = computed(() => normalizeDocsHashPath(route.params.pathMatch as string | string[] | undefined))
 
@@ -147,7 +146,7 @@ function configureDocsify() {
     nameLink: '/home',
     basePath: docsBasePath.value,
     homepage: 'README.md',
-    loadSidebar: true,
+    loadSidebar: '_sidebar.md',
     subMaxLevel: 3,
     auto2top: true,
     relativePath: true,
@@ -157,9 +156,6 @@ function configureDocsify() {
       placeholder: locale.value === 'zh' ? '搜索文档' : 'Search docs',
       noData: locale.value === 'zh' ? '没有找到结果' : 'No results',
       depth: 4,
-    },
-    alias: {
-      '/.*/_sidebar.md': docsSidebarPath.value,
     },
   }
 }

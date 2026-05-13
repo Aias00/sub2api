@@ -1,45 +1,59 @@
-# Overview
+# cloudbase Guide
 
-Welcome to the cloudbase documentation center.
+cloudbase is a unified gateway for AI development tools. It lets you connect Claude Code, Codex, Cherry Studio, Claude Desktop, and similar clients through one platform account, one billing system, and managed API keys.
 
-The goal is not to explain every button one by one. It is to give you the shortest path to get started, stay stable, and troubleshoot quickly.
+Console: [https://cloudbase.eu.org](https://cloudbase.eu.org)
 
-## What problem does this platform solve?
+## What is cloudbase?
 
-cloudbase unifies multiple upstream AI services behind one controllable gateway.
+cloudbase puts multiple upstream AI services behind a controlled gateway.
 
-- You only need to maintain one platform account and a set of API keys.
-- You can switch models and routing groups through the same entry point.
-- You can use balance, subscriptions, quotas, and statistics to control cost and usage scope.
+- Manage balance, subscriptions, orders, and API keys in one account.
+- Use one gateway endpoint for multiple developer tools.
+- Route models through groups with different channel and pricing policies.
+- Track requests, token usage, spend, and latency from the dashboard.
 
-## Who is it for?
+## Core Features
 
-- Individual developers who want fewer accounts to maintain and faster model access.
-- Small teams that need shared credits, usage limits, and usage visibility.
-- Operators or administrators who need to manage channels, plans, payments, and users visually.
+### Unified API Keys
 
-## Core Pages
-
-### Dashboard
-
-Quickly check balance, request count, token usage, latency, and recent trends.
-
-### API Keys
-
-Create and manage client-facing access keys. Most users start here before their first integration.
+Create an API key in the console and use it in Claude Code, Codex, Cherry Studio, Claude Desktop, or any client that supports a custom provider.
 
 ### Gateway Guide
 
-The page generates gateway URLs, authentication headers, and example code based on the group bound to the current API key.
+The Gateway Guide page generates the Base URL, authentication header, and examples for the selected key and group. Prefer the values shown in the console over hard-coded examples.
 
-### Billing and Subscriptions
+### Balance and Subscriptions
 
-Purchase recharge products, subscribe to plans, and review orders or payment status.
+The purchase page shows only products configured and enabled by administrators.
 
-## Recommended Reading Order
+### Usage Visibility
 
-1. [Quick Start](getting-started/quick-start)
-2. [API Keys](guides/api-keys)
-3. [Gateway Calls](guides/gateway)
-4. [Billing and Subscriptions](guides/billing)
-5. [Account and Security](guides/security)
+Use the dashboard and usage records to understand cost, model usage, and failed requests.
+
+## Quick Start
+
+### 1. Create an account
+
+Open [https://cloudbase.eu.org/register](https://cloudbase.eu.org/register) and create an account with email or an enabled third-party login provider.
+
+### 2. Add credit or subscribe
+
+Open [Purchase](https://cloudbase.eu.org/purchase) and select an available product.
+
+### 3. Create an API key
+
+Open **API Keys** and create a key. Use separate keys for separate tools whenever possible.
+
+### 4. Configure your tool
+
+Choose the matching quickstart:
+
+- [Claude Code Quickstart](quickstart/claude-code)
+- [Codex Quickstart](quickstart/codex)
+- [Cherry Studio Quickstart](quickstart/cherry-studio)
+- [Claude Desktop Third-party Provider](quickstart/claude-desktop)
+
+## Getting Help
+
+When asking for help, provide the tool name, tool version, Base URL shown in the console, error logs, model name, and request time. Never expose a full API key in screenshots or messages.
