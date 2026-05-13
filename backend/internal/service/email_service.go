@@ -384,11 +384,6 @@ func (s *EmailService) VerifyCode(ctx context.Context, email, code string) error
 	return nil
 }
 
-// buildVerifyCodeEmailBody 构建验证码邮件HTML内容
-func (s *EmailService) buildVerifyCodeEmailBody(code, siteName string) string {
-	return s.buildVerifyCodeEmailBodyWithLogo(code, siteName, "")
-}
-
 func (s *EmailService) buildVerifyCodeEmailBodyWithLogo(code, siteName, logoURL string) string {
 	siteName = normalizeEmailSiteName(siteName)
 	return renderProductEmail(emailTemplateData{
@@ -551,11 +546,6 @@ func (s *EmailService) ConsumePasswordResetToken(ctx context.Context, email, tok
 		slog.Error("failed to delete password reset token after consumption", "email", email, "error", err)
 	}
 	return nil
-}
-
-// buildPasswordResetEmailBody builds the HTML content for password reset email
-func (s *EmailService) buildPasswordResetEmailBody(resetURL, siteName string) string {
-	return s.buildPasswordResetEmailBodyWithLogo(resetURL, siteName, "")
 }
 
 func (s *EmailService) buildPasswordResetEmailBodyWithLogo(resetURL, siteName, logoURL string) string {

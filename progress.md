@@ -27,6 +27,28 @@
 - Commit and push the backend-only limit.
 - Deploy to the Google server and verify the live backend restarts on `SERVER_PORT=8081`.
 
+## 2026-05-13 CI Follow-up After Email Rate Limit
+### Done
+- Investigated the GitHub Actions failure for commit `ceac08cd`.
+- Fixed frontend lint by replacing the Docs build-time global with `import.meta.env.VITE_DOCS_CONTENT_VERSION`.
+- Fixed backend lint by:
+  - checking/explicitly ignoring email template `strings.Builder` writes
+  - checking/explicitly ignoring registration webhook HMAC writes and response body close
+  - removing obsolete no-logo email-template wrapper functions that were only referenced by unit tests
+  - updating unit tests to call the current `WithLogo(..., "")` helpers directly
+- Verified:
+  - `make test-frontend`
+  - `go test -tags=unit ./internal/service -count=1`
+  - `make build`
+  - `git diff --check`
+
+### Failures
+- Local `golangci-lint run --timeout=30m` could not execute because the installed binary was built with Go 1.25 while the project targets Go 1.26.3; CI uses the correct v2.9 binary.
+
+### Next
+- Commit and push the CI follow-up.
+- Monitor the new CI run and deploy if it passes.
+
 ## 2026-05-13 Admin Stats and Registration Push
 ### Done
 - Verified live admin dashboard/statistics APIs with the provided admin account:

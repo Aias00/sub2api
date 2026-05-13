@@ -92,7 +92,7 @@ const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appS
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const dashboardPath = computed(() => (authStore.isAdmin ? '/admin/dashboard' : '/dashboard'))
 const docsBasePath = computed(() => (locale.value === 'en' ? '/docs-content/en/' : '/docs-content/'))
-const docsContentVersion = encodeURIComponent(__DOCS_CONTENT_VERSION__)
+const docsContentVersion = encodeURIComponent(import.meta.env.VITE_DOCS_CONTENT_VERSION || '')
 const docsVersionQueryKey = '_docs_v'
 const appRouteDocsLinks = new Set(['#/home', '#/dashboard', '#/register', '#/purchase'])
 

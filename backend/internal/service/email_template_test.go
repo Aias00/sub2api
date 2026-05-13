@@ -12,7 +12,7 @@ import (
 
 func TestBuildVerifyCodeEmailBody_UsesCursorStyleCodeTemplate(t *testing.T) {
 	s := &EmailService{}
-	body := s.buildVerifyCodeEmailBody("199929", "cloudbase")
+	body := s.buildVerifyCodeEmailBodyWithLogo("199929", "cloudbase", "")
 
 	require.Contains(t, body, "Verify your email for cloudbase")
 	require.Contains(t, body, "You requested a one-time verification code for cloudbase")
@@ -25,7 +25,7 @@ func TestBuildVerifyCodeEmailBody_UsesCursorStyleCodeTemplate(t *testing.T) {
 
 func TestBuildVerifyCodeEmailBody_EscapesSiteName(t *testing.T) {
 	s := &EmailService{}
-	body := s.buildVerifyCodeEmailBody("123456", `site<script>`)
+	body := s.buildVerifyCodeEmailBodyWithLogo("123456", `site<script>`, "")
 
 	require.Contains(t, body, "site&lt;script&gt;")
 	require.NotContains(t, body, "<script>")
@@ -33,7 +33,7 @@ func TestBuildVerifyCodeEmailBody_EscapesSiteName(t *testing.T) {
 
 func TestBuildPasswordResetEmailBody_UsesActionTemplate(t *testing.T) {
 	s := &EmailService{}
-	body := s.buildPasswordResetEmailBody(`https://example.com/reset?email=a@b.com&token=<x>`, "cloudbase")
+	body := s.buildPasswordResetEmailBodyWithLogo(`https://example.com/reset?email=a@b.com&token=<x>`, "cloudbase", "")
 
 	require.Contains(t, body, "Reset your cloudbase password")
 	require.Contains(t, body, "Reset password")
@@ -43,7 +43,7 @@ func TestBuildPasswordResetEmailBody_UsesActionTemplate(t *testing.T) {
 }
 
 func TestBuildNotifyVerifyEmailBody_UsesSharedCodeTemplate(t *testing.T) {
-	body := buildNotifyVerifyEmailBody("654321", "cloudbase")
+	body := buildNotifyVerifyEmailBodyWithLogo("654321", "cloudbase", "")
 
 	require.Contains(t, body, "Verify notification email for cloudbase")
 	require.Contains(t, body, "654321")

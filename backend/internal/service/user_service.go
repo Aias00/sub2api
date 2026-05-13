@@ -1316,11 +1316,6 @@ func (s *UserService) ToggleNotifyEmail(ctx context.Context, userID int64, email
 	return s.userRepo.Update(ctx, user)
 }
 
-// buildNotifyVerifyEmailBody builds the HTML email body for notify email verification.
-func buildNotifyVerifyEmailBody(code, siteName string) string {
-	return buildNotifyVerifyEmailBodyWithLogo(code, siteName, "")
-}
-
 func buildNotifyVerifyEmailBodyWithLogo(code, siteName, logoURL string) string {
 	siteName = normalizeEmailSiteName(siteName)
 	return renderProductEmail(emailTemplateData{

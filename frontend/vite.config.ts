@@ -59,7 +59,7 @@ export default defineConfig(({ mode }) => {
     // 启用 vue-i18n JIT 编译，在 CSP 环境下处理消息插值
     // JIT 编译器生成 AST 对象而非 JS 代码，无需 unsafe-eval
     __INTLIFY_JIT_COMPILATION__: true,
-    __DOCS_CONTENT_VERSION__: JSON.stringify(String(Date.now()))
+    'import.meta.env.VITE_DOCS_CONTENT_VERSION': JSON.stringify(String(Date.now()))
   },
   build: {
     outDir: '../backend/internal/web/dist',

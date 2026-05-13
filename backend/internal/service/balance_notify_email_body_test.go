@@ -17,7 +17,7 @@ import (
 
 func TestBuildBalanceLowEmailBody_ContainsRequiredFields(t *testing.T) {
 	s := &BalanceNotifyService{}
-	body := s.buildBalanceLowEmailBody("Alice", 3.14, 10.0, "MySite", "")
+	body := s.buildBalanceLowEmailBodyWithLogo("Alice", 3.14, 10.0, "MySite", "", "")
 
 	// All substituted values should appear in the output.
 	require.Contains(t, body, "MySite")
@@ -33,7 +33,7 @@ func TestBuildBalanceLowEmailBody_ContainsRequiredFields(t *testing.T) {
 
 func TestBuildBalanceLowEmailBody_WithRechargeURL(t *testing.T) {
 	s := &BalanceNotifyService{}
-	body := s.buildBalanceLowEmailBody("Bob", 5.0, 20.0, "Site", "https://example.com/pay")
+	body := s.buildBalanceLowEmailBodyWithLogo("Bob", 5.0, 20.0, "Site", "https://example.com/pay", "")
 
 	// The recharge anchor element should appear with the URL.
 	require.Contains(t, body, `href="https://example.com/pay"`)
@@ -44,7 +44,7 @@ func TestBuildBalanceLowEmailBody_WithRechargeURL(t *testing.T) {
 func TestBuildBalanceLowEmailBody_RechargeURLEscaped(t *testing.T) {
 	s := &BalanceNotifyService{}
 	// Try a URL with characters that need HTML escaping.
-	body := s.buildBalanceLowEmailBody("u", 1.0, 5.0, "Site", `https://example.com/?a=1&b=<script>`)
+	body := s.buildBalanceLowEmailBodyWithLogo("u", 1.0, 5.0, "Site", `https://example.com/?a=1&b=<script>`, "")
 
 	// `&` and `<` should be escaped in the href.
 	require.Contains(t, body, "&amp;")
@@ -54,7 +54,7 @@ func TestBuildBalanceLowEmailBody_RechargeURLEscaped(t *testing.T) {
 
 func TestBuildBalanceLowEmailBody_NoRechargeURLOmitsButton(t *testing.T) {
 	s := &BalanceNotifyService{}
-	body := s.buildBalanceLowEmailBody("u", 1.0, 5.0, "Site", "")
+	body := s.buildBalanceLowEmailBodyWithLogo("u", 1.0, 5.0, "Site", "", "")
 	// The anchor element should not be rendered (style class may still appear).
 	require.NotContains(t, body, `<a href`)
 	require.NotContains(t, body, "立即充值")
@@ -64,7 +64,7 @@ func TestBuildBalanceLowEmailBody_NoRechargeURLOmitsButton(t *testing.T) {
 
 func TestBuildQuotaAlertEmailBody_AllFieldsPresent(t *testing.T) {
 	s := &BalanceNotifyService{}
-	body := s.buildQuotaAlertEmailBody(
+	body := s.buildQuotaAlertEmailBodyWithLogo(
 		42,            // accountID
 		"acc-foo",     // accountName
 		"anthropic",   // platform
@@ -74,6 +74,7 @@ func TestBuildQuotaAlertEmailBody_AllFieldsPresent(t *testing.T) {
 		249.50,        // remaining
 		"$249.50",     // thresholdDisplay
 		"MySite",      // siteName
+		"",
 	)
 
 	require.Contains(t, body, "MySite")
@@ -93,10 +94,10 @@ func TestBuildQuotaAlertEmailBody_AllFieldsPresent(t *testing.T) {
 
 func TestBuildQuotaAlertEmailBody_UnlimitedDisplay(t *testing.T) {
 	s := &BalanceNotifyService{}
-	body := s.buildQuotaAlertEmailBody(
+	body := s.buildQuotaAlertEmailBodyWithLogo(
 		1, "n", "p", "dim",
 		100.0, 0.0, // limit=0 triggers unlimited branch
-		0.0, "30%", "Site",
+		0.0, "30%", "Site", "",
 	)
 	require.Contains(t, body, "无限制")
 	require.Contains(t, body, "Unlimited")
@@ -104,11 +105,11 @@ func TestBuildQuotaAlertEmailBody_UnlimitedDisplay(t *testing.T) {
 
 func TestBuildQuotaAlertEmailBody_PercentageThresholdDisplay(t *testing.T) {
 	s := &BalanceNotifyService{}
-	body := s.buildQuotaAlertEmailBody(
+	body := s.buildQuotaAlertEmailBodyWithLogo(
 		1, "n", "p", "dim",
 		700.0, 1000.0, 300.0,
 		"30%", // percentage-formatted threshold
-		"Site",
+		"Site", "",
 	)
 	require.Contains(t, body, "30%")
 	require.NotContains(t, body, "%!")
@@ -118,10 +119,10 @@ func TestBuildQuotaAlertEmailBody_RemainingClampedAtZero(t *testing.T) {
 	// Even though caller is responsible for clamping, this test documents the
 	// display behavior with remaining=0.
 	s := &BalanceNotifyService{}
-	body := s.buildQuotaAlertEmailBody(
+	body := s.buildQuotaAlertEmailBodyWithLogo(
 		1, "n", "p", "dim",
 		1500.0, 1000.0, 0.0, // used > limit (over-quota)
-		"$100.00", "Site",
+		"$100.00", "Site", "",
 	)
 	require.Contains(t, body, "$0.00")
 }
@@ -130,7 +131,7 @@ func TestBuildQuotaAlertEmailBody_RemainingClampedAtZero(t *testing.T) {
 
 func TestBuildBalanceLowEmailBody_UsesSharedEmailShell(t *testing.T) {
 	s := &BalanceNotifyService{}
-	body := s.buildBalanceLowEmailBody("u", 1.0, 5.0, "Site", "")
+	body := s.buildBalanceLowEmailBodyWithLogo("u", 1.0, 5.0, "Site", "", "")
 	require.True(t,
 		strings.Contains(body, "border:1px solid #dedede") && strings.Contains(body, "border-radius:22px"),
 		"shared card shell not rendered; got: %s", body)
@@ -139,7 +140,7 @@ func TestBuildBalanceLowEmailBody_UsesSharedEmailShell(t *testing.T) {
 
 func TestBuildQuotaAlertEmailBody_UsesSharedEmailShell(t *testing.T) {
 	s := &BalanceNotifyService{}
-	body := s.buildQuotaAlertEmailBody(1, "n", "p", "d", 0, 0, 0, "$0.00", "Site")
+	body := s.buildQuotaAlertEmailBodyWithLogo(1, "n", "p", "d", 0, 0, 0, "$0.00", "Site", "")
 	require.True(t,
 		strings.Contains(body, "border:1px solid #dedede") && strings.Contains(body, "border-radius:22px"),
 		"shared card shell not rendered; got: %s", body)

@@ -23,6 +23,10 @@ type emailDetailRow struct {
 	Value string
 }
 
+func appendEmailHTML(b *strings.Builder, value string) {
+	_, _ = b.WriteString(value)
+}
+
 func renderProductEmail(data emailTemplateData) string {
 	siteName := normalizeEmailSiteName(data.SiteName)
 	title := strings.TrimSpace(data.Title)
@@ -31,46 +35,46 @@ func renderProductEmail(data emailTemplateData) string {
 	}
 
 	var b strings.Builder
-	b.WriteString(`<!doctype html>
+	appendEmailHTML(&b, `<!doctype html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>`)
-	b.WriteString(emailEscape(title))
-	b.WriteString(`</title>
+	appendEmailHTML(&b, emailEscape(title))
+	appendEmailHTML(&b, `</title>
 </head>
 <body style="margin:0;padding:0;background:#f8f8f7;color:#202020;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
   <div style="padding:40px 16px;">
     <div style="max-width:920px;margin:0 auto;background:#ffffff;border:1px solid #dedede;border-radius:22px;padding:56px 64px 50px;box-sizing:border-box;">
       <div style="width:58px;height:58px;border:1px solid #ececec;border-radius:14px;background:#ffffff;box-shadow:0 8px 20px rgba(0,0,0,.10);display:flex;align-items:center;justify-content:center;margin-bottom:36px;">`)
-	b.WriteString(emailLogoHTML(data.LogoURL, siteName))
-	b.WriteString(`</div>
+	appendEmailHTML(&b, emailLogoHTML(data.LogoURL, siteName))
+	appendEmailHTML(&b, `</div>
       <h1 style="margin:0 0 26px;font-size:30px;line-height:1.18;font-weight:700;letter-spacing:-.035em;color:#202020;">`)
-	b.WriteString(emailEscape(title))
-	b.WriteString(`</h1>`)
+	appendEmailHTML(&b, emailEscape(title))
+	appendEmailHTML(&b, `</h1>`)
 
 	if strings.TrimSpace(data.Intro) != "" {
-		b.WriteString(`<p style="margin:0 0 30px;font-size:20px;line-height:1.55;color:#202020;">`)
-		b.WriteString(emailEscape(data.Intro))
-		b.WriteString(`</p>`)
+		appendEmailHTML(&b, `<p style="margin:0 0 30px;font-size:20px;line-height:1.55;color:#202020;">`)
+		appendEmailHTML(&b, emailEscape(data.Intro))
+		appendEmailHTML(&b, `</p>`)
 	}
 	if strings.TrimSpace(data.PrimaryHTML) != "" {
-		b.WriteString(data.PrimaryHTML)
+		appendEmailHTML(&b, data.PrimaryHTML)
 	}
 	if strings.TrimSpace(data.SupportHTML) != "" {
-		b.WriteString(`<div style="margin-top:28px;">`)
-		b.WriteString(data.SupportHTML)
-		b.WriteString(`</div>`)
+		appendEmailHTML(&b, `<div style="margin-top:28px;">`)
+		appendEmailHTML(&b, data.SupportHTML)
+		appendEmailHTML(&b, `</div>`)
 	}
 
-	b.WriteString(`<div style="height:1px;background:#d8d8d8;margin:38px 0 30px;"></div>`)
+	appendEmailHTML(&b, `<div style="height:1px;background:#d8d8d8;margin:38px 0 30px;"></div>`)
 	if strings.TrimSpace(data.FooterHTML) != "" {
-		b.WriteString(data.FooterHTML)
+		appendEmailHTML(&b, data.FooterHTML)
 	} else {
-		b.WriteString(emailMutedParagraph("This is an automated message. You can safely ignore it if you did not request it."))
+		appendEmailHTML(&b, emailMutedParagraph("This is an automated message. You can safely ignore it if you did not request it."))
 	}
-	b.WriteString(`
+	appendEmailHTML(&b, `
     </div>
   </div>
 </body>
@@ -214,19 +218,19 @@ func emailDetailsBlock(title string, rows []emailDetailRow) string {
 	}
 	var b strings.Builder
 	if strings.TrimSpace(title) != "" {
-		b.WriteString(`<h2 style="margin:0 0 16px;font-size:18px;line-height:1.4;color:#202020;">`)
-		b.WriteString(emailEscape(title))
-		b.WriteString(`</h2>`)
+		appendEmailHTML(&b, `<h2 style="margin:0 0 16px;font-size:18px;line-height:1.4;color:#202020;">`)
+		appendEmailHTML(&b, emailEscape(title))
+		appendEmailHTML(&b, `</h2>`)
 	}
-	b.WriteString(`<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0;">`)
+	appendEmailHTML(&b, `<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;margin:0;">`)
 	for _, row := range rows {
-		b.WriteString(`<tr><td style="padding:13px 0;border-bottom:1px solid #eeeeee;color:#666666;font-size:15px;line-height:1.5;">`)
-		b.WriteString(emailEscape(row.Label))
-		b.WriteString(`</td><td style="padding:13px 0;border-bottom:1px solid #eeeeee;color:#202020;font-size:15px;line-height:1.5;font-weight:650;text-align:right;">`)
-		b.WriteString(emailEscape(row.Value))
-		b.WriteString(`</td></tr>`)
+		appendEmailHTML(&b, `<tr><td style="padding:13px 0;border-bottom:1px solid #eeeeee;color:#666666;font-size:15px;line-height:1.5;">`)
+		appendEmailHTML(&b, emailEscape(row.Label))
+		appendEmailHTML(&b, `</td><td style="padding:13px 0;border-bottom:1px solid #eeeeee;color:#202020;font-size:15px;line-height:1.5;font-weight:650;text-align:right;">`)
+		appendEmailHTML(&b, emailEscape(row.Value))
+		appendEmailHTML(&b, `</td></tr>`)
 	}
-	b.WriteString(`</table>`)
+	appendEmailHTML(&b, `</table>`)
 	return b.String()
 }
 

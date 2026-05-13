@@ -378,11 +378,6 @@ func sanitizeEmailHeader(s string) string {
 	return strings.NewReplacer("\r", "", "\n", "").Replace(s)
 }
 
-// buildBalanceLowEmailBody builds HTML email for balance low notification.
-func (s *BalanceNotifyService) buildBalanceLowEmailBody(userName string, balance, threshold float64, siteName, rechargeURL string) string {
-	return s.buildBalanceLowEmailBodyWithLogo(userName, balance, threshold, siteName, rechargeURL, "")
-}
-
 func (s *BalanceNotifyService) buildBalanceLowEmailBodyWithLogo(userName string, balance, threshold float64, siteName, rechargeURL, logoURL string) string {
 	siteName = normalizeEmailSiteName(siteName)
 	support := emailDetailsBlock("", []emailDetailRow{
@@ -402,11 +397,6 @@ func (s *BalanceNotifyService) buildBalanceLowEmailBodyWithLogo(userName string,
 		FooterHTML: emailMutedParagraph(fmt.Sprintf("Your balance has fallen below the alert threshold of $%.2f.", threshold)) +
 			emailMutedParagraph("Please top up in time to avoid service interruption."),
 	})
-}
-
-// buildQuotaAlertEmailBody builds HTML email for account quota alert.
-func (s *BalanceNotifyService) buildQuotaAlertEmailBody(accountID int64, accountName, platform, dimLabel string, used, limit, remaining float64, thresholdDisplay, siteName string) string {
-	return s.buildQuotaAlertEmailBodyWithLogo(accountID, accountName, platform, dimLabel, used, limit, remaining, thresholdDisplay, siteName, "")
 }
 
 func (s *BalanceNotifyService) buildQuotaAlertEmailBodyWithLogo(accountID int64, accountName, platform, dimLabel string, used, limit, remaining float64, thresholdDisplay, siteName, logoURL string) string {

@@ -73,7 +73,9 @@ func (s *AuthService) sendRegistrationNotification(ctx context.Context, user *Us
 	if err != nil {
 		return fmt.Errorf("send registration notification: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		responseBody, _ := io.ReadAll(io.LimitReader(resp.Body, 512))
@@ -212,7 +214,7 @@ func signDingTalkWebhookURL(webhookURL string, secret string, now time.Time) str
 	timestamp := strconv.FormatInt(now.UnixMilli(), 10)
 	stringToSign := timestamp + "\n" + secret
 	mac := hmac.New(sha256.New, []byte(secret))
-	mac.Write([]byte(stringToSign))
+	_, _ = mac.Write([]byte(stringToSign))
 	signature := base64.StdEncoding.EncodeToString(mac.Sum(nil))
 	query := parsed.Query()
 	query.Set("timestamp", timestamp)
@@ -224,6 +226,6 @@ func signDingTalkWebhookURL(webhookURL string, secret string, now time.Time) str
 func signFeishuWebhook(timestamp string, secret string) string {
 	stringToSign := timestamp + "\n" + secret
 	mac := hmac.New(sha256.New, []byte(stringToSign))
-	mac.Write([]byte{})
+	_, _ = mac.Write([]byte{})
 	return base64.StdEncoding.EncodeToString(mac.Sum(nil))
 }

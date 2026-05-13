@@ -29,7 +29,7 @@ describe('DocsView docsify integration', () => {
   })
 
   it('adds a build-specific cache buster to Docsify hashes and search index', () => {
-    expect(docsViewSource).toContain('const docsContentVersion = encodeURIComponent(__DOCS_CONTENT_VERSION__)')
+    expect(docsViewSource).toContain("const docsContentVersion = encodeURIComponent(import.meta.env.VITE_DOCS_CONTENT_VERSION || '')")
     expect(docsViewSource).toContain("const docsVersionQueryKey = '_docs_v'")
     expect(docsViewSource).toContain('function withDocsContentVersion')
     expect(docsViewSource).toContain('window.location.hash = withDocsContentVersion(initialHash)')
