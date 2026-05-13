@@ -138,6 +138,10 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	if err != nil {
 		return nil, nil, fmt.Errorf("generate token pair: %w", err)
 	}
+	if created {
+		s.notifyUserRegistered(ctx, user, providerType)
+		s.sendWelcomeEmailForNewUser(ctx, user, providerType)
+	}
 	return tokenPair, user, nil
 }
 

@@ -68,6 +68,26 @@ func TestBuildTestEmailBodyWithLogo_UsesImageLogo(t *testing.T) {
 	require.NotContains(t, body, `transform:rotate(30deg)`)
 }
 
+func TestBuildWelcomeEmailBodyWithLogo_IncludesOnboardingAndPreferenceLinks(t *testing.T) {
+	body := BuildWelcomeEmailBodyWithLogo(
+		"cloudbase",
+		"https://cloudbase.eu.org/logo.png",
+		"Ray",
+		"https://cloudbase.eu.org/dashboard",
+		"https://cloudbase.eu.org/api/v1/email-preferences/manage?token=tok",
+		"https://cloudbase.eu.org/api/v1/email-preferences/unsubscribe?token=tok",
+	)
+
+	require.Contains(t, body, "Welcome to cloudbase")
+	require.Contains(t, body, "Hi Ray")
+	require.Contains(t, body, "Open dashboard")
+	require.Contains(t, body, "Create your first API key")
+	require.Contains(t, body, "Manage subscriptions")
+	require.Contains(t, body, "Unsubscribe")
+	require.Contains(t, body, `<img src="https://cloudbase.eu.org/logo.png"`)
+	require.NotContains(t, body, "%!")
+}
+
 func TestResolveEmailLogoURL_DefaultsToFrontendLogo(t *testing.T) {
 	repo := newMockSettingRepo()
 	require.NoError(t, repo.Set(context.Background(), SettingKeyFrontendURL, "https://cloudbase.eu.org/login"))

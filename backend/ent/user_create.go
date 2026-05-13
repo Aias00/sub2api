@@ -255,6 +255,34 @@ func (_c *UserCreate) SetNillableLastActiveAt(v *time.Time) *UserCreate {
 	return _c
 }
 
+// SetWelcomeEmailSentAt sets the "welcome_email_sent_at" field.
+func (_c *UserCreate) SetWelcomeEmailSentAt(v time.Time) *UserCreate {
+	_c.mutation.SetWelcomeEmailSentAt(v)
+	return _c
+}
+
+// SetNillableWelcomeEmailSentAt sets the "welcome_email_sent_at" field if the given value is not nil.
+func (_c *UserCreate) SetNillableWelcomeEmailSentAt(v *time.Time) *UserCreate {
+	if v != nil {
+		_c.SetWelcomeEmailSentAt(*v)
+	}
+	return _c
+}
+
+// SetMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field.
+func (_c *UserCreate) SetMarketingEmailsUnsubscribedAt(v time.Time) *UserCreate {
+	_c.mutation.SetMarketingEmailsUnsubscribedAt(v)
+	return _c
+}
+
+// SetNillableMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field if the given value is not nil.
+func (_c *UserCreate) SetNillableMarketingEmailsUnsubscribedAt(v *time.Time) *UserCreate {
+	if v != nil {
+		_c.SetMarketingEmailsUnsubscribedAt(*v)
+	}
+	return _c
+}
+
 // SetBalanceNotifyEnabled sets the "balance_notify_enabled" field.
 func (_c *UserCreate) SetBalanceNotifyEnabled(v bool) *UserCreate {
 	_c.mutation.SetBalanceNotifyEnabled(v)
@@ -803,6 +831,14 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 		_spec.SetField(user.FieldLastActiveAt, field.TypeTime, value)
 		_node.LastActiveAt = &value
 	}
+	if value, ok := _c.mutation.WelcomeEmailSentAt(); ok {
+		_spec.SetField(user.FieldWelcomeEmailSentAt, field.TypeTime, value)
+		_node.WelcomeEmailSentAt = &value
+	}
+	if value, ok := _c.mutation.MarketingEmailsUnsubscribedAt(); ok {
+		_spec.SetField(user.FieldMarketingEmailsUnsubscribedAt, field.TypeTime, value)
+		_node.MarketingEmailsUnsubscribedAt = &value
+	}
 	if value, ok := _c.mutation.BalanceNotifyEnabled(); ok {
 		_spec.SetField(user.FieldBalanceNotifyEnabled, field.TypeBool, value)
 		_node.BalanceNotifyEnabled = value
@@ -1309,6 +1345,42 @@ func (u *UserUpsert) ClearLastActiveAt() *UserUpsert {
 	return u
 }
 
+// SetWelcomeEmailSentAt sets the "welcome_email_sent_at" field.
+func (u *UserUpsert) SetWelcomeEmailSentAt(v time.Time) *UserUpsert {
+	u.Set(user.FieldWelcomeEmailSentAt, v)
+	return u
+}
+
+// UpdateWelcomeEmailSentAt sets the "welcome_email_sent_at" field to the value that was provided on create.
+func (u *UserUpsert) UpdateWelcomeEmailSentAt() *UserUpsert {
+	u.SetExcluded(user.FieldWelcomeEmailSentAt)
+	return u
+}
+
+// ClearWelcomeEmailSentAt clears the value of the "welcome_email_sent_at" field.
+func (u *UserUpsert) ClearWelcomeEmailSentAt() *UserUpsert {
+	u.SetNull(user.FieldWelcomeEmailSentAt)
+	return u
+}
+
+// SetMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field.
+func (u *UserUpsert) SetMarketingEmailsUnsubscribedAt(v time.Time) *UserUpsert {
+	u.Set(user.FieldMarketingEmailsUnsubscribedAt, v)
+	return u
+}
+
+// UpdateMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field to the value that was provided on create.
+func (u *UserUpsert) UpdateMarketingEmailsUnsubscribedAt() *UserUpsert {
+	u.SetExcluded(user.FieldMarketingEmailsUnsubscribedAt)
+	return u
+}
+
+// ClearMarketingEmailsUnsubscribedAt clears the value of the "marketing_emails_unsubscribed_at" field.
+func (u *UserUpsert) ClearMarketingEmailsUnsubscribedAt() *UserUpsert {
+	u.SetNull(user.FieldMarketingEmailsUnsubscribedAt)
+	return u
+}
+
 // SetBalanceNotifyEnabled sets the "balance_notify_enabled" field.
 func (u *UserUpsert) SetBalanceNotifyEnabled(v bool) *UserUpsert {
 	u.Set(user.FieldBalanceNotifyEnabled, v)
@@ -1720,6 +1792,48 @@ func (u *UserUpsertOne) UpdateLastActiveAt() *UserUpsertOne {
 func (u *UserUpsertOne) ClearLastActiveAt() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearLastActiveAt()
+	})
+}
+
+// SetWelcomeEmailSentAt sets the "welcome_email_sent_at" field.
+func (u *UserUpsertOne) SetWelcomeEmailSentAt(v time.Time) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetWelcomeEmailSentAt(v)
+	})
+}
+
+// UpdateWelcomeEmailSentAt sets the "welcome_email_sent_at" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateWelcomeEmailSentAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateWelcomeEmailSentAt()
+	})
+}
+
+// ClearWelcomeEmailSentAt clears the value of the "welcome_email_sent_at" field.
+func (u *UserUpsertOne) ClearWelcomeEmailSentAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearWelcomeEmailSentAt()
+	})
+}
+
+// SetMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field.
+func (u *UserUpsertOne) SetMarketingEmailsUnsubscribedAt(v time.Time) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetMarketingEmailsUnsubscribedAt(v)
+	})
+}
+
+// UpdateMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateMarketingEmailsUnsubscribedAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateMarketingEmailsUnsubscribedAt()
+	})
+}
+
+// ClearMarketingEmailsUnsubscribedAt clears the value of the "marketing_emails_unsubscribed_at" field.
+func (u *UserUpsertOne) ClearMarketingEmailsUnsubscribedAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearMarketingEmailsUnsubscribedAt()
 	})
 }
 
@@ -2316,6 +2430,48 @@ func (u *UserUpsertBulk) UpdateLastActiveAt() *UserUpsertBulk {
 func (u *UserUpsertBulk) ClearLastActiveAt() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearLastActiveAt()
+	})
+}
+
+// SetWelcomeEmailSentAt sets the "welcome_email_sent_at" field.
+func (u *UserUpsertBulk) SetWelcomeEmailSentAt(v time.Time) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetWelcomeEmailSentAt(v)
+	})
+}
+
+// UpdateWelcomeEmailSentAt sets the "welcome_email_sent_at" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateWelcomeEmailSentAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateWelcomeEmailSentAt()
+	})
+}
+
+// ClearWelcomeEmailSentAt clears the value of the "welcome_email_sent_at" field.
+func (u *UserUpsertBulk) ClearWelcomeEmailSentAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearWelcomeEmailSentAt()
+	})
+}
+
+// SetMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field.
+func (u *UserUpsertBulk) SetMarketingEmailsUnsubscribedAt(v time.Time) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetMarketingEmailsUnsubscribedAt(v)
+	})
+}
+
+// UpdateMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateMarketingEmailsUnsubscribedAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateMarketingEmailsUnsubscribedAt()
+	})
+}
+
+// ClearMarketingEmailsUnsubscribedAt clears the value of the "marketing_emails_unsubscribed_at" field.
+func (u *UserUpsertBulk) ClearMarketingEmailsUnsubscribedAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearMarketingEmailsUnsubscribedAt()
 	})
 }
 

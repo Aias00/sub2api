@@ -184,6 +184,14 @@ func RegisterAuthRoutes(
 		)
 	}
 
+	// 邮件偏好公开入口：用于欢迎邮件底部的订阅管理/退订链接，不依赖登录态。
+	emailPreferences := v1.Group("/email-preferences")
+	{
+		emailPreferences.GET("/manage", h.Auth.ManageEmailPreferences)
+		emailPreferences.GET("/unsubscribe", h.Auth.UnsubscribeMarketingEmails)
+		emailPreferences.GET("/subscribe", h.Auth.SubscribeMarketingEmails)
+	}
+
 	// 公开设置（无需认证）
 	settings := v1.Group("/settings")
 	{

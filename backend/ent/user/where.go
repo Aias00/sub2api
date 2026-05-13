@@ -140,6 +140,16 @@ func LastActiveAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldLastActiveAt, v))
 }
 
+// WelcomeEmailSentAt applies equality check predicate on the "welcome_email_sent_at" field. It's identical to WelcomeEmailSentAtEQ.
+func WelcomeEmailSentAt(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldWelcomeEmailSentAt, v))
+}
+
+// MarketingEmailsUnsubscribedAt applies equality check predicate on the "marketing_emails_unsubscribed_at" field. It's identical to MarketingEmailsUnsubscribedAtEQ.
+func MarketingEmailsUnsubscribedAt(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldMarketingEmailsUnsubscribedAt, v))
+}
+
 // BalanceNotifyEnabled applies equality check predicate on the "balance_notify_enabled" field. It's identical to BalanceNotifyEnabledEQ.
 func BalanceNotifyEnabled(v bool) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldBalanceNotifyEnabled, v))
@@ -1068,6 +1078,106 @@ func LastActiveAtIsNil() predicate.User {
 // LastActiveAtNotNil applies the NotNil predicate on the "last_active_at" field.
 func LastActiveAtNotNil() predicate.User {
 	return predicate.User(sql.FieldNotNull(FieldLastActiveAt))
+}
+
+// WelcomeEmailSentAtEQ applies the EQ predicate on the "welcome_email_sent_at" field.
+func WelcomeEmailSentAtEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldWelcomeEmailSentAt, v))
+}
+
+// WelcomeEmailSentAtNEQ applies the NEQ predicate on the "welcome_email_sent_at" field.
+func WelcomeEmailSentAtNEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldWelcomeEmailSentAt, v))
+}
+
+// WelcomeEmailSentAtIn applies the In predicate on the "welcome_email_sent_at" field.
+func WelcomeEmailSentAtIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldIn(FieldWelcomeEmailSentAt, vs...))
+}
+
+// WelcomeEmailSentAtNotIn applies the NotIn predicate on the "welcome_email_sent_at" field.
+func WelcomeEmailSentAtNotIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldWelcomeEmailSentAt, vs...))
+}
+
+// WelcomeEmailSentAtGT applies the GT predicate on the "welcome_email_sent_at" field.
+func WelcomeEmailSentAtGT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGT(FieldWelcomeEmailSentAt, v))
+}
+
+// WelcomeEmailSentAtGTE applies the GTE predicate on the "welcome_email_sent_at" field.
+func WelcomeEmailSentAtGTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldWelcomeEmailSentAt, v))
+}
+
+// WelcomeEmailSentAtLT applies the LT predicate on the "welcome_email_sent_at" field.
+func WelcomeEmailSentAtLT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLT(FieldWelcomeEmailSentAt, v))
+}
+
+// WelcomeEmailSentAtLTE applies the LTE predicate on the "welcome_email_sent_at" field.
+func WelcomeEmailSentAtLTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldWelcomeEmailSentAt, v))
+}
+
+// WelcomeEmailSentAtIsNil applies the IsNil predicate on the "welcome_email_sent_at" field.
+func WelcomeEmailSentAtIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldWelcomeEmailSentAt))
+}
+
+// WelcomeEmailSentAtNotNil applies the NotNil predicate on the "welcome_email_sent_at" field.
+func WelcomeEmailSentAtNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldWelcomeEmailSentAt))
+}
+
+// MarketingEmailsUnsubscribedAtEQ applies the EQ predicate on the "marketing_emails_unsubscribed_at" field.
+func MarketingEmailsUnsubscribedAtEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldMarketingEmailsUnsubscribedAt, v))
+}
+
+// MarketingEmailsUnsubscribedAtNEQ applies the NEQ predicate on the "marketing_emails_unsubscribed_at" field.
+func MarketingEmailsUnsubscribedAtNEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldMarketingEmailsUnsubscribedAt, v))
+}
+
+// MarketingEmailsUnsubscribedAtIn applies the In predicate on the "marketing_emails_unsubscribed_at" field.
+func MarketingEmailsUnsubscribedAtIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldIn(FieldMarketingEmailsUnsubscribedAt, vs...))
+}
+
+// MarketingEmailsUnsubscribedAtNotIn applies the NotIn predicate on the "marketing_emails_unsubscribed_at" field.
+func MarketingEmailsUnsubscribedAtNotIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldMarketingEmailsUnsubscribedAt, vs...))
+}
+
+// MarketingEmailsUnsubscribedAtGT applies the GT predicate on the "marketing_emails_unsubscribed_at" field.
+func MarketingEmailsUnsubscribedAtGT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGT(FieldMarketingEmailsUnsubscribedAt, v))
+}
+
+// MarketingEmailsUnsubscribedAtGTE applies the GTE predicate on the "marketing_emails_unsubscribed_at" field.
+func MarketingEmailsUnsubscribedAtGTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldMarketingEmailsUnsubscribedAt, v))
+}
+
+// MarketingEmailsUnsubscribedAtLT applies the LT predicate on the "marketing_emails_unsubscribed_at" field.
+func MarketingEmailsUnsubscribedAtLT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLT(FieldMarketingEmailsUnsubscribedAt, v))
+}
+
+// MarketingEmailsUnsubscribedAtLTE applies the LTE predicate on the "marketing_emails_unsubscribed_at" field.
+func MarketingEmailsUnsubscribedAtLTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldMarketingEmailsUnsubscribedAt, v))
+}
+
+// MarketingEmailsUnsubscribedAtIsNil applies the IsNil predicate on the "marketing_emails_unsubscribed_at" field.
+func MarketingEmailsUnsubscribedAtIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldMarketingEmailsUnsubscribedAt))
+}
+
+// MarketingEmailsUnsubscribedAtNotNil applies the NotNil predicate on the "marketing_emails_unsubscribed_at" field.
+func MarketingEmailsUnsubscribedAtNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldMarketingEmailsUnsubscribedAt))
 }
 
 // BalanceNotifyEnabledEQ applies the EQ predicate on the "balance_notify_enabled" field.

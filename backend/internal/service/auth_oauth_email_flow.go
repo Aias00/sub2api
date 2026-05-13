@@ -307,6 +307,7 @@ func (s *AuthService) FinalizeOAuthEmailAccount(
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
 	s.notifyUserRegistered(ctx, user, signupSource)
+	s.sendWelcomeEmailForNewUser(ctx, user, signupSource)
 	return nil
 }
 

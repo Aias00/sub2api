@@ -299,6 +299,46 @@ func (_u *UserUpdate) ClearLastActiveAt() *UserUpdate {
 	return _u
 }
 
+// SetWelcomeEmailSentAt sets the "welcome_email_sent_at" field.
+func (_u *UserUpdate) SetWelcomeEmailSentAt(v time.Time) *UserUpdate {
+	_u.mutation.SetWelcomeEmailSentAt(v)
+	return _u
+}
+
+// SetNillableWelcomeEmailSentAt sets the "welcome_email_sent_at" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableWelcomeEmailSentAt(v *time.Time) *UserUpdate {
+	if v != nil {
+		_u.SetWelcomeEmailSentAt(*v)
+	}
+	return _u
+}
+
+// ClearWelcomeEmailSentAt clears the value of the "welcome_email_sent_at" field.
+func (_u *UserUpdate) ClearWelcomeEmailSentAt() *UserUpdate {
+	_u.mutation.ClearWelcomeEmailSentAt()
+	return _u
+}
+
+// SetMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field.
+func (_u *UserUpdate) SetMarketingEmailsUnsubscribedAt(v time.Time) *UserUpdate {
+	_u.mutation.SetMarketingEmailsUnsubscribedAt(v)
+	return _u
+}
+
+// SetNillableMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableMarketingEmailsUnsubscribedAt(v *time.Time) *UserUpdate {
+	if v != nil {
+		_u.SetMarketingEmailsUnsubscribedAt(*v)
+	}
+	return _u
+}
+
+// ClearMarketingEmailsUnsubscribedAt clears the value of the "marketing_emails_unsubscribed_at" field.
+func (_u *UserUpdate) ClearMarketingEmailsUnsubscribedAt() *UserUpdate {
+	_u.mutation.ClearMarketingEmailsUnsubscribedAt()
+	return _u
+}
+
 // SetBalanceNotifyEnabled sets the "balance_notify_enabled" field.
 func (_u *UserUpdate) SetBalanceNotifyEnabled(v bool) *UserUpdate {
 	_u.mutation.SetBalanceNotifyEnabled(v)
@@ -1004,6 +1044,18 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.LastActiveAtCleared() {
 		_spec.ClearField(user.FieldLastActiveAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.WelcomeEmailSentAt(); ok {
+		_spec.SetField(user.FieldWelcomeEmailSentAt, field.TypeTime, value)
+	}
+	if _u.mutation.WelcomeEmailSentAtCleared() {
+		_spec.ClearField(user.FieldWelcomeEmailSentAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.MarketingEmailsUnsubscribedAt(); ok {
+		_spec.SetField(user.FieldMarketingEmailsUnsubscribedAt, field.TypeTime, value)
+	}
+	if _u.mutation.MarketingEmailsUnsubscribedAtCleared() {
+		_spec.ClearField(user.FieldMarketingEmailsUnsubscribedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.BalanceNotifyEnabled(); ok {
 		_spec.SetField(user.FieldBalanceNotifyEnabled, field.TypeBool, value)
@@ -1867,6 +1919,46 @@ func (_u *UserUpdateOne) ClearLastActiveAt() *UserUpdateOne {
 	return _u
 }
 
+// SetWelcomeEmailSentAt sets the "welcome_email_sent_at" field.
+func (_u *UserUpdateOne) SetWelcomeEmailSentAt(v time.Time) *UserUpdateOne {
+	_u.mutation.SetWelcomeEmailSentAt(v)
+	return _u
+}
+
+// SetNillableWelcomeEmailSentAt sets the "welcome_email_sent_at" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableWelcomeEmailSentAt(v *time.Time) *UserUpdateOne {
+	if v != nil {
+		_u.SetWelcomeEmailSentAt(*v)
+	}
+	return _u
+}
+
+// ClearWelcomeEmailSentAt clears the value of the "welcome_email_sent_at" field.
+func (_u *UserUpdateOne) ClearWelcomeEmailSentAt() *UserUpdateOne {
+	_u.mutation.ClearWelcomeEmailSentAt()
+	return _u
+}
+
+// SetMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field.
+func (_u *UserUpdateOne) SetMarketingEmailsUnsubscribedAt(v time.Time) *UserUpdateOne {
+	_u.mutation.SetMarketingEmailsUnsubscribedAt(v)
+	return _u
+}
+
+// SetNillableMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableMarketingEmailsUnsubscribedAt(v *time.Time) *UserUpdateOne {
+	if v != nil {
+		_u.SetMarketingEmailsUnsubscribedAt(*v)
+	}
+	return _u
+}
+
+// ClearMarketingEmailsUnsubscribedAt clears the value of the "marketing_emails_unsubscribed_at" field.
+func (_u *UserUpdateOne) ClearMarketingEmailsUnsubscribedAt() *UserUpdateOne {
+	_u.mutation.ClearMarketingEmailsUnsubscribedAt()
+	return _u
+}
+
 // SetBalanceNotifyEnabled sets the "balance_notify_enabled" field.
 func (_u *UserUpdateOne) SetBalanceNotifyEnabled(v bool) *UserUpdateOne {
 	_u.mutation.SetBalanceNotifyEnabled(v)
@@ -2602,6 +2694,18 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.LastActiveAtCleared() {
 		_spec.ClearField(user.FieldLastActiveAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.WelcomeEmailSentAt(); ok {
+		_spec.SetField(user.FieldWelcomeEmailSentAt, field.TypeTime, value)
+	}
+	if _u.mutation.WelcomeEmailSentAtCleared() {
+		_spec.ClearField(user.FieldWelcomeEmailSentAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.MarketingEmailsUnsubscribedAt(); ok {
+		_spec.SetField(user.FieldMarketingEmailsUnsubscribedAt, field.TypeTime, value)
+	}
+	if _u.mutation.MarketingEmailsUnsubscribedAtCleared() {
+		_spec.ClearField(user.FieldMarketingEmailsUnsubscribedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.BalanceNotifyEnabled(); ok {
 		_spec.SetField(user.FieldBalanceNotifyEnabled, field.TypeBool, value)

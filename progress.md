@@ -622,3 +622,18 @@
 
 ### Next
 - Commit, push, deploy to the server, then use the admin SMTP test email if a real mailbox render check is needed.
+
+## 2026-05-13 Welcome Email And Subscription Links
+### Done
+- Added user-level welcome email and marketing email unsubscribe timestamps.
+- Added a welcome email template with uploaded site logo support, onboarding CTA, and Manage subscriptions / Unsubscribe footer links.
+- Added signed public email preference endpoints for manage, unsubscribe, and resubscribe actions.
+- Wired first-time email registration, verified Google/GitHub OAuth signup, pending OAuth finalization, and legacy OAuth signup paths to enqueue one welcome email.
+- Generated ent code and verified focused service/handler tests plus backend server build.
+
+### Failures
+- `make generate` completed ent generation but failed at Wire because the local `go.sum` lacks `github.com/google/subcommands` for the Wire tool path; this feature did not require Wire regeneration.
+- Initial handler test exposed a transaction lock in the welcome-email dedupe update; fixed by reusing the current ent transaction client.
+
+### Next
+- Commit, push, deploy to the server, then create a fresh test account to verify the real welcome email and preference links in production.

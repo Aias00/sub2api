@@ -37619,77 +37619,79 @@ func (m *UsageLogMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                            Op
-	typ                           string
-	id                            *int64
-	created_at                    *time.Time
-	updated_at                    *time.Time
-	deleted_at                    *time.Time
-	email                         *string
-	password_hash                 *string
-	role                          *string
-	balance                       *float64
-	addbalance                    *float64
-	concurrency                   *int
-	addconcurrency                *int
-	status                        *string
-	username                      *string
-	notes                         *string
-	totp_secret_encrypted         *string
-	totp_enabled                  *bool
-	totp_enabled_at               *time.Time
-	signup_source                 *string
-	last_login_at                 *time.Time
-	last_active_at                *time.Time
-	balance_notify_enabled        *bool
-	balance_notify_threshold_type *string
-	balance_notify_threshold      *float64
-	addbalance_notify_threshold   *float64
-	balance_notify_extra_emails   *string
-	total_recharged               *float64
-	addtotal_recharged            *float64
-	rpm_limit                     *int
-	addrpm_limit                  *int
-	clearedFields                 map[string]struct{}
-	api_keys                      map[int64]struct{}
-	removedapi_keys               map[int64]struct{}
-	clearedapi_keys               bool
-	redeem_codes                  map[int64]struct{}
-	removedredeem_codes           map[int64]struct{}
-	clearedredeem_codes           bool
-	subscriptions                 map[int64]struct{}
-	removedsubscriptions          map[int64]struct{}
-	clearedsubscriptions          bool
-	assigned_subscriptions        map[int64]struct{}
-	removedassigned_subscriptions map[int64]struct{}
-	clearedassigned_subscriptions bool
-	announcement_reads            map[int64]struct{}
-	removedannouncement_reads     map[int64]struct{}
-	clearedannouncement_reads     bool
-	allowed_groups                map[int64]struct{}
-	removedallowed_groups         map[int64]struct{}
-	clearedallowed_groups         bool
-	usage_logs                    map[int64]struct{}
-	removedusage_logs             map[int64]struct{}
-	clearedusage_logs             bool
-	attribute_values              map[int64]struct{}
-	removedattribute_values       map[int64]struct{}
-	clearedattribute_values       bool
-	promo_code_usages             map[int64]struct{}
-	removedpromo_code_usages      map[int64]struct{}
-	clearedpromo_code_usages      bool
-	payment_orders                map[int64]struct{}
-	removedpayment_orders         map[int64]struct{}
-	clearedpayment_orders         bool
-	auth_identities               map[int64]struct{}
-	removedauth_identities        map[int64]struct{}
-	clearedauth_identities        bool
-	pending_auth_sessions         map[int64]struct{}
-	removedpending_auth_sessions  map[int64]struct{}
-	clearedpending_auth_sessions  bool
-	done                          bool
-	oldValue                      func(context.Context) (*User, error)
-	predicates                    []predicate.User
+	op                               Op
+	typ                              string
+	id                               *int64
+	created_at                       *time.Time
+	updated_at                       *time.Time
+	deleted_at                       *time.Time
+	email                            *string
+	password_hash                    *string
+	role                             *string
+	balance                          *float64
+	addbalance                       *float64
+	concurrency                      *int
+	addconcurrency                   *int
+	status                           *string
+	username                         *string
+	notes                            *string
+	totp_secret_encrypted            *string
+	totp_enabled                     *bool
+	totp_enabled_at                  *time.Time
+	signup_source                    *string
+	last_login_at                    *time.Time
+	last_active_at                   *time.Time
+	welcome_email_sent_at            *time.Time
+	marketing_emails_unsubscribed_at *time.Time
+	balance_notify_enabled           *bool
+	balance_notify_threshold_type    *string
+	balance_notify_threshold         *float64
+	addbalance_notify_threshold      *float64
+	balance_notify_extra_emails      *string
+	total_recharged                  *float64
+	addtotal_recharged               *float64
+	rpm_limit                        *int
+	addrpm_limit                     *int
+	clearedFields                    map[string]struct{}
+	api_keys                         map[int64]struct{}
+	removedapi_keys                  map[int64]struct{}
+	clearedapi_keys                  bool
+	redeem_codes                     map[int64]struct{}
+	removedredeem_codes              map[int64]struct{}
+	clearedredeem_codes              bool
+	subscriptions                    map[int64]struct{}
+	removedsubscriptions             map[int64]struct{}
+	clearedsubscriptions             bool
+	assigned_subscriptions           map[int64]struct{}
+	removedassigned_subscriptions    map[int64]struct{}
+	clearedassigned_subscriptions    bool
+	announcement_reads               map[int64]struct{}
+	removedannouncement_reads        map[int64]struct{}
+	clearedannouncement_reads        bool
+	allowed_groups                   map[int64]struct{}
+	removedallowed_groups            map[int64]struct{}
+	clearedallowed_groups            bool
+	usage_logs                       map[int64]struct{}
+	removedusage_logs                map[int64]struct{}
+	clearedusage_logs                bool
+	attribute_values                 map[int64]struct{}
+	removedattribute_values          map[int64]struct{}
+	clearedattribute_values          bool
+	promo_code_usages                map[int64]struct{}
+	removedpromo_code_usages         map[int64]struct{}
+	clearedpromo_code_usages         bool
+	payment_orders                   map[int64]struct{}
+	removedpayment_orders            map[int64]struct{}
+	clearedpayment_orders            bool
+	auth_identities                  map[int64]struct{}
+	removedauth_identities           map[int64]struct{}
+	clearedauth_identities           bool
+	pending_auth_sessions            map[int64]struct{}
+	removedpending_auth_sessions     map[int64]struct{}
+	clearedpending_auth_sessions     bool
+	done                             bool
+	oldValue                         func(context.Context) (*User, error)
+	predicates                       []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -38505,6 +38507,104 @@ func (m *UserMutation) LastActiveAtCleared() bool {
 func (m *UserMutation) ResetLastActiveAt() {
 	m.last_active_at = nil
 	delete(m.clearedFields, user.FieldLastActiveAt)
+}
+
+// SetWelcomeEmailSentAt sets the "welcome_email_sent_at" field.
+func (m *UserMutation) SetWelcomeEmailSentAt(t time.Time) {
+	m.welcome_email_sent_at = &t
+}
+
+// WelcomeEmailSentAt returns the value of the "welcome_email_sent_at" field in the mutation.
+func (m *UserMutation) WelcomeEmailSentAt() (r time.Time, exists bool) {
+	v := m.welcome_email_sent_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWelcomeEmailSentAt returns the old "welcome_email_sent_at" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldWelcomeEmailSentAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWelcomeEmailSentAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWelcomeEmailSentAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWelcomeEmailSentAt: %w", err)
+	}
+	return oldValue.WelcomeEmailSentAt, nil
+}
+
+// ClearWelcomeEmailSentAt clears the value of the "welcome_email_sent_at" field.
+func (m *UserMutation) ClearWelcomeEmailSentAt() {
+	m.welcome_email_sent_at = nil
+	m.clearedFields[user.FieldWelcomeEmailSentAt] = struct{}{}
+}
+
+// WelcomeEmailSentAtCleared returns if the "welcome_email_sent_at" field was cleared in this mutation.
+func (m *UserMutation) WelcomeEmailSentAtCleared() bool {
+	_, ok := m.clearedFields[user.FieldWelcomeEmailSentAt]
+	return ok
+}
+
+// ResetWelcomeEmailSentAt resets all changes to the "welcome_email_sent_at" field.
+func (m *UserMutation) ResetWelcomeEmailSentAt() {
+	m.welcome_email_sent_at = nil
+	delete(m.clearedFields, user.FieldWelcomeEmailSentAt)
+}
+
+// SetMarketingEmailsUnsubscribedAt sets the "marketing_emails_unsubscribed_at" field.
+func (m *UserMutation) SetMarketingEmailsUnsubscribedAt(t time.Time) {
+	m.marketing_emails_unsubscribed_at = &t
+}
+
+// MarketingEmailsUnsubscribedAt returns the value of the "marketing_emails_unsubscribed_at" field in the mutation.
+func (m *UserMutation) MarketingEmailsUnsubscribedAt() (r time.Time, exists bool) {
+	v := m.marketing_emails_unsubscribed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMarketingEmailsUnsubscribedAt returns the old "marketing_emails_unsubscribed_at" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldMarketingEmailsUnsubscribedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMarketingEmailsUnsubscribedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMarketingEmailsUnsubscribedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMarketingEmailsUnsubscribedAt: %w", err)
+	}
+	return oldValue.MarketingEmailsUnsubscribedAt, nil
+}
+
+// ClearMarketingEmailsUnsubscribedAt clears the value of the "marketing_emails_unsubscribed_at" field.
+func (m *UserMutation) ClearMarketingEmailsUnsubscribedAt() {
+	m.marketing_emails_unsubscribed_at = nil
+	m.clearedFields[user.FieldMarketingEmailsUnsubscribedAt] = struct{}{}
+}
+
+// MarketingEmailsUnsubscribedAtCleared returns if the "marketing_emails_unsubscribed_at" field was cleared in this mutation.
+func (m *UserMutation) MarketingEmailsUnsubscribedAtCleared() bool {
+	_, ok := m.clearedFields[user.FieldMarketingEmailsUnsubscribedAt]
+	return ok
+}
+
+// ResetMarketingEmailsUnsubscribedAt resets all changes to the "marketing_emails_unsubscribed_at" field.
+func (m *UserMutation) ResetMarketingEmailsUnsubscribedAt() {
+	m.marketing_emails_unsubscribed_at = nil
+	delete(m.clearedFields, user.FieldMarketingEmailsUnsubscribedAt)
 }
 
 // SetBalanceNotifyEnabled sets the "balance_notify_enabled" field.
@@ -39479,7 +39579,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 23)
+	fields := make([]string, 0, 25)
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
 	}
@@ -39530,6 +39630,12 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.last_active_at != nil {
 		fields = append(fields, user.FieldLastActiveAt)
+	}
+	if m.welcome_email_sent_at != nil {
+		fields = append(fields, user.FieldWelcomeEmailSentAt)
+	}
+	if m.marketing_emails_unsubscribed_at != nil {
+		fields = append(fields, user.FieldMarketingEmailsUnsubscribedAt)
 	}
 	if m.balance_notify_enabled != nil {
 		fields = append(fields, user.FieldBalanceNotifyEnabled)
@@ -39591,6 +39697,10 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.LastLoginAt()
 	case user.FieldLastActiveAt:
 		return m.LastActiveAt()
+	case user.FieldWelcomeEmailSentAt:
+		return m.WelcomeEmailSentAt()
+	case user.FieldMarketingEmailsUnsubscribedAt:
+		return m.MarketingEmailsUnsubscribedAt()
 	case user.FieldBalanceNotifyEnabled:
 		return m.BalanceNotifyEnabled()
 	case user.FieldBalanceNotifyThresholdType:
@@ -39646,6 +39756,10 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldLastLoginAt(ctx)
 	case user.FieldLastActiveAt:
 		return m.OldLastActiveAt(ctx)
+	case user.FieldWelcomeEmailSentAt:
+		return m.OldWelcomeEmailSentAt(ctx)
+	case user.FieldMarketingEmailsUnsubscribedAt:
+		return m.OldMarketingEmailsUnsubscribedAt(ctx)
 	case user.FieldBalanceNotifyEnabled:
 		return m.OldBalanceNotifyEnabled(ctx)
 	case user.FieldBalanceNotifyThresholdType:
@@ -39785,6 +39899,20 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetLastActiveAt(v)
+		return nil
+	case user.FieldWelcomeEmailSentAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWelcomeEmailSentAt(v)
+		return nil
+	case user.FieldMarketingEmailsUnsubscribedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMarketingEmailsUnsubscribedAt(v)
 		return nil
 	case user.FieldBalanceNotifyEnabled:
 		v, ok := value.(bool)
@@ -39936,6 +40064,12 @@ func (m *UserMutation) ClearedFields() []string {
 	if m.FieldCleared(user.FieldLastActiveAt) {
 		fields = append(fields, user.FieldLastActiveAt)
 	}
+	if m.FieldCleared(user.FieldWelcomeEmailSentAt) {
+		fields = append(fields, user.FieldWelcomeEmailSentAt)
+	}
+	if m.FieldCleared(user.FieldMarketingEmailsUnsubscribedAt) {
+		fields = append(fields, user.FieldMarketingEmailsUnsubscribedAt)
+	}
 	if m.FieldCleared(user.FieldBalanceNotifyThreshold) {
 		fields = append(fields, user.FieldBalanceNotifyThreshold)
 	}
@@ -39967,6 +40101,12 @@ func (m *UserMutation) ClearField(name string) error {
 		return nil
 	case user.FieldLastActiveAt:
 		m.ClearLastActiveAt()
+		return nil
+	case user.FieldWelcomeEmailSentAt:
+		m.ClearWelcomeEmailSentAt()
+		return nil
+	case user.FieldMarketingEmailsUnsubscribedAt:
+		m.ClearMarketingEmailsUnsubscribedAt()
 		return nil
 	case user.FieldBalanceNotifyThreshold:
 		m.ClearBalanceNotifyThreshold()
@@ -40029,6 +40169,12 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldLastActiveAt:
 		m.ResetLastActiveAt()
+		return nil
+	case user.FieldWelcomeEmailSentAt:
+		m.ResetWelcomeEmailSentAt()
+		return nil
+	case user.FieldMarketingEmailsUnsubscribedAt:
+		m.ResetMarketingEmailsUnsubscribedAt()
 		return nil
 	case user.FieldBalanceNotifyEnabled:
 		m.ResetBalanceNotifyEnabled()

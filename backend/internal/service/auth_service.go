@@ -268,6 +268,7 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	}
 
 	s.notifyUserRegistered(ctx, user, "email")
+	s.sendWelcomeEmailForNewUser(ctx, user, "email")
 
 	return token, user, nil
 }
@@ -488,6 +489,8 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 	}
 
 	user, err := s.userRepo.GetByEmail(ctx, email)
+	created := false
+	createdSignupSource := ""
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			// OAuth 首次登录视为注册（fail-close：settingService 未配置时不允许注册）
@@ -538,6 +541,8 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 				}
 			} else {
 				user = newUser
+				created = true
+				createdSignupSource = signupSource
 				s.postAuthUserBootstrap(ctx, user, signupSource, false)
 				s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 			}
@@ -561,6 +566,10 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 	token, err := s.GenerateToken(user)
 	if err != nil {
 		return "", nil, fmt.Errorf("generate token: %w", err)
+	}
+	if created {
+		s.notifyUserRegistered(ctx, user, createdSignupSource)
+		s.sendWelcomeEmailForNewUser(ctx, user, createdSignupSource)
 	}
 	return token, user, nil
 }
@@ -589,6 +598,8 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 	}
 
 	user, err := s.userRepo.GetByEmail(ctx, email)
+	created := false
+	createdSignupSource := ""
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			// OAuth 首次登录视为注册
@@ -670,6 +681,8 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 						return nil, nil, ErrServiceUnavailable
 					}
 					user = newUser
+					created = true
+					createdSignupSource = signupSource
 					s.postAuthUserBootstrap(ctx, user, signupSource, false)
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 					s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
@@ -688,6 +701,8 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					}
 				} else {
 					user = newUser
+					created = true
+					createdSignupSource = signupSource
 					s.postAuthUserBootstrap(ctx, user, signupSource, false)
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 					s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
@@ -717,6 +732,10 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 	tokenPair, err := s.GenerateTokenPair(ctx, user, "")
 	if err != nil {
 		return nil, nil, fmt.Errorf("generate token pair: %w", err)
+	}
+	if created {
+		s.notifyUserRegistered(ctx, user, createdSignupSource)
+		s.sendWelcomeEmailForNewUser(ctx, user, createdSignupSource)
 	}
 	return tokenPair, user, nil
 }

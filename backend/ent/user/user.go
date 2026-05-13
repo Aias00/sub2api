@@ -49,6 +49,10 @@ const (
 	FieldLastLoginAt = "last_login_at"
 	// FieldLastActiveAt holds the string denoting the last_active_at field in the database.
 	FieldLastActiveAt = "last_active_at"
+	// FieldWelcomeEmailSentAt holds the string denoting the welcome_email_sent_at field in the database.
+	FieldWelcomeEmailSentAt = "welcome_email_sent_at"
+	// FieldMarketingEmailsUnsubscribedAt holds the string denoting the marketing_emails_unsubscribed_at field in the database.
+	FieldMarketingEmailsUnsubscribedAt = "marketing_emails_unsubscribed_at"
 	// FieldBalanceNotifyEnabled holds the string denoting the balance_notify_enabled field in the database.
 	FieldBalanceNotifyEnabled = "balance_notify_enabled"
 	// FieldBalanceNotifyThresholdType holds the string denoting the balance_notify_threshold_type field in the database.
@@ -200,6 +204,8 @@ var Columns = []string{
 	FieldSignupSource,
 	FieldLastLoginAt,
 	FieldLastActiveAt,
+	FieldWelcomeEmailSentAt,
+	FieldMarketingEmailsUnsubscribedAt,
 	FieldBalanceNotifyEnabled,
 	FieldBalanceNotifyThresholdType,
 	FieldBalanceNotifyThreshold,
@@ -369,6 +375,16 @@ func ByLastLoginAt(opts ...sql.OrderTermOption) OrderOption {
 // ByLastActiveAt orders the results by the last_active_at field.
 func ByLastActiveAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldLastActiveAt, opts...).ToFunc()
+}
+
+// ByWelcomeEmailSentAt orders the results by the welcome_email_sent_at field.
+func ByWelcomeEmailSentAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWelcomeEmailSentAt, opts...).ToFunc()
+}
+
+// ByMarketingEmailsUnsubscribedAt orders the results by the marketing_emails_unsubscribed_at field.
+func ByMarketingEmailsUnsubscribedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMarketingEmailsUnsubscribedAt, opts...).ToFunc()
 }
 
 // ByBalanceNotifyEnabled orders the results by the balance_notify_enabled field.

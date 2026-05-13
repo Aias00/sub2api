@@ -981,6 +981,8 @@ func applyUserEntityToService(dst *service.User, src *dbent.User) {
 	dst.SignupSource = src.SignupSource
 	dst.LastLoginAt = src.LastLoginAt
 	dst.LastActiveAt = src.LastActiveAt
+	dst.WelcomeEmailSentAt = src.WelcomeEmailSentAt
+	dst.MarketingEmailsUnsubscribedAt = src.MarketingEmailsUnsubscribedAt
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
 }
@@ -989,7 +991,7 @@ func userSignupSourceOrDefault(signupSource string) string {
 	switch strings.TrimSpace(strings.ToLower(signupSource)) {
 	case "", "email":
 		return "email"
-	case "linuxdo", "wechat", "oidc":
+	case "linuxdo", "wechat", "oidc", "github", "google":
 		return strings.TrimSpace(strings.ToLower(signupSource))
 	default:
 		return "email"

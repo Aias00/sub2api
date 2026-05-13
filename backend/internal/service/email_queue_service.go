@@ -13,14 +13,19 @@ import (
 const (
 	TaskTypeVerifyCode    = "verify_code"
 	TaskTypePasswordReset = "password_reset"
+	TaskTypeWelcome       = "welcome"
 )
 
 // EmailTask 邮件发送任务
 type EmailTask struct {
-	Email    string
-	SiteName string
-	TaskType string // "verify_code" or "password_reset"
-	ResetURL string // Only used for password_reset task type
+	Email          string
+	SiteName       string
+	TaskType       string
+	ResetURL       string // Only used for password_reset task type
+	DisplayName    string
+	DashboardURL   string
+	ManageURL      string
+	UnsubscribeURL string
 }
 
 // EmailQueueService 异步邮件队列服务
@@ -93,6 +98,12 @@ func (s *EmailQueueService) processTask(workerID int, task EmailTask) {
 		} else {
 			logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d sent password reset to %s", workerID, task.Email)
 		}
+	case TaskTypeWelcome:
+		if err := s.emailService.SendWelcomeEmail(ctx, task.Email, task.SiteName, task.DisplayName, task.DashboardURL, task.ManageURL, task.UnsubscribeURL); err != nil {
+			logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d failed to send welcome email to %s: %v", workerID, task.Email, err)
+		} else {
+			logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d sent welcome email to %s", workerID, task.Email)
+		}
 	default:
 		logger.LegacyPrintf("service.email_queue", "[EmailQueue] Worker %d unknown task type: %s", workerID, task.TaskType)
 	}
@@ -109,6 +120,27 @@ func (s *EmailQueueService) EnqueueVerifyCode(email, siteName string) error {
 	select {
 	case s.taskChan <- task:
 		logger.LegacyPrintf("service.email_queue", "[EmailQueue] Enqueued verify code task for %s", email)
+		return nil
+	default:
+		return fmt.Errorf("email queue is full")
+	}
+}
+
+// EnqueueWelcomeEmail 将欢迎邮件任务加入队列
+func (s *EmailQueueService) EnqueueWelcomeEmail(email, siteName, displayName, dashboardURL, manageURL, unsubscribeURL string) error {
+	task := EmailTask{
+		Email:          email,
+		SiteName:       siteName,
+		TaskType:       TaskTypeWelcome,
+		DisplayName:    displayName,
+		DashboardURL:   dashboardURL,
+		ManageURL:      manageURL,
+		UnsubscribeURL: unsubscribeURL,
+	}
+
+	select {
+	case s.taskChan <- task:
+		logger.LegacyPrintf("service.email_queue", "[EmailQueue] Enqueued welcome email task for %s", email)
 		return nil
 	default:
 		return fmt.Errorf("email queue is full")

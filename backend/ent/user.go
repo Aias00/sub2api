@@ -51,6 +51,10 @@ type User struct {
 	LastLoginAt *time.Time `json:"last_login_at,omitempty"`
 	// LastActiveAt holds the value of the "last_active_at" field.
 	LastActiveAt *time.Time `json:"last_active_at,omitempty"`
+	// WelcomeEmailSentAt holds the value of the "welcome_email_sent_at" field.
+	WelcomeEmailSentAt *time.Time `json:"welcome_email_sent_at,omitempty"`
+	// MarketingEmailsUnsubscribedAt holds the value of the "marketing_emails_unsubscribed_at" field.
+	MarketingEmailsUnsubscribedAt *time.Time `json:"marketing_emails_unsubscribed_at,omitempty"`
 	// BalanceNotifyEnabled holds the value of the "balance_notify_enabled" field.
 	BalanceNotifyEnabled bool `json:"balance_notify_enabled,omitempty"`
 	// BalanceNotifyThresholdType holds the value of the "balance_notify_threshold_type" field.
@@ -232,7 +236,7 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullInt64)
 		case user.FieldEmail, user.FieldPasswordHash, user.FieldRole, user.FieldStatus, user.FieldUsername, user.FieldNotes, user.FieldTotpSecretEncrypted, user.FieldSignupSource, user.FieldBalanceNotifyThresholdType, user.FieldBalanceNotifyExtraEmails:
 			values[i] = new(sql.NullString)
-		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt, user.FieldTotpEnabledAt, user.FieldLastLoginAt, user.FieldLastActiveAt:
+		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt, user.FieldTotpEnabledAt, user.FieldLastLoginAt, user.FieldLastActiveAt, user.FieldWelcomeEmailSentAt, user.FieldMarketingEmailsUnsubscribedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -361,6 +365,20 @@ func (_m *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.LastActiveAt = new(time.Time)
 				*_m.LastActiveAt = value.Time
+			}
+		case user.FieldWelcomeEmailSentAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field welcome_email_sent_at", values[i])
+			} else if value.Valid {
+				_m.WelcomeEmailSentAt = new(time.Time)
+				*_m.WelcomeEmailSentAt = value.Time
+			}
+		case user.FieldMarketingEmailsUnsubscribedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field marketing_emails_unsubscribed_at", values[i])
+			} else if value.Valid {
+				_m.MarketingEmailsUnsubscribedAt = new(time.Time)
+				*_m.MarketingEmailsUnsubscribedAt = value.Time
 			}
 		case user.FieldBalanceNotifyEnabled:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -558,6 +576,16 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	if v := _m.LastActiveAt; v != nil {
 		builder.WriteString("last_active_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.WelcomeEmailSentAt; v != nil {
+		builder.WriteString("welcome_email_sent_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	if v := _m.MarketingEmailsUnsubscribedAt; v != nil {
+		builder.WriteString("marketing_emails_unsubscribed_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
