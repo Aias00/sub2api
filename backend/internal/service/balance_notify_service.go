@@ -347,7 +347,7 @@ func (s *BalanceNotifyService) sendBalanceLowEmails(recipients []string, userNam
 		displayName = userEmail
 	}
 	subject := fmt.Sprintf("[%s] 余额不足提醒 / Balance Low Alert", sanitizeEmailHeader(siteName))
-	body := s.buildBalanceLowEmailBody(displayName, balance, threshold, siteName, rechargeURL)
+	body := s.buildBalanceLowEmailBodyWithLogo(displayName, balance, threshold, siteName, rechargeURL, resolveEmailLogoURL(context.Background(), s.settingRepo))
 	s.sendEmails(recipients, subject, body, "user_email", userEmail, "balance", balance)
 }
 
@@ -369,7 +369,7 @@ func (s *BalanceNotifyService) sendQuotaAlertEmails(adminEmails []string, accoun
 	}
 
 	subject := fmt.Sprintf("[%s] 账号限额告警 / Account Quota Alert - %s", sanitizeEmailHeader(siteName), sanitizeEmailHeader(accountName))
-	body := s.buildQuotaAlertEmailBody(accountID, accountName, platform, dimLabel, used, dim.limit, remaining, thresholdDisplay, siteName)
+	body := s.buildQuotaAlertEmailBodyWithLogo(accountID, accountName, platform, dimLabel, used, dim.limit, remaining, thresholdDisplay, siteName, resolveEmailLogoURL(context.Background(), s.settingRepo))
 	s.sendEmails(adminEmails, subject, body, "account", accountName, "dimension", dim.name)
 }
 
@@ -380,6 +380,10 @@ func sanitizeEmailHeader(s string) string {
 
 // buildBalanceLowEmailBody builds HTML email for balance low notification.
 func (s *BalanceNotifyService) buildBalanceLowEmailBody(userName string, balance, threshold float64, siteName, rechargeURL string) string {
+	return s.buildBalanceLowEmailBodyWithLogo(userName, balance, threshold, siteName, rechargeURL, "")
+}
+
+func (s *BalanceNotifyService) buildBalanceLowEmailBodyWithLogo(userName string, balance, threshold float64, siteName, rechargeURL, logoURL string) string {
 	siteName = normalizeEmailSiteName(siteName)
 	support := emailDetailsBlock("", []emailDetailRow{
 		{Label: "Account", Value: userName},
@@ -390,6 +394,7 @@ func (s *BalanceNotifyService) buildBalanceLowEmailBody(userName string, balance
 	}
 	return renderProductEmail(emailTemplateData{
 		SiteName:    siteName,
+		LogoURL:     logoURL,
 		Title:       fmt.Sprintf("Balance low on %s", siteName),
 		Intro:       fmt.Sprintf("Dear %s, your account balance is running low.", userName),
 		PrimaryHTML: emailHeroValue(fmt.Sprintf("$%.2f", balance), "#dc2626"),
@@ -401,6 +406,10 @@ func (s *BalanceNotifyService) buildBalanceLowEmailBody(userName string, balance
 
 // buildQuotaAlertEmailBody builds HTML email for account quota alert.
 func (s *BalanceNotifyService) buildQuotaAlertEmailBody(accountID int64, accountName, platform, dimLabel string, used, limit, remaining float64, thresholdDisplay, siteName string) string {
+	return s.buildQuotaAlertEmailBodyWithLogo(accountID, accountName, platform, dimLabel, used, limit, remaining, thresholdDisplay, siteName, "")
+}
+
+func (s *BalanceNotifyService) buildQuotaAlertEmailBodyWithLogo(accountID int64, accountName, platform, dimLabel string, used, limit, remaining float64, thresholdDisplay, siteName, logoURL string) string {
 	siteName = normalizeEmailSiteName(siteName)
 	limitStr := fmt.Sprintf("$%.2f", limit)
 	if limit <= 0 {
@@ -408,6 +417,7 @@ func (s *BalanceNotifyService) buildQuotaAlertEmailBody(accountID int64, account
 	}
 	return renderProductEmail(emailTemplateData{
 		SiteName: siteName,
+		LogoURL:  logoURL,
 		Title:    fmt.Sprintf("Account quota alert for %s", siteName),
 		Intro:    "An account quota is below its configured alert threshold.",
 		SupportHTML: emailDetailsBlock("账号限额告警 / Account Quota Alert", []emailDetailRow{

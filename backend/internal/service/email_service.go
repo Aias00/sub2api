@@ -329,7 +329,7 @@ func (s *EmailService) SendVerifyCode(ctx context.Context, email, siteName strin
 
 	// 构建邮件内容
 	subject := fmt.Sprintf("[%s] Email Verification Code", siteName)
-	body := s.buildVerifyCodeEmailBody(code, siteName)
+	body := s.buildVerifyCodeEmailBodyWithLogo(code, siteName, resolveEmailLogoURL(ctx, s.settingRepo))
 
 	// 发送邮件
 	if err := s.SendEmail(ctx, email, subject, body); err != nil {
@@ -376,9 +376,14 @@ func (s *EmailService) VerifyCode(ctx context.Context, email, code string) error
 
 // buildVerifyCodeEmailBody 构建验证码邮件HTML内容
 func (s *EmailService) buildVerifyCodeEmailBody(code, siteName string) string {
+	return s.buildVerifyCodeEmailBodyWithLogo(code, siteName, "")
+}
+
+func (s *EmailService) buildVerifyCodeEmailBodyWithLogo(code, siteName, logoURL string) string {
 	siteName = normalizeEmailSiteName(siteName)
 	return renderProductEmail(emailTemplateData{
 		SiteName:    siteName,
+		LogoURL:     logoURL,
 		Title:       fmt.Sprintf("Verify your email for %s", siteName),
 		Intro:       fmt.Sprintf("You requested a one-time verification code for %s. Your code is:", siteName),
 		PrimaryHTML: emailCodeBlock(code),
@@ -477,7 +482,7 @@ func (s *EmailService) SendPasswordResetEmail(ctx context.Context, email, siteNa
 
 	// Build email content
 	subject := fmt.Sprintf("[%s] 密码重置请求", siteName)
-	body := s.buildPasswordResetEmailBody(fullResetURL, siteName)
+	body := s.buildPasswordResetEmailBodyWithLogo(fullResetURL, siteName, resolveEmailLogoURL(ctx, s.settingRepo))
 
 	// Send email
 	if err := s.SendEmail(ctx, email, subject, body); err != nil {
@@ -540,9 +545,14 @@ func (s *EmailService) ConsumePasswordResetToken(ctx context.Context, email, tok
 
 // buildPasswordResetEmailBody builds the HTML content for password reset email
 func (s *EmailService) buildPasswordResetEmailBody(resetURL, siteName string) string {
+	return s.buildPasswordResetEmailBodyWithLogo(resetURL, siteName, "")
+}
+
+func (s *EmailService) buildPasswordResetEmailBodyWithLogo(resetURL, siteName, logoURL string) string {
 	siteName = normalizeEmailSiteName(siteName)
 	return renderProductEmail(emailTemplateData{
 		SiteName:    siteName,
+		LogoURL:     logoURL,
 		Title:       fmt.Sprintf("Reset your %s password", siteName),
 		Intro:       fmt.Sprintf("We received a request to reset your %s password. Use the button below to continue.", siteName),
 		PrimaryHTML: emailActionButton("Reset password", resetURL),

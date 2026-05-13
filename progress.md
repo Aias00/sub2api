@@ -31,6 +31,25 @@
 ### Next
 - If the user provides a real DingTalk or Feishu bot webhook, configure it under admin settings and run a live registration smoke test to confirm delivery.
 
+## 2026-05-13 Email Template Logo
+### Done
+- Updated the shared HTML email shell to render a real image logo when a logo URL is available.
+- Email logo resolution now prefers configured `site_logo`, then falls back to the public site origin plus `/logo.png`.
+- Wired the resolved logo into:
+  - registration verification code emails
+  - password reset emails
+  - notification email verification emails
+  - balance low and account quota alert emails
+  - admin SMTP test emails
+- Added regression coverage for image-logo rendering and default `/logo.png` resolution from `frontend_url`.
+- Verified backend unit coverage with `go test -tags unit ./internal/...`.
+
+### Failures
+- Initial test command used the backend directory with root-relative paths, so `gofmt` could not find files; reran from the repository root successfully.
+
+### Next
+- Commit, push, deploy the backend/frontend embedded build on the server, then verify `/logo.png` and public settings remain reachable.
+
 ## 2026-05-13 Docs Content Rewrite
 ### Done
 - Replaced the small built-in docs set with a DragonCode-inspired information architecture:

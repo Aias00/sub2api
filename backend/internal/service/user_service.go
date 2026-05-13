@@ -1200,7 +1200,7 @@ func (s *UserService) sendNotifyVerifyEmail(ctx context.Context, emailService *E
 		}
 	}
 	subject := fmt.Sprintf("[%s] 通知邮箱验证码 / Notification Email Verification", siteName)
-	body := buildNotifyVerifyEmailBody(code, siteName)
+	body := buildNotifyVerifyEmailBodyWithLogo(code, siteName, resolveEmailLogoURL(ctx, s.settingRepo))
 	return emailService.SendEmail(ctx, email, subject, body)
 }
 
@@ -1315,9 +1315,14 @@ func (s *UserService) ToggleNotifyEmail(ctx context.Context, userID int64, email
 
 // buildNotifyVerifyEmailBody builds the HTML email body for notify email verification.
 func buildNotifyVerifyEmailBody(code, siteName string) string {
+	return buildNotifyVerifyEmailBodyWithLogo(code, siteName, "")
+}
+
+func buildNotifyVerifyEmailBodyWithLogo(code, siteName, logoURL string) string {
 	siteName = normalizeEmailSiteName(siteName)
 	return renderProductEmail(emailTemplateData{
 		SiteName:    siteName,
+		LogoURL:     logoURL,
 		Title:       fmt.Sprintf("Verify notification email for %s", siteName),
 		Intro:       "You are adding an extra notification email. Enter this one-time code to verify it:",
 		PrimaryHTML: emailCodeBlock(code),

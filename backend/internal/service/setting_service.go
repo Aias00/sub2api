@@ -557,7 +557,30 @@ func (s *SettingService) GetFrontendURL(ctx context.Context) string {
 	if err == nil && strings.TrimSpace(val) != "" {
 		return strings.TrimSpace(val)
 	}
+	if s.cfg == nil {
+		return ""
+	}
 	return s.cfg.Server.FrontendURL
+}
+
+// GetEmailLogoURL resolves the absolute logo URL used by HTML email templates.
+func (s *SettingService) GetEmailLogoURL(ctx context.Context) string {
+	if s == nil || s.settingRepo == nil {
+		return ""
+	}
+	settings, err := s.settingRepo.GetMultiple(ctx, []string{
+		SettingKeySiteLogo,
+		SettingKeyFrontendURL,
+		SettingKeyAPIBaseURL,
+	})
+	if err != nil {
+		return ""
+	}
+	baseURL := firstNonEmpty(settings[SettingKeyFrontendURL], settings[SettingKeyAPIBaseURL], s.GetFrontendURL(ctx))
+	if logoURL := normalizeEmailImageURL(settings[SettingKeySiteLogo], baseURL); logoURL != "" {
+		return logoURL
+	}
+	return emailDefaultLogoURL(baseURL)
 }
 
 // GetPublicSettings 获取公开设置（无需登录）

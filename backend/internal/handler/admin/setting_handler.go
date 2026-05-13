@@ -2642,7 +2642,7 @@ func (h *SettingHandler) SendTestEmail(c *gin.Context) {
 
 	siteName := h.settingService.GetSiteName(c.Request.Context())
 	subject := "[" + siteName + "] Test Email"
-	body := service.BuildTestEmailBody(siteName)
+	body := service.BuildTestEmailBodyWithLogo(siteName, h.settingService.GetEmailLogoURL(c.Request.Context()))
 
 	if err := h.emailService.SendEmailWithConfig(config, req.Email, subject, body); err != nil {
 		response.BadRequest(c, "Failed to send test email: "+err.Error())
