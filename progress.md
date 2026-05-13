@@ -36,9 +36,11 @@
   - checking/explicitly ignoring registration webhook HMAC writes and response body close
   - removing obsolete no-logo email-template wrapper functions that were only referenced by unit tests
   - updating unit tests to call the current `WithLogo(..., "")` helpers directly
+- Follow-up: fixed the same unchecked `strings.Builder` writes in the welcome email template after CI surfaced the remaining file.
 - Verified:
   - `make test-frontend`
   - `go test -tags=unit ./internal/service -count=1`
+  - `go test -tags=unit ./internal/service -run 'TestBuild.*Email|TestAuthService_SendVerifyCode_ActiveEmailDailyLimit' -count=1`
   - `make build`
   - `git diff --check`
 
