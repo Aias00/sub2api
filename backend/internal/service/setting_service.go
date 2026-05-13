@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/rand"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
 	"errors"
@@ -44,6 +45,12 @@ type SettingRepository interface {
 	SetMultiple(ctx context.Context, settings map[string]string) error
 	GetAll(ctx context.Context) (map[string]string, error)
 	Delete(ctx context.Context, key string) error
+}
+
+type SiteLogoImage struct {
+	ContentType string
+	Data        []byte
+	ETag        string
 }
 
 // cachedVersionBounds 缓存 Claude Code 版本号上下限（进程内缓存，60s TTL）
@@ -577,10 +584,81 @@ func (s *SettingService) GetEmailLogoURL(ctx context.Context) string {
 		return ""
 	}
 	baseURL := firstNonEmpty(settings[SettingKeyFrontendURL], settings[SettingKeyAPIBaseURL], s.GetFrontendURL(ctx))
+	if logo, ok := parseSiteLogoDataURL(settings[SettingKeySiteLogo]); ok {
+		if endpoint := emailSiteLogoEndpointURL(baseURL, logo.ETag); endpoint != "" {
+			return endpoint
+		}
+	}
 	if logoURL := normalizeEmailImageURL(settings[SettingKeySiteLogo], baseURL); logoURL != "" {
 		return logoURL
 	}
 	return emailDefaultLogoURL(baseURL)
+}
+
+func (s *SettingService) GetSiteLogoImage(ctx context.Context) (*SiteLogoImage, error) {
+	if s == nil || s.settingRepo == nil {
+		return nil, nil
+	}
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeySiteLogo)
+	if err != nil {
+		return nil, fmt.Errorf("get site logo: %w", err)
+	}
+	logo, ok := parseSiteLogoDataURL(raw)
+	if !ok {
+		return nil, nil
+	}
+	return logo, nil
+}
+
+func parseSiteLogoDataURL(raw string) (*SiteLogoImage, bool) {
+	raw = strings.TrimSpace(raw)
+	if !strings.HasPrefix(raw, "data:") {
+		return nil, false
+	}
+	header, payload, ok := strings.Cut(raw, ",")
+	if !ok {
+		return nil, false
+	}
+	mediaType := strings.TrimSpace(strings.TrimPrefix(header, "data:"))
+	parts := strings.Split(mediaType, ";")
+	if len(parts) < 2 {
+		return nil, false
+	}
+	contentType := strings.ToLower(strings.TrimSpace(parts[0]))
+	if !isAllowedSiteLogoContentType(contentType) {
+		return nil, false
+	}
+	base64Encoded := false
+	for _, part := range parts[1:] {
+		if strings.EqualFold(strings.TrimSpace(part), "base64") {
+			base64Encoded = true
+			break
+		}
+	}
+	if !base64Encoded {
+		return nil, false
+	}
+
+	cleanPayload := strings.NewReplacer("\n", "", "\r", "", "\t", "", " ", "").Replace(payload)
+	data, err := base64.StdEncoding.DecodeString(cleanPayload)
+	if err != nil || len(data) == 0 {
+		return nil, false
+	}
+	sum := sha256.Sum256(data)
+	return &SiteLogoImage{
+		ContentType: contentType,
+		Data:        data,
+		ETag:        `"` + hex.EncodeToString(sum[:]) + `"`,
+	}, true
+}
+
+func isAllowedSiteLogoContentType(contentType string) bool {
+	switch strings.ToLower(strings.TrimSpace(contentType)) {
+	case "image/png", "image/jpeg", "image/jpg", "image/webp", "image/gif", "image/x-icon", "image/vnd.microsoft.icon":
+		return true
+	default:
+		return false
+	}
 }
 
 // GetPublicSettings 获取公开设置（无需登录）

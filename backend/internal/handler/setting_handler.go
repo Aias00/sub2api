@@ -1,6 +1,9 @@
 package handler
 
 import (
+	"net/http"
+	"strings"
+
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -88,6 +91,44 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 
 		RiskControlEnabled: settings.RiskControlEnabled,
 	})
+}
+
+// GetSiteLogo serves the configured uploaded site logo as a normal image URL for
+// clients that do not support data URI images, especially email clients.
+func (h *SettingHandler) GetSiteLogo(c *gin.Context) {
+	logo, err := h.settingService.GetSiteLogoImage(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if logo == nil {
+		response.NotFound(c, "site logo not configured")
+		return
+	}
+	if siteLogoETagMatches(c.GetHeader("If-None-Match"), logo.ETag) {
+		c.Status(http.StatusNotModified)
+		c.Writer.WriteHeaderNow()
+		return
+	}
+	c.Header("Cache-Control", "public, max-age=300")
+	c.Header("ETag", logo.ETag)
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.Data(http.StatusOK, logo.ContentType, logo.Data)
+}
+
+func siteLogoETagMatches(ifNoneMatch, etag string) bool {
+	ifNoneMatch = strings.TrimSpace(ifNoneMatch)
+	etag = strings.TrimSpace(etag)
+	if ifNoneMatch == "" || etag == "" {
+		return false
+	}
+	for _, candidate := range strings.Split(ifNoneMatch, ",") {
+		candidate = strings.TrimSpace(candidate)
+		if candidate == "*" || candidate == etag {
+			return true
+		}
+	}
+	return false
 }
 
 func publicLoginAgreementDocumentsToDTO(items []service.LoginAgreementDocument) []dto.LoginAgreementDocument {

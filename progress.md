@@ -46,7 +46,7 @@
 - Committed and pushed the logo change as `3431e2f0`.
 - Deployed the embedded frontend/backend build on the Google server and restarted the live `SERVER_PORT=8081` process.
 - Verified `https://cloudbase.eu.org/dashboard` returns HTTP 200 and `https://cloudbase.eu.org/logo.png` serves the real PNG logo.
-- Follow-up: rejected inline `data:image` logos for email rendering so the current configured base64 site logo falls back to the public `/logo.png`, which is safer for real mail clients.
+- Follow-up: added `GET /api/v1/settings/site-logo` so an uploaded base64 `site_logo` is exposed as a normal public image URL for email clients, instead of falling back to `/logo.png`.
 
 ### Failures
 - Initial test command used the backend directory with root-relative paths, so `gofmt` could not find files; reran from the repository root successfully.

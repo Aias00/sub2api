@@ -111,7 +111,13 @@ func resolveEmailLogoURL(ctx context.Context, repo SettingRepository) string {
 	}
 
 	baseURL := firstNonEmpty(settings[SettingKeyFrontendURL], settings[SettingKeyAPIBaseURL])
-	if logo := normalizeEmailImageURL(settings[SettingKeySiteLogo], baseURL); logo != "" {
+	siteLogo := settings[SettingKeySiteLogo]
+	if logo, ok := parseSiteLogoDataURL(siteLogo); ok {
+		if endpoint := emailSiteLogoEndpointURL(baseURL, logo.ETag); endpoint != "" {
+			return endpoint
+		}
+	}
+	if logo := normalizeEmailImageURL(siteLogo, baseURL); logo != "" {
 		return logo
 	}
 	return emailDefaultLogoURL(baseURL)
@@ -146,6 +152,20 @@ func emailDefaultLogoURL(baseURL string) string {
 		return ""
 	}
 	base.Path = "/logo.png"
+	return base.String()
+}
+
+func emailSiteLogoEndpointURL(baseURL, etag string) string {
+	base := emailOriginURL(baseURL)
+	if base == nil {
+		return ""
+	}
+	base.Path = "/api/v1/settings/site-logo"
+	query := base.Query()
+	if etag != "" {
+		query.Set("v", strings.Trim(etag, `"`))
+	}
+	base.RawQuery = query.Encode()
 	return base.String()
 }
 

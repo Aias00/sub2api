@@ -24,7 +24,7 @@ func (s *settingHandlerPublicRepoStub) Get(ctx context.Context, key string) (*se
 }
 
 func (s *settingHandlerPublicRepoStub) GetValue(ctx context.Context, key string) (string, error) {
-	panic("unexpected GetValue call")
+	return s.values[key], nil
 }
 
 func (s *settingHandlerPublicRepoStub) Set(ctx context.Context, key, value string) error {
@@ -109,6 +109,54 @@ func TestSettingHandler_GetPublicSettings_ExposesPasswordMinLength(t *testing.T)
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
 	require.Equal(t, 0, resp.Code)
 	require.Equal(t, 12, resp.Data.PasswordMinLength)
+}
+
+func TestSettingHandler_GetSiteLogo_ServesConfiguredDataLogo(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	h := NewSettingHandler(service.NewSettingService(&settingHandlerPublicRepoStub{
+		values: map[string]string{
+			service.SettingKeySiteLogo: "data:image/png;base64,aGVsbG8=",
+		},
+	}, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/site-logo", nil)
+
+	h.GetSiteLogo(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, "image/png", recorder.Header().Get("Content-Type"))
+	require.Equal(t, "nosniff", recorder.Header().Get("X-Content-Type-Options"))
+	require.NotEmpty(t, recorder.Header().Get("ETag"))
+	require.Equal(t, "hello", recorder.Body.String())
+}
+
+func TestSettingHandler_GetSiteLogo_ReturnsNotModifiedForMatchingETag(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	h := NewSettingHandler(service.NewSettingService(&settingHandlerPublicRepoStub{
+		values: map[string]string{
+			service.SettingKeySiteLogo: "data:image/png;base64,aGVsbG8=",
+		},
+	}, &config.Config{}), "test-version")
+
+	first := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(first)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/site-logo", nil)
+	h.GetSiteLogo(c)
+	etag := first.Header().Get("ETag")
+	require.NotEmpty(t, etag)
+
+	second := httptest.NewRecorder()
+	c, _ = gin.CreateTestContext(second)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/site-logo", nil)
+	c.Request.Header.Set("If-None-Match", etag)
+	h.GetSiteLogo(c)
+
+	require.Equal(t, http.StatusNotModified, second.Code)
+	require.Empty(t, second.Body.String())
 }
 
 func TestSettingHandler_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *testing.T) {

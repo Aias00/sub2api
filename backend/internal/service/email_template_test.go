@@ -87,12 +87,27 @@ func TestResolveEmailLogoURL_UsesConfiguredRelativeLogo(t *testing.T) {
 	require.Equal(t, "https://cloudbase.eu.org/assets/brand.png", logoURL)
 }
 
-func TestResolveEmailLogoURL_IgnoresInlineDataLogo(t *testing.T) {
+func TestResolveEmailLogoURL_UsesPublicEndpointForInlineDataLogo(t *testing.T) {
 	repo := newMockSettingRepo()
 	require.NoError(t, repo.Set(context.Background(), SettingKeyFrontendURL, "https://cloudbase.eu.org"))
-	require.NoError(t, repo.Set(context.Background(), SettingKeySiteLogo, "data:image/png;base64,abc"))
+	require.NoError(t, repo.Set(context.Background(), SettingKeySiteLogo, "data:image/png;base64,aGVsbG8="))
 
 	logoURL := resolveEmailLogoURL(context.Background(), repo)
 
-	require.Equal(t, "https://cloudbase.eu.org/logo.png", logoURL)
+	require.Contains(t, logoURL, "https://cloudbase.eu.org/api/v1/settings/site-logo?v=")
+	require.NotContains(t, logoURL, "data:image")
+}
+
+func TestSettingService_GetSiteLogoImage_DecodesInlineDataLogo(t *testing.T) {
+	repo := newMockSettingRepo()
+	require.NoError(t, repo.Set(context.Background(), SettingKeySiteLogo, "data:image/png;base64,aGVsbG8="))
+	svc := NewSettingService(repo, nil)
+
+	logo, err := svc.GetSiteLogoImage(context.Background())
+
+	require.NoError(t, err)
+	require.NotNil(t, logo)
+	require.Equal(t, "image/png", logo.ContentType)
+	require.Equal(t, []byte("hello"), logo.Data)
+	require.NotEmpty(t, logo.ETag)
 }
