@@ -637,3 +637,17 @@
 
 ### Next
 - Commit, push, deploy to the server, then create a fresh test account to verify the real welcome email and preference links in production.
+
+## 2026-05-13 Welcome Email Deployment
+### Done
+- Pushed the welcome email and subscription preference implementation to the `aias00/main` remote.
+- Pulled commit `f66a58a9` on the Google server, built the backend binary on the server with Go 1.26.3, and replaced the live `sub2api` binary.
+- Restarted the live process with the required `SERVER_PORT=8081` environment and verified `https://cloudbase.eu.org/api/v1/settings/public` returns 200.
+- Verified the new public preference route `https://cloudbase.eu.org/api/v1/email-preferences/manage?token=bad` reaches the app and returns the expected invalid-token HTML response.
+
+### Failures
+- The first manual restart omitted `SERVER_PORT=8081`, so the app listened on the default `8080` and Cloudflare returned 502 until it was restarted on the correct port.
+- Pushing to the `origin` remote failed with 403 because the current GitHub credentials cannot write to `Wei-Shaw/sub2api`; pushed to `aias00/main` instead.
+
+### Next
+- Create a fresh test account on production to verify a real welcome email is delivered and that Manage subscriptions / Unsubscribe links mutate the account preference as expected.
