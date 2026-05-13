@@ -86,3 +86,13 @@ func TestResolveEmailLogoURL_UsesConfiguredRelativeLogo(t *testing.T) {
 
 	require.Equal(t, "https://cloudbase.eu.org/assets/brand.png", logoURL)
 }
+
+func TestResolveEmailLogoURL_IgnoresInlineDataLogo(t *testing.T) {
+	repo := newMockSettingRepo()
+	require.NoError(t, repo.Set(context.Background(), SettingKeyFrontendURL, "https://cloudbase.eu.org"))
+	require.NoError(t, repo.Set(context.Background(), SettingKeySiteLogo, "data:image/png;base64,abc"))
+
+	logoURL := resolveEmailLogoURL(context.Background(), repo)
+
+	require.Equal(t, "https://cloudbase.eu.org/logo.png", logoURL)
+}

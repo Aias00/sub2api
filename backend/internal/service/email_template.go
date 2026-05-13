@@ -122,9 +122,6 @@ func normalizeEmailImageURL(raw, baseURL string) string {
 	if raw == "" {
 		return ""
 	}
-	if strings.HasPrefix(raw, "data:image/") {
-		return raw
-	}
 	parsed, err := url.Parse(raw)
 	if err != nil {
 		return ""
