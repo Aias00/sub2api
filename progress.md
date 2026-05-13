@@ -539,3 +539,16 @@
 
 ### Next
 - Commit, push, deploy to the server, then verify live `/dashboard` no longer shows the redundant overview hero for normal users.
+
+## 2026-05-13 Email Template Refresh
+### Done
+- Added a shared backend email shell inspired by the Cursor one-time-code email: white bordered card, compact logo block, large title, primary code/action, divider, and muted safety copy.
+- Migrated verification code, password reset, notification email verification, balance low, quota alert, ops alert, content moderation, and SMTP test email bodies to the shared shell.
+- Added focused unit coverage for the shared template and updated existing notification email assertions.
+- Verified template tests, service/handler tests, and backend server build locally.
+
+### Failures
+- `GOTOOLCHAIN=local go build` failed on this machine because local Go is 1.25.5 while the project requires Go 1.26.3; `go build` with automatic toolchain selection passed.
+
+### Next
+- Commit, push, deploy to the server, then send or inspect a live test email from admin settings if needed.

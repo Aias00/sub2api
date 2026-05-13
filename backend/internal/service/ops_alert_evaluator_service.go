@@ -712,24 +712,20 @@ func buildOpsAlertEmailBody(rule *OpsAlertRule, event *OpsAlertEvent) string {
 	if event.ThresholdValue != nil {
 		threshold = fmt.Sprintf("%.2f", *event.ThresholdValue)
 	}
-	return fmt.Sprintf(`
-<h2>Ops Alert</h2>
-<p><b>Rule</b>: %s</p>
-<p><b>Severity</b>: %s</p>
-<p><b>Status</b>: %s</p>
-<p><b>Metric</b>: %s %s %s</p>
-<p><b>Fired at</b>: %s</p>
-<p><b>Description</b>: %s</p>
-`,
-		htmlEscape(rule.Name),
-		htmlEscape(rule.Severity),
-		htmlEscape(event.Status),
-		htmlEscape(metric),
-		htmlEscape(rule.Operator),
-		htmlEscape(fmt.Sprintf("%s (threshold %s)", value, threshold)),
-		event.FiredAt.Format(time.RFC3339),
-		htmlEscape(event.Description),
-	)
+	return renderProductEmail(emailTemplateData{
+		SiteName: "Sub2API",
+		Title:    "Ops Alert",
+		Intro:    "A monitored operation rule has fired.",
+		SupportHTML: emailDetailsBlock("Alert details", []emailDetailRow{
+			{Label: "Rule", Value: rule.Name},
+			{Label: "Severity", Value: rule.Severity},
+			{Label: "Status", Value: event.Status},
+			{Label: "Metric", Value: fmt.Sprintf("%s %s %s (threshold %s)", metric, rule.Operator, value, threshold)},
+			{Label: "Fired at", Value: event.FiredAt.Format(time.RFC3339)},
+			{Label: "Description", Value: event.Description},
+		}),
+		FooterHTML: emailMutedParagraph("This alert was sent automatically by the operations monitor."),
+	})
 }
 
 func shouldSendOpsAlertEmailByMinSeverity(minSeverity string, ruleSeverity string) bool {
