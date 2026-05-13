@@ -10,13 +10,26 @@
   - notification failures are logged and do not fail registration
 - Added admin settings API fields and admin settings UI controls for the registration push provider, webhook, and secret.
 - Added regression tests for DingTalk payload/sign query, Feishu signed text payload, disabled notification behavior, and updated admin settings API contracts.
+- Committed and pushed the implementation to `aias00/main`.
+- Deployed commit `5d67cb37` to the Google server using the server-side build flow:
+  - `pnpm --dir frontend install --frozen-lockfile`
+  - `pnpm --dir frontend run build`
+  - `go build -tags embed -o ../sub2api.new ./cmd/server`
+- Restarted the live `./sub2api` process on `SERVER_PORT=8081`; the first manual restart used the default port `8080`, which caused a temporary Cloudflare 502 until the process was restarted with the correct port.
+- Verified the live domain is healthy again and admin APIs return HTTP 200 / code 0 after deployment.
+- Verified `/api/v1/admin/settings` now exposes:
+  - `registration_notify_enabled`
+  - `registration_notify_provider`
+  - `registration_notify_webhook_url`
+  - `registration_notify_secret_configured`
 
 ### Failures
 - The first live API login attempt returned HTTP 403 without a browser user-agent; retrying with a browser-like user-agent succeeded.
 - Full unit tests initially failed because the admin settings API contract expected the old response shape; updated the contract snapshot with the new fields.
+- Deployment health check initially targeted the wrong local port (`8081`) after a default-port restart; corrected by restarting with `SERVER_PORT=8081`.
 
 ### Next
-- Commit, push, build on the server, restart the service, and verify the live admin settings response exposes the new registration push fields.
+- If the user provides a real DingTalk or Feishu bot webhook, configure it under admin settings and run a live registration smoke test to confirm delivery.
 
 ## 2026-05-13 Docs Content Rewrite
 ### Done
