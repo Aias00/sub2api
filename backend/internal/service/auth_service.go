@@ -267,6 +267,8 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 		return "", nil, fmt.Errorf("generate token: %w", err)
 	}
 
+	s.notifyUserRegistered(ctx, user, "email")
+
 	return token, user, nil
 }
 

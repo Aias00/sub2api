@@ -1,3 +1,23 @@
+## 2026-05-13 Admin Stats and Registration Push
+### Done
+- Verified live admin dashboard/statistics APIs with the provided admin account:
+  - stats, snapshot, trend, model stats, group stats, user ranking, usage list, and users list all returned HTTP 200 / code 0
+  - trend/model/group/ranking data is empty because live usage totals are currently zero
+- Added configurable new-user registration push notifications:
+  - supports DingTalk and Feishu custom bot webhooks
+  - supports optional bot signing secrets without returning secrets to the frontend
+  - sends asynchronously after successful email registration or finalized OAuth email registration
+  - notification failures are logged and do not fail registration
+- Added admin settings API fields and admin settings UI controls for the registration push provider, webhook, and secret.
+- Added regression tests for DingTalk payload/sign query, Feishu signed text payload, disabled notification behavior, and updated admin settings API contracts.
+
+### Failures
+- The first live API login attempt returned HTTP 403 without a browser user-agent; retrying with a browser-like user-agent succeeded.
+- Full unit tests initially failed because the admin settings API contract expected the old response shape; updated the contract snapshot with the new fields.
+
+### Next
+- Commit, push, build on the server, restart the service, and verify the live admin settings response exposes the new registration push fields.
+
 ## 2026-05-13 Docs Content Rewrite
 ### Done
 - Replaced the small built-in docs set with a DragonCode-inspired information architecture:

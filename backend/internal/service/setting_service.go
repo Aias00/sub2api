@@ -1329,8 +1329,22 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	if err != nil {
 		return nil, err
 	}
+	registrationNotifyProvider, err := normalizeRegistrationNotifyProvider(settings.RegistrationNotifyProvider)
+	if err != nil {
+		return nil, err
+	}
+	registrationNotifyWebhookURL, err := normalizeRegistrationNotifyWebhookURL(settings.RegistrationNotifyWebhookURL, settings.RegistrationNotifyEnabled)
+	if err != nil {
+		return nil, err
+	}
+	if settings.RegistrationNotifyEnabled && registrationNotifyProvider == "" {
+		return nil, infraerrors.BadRequest("REGISTRATION_NOTIFY_PROVIDER_REQUIRED", "registration notification provider is required")
+	}
 	settings.PaymentVisibleMethodAlipaySource = alipaySource
 	settings.PaymentVisibleMethodWxpaySource = wxpaySource
+	settings.RegistrationNotifyProvider = registrationNotifyProvider
+	settings.RegistrationNotifyWebhookURL = registrationNotifyWebhookURL
+	settings.RegistrationNotifySecret = strings.TrimSpace(settings.RegistrationNotifySecret)
 	settings.WeChatConnectAppID = strings.TrimSpace(settings.WeChatConnectAppID)
 	settings.WeChatConnectAppSecret = strings.TrimSpace(settings.WeChatConnectAppSecret)
 	settings.WeChatConnectOpenAppID = strings.TrimSpace(firstNonEmpty(settings.WeChatConnectOpenAppID, settings.WeChatConnectAppID))
@@ -1602,6 +1616,12 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyBalanceLowNotifyRechargeURL] = settings.BalanceLowNotifyRechargeURL
 	updates[SettingKeyAccountQuotaNotifyEnabled] = strconv.FormatBool(settings.AccountQuotaNotifyEnabled)
 	updates[SettingKeyAccountQuotaNotifyEmails] = MarshalNotifyEmails(settings.AccountQuotaNotifyEmails)
+	updates[SettingKeyRegistrationNotifyEnabled] = strconv.FormatBool(settings.RegistrationNotifyEnabled)
+	updates[SettingKeyRegistrationNotifyProvider] = settings.RegistrationNotifyProvider
+	updates[SettingKeyRegistrationNotifyWebhookURL] = settings.RegistrationNotifyWebhookURL
+	if settings.RegistrationNotifySecret != "" {
+		updates[SettingKeyRegistrationNotifySecret] = settings.RegistrationNotifySecret
+	}
 
 	return updates, nil
 }
@@ -2370,6 +2390,10 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingPaymentVisibleMethodAlipayEnabled:     "false",
 		SettingPaymentVisibleMethodWxpayEnabled:      "false",
 		openAIAdvancedSchedulerSettingKey:            "false",
+		SettingKeyRegistrationNotifyEnabled:          "false",
+		SettingKeyRegistrationNotifyProvider:         "",
+		SettingKeyRegistrationNotifyWebhookURL:       "",
+		SettingKeyRegistrationNotifySecret:           "",
 	}
 
 	return s.settingRepo.SetMultiple(ctx, defaults)
@@ -2771,6 +2795,13 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	if result.AccountQuotaNotifyEmails == nil {
 		result.AccountQuotaNotifyEmails = []NotifyEmailEntry{}
 	}
+
+	// Registration notification
+	result.RegistrationNotifyEnabled = settings[SettingKeyRegistrationNotifyEnabled] == "true"
+	result.RegistrationNotifyProvider = normalizeStoredRegistrationNotifyProvider(settings[SettingKeyRegistrationNotifyProvider])
+	result.RegistrationNotifyWebhookURL = strings.TrimSpace(settings[SettingKeyRegistrationNotifyWebhookURL])
+	result.RegistrationNotifySecret = strings.TrimSpace(settings[SettingKeyRegistrationNotifySecret])
+	result.RegistrationNotifySecretConfigured = result.RegistrationNotifySecret != ""
 
 	return result
 }

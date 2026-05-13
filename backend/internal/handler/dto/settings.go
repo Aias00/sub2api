@@ -208,6 +208,12 @@ type SystemSettings struct {
 	AccountQuotaNotifyEnabled   bool               `json:"account_quota_notify_enabled"`
 	AccountQuotaNotifyEmails    []NotifyEmailEntry `json:"account_quota_notify_emails"`
 
+	// Registration notification
+	RegistrationNotifyEnabled          bool   `json:"registration_notify_enabled"`
+	RegistrationNotifyProvider         string `json:"registration_notify_provider"`
+	RegistrationNotifyWebhookURL       string `json:"registration_notify_webhook_url"`
+	RegistrationNotifySecretConfigured bool   `json:"registration_notify_secret_configured"`
+
 	// Channel Monitor feature switch
 	ChannelMonitorEnabled                bool `json:"channel_monitor_enabled"`
 	ChannelMonitorDefaultIntervalSeconds int  `json:"channel_monitor_default_interval_seconds"`

@@ -5957,6 +5957,104 @@
               </div>
             </div>
           </div>
+
+          <!-- Registration Notification -->
+          <div class="card">
+            <div
+              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+            >
+              <h3 class="text-base font-medium text-gray-900 dark:text-white">
+                {{ t("admin.settings.registrationNotify.title") }}
+              </h3>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{ t("admin.settings.registrationNotify.description") }}
+              </p>
+            </div>
+            <div class="px-6 py-6 space-y-4">
+              <div class="flex items-center justify-between">
+                <label
+                  class="mb-0 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >{{ t("admin.settings.registrationNotify.enabled") }}</label
+                >
+                <Toggle v-model="form.registration_notify_enabled" />
+              </div>
+              <div
+                v-if="form.registration_notify_enabled"
+                class="grid grid-cols-1 gap-4 lg:grid-cols-2"
+              >
+                <div>
+                  <label
+                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >{{ t("admin.settings.registrationNotify.provider") }}</label
+                  >
+                  <select
+                    v-model="form.registration_notify_provider"
+                    class="input"
+                  >
+                    <option value="" disabled>
+                      {{
+                        t(
+                          "admin.settings.registrationNotify.providerPlaceholder",
+                        )
+                      }}
+                    </option>
+                    <option value="dingtalk">
+                      {{
+                        t("admin.settings.registrationNotify.providerDingTalk")
+                      }}
+                    </option>
+                    <option value="feishu">
+                      {{
+                        t("admin.settings.registrationNotify.providerFeishu")
+                      }}
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >{{ t("admin.settings.registrationNotify.webhookUrl") }}</label
+                  >
+                  <input
+                    v-model="form.registration_notify_webhook_url"
+                    type="url"
+                    class="input"
+                    :placeholder="
+                      t('admin.settings.registrationNotify.webhookPlaceholder')
+                    "
+                  />
+                </div>
+                <div class="lg:col-span-2">
+                  <label
+                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                    >{{ t("admin.settings.registrationNotify.secret") }}</label
+                  >
+                  <input
+                    v-model="form.registration_notify_secret"
+                    type="password"
+                    class="input"
+                    :placeholder="
+                      form.registration_notify_secret_configured
+                        ? t(
+                            'admin.settings.registrationNotify.secretConfiguredPlaceholder',
+                          )
+                        : t('admin.settings.registrationNotify.secretPlaceholder')
+                    "
+                  />
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {{
+                      form.registration_notify_secret_configured
+                        ? t(
+                            "admin.settings.registrationNotify.secretConfiguredHint",
+                          )
+                        : t("admin.settings.registrationNotify.secretHint")
+                    }}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Balance Low Notification -->
           <div class="card">
             <div
@@ -6431,6 +6529,7 @@ type SettingsForm = Omit<
   google_oauth_client_secret: string;
   force_email_on_third_party_signup: boolean;
   openai_advanced_scheduler_enabled: boolean;
+  registration_notify_secret: string;
 };
 
 const form = reactive<SettingsForm>({
@@ -6511,6 +6610,11 @@ const form = reactive<SettingsForm>({
   smtp_from_email: "",
   smtp_from_name: "",
   smtp_use_tls: true,
+  registration_notify_enabled: false,
+  registration_notify_provider: "",
+  registration_notify_webhook_url: "",
+  registration_notify_secret: "",
+  registration_notify_secret_configured: false,
   // Cloudflare Turnstile
   turnstile_enabled: false,
   turnstile_site_key: "",
@@ -7296,6 +7400,7 @@ async function loadSettings() {
     registrationEmailSuffixWhitelistDraft.value = "";
     form.smtp_password = "";
     smtpPasswordManuallyEdited.value = false;
+    form.registration_notify_secret = "";
     form.turnstile_secret_key = "";
     form.linuxdo_connect_client_secret = "";
     form.github_oauth_client_secret = "";
@@ -7773,6 +7878,10 @@ async function saveSettings() {
       account_quota_notify_emails: (
         form.account_quota_notify_emails || []
       ).filter((e) => e.email.trim() !== ""),
+      registration_notify_enabled: form.registration_notify_enabled,
+      registration_notify_provider: form.registration_notify_provider,
+      registration_notify_webhook_url: form.registration_notify_webhook_url,
+      registration_notify_secret: form.registration_notify_secret || undefined,
       // Channel Monitor feature switch
       channel_monitor_enabled: form.channel_monitor_enabled,
       channel_monitor_default_interval_seconds:

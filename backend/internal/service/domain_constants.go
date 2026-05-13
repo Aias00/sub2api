@@ -382,6 +382,12 @@ const (
 	SettingKeyAccountQuotaNotifyEnabled = "account_quota_notify_enabled" // 全局开关
 	SettingKeyAccountQuotaNotifyEmails  = "account_quota_notify_emails"  // 管理员通知邮箱列表（JSON 数组）
 
+	// Registration Notification
+	SettingKeyRegistrationNotifyEnabled    = "registration_notify_enabled"     // 全局开关
+	SettingKeyRegistrationNotifyProvider   = "registration_notify_provider"    // dingtalk | feishu
+	SettingKeyRegistrationNotifyWebhookURL = "registration_notify_webhook_url" // 机器人 Webhook 地址
+	SettingKeyRegistrationNotifySecret     = "registration_notify_secret"      // 机器人签名密钥
+
 	// Web Search Emulation
 	SettingKeyWebSearchEmulationConfig = "web_search_emulation_config" // JSON 配置
 )

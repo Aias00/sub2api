@@ -279,6 +279,10 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		BalanceLowNotifyRechargeURL:            settings.BalanceLowNotifyRechargeURL,
 		AccountQuotaNotifyEnabled:              settings.AccountQuotaNotifyEnabled,
 		AccountQuotaNotifyEmails:               dto.NotifyEmailEntriesFromService(settings.AccountQuotaNotifyEmails),
+		RegistrationNotifyEnabled:              settings.RegistrationNotifyEnabled,
+		RegistrationNotifyProvider:             settings.RegistrationNotifyProvider,
+		RegistrationNotifyWebhookURL:           settings.RegistrationNotifyWebhookURL,
+		RegistrationNotifySecretConfigured:     settings.RegistrationNotifySecretConfigured,
 		PaymentEnabled:                         paymentCfg.Enabled,
 		PaymentMinAmount:                       paymentCfg.MinAmount,
 		PaymentMaxAmount:                       paymentCfg.MaxAmount,
@@ -571,11 +575,15 @@ type UpdateSettingsRequest struct {
 	OpenAIAdvancedSchedulerEnabled *bool `json:"openai_advanced_scheduler_enabled"`
 
 	// Balance low notification
-	BalanceLowNotifyEnabled     *bool                   `json:"balance_low_notify_enabled"`
-	BalanceLowNotifyThreshold   *float64                `json:"balance_low_notify_threshold"`
-	BalanceLowNotifyRechargeURL *string                 `json:"balance_low_notify_recharge_url"`
-	AccountQuotaNotifyEnabled   *bool                   `json:"account_quota_notify_enabled"`
-	AccountQuotaNotifyEmails    *[]dto.NotifyEmailEntry `json:"account_quota_notify_emails"`
+	BalanceLowNotifyEnabled      *bool                   `json:"balance_low_notify_enabled"`
+	BalanceLowNotifyThreshold    *float64                `json:"balance_low_notify_threshold"`
+	BalanceLowNotifyRechargeURL  *string                 `json:"balance_low_notify_recharge_url"`
+	AccountQuotaNotifyEnabled    *bool                   `json:"account_quota_notify_enabled"`
+	AccountQuotaNotifyEmails     *[]dto.NotifyEmailEntry `json:"account_quota_notify_emails"`
+	RegistrationNotifyEnabled    *bool                   `json:"registration_notify_enabled"`
+	RegistrationNotifyProvider   *string                 `json:"registration_notify_provider"`
+	RegistrationNotifyWebhookURL *string                 `json:"registration_notify_webhook_url"`
+	RegistrationNotifySecret     *string                 `json:"registration_notify_secret"`
 
 	// Payment configuration (integrated into settings, full replace)
 	PaymentEnabled                   *bool                        `json:"payment_enabled"`
@@ -1523,6 +1531,30 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 			return previousSettings.AccountQuotaNotifyEmails
 		}(),
+		RegistrationNotifyEnabled: func() bool {
+			if req.RegistrationNotifyEnabled != nil {
+				return *req.RegistrationNotifyEnabled
+			}
+			return previousSettings.RegistrationNotifyEnabled
+		}(),
+		RegistrationNotifyProvider: func() string {
+			if req.RegistrationNotifyProvider != nil {
+				return strings.TrimSpace(*req.RegistrationNotifyProvider)
+			}
+			return previousSettings.RegistrationNotifyProvider
+		}(),
+		RegistrationNotifyWebhookURL: func() string {
+			if req.RegistrationNotifyWebhookURL != nil {
+				return strings.TrimSpace(*req.RegistrationNotifyWebhookURL)
+			}
+			return previousSettings.RegistrationNotifyWebhookURL
+		}(),
+		RegistrationNotifySecret: func() string {
+			if req.RegistrationNotifySecret != nil {
+				return strings.TrimSpace(*req.RegistrationNotifySecret)
+			}
+			return ""
+		}(),
 		ChannelMonitorEnabled: func() bool {
 			if req.ChannelMonitorEnabled != nil {
 				return *req.ChannelMonitorEnabled
@@ -1807,6 +1839,10 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		BalanceLowNotifyRechargeURL:            updatedSettings.BalanceLowNotifyRechargeURL,
 		AccountQuotaNotifyEnabled:              updatedSettings.AccountQuotaNotifyEnabled,
 		AccountQuotaNotifyEmails:               dto.NotifyEmailEntriesFromService(updatedSettings.AccountQuotaNotifyEmails),
+		RegistrationNotifyEnabled:              updatedSettings.RegistrationNotifyEnabled,
+		RegistrationNotifyProvider:             updatedSettings.RegistrationNotifyProvider,
+		RegistrationNotifyWebhookURL:           updatedSettings.RegistrationNotifyWebhookURL,
+		RegistrationNotifySecretConfigured:     updatedSettings.RegistrationNotifySecretConfigured,
 		PaymentEnabled:                         updatedPaymentCfg.Enabled,
 		PaymentMinAmount:                       updatedPaymentCfg.MinAmount,
 		PaymentMaxAmount:                       updatedPaymentCfg.MaxAmount,
@@ -2228,6 +2264,18 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if !equalNotifyEmailEntries(before.AccountQuotaNotifyEmails, after.AccountQuotaNotifyEmails) {
 		changed = append(changed, "account_quota_notify_emails")
+	}
+	if before.RegistrationNotifyEnabled != after.RegistrationNotifyEnabled {
+		changed = append(changed, "registration_notify_enabled")
+	}
+	if before.RegistrationNotifyProvider != after.RegistrationNotifyProvider {
+		changed = append(changed, "registration_notify_provider")
+	}
+	if before.RegistrationNotifyWebhookURL != after.RegistrationNotifyWebhookURL {
+		changed = append(changed, "registration_notify_webhook_url")
+	}
+	if req.RegistrationNotifySecret != nil && strings.TrimSpace(*req.RegistrationNotifySecret) != "" {
+		changed = append(changed, "registration_notify_secret")
 	}
 	if before.ChannelMonitorEnabled != after.ChannelMonitorEnabled {
 		changed = append(changed, "channel_monitor_enabled")

@@ -194,6 +194,13 @@ type SystemSettings struct {
 	// Account quota notification
 	AccountQuotaNotifyEnabled bool
 	AccountQuotaNotifyEmails  []NotifyEmailEntry
+
+	// Registration notification
+	RegistrationNotifyEnabled          bool
+	RegistrationNotifyProvider         string
+	RegistrationNotifyWebhookURL       string
+	RegistrationNotifySecret           string
+	RegistrationNotifySecretConfigured bool
 }
 
 type DefaultSubscriptionSetting struct {

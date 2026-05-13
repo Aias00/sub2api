@@ -516,6 +516,10 @@ export interface SystemSettings {
   balance_low_notify_recharge_url: string;
   account_quota_notify_enabled: boolean;
   account_quota_notify_emails: NotifyEmailEntry[];
+  registration_notify_enabled: boolean;
+  registration_notify_provider: "" | "dingtalk" | "feishu" | string;
+  registration_notify_webhook_url: string;
+  registration_notify_secret_configured: boolean;
 
   // Channel Monitor feature switch
   channel_monitor_enabled: boolean;
@@ -711,6 +715,10 @@ export interface UpdateSettingsRequest {
   balance_low_notify_recharge_url?: string;
   account_quota_notify_enabled?: boolean;
   account_quota_notify_emails?: NotifyEmailEntry[];
+  registration_notify_enabled?: boolean;
+  registration_notify_provider?: "" | "dingtalk" | "feishu" | string;
+  registration_notify_webhook_url?: string;
+  registration_notify_secret?: string;
 
   // Channel Monitor feature switch
   channel_monitor_enabled?: boolean;
