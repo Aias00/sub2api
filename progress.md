@@ -43,12 +43,15 @@
   - admin SMTP test emails
 - Added regression coverage for image-logo rendering and default `/logo.png` resolution from `frontend_url`.
 - Verified backend unit coverage with `go test -tags unit ./internal/...`.
+- Committed and pushed the logo change as `3431e2f0`.
+- Deployed the embedded frontend/backend build on the Google server and restarted the live `SERVER_PORT=8081` process.
+- Verified `https://cloudbase.eu.org/dashboard` returns HTTP 200 and `https://cloudbase.eu.org/logo.png` serves the real PNG logo.
 
 ### Failures
 - Initial test command used the backend directory with root-relative paths, so `gofmt` could not find files; reran from the repository root successfully.
 
 ### Next
-- Commit, push, deploy the backend/frontend embedded build on the server, then verify `/logo.png` and public settings remain reachable.
+- If needed, send a live SMTP test email from admin settings to inspect real mailbox rendering.
 
 ## 2026-05-13 Docs Content Rewrite
 ### Done
