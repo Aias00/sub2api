@@ -92,6 +92,8 @@ const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appS
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const dashboardPath = computed(() => (authStore.isAdmin ? '/admin/dashboard' : '/dashboard'))
 const docsBasePath = computed(() => (locale.value === 'en' ? '/docs-content/en/' : '/docs-content/'))
+const docsContentVersion = encodeURIComponent(__DOCS_CONTENT_VERSION__)
+const docsVersionQueryKey = '_docs_v'
 
 const docsHash = computed(() => normalizeDocsHashPath(route.params.pathMatch as string | string[] | undefined))
 
@@ -150,14 +152,51 @@ function configureDocsify() {
     subMaxLevel: 3,
     auto2top: true,
     relativePath: true,
+    requestHeaders: {
+      'Cache-Control': 'no-cache',
+      Pragma: 'no-cache',
+    },
     themeColor: '#2563eb',
     notFoundPage: true,
+    plugins: [docsVersionPlugin],
     search: {
+      namespace: `cloudbase-docs-${locale.value}-${docsContentVersion}`,
       placeholder: locale.value === 'zh' ? '搜索文档' : 'Search docs',
       noData: locale.value === 'zh' ? '没有找到结果' : 'No results',
       depth: 4,
     },
   }
+}
+
+function withDocsContentVersion(hash: string) {
+  const normalizedHash = hash.startsWith('#') ? hash : `#${hash}`
+  if (!normalizedHash.startsWith('#/')) {
+    return normalizedHash
+  }
+
+  const [path, query = ''] = normalizedHash.slice(1).split('?')
+  const params = new URLSearchParams(query)
+  if (params.get(docsVersionQueryKey) !== docsContentVersion) {
+    params.set(docsVersionQueryKey, docsContentVersion)
+  }
+  const queryString = params.toString()
+
+  return queryString ? `#${path}?${queryString}` : `#${path}`
+}
+
+function rewriteDocsLinks() {
+  const root = docsifyRoot.value
+  if (!root) return
+  root.querySelectorAll<HTMLAnchorElement>('a[href^="#/"]').forEach((link) => {
+    const href = link.getAttribute('href')
+    if (!href) return
+    link.setAttribute('href', withDocsContentVersion(href))
+  })
+}
+
+function docsVersionPlugin(hook: { mounted: (callback: () => void) => void; doneEach: (callback: () => void) => void }) {
+  hook.mounted(rewriteDocsLinks)
+  hook.doneEach(rewriteDocsLinks)
 }
 
 async function loadDocsify() {
@@ -171,7 +210,7 @@ async function loadDocsify() {
 
 function syncHash(force = false) {
   if (typeof window === 'undefined') return
-  const targetHash = docsHash.value
+  const targetHash = withDocsContentVersion(docsHash.value)
   if (force || window.location.hash !== targetHash) {
     window.location.hash = targetHash
   }
@@ -204,7 +243,7 @@ onMounted(async () => {
     await router.replace('/docs')
   }
   if (typeof window !== 'undefined') {
-    window.location.hash = initialHash
+    window.location.hash = withDocsContentVersion(initialHash)
   }
   await loadDocsify()
 })

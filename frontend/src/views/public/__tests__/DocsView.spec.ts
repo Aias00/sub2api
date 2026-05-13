@@ -11,6 +11,9 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).toContain("docsify/lib/themes/vue.css?url")
     expect(docsViewSource).toContain('window.$docsify')
     expect(docsViewSource).toContain('basePath: docsBasePath.value')
+    expect(docsViewSource).toContain('requestHeaders:')
+    expect(docsViewSource).toContain("'Cache-Control': 'no-cache'")
+    expect(docsViewSource).toContain('plugins: [docsVersionPlugin]')
     expect(docsViewSource).not.toContain('findDocsPage(')
     expect(docsViewSource).not.toContain('marked.parse(')
   })
@@ -23,6 +26,15 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).not.toContain('const docsSidebarPath = computed')
     expect(docsViewSource).not.toContain("'/.*/_sidebar.md'")
     expect(docsViewSource).toContain('window.location.reload()')
+  })
+
+  it('adds a build-specific cache buster to Docsify hashes and search index', () => {
+    expect(docsViewSource).toContain('const docsContentVersion = encodeURIComponent(__DOCS_CONTENT_VERSION__)')
+    expect(docsViewSource).toContain("const docsVersionQueryKey = '_docs_v'")
+    expect(docsViewSource).toContain('function withDocsContentVersion')
+    expect(docsViewSource).toContain('window.location.hash = withDocsContentVersion(initialHash)')
+    expect(docsViewSource).toContain('namespace: `cloudbase-docs-${locale.value}-${docsContentVersion}`')
+    expect(docsViewSource).toContain('link.setAttribute')
   })
 
   it('overrides Docsify default fixed layout so the product header stays pinned', () => {

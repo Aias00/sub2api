@@ -512,3 +512,15 @@
 
 ### Next
 - Commit, push, deploy to the server, then re-check live `/purchase` for the empty catalog state.
+
+## 2026-05-13 Docs Content Domain Portability
+### Done
+- Replaced production-domain links inside `frontend/public/docs-content/**/*.md` with same-origin routes such as `/home`, `/dashboard`, `/register`, and `/purchase`.
+- Added `DocsContent` regression coverage so Markdown docs cannot reintroduce `cloudbase.eu.org`.
+- Added a Docsify content cache-buster built at frontend build time, rewrote Docsify hash links with `_docs_v`, isolated the search index by version, and sent no-cache headers for Markdown requests.
+
+### Failures
+- First live verification showed the server content was updated but the browser still rendered stale Docsify Markdown from the old page cache.
+
+### Next
+- Commit, push, deploy the Docsify cache-busting fix, then verify the live docs page no longer displays hard-coded production-domain links.
