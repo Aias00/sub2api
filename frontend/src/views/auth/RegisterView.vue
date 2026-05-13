@@ -132,6 +132,9 @@
               </span>
             </div>
           </transition>
+          <p v-if="invitationGateSatisfiedByAffiliate" class="mt-2 text-xs text-primary-700 dark:text-primary-300">
+            {{ t('auth.affiliateInvitationDetected') }}
+          </p>
         </div>
 
         <!-- Promo Code Input (Optional) -->
@@ -433,6 +436,10 @@ const agreementGateActive = computed(
 
 const registrationActionDisabled = computed(
   () => isLoading.value || !settingsLoaded.value || agreementGateActive.value
+)
+const affiliateInviteCodeForGate = computed(() => formData.aff_code.trim() || loadAffiliateReferralCode())
+const invitationGateSatisfiedByAffiliate = computed(
+  () => invitationCodeEnabled.value && !formData.invitation_code.trim() && !!affiliateInviteCodeForGate.value
 )
 
 watch(validationToastMessage, (value, previousValue) => {
@@ -788,7 +795,7 @@ function validateForm(): boolean {
 
   // Invitation code validation (required when enabled)
   if (invitationCodeEnabled.value) {
-    if (!formData.invitation_code.trim()) {
+    if (!formData.invitation_code.trim() && !affiliateInviteCodeForGate.value) {
       errors.invitation_code = t('auth.invitationCodeRequired')
       isValid = false
     }
@@ -829,7 +836,7 @@ async function handleRegister(): Promise<void> {
   }
 
   // Check invitation code validation status (if enabled and code provided)
-  if (invitationCodeEnabled.value) {
+  if (invitationCodeEnabled.value && formData.invitation_code.trim()) {
     // If still validating, wait
     if (invitationValidating.value) {
       errorMessage.value = t('auth.invitationCodeValidating')

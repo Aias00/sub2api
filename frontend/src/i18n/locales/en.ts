@@ -478,6 +478,7 @@ export default {
     invitationCodeInvalid: 'Invalid or used invitation code',
     invitationCodeValidating: 'Validating invitation code...',
     invitationCodeInvalidCannotRegister: 'Invalid invitation code. Please check and try again',
+    affiliateInvitationDetected: 'Friend invitation link detected. You can continue and the inviter will be linked automatically.',
     oauthOrContinue: 'or continue with email',
     linuxdo: {
       signIn: 'Continue with Linux.do',

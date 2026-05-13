@@ -523,9 +523,15 @@ func (h *AuthHandler) ValidateInvitationCode(c *gin.Context) {
 		return
 	}
 
-	// 验证邀请码
+	// 验证一次性邀请码；如果失败，再尝试好友邀请码（可复用，注册后绑定返利关系）。
 	redeemCode, err := h.redeemService.GetByCode(c.Request.Context(), req.Code)
 	if err != nil {
+		if h.authService != nil && h.authService.CanUseAffiliateCodeAsRegistrationInvite(c.Request.Context(), req.Code) {
+			response.Success(c, ValidateInvitationCodeResponse{
+				Valid: true,
+			})
+			return
+		}
 		response.Success(c, ValidateInvitationCodeResponse{
 			Valid:     false,
 			ErrorCode: "INVITATION_CODE_NOT_FOUND",
@@ -535,6 +541,12 @@ func (h *AuthHandler) ValidateInvitationCode(c *gin.Context) {
 
 	// 检查类型和状态
 	if redeemCode.Type != service.RedeemTypeInvitation {
+		if h.authService != nil && h.authService.CanUseAffiliateCodeAsRegistrationInvite(c.Request.Context(), req.Code) {
+			response.Success(c, ValidateInvitationCodeResponse{
+				Valid: true,
+			})
+			return
+		}
 		response.Success(c, ValidateInvitationCodeResponse{
 			Valid:     false,
 			ErrorCode: "INVITATION_CODE_INVALID",
@@ -543,6 +555,12 @@ func (h *AuthHandler) ValidateInvitationCode(c *gin.Context) {
 	}
 
 	if redeemCode.Status != service.StatusUnused {
+		if h.authService != nil && h.authService.CanUseAffiliateCodeAsRegistrationInvite(c.Request.Context(), req.Code) {
+			response.Success(c, ValidateInvitationCodeResponse{
+				Valid: true,
+			})
+			return
+		}
 		response.Success(c, ValidateInvitationCodeResponse{
 			Valid:     false,
 			ErrorCode: "INVITATION_CODE_USED",

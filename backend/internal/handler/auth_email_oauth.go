@@ -172,7 +172,7 @@ func (h *AuthHandler) emailOAuthCallbackWithProfile(
 	if shouldCreate, err := h.emailOAuthShouldCreatePendingRegistration(c.Request.Context(), input); err != nil {
 		redirectOAuthError(c, frontendCallback, infraerrors.Reason(err), infraerrors.Message(err), "")
 		return
-	} else if shouldCreate && h.emailOAuthRequiresManualCompletion(c.Request.Context(), provider) {
+	} else if shouldCreate && h.emailOAuthRequiresManualCompletion(c.Request.Context(), provider, affiliateCode) {
 		if pendingErr := h.createEmailOAuthRegistrationPendingSession(c, provider, frontendCallback, redirectTo, profile); pendingErr != nil {
 			redirectOAuthError(c, frontendCallback, infraerrors.Reason(pendingErr), infraerrors.Message(pendingErr), "")
 			return
@@ -208,14 +208,17 @@ func (h *AuthHandler) emailOAuthCallbackWithProfile(
 	redirectWithFragment(c, frontendCallback, fragment)
 }
 
-func (h *AuthHandler) emailOAuthRequiresManualCompletion(ctx context.Context, provider string) bool {
+func (h *AuthHandler) emailOAuthRequiresManualCompletion(ctx context.Context, provider string, affiliateCode string) bool {
 	if !strings.EqualFold(strings.TrimSpace(provider), "google") {
 		return true
 	}
 	if h == nil || h.settingSvc == nil {
 		return true
 	}
-	return h.settingSvc.IsInvitationCodeEnabled(ctx)
+	if !h.settingSvc.IsInvitationCodeEnabled(ctx) {
+		return false
+	}
+	return h.authService == nil || !h.authService.CanUseAffiliateCodeAsRegistrationInvite(ctx, affiliateCode)
 }
 
 func (h *AuthHandler) emailOAuthShouldCreatePendingRegistration(ctx context.Context, input service.EmailOAuthIdentityInput) (bool, error) {

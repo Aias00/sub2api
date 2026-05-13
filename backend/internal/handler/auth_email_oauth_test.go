@@ -227,6 +227,54 @@ func TestEmailOAuthCallbackAutoRegistersGoogleForNewEmailWhenInvitationDisabled(
 	require.Equal(t, 1, identityCount)
 }
 
+func TestEmailOAuthCallbackAutoRegistersGoogleWithAffiliateInviteWhenInvitationEnabled(t *testing.T) {
+	affiliateRepo := newOAuthEmailAffiliateRepoStub(map[string]int64{"AFFGOOG": 3003})
+	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		invitationEnabled: true,
+		settingValues: map[string]string{
+			service.SettingKeyAffiliateEnabled: "true",
+		},
+		affiliateFactory: func(_ *dbent.Client, settingSvc *service.SettingService) *service.AffiliateService {
+			return service.NewAffiliateService(affiliateRepo, settingSvc, nil, nil)
+		},
+	})
+	ctx := context.Background()
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback", nil)
+	req.AddCookie(&http.Cookie{Name: emailOAuthAffiliateCookie, Value: encodeCookieValue("AFFGOOG")})
+	c.Request = req
+
+	handler.emailOAuthCallbackWithProfile(c, "google", config.EmailOAuthProviderConfig{
+		Enabled:             true,
+		ClientID:            "google-client",
+		ClientSecret:        "google-secret",
+		RedirectURL:         "https://app.example/api/v1/auth/oauth/google/callback",
+		FrontendRedirectURL: "/auth/oauth/callback",
+	}, "/auth/oauth/callback", "/dashboard", &emailOAuthProfile{
+		Subject:       "google-aff-invite-user",
+		Email:         "google-aff-invite@example.com",
+		EmailVerified: true,
+		Username:      "google-aff-invite",
+		DisplayName:   "Google Affiliate Invite",
+	})
+
+	require.Equal(t, http.StatusFound, recorder.Code)
+	location := recorder.Header().Get("Location")
+	require.Contains(t, location, "access_token=")
+	require.Contains(t, location, "redirect=%252Fdashboard")
+
+	user, err := client.User.Query().Where(dbuser.EmailEQ("google-aff-invite@example.com")).Only(ctx)
+	require.NoError(t, err)
+	require.NotEmpty(t, user.PasswordHash)
+	require.Equal(t, []oauthEmailAffiliateBindCall{{userID: user.ID, inviterID: 3003}}, affiliateRepo.bindCalls)
+
+	sessionCount, err := client.PendingAuthSession.Query().Count(ctx)
+	require.NoError(t, err)
+	require.Zero(t, sessionCount)
+}
+
 func TestCompleteEmailOAuthRegistrationUsesAffiliateCodeFromPendingSession(t *testing.T) {
 	affiliateRepo := newOAuthEmailAffiliateRepoStub(map[string]int64{"AFF456": 2002})
 	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{

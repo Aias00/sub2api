@@ -704,3 +704,18 @@
 
 ### Next
 - Create a fresh test account on production to verify a real welcome email is delivered and that Manage subscriptions / Unsubscribe links mutate the account preference as expected.
+
+## 2026-05-14 Affiliate Invitation Gate
+### Done
+- Investigated invite-only registration, reusable affiliate invite codes, OAuth first-login, and rebate binding paths.
+- Found that invitation-only mode accepted only one-time redeem invitation codes, so a valid friend invite link could not onboard a new user.
+- Added a shared registration gate that still prefers one-time invitation codes, but accepts enabled affiliate invite codes as reusable onboarding credentials and preserves inviter binding for rebates.
+- Updated email registration and Google verified-email OAuth auto-registration so a valid affiliate invite link can pass the gate without a separate invitation code.
+- Added UI hints so users arriving through a friend invite link are not blocked by an empty invitation-code field.
+- Verified focused backend service/handler tests, full backend unit tests, frontend typecheck, production frontend build, and affected OAuth frontend tests.
+
+### Failures
+- Accidentally overwrote `progress.md` with only the new entry during the first update; restored the tracked history and appended this entry instead.
+
+### Next
+- Commit, push, deploy to the server, then verify the live invitation-only affiliate signup path.

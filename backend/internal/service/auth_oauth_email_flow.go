@@ -77,26 +77,15 @@ func (s *AuthService) SendPendingOAuthVerifyCode(ctx context.Context, email stri
 }
 
 func (s *AuthService) validateOAuthRegistrationInvitation(ctx context.Context, invitationCode string) (*RedeemCode, error) {
+	redeemCode, _, err := s.validateOAuthRegistrationInvitationWithAffiliate(ctx, invitationCode, "")
+	return redeemCode, err
+}
+
+func (s *AuthService) validateOAuthRegistrationInvitationWithAffiliate(ctx context.Context, invitationCode string, affiliateCode string) (*RedeemCode, string, error) {
 	if s == nil || s.settingService == nil || !s.settingService.IsInvitationCodeEnabled(ctx) {
-		return nil, nil
+		return nil, strings.TrimSpace(affiliateCode), nil
 	}
-	if s.redeemRepo == nil && s.oauthEmailFlowClient(ctx) == nil {
-		return nil, ErrServiceUnavailable
-	}
-
-	invitationCode = strings.TrimSpace(invitationCode)
-	if invitationCode == "" {
-		return nil, ErrInvitationCodeRequired
-	}
-
-	redeemCode, err := s.loadOAuthRegistrationInvitation(ctx, invitationCode)
-	if err != nil {
-		return nil, ErrInvitationCodeInvalid
-	}
-	if redeemCode.Type != RedeemTypeInvitation || redeemCode.Status != StatusUnused {
-		return nil, ErrInvitationCodeInvalid
-	}
-	return redeemCode, nil
+	return s.resolveRegistrationInvitationGate(ctx, invitationCode, affiliateCode, s.loadOAuthRegistrationInvitation)
 }
 
 // VerifyOAuthEmailCode verifies the locally entered email verification code for
@@ -295,7 +284,7 @@ func (s *AuthService) FinalizeOAuthEmailAccount(
 	}
 
 	signupSource = normalizeOAuthSignupSource(signupSource)
-	invitationRedeemCode, err := s.validateOAuthRegistrationInvitation(ctx, invitationCode)
+	invitationRedeemCode, effectiveAffiliateCode, err := s.validateOAuthRegistrationInvitationWithAffiliate(ctx, invitationCode, affiliateCode)
 	if err != nil {
 		return err
 	}
@@ -308,7 +297,7 @@ func (s *AuthService) FinalizeOAuthEmailAccount(
 	s.updateOAuthSignupSource(ctx, user.ID, signupSource)
 	grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
-	s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
+	s.bindOAuthAffiliate(ctx, user.ID, effectiveAffiliateCode)
 	s.notifyUserRegistered(ctx, user, signupSource)
 	s.sendWelcomeEmailForNewUser(ctx, user, signupSource)
 	return nil
@@ -394,6 +383,9 @@ func (s *AuthService) loadOAuthRegistrationInvitation(ctx context.Context, invit
 			GroupID:      entity.GroupID,
 			ValidityDays: entity.ValidityDays,
 		}, nil
+	}
+	if s == nil || s.redeemRepo == nil {
+		return nil, ErrRedeemCodeNotFound
 	}
 	return s.redeemRepo.GetByCode(ctx, invitationCode)
 }

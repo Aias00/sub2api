@@ -83,6 +83,9 @@
               :disabled="isSubmitting"
               @keyup.enter="handleSubmitRegistration"
             />
+            <p v-if="invitationGateSatisfiedByAffiliate" class="mt-2 text-xs text-primary-700 dark:text-primary-300">
+              {{ t('auth.affiliateInvitationDetected') }}
+            </p>
           </div>
           <p v-if="registrationError" class="text-sm text-red-600 dark:text-red-400">
             {{ registrationError }}
@@ -234,9 +237,13 @@ const passwordMinLength = computed(() =>
   resolvePasswordMinLength(appStore.cachedPublicSettings)
 )
 const passwordOptional = computed(() => pendingProvider.value === 'google')
+const oauthAffiliateCodeForGate = computed(() => loadOAuthAffiliateCode())
+const invitationGateSatisfiedByAffiliate = computed(
+  () => invitationRequired.value && !invitationCode.value.trim() && !!oauthAffiliateCodeForGate.value
+)
 const canSubmitRegistration = computed(() => {
   if (!registrationEmail.value.trim()) return false
-  if (invitationRequired.value && !invitationCode.value.trim()) return false
+  if (invitationRequired.value && !invitationCode.value.trim() && !oauthAffiliateCodeForGate.value) return false
   if (!passwordOptional.value) {
     if (password.value.length < passwordMinLength.value) return false
     if (password.value !== confirmPassword.value) return false
@@ -372,12 +379,13 @@ async function handleSubmitRegistration() {
     }
   }
   const code = invitationCode.value.trim()
-  if (invitationRequired.value && !code) return
+  const affCode = loadOAuthAffiliateCode()
+  if (invitationRequired.value && !code && !affCode) return
 
   isSubmitting.value = true
   try {
     const payload: { password?: string; invitation_code?: string; aff_code?: string } = {
-      ...oauthAffiliatePayload(loadOAuthAffiliateCode())
+      ...oauthAffiliatePayload(affCode)
     }
     if (password.value.trim()) {
       payload.password = password.value

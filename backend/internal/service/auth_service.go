@@ -145,23 +145,17 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	}
 
 	// 检查是否需要邀请码
-	var invitationRedeemCode *RedeemCode
-	if s.settingService != nil && s.settingService.IsInvitationCodeEnabled(ctx) {
-		if invitationCode == "" {
-			return "", nil, ErrInvitationCodeRequired
+	invitationRedeemCode, effectiveAffiliateCode, err := s.resolveRegistrationInvitationGate(
+		ctx,
+		invitationCode,
+		affiliateCode,
+		s.loadRedeemRegistrationInvitation,
+	)
+	if err != nil {
+		if errors.Is(err, ErrInvitationCodeInvalid) {
+			logger.LegacyPrintf("service.auth", "[Auth] Invalid invitation code: %s", invitationCode)
 		}
-		// 验证邀请码
-		redeemCode, err := s.redeemRepo.GetByCode(ctx, invitationCode)
-		if err != nil {
-			logger.LegacyPrintf("service.auth", "[Auth] Invalid invitation code: %s, error: %v", invitationCode, err)
-			return "", nil, ErrInvitationCodeInvalid
-		}
-		// 检查类型和状态
-		if redeemCode.Type != RedeemTypeInvitation || redeemCode.Status != StatusUnused {
-			logger.LegacyPrintf("service.auth", "[Auth] Invitation code invalid: type=%s, status=%s", redeemCode.Type, redeemCode.Status)
-			return "", nil, ErrInvitationCodeInvalid
-		}
-		invitationRedeemCode = redeemCode
+		return "", nil, err
 	}
 
 	// 检查是否需要邮件验证
@@ -233,7 +227,7 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 		if _, err := s.affiliateService.EnsureUserAffiliate(ctx, user.ID); err != nil {
 			logger.LegacyPrintf("service.auth", "[Auth] Failed to initialize affiliate profile for user %d: %v", user.ID, err)
 		}
-		if code := strings.TrimSpace(affiliateCode); code != "" {
+		if code := strings.TrimSpace(effectiveAffiliateCode); code != "" {
 			if err := s.affiliateService.BindInviterByCode(ctx, user.ID, code); err != nil {
 				// 邀请返利码绑定失败不影响注册，只记录日志
 				logger.LegacyPrintf("service.auth", "[Auth] Failed to bind affiliate inviter for user %d: %v", user.ID, err)
@@ -618,20 +612,18 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 				return nil, nil, ErrRegDisabled
 			}
 
-			// 检查是否需要邀请码
-			var invitationRedeemCode *RedeemCode
-			if s.settingService != nil && s.settingService.IsInvitationCodeEnabled(ctx) {
-				if invitationCode == "" {
+			// 检查是否需要邀请码；好友邀请码可作为入驻凭证并保留返利关系。
+			invitationRedeemCode, effectiveAffiliateCode, err := s.resolveRegistrationInvitationGate(
+				ctx,
+				invitationCode,
+				affiliateCode,
+				s.loadRedeemRegistrationInvitation,
+			)
+			if err != nil {
+				if errors.Is(err, ErrInvitationCodeRequired) {
 					return nil, nil, ErrOAuthInvitationRequired
 				}
-				redeemCode, err := s.redeemRepo.GetByCode(ctx, invitationCode)
-				if err != nil {
-					return nil, nil, ErrInvitationCodeInvalid
-				}
-				if redeemCode.Type != RedeemTypeInvitation || redeemCode.Status != StatusUnused {
-					return nil, nil, ErrInvitationCodeInvalid
-				}
-				invitationRedeemCode = redeemCode
+				return nil, nil, err
 			}
 
 			randomPassword, err := randomHexString(32)
@@ -696,7 +688,7 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					createdSignupSource = signupSource
 					s.postAuthUserBootstrap(ctx, user, signupSource, false)
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
-					s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
+					s.bindOAuthAffiliate(ctx, user.ID, effectiveAffiliateCode)
 				}
 			} else {
 				if err := s.userRepo.Create(ctx, newUser); err != nil {
@@ -716,7 +708,7 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 					createdSignupSource = signupSource
 					s.postAuthUserBootstrap(ctx, user, signupSource, false)
 					s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
-					s.bindOAuthAffiliate(ctx, user.ID, affiliateCode)
+					s.bindOAuthAffiliate(ctx, user.ID, effectiveAffiliateCode)
 					if invitationRedeemCode != nil {
 						if err := s.redeemRepo.Use(ctx, invitationRedeemCode.ID, user.ID); err != nil {
 							return nil, nil, ErrInvitationCodeInvalid

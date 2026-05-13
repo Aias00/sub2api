@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -76,6 +77,17 @@ type defaultSubscriptionAssignerStub struct {
 
 type refreshTokenCacheStub struct{}
 
+type authRegisterAffiliateBindCall struct {
+	userID    int64
+	inviterID int64
+}
+
+type authRegisterAffiliateRepoStub struct {
+	codeOwners    map[string]int64
+	ensureUserIDs []int64
+	bindCalls     []authRegisterAffiliateBindCall
+}
+
 func (s *defaultSubscriptionAssignerStub) AssignOrExtendSubscription(_ context.Context, input *AssignSubscriptionInput) (*UserSubscription, bool, error) {
 	if input != nil {
 		s.calls = append(s.calls, *input)
@@ -124,6 +136,80 @@ func (s *refreshTokenCacheStub) GetFamilyTokenHashes(context.Context, string) ([
 
 func (s *refreshTokenCacheStub) IsTokenInFamily(context.Context, string, string) (bool, error) {
 	return false, nil
+}
+
+func (r *authRegisterAffiliateRepoStub) EnsureUserAffiliate(_ context.Context, userID int64) (*AffiliateSummary, error) {
+	r.ensureUserIDs = append(r.ensureUserIDs, userID)
+	return &AffiliateSummary{UserID: userID, AffCode: "SELF"}, nil
+}
+
+func (r *authRegisterAffiliateRepoStub) GetAffiliateByCode(_ context.Context, code string) (*AffiliateSummary, error) {
+	userID, ok := r.codeOwners[strings.ToUpper(strings.TrimSpace(code))]
+	if !ok {
+		return nil, ErrAffiliateProfileNotFound
+	}
+	return &AffiliateSummary{UserID: userID, AffCode: strings.ToUpper(strings.TrimSpace(code))}, nil
+}
+
+func (r *authRegisterAffiliateRepoStub) BindInviter(_ context.Context, userID, inviterID int64) (bool, error) {
+	r.bindCalls = append(r.bindCalls, authRegisterAffiliateBindCall{userID: userID, inviterID: inviterID})
+	return true, nil
+}
+
+func (r *authRegisterAffiliateRepoStub) AccrueQuota(context.Context, int64, int64, float64, int, *int64) (bool, error) {
+	panic("unexpected AccrueQuota call")
+}
+
+func (r *authRegisterAffiliateRepoStub) GetAccruedRebateFromInvitee(context.Context, int64, int64) (float64, error) {
+	panic("unexpected GetAccruedRebateFromInvitee call")
+}
+
+func (r *authRegisterAffiliateRepoStub) ThawFrozenQuota(context.Context, int64) (float64, error) {
+	panic("unexpected ThawFrozenQuota call")
+}
+
+func (r *authRegisterAffiliateRepoStub) TransferQuotaToBalance(context.Context, int64) (float64, float64, error) {
+	panic("unexpected TransferQuotaToBalance call")
+}
+
+func (r *authRegisterAffiliateRepoStub) ListInvitees(context.Context, int64, int) ([]AffiliateInvitee, error) {
+	panic("unexpected ListInvitees call")
+}
+
+func (r *authRegisterAffiliateRepoStub) UpdateUserAffCode(context.Context, int64, string) error {
+	panic("unexpected UpdateUserAffCode call")
+}
+
+func (r *authRegisterAffiliateRepoStub) ResetUserAffCode(context.Context, int64) (string, error) {
+	panic("unexpected ResetUserAffCode call")
+}
+
+func (r *authRegisterAffiliateRepoStub) SetUserRebateRate(context.Context, int64, *float64) error {
+	panic("unexpected SetUserRebateRate call")
+}
+
+func (r *authRegisterAffiliateRepoStub) BatchSetUserRebateRate(context.Context, []int64, *float64) error {
+	panic("unexpected BatchSetUserRebateRate call")
+}
+
+func (r *authRegisterAffiliateRepoStub) ListUsersWithCustomSettings(context.Context, AffiliateAdminFilter) ([]AffiliateAdminEntry, int64, error) {
+	panic("unexpected ListUsersWithCustomSettings call")
+}
+
+func (r *authRegisterAffiliateRepoStub) ListAffiliateInviteRecords(context.Context, AffiliateRecordFilter) ([]AffiliateInviteRecord, int64, error) {
+	panic("unexpected ListAffiliateInviteRecords call")
+}
+
+func (r *authRegisterAffiliateRepoStub) ListAffiliateRebateRecords(context.Context, AffiliateRecordFilter) ([]AffiliateRebateRecord, int64, error) {
+	panic("unexpected ListAffiliateRebateRecords call")
+}
+
+func (r *authRegisterAffiliateRepoStub) ListAffiliateTransferRecords(context.Context, AffiliateRecordFilter) ([]AffiliateTransferRecord, int64, error) {
+	panic("unexpected ListAffiliateTransferRecords call")
+}
+
+func (r *authRegisterAffiliateRepoStub) GetAffiliateUserOverview(context.Context, int64) (*AffiliateUserOverview, error) {
+	panic("unexpected GetAffiliateUserOverview call")
 }
 
 func (s *emailCacheStub) GetVerificationCode(ctx context.Context, email string) (*VerificationCodeData, error) {
@@ -419,6 +505,36 @@ func TestAuthService_Register_Success(t *testing.T) {
 	require.Equal(t, 2, user.Concurrency)
 	require.Len(t, repo.created, 1)
 	require.True(t, user.CheckPassword("password"))
+}
+
+func TestAuthService_Register_AllowsAffiliateInviteWhenInvitationGateEnabled(t *testing.T) {
+	repo := &userRepoStub{nextID: 101}
+	authService := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:                 "true",
+		SettingKeyInvitationCodeEnabled:               "true",
+		SettingKeyAffiliateEnabled:                    "true",
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "false",
+	}, nil)
+	affiliateRepo := &authRegisterAffiliateRepoStub{
+		codeOwners: map[string]int64{"AFF123": 7},
+	}
+	authService.affiliateService = NewAffiliateService(affiliateRepo, authService.settingService, nil, nil)
+
+	token, user, err := authService.RegisterWithVerification(
+		context.Background(),
+		"invited@test.com",
+		"password",
+		"",
+		"",
+		"",
+		"AFF123",
+	)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+	require.NotNil(t, user)
+	require.Equal(t, int64(101), user.ID)
+	require.Equal(t, []authRegisterAffiliateBindCall{{userID: 101, inviterID: 7}}, affiliateRepo.bindCalls)
 }
 
 func TestAuthService_ValidateToken_ExpiredReturnsClaimsWithError(t *testing.T) {

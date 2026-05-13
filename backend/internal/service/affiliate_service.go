@@ -238,6 +238,30 @@ func (s *AffiliateService) EnsureUserAffiliate(ctx context.Context, userID int64
 	return s.repo.EnsureUserAffiliate(ctx, userID)
 }
 
+func (s *AffiliateService) ValidateInviterCode(ctx context.Context, rawCode string) error {
+	code := strings.ToUpper(strings.TrimSpace(rawCode))
+	if code == "" || !isValidAffiliateCodeFormat(code) {
+		return ErrAffiliateCodeInvalid
+	}
+	if s == nil || s.repo == nil {
+		return infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
+	}
+	if !s.IsEnabled(ctx) {
+		return ErrAffiliateCodeInvalid
+	}
+	summary, err := s.repo.GetAffiliateByCode(ctx, code)
+	if err != nil {
+		if errors.Is(err, ErrAffiliateProfileNotFound) {
+			return ErrAffiliateCodeInvalid
+		}
+		return err
+	}
+	if summary == nil || summary.UserID <= 0 {
+		return ErrAffiliateCodeInvalid
+	}
+	return nil
+}
+
 func (s *AffiliateService) GetAffiliateDetail(ctx context.Context, userID int64) (*AffiliateDetail, error) {
 	// Lazy thaw: move any matured frozen quota to available before reading.
 	if s != nil && s.repo != nil {
