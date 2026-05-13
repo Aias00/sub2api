@@ -37,6 +37,11 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).toContain('link.setAttribute')
   })
 
+  it('keeps application route links from being treated as Docsify document routes', () => {
+    expect(docsViewSource).toContain("const appRouteDocsLinks = new Set(['#/home', '#/dashboard', '#/register', '#/purchase'])")
+    expect(docsViewSource).toContain("link.setAttribute('href', href.slice(1))")
+  })
+
   it('overrides Docsify default fixed layout so the product header stays pinned', () => {
     expect(docsViewSource).toContain(".docsify-shell :deep(main)")
     expect(docsViewSource).toContain('display: flex')

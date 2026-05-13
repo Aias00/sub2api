@@ -94,6 +94,7 @@ const dashboardPath = computed(() => (authStore.isAdmin ? '/admin/dashboard' : '
 const docsBasePath = computed(() => (locale.value === 'en' ? '/docs-content/en/' : '/docs-content/'))
 const docsContentVersion = encodeURIComponent(__DOCS_CONTENT_VERSION__)
 const docsVersionQueryKey = '_docs_v'
+const appRouteDocsLinks = new Set(['#/home', '#/dashboard', '#/register', '#/purchase'])
 
 const docsHash = computed(() => normalizeDocsHashPath(route.params.pathMatch as string | string[] | undefined))
 
@@ -190,6 +191,10 @@ function rewriteDocsLinks() {
   root.querySelectorAll<HTMLAnchorElement>('a[href^="#/"]').forEach((link) => {
     const href = link.getAttribute('href')
     if (!href) return
+    if (appRouteDocsLinks.has(href.split('?')[0] ?? href)) {
+      link.setAttribute('href', href.slice(1))
+      return
+    }
     link.setAttribute('href', withDocsContentVersion(href))
   })
 }

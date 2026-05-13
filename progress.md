@@ -518,9 +518,11 @@
 - Replaced production-domain links inside `frontend/public/docs-content/**/*.md` with same-origin routes such as `/home`, `/dashboard`, `/register`, and `/purchase`.
 - Added `DocsContent` regression coverage so Markdown docs cannot reintroduce `cloudbase.eu.org`.
 - Added a Docsify content cache-buster built at frontend build time, rewrote Docsify hash links with `_docs_v`, isolated the search index by version, and sent no-cache headers for Markdown requests.
+- Corrected Docsify's rewriting of app-route links so `/home`, `/dashboard`, `/register`, and `/purchase` remain application routes instead of document hashes.
 
 ### Failures
 - First live verification showed the server content was updated but the browser still rendered stale Docsify Markdown from the old page cache.
+- Second live verification showed Docsify converted same-origin app links into `#/...` document routes; corrected before final deployment.
 
 ### Next
 - Commit, push, deploy the Docsify cache-busting fix, then verify the live docs page no longer displays hard-coded production-domain links.
