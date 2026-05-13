@@ -37,13 +37,13 @@ func renderProductEmail(data emailTemplateData) string {
 	b.WriteString(emailEscape(title))
 	b.WriteString(`</title>
 </head>
-<body style="margin:0;padding:0;background:#f7f7f5;color:#202020;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-  <div style="padding:32px 16px;">
-    <div style="max-width:720px;margin:0 auto;background:#ffffff;border:1px solid #dedede;border-radius:24px;padding:56px 64px;box-sizing:border-box;">
-      <div style="width:64px;height:64px;border:1px solid #ececec;border-radius:16px;box-shadow:0 8px 22px rgba(0,0,0,.08);display:flex;align-items:center;justify-content:center;margin-bottom:42px;">`)
+<body style="margin:0;padding:0;background:#f8f8f7;color:#202020;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <div style="padding:40px 16px;">
+    <div style="max-width:920px;margin:0 auto;background:#ffffff;border:1px solid #dedede;border-radius:22px;padding:56px 64px 50px;box-sizing:border-box;">
+      <div style="width:58px;height:58px;border:1px solid #ececec;border-radius:14px;background:#ffffff;box-shadow:0 8px 20px rgba(0,0,0,.10);display:flex;align-items:center;justify-content:center;margin-bottom:36px;">`)
 	b.WriteString(emailLogoHTML())
 	b.WriteString(`</div>
-      <h1 style="margin:0 0 28px;font-size:32px;line-height:1.2;font-weight:700;letter-spacing:-.03em;color:#202020;">`)
+      <h1 style="margin:0 0 26px;font-size:30px;line-height:1.18;font-weight:700;letter-spacing:-.035em;color:#202020;">`)
 	b.WriteString(emailEscape(title))
 	b.WriteString(`</h1>`)
 
@@ -56,12 +56,12 @@ func renderProductEmail(data emailTemplateData) string {
 		b.WriteString(data.PrimaryHTML)
 	}
 	if strings.TrimSpace(data.SupportHTML) != "" {
-		b.WriteString(`<div style="margin-top:30px;">`)
+		b.WriteString(`<div style="margin-top:28px;">`)
 		b.WriteString(data.SupportHTML)
 		b.WriteString(`</div>`)
 	}
 
-	b.WriteString(`<div style="height:1px;background:#dedede;margin:42px 0 32px;"></div>`)
+	b.WriteString(`<div style="height:1px;background:#d8d8d8;margin:38px 0 30px;"></div>`)
 	if strings.TrimSpace(data.FooterHTML) != "" {
 		b.WriteString(data.FooterHTML)
 	} else {
@@ -88,17 +88,11 @@ func emailEscape(value string) string {
 }
 
 func emailLogoHTML() string {
-	return `<svg width="34" height="34" viewBox="0 0 64 64" role="img" aria-label="logo" xmlns="http://www.w3.org/2000/svg">
-  <path d="M32 4 56 18v28L32 60 8 46V18L32 4Z" fill="#20201d"/>
-  <path d="M32 4 56 18 32 32 8 18 32 4Z" fill="#2b2b27"/>
-  <path d="M32 32 56 18v28L32 60V32Z" fill="#11110f"/>
-  <path d="M32 32 8 18v28l24 14V32Z" fill="#34342f"/>
-  <path d="M16 18h32L32 28 16 18Z" fill="#ffffff"/>
-</svg>`
+	return `<div style="width:30px;height:30px;background:#20201d;border-radius:5px;box-shadow:inset -10px -10px 0 #11110f,inset 10px -10px 0 #34342f;transform:rotate(30deg);"></div>`
 }
 
 func emailCodeBlock(code string) string {
-	return fmt.Sprintf(`<div style="margin:12px 0 18px;font-size:42px;line-height:1.15;font-weight:500;letter-spacing:.14em;color:#202020;font-family:'SFMono-Regular','Roboto Mono','Courier New',monospace;">%s</div>`, emailEscape(code))
+	return fmt.Sprintf(`<div style="margin:10px 0 14px;font-size:40px;line-height:1.18;font-weight:500;letter-spacing:.075em;color:#202020;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-variant-numeric:tabular-nums;">%s</div>`, emailEscape(code))
 }
 
 func emailHeroValue(value string, color string) string {
@@ -106,7 +100,7 @@ func emailHeroValue(value string, color string) string {
 	if color == "" {
 		color = "#202020"
 	}
-	return fmt.Sprintf(`<div style="margin:12px 0 18px;font-size:42px;line-height:1.15;font-weight:650;letter-spacing:-.03em;color:%s;">%s</div>`, emailEscape(color), emailEscape(value))
+	return fmt.Sprintf(`<div style="margin:10px 0 14px;font-size:42px;line-height:1.15;font-weight:700;letter-spacing:-.035em;color:%s;">%s</div>`, emailEscape(color), emailEscape(value))
 }
 
 func emailActionButton(label, href string) string {
@@ -118,7 +112,7 @@ func emailFallbackLink(label, href string) string {
 }
 
 func emailMutedParagraph(text string) string {
-	return fmt.Sprintf(`<p style="margin:0 0 20px;font-size:16px;line-height:1.65;color:#666666;">%s</p>`, emailEscape(text))
+	return fmt.Sprintf(`<p style="margin:0 0 16px;font-size:15px;line-height:1.65;color:#666666;">%s</p>`, emailEscape(text))
 }
 
 func emailDetailsBlock(title string, rows []emailDetailRow) string {

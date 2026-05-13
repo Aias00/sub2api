@@ -55,6 +55,6 @@ func TestBuildTestEmailBody_UsesSharedTemplate(t *testing.T) {
 
 	require.Contains(t, body, "Test email from cloudbase")
 	require.Contains(t, body, "Sent successfully")
-	require.True(t, strings.Contains(body, "border-radius:24px"), "expected shared card styling")
+	require.True(t, strings.Contains(body, "border-radius:22px"), "expected shared card styling")
 	require.NotContains(t, body, "%!")
 }

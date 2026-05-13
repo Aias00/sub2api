@@ -132,7 +132,7 @@ func TestBuildBalanceLowEmailBody_UsesSharedEmailShell(t *testing.T) {
 	s := &BalanceNotifyService{}
 	body := s.buildBalanceLowEmailBody("u", 1.0, 5.0, "Site", "")
 	require.True(t,
-		strings.Contains(body, "border:1px solid #dedede") && strings.Contains(body, "border-radius:24px"),
+		strings.Contains(body, "border:1px solid #dedede") && strings.Contains(body, "border-radius:22px"),
 		"shared card shell not rendered; got: %s", body)
 	require.NotContains(t, body, "linear-gradient")
 }
@@ -141,7 +141,7 @@ func TestBuildQuotaAlertEmailBody_UsesSharedEmailShell(t *testing.T) {
 	s := &BalanceNotifyService{}
 	body := s.buildQuotaAlertEmailBody(1, "n", "p", "d", 0, 0, 0, "$0.00", "Site")
 	require.True(t,
-		strings.Contains(body, "border:1px solid #dedede") && strings.Contains(body, "border-radius:24px"),
+		strings.Contains(body, "border:1px solid #dedede") && strings.Contains(body, "border-radius:22px"),
 		"shared card shell not rendered; got: %s", body)
 	require.NotContains(t, body, "linear-gradient")
 }

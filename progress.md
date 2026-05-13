@@ -552,3 +552,16 @@
 
 ### Next
 - Commit, push, deploy to the server, then send or inspect a live test email from admin settings if needed.
+
+## 2026-05-13 Email Template Polish
+### Done
+- Tightened the shared email card spacing, typography, divider, and main value/code hierarchy to better match the Cursor reference.
+- Replaced the SVG email logo with a pure HTML/CSS mark so real mail clients are less likely to strip it.
+- Generated local browser previews for test and verification-code emails.
+
+### Failures
+- The first local preview was too narrow; adjusted the card width back up while keeping the vertical rhythm tighter.
+- The initial code preview used overly loose monospace digits; switched to system digits with tighter tracking.
+
+### Next
+- Commit, push, deploy to the server, then use the admin SMTP test email if a real mailbox render check is needed.
