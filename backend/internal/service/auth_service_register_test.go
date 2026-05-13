@@ -62,8 +62,11 @@ func (s *settingRepoStub) Delete(ctx context.Context, key string) error {
 }
 
 type emailCacheStub struct {
-	data *VerificationCodeData
-	err  error
+	data             *VerificationCodeData
+	err              error
+	activeDailyCount int64
+	activeDailyErr   error
+	activeDailyScope string
 }
 
 type defaultSubscriptionAssignerStub struct {
@@ -176,6 +179,19 @@ func (s *emailCacheStub) GetNotifyCodeUserRate(ctx context.Context, userID int64
 
 func (s *emailCacheStub) IncrNotifyCodeUserRate(ctx context.Context, userID int64, window time.Duration) (int64, error) {
 	return 0, nil
+}
+
+func (s *emailCacheStub) IncrActiveEmailDailyRate(ctx context.Context, scope string, window time.Duration) (int64, error) {
+	if s.activeDailyErr != nil {
+		return 0, s.activeDailyErr
+	}
+	s.activeDailyScope = scope
+	s.activeDailyCount++
+	return s.activeDailyCount, nil
+}
+
+func (s *emailCacheStub) GetActiveEmailDailyRate(ctx context.Context, scope string) (int64, error) {
+	return s.activeDailyCount, nil
 }
 
 func newAuthService(repo *userRepoStub, settings map[string]string, emailCache EmailCache) *AuthService {
@@ -348,6 +364,19 @@ func TestAuthService_SendVerifyCode_EmailSuffixNotAllowed(t *testing.T) {
 	require.Contains(t, appErr.Message, "@example.com")
 	require.Contains(t, appErr.Message, "@company.com")
 	require.Equal(t, "2", appErr.Metadata["allowed_suffix_count"])
+}
+
+func TestAuthService_SendVerifyCode_ActiveEmailDailyLimit(t *testing.T) {
+	repo := &userRepoStub{}
+	cache := &emailCacheStub{activeDailyCount: activeEmailDailyLimit}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled: "true",
+	}, cache)
+
+	err := service.SendVerifyCode(context.Background(), "User@Example.com")
+	require.Error(t, err)
+	require.Equal(t, "ACTIVE_EMAIL_DAILY_RATE_LIMIT", infraerrors.Reason(err))
+	require.Equal(t, "email:user@example.com", cache.activeDailyScope)
 }
 
 func TestAuthService_Register_CreateError(t *testing.T) {

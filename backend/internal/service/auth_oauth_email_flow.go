@@ -65,6 +65,9 @@ func (s *AuthService) SendPendingOAuthVerifyCode(ctx context.Context, email stri
 	if s.settingService != nil {
 		siteName = s.settingService.GetSiteName(ctx)
 	}
+	if err := reserveActiveEmailDailyQuota(ctx, s.emailService.cache, activeEmailScopeForEmail(email)); err != nil {
+		return nil, err
+	}
 	if err := s.emailService.SendVerifyCode(ctx, email, siteName); err != nil {
 		return nil, err
 	}

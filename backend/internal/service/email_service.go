@@ -24,6 +24,7 @@ var (
 	ErrInvalidVerifyCode     = infraerrors.BadRequest("INVALID_VERIFY_CODE", "invalid or expired verification code")
 	ErrVerifyCodeTooFrequent = infraerrors.TooManyRequests("VERIFY_CODE_TOO_FREQUENT", "please wait before requesting a new code")
 	ErrVerifyCodeMaxAttempts = infraerrors.TooManyRequests("VERIFY_CODE_MAX_ATTEMPTS", "too many failed attempts, please request a new code")
+	ErrActiveEmailDailyLimit = infraerrors.TooManyRequests("ACTIVE_EMAIL_DAILY_RATE_LIMIT", "too many email requests today, please try again tomorrow")
 
 	// Password reset errors
 	ErrInvalidResetToken = infraerrors.BadRequest("INVALID_RESET_TOKEN", "invalid or expired password reset token")
@@ -53,6 +54,10 @@ type EmailCache interface {
 	// Notify code rate limiting per user
 	IncrNotifyCodeUserRate(ctx context.Context, userID int64, window time.Duration) (int64, error)
 	GetNotifyCodeUserRate(ctx context.Context, userID int64) (int64, error)
+
+	// Active user-triggered email daily rate limiting.
+	IncrActiveEmailDailyRate(ctx context.Context, scope string, window time.Duration) (int64, error)
+	GetActiveEmailDailyRate(ctx context.Context, scope string) (int64, error)
 }
 
 // VerificationCodeData represents verification code data
@@ -79,6 +84,11 @@ const (
 
 	// Password reset email cooldown (prevent email bombing)
 	passwordResetEmailCooldown = 30 * time.Second
+
+	// Cross-flow active email trigger quota. This covers user-initiated
+	// verification/reset emails only; system notifications and welcome emails
+	// are intentionally excluded.
+	activeEmailDailyLimit = 20
 )
 
 // SMTPConfig SMTP配置

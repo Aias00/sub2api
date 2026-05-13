@@ -2,6 +2,8 @@ package repository
 
 import (
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"strings"
@@ -17,6 +19,7 @@ const (
 	passwordResetKeyPrefix       = "password_reset:"
 	passwordResetSentAtKeyPrefix = "password_reset_sent:"
 	notifyCodeUserRateKeyPrefix  = "notify_code_user_rate:"
+	activeEmailDailyKeyPrefix    = "active_email_daily:"
 )
 
 // verifyCodeKey generates the Redis key for email verification code.
@@ -154,6 +157,12 @@ func notifyCodeUserRateKey(userID int64) string {
 	return notifyCodeUserRateKeyPrefix + fmt.Sprintf("%d", userID)
 }
 
+func activeEmailDailyRateKey(scope string) string {
+	normalizedScope := strings.ToLower(strings.TrimSpace(scope))
+	sum := sha256.Sum256([]byte(normalizedScope))
+	return activeEmailDailyKeyPrefix + time.Now().In(time.Local).Format("20060102") + ":" + hex.EncodeToString(sum[:16])
+}
+
 func (c *emailCache) IncrNotifyCodeUserRate(ctx context.Context, userID int64, window time.Duration) (int64, error) {
 	key := notifyCodeUserRateKey(userID)
 	count, err := c.rdb.Incr(ctx, key).Result()
@@ -169,6 +178,27 @@ func (c *emailCache) IncrNotifyCodeUserRate(ctx context.Context, userID int64, w
 
 func (c *emailCache) GetNotifyCodeUserRate(ctx context.Context, userID int64) (int64, error) {
 	key := notifyCodeUserRateKey(userID)
+	count, err := c.rdb.Get(ctx, key).Int64()
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+func (c *emailCache) IncrActiveEmailDailyRate(ctx context.Context, scope string, window time.Duration) (int64, error) {
+	key := activeEmailDailyRateKey(scope)
+	count, err := c.rdb.Incr(ctx, key).Result()
+	if err != nil {
+		return 0, err
+	}
+	if err := c.rdb.Expire(ctx, key, window).Err(); err != nil {
+		return count, fmt.Errorf("expire active email daily rate key: %w", err)
+	}
+	return count, nil
+}
+
+func (c *emailCache) GetActiveEmailDailyRate(ctx context.Context, scope string) (int64, error) {
+	key := activeEmailDailyRateKey(scope)
 	count, err := c.rdb.Get(ctx, key).Int64()
 	if err != nil {
 		return 0, err

@@ -2379,6 +2379,14 @@ func (s *oauthPendingFlowEmailCacheStub) GetNotifyCodeUserRate(context.Context, 
 	return 0, nil
 }
 
+func (s *oauthPendingFlowEmailCacheStub) IncrActiveEmailDailyRate(context.Context, string, time.Duration) (int64, error) {
+	return 1, nil
+}
+
+func (s *oauthPendingFlowEmailCacheStub) GetActiveEmailDailyRate(context.Context, string) (int64, error) {
+	return 0, nil
+}
+
 func (s *oauthPendingFlowRefreshTokenCacheStub) StoreRefreshToken(context.Context, string, *service.RefreshTokenData, time.Duration) error {
 	return nil
 }

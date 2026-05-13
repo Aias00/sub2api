@@ -1138,6 +1138,9 @@ func (s *UserService) SendNotifyEmailCode(ctx context.Context, userID int64, ema
 	if err := checkNotifyCodeRateLimit(ctx, cache, userID, email); err != nil {
 		return err
 	}
+	if err := reserveActiveEmailDailyQuota(ctx, cache, activeEmailScopeForUserID(userID)); err != nil {
+		return err
+	}
 
 	code, err := emailService.GenerateVerifyCode()
 	if err != nil {

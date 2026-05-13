@@ -134,6 +134,9 @@ func (s *AuthService) SendEmailIdentityBindCode(ctx context.Context, userID int6
 	if s.settingService != nil {
 		siteName = s.settingService.GetSiteName(ctx)
 	}
+	if err := reserveActiveEmailDailyQuota(ctx, s.emailService.cache, activeEmailScopeForUserID(userID)); err != nil {
+		return err
+	}
 	return s.emailService.SendVerifyCode(ctx, normalizedEmail, siteName)
 }
 

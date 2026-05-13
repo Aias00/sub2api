@@ -313,6 +313,10 @@ func (s *AuthService) SendVerifyCode(ctx context.Context, email string) error {
 		siteName = s.settingService.GetSiteName(ctx)
 	}
 
+	if err := reserveActiveEmailDailyQuota(ctx, s.emailService.cache, activeEmailScopeForEmail(email)); err != nil {
+		return err
+	}
+
 	return s.emailService.SendVerifyCode(ctx, email, siteName)
 }
 
@@ -354,6 +358,13 @@ func (s *AuthService) SendVerifyCodeAsync(ctx context.Context, email string) (*S
 	siteName := "Sub2API"
 	if s.settingService != nil {
 		siteName = s.settingService.GetSiteName(ctx)
+	}
+
+	if s.emailService == nil {
+		return nil, ErrServiceUnavailable
+	}
+	if err := reserveActiveEmailDailyQuota(ctx, s.emailService.cache, activeEmailScopeForEmail(email)); err != nil {
+		return nil, err
 	}
 
 	// 异步发送
@@ -1264,6 +1275,10 @@ func (s *AuthService) RequestPasswordReset(ctx context.Context, email, frontendB
 	if !shouldProceed {
 		return nil // Silent success to prevent enumeration
 	}
+	if err := reserveActiveEmailDailyQuota(ctx, s.emailService.cache, activeEmailScopeForEmail(email)); err != nil {
+		logger.LegacyPrintf("service.auth", "[Auth] Password reset rate-limited for %s: %v", email, err)
+		return nil // Silent success to prevent enumeration
+	}
 
 	if err := s.emailService.SendPasswordResetEmail(ctx, email, siteName, resetURL); err != nil {
 		logger.LegacyPrintf("service.auth", "[Auth] Failed to send password reset email to %s: %v", email, err)
@@ -1286,6 +1301,13 @@ func (s *AuthService) RequestPasswordResetAsync(ctx context.Context, email, fron
 
 	siteName, resetURL, shouldProceed := s.preparePasswordReset(ctx, email, frontendBaseURL)
 	if !shouldProceed {
+		return nil // Silent success to prevent enumeration
+	}
+	if s.emailService == nil {
+		return ErrServiceUnavailable
+	}
+	if err := reserveActiveEmailDailyQuota(ctx, s.emailService.cache, activeEmailScopeForEmail(email)); err != nil {
+		logger.LegacyPrintf("service.auth", "[Auth] Password reset rate-limited for %s: %v", email, err)
 		return nil // Silent success to prevent enumeration
 	}
 

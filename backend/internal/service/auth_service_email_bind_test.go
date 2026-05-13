@@ -595,6 +595,14 @@ func (s *emailBindCacheStub) IncrNotifyCodeUserRate(context.Context, int64, time
 	return 0, nil
 }
 
+func (s *emailBindCacheStub) IncrActiveEmailDailyRate(context.Context, string, time.Duration) (int64, error) {
+	return 1, nil
+}
+
+func (s *emailBindCacheStub) GetActiveEmailDailyRate(context.Context, string) (int64, error) {
+	return 0, nil
+}
+
 type emailBindRefreshTokenCacheStub struct {
 	mu       sync.Mutex
 	tokens   map[string]*service.RefreshTokenData
@@ -810,8 +818,8 @@ func (s *emailBindUserRepoStub) UpdateUserLastActiveAt(context.Context, int64, t
 }
 
 func (s *emailBindUserRepoStub) UpdateBalance(context.Context, int64, float64) error { return nil }
-func (s *emailBindUserRepoStub) DeductBalance(context.Context, int64, float64) error  { return nil }
-func (s *emailBindUserRepoStub) UpdateConcurrency(context.Context, int64, int) error   { return nil }
+func (s *emailBindUserRepoStub) DeductBalance(context.Context, int64, float64) error { return nil }
+func (s *emailBindUserRepoStub) UpdateConcurrency(context.Context, int64, int) error { return nil }
 
 func (s *emailBindUserRepoStub) ExistsByEmail(_ context.Context, email string) (bool, error) {
 	s.mu.Lock()
@@ -820,8 +828,12 @@ func (s *emailBindUserRepoStub) ExistsByEmail(_ context.Context, email string) (
 	return ok, nil
 }
 
-func (s *emailBindUserRepoStub) BatchSetConcurrency(context.Context, []int64, int) (int, error) { return 0, nil }
-func (s *emailBindUserRepoStub) BatchAddConcurrency(context.Context, []int64, int) (int, error) { return 0, nil }
+func (s *emailBindUserRepoStub) BatchSetConcurrency(context.Context, []int64, int) (int, error) {
+	return 0, nil
+}
+func (s *emailBindUserRepoStub) BatchAddConcurrency(context.Context, []int64, int) (int, error) {
+	return 0, nil
+}
 
 func (s *emailBindUserRepoStub) RemoveGroupFromAllowedGroups(context.Context, int64) (int64, error) {
 	return 0, nil
@@ -847,8 +859,8 @@ func (s *emailBindUserRepoStub) UpdateTotpSecret(context.Context, int64, *string
 func (s *emailBindUserRepoStub) MarkEmailIdentitySupportsSignIn(context.Context, int64, string, string) error {
 	return nil
 }
-func (s *emailBindUserRepoStub) EnableTotp(context.Context, int64) error                { return nil }
-func (s *emailBindUserRepoStub) DisableTotp(context.Context, int64) error               { return nil }
+func (s *emailBindUserRepoStub) EnableTotp(context.Context, int64) error  { return nil }
+func (s *emailBindUserRepoStub) DisableTotp(context.Context, int64) error { return nil }
 
 func cloneEmailBindUser(user *service.User) *service.User {
 	if user == nil {

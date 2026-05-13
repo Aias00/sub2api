@@ -1,3 +1,32 @@
+## 2026-05-13 Active Email Daily Rate Limit
+### Done
+- Added a shared daily quota for user-initiated email sends to reduce SMTP abuse risk.
+- Limited active email triggers across:
+  - registration verification codes
+  - pending OAuth email verification codes
+  - email identity binding codes
+  - notification email binding codes
+  - TOTP verification codes
+  - password reset requests
+- Scoped the quota by authenticated user ID when available, and by normalized email address for pre-login/pre-registration flows.
+- Stored counters in Redis with hashed keys and a TTL that expires at the next local midnight.
+- Kept system/admin-driven emails outside this limit:
+  - welcome emails
+  - admin registration push notifications
+  - balance/quota/ops alerts
+- Added regression coverage for registration verification code daily-limit behavior and updated affected test doubles.
+- Verified:
+  - `go test -tags=unit ./internal/... -count=1`
+  - `make build`
+  - `git diff --check`
+
+### Failures
+- None during implementation.
+
+### Next
+- Commit and push the backend-only limit.
+- Deploy to the Google server and verify the live backend restarts on `SERVER_PORT=8081`.
+
 ## 2026-05-13 Admin Stats and Registration Push
 ### Done
 - Verified live admin dashboard/statistics APIs with the provided admin account:

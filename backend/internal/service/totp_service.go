@@ -541,11 +541,18 @@ func (s *TotpService) SendVerifyCode(ctx context.Context, userID int64) error {
 	if !s.settingService.IsEmailVerifyEnabled(ctx) {
 		return infraerrors.BadRequest("EMAIL_VERIFY_NOT_ENABLED", "email verification is not enabled")
 	}
+	if s.emailService == nil || s.emailQueueService == nil {
+		return ErrServiceUnavailable
+	}
 
 	// Get user email
 	user, err := s.userRepo.GetByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("get user: %w", err)
+	}
+
+	if err := reserveActiveEmailDailyQuota(ctx, s.emailService.cache, activeEmailScopeForUserID(userID)); err != nil {
+		return err
 	}
 
 	// Get site name for email
