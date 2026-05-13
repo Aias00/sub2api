@@ -39,6 +39,7 @@ describe('DocsView docsify integration', () => {
 
   it('keeps application route links from being treated as Docsify document routes', () => {
     expect(docsViewSource).toContain("const appRouteDocsLinks = new Set(['#/home', '#/dashboard', '#/register', '#/purchase'])")
+    expect(docsViewSource).toContain("document.querySelector('.docsify-shell')")
     expect(docsViewSource).toContain("link.setAttribute('href', href.slice(1))")
   })
 

@@ -519,6 +519,7 @@
 - Added `DocsContent` regression coverage so Markdown docs cannot reintroduce `cloudbase.eu.org`.
 - Added a Docsify content cache-buster built at frontend build time, rewrote Docsify hash links with `_docs_v`, isolated the search index by version, and sent no-cache headers for Markdown requests.
 - Corrected Docsify's rewriting of app-route links so `/home`, `/dashboard`, `/register`, and `/purchase` remain application routes instead of document hashes.
+- Switched Docsify link post-processing to the stable `.docsify-shell` container because Docsify replaces the original Vue ref element during initialization.
 
 ### Failures
 - First live verification showed the server content was updated but the browser still rendered stale Docsify Markdown from the old page cache.

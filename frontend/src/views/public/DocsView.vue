@@ -186,7 +186,7 @@ function withDocsContentVersion(hash: string) {
 }
 
 function rewriteDocsLinks() {
-  const root = docsifyRoot.value
+  const root = document.querySelector('.docsify-shell')
   if (!root) return
   root.querySelectorAll<HTMLAnchorElement>('a[href^="#/"]').forEach((link) => {
     const href = link.getAttribute('href')
