@@ -47,6 +47,7 @@
 - Deployed the embedded frontend/backend build on the Google server and restarted the live `SERVER_PORT=8081` process.
 - Verified `https://cloudbase.eu.org/dashboard` returns HTTP 200 and `https://cloudbase.eu.org/logo.png` serves the real PNG logo.
 - Follow-up: added `GET /api/v1/settings/site-logo` so an uploaded base64 `site_logo` is exposed as a normal public image URL for email clients, instead of falling back to `/logo.png`.
+- Deployed the uploaded-logo endpoint and verified `https://cloudbase.eu.org/api/v1/settings/site-logo` returns a 1024x1024 PNG with an ETag.
 
 ### Failures
 - Initial test command used the backend directory with root-relative paths, so `gofmt` could not find files; reran from the repository root successfully.
