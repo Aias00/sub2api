@@ -8,7 +8,7 @@
 
 ## 推荐流程
 
-1. 登录 [cloudbase 控制台](https://cloudbase.eu.org/dashboard)。
+1. 登录 [cloudbase 控制台](/dashboard)。
 2. 创建或选择一个 API Key。
 3. 打开 **调用说明** 页面。
 4. 复制页面生成的 Base URL 和认证头。

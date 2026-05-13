@@ -28,7 +28,7 @@ cloudbase uses channels, groups, and usage visibility to reduce the impact of a 
 
 ## How do I purchase credit or subscriptions?
 
-Open [Purchase](https://cloudbase.eu.org/purchase). The page displays products configured and enabled by administrators.
+Open [Purchase](/purchase). The page displays products configured and enabled by administrators.
 
 ## Are invoices supported?
 

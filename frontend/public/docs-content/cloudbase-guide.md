@@ -53,11 +53,11 @@ API 可以理解为程序之间的调用入口。你在工具里填入的 Base U
 
 ### 第 1 步：注册账号
 
-访问 [https://cloudbase.eu.org/register](https://cloudbase.eu.org/register)，使用邮箱或已开放的第三方方式注册。
+访问 [注册页面](/register)，使用邮箱或已开放的第三方方式注册。
 
 ### 第 2 步：充值或订阅
 
-进入 [充值/订阅](https://cloudbase.eu.org/purchase) 页面选择商品。商品列表由管理员配置，配置一个就展示一个。
+进入 [充值/订阅](/purchase) 页面选择商品。商品列表由管理员配置，配置一个就展示一个。
 
 ### 第 3 步：创建 API Key
 

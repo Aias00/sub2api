@@ -10,6 +10,7 @@
 - Added matching English docs so the existing docs i18n switch remains useful.
 - Removed stale `getting-started` / `guides` docs that were no longer linked.
 - Fixed Docsify sidebar loading so localized docs load `_sidebar.md` from the active `basePath`.
+- Follow-up: replaced hardcoded `https://cloudbase.eu.org` docs links with same-origin app routes and added a regression test to prevent reintroducing the production domain in Markdown.
 
 ### Failures
 - Local Vite preview reports `/setup/status` and `/api/v1/settings/public` proxy errors because no backend is attached to the preview server; docs content itself renders normally.

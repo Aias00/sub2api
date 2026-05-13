@@ -8,7 +8,7 @@ Most custom-provider clients need three values:
 
 ## Recommended flow
 
-1. Log in to [cloudbase](https://cloudbase.eu.org/dashboard).
+1. Log in to the [cloudbase dashboard](/dashboard).
 2. Create or select an API key.
 3. Open **Gateway Guide**.
 4. Copy the generated Base URL and authentication values.

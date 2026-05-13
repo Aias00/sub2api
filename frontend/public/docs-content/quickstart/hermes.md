@@ -4,7 +4,7 @@ Hermes 接入 cloudbase 的方式与其他自定义 Provider 客户端类似：�
 
 ## 接入步骤
 
-1. 登录 [cloudbase](https://cloudbase.eu.org)。
+1. 登录 [cloudbase](/home)。
 2. 创建 API Key。
 3. 在 **调用说明** 页面复制当前 Key 的调用参数。
 4. 在 Hermes 的模型服务配置里新增 cloudbase Provider。

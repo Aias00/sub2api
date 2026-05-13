@@ -2,7 +2,7 @@
 
 cloudbase 是一个面向 AI 开发工具的统一接入网关。你可以把 Claude Code、Codex、Cherry Studio、Claude Desktop 等工具接到同一个平台账号下，用一组 API Key 管理模型调用、余额、订阅和用量统计。
 
-控制台地址：[https://cloudbase.eu.org](https://cloudbase.eu.org)
+控制台入口：[首页](/home) / [控制台](/dashboard)
 
 ## 什么是 cloudbase？
 
@@ -35,11 +35,11 @@ cloudbase 把多个上游 AI 服务统一到一个可控入口，核心目标是
 
 ### 1. 注册账号
 
-打开 [https://cloudbase.eu.org/register](https://cloudbase.eu.org/register)，使用邮箱或已开放的第三方登录方式创建账号。
+打开 [注册页面](/register)，使用邮箱或已开放的第三方登录方式创建账号。
 
 ### 2. 获取额度
 
-进入 [充值/订阅](https://cloudbase.eu.org/purchase) 页面选择可用商品。页面只展示管理员已经配置并开放的商品。
+进入 [充值/订阅](/purchase) 页面选择可用商品。页面只展示管理员已经配置并开放的商品。
 
 ### 3. 创建 API Key
 

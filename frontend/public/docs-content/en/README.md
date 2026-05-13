@@ -2,7 +2,7 @@
 
 cloudbase is a unified gateway for AI development tools. It lets you connect Claude Code, Codex, Cherry Studio, Claude Desktop, and similar clients through one platform account, one billing system, and managed API keys.
 
-Console: [https://cloudbase.eu.org](https://cloudbase.eu.org)
+Console entry: [Home](/home) / [Dashboard](/dashboard)
 
 ## What is cloudbase?
 
@@ -35,11 +35,11 @@ Use the dashboard and usage records to understand cost, model usage, and failed 
 
 ### 1. Create an account
 
-Open [https://cloudbase.eu.org/register](https://cloudbase.eu.org/register) and create an account with email or an enabled third-party login provider.
+Open [Register](/register) and create an account with email or an enabled third-party login provider.
 
 ### 2. Add credit or subscribe
 
-Open [Purchase](https://cloudbase.eu.org/purchase) and select an available product.
+Open [Purchase](/purchase) and select an available product.
 
 ### 3. Create an API key
 

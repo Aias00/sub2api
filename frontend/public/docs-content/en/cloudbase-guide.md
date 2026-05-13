@@ -41,8 +41,8 @@ An API is a programmatic entry point. In cloudbase, your client usually needs:
 
 ## Start using cloudbase
 
-1. Register at [https://cloudbase.eu.org/register](https://cloudbase.eu.org/register).
-2. Add credit or subscribe from [Purchase](https://cloudbase.eu.org/purchase).
+1. Register from [Register](/register).
+2. Add credit or subscribe from [Purchase](/purchase).
 3. Create an API key from **API Keys**.
 4. Open **Gateway Guide** and copy the generated values.
 5. Configure your client and send a small test request.
