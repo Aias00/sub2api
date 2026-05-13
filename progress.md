@@ -527,3 +527,15 @@
 
 ### Next
 - Commit, push, deploy the Docsify cache-busting fix, then verify the live docs page no longer displays hard-coded production-domain links.
+
+## 2026-05-13 User Dashboard Hero Removal
+### Done
+- Removed the normal-user dashboard overview hero so the page starts directly with the main dashboard stats, charts, recent usage, and quick actions.
+- Replaced the obsolete hero typography regression with a no-hero layout regression.
+- Verified the focused dashboard regression and a production frontend build locally.
+
+### Failures
+- None.
+
+### Next
+- Commit, push, deploy to the server, then verify live `/dashboard` no longer shows the redundant overview hero for normal users.
