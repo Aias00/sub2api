@@ -823,3 +823,21 @@
 - Local browser verification on `http://127.0.0.1:4173/monitor?localVerify=empty-state-clean` used mocked API responses and found one framed empty state (`672x274`) with no console errors.
 - Deployed commit `b1ef8bc4` to production; `https://cloudbase.eu.org/api/v1/settings/public` and `/monitor` returned HTTP 200.
 - Browser verification on `https://cloudbase.eu.org/monitor?verify=b1ef8bc4` found one framed empty state (`672x274`) and no console errors.
+
+## 2026-05-14 Docs Sidebar Polish
+### Done
+- Started the second local-first optimization pass for Docsify navigation.
+- Removed Docsify sidebar list marker clutter by normalizing sidebar list spacing and list styles.
+- Changed active sidebar links to a full-row pill style so the selected document item stays visible and easier to scan.
+- Added sidebar-only scroll correction after active-link sync so clicking deeper documentation items keeps the selected entry inside the left navigation viewport.
+
+### Failures
+- None so far.
+
+### Next
+- Push and deploy after committing the verified local changes.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
+- Local browser verification on `http://127.0.0.1:18084/docs?localVerify=docs-sidebar-clean#/advanced/vscode-gui` found marker style `none`, active link display `flex`, selected item visible inside the sidebar, and a 40px sidebar-to-content gap with no console errors.

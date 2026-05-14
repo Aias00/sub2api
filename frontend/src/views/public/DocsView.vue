@@ -223,6 +223,17 @@ function syncSidebarActiveLink() {
 
   activeLink.classList.add('active')
   activeLink.closest('li')?.classList.add('active')
+
+  const sidebar = activeLink.closest('.sidebar') as HTMLElement | null
+  if (!sidebar) return
+  const linkRect = activeLink.getBoundingClientRect()
+  const sidebarRect = sidebar.getBoundingClientRect()
+  const safePadding = 24
+  if (linkRect.top < sidebarRect.top + safePadding) {
+    sidebar.scrollTop -= sidebarRect.top + safePadding - linkRect.top
+  } else if (linkRect.bottom > sidebarRect.bottom - safePadding) {
+    sidebar.scrollTop += linkRect.bottom - sidebarRect.bottom + safePadding
+  }
 }
 
 function docsVersionPlugin(hook: { mounted: (callback: () => void) => void; doneEach: (callback: () => void) => void }) {
@@ -344,8 +355,23 @@ onBeforeUnmount(() => {
   padding-bottom: 0 !important;
 }
 
+.docsify-shell :deep(.sidebar-nav ul) {
+  list-style: none;
+  margin: 0.15rem 0 0.45rem;
+  padding-left: 0.7rem;
+}
+
+.docsify-shell :deep(.sidebar-nav > ul) {
+  padding-left: 0;
+}
+
 .docsify-shell :deep(.sidebar-nav li) {
-  margin: 0.18rem 0;
+  list-style: none;
+  margin: 0.12rem 0;
+}
+
+.docsify-shell :deep(.sidebar-nav li::marker) {
+  content: '';
 }
 
 .docsify-shell :deep(.content) {
@@ -380,18 +406,36 @@ onBeforeUnmount(() => {
   color: inherit;
 }
 
-.docsify-shell :deep(.sidebar-nav li.active > a) {
-  display: inline-flex;
-  max-width: 100%;
+.docsify-shell :deep(.sidebar-nav a) {
+  display: flex;
+  width: 100%;
+  min-height: 2.15rem;
   align-items: center;
-  border: 2px solid #6656d9;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.42rem 0.75rem !important;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-decoration: none;
+  transition:
+    background-color 160ms ease,
+    border-color 160ms ease,
+    color 160ms ease;
+}
+
+.docsify-shell :deep(.sidebar-nav > ul > li > a) {
+  font-weight: 700;
+}
+
+.docsify-shell :deep(.sidebar-nav li.active > a) {
+  border: 1px solid #6656d9;
   border-radius: 999px;
   background: #ece8ff;
   box-shadow: none;
   color: #4c409c !important;
   font-weight: 800;
   line-height: 1.25;
-  padding: 0.45rem 1rem !important;
   text-decoration: none;
 }
 
@@ -403,6 +447,8 @@ onBeforeUnmount(() => {
 }
 
 .docsify-shell :deep(.sidebar-nav a:hover) {
+  border-color: rgba(102, 86, 217, 0.22);
+  background: rgba(236, 232, 255, 0.58);
   color: #4c409c !important;
 }
 
