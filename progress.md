@@ -795,9 +795,11 @@
 - None so far.
 
 ### Next
-- Run frontend validation, inspect the affected page background, then deploy to production.
+- None.
 
 ### Validation
 - `rg` confirmed `bg-mesh-gradient` / `mesh-gradient` are no longer referenced.
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
+- Deployed commit `ac7b0c32` to production; `https://cloudbase.eu.org/api/v1/settings/public` and `/dashboard` returned HTTP 200.
+- Browser verification on `/dashboard?verify=ac7b0c32` found `meshClassCount=0`, solid shell background `rgb(247, 246, 241)`, and no console errors.
