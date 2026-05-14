@@ -888,3 +888,22 @@
 - Deployed commit `a1214648` to production; `https://cloudbase.eu.org/api/v1/settings/public` and `/docs` returned HTTP 200.
 - `/monitor` returned HTTP 200 but the full body download exceeded the 20s curl limit, so page weight/transfer time remains a separate follow-up optimization candidate.
 - Browser verification on `https://cloudbase.eu.org/docs?verify=a1214648#/advanced/vscode-gui` found title `VS Code 图形化操作教程`, hash preserved as `#/advanced/vscode-gui?...`, active link text `VS Code 图形化操作教程`, selected item visible inside `.sidebar-nav`, `sidebarNavScrollTop=249`, and no console errors.
+
+## 2026-05-14 Sidebar Version Badge Removal
+### Done
+- Started a narrow production cleanup pass for the admin sidebar version badge.
+- Removed the sidebar `VersionBadge` mount point so the visible version pill/dropdown no longer appears in the navigation header.
+- Removed the sidebar import and `siteVersion` binding so mounting the sidebar no longer triggers the update-check component path.
+- Updated the source-level sidebar regression test to lock the version badge out of `AppSidebar`.
+
+### Failures
+- The first server deploy command for the previous admin settings fix lost SSH during the frontend build before restart; the running service was not restarted from that interrupted command.
+
+### Next
+- Verify locally, commit, push, and redeploy the combined latest state to production.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/components/layout/__tests__/AppSidebar.spec.ts` passed.
+- `pnpm --dir frontend exec eslint src/components/layout/AppSidebar.vue src/components/layout/__tests__/AppSidebar.spec.ts` passed.
+- `pnpm --dir frontend exec vue-tsc --noEmit` passed.
+- `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
