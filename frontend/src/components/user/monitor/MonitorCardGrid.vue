@@ -25,11 +25,14 @@
       </div>
     </div>
 
-    <EmptyState
-      v-else-if="items.length === 0"
-      :title="t('channelStatus.empty.title')"
-      :description="t('channelStatus.empty.description')"
-    />
+    <div v-else-if="items.length === 0" class="px-4 py-10 sm:py-12">
+      <EmptyState
+        variant="panel"
+        size="lg"
+        :title="t('channelStatus.empty.title')"
+        :description="t('channelStatus.empty.description')"
+      />
+    </div>
 
     <div
       v-else

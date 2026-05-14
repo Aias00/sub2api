@@ -697,21 +697,20 @@
 
   /* ============ 空状态 ============ */
   .empty-state {
-    @apply flex flex-col items-center justify-center px-4 py-12;
+    @apply flex flex-col items-center justify-center px-4 py-10;
     @apply text-center;
   }
 
   .empty-state-icon {
-    @apply mb-4 h-16 w-16;
     @apply text-gray-300 dark:text-dark-600;
   }
 
   .empty-state-title {
-    @apply mb-1 text-lg font-medium text-gray-900 dark:text-white;
+    @apply mb-2 text-lg font-semibold text-gray-900 dark:text-white;
   }
 
   .empty-state-description {
-    @apply max-w-sm text-sm text-gray-500 dark:text-dark-400;
+    @apply max-w-sm text-sm leading-6 text-gray-500 dark:text-dark-400;
   }
 
   /* ============ 加载状态 ============ */

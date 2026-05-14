@@ -803,3 +803,21 @@
 - `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
 - Deployed commit `ac7b0c32` to production; `https://cloudbase.eu.org/api/v1/settings/public` and `/dashboard` returned HTTP 200.
 - Browser verification on `/dashboard?verify=ac7b0c32` found `meshClassCount=0`, solid shell background `rgb(247, 246, 241)`, and no console errors.
+
+## 2026-05-14 Empty State Polish
+### Done
+- Started the first local-first optimization pass with a narrow scope: common empty states and the user channel status empty page.
+- Updated the shared `EmptyState` component to support a framed `panel` presentation while preserving the default plain presentation for table slots.
+- Fixed the legacy `message` prop so existing `<EmptyState :message="...">` usages display their message instead of falling back to the generic no-data title.
+- Changed the channel status empty view to use the framed empty state, reducing the impression of an oversized blank page.
+
+### Failures
+- None so far.
+
+### Next
+- Push and deploy after committing the verified local changes.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
+- Local browser verification on `http://127.0.0.1:4173/monitor?localVerify=empty-state-clean` used mocked API responses and found one framed empty state (`672x274`) with no console errors.
