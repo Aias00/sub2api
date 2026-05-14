@@ -1,11 +1,11 @@
 <template>
-  <div class="docs-page min-h-screen bg-slate-50 text-gray-900 dark:bg-slate-950 dark:text-white">
-    <header class="sticky top-0 z-40 border-b border-gray-200/80 bg-white/90 backdrop-blur-xl dark:border-white/10 dark:bg-slate-950/80">
+  <div class="docs-page min-h-screen bg-[#f7f6f1] text-gray-950 dark:bg-primary-950 dark:text-white">
+    <header class="sticky top-0 z-40 border-b border-primary-100/80 bg-[#fffefb]/95 backdrop-blur-xl dark:border-primary-500/20 dark:bg-primary-950/80">
       <div class="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 md:px-6">
         <div class="flex min-w-0 items-center gap-3">
           <RouterLink
             to="/home"
-            class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-sm shadow-primary-500/10 dark:border-white/10 dark:bg-white/5"
+            class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-sm shadow-primary-500/10 dark:border-primary-400/20 dark:bg-white/5"
           >
             <img
               v-if="siteLogo"
@@ -35,7 +35,7 @@
           <router-link
             v-if="isAuthenticated"
             :to="dashboardPath"
-            class="inline-flex items-center rounded-xl bg-gray-950 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-800 sm:px-4 dark:bg-primary-500 dark:text-slate-950 dark:hover:bg-primary-400"
+            class="inline-flex items-center rounded-2xl bg-primary-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-800 sm:px-4 dark:bg-primary-200 dark:text-primary-950 dark:hover:bg-primary-100"
           >
             <span class="hidden sm:inline">{{ t('home.goToDashboard') }}</span>
             <span class="sm:hidden">{{ t('nav.dashboard') }}</span>
@@ -43,7 +43,7 @@
           <router-link
             v-else
             to="/login"
-            class="inline-flex items-center rounded-xl bg-gray-950 px-3 py-2 text-sm font-medium text-white transition hover:bg-gray-800 sm:px-4 dark:bg-primary-500 dark:text-slate-950 dark:hover:bg-primary-400"
+            class="inline-flex items-center rounded-2xl bg-primary-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-800 sm:px-4 dark:bg-primary-200 dark:text-primary-950 dark:hover:bg-primary-100"
           >
             {{ t('home.login') }}
           </router-link>
@@ -52,7 +52,7 @@
     </header>
 
     <main class="mx-auto max-w-[1600px] px-4 py-4 md:px-6 md:py-6">
-      <div class="rounded-[32px] border border-white/75 bg-white/92 shadow-[0_30px_80px_-40px_rgba(15,23,42,0.35)] dark:border-white/10 dark:bg-slate-900/70">
+      <div class="rounded-[36px] border border-primary-100/70 bg-[#fffefb]/94 shadow-[0_30px_80px_-48px_rgba(76,64,156,0.36)] dark:border-primary-500/20 dark:bg-primary-950/70">
         <div class="docsify-shell px-2 py-3 md:px-4">
           <div id="docsify-app" ref="docsifyRoot" class="min-h-[70vh]"></div>
         </div>
@@ -160,7 +160,7 @@ function configureDocsify() {
       'Cache-Control': 'no-cache',
       Pragma: 'no-cache',
     },
-    themeColor: '#2563eb',
+    themeColor: '#4c409c',
     notFoundPage: true,
     plugins: [docsVersionPlugin],
     search: {
@@ -329,7 +329,7 @@ onBeforeUnmount(() => {
   flex: 0 0 15.5rem;
   width: 15.5rem !important;
   height: calc(100vh - 12rem) !important;
-  border-right: 1px solid rgba(148, 163, 184, 0.18);
+  border-right: 1px solid rgba(219, 212, 255, 0.72);
   padding: 0.75rem 1rem 2rem !important;
   overflow-y: auto;
   background: transparent;
@@ -342,6 +342,10 @@ onBeforeUnmount(() => {
 
 .docsify-shell :deep(.sidebar-nav) {
   padding-bottom: 0 !important;
+}
+
+.docsify-shell :deep(.sidebar-nav li) {
+  margin: 0.18rem 0;
 }
 
 .docsify-shell :deep(.content) {
@@ -366,7 +370,8 @@ onBeforeUnmount(() => {
 .docsify-shell :deep(.markdown-section h2),
 .docsify-shell :deep(.markdown-section h3),
 .docsify-shell :deep(.markdown-section h4) {
-  color: inherit;
+  color: #4c409c;
+  font-weight: 800;
 }
 
 .docsify-shell :deep(.app-name-link),
@@ -376,27 +381,33 @@ onBeforeUnmount(() => {
 }
 
 .docsify-shell :deep(.sidebar-nav li.active > a) {
-  display: block;
-  border-radius: 0.85rem;
-  background: rgba(37, 99, 235, 0.1);
-  box-shadow: inset 3px 0 0 rgba(37, 99, 235, 0.85);
-  color: #2563eb !important;
-  font-weight: 700;
-  padding-left: 0.75rem;
+  display: inline-flex;
+  max-width: 100%;
+  align-items: center;
+  border: 2px solid #6656d9;
+  border-radius: 999px;
+  background: #ece8ff;
+  box-shadow: none;
+  color: #4c409c !important;
+  font-weight: 800;
+  line-height: 1.25;
+  padding: 0.45rem 1rem !important;
+  text-decoration: none;
 }
 
 .dark .docsify-shell :deep(.sidebar-nav li.active > a) {
-  background: rgba(96, 165, 250, 0.16);
-  box-shadow: inset 3px 0 0 rgba(96, 165, 250, 0.9);
-  color: #bfdbfe !important;
+  border-color: #bfb4ff;
+  background: rgba(102, 86, 217, 0.24);
+  box-shadow: none;
+  color: #ece8ff !important;
 }
 
 .docsify-shell :deep(.sidebar-nav a:hover) {
-  color: #2563eb !important;
+  color: #4c409c !important;
 }
 
 .dark .docsify-shell :deep(.sidebar-nav a:hover) {
-  color: #bfdbfe !important;
+  color: #ece8ff !important;
 }
 
 .docsify-shell :deep(.search) {
@@ -404,8 +415,9 @@ onBeforeUnmount(() => {
 }
 
 .docsify-shell :deep(.search input) {
-  border-radius: 1rem;
-  border-color: rgba(148, 163, 184, 0.3);
+  border-radius: 999px;
+  border-color: rgba(191, 180, 255, 0.68);
+  background: rgba(255, 255, 255, 0.72);
 }
 
 .docsify-shell :deep(.sidebar-toggle) {

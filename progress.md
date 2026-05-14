@@ -751,3 +751,21 @@
 
 ### Next
 - Commit, push, deploy, and verify the nested docs sidebar fix on the live site.
+
+## 2026-05-14 Aura Theme Refresh
+### Done
+- Started a global visual refresh using the provided Brevo/Aura references: warm off-white surfaces, lavender backgrounds, deep-purple primary actions, and black-forward typography.
+- Changed the Tailwind primary palette from deep blue to an Aura purple scale, with a muted green accent for sparse brand highlights.
+- Updated shared global UI tokens for buttons, cards, panels, sidebar active states, page hero surfaces, glass surfaces, and the app background mesh.
+- Restyled the Docsify selected sidebar item into a rounded outlined lavender pill and aligned docs headings/search/borders with the new palette.
+
+### Failures
+- None so far.
+
+### Next
+- Run frontend validation, inspect the docs/dashboard visuals locally, then commit, push, deploy, and verify production.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
+- Local browser preview checked `/docs#/cloudbase-guide` and `/login`; the docs active item now renders as a rounded lavender outline pill and the public auth page uses the updated purple/off-white theme.
