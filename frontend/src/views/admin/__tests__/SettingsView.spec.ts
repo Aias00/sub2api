@@ -382,6 +382,7 @@ const baseSettingsResponse = {
   payment_balance_disabled: false,
   payment_balance_recharge_multiplier: 1,
   payment_recharge_fee_rate: 0,
+  payment_recharge_products: [],
   payment_load_balance_strategy: "round-robin",
   payment_product_name_prefix: "",
   payment_product_name_suffix: "",
@@ -695,6 +696,35 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(paymentHelpImageUpload).toBeDefined();
     expect(paymentHelpImageUpload?.attributes("data-upload-label")).toBe("上传图片");
     expect(paymentHelpImageUpload?.attributes("data-remove-label")).toBe("移除");
+  });
+
+  it("keeps recharge products renderable when the save response returns null features", async () => {
+    updateSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      payment_recharge_products: [
+        {
+          id: "starter",
+          name: "体验",
+          description: "适合初次体验",
+          amount: 30,
+          credited_amount: 30,
+          badge: "",
+          recommended: false,
+          features: null,
+          sort_order: 10,
+        },
+      ],
+    });
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(showError).not.toHaveBeenCalled();
+    expect(showSuccess).toHaveBeenCalledWith("admin.settings.settingsSaved");
+    expect(wrapper.text()).toContain("体验");
   });
 });
 

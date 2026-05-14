@@ -8144,6 +8144,12 @@ async function saveSettings() {
     const updated = await adminAPI.settings.updateSettings(payload);
     for (const [key, value] of Object.entries(updated)) {
       if (key === "openai_fast_policy_settings") continue;
+      if (key === "payment_recharge_products") {
+        form.payment_recharge_products = normalizeRechargeProducts(
+          value as RechargeProduct[] | null | undefined,
+        );
+        continue;
+      }
       if (value !== null && value !== undefined) {
         (form as Record<string, unknown>)[key] = value;
       }

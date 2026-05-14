@@ -58,6 +58,8 @@ func dtoRechargeProducts(products []service.RechargeProduct) []dto.RechargeProdu
 	}
 	result := make([]dto.RechargeProductConfig, 0, len(products))
 	for _, product := range products {
+		features := make([]string, 0, len(product.Features))
+		features = append(features, product.Features...)
 		result = append(result, dto.RechargeProductConfig{
 			ID:             product.ID,
 			Name:           product.Name,
@@ -66,7 +68,7 @@ func dtoRechargeProducts(products []service.RechargeProduct) []dto.RechargeProdu
 			CreditedAmount: product.CreditedAmount,
 			Badge:          product.Badge,
 			Recommended:    product.Recommended,
-			Features:       append([]string(nil), product.Features...),
+			Features:       features,
 			SortOrder:      product.SortOrder,
 		})
 	}

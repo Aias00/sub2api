@@ -202,6 +202,27 @@
 - Finish the in-flight frontend/backend builds.
 - If green, deploy to the server and verify that plain password login works without Turnstile while register/forgot-password still require it.
 
+## 2026-05-14 Admin Settings Recharge Product Blank Page
+### Done
+- Investigated the settings page blank screen after saving recharge products.
+- Root cause: save response could contain `payment_recharge_products[].features` as `null`, while the settings template expects an array and calls `.join()`.
+- Patched backend admin settings DTO output to serialize empty recharge product features as `[]`.
+- Patched frontend save handling to normalize returned recharge products before assigning them back into the form.
+- Added frontend/backend regression tests for null/empty feature lists.
+- Verified:
+  - `pnpm --dir frontend exec vitest run src/views/admin/__tests__/SettingsView.spec.ts`
+  - `pnpm --dir frontend exec vue-tsc --noEmit`
+  - `pnpm --dir frontend exec eslint src/views/admin/SettingsView.vue src/views/admin/__tests__/SettingsView.spec.ts`
+  - `go test ./internal/handler/admin -run TestDTORechargeProductsEncodesEmptyFeaturesAsArray -count=1`
+  - `git diff --check`
+
+### Failures
+- An initial backend test command was run from the repository root, but this project keeps `go.mod` under `backend`; reran from `backend` successfully.
+- The new backend test initially used an old module import path; corrected to `github.com/Wei-Shaw/sub2api/internal/service`.
+
+### Next
+- If this needs to go live immediately, commit/push and deploy with the server-side build flow.
+
 ## 2026-05-12 Turnstile CSP Nonce Propagation
 ### Done
 - Narrowed the likely root cause of the remaining register/forgot-password Turnstile instability:
