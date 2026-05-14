@@ -769,3 +769,19 @@
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
 - Local browser preview checked `/docs#/cloudbase-guide` and `/login`; the docs active item now renders as a rounded lavender outline pill and the public auth page uses the updated purple/off-white theme.
+
+## 2026-05-14 Fixed Light Theme
+### Done
+- Removed user-facing theme toggle controls from the main sidebar, home page, and key usage page.
+- Changed app bootstrap to always remove the `dark` class and persist `theme=light`, so cached or OS dark-mode preferences no longer switch the UI theme.
+
+### Failures
+- None so far.
+
+### Next
+- Run frontend validation, inspect the sidebar/home controls locally, then deploy to production.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
+- Local browser preview forced `localStorage.theme=dark` and reloaded `/home`; the root `dark` class was removed, `theme` was reset to `light`, and no sun/moon theme toggle button remained.
