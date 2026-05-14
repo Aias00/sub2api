@@ -857,10 +857,13 @@
 - None so far.
 
 ### Next
-- Commit the verified local changes, push, deploy, and verify production.
+- Continue with the next local-first optimization item.
 
 ### Validation
 - `pnpm --dir frontend exec vitest run src/views/public/__tests__/DocsView.spec.ts src/utils/__tests__/docs.spec.ts` passed.
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
 - Local browser verification on `http://127.0.0.1:18084/docs?localVerify=docs-deep-link-final#/advanced/vscode-gui` found title `VS Code 图形化操作教程`, hash preserved as `#/advanced/vscode-gui?...`, active link text `VS Code 图形化操作教程`, selected item visible inside `.sidebar-nav`, `sidebarNavScrollTop=249`, and no console errors.
+- Deployed commit `a1214648` to production; `https://cloudbase.eu.org/api/v1/settings/public` and `/docs` returned HTTP 200.
+- `/monitor` returned HTTP 200 but the full body download exceeded the 20s curl limit, so page weight/transfer time remains a separate follow-up optimization candidate.
+- Browser verification on `https://cloudbase.eu.org/docs?verify=a1214648#/advanced/vscode-gui` found title `VS Code 图形化操作教程`, hash preserved as `#/advanced/vscode-gui?...`, active link text `VS Code 图形化操作教程`, selected item visible inside `.sidebar-nav`, `sidebarNavScrollTop=249`, and no console errors.
