@@ -740,9 +740,14 @@
 - Tightened the desktop sidebar width and changed the Markdown content column from centered to left-aligned inside the content area.
 - Verified the production frontend build and local preview layout: sidebar width dropped from 272px to 248px, and Markdown content now starts at the content column instead of leaving an extra centered gap.
 - Follow-up: made Docsify sidebar active links explicit with a blue pill, left accent, and dark-mode-safe text color so selected menu entries stay visible after clicking.
+- Follow-up: fixed nested Docsify page navigation by aliasing every nested `_sidebar.md` request back to the root `_sidebar.md`, avoiding SPA fallback HTML replacing the sidebar menu.
+- Follow-up: disabled Docsify relative path resolution so root sidebar links remain root-relative when switching between nested quickstart/advanced pages.
+- Follow-up: disabled Docsify sidebar auto-heading injection and added path-based active-link syncing so clicking nested left-menu entries keeps the selected item visible in the stable root navigation.
 
 ### Failures
-- None so far.
+- Nested docs pages initially loaded the right Markdown body but fetched a missing nested sidebar file; the backend SPA fallback returned `index.html`, which corrupted the sidebar content.
+- With only the sidebar alias applied, Docsify still resolved sidebar links relative to the current nested page and produced duplicated routes such as `quickstart/quickstart/gpt-image-2`.
+- After the alias and path fix, Docsify still treated the root overview link as active on nested pages and inserted current-page headings under it; the fix now avoids Docsify's generated sidebar subsection for this layout and marks the exact sidebar route manually.
 
 ### Next
-- Run frontend validation, then commit/push/deploy the active-menu visibility fix.
+- Commit, push, deploy, and verify the nested docs sidebar fix on the live site.

@@ -150,9 +150,12 @@ function configureDocsify() {
     basePath: docsBasePath.value,
     homepage: 'README.md',
     loadSidebar: '_sidebar.md',
-    subMaxLevel: 3,
+    alias: {
+      '/.*/_sidebar.md': '/_sidebar.md',
+    },
+    subMaxLevel: 0,
     auto2top: true,
-    relativePath: true,
+    relativePath: false,
     requestHeaders: {
       'Cache-Control': 'no-cache',
       Pragma: 'no-cache',
@@ -199,9 +202,36 @@ function rewriteDocsLinks() {
   })
 }
 
+function getDocsHashPath(hash: string) {
+  const normalizedHash = hash.startsWith('#') ? hash : `#${hash}`
+  const path = normalizedHash.slice(1).split('?')[0] || '/'
+
+  return path === '/' ? '/' : path.replace(/\/+$/, '')
+}
+
+function syncSidebarActiveLink() {
+  const root = document.querySelector('.docsify-shell')
+  if (!root) return
+
+  const currentPath = getDocsHashPath(window.location.hash)
+  const links = Array.from(root.querySelectorAll<HTMLAnchorElement>('.sidebar-nav a[href^="#/"]'))
+  root.querySelectorAll('.sidebar-nav li.active').forEach((item) => item.classList.remove('active'))
+  root.querySelectorAll('.sidebar-nav a.active').forEach((link) => link.classList.remove('active'))
+
+  const activeLink = links.find((link) => getDocsHashPath(link.getAttribute('href') || '') === currentPath)
+  if (!activeLink) return
+
+  activeLink.classList.add('active')
+  activeLink.closest('li')?.classList.add('active')
+}
+
 function docsVersionPlugin(hook: { mounted: (callback: () => void) => void; doneEach: (callback: () => void) => void }) {
-  hook.mounted(rewriteDocsLinks)
-  hook.doneEach(rewriteDocsLinks)
+  const syncDocsLinks = () => {
+    rewriteDocsLinks()
+    syncSidebarActiveLink()
+  }
+  hook.mounted(syncDocsLinks)
+  hook.doneEach(syncDocsLinks)
 }
 
 async function loadDocsify() {
@@ -251,6 +281,7 @@ onMounted(async () => {
     window.location.hash = withDocsContentVersion(initialHash)
   }
   await loadDocsify()
+  window.addEventListener('hashchange', syncSidebarActiveLink)
 })
 
 onBeforeUnmount(() => {
@@ -267,6 +298,7 @@ onBeforeUnmount(() => {
   })
   document.body.classList.remove('ready', 'sticky', 'close')
   document.body.classList.remove('docs-page-body')
+  window.removeEventListener('hashchange', syncSidebarActiveLink)
   delete window.$docsify
 })
 </script>
