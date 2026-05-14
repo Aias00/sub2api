@@ -80,9 +80,7 @@ export default {
         'gradient-primary': 'linear-gradient(135deg, #6656d9 0%, #4c409c 58%, #332d68 100%)',
         'gradient-dark': 'linear-gradient(135deg, #1e293b 0%, #0f172a 100%)',
         'gradient-glass':
-          'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)',
-        'mesh-gradient':
-          'radial-gradient(at 14% 10%, rgba(191, 180, 255, 0.48) 0px, transparent 46%), radial-gradient(at 86% 4%, rgba(67, 155, 116, 0.18) 0px, transparent 38%), radial-gradient(at 54% 100%, rgba(236, 232, 255, 0.72) 0px, transparent 48%)'
+          'linear-gradient(135deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.05) 100%)'
       },
       animation: {
         'fade-in': 'fadeIn 0.3s ease-out',

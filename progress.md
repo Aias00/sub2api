@@ -785,3 +785,19 @@
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
 - Local browser preview forced `localStorage.theme=dark` and reloaded `/home`; the root `dark` class was removed, `theme` was reset to `light`, and no sun/moon theme toggle button remained.
+
+## 2026-05-14 Solid App Background
+### Done
+- Removed the global app background decoration layer that added lavender/green mesh gradients behind every authenticated page.
+- Removed the unused Tailwind `mesh-gradient` token so the colored page backdrop is not reintroduced accidentally through that utility.
+
+### Failures
+- None so far.
+
+### Next
+- Run frontend validation, inspect the affected page background, then deploy to production.
+
+### Validation
+- `rg` confirmed `bg-mesh-gradient` / `mesh-gradient` are no longer referenced.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.

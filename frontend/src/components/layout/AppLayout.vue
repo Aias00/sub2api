@@ -7,15 +7,6 @@
       Skip to content
     </a>
 
-    <!-- Background Decoration -->
-    <div class="pointer-events-none fixed inset-0 overflow-hidden">
-      <div class="absolute inset-0 bg-mesh-gradient opacity-95 dark:opacity-80"></div>
-      <div class="absolute left-[-10rem] top-[-9rem] h-[28rem] w-[28rem] rounded-full bg-primary-200/50 blur-3xl dark:bg-primary-500/16"></div>
-      <div class="absolute right-[-8rem] top-16 h-[24rem] w-[24rem] rounded-full bg-accent-100/40 blur-3xl dark:bg-accent-400/10"></div>
-      <div class="absolute bottom-[-12rem] left-[24%] h-[26rem] w-[26rem] rounded-full bg-primary-100/70 blur-3xl dark:bg-primary-400/12"></div>
-      <div class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary-400/40 to-transparent"></div>
-    </div>
-
     <!-- Sidebar -->
     <AppSidebar />
 
