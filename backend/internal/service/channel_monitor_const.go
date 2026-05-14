@@ -63,6 +63,26 @@ const (
 	MonitorStatusFailed      = "failed"
 	MonitorStatusError       = "error"
 
+	// MonitorHealth* 是 monitor 级健康状态，由最近历史聚合推导。
+	MonitorHealthUnknown   = "unknown"
+	MonitorHealthHealthy   = "healthy"
+	MonitorHealthDegraded  = "degraded"
+	MonitorHealthUnhealthy = "unhealthy"
+
+	// MonitorErrorCategory* 是错误分类字段，写入历史用于聚合、排障和告警。
+	MonitorErrorCategoryNone          = ""
+	MonitorErrorCategoryAuth          = "auth"
+	MonitorErrorCategoryRateLimit     = "rate_limit"
+	MonitorErrorCategoryQuota         = "quota"
+	MonitorErrorCategoryServer        = "server"
+	MonitorErrorCategoryNetwork       = "network"
+	MonitorErrorCategoryTimeout       = "timeout"
+	MonitorErrorCategoryChallenge     = "challenge"
+	MonitorErrorCategorySlow          = "slow"
+	MonitorErrorCategoryEmptyResponse = "empty_response"
+	MonitorErrorCategoryInvalid       = "invalid_request"
+	MonitorErrorCategoryUnknown       = "unknown"
+
 	// monitorAvailability7Days / 15 / 30 用于聚合查询窗口。
 	monitorAvailability7Days  = 7
 	monitorAvailability15Days = 15
@@ -75,6 +95,16 @@ const (
 
 	// monitorTimelineMaxPoints 用户视图 timeline 每个监控最多返回的历史点数。
 	monitorTimelineMaxPoints = 60
+
+	// monitorHealthWindow / monitorHealthHistoryLimit 控制健康快照的最近窗口。
+	monitorHealthWindow       = 30 * time.Minute
+	monitorHealthHistoryLimit = 200
+	// monitorAutoDisableConsecutiveFailures 连续失败多少个检测批次后自动标记禁用。
+	monitorAutoDisableConsecutiveFailures = 3
+	// monitorAutoRecoverConsecutiveSuccesses 自动禁用后连续成功多少个批次恢复。
+	monitorAutoRecoverConsecutiveSuccesses = 2
+	// monitorHealthRunGroupWindow 同一轮并发模型检测的 checked_at 允许偏移。
+	monitorHealthRunGroupWindow = 5 * time.Second
 
 	// monitorEndpointResolveTimeout validateEndpoint 解析 hostname 的最长耗时。
 	monitorEndpointResolveTimeout = 5 * time.Second

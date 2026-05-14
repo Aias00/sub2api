@@ -125,6 +125,26 @@ func (_u *ChannelMonitorHistoryUpdate) ClearPingLatencyMs() *ChannelMonitorHisto
 	return _u
 }
 
+// SetErrorCategory sets the "error_category" field.
+func (_u *ChannelMonitorHistoryUpdate) SetErrorCategory(v string) *ChannelMonitorHistoryUpdate {
+	_u.mutation.SetErrorCategory(v)
+	return _u
+}
+
+// SetNillableErrorCategory sets the "error_category" field if the given value is not nil.
+func (_u *ChannelMonitorHistoryUpdate) SetNillableErrorCategory(v *string) *ChannelMonitorHistoryUpdate {
+	if v != nil {
+		_u.SetErrorCategory(*v)
+	}
+	return _u
+}
+
+// ClearErrorCategory clears the value of the "error_category" field.
+func (_u *ChannelMonitorHistoryUpdate) ClearErrorCategory() *ChannelMonitorHistoryUpdate {
+	_u.mutation.ClearErrorCategory()
+	return _u
+}
+
 // SetMessage sets the "message" field.
 func (_u *ChannelMonitorHistoryUpdate) SetMessage(v string) *ChannelMonitorHistoryUpdate {
 	_u.mutation.SetMessage(v)
@@ -214,6 +234,11 @@ func (_u *ChannelMonitorHistoryUpdate) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitorHistory.status": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ErrorCategory(); ok {
+		if err := channelmonitorhistory.ErrorCategoryValidator(v); err != nil {
+			return &ValidationError{Name: "error_category", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitorHistory.error_category": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Message(); ok {
 		if err := channelmonitorhistory.MessageValidator(v); err != nil {
 			return &ValidationError{Name: "message", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitorHistory.message": %w`, err)}
@@ -260,6 +285,12 @@ func (_u *ChannelMonitorHistoryUpdate) sqlSave(ctx context.Context) (_node int, 
 	}
 	if _u.mutation.PingLatencyMsCleared() {
 		_spec.ClearField(channelmonitorhistory.FieldPingLatencyMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.ErrorCategory(); ok {
+		_spec.SetField(channelmonitorhistory.FieldErrorCategory, field.TypeString, value)
+	}
+	if _u.mutation.ErrorCategoryCleared() {
+		_spec.ClearField(channelmonitorhistory.FieldErrorCategory, field.TypeString)
 	}
 	if value, ok := _u.mutation.Message(); ok {
 		_spec.SetField(channelmonitorhistory.FieldMessage, field.TypeString, value)
@@ -415,6 +446,26 @@ func (_u *ChannelMonitorHistoryUpdateOne) ClearPingLatencyMs() *ChannelMonitorHi
 	return _u
 }
 
+// SetErrorCategory sets the "error_category" field.
+func (_u *ChannelMonitorHistoryUpdateOne) SetErrorCategory(v string) *ChannelMonitorHistoryUpdateOne {
+	_u.mutation.SetErrorCategory(v)
+	return _u
+}
+
+// SetNillableErrorCategory sets the "error_category" field if the given value is not nil.
+func (_u *ChannelMonitorHistoryUpdateOne) SetNillableErrorCategory(v *string) *ChannelMonitorHistoryUpdateOne {
+	if v != nil {
+		_u.SetErrorCategory(*v)
+	}
+	return _u
+}
+
+// ClearErrorCategory clears the value of the "error_category" field.
+func (_u *ChannelMonitorHistoryUpdateOne) ClearErrorCategory() *ChannelMonitorHistoryUpdateOne {
+	_u.mutation.ClearErrorCategory()
+	return _u
+}
+
 // SetMessage sets the "message" field.
 func (_u *ChannelMonitorHistoryUpdateOne) SetMessage(v string) *ChannelMonitorHistoryUpdateOne {
 	_u.mutation.SetMessage(v)
@@ -517,6 +568,11 @@ func (_u *ChannelMonitorHistoryUpdateOne) check() error {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitorHistory.status": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.ErrorCategory(); ok {
+		if err := channelmonitorhistory.ErrorCategoryValidator(v); err != nil {
+			return &ValidationError{Name: "error_category", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitorHistory.error_category": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Message(); ok {
 		if err := channelmonitorhistory.MessageValidator(v); err != nil {
 			return &ValidationError{Name: "message", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitorHistory.message": %w`, err)}
@@ -580,6 +636,12 @@ func (_u *ChannelMonitorHistoryUpdateOne) sqlSave(ctx context.Context) (_node *C
 	}
 	if _u.mutation.PingLatencyMsCleared() {
 		_spec.ClearField(channelmonitorhistory.FieldPingLatencyMs, field.TypeInt)
+	}
+	if value, ok := _u.mutation.ErrorCategory(); ok {
+		_spec.SetField(channelmonitorhistory.FieldErrorCategory, field.TypeString, value)
+	}
+	if _u.mutation.ErrorCategoryCleared() {
+		_spec.ClearField(channelmonitorhistory.FieldErrorCategory, field.TypeString)
 	}
 	if value, ok := _u.mutation.Message(); ok {
 		_spec.SetField(channelmonitorhistory.FieldMessage, field.TypeString, value)

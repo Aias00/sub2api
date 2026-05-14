@@ -7,6 +7,20 @@ import { apiClient } from '../client'
 
 export type Provider = 'openai' | 'anthropic' | 'gemini'
 export type MonitorStatus = 'operational' | 'degraded' | 'failed' | 'error'
+export type MonitorHealthStatus = 'unknown' | 'healthy' | 'degraded' | 'unhealthy'
+export type MonitorErrorCategory =
+  | ''
+  | 'auth'
+  | 'rate_limit'
+  | 'quota'
+  | 'server'
+  | 'network'
+  | 'timeout'
+  | 'challenge'
+  | 'slow'
+  | 'empty_response'
+  | 'invalid_request'
+  | 'unknown'
 export type BodyOverrideMode = 'off' | 'merge' | 'replace'
 
 export interface ChannelMonitor {
@@ -25,6 +39,11 @@ export interface ChannelMonitor {
   extra_models: string[]
   group_name: string
   enabled: boolean
+  auto_disabled: boolean
+  auto_disabled_at: string | null
+  auto_disabled_reason: string
+  auto_recovered_at: string | null
+  health_status: MonitorHealthStatus
   interval_seconds: number
   last_checked_at: string | null
   created_by: number
@@ -93,12 +112,40 @@ export interface CheckResult {
   status: MonitorStatus
   latency_ms: number | null
   ping_latency_ms: number | null
+  error_category: MonitorErrorCategory
   message: string
   checked_at: string
 }
 
+export interface ErrorCategoryCount {
+  category: MonitorErrorCategory
+  count: number
+}
+
+export interface HealthSnapshot {
+  monitor_id: number
+  health_status: MonitorHealthStatus
+  auto_disabled: boolean
+  auto_disabled_at: string | null
+  auto_disabled_reason: string
+  auto_recovered_at: string | null
+  window_minutes: number
+  total_checks: number
+  successful_checks: number
+  success_rate_pct: number
+  avg_latency_ms: number | null
+  consecutive_failed_runs: number
+  consecutive_successful_runs: number
+  top_error_categories: ErrorCategoryCount[]
+  latest_status: MonitorStatus | ''
+  latest_error_category: MonitorErrorCategory
+  latest_message: string
+  latest_checked_at: string | null
+}
+
 export interface RunNowResponse {
   results: CheckResult[]
+  health?: HealthSnapshot
 }
 
 export interface HistoryItem {
@@ -107,6 +154,7 @@ export interface HistoryItem {
   status: MonitorStatus
   latency_ms: number | null
   ping_latency_ms: number | null
+  error_category: MonitorErrorCategory
   message: string
   checked_at: string
 }
@@ -176,6 +224,14 @@ export async function runNow(id: number): Promise<RunNowResponse> {
 }
 
 /**
+ * Get monitor health snapshot for ops troubleshooting.
+ */
+export async function health(id: number): Promise<HealthSnapshot> {
+  const { data } = await apiClient.get<HealthSnapshot>(`/admin/channel-monitors/${id}/health`)
+  return data
+}
+
+/**
  * List historical check results for a monitor.
  */
 export async function listHistory(
@@ -196,6 +252,7 @@ export const channelMonitorAPI = {
   update,
   del,
   runNow,
+  health,
   listHistory,
 }
 

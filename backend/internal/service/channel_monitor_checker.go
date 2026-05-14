@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"regexp"
@@ -71,6 +72,7 @@ func runCheckForModel(ctx context.Context, provider, endpoint, apiKey, model str
 
 	if err != nil {
 		res.Status = MonitorStatusError
+		res.ErrorCategory = classifyMonitorError(err, statusCode, "")
 		res.Message = truncateMessage(sanitizeErrorMessage(err.Error()))
 		return res
 	}
@@ -78,6 +80,7 @@ func runCheckForModel(ctx context.Context, provider, endpoint, apiKey, model str
 		// 错误路径：用 rawBody 而非 respText（gjson textPath 抽取在错误响应里通常为空，
 		// 会丢掉真正的上游错误信息，例如 `{"error":{"message":"No available accounts ..."}}`）。
 		res.Status = MonitorStatusError
+		res.ErrorCategory = classifyMonitorError(nil, statusCode, rawBody)
 		bodySnippet := truncateForErrorBody(rawBody)
 		res.Message = truncateMessage(sanitizeErrorMessage(fmt.Sprintf("upstream HTTP %d: %s", statusCode, bodySnippet)))
 		return res
@@ -89,6 +92,7 @@ func runCheckForModel(ctx context.Context, provider, endpoint, apiKey, model str
 	if mode == MonitorBodyOverrideModeReplace {
 		if strings.TrimSpace(respText) == "" {
 			res.Status = MonitorStatusFailed
+			res.ErrorCategory = MonitorErrorCategoryEmptyResponse
 			res.Message = truncateMessage("replace-mode: upstream returned 2xx with empty text")
 			return res
 		}
@@ -97,6 +101,7 @@ func runCheckForModel(ctx context.Context, provider, endpoint, apiKey, model str
 
 	if !validateChallenge(respText, challenge.Expected) {
 		res.Status = MonitorStatusFailed
+		res.ErrorCategory = MonitorErrorCategoryChallenge
 		res.Message = truncateMessage(sanitizeErrorMessage(fmt.Sprintf("challenge mismatch (expected %s, got %q)", challenge.Expected, respText)))
 		return res
 	}
@@ -109,11 +114,65 @@ func runCheckForModel(ctx context.Context, provider, endpoint, apiKey, model str
 func finalizeOperationalOrDegraded(res *CheckResult, latency time.Duration, latencyMs int) *CheckResult {
 	if latency >= monitorDegradedThreshold {
 		res.Status = MonitorStatusDegraded
+		res.ErrorCategory = MonitorErrorCategorySlow
 		res.Message = truncateMessage(fmt.Sprintf("slow response: %dms", latencyMs))
 		return res
 	}
 	res.Status = MonitorStatusOperational
+	res.ErrorCategory = MonitorErrorCategoryNone
 	return res
+}
+
+// classifyMonitorError maps provider/network failures to stable categories for
+// aggregation and alerting. Keep this conservative: unknown beats misleading.
+func classifyMonitorError(err error, statusCode int, body string) string {
+	if err != nil {
+		if errors.Is(err, context.DeadlineExceeded) {
+			return MonitorErrorCategoryTimeout
+		}
+		var netErr net.Error
+		if errors.As(err, &netErr) && netErr.Timeout() {
+			return MonitorErrorCategoryTimeout
+		}
+		msg := strings.ToLower(err.Error())
+		if strings.Contains(msg, "timeout") || strings.Contains(msg, "deadline exceeded") {
+			return MonitorErrorCategoryTimeout
+		}
+		if strings.Contains(msg, "connection refused") ||
+			strings.Contains(msg, "no such host") ||
+			strings.Contains(msg, "network is unreachable") ||
+			strings.Contains(msg, "temporary failure") {
+			return MonitorErrorCategoryNetwork
+		}
+		return MonitorErrorCategoryNetwork
+	}
+
+	text := strings.ToLower(body)
+	switch {
+	case statusCode == http.StatusUnauthorized || statusCode == http.StatusForbidden ||
+		containsAny(text, "invalid api key", "incorrect api key", "unauthorized", "forbidden", "permission denied", "invalid x-api-key"):
+		return MonitorErrorCategoryAuth
+	case statusCode == http.StatusTooManyRequests ||
+		containsAny(text, "rate limit", "rate_limit", "too many requests", "requests per minute", "quota rate"):
+		return MonitorErrorCategoryRateLimit
+	case containsAny(text, "quota", "insufficient", "credit", "balance", "billing", "no available account", "exceeded your current quota"):
+		return MonitorErrorCategoryQuota
+	case statusCode >= 500:
+		return MonitorErrorCategoryServer
+	case statusCode >= 400:
+		return MonitorErrorCategoryInvalid
+	default:
+		return MonitorErrorCategoryUnknown
+	}
+}
+
+func containsAny(s string, needles ...string) bool {
+	for _, needle := range needles {
+		if strings.Contains(s, needle) {
+			return true
+		}
+	}
+	return false
 }
 
 // bodyOverrideMode 归一取 opts.BodyOverrideMode，nil opts / 空串都视为 off。

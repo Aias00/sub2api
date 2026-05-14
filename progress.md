@@ -910,3 +910,26 @@
 - Deployed commit `deb60f2c` to production with server-side frontend and backend builds; local server health returned `{"env":"production","status":"ok"}`.
 - `https://cloudbase.eu.org/health`, `https://cloudbase.eu.org/api/v1/settings/public`, and `/dashboard` returned HTTP 200.
 - Browser verification on `https://cloudbase.eu.org/dashboard?verify=deb60f2c` found no `v0.1.x` text in the page/sidebar, no `/check-updates` network request, and no console warnings/errors.
+
+## 2026-05-14 Channel Monitor Health Layer
+### Done
+- Started the New API-inspired channel health enhancement pass.
+- Added monitor-level health state fields for automatic disable/recover tracking without turning off the scheduled probes.
+- Added error classification to channel monitor histories for auth, rate limit, quota, server, network, timeout, challenge, slow response, empty response, invalid request, and unknown failures.
+- Added health snapshot computation for recent success rate, average latency, consecutive failed/successful check runs, top error categories, and latest failure context.
+- Added admin API exposure for health state and a dedicated `GET /api/v1/admin/channel-monitors/:id/health` endpoint.
+- Wired auto-disable/auto-recover transitions into the existing Ops Alert event stream so monitor health incidents are visible in the admin alert center.
+- Added focused unit coverage for error classification and health snapshot derivation.
+
+### Failures
+- Initially overwrote the existing `progress.md` while creating the task record; restored the original history and appended this section only.
+
+### Next
+- Optionally add a management UI panel for the health snapshot and route these Ops Alert events through email/Feishu/DingTalk delivery if product-level push notifications are required.
+
+### Validation
+- `go test -tags unit ./internal/service -run 'Test(ClassifyMonitorError|BuildChannelMonitorHealthSnapshot|RunCheckForModel)'` passed.
+- `go test ./internal/service ./internal/handler/admin ./internal/server ./internal/repository` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend run build` passed with existing Vite chunk warnings.
+- `go test ./...` passed.

@@ -25,6 +25,8 @@ const (
 	FieldLatencyMs = "latency_ms"
 	// FieldPingLatencyMs holds the string denoting the ping_latency_ms field in the database.
 	FieldPingLatencyMs = "ping_latency_ms"
+	// FieldErrorCategory holds the string denoting the error_category field in the database.
+	FieldErrorCategory = "error_category"
 	// FieldMessage holds the string denoting the message field in the database.
 	FieldMessage = "message"
 	// FieldCheckedAt holds the string denoting the checked_at field in the database.
@@ -50,6 +52,7 @@ var Columns = []string{
 	FieldStatus,
 	FieldLatencyMs,
 	FieldPingLatencyMs,
+	FieldErrorCategory,
 	FieldMessage,
 	FieldCheckedAt,
 }
@@ -67,6 +70,10 @@ func ValidColumn(column string) bool {
 var (
 	// ModelValidator is a validator for the "model" field. It is called by the builders before save.
 	ModelValidator func(string) error
+	// DefaultErrorCategory holds the default value on creation for the "error_category" field.
+	DefaultErrorCategory string
+	// ErrorCategoryValidator is a validator for the "error_category" field. It is called by the builders before save.
+	ErrorCategoryValidator func(string) error
 	// DefaultMessage holds the default value on creation for the "message" field.
 	DefaultMessage string
 	// MessageValidator is a validator for the "message" field. It is called by the builders before save.
@@ -131,6 +138,11 @@ func ByLatencyMs(opts ...sql.OrderTermOption) OrderOption {
 // ByPingLatencyMs orders the results by the ping_latency_ms field.
 func ByPingLatencyMs(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPingLatencyMs, opts...).ToFunc()
+}
+
+// ByErrorCategory orders the results by the error_category field.
+func ByErrorCategory(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldErrorCategory, opts...).ToFunc()
 }
 
 // ByMessage orders the results by the message field.

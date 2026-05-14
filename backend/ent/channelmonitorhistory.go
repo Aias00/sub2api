@@ -28,6 +28,8 @@ type ChannelMonitorHistory struct {
 	LatencyMs *int `json:"latency_ms,omitempty"`
 	// PingLatencyMs holds the value of the "ping_latency_ms" field.
 	PingLatencyMs *int `json:"ping_latency_ms,omitempty"`
+	// ErrorCategory holds the value of the "error_category" field.
+	ErrorCategory string `json:"error_category,omitempty"`
 	// Message holds the value of the "message" field.
 	Message string `json:"message,omitempty"`
 	// CheckedAt holds the value of the "checked_at" field.
@@ -65,7 +67,7 @@ func (*ChannelMonitorHistory) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case channelmonitorhistory.FieldID, channelmonitorhistory.FieldMonitorID, channelmonitorhistory.FieldLatencyMs, channelmonitorhistory.FieldPingLatencyMs:
 			values[i] = new(sql.NullInt64)
-		case channelmonitorhistory.FieldModel, channelmonitorhistory.FieldStatus, channelmonitorhistory.FieldMessage:
+		case channelmonitorhistory.FieldModel, channelmonitorhistory.FieldStatus, channelmonitorhistory.FieldErrorCategory, channelmonitorhistory.FieldMessage:
 			values[i] = new(sql.NullString)
 		case channelmonitorhistory.FieldCheckedAt:
 			values[i] = new(sql.NullTime)
@@ -121,6 +123,12 @@ func (_m *ChannelMonitorHistory) assignValues(columns []string, values []any) er
 			} else if value.Valid {
 				_m.PingLatencyMs = new(int)
 				*_m.PingLatencyMs = int(value.Int64)
+			}
+		case channelmonitorhistory.FieldErrorCategory:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field error_category", values[i])
+			} else if value.Valid {
+				_m.ErrorCategory = value.String
 			}
 		case channelmonitorhistory.FieldMessage:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -193,6 +201,9 @@ func (_m *ChannelMonitorHistory) String() string {
 		builder.WriteString("ping_latency_ms=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("error_category=")
+	builder.WriteString(_m.ErrorCategory)
 	builder.WriteString(", ")
 	builder.WriteString("message=")
 	builder.WriteString(_m.Message)

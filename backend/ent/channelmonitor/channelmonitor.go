@@ -35,6 +35,16 @@ const (
 	FieldGroupName = "group_name"
 	// FieldEnabled holds the string denoting the enabled field in the database.
 	FieldEnabled = "enabled"
+	// FieldAutoDisabled holds the string denoting the auto_disabled field in the database.
+	FieldAutoDisabled = "auto_disabled"
+	// FieldAutoDisabledAt holds the string denoting the auto_disabled_at field in the database.
+	FieldAutoDisabledAt = "auto_disabled_at"
+	// FieldAutoDisabledReason holds the string denoting the auto_disabled_reason field in the database.
+	FieldAutoDisabledReason = "auto_disabled_reason"
+	// FieldAutoRecoveredAt holds the string denoting the auto_recovered_at field in the database.
+	FieldAutoRecoveredAt = "auto_recovered_at"
+	// FieldLastHealthStatus holds the string denoting the last_health_status field in the database.
+	FieldLastHealthStatus = "last_health_status"
 	// FieldIntervalSeconds holds the string denoting the interval_seconds field in the database.
 	FieldIntervalSeconds = "interval_seconds"
 	// FieldLastCheckedAt holds the string denoting the last_checked_at field in the database.
@@ -93,6 +103,11 @@ var Columns = []string{
 	FieldExtraModels,
 	FieldGroupName,
 	FieldEnabled,
+	FieldAutoDisabled,
+	FieldAutoDisabledAt,
+	FieldAutoDisabledReason,
+	FieldAutoRecoveredAt,
+	FieldLastHealthStatus,
 	FieldIntervalSeconds,
 	FieldLastCheckedAt,
 	FieldCreatedBy,
@@ -135,6 +150,16 @@ var (
 	GroupNameValidator func(string) error
 	// DefaultEnabled holds the default value on creation for the "enabled" field.
 	DefaultEnabled bool
+	// DefaultAutoDisabled holds the default value on creation for the "auto_disabled" field.
+	DefaultAutoDisabled bool
+	// DefaultAutoDisabledReason holds the default value on creation for the "auto_disabled_reason" field.
+	DefaultAutoDisabledReason string
+	// AutoDisabledReasonValidator is a validator for the "auto_disabled_reason" field. It is called by the builders before save.
+	AutoDisabledReasonValidator func(string) error
+	// DefaultLastHealthStatus holds the default value on creation for the "last_health_status" field.
+	DefaultLastHealthStatus string
+	// LastHealthStatusValidator is a validator for the "last_health_status" field. It is called by the builders before save.
+	LastHealthStatusValidator func(string) error
 	// IntervalSecondsValidator is a validator for the "interval_seconds" field. It is called by the builders before save.
 	IntervalSecondsValidator func(int) error
 	// DefaultExtraHeaders holds the default value on creation for the "extra_headers" field.
@@ -220,6 +245,31 @@ func ByGroupName(opts ...sql.OrderTermOption) OrderOption {
 // ByEnabled orders the results by the enabled field.
 func ByEnabled(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldEnabled, opts...).ToFunc()
+}
+
+// ByAutoDisabled orders the results by the auto_disabled field.
+func ByAutoDisabled(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAutoDisabled, opts...).ToFunc()
+}
+
+// ByAutoDisabledAt orders the results by the auto_disabled_at field.
+func ByAutoDisabledAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAutoDisabledAt, opts...).ToFunc()
+}
+
+// ByAutoDisabledReason orders the results by the auto_disabled_reason field.
+func ByAutoDisabledReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAutoDisabledReason, opts...).ToFunc()
+}
+
+// ByAutoRecoveredAt orders the results by the auto_recovered_at field.
+func ByAutoRecoveredAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldAutoRecoveredAt, opts...).ToFunc()
+}
+
+// ByLastHealthStatus orders the results by the last_health_status field.
+func ByLastHealthStatus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLastHealthStatus, opts...).ToFunc()
 }
 
 // ByIntervalSeconds orders the results by the interval_seconds field.

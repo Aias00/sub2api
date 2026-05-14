@@ -95,6 +95,31 @@ func Enabled(v bool) predicate.ChannelMonitor {
 	return predicate.ChannelMonitor(sql.FieldEQ(FieldEnabled, v))
 }
 
+// AutoDisabled applies equality check predicate on the "auto_disabled" field. It's identical to AutoDisabledEQ.
+func AutoDisabled(v bool) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEQ(FieldAutoDisabled, v))
+}
+
+// AutoDisabledAt applies equality check predicate on the "auto_disabled_at" field. It's identical to AutoDisabledAtEQ.
+func AutoDisabledAt(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEQ(FieldAutoDisabledAt, v))
+}
+
+// AutoDisabledReason applies equality check predicate on the "auto_disabled_reason" field. It's identical to AutoDisabledReasonEQ.
+func AutoDisabledReason(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEQ(FieldAutoDisabledReason, v))
+}
+
+// AutoRecoveredAt applies equality check predicate on the "auto_recovered_at" field. It's identical to AutoRecoveredAtEQ.
+func AutoRecoveredAt(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEQ(FieldAutoRecoveredAt, v))
+}
+
+// LastHealthStatus applies equality check predicate on the "last_health_status" field. It's identical to LastHealthStatusEQ.
+func LastHealthStatus(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEQ(FieldLastHealthStatus, v))
+}
+
 // IntervalSeconds applies equality check predicate on the "interval_seconds" field. It's identical to IntervalSecondsEQ.
 func IntervalSeconds(v int) predicate.ChannelMonitor {
 	return predicate.ChannelMonitor(sql.FieldEQ(FieldIntervalSeconds, v))
@@ -563,6 +588,256 @@ func EnabledEQ(v bool) predicate.ChannelMonitor {
 // EnabledNEQ applies the NEQ predicate on the "enabled" field.
 func EnabledNEQ(v bool) predicate.ChannelMonitor {
 	return predicate.ChannelMonitor(sql.FieldNEQ(FieldEnabled, v))
+}
+
+// AutoDisabledEQ applies the EQ predicate on the "auto_disabled" field.
+func AutoDisabledEQ(v bool) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEQ(FieldAutoDisabled, v))
+}
+
+// AutoDisabledNEQ applies the NEQ predicate on the "auto_disabled" field.
+func AutoDisabledNEQ(v bool) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNEQ(FieldAutoDisabled, v))
+}
+
+// AutoDisabledAtEQ applies the EQ predicate on the "auto_disabled_at" field.
+func AutoDisabledAtEQ(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEQ(FieldAutoDisabledAt, v))
+}
+
+// AutoDisabledAtNEQ applies the NEQ predicate on the "auto_disabled_at" field.
+func AutoDisabledAtNEQ(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNEQ(FieldAutoDisabledAt, v))
+}
+
+// AutoDisabledAtIn applies the In predicate on the "auto_disabled_at" field.
+func AutoDisabledAtIn(vs ...time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldIn(FieldAutoDisabledAt, vs...))
+}
+
+// AutoDisabledAtNotIn applies the NotIn predicate on the "auto_disabled_at" field.
+func AutoDisabledAtNotIn(vs ...time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNotIn(FieldAutoDisabledAt, vs...))
+}
+
+// AutoDisabledAtGT applies the GT predicate on the "auto_disabled_at" field.
+func AutoDisabledAtGT(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldGT(FieldAutoDisabledAt, v))
+}
+
+// AutoDisabledAtGTE applies the GTE predicate on the "auto_disabled_at" field.
+func AutoDisabledAtGTE(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldGTE(FieldAutoDisabledAt, v))
+}
+
+// AutoDisabledAtLT applies the LT predicate on the "auto_disabled_at" field.
+func AutoDisabledAtLT(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldLT(FieldAutoDisabledAt, v))
+}
+
+// AutoDisabledAtLTE applies the LTE predicate on the "auto_disabled_at" field.
+func AutoDisabledAtLTE(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldLTE(FieldAutoDisabledAt, v))
+}
+
+// AutoDisabledAtIsNil applies the IsNil predicate on the "auto_disabled_at" field.
+func AutoDisabledAtIsNil() predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldIsNull(FieldAutoDisabledAt))
+}
+
+// AutoDisabledAtNotNil applies the NotNil predicate on the "auto_disabled_at" field.
+func AutoDisabledAtNotNil() predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNotNull(FieldAutoDisabledAt))
+}
+
+// AutoDisabledReasonEQ applies the EQ predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonEQ(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEQ(FieldAutoDisabledReason, v))
+}
+
+// AutoDisabledReasonNEQ applies the NEQ predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonNEQ(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNEQ(FieldAutoDisabledReason, v))
+}
+
+// AutoDisabledReasonIn applies the In predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonIn(vs ...string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldIn(FieldAutoDisabledReason, vs...))
+}
+
+// AutoDisabledReasonNotIn applies the NotIn predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonNotIn(vs ...string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNotIn(FieldAutoDisabledReason, vs...))
+}
+
+// AutoDisabledReasonGT applies the GT predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonGT(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldGT(FieldAutoDisabledReason, v))
+}
+
+// AutoDisabledReasonGTE applies the GTE predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonGTE(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldGTE(FieldAutoDisabledReason, v))
+}
+
+// AutoDisabledReasonLT applies the LT predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonLT(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldLT(FieldAutoDisabledReason, v))
+}
+
+// AutoDisabledReasonLTE applies the LTE predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonLTE(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldLTE(FieldAutoDisabledReason, v))
+}
+
+// AutoDisabledReasonContains applies the Contains predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonContains(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldContains(FieldAutoDisabledReason, v))
+}
+
+// AutoDisabledReasonHasPrefix applies the HasPrefix predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonHasPrefix(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldHasPrefix(FieldAutoDisabledReason, v))
+}
+
+// AutoDisabledReasonHasSuffix applies the HasSuffix predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonHasSuffix(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldHasSuffix(FieldAutoDisabledReason, v))
+}
+
+// AutoDisabledReasonIsNil applies the IsNil predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonIsNil() predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldIsNull(FieldAutoDisabledReason))
+}
+
+// AutoDisabledReasonNotNil applies the NotNil predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonNotNil() predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNotNull(FieldAutoDisabledReason))
+}
+
+// AutoDisabledReasonEqualFold applies the EqualFold predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonEqualFold(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEqualFold(FieldAutoDisabledReason, v))
+}
+
+// AutoDisabledReasonContainsFold applies the ContainsFold predicate on the "auto_disabled_reason" field.
+func AutoDisabledReasonContainsFold(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldContainsFold(FieldAutoDisabledReason, v))
+}
+
+// AutoRecoveredAtEQ applies the EQ predicate on the "auto_recovered_at" field.
+func AutoRecoveredAtEQ(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEQ(FieldAutoRecoveredAt, v))
+}
+
+// AutoRecoveredAtNEQ applies the NEQ predicate on the "auto_recovered_at" field.
+func AutoRecoveredAtNEQ(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNEQ(FieldAutoRecoveredAt, v))
+}
+
+// AutoRecoveredAtIn applies the In predicate on the "auto_recovered_at" field.
+func AutoRecoveredAtIn(vs ...time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldIn(FieldAutoRecoveredAt, vs...))
+}
+
+// AutoRecoveredAtNotIn applies the NotIn predicate on the "auto_recovered_at" field.
+func AutoRecoveredAtNotIn(vs ...time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNotIn(FieldAutoRecoveredAt, vs...))
+}
+
+// AutoRecoveredAtGT applies the GT predicate on the "auto_recovered_at" field.
+func AutoRecoveredAtGT(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldGT(FieldAutoRecoveredAt, v))
+}
+
+// AutoRecoveredAtGTE applies the GTE predicate on the "auto_recovered_at" field.
+func AutoRecoveredAtGTE(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldGTE(FieldAutoRecoveredAt, v))
+}
+
+// AutoRecoveredAtLT applies the LT predicate on the "auto_recovered_at" field.
+func AutoRecoveredAtLT(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldLT(FieldAutoRecoveredAt, v))
+}
+
+// AutoRecoveredAtLTE applies the LTE predicate on the "auto_recovered_at" field.
+func AutoRecoveredAtLTE(v time.Time) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldLTE(FieldAutoRecoveredAt, v))
+}
+
+// AutoRecoveredAtIsNil applies the IsNil predicate on the "auto_recovered_at" field.
+func AutoRecoveredAtIsNil() predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldIsNull(FieldAutoRecoveredAt))
+}
+
+// AutoRecoveredAtNotNil applies the NotNil predicate on the "auto_recovered_at" field.
+func AutoRecoveredAtNotNil() predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNotNull(FieldAutoRecoveredAt))
+}
+
+// LastHealthStatusEQ applies the EQ predicate on the "last_health_status" field.
+func LastHealthStatusEQ(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEQ(FieldLastHealthStatus, v))
+}
+
+// LastHealthStatusNEQ applies the NEQ predicate on the "last_health_status" field.
+func LastHealthStatusNEQ(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNEQ(FieldLastHealthStatus, v))
+}
+
+// LastHealthStatusIn applies the In predicate on the "last_health_status" field.
+func LastHealthStatusIn(vs ...string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldIn(FieldLastHealthStatus, vs...))
+}
+
+// LastHealthStatusNotIn applies the NotIn predicate on the "last_health_status" field.
+func LastHealthStatusNotIn(vs ...string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldNotIn(FieldLastHealthStatus, vs...))
+}
+
+// LastHealthStatusGT applies the GT predicate on the "last_health_status" field.
+func LastHealthStatusGT(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldGT(FieldLastHealthStatus, v))
+}
+
+// LastHealthStatusGTE applies the GTE predicate on the "last_health_status" field.
+func LastHealthStatusGTE(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldGTE(FieldLastHealthStatus, v))
+}
+
+// LastHealthStatusLT applies the LT predicate on the "last_health_status" field.
+func LastHealthStatusLT(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldLT(FieldLastHealthStatus, v))
+}
+
+// LastHealthStatusLTE applies the LTE predicate on the "last_health_status" field.
+func LastHealthStatusLTE(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldLTE(FieldLastHealthStatus, v))
+}
+
+// LastHealthStatusContains applies the Contains predicate on the "last_health_status" field.
+func LastHealthStatusContains(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldContains(FieldLastHealthStatus, v))
+}
+
+// LastHealthStatusHasPrefix applies the HasPrefix predicate on the "last_health_status" field.
+func LastHealthStatusHasPrefix(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldHasPrefix(FieldLastHealthStatus, v))
+}
+
+// LastHealthStatusHasSuffix applies the HasSuffix predicate on the "last_health_status" field.
+func LastHealthStatusHasSuffix(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldHasSuffix(FieldLastHealthStatus, v))
+}
+
+// LastHealthStatusEqualFold applies the EqualFold predicate on the "last_health_status" field.
+func LastHealthStatusEqualFold(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldEqualFold(FieldLastHealthStatus, v))
+}
+
+// LastHealthStatusContainsFold applies the ContainsFold predicate on the "last_health_status" field.
+func LastHealthStatusContainsFold(v string) predicate.ChannelMonitor {
+	return predicate.ChannelMonitor(sql.FieldContainsFold(FieldLastHealthStatus, v))
 }
 
 // IntervalSecondsEQ applies the EQ predicate on the "interval_seconds" field.

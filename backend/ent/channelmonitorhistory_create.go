@@ -69,6 +69,20 @@ func (_c *ChannelMonitorHistoryCreate) SetNillablePingLatencyMs(v *int) *Channel
 	return _c
 }
 
+// SetErrorCategory sets the "error_category" field.
+func (_c *ChannelMonitorHistoryCreate) SetErrorCategory(v string) *ChannelMonitorHistoryCreate {
+	_c.mutation.SetErrorCategory(v)
+	return _c
+}
+
+// SetNillableErrorCategory sets the "error_category" field if the given value is not nil.
+func (_c *ChannelMonitorHistoryCreate) SetNillableErrorCategory(v *string) *ChannelMonitorHistoryCreate {
+	if v != nil {
+		_c.SetErrorCategory(*v)
+	}
+	return _c
+}
+
 // SetMessage sets the "message" field.
 func (_c *ChannelMonitorHistoryCreate) SetMessage(v string) *ChannelMonitorHistoryCreate {
 	_c.mutation.SetMessage(v)
@@ -137,6 +151,10 @@ func (_c *ChannelMonitorHistoryCreate) ExecX(ctx context.Context) {
 
 // defaults sets the default values of the builder before save.
 func (_c *ChannelMonitorHistoryCreate) defaults() {
+	if _, ok := _c.mutation.ErrorCategory(); !ok {
+		v := channelmonitorhistory.DefaultErrorCategory
+		_c.mutation.SetErrorCategory(v)
+	}
 	if _, ok := _c.mutation.Message(); !ok {
 		v := channelmonitorhistory.DefaultMessage
 		_c.mutation.SetMessage(v)
@@ -166,6 +184,11 @@ func (_c *ChannelMonitorHistoryCreate) check() error {
 	if v, ok := _c.mutation.Status(); ok {
 		if err := channelmonitorhistory.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitorHistory.status": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.ErrorCategory(); ok {
+		if err := channelmonitorhistory.ErrorCategoryValidator(v); err != nil {
+			return &ValidationError{Name: "error_category", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitorHistory.error_category": %w`, err)}
 		}
 	}
 	if v, ok := _c.mutation.Message(); ok {
@@ -221,6 +244,10 @@ func (_c *ChannelMonitorHistoryCreate) createSpec() (*ChannelMonitorHistory, *sq
 	if value, ok := _c.mutation.PingLatencyMs(); ok {
 		_spec.SetField(channelmonitorhistory.FieldPingLatencyMs, field.TypeInt, value)
 		_node.PingLatencyMs = &value
+	}
+	if value, ok := _c.mutation.ErrorCategory(); ok {
+		_spec.SetField(channelmonitorhistory.FieldErrorCategory, field.TypeString, value)
+		_node.ErrorCategory = value
 	}
 	if value, ok := _c.mutation.Message(); ok {
 		_spec.SetField(channelmonitorhistory.FieldMessage, field.TypeString, value)
@@ -380,6 +407,24 @@ func (u *ChannelMonitorHistoryUpsert) AddPingLatencyMs(v int) *ChannelMonitorHis
 // ClearPingLatencyMs clears the value of the "ping_latency_ms" field.
 func (u *ChannelMonitorHistoryUpsert) ClearPingLatencyMs() *ChannelMonitorHistoryUpsert {
 	u.SetNull(channelmonitorhistory.FieldPingLatencyMs)
+	return u
+}
+
+// SetErrorCategory sets the "error_category" field.
+func (u *ChannelMonitorHistoryUpsert) SetErrorCategory(v string) *ChannelMonitorHistoryUpsert {
+	u.Set(channelmonitorhistory.FieldErrorCategory, v)
+	return u
+}
+
+// UpdateErrorCategory sets the "error_category" field to the value that was provided on create.
+func (u *ChannelMonitorHistoryUpsert) UpdateErrorCategory() *ChannelMonitorHistoryUpsert {
+	u.SetExcluded(channelmonitorhistory.FieldErrorCategory)
+	return u
+}
+
+// ClearErrorCategory clears the value of the "error_category" field.
+func (u *ChannelMonitorHistoryUpsert) ClearErrorCategory() *ChannelMonitorHistoryUpsert {
+	u.SetNull(channelmonitorhistory.FieldErrorCategory)
 	return u
 }
 
@@ -548,6 +593,27 @@ func (u *ChannelMonitorHistoryUpsertOne) UpdatePingLatencyMs() *ChannelMonitorHi
 func (u *ChannelMonitorHistoryUpsertOne) ClearPingLatencyMs() *ChannelMonitorHistoryUpsertOne {
 	return u.Update(func(s *ChannelMonitorHistoryUpsert) {
 		s.ClearPingLatencyMs()
+	})
+}
+
+// SetErrorCategory sets the "error_category" field.
+func (u *ChannelMonitorHistoryUpsertOne) SetErrorCategory(v string) *ChannelMonitorHistoryUpsertOne {
+	return u.Update(func(s *ChannelMonitorHistoryUpsert) {
+		s.SetErrorCategory(v)
+	})
+}
+
+// UpdateErrorCategory sets the "error_category" field to the value that was provided on create.
+func (u *ChannelMonitorHistoryUpsertOne) UpdateErrorCategory() *ChannelMonitorHistoryUpsertOne {
+	return u.Update(func(s *ChannelMonitorHistoryUpsert) {
+		s.UpdateErrorCategory()
+	})
+}
+
+// ClearErrorCategory clears the value of the "error_category" field.
+func (u *ChannelMonitorHistoryUpsertOne) ClearErrorCategory() *ChannelMonitorHistoryUpsertOne {
+	return u.Update(func(s *ChannelMonitorHistoryUpsert) {
+		s.ClearErrorCategory()
 	})
 }
 
@@ -885,6 +951,27 @@ func (u *ChannelMonitorHistoryUpsertBulk) UpdatePingLatencyMs() *ChannelMonitorH
 func (u *ChannelMonitorHistoryUpsertBulk) ClearPingLatencyMs() *ChannelMonitorHistoryUpsertBulk {
 	return u.Update(func(s *ChannelMonitorHistoryUpsert) {
 		s.ClearPingLatencyMs()
+	})
+}
+
+// SetErrorCategory sets the "error_category" field.
+func (u *ChannelMonitorHistoryUpsertBulk) SetErrorCategory(v string) *ChannelMonitorHistoryUpsertBulk {
+	return u.Update(func(s *ChannelMonitorHistoryUpsert) {
+		s.SetErrorCategory(v)
+	})
+}
+
+// UpdateErrorCategory sets the "error_category" field to the value that was provided on create.
+func (u *ChannelMonitorHistoryUpsertBulk) UpdateErrorCategory() *ChannelMonitorHistoryUpsertBulk {
+	return u.Update(func(s *ChannelMonitorHistoryUpsert) {
+		s.UpdateErrorCategory()
+	})
+}
+
+// ClearErrorCategory clears the value of the "error_category" field.
+func (u *ChannelMonitorHistoryUpsertBulk) ClearErrorCategory() *ChannelMonitorHistoryUpsertBulk {
+	return u.Update(func(s *ChannelMonitorHistoryUpsert) {
+		s.ClearErrorCategory()
 	})
 }
 

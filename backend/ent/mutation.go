@@ -8759,6 +8759,11 @@ type ChannelMonitorMutation struct {
 	appendextra_models      []string
 	group_name              *string
 	enabled                 *bool
+	auto_disabled           *bool
+	auto_disabled_at        *time.Time
+	auto_disabled_reason    *string
+	auto_recovered_at       *time.Time
+	last_health_status      *string
 	interval_seconds        *int
 	addinterval_seconds     *int
 	last_checked_at         *time.Time
@@ -9265,6 +9270,225 @@ func (m *ChannelMonitorMutation) OldEnabled(ctx context.Context) (v bool, err er
 // ResetEnabled resets all changes to the "enabled" field.
 func (m *ChannelMonitorMutation) ResetEnabled() {
 	m.enabled = nil
+}
+
+// SetAutoDisabled sets the "auto_disabled" field.
+func (m *ChannelMonitorMutation) SetAutoDisabled(b bool) {
+	m.auto_disabled = &b
+}
+
+// AutoDisabled returns the value of the "auto_disabled" field in the mutation.
+func (m *ChannelMonitorMutation) AutoDisabled() (r bool, exists bool) {
+	v := m.auto_disabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAutoDisabled returns the old "auto_disabled" field's value of the ChannelMonitor entity.
+// If the ChannelMonitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChannelMonitorMutation) OldAutoDisabled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAutoDisabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAutoDisabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAutoDisabled: %w", err)
+	}
+	return oldValue.AutoDisabled, nil
+}
+
+// ResetAutoDisabled resets all changes to the "auto_disabled" field.
+func (m *ChannelMonitorMutation) ResetAutoDisabled() {
+	m.auto_disabled = nil
+}
+
+// SetAutoDisabledAt sets the "auto_disabled_at" field.
+func (m *ChannelMonitorMutation) SetAutoDisabledAt(t time.Time) {
+	m.auto_disabled_at = &t
+}
+
+// AutoDisabledAt returns the value of the "auto_disabled_at" field in the mutation.
+func (m *ChannelMonitorMutation) AutoDisabledAt() (r time.Time, exists bool) {
+	v := m.auto_disabled_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAutoDisabledAt returns the old "auto_disabled_at" field's value of the ChannelMonitor entity.
+// If the ChannelMonitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChannelMonitorMutation) OldAutoDisabledAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAutoDisabledAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAutoDisabledAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAutoDisabledAt: %w", err)
+	}
+	return oldValue.AutoDisabledAt, nil
+}
+
+// ClearAutoDisabledAt clears the value of the "auto_disabled_at" field.
+func (m *ChannelMonitorMutation) ClearAutoDisabledAt() {
+	m.auto_disabled_at = nil
+	m.clearedFields[channelmonitor.FieldAutoDisabledAt] = struct{}{}
+}
+
+// AutoDisabledAtCleared returns if the "auto_disabled_at" field was cleared in this mutation.
+func (m *ChannelMonitorMutation) AutoDisabledAtCleared() bool {
+	_, ok := m.clearedFields[channelmonitor.FieldAutoDisabledAt]
+	return ok
+}
+
+// ResetAutoDisabledAt resets all changes to the "auto_disabled_at" field.
+func (m *ChannelMonitorMutation) ResetAutoDisabledAt() {
+	m.auto_disabled_at = nil
+	delete(m.clearedFields, channelmonitor.FieldAutoDisabledAt)
+}
+
+// SetAutoDisabledReason sets the "auto_disabled_reason" field.
+func (m *ChannelMonitorMutation) SetAutoDisabledReason(s string) {
+	m.auto_disabled_reason = &s
+}
+
+// AutoDisabledReason returns the value of the "auto_disabled_reason" field in the mutation.
+func (m *ChannelMonitorMutation) AutoDisabledReason() (r string, exists bool) {
+	v := m.auto_disabled_reason
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAutoDisabledReason returns the old "auto_disabled_reason" field's value of the ChannelMonitor entity.
+// If the ChannelMonitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChannelMonitorMutation) OldAutoDisabledReason(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAutoDisabledReason is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAutoDisabledReason requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAutoDisabledReason: %w", err)
+	}
+	return oldValue.AutoDisabledReason, nil
+}
+
+// ClearAutoDisabledReason clears the value of the "auto_disabled_reason" field.
+func (m *ChannelMonitorMutation) ClearAutoDisabledReason() {
+	m.auto_disabled_reason = nil
+	m.clearedFields[channelmonitor.FieldAutoDisabledReason] = struct{}{}
+}
+
+// AutoDisabledReasonCleared returns if the "auto_disabled_reason" field was cleared in this mutation.
+func (m *ChannelMonitorMutation) AutoDisabledReasonCleared() bool {
+	_, ok := m.clearedFields[channelmonitor.FieldAutoDisabledReason]
+	return ok
+}
+
+// ResetAutoDisabledReason resets all changes to the "auto_disabled_reason" field.
+func (m *ChannelMonitorMutation) ResetAutoDisabledReason() {
+	m.auto_disabled_reason = nil
+	delete(m.clearedFields, channelmonitor.FieldAutoDisabledReason)
+}
+
+// SetAutoRecoveredAt sets the "auto_recovered_at" field.
+func (m *ChannelMonitorMutation) SetAutoRecoveredAt(t time.Time) {
+	m.auto_recovered_at = &t
+}
+
+// AutoRecoveredAt returns the value of the "auto_recovered_at" field in the mutation.
+func (m *ChannelMonitorMutation) AutoRecoveredAt() (r time.Time, exists bool) {
+	v := m.auto_recovered_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAutoRecoveredAt returns the old "auto_recovered_at" field's value of the ChannelMonitor entity.
+// If the ChannelMonitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChannelMonitorMutation) OldAutoRecoveredAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAutoRecoveredAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAutoRecoveredAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAutoRecoveredAt: %w", err)
+	}
+	return oldValue.AutoRecoveredAt, nil
+}
+
+// ClearAutoRecoveredAt clears the value of the "auto_recovered_at" field.
+func (m *ChannelMonitorMutation) ClearAutoRecoveredAt() {
+	m.auto_recovered_at = nil
+	m.clearedFields[channelmonitor.FieldAutoRecoveredAt] = struct{}{}
+}
+
+// AutoRecoveredAtCleared returns if the "auto_recovered_at" field was cleared in this mutation.
+func (m *ChannelMonitorMutation) AutoRecoveredAtCleared() bool {
+	_, ok := m.clearedFields[channelmonitor.FieldAutoRecoveredAt]
+	return ok
+}
+
+// ResetAutoRecoveredAt resets all changes to the "auto_recovered_at" field.
+func (m *ChannelMonitorMutation) ResetAutoRecoveredAt() {
+	m.auto_recovered_at = nil
+	delete(m.clearedFields, channelmonitor.FieldAutoRecoveredAt)
+}
+
+// SetLastHealthStatus sets the "last_health_status" field.
+func (m *ChannelMonitorMutation) SetLastHealthStatus(s string) {
+	m.last_health_status = &s
+}
+
+// LastHealthStatus returns the value of the "last_health_status" field in the mutation.
+func (m *ChannelMonitorMutation) LastHealthStatus() (r string, exists bool) {
+	v := m.last_health_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldLastHealthStatus returns the old "last_health_status" field's value of the ChannelMonitor entity.
+// If the ChannelMonitor object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChannelMonitorMutation) OldLastHealthStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldLastHealthStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldLastHealthStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldLastHealthStatus: %w", err)
+	}
+	return oldValue.LastHealthStatus, nil
+}
+
+// ResetLastHealthStatus resets all changes to the "last_health_status" field.
+func (m *ChannelMonitorMutation) ResetLastHealthStatus() {
+	m.last_health_status = nil
 }
 
 // SetIntervalSeconds sets the "interval_seconds" field.
@@ -9780,7 +10004,7 @@ func (m *ChannelMonitorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ChannelMonitorMutation) Fields() []string {
-	fields := make([]string, 0, 17)
+	fields := make([]string, 0, 22)
 	if m.created_at != nil {
 		fields = append(fields, channelmonitor.FieldCreatedAt)
 	}
@@ -9810,6 +10034,21 @@ func (m *ChannelMonitorMutation) Fields() []string {
 	}
 	if m.enabled != nil {
 		fields = append(fields, channelmonitor.FieldEnabled)
+	}
+	if m.auto_disabled != nil {
+		fields = append(fields, channelmonitor.FieldAutoDisabled)
+	}
+	if m.auto_disabled_at != nil {
+		fields = append(fields, channelmonitor.FieldAutoDisabledAt)
+	}
+	if m.auto_disabled_reason != nil {
+		fields = append(fields, channelmonitor.FieldAutoDisabledReason)
+	}
+	if m.auto_recovered_at != nil {
+		fields = append(fields, channelmonitor.FieldAutoRecoveredAt)
+	}
+	if m.last_health_status != nil {
+		fields = append(fields, channelmonitor.FieldLastHealthStatus)
 	}
 	if m.interval_seconds != nil {
 		fields = append(fields, channelmonitor.FieldIntervalSeconds)
@@ -9860,6 +10099,16 @@ func (m *ChannelMonitorMutation) Field(name string) (ent.Value, bool) {
 		return m.GroupName()
 	case channelmonitor.FieldEnabled:
 		return m.Enabled()
+	case channelmonitor.FieldAutoDisabled:
+		return m.AutoDisabled()
+	case channelmonitor.FieldAutoDisabledAt:
+		return m.AutoDisabledAt()
+	case channelmonitor.FieldAutoDisabledReason:
+		return m.AutoDisabledReason()
+	case channelmonitor.FieldAutoRecoveredAt:
+		return m.AutoRecoveredAt()
+	case channelmonitor.FieldLastHealthStatus:
+		return m.LastHealthStatus()
 	case channelmonitor.FieldIntervalSeconds:
 		return m.IntervalSeconds()
 	case channelmonitor.FieldLastCheckedAt:
@@ -9903,6 +10152,16 @@ func (m *ChannelMonitorMutation) OldField(ctx context.Context, name string) (ent
 		return m.OldGroupName(ctx)
 	case channelmonitor.FieldEnabled:
 		return m.OldEnabled(ctx)
+	case channelmonitor.FieldAutoDisabled:
+		return m.OldAutoDisabled(ctx)
+	case channelmonitor.FieldAutoDisabledAt:
+		return m.OldAutoDisabledAt(ctx)
+	case channelmonitor.FieldAutoDisabledReason:
+		return m.OldAutoDisabledReason(ctx)
+	case channelmonitor.FieldAutoRecoveredAt:
+		return m.OldAutoRecoveredAt(ctx)
+	case channelmonitor.FieldLastHealthStatus:
+		return m.OldLastHealthStatus(ctx)
 	case channelmonitor.FieldIntervalSeconds:
 		return m.OldIntervalSeconds(ctx)
 	case channelmonitor.FieldLastCheckedAt:
@@ -9995,6 +10254,41 @@ func (m *ChannelMonitorMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetEnabled(v)
+		return nil
+	case channelmonitor.FieldAutoDisabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAutoDisabled(v)
+		return nil
+	case channelmonitor.FieldAutoDisabledAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAutoDisabledAt(v)
+		return nil
+	case channelmonitor.FieldAutoDisabledReason:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAutoDisabledReason(v)
+		return nil
+	case channelmonitor.FieldAutoRecoveredAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAutoRecoveredAt(v)
+		return nil
+	case channelmonitor.FieldLastHealthStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetLastHealthStatus(v)
 		return nil
 	case channelmonitor.FieldIntervalSeconds:
 		v, ok := value.(int)
@@ -10105,6 +10399,15 @@ func (m *ChannelMonitorMutation) ClearedFields() []string {
 	if m.FieldCleared(channelmonitor.FieldGroupName) {
 		fields = append(fields, channelmonitor.FieldGroupName)
 	}
+	if m.FieldCleared(channelmonitor.FieldAutoDisabledAt) {
+		fields = append(fields, channelmonitor.FieldAutoDisabledAt)
+	}
+	if m.FieldCleared(channelmonitor.FieldAutoDisabledReason) {
+		fields = append(fields, channelmonitor.FieldAutoDisabledReason)
+	}
+	if m.FieldCleared(channelmonitor.FieldAutoRecoveredAt) {
+		fields = append(fields, channelmonitor.FieldAutoRecoveredAt)
+	}
 	if m.FieldCleared(channelmonitor.FieldLastCheckedAt) {
 		fields = append(fields, channelmonitor.FieldLastCheckedAt)
 	}
@@ -10130,6 +10433,15 @@ func (m *ChannelMonitorMutation) ClearField(name string) error {
 	switch name {
 	case channelmonitor.FieldGroupName:
 		m.ClearGroupName()
+		return nil
+	case channelmonitor.FieldAutoDisabledAt:
+		m.ClearAutoDisabledAt()
+		return nil
+	case channelmonitor.FieldAutoDisabledReason:
+		m.ClearAutoDisabledReason()
+		return nil
+	case channelmonitor.FieldAutoRecoveredAt:
+		m.ClearAutoRecoveredAt()
 		return nil
 	case channelmonitor.FieldLastCheckedAt:
 		m.ClearLastCheckedAt()
@@ -10177,6 +10489,21 @@ func (m *ChannelMonitorMutation) ResetField(name string) error {
 		return nil
 	case channelmonitor.FieldEnabled:
 		m.ResetEnabled()
+		return nil
+	case channelmonitor.FieldAutoDisabled:
+		m.ResetAutoDisabled()
+		return nil
+	case channelmonitor.FieldAutoDisabledAt:
+		m.ResetAutoDisabledAt()
+		return nil
+	case channelmonitor.FieldAutoDisabledReason:
+		m.ResetAutoDisabledReason()
+		return nil
+	case channelmonitor.FieldAutoRecoveredAt:
+		m.ResetAutoRecoveredAt()
+		return nil
+	case channelmonitor.FieldLastHealthStatus:
+		m.ResetLastHealthStatus()
 		return nil
 	case channelmonitor.FieldIntervalSeconds:
 		m.ResetIntervalSeconds()
@@ -11758,6 +12085,7 @@ type ChannelMonitorHistoryMutation struct {
 	addlatency_ms      *int
 	ping_latency_ms    *int
 	addping_latency_ms *int
+	error_category     *string
 	message            *string
 	checked_at         *time.Time
 	clearedFields      map[string]struct{}
@@ -12114,6 +12442,55 @@ func (m *ChannelMonitorHistoryMutation) ResetPingLatencyMs() {
 	delete(m.clearedFields, channelmonitorhistory.FieldPingLatencyMs)
 }
 
+// SetErrorCategory sets the "error_category" field.
+func (m *ChannelMonitorHistoryMutation) SetErrorCategory(s string) {
+	m.error_category = &s
+}
+
+// ErrorCategory returns the value of the "error_category" field in the mutation.
+func (m *ChannelMonitorHistoryMutation) ErrorCategory() (r string, exists bool) {
+	v := m.error_category
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldErrorCategory returns the old "error_category" field's value of the ChannelMonitorHistory entity.
+// If the ChannelMonitorHistory object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *ChannelMonitorHistoryMutation) OldErrorCategory(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldErrorCategory is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldErrorCategory requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldErrorCategory: %w", err)
+	}
+	return oldValue.ErrorCategory, nil
+}
+
+// ClearErrorCategory clears the value of the "error_category" field.
+func (m *ChannelMonitorHistoryMutation) ClearErrorCategory() {
+	m.error_category = nil
+	m.clearedFields[channelmonitorhistory.FieldErrorCategory] = struct{}{}
+}
+
+// ErrorCategoryCleared returns if the "error_category" field was cleared in this mutation.
+func (m *ChannelMonitorHistoryMutation) ErrorCategoryCleared() bool {
+	_, ok := m.clearedFields[channelmonitorhistory.FieldErrorCategory]
+	return ok
+}
+
+// ResetErrorCategory resets all changes to the "error_category" field.
+func (m *ChannelMonitorHistoryMutation) ResetErrorCategory() {
+	m.error_category = nil
+	delete(m.clearedFields, channelmonitorhistory.FieldErrorCategory)
+}
+
 // SetMessage sets the "message" field.
 func (m *ChannelMonitorHistoryMutation) SetMessage(s string) {
 	m.message = &s
@@ -12260,7 +12637,7 @@ func (m *ChannelMonitorHistoryMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ChannelMonitorHistoryMutation) Fields() []string {
-	fields := make([]string, 0, 7)
+	fields := make([]string, 0, 8)
 	if m.monitor != nil {
 		fields = append(fields, channelmonitorhistory.FieldMonitorID)
 	}
@@ -12275,6 +12652,9 @@ func (m *ChannelMonitorHistoryMutation) Fields() []string {
 	}
 	if m.ping_latency_ms != nil {
 		fields = append(fields, channelmonitorhistory.FieldPingLatencyMs)
+	}
+	if m.error_category != nil {
+		fields = append(fields, channelmonitorhistory.FieldErrorCategory)
 	}
 	if m.message != nil {
 		fields = append(fields, channelmonitorhistory.FieldMessage)
@@ -12300,6 +12680,8 @@ func (m *ChannelMonitorHistoryMutation) Field(name string) (ent.Value, bool) {
 		return m.LatencyMs()
 	case channelmonitorhistory.FieldPingLatencyMs:
 		return m.PingLatencyMs()
+	case channelmonitorhistory.FieldErrorCategory:
+		return m.ErrorCategory()
 	case channelmonitorhistory.FieldMessage:
 		return m.Message()
 	case channelmonitorhistory.FieldCheckedAt:
@@ -12323,6 +12705,8 @@ func (m *ChannelMonitorHistoryMutation) OldField(ctx context.Context, name strin
 		return m.OldLatencyMs(ctx)
 	case channelmonitorhistory.FieldPingLatencyMs:
 		return m.OldPingLatencyMs(ctx)
+	case channelmonitorhistory.FieldErrorCategory:
+		return m.OldErrorCategory(ctx)
 	case channelmonitorhistory.FieldMessage:
 		return m.OldMessage(ctx)
 	case channelmonitorhistory.FieldCheckedAt:
@@ -12370,6 +12754,13 @@ func (m *ChannelMonitorHistoryMutation) SetField(name string, value ent.Value) e
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPingLatencyMs(v)
+		return nil
+	case channelmonitorhistory.FieldErrorCategory:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetErrorCategory(v)
 		return nil
 	case channelmonitorhistory.FieldMessage:
 		v, ok := value.(string)
@@ -12448,6 +12839,9 @@ func (m *ChannelMonitorHistoryMutation) ClearedFields() []string {
 	if m.FieldCleared(channelmonitorhistory.FieldPingLatencyMs) {
 		fields = append(fields, channelmonitorhistory.FieldPingLatencyMs)
 	}
+	if m.FieldCleared(channelmonitorhistory.FieldErrorCategory) {
+		fields = append(fields, channelmonitorhistory.FieldErrorCategory)
+	}
 	if m.FieldCleared(channelmonitorhistory.FieldMessage) {
 		fields = append(fields, channelmonitorhistory.FieldMessage)
 	}
@@ -12470,6 +12864,9 @@ func (m *ChannelMonitorHistoryMutation) ClearField(name string) error {
 		return nil
 	case channelmonitorhistory.FieldPingLatencyMs:
 		m.ClearPingLatencyMs()
+		return nil
+	case channelmonitorhistory.FieldErrorCategory:
+		m.ClearErrorCategory()
 		return nil
 	case channelmonitorhistory.FieldMessage:
 		m.ClearMessage()
@@ -12496,6 +12893,9 @@ func (m *ChannelMonitorHistoryMutation) ResetField(name string) error {
 		return nil
 	case channelmonitorhistory.FieldPingLatencyMs:
 		m.ResetPingLatencyMs()
+		return nil
+	case channelmonitorhistory.FieldErrorCategory:
+		m.ResetErrorCategory()
 		return nil
 	case channelmonitorhistory.FieldMessage:
 		m.ResetMessage()

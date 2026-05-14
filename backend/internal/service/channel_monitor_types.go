@@ -32,6 +32,14 @@ type ChannelMonitor struct {
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
 
+	// Health state is separate from Enabled: the scheduler keeps probing
+	// auto-disabled monitors so recovery can be detected automatically.
+	AutoDisabled       bool
+	AutoDisabledAt     *time.Time
+	AutoDisabledReason string
+	AutoRecoveredAt    *time.Time
+	LastHealthStatus   string
+
 	// 请求自定义快照（来自模板拷贝 or 用户手填，运行时直接读取）
 	TemplateID       *int64            // 仅用于 UI 分组 + 一键应用，运行时不用
 	ExtraHeaders     map[string]string // 与 adapter 默认 headers 合并，用户优先
@@ -97,6 +105,7 @@ type CheckResult struct {
 	Status        string // operational / degraded / failed / error
 	LatencyMs     *int
 	PingLatencyMs *int
+	ErrorCategory string
 	Message       string
 	CheckedAt     time.Time
 }
@@ -158,6 +167,7 @@ type ChannelMonitorHistoryRow struct {
 	Status        string
 	LatencyMs     *int
 	PingLatencyMs *int
+	ErrorCategory string
 	Message       string
 	CheckedAt     time.Time
 }
@@ -169,6 +179,7 @@ type ChannelMonitorHistoryEntry struct {
 	Status        string
 	LatencyMs     *int
 	PingLatencyMs *int
+	ErrorCategory string
 	Message       string
 	CheckedAt     time.Time
 }
@@ -179,6 +190,7 @@ type ChannelMonitorLatest struct {
 	Status        string
 	LatencyMs     *int
 	PingLatencyMs *int
+	ErrorCategory string
 	CheckedAt     time.Time
 }
 
@@ -200,4 +212,32 @@ type MonitorStatusSummary struct {
 	PrimaryLatencyMs *int
 	Availability7d   float64 // 0-100，无历史时为 0
 	ExtraModels      []ExtraModelStatus
+}
+
+// MonitorErrorCategoryCount 记录健康快照中的错误分类聚合。
+type MonitorErrorCategoryCount struct {
+	Category string
+	Count    int
+}
+
+// ChannelMonitorHealthSnapshot 是 monitor 级健康画像，供管理端排障/告警展示。
+type ChannelMonitorHealthSnapshot struct {
+	MonitorID                 int64
+	HealthStatus              string
+	AutoDisabled              bool
+	AutoDisabledAt            *time.Time
+	AutoDisabledReason        string
+	AutoRecoveredAt           *time.Time
+	WindowMinutes             int
+	TotalChecks               int
+	SuccessfulChecks          int
+	SuccessRatePct            float64
+	AvgLatencyMs              *int
+	ConsecutiveFailedRuns     int
+	ConsecutiveSuccessfulRuns int
+	TopErrorCategories        []MonitorErrorCategoryCount
+	LatestStatus              string
+	LatestErrorCategory       string
+	LatestMessage             string
+	LatestCheckedAt           *time.Time
 }

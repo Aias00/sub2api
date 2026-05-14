@@ -39,6 +39,16 @@ type ChannelMonitor struct {
 	GroupName string `json:"group_name,omitempty"`
 	// Enabled holds the value of the "enabled" field.
 	Enabled bool `json:"enabled,omitempty"`
+	// Runtime health gate; enabled monitor keeps probing for auto recovery
+	AutoDisabled bool `json:"auto_disabled,omitempty"`
+	// AutoDisabledAt holds the value of the "auto_disabled_at" field.
+	AutoDisabledAt *time.Time `json:"auto_disabled_at,omitempty"`
+	// AutoDisabledReason holds the value of the "auto_disabled_reason" field.
+	AutoDisabledReason string `json:"auto_disabled_reason,omitempty"`
+	// AutoRecoveredAt holds the value of the "auto_recovered_at" field.
+	AutoRecoveredAt *time.Time `json:"auto_recovered_at,omitempty"`
+	// LastHealthStatus holds the value of the "last_health_status" field.
+	LastHealthStatus string `json:"last_health_status,omitempty"`
 	// IntervalSeconds holds the value of the "interval_seconds" field.
 	IntervalSeconds int `json:"interval_seconds,omitempty"`
 	// LastCheckedAt holds the value of the "last_checked_at" field.
@@ -108,13 +118,13 @@ func (*ChannelMonitor) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case channelmonitor.FieldExtraModels, channelmonitor.FieldExtraHeaders, channelmonitor.FieldBodyOverride:
 			values[i] = new([]byte)
-		case channelmonitor.FieldEnabled:
+		case channelmonitor.FieldEnabled, channelmonitor.FieldAutoDisabled:
 			values[i] = new(sql.NullBool)
 		case channelmonitor.FieldID, channelmonitor.FieldIntervalSeconds, channelmonitor.FieldCreatedBy, channelmonitor.FieldTemplateID:
 			values[i] = new(sql.NullInt64)
-		case channelmonitor.FieldName, channelmonitor.FieldProvider, channelmonitor.FieldEndpoint, channelmonitor.FieldAPIKeyEncrypted, channelmonitor.FieldPrimaryModel, channelmonitor.FieldGroupName, channelmonitor.FieldBodyOverrideMode:
+		case channelmonitor.FieldName, channelmonitor.FieldProvider, channelmonitor.FieldEndpoint, channelmonitor.FieldAPIKeyEncrypted, channelmonitor.FieldPrimaryModel, channelmonitor.FieldGroupName, channelmonitor.FieldAutoDisabledReason, channelmonitor.FieldLastHealthStatus, channelmonitor.FieldBodyOverrideMode:
 			values[i] = new(sql.NullString)
-		case channelmonitor.FieldCreatedAt, channelmonitor.FieldUpdatedAt, channelmonitor.FieldLastCheckedAt:
+		case channelmonitor.FieldCreatedAt, channelmonitor.FieldUpdatedAt, channelmonitor.FieldAutoDisabledAt, channelmonitor.FieldAutoRecoveredAt, channelmonitor.FieldLastCheckedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -198,6 +208,38 @@ func (_m *ChannelMonitor) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field enabled", values[i])
 			} else if value.Valid {
 				_m.Enabled = value.Bool
+			}
+		case channelmonitor.FieldAutoDisabled:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field auto_disabled", values[i])
+			} else if value.Valid {
+				_m.AutoDisabled = value.Bool
+			}
+		case channelmonitor.FieldAutoDisabledAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field auto_disabled_at", values[i])
+			} else if value.Valid {
+				_m.AutoDisabledAt = new(time.Time)
+				*_m.AutoDisabledAt = value.Time
+			}
+		case channelmonitor.FieldAutoDisabledReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field auto_disabled_reason", values[i])
+			} else if value.Valid {
+				_m.AutoDisabledReason = value.String
+			}
+		case channelmonitor.FieldAutoRecoveredAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field auto_recovered_at", values[i])
+			} else if value.Valid {
+				_m.AutoRecoveredAt = new(time.Time)
+				*_m.AutoRecoveredAt = value.Time
+			}
+		case channelmonitor.FieldLastHealthStatus:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field last_health_status", values[i])
+			} else if value.Valid {
+				_m.LastHealthStatus = value.String
 			}
 		case channelmonitor.FieldIntervalSeconds:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -326,6 +368,25 @@ func (_m *ChannelMonitor) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("enabled=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Enabled))
+	builder.WriteString(", ")
+	builder.WriteString("auto_disabled=")
+	builder.WriteString(fmt.Sprintf("%v", _m.AutoDisabled))
+	builder.WriteString(", ")
+	if v := _m.AutoDisabledAt; v != nil {
+		builder.WriteString("auto_disabled_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("auto_disabled_reason=")
+	builder.WriteString(_m.AutoDisabledReason)
+	builder.WriteString(", ")
+	if v := _m.AutoRecoveredAt; v != nil {
+		builder.WriteString("auto_recovered_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("last_health_status=")
+	builder.WriteString(_m.LastHealthStatus)
 	builder.WriteString(", ")
 	builder.WriteString("interval_seconds=")
 	builder.WriteString(fmt.Sprintf("%v", _m.IntervalSeconds))

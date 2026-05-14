@@ -187,6 +187,36 @@ func (r *channelMonitorRepository) MarkChecked(ctx context.Context, id int64, ch
 	return nil
 }
 
+func (r *channelMonitorRepository) UpdateHealthState(
+	ctx context.Context,
+	id int64,
+	healthStatus string,
+	autoDisabled bool,
+	reason string,
+	disabledAt *time.Time,
+	recoveredAt *time.Time,
+) error {
+	client := clientFromContext(ctx, r.client)
+	updater := client.ChannelMonitor.UpdateOneID(id).
+		SetLastHealthStatus(healthStatus).
+		SetAutoDisabled(autoDisabled).
+		SetAutoDisabledReason(reason)
+	if disabledAt != nil {
+		updater = updater.SetAutoDisabledAt(*disabledAt)
+	} else {
+		updater = updater.ClearAutoDisabledAt()
+	}
+	if recoveredAt != nil {
+		updater = updater.SetAutoRecoveredAt(*recoveredAt)
+	} else {
+		updater = updater.ClearAutoRecoveredAt()
+	}
+	if err := updater.Exec(ctx); err != nil {
+		return translatePersistenceError(err, service.ErrChannelMonitorNotFound, nil)
+	}
+	return nil
+}
+
 func (r *channelMonitorRepository) InsertHistoryBatch(ctx context.Context, rows []*service.ChannelMonitorHistoryRow) error {
 	if len(rows) == 0 {
 		return nil
@@ -198,6 +228,7 @@ func (r *channelMonitorRepository) InsertHistoryBatch(ctx context.Context, rows 
 			SetMonitorID(row.MonitorID).
 			SetModel(row.Model).
 			SetStatus(channelmonitorhistory.Status(row.Status)).
+			SetErrorCategory(row.ErrorCategory).
 			SetMessage(row.Message).
 			SetCheckedAt(row.CheckedAt)
 		if row.LatencyMs != nil {
@@ -243,6 +274,7 @@ func (r *channelMonitorRepository) ListHistory(ctx context.Context, monitorID in
 			Status:        string(row.Status),
 			LatencyMs:     row.LatencyMs,
 			PingLatencyMs: row.PingLatencyMs,
+			ErrorCategory: row.ErrorCategory,
 			Message:       row.Message,
 			CheckedAt:     row.CheckedAt,
 		}
@@ -258,7 +290,7 @@ func (r *channelMonitorRepository) ListHistory(ctx context.Context, monitorID in
 func (r *channelMonitorRepository) ListLatestPerModel(ctx context.Context, monitorID int64) ([]*service.ChannelMonitorLatest, error) {
 	const q = `
 		SELECT DISTINCT ON (model)
-		    model, status, latency_ms, ping_latency_ms, checked_at
+		    model, status, latency_ms, ping_latency_ms, error_category, checked_at
 		FROM channel_monitor_histories
 		WHERE monitor_id = $1
 		ORDER BY model, checked_at DESC
@@ -273,7 +305,7 @@ func (r *channelMonitorRepository) ListLatestPerModel(ctx context.Context, monit
 	for rows.Next() {
 		l := &service.ChannelMonitorLatest{}
 		var latency, ping sql.NullInt64
-		if err := rows.Scan(&l.Model, &l.Status, &latency, &ping, &l.CheckedAt); err != nil {
+		if err := rows.Scan(&l.Model, &l.Status, &latency, &ping, &l.ErrorCategory, &l.CheckedAt); err != nil {
 			return nil, fmt.Errorf("scan latest row: %w", err)
 		}
 		assignNullInt(&l.LatencyMs, latency)
@@ -365,7 +397,7 @@ func (r *channelMonitorRepository) ListLatestForMonitorIDs(ctx context.Context, 
 	}
 	const q = `
 		SELECT DISTINCT ON (monitor_id, model)
-		    monitor_id, model, status, latency_ms, ping_latency_ms, checked_at
+		    monitor_id, model, status, latency_ms, ping_latency_ms, error_category, checked_at
 		FROM channel_monitor_histories
 		WHERE monitor_id = ANY($1)
 		ORDER BY monitor_id, model, checked_at DESC
@@ -380,7 +412,7 @@ func (r *channelMonitorRepository) ListLatestForMonitorIDs(ctx context.Context, 
 		var monitorID int64
 		l := &service.ChannelMonitorLatest{}
 		var latency, ping sql.NullInt64
-		if err := rows.Scan(&monitorID, &l.Model, &l.Status, &latency, &ping, &l.CheckedAt); err != nil {
+		if err := rows.Scan(&monitorID, &l.Model, &l.Status, &latency, &ping, &l.ErrorCategory, &l.CheckedAt); err != nil {
 			return nil, fmt.Errorf("scan latest batch row: %w", err)
 		}
 		assignNullInt(&l.LatencyMs, latency)
@@ -423,13 +455,14 @@ func (r *channelMonitorRepository) ListRecentHistoryForMonitors(
 		           h.status,
 		           h.latency_ms,
 		           h.ping_latency_ms,
+		           h.error_category,
 		           h.checked_at,
 		           ROW_NUMBER() OVER (PARTITION BY h.monitor_id ORDER BY h.checked_at DESC) AS rn
 		    FROM channel_monitor_histories h
 		    JOIN targets t
 		      ON t.monitor_id = h.monitor_id AND t.model = h.model
 		)
-		SELECT monitor_id, status, latency_ms, ping_latency_ms, checked_at
+		SELECT monitor_id, status, latency_ms, ping_latency_ms, error_category, checked_at
 		FROM ranked
 		WHERE rn <= $3
 		ORDER BY monitor_id, checked_at DESC
@@ -444,7 +477,7 @@ func (r *channelMonitorRepository) ListRecentHistoryForMonitors(
 		var monitorID int64
 		entry := &service.ChannelMonitorHistoryEntry{}
 		var latency, ping sql.NullInt64
-		if err := rows.Scan(&monitorID, &entry.Status, &latency, &ping, &entry.CheckedAt); err != nil {
+		if err := rows.Scan(&monitorID, &entry.Status, &latency, &ping, &entry.ErrorCategory, &entry.CheckedAt); err != nil {
 			return nil, fmt.Errorf("scan recent history row: %w", err)
 		}
 		assignNullInt(&entry.LatencyMs, latency)
@@ -705,23 +738,28 @@ func entToServiceMonitor(row *dbent.ChannelMonitor) *service.ChannelMonitor {
 		headers = map[string]string{}
 	}
 	out := &service.ChannelMonitor{
-		ID:               row.ID,
-		Name:             row.Name,
-		Provider:         string(row.Provider),
-		Endpoint:         row.Endpoint,
-		APIKey:           row.APIKeyEncrypted, // 仍为密文，service 层负责解密
-		PrimaryModel:     row.PrimaryModel,
-		ExtraModels:      extras,
-		GroupName:        row.GroupName,
-		Enabled:          row.Enabled,
-		IntervalSeconds:  row.IntervalSeconds,
-		LastCheckedAt:    row.LastCheckedAt,
-		CreatedBy:        row.CreatedBy,
-		CreatedAt:        row.CreatedAt,
-		UpdatedAt:        row.UpdatedAt,
-		ExtraHeaders:     headers,
-		BodyOverrideMode: row.BodyOverrideMode,
-		BodyOverride:     row.BodyOverride,
+		ID:                 row.ID,
+		Name:               row.Name,
+		Provider:           string(row.Provider),
+		Endpoint:           row.Endpoint,
+		APIKey:             row.APIKeyEncrypted, // 仍为密文，service 层负责解密
+		PrimaryModel:       row.PrimaryModel,
+		ExtraModels:        extras,
+		GroupName:          row.GroupName,
+		Enabled:            row.Enabled,
+		IntervalSeconds:    row.IntervalSeconds,
+		LastCheckedAt:      row.LastCheckedAt,
+		CreatedBy:          row.CreatedBy,
+		CreatedAt:          row.CreatedAt,
+		UpdatedAt:          row.UpdatedAt,
+		AutoDisabled:       row.AutoDisabled,
+		AutoDisabledAt:     row.AutoDisabledAt,
+		AutoDisabledReason: row.AutoDisabledReason,
+		AutoRecoveredAt:    row.AutoRecoveredAt,
+		LastHealthStatus:   row.LastHealthStatus,
+		ExtraHeaders:       headers,
+		BodyOverrideMode:   row.BodyOverrideMode,
+		BodyOverride:       row.BodyOverride,
 	}
 	if row.TemplateID != nil {
 		id := *row.TemplateID

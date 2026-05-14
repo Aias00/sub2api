@@ -25,6 +25,7 @@ type ChannelMonitorRepository interface {
 	// 调度器辅助
 	ListEnabled(ctx context.Context) ([]*ChannelMonitor, error)
 	MarkChecked(ctx context.Context, id int64, checkedAt time.Time) error
+	UpdateHealthState(ctx context.Context, id int64, healthStatus string, autoDisabled bool, reason string, disabledAt *time.Time, recoveredAt *time.Time) error
 	InsertHistoryBatch(ctx context.Context, rows []*ChannelMonitorHistoryRow) error
 	DeleteHistoryBefore(ctx context.Context, before time.Time) (int64, error)
 
@@ -57,6 +58,11 @@ type ChannelMonitorRepository interface {
 	UpdateAggregationWatermark(ctx context.Context, date time.Time) error
 }
 
+// ChannelMonitorAlertSink receives monitor health transition events.
+type ChannelMonitorAlertSink interface {
+	CreateAlertEvent(ctx context.Context, event *OpsAlertEvent) (*OpsAlertEvent, error)
+}
+
 // ChannelMonitorService 渠道监控管理服务。
 type ChannelMonitorService struct {
 	repo      ChannelMonitorRepository
@@ -64,6 +70,7 @@ type ChannelMonitorService struct {
 	// scheduler 由 wire 通过 SetScheduler 注入；CRUD 后调用对应钩子即时同步任务。
 	// 测试或未注入场景下保持 nil，所有钩子调用变为 no-op。
 	scheduler MonitorScheduler
+	alertSink ChannelMonitorAlertSink
 }
 
 // NewChannelMonitorService 创建渠道监控服务实例。
@@ -259,6 +266,7 @@ func (s *ChannelMonitorService) RunCheck(ctx context.Context, id int64) ([]*Chec
 	}
 	results := s.runChecksConcurrent(ctx, m)
 	s.persistCheckResults(ctx, m, results)
+	s.evaluateHealthTransition(ctx, m)
 	return results, nil
 }
 
@@ -273,6 +281,7 @@ func (s *ChannelMonitorService) persistCheckResults(ctx context.Context, m *Chan
 			Status:        r.Status,
 			LatencyMs:     r.LatencyMs,
 			PingLatencyMs: r.PingLatencyMs,
+			ErrorCategory: r.ErrorCategory,
 			Message:       r.Message,
 			CheckedAt:     r.CheckedAt,
 		})
@@ -326,6 +335,11 @@ func (s *ChannelMonitorService) runChecksConcurrent(ctx context.Context, m *Chan
 // 通过 setter 注入避免 service ↔ runner 的依赖环。
 func (s *ChannelMonitorService) SetScheduler(sched MonitorScheduler) {
 	s.scheduler = sched
+}
+
+// SetAlertSink wires an optional operations alert sink for health transitions.
+func (s *ChannelMonitorService) SetAlertSink(sink ChannelMonitorAlertSink) {
+	s.alertSink = sink
 }
 
 // ListEnabledMonitors 返回所有 enabled=true 的监控（解密后），供 runner 启动时建立任务表。

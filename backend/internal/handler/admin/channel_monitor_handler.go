@@ -79,6 +79,11 @@ type channelMonitorResponse struct {
 	ExtraModels         []string                             `json:"extra_models"`
 	GroupName           string                               `json:"group_name"`
 	Enabled             bool                                 `json:"enabled"`
+	AutoDisabled        bool                                 `json:"auto_disabled"`
+	AutoDisabledAt      *string                              `json:"auto_disabled_at"`
+	AutoDisabledReason  string                               `json:"auto_disabled_reason"`
+	AutoRecoveredAt     *string                              `json:"auto_recovered_at"`
+	HealthStatus        string                               `json:"health_status"`
 	IntervalSeconds     int                                  `json:"interval_seconds"`
 	LastCheckedAt       *string                              `json:"last_checked_at"`
 	CreatedBy           int64                                `json:"created_by"`
@@ -100,6 +105,7 @@ type channelMonitorCheckResultResponse struct {
 	Status        string `json:"status"`
 	LatencyMs     *int   `json:"latency_ms"`
 	PingLatencyMs *int   `json:"ping_latency_ms"`
+	ErrorCategory string `json:"error_category"`
 	Message       string `json:"message"`
 	CheckedAt     string `json:"checked_at"`
 }
@@ -110,8 +116,35 @@ type channelMonitorHistoryItemResponse struct {
 	Status        string `json:"status"`
 	LatencyMs     *int   `json:"latency_ms"`
 	PingLatencyMs *int   `json:"ping_latency_ms"`
+	ErrorCategory string `json:"error_category"`
 	Message       string `json:"message"`
 	CheckedAt     string `json:"checked_at"`
+}
+
+type channelMonitorErrorCategoryCountResponse struct {
+	Category string `json:"category"`
+	Count    int    `json:"count"`
+}
+
+type channelMonitorHealthResponse struct {
+	MonitorID                 int64                                      `json:"monitor_id"`
+	HealthStatus              string                                     `json:"health_status"`
+	AutoDisabled              bool                                       `json:"auto_disabled"`
+	AutoDisabledAt            *string                                    `json:"auto_disabled_at"`
+	AutoDisabledReason        string                                     `json:"auto_disabled_reason"`
+	AutoRecoveredAt           *string                                    `json:"auto_recovered_at"`
+	WindowMinutes             int                                        `json:"window_minutes"`
+	TotalChecks               int                                        `json:"total_checks"`
+	SuccessfulChecks          int                                        `json:"successful_checks"`
+	SuccessRatePct            float64                                    `json:"success_rate_pct"`
+	AvgLatencyMs              *int                                       `json:"avg_latency_ms"`
+	ConsecutiveFailedRuns     int                                        `json:"consecutive_failed_runs"`
+	ConsecutiveSuccessfulRuns int                                        `json:"consecutive_successful_runs"`
+	TopErrorCategories        []channelMonitorErrorCategoryCountResponse `json:"top_error_categories"`
+	LatestStatus              string                                     `json:"latest_status"`
+	LatestErrorCategory       string                                     `json:"latest_error_category"`
+	LatestMessage             string                                     `json:"latest_message"`
+	LatestCheckedAt           *string                                    `json:"latest_checked_at"`
 }
 
 // maskAPIKey 对 API Key 明文做脱敏：前 4 字符 + "***"，长度 ≤ 4 时只显示 "***"。
@@ -145,6 +178,9 @@ func channelMonitorToResponse(m *service.ChannelMonitor) *channelMonitorResponse
 		ExtraModels:         extras,
 		GroupName:           m.GroupName,
 		Enabled:             m.Enabled,
+		AutoDisabled:        m.AutoDisabled,
+		AutoDisabledReason:  m.AutoDisabledReason,
+		HealthStatus:        m.LastHealthStatus,
 		IntervalSeconds:     m.IntervalSeconds,
 		CreatedBy:           m.CreatedBy,
 		CreatedAt:           m.CreatedAt.UTC().Format(time.RFC3339),
@@ -159,6 +195,8 @@ func channelMonitorToResponse(m *service.ChannelMonitor) *channelMonitorResponse
 		s := m.LastCheckedAt.UTC().Format(time.RFC3339)
 		resp.LastCheckedAt = &s
 	}
+	resp.AutoDisabledAt = formatMonitorTimePtr(m.AutoDisabledAt)
+	resp.AutoRecoveredAt = formatMonitorTimePtr(m.AutoRecoveredAt)
 	return resp
 }
 
@@ -168,6 +206,7 @@ func checkResultToResponse(r *service.CheckResult) channelMonitorCheckResultResp
 		Status:        r.Status,
 		LatencyMs:     r.LatencyMs,
 		PingLatencyMs: r.PingLatencyMs,
+		ErrorCategory: r.ErrorCategory,
 		Message:       r.Message,
 		CheckedAt:     r.CheckedAt.UTC().Format(time.RFC3339),
 	}
@@ -180,9 +219,51 @@ func historyEntryToResponse(e *service.ChannelMonitorHistoryEntry) channelMonito
 		Status:        e.Status,
 		LatencyMs:     e.LatencyMs,
 		PingLatencyMs: e.PingLatencyMs,
+		ErrorCategory: e.ErrorCategory,
 		Message:       e.Message,
 		CheckedAt:     e.CheckedAt.UTC().Format(time.RFC3339),
 	}
+}
+
+func healthSnapshotToResponse(s *service.ChannelMonitorHealthSnapshot) *channelMonitorHealthResponse {
+	if s == nil {
+		return nil
+	}
+	categories := make([]channelMonitorErrorCategoryCountResponse, 0, len(s.TopErrorCategories))
+	for _, c := range s.TopErrorCategories {
+		categories = append(categories, channelMonitorErrorCategoryCountResponse{
+			Category: c.Category,
+			Count:    c.Count,
+		})
+	}
+	return &channelMonitorHealthResponse{
+		MonitorID:                 s.MonitorID,
+		HealthStatus:              s.HealthStatus,
+		AutoDisabled:              s.AutoDisabled,
+		AutoDisabledAt:            formatMonitorTimePtr(s.AutoDisabledAt),
+		AutoDisabledReason:        s.AutoDisabledReason,
+		AutoRecoveredAt:           formatMonitorTimePtr(s.AutoRecoveredAt),
+		WindowMinutes:             s.WindowMinutes,
+		TotalChecks:               s.TotalChecks,
+		SuccessfulChecks:          s.SuccessfulChecks,
+		SuccessRatePct:            s.SuccessRatePct,
+		AvgLatencyMs:              s.AvgLatencyMs,
+		ConsecutiveFailedRuns:     s.ConsecutiveFailedRuns,
+		ConsecutiveSuccessfulRuns: s.ConsecutiveSuccessfulRuns,
+		TopErrorCategories:        categories,
+		LatestStatus:              s.LatestStatus,
+		LatestErrorCategory:       s.LatestErrorCategory,
+		LatestMessage:             s.LatestMessage,
+		LatestCheckedAt:           formatMonitorTimePtr(s.LatestCheckedAt),
+	}
+}
+
+func formatMonitorTimePtr(t *time.Time) *string {
+	if t == nil {
+		return nil
+	}
+	s := t.UTC().Format(time.RFC3339)
+	return &s
 }
 
 // ParseChannelMonitorID 提取并校验路径参数 :id（admin 与 user handler 共享）。
@@ -386,7 +467,25 @@ func (h *ChannelMonitorHandler) Run(c *gin.Context) {
 	for _, r := range results {
 		out = append(out, checkResultToResponse(r))
 	}
-	response.Success(c, gin.H{"results": out})
+	payload := gin.H{"results": out}
+	if health, healthErr := h.monitorService.GetHealthSnapshot(c.Request.Context(), id); healthErr == nil {
+		payload["health"] = healthSnapshotToResponse(health)
+	}
+	response.Success(c, payload)
+}
+
+// Health GET /api/v1/admin/channel-monitors/:id/health
+func (h *ChannelMonitorHandler) Health(c *gin.Context) {
+	id, ok := ParseChannelMonitorID(c)
+	if !ok {
+		return
+	}
+	health, err := h.monitorService.GetHealthSnapshot(c.Request.Context(), id)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, healthSnapshotToResponse(health))
 }
 
 // History GET /api/v1/admin/channel-monitors/:id/history

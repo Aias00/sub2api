@@ -56,6 +56,22 @@ func (ChannelMonitor) Fields() []ent.Field {
 			MaxLen(100),
 		field.Bool("enabled").
 			Default(true),
+		field.Bool("auto_disabled").
+			Default(false).
+			Comment("Runtime health gate; enabled monitor keeps probing for auto recovery"),
+		field.Time("auto_disabled_at").
+			Optional().
+			Nillable(),
+		field.String("auto_disabled_reason").
+			Optional().
+			Default("").
+			MaxLen(500),
+		field.Time("auto_recovered_at").
+			Optional().
+			Nillable(),
+		field.String("last_health_status").
+			Default("unknown").
+			MaxLen(20),
 		field.Int("interval_seconds").
 			Range(15, 3600),
 		field.Time("last_checked_at").
@@ -103,6 +119,7 @@ func (ChannelMonitor) Edges() []ent.Edge {
 func (ChannelMonitor) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("enabled", "last_checked_at"),
+		index.Fields("auto_disabled", "last_health_status"),
 		index.Fields("provider"),
 		index.Fields("group_name"),
 		index.Fields("template_id"),

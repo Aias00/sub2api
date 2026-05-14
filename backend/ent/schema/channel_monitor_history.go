@@ -39,6 +39,10 @@ func (ChannelMonitorHistory) Fields() []ent.Field {
 		field.Int("ping_latency_ms").
 			Optional().
 			Nillable(),
+		field.String("error_category").
+			Optional().
+			Default("").
+			MaxLen(32),
 		field.String("message").
 			Optional().
 			Default("").
@@ -61,6 +65,7 @@ func (ChannelMonitorHistory) Edges() []ent.Edge {
 func (ChannelMonitorHistory) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("monitor_id", "model", "checked_at"),
+		index.Fields("monitor_id", "error_category", "checked_at"),
 		index.Fields("checked_at"),
 	}
 }

@@ -154,6 +154,94 @@ func (_u *ChannelMonitorUpdate) SetNillableEnabled(v *bool) *ChannelMonitorUpdat
 	return _u
 }
 
+// SetAutoDisabled sets the "auto_disabled" field.
+func (_u *ChannelMonitorUpdate) SetAutoDisabled(v bool) *ChannelMonitorUpdate {
+	_u.mutation.SetAutoDisabled(v)
+	return _u
+}
+
+// SetNillableAutoDisabled sets the "auto_disabled" field if the given value is not nil.
+func (_u *ChannelMonitorUpdate) SetNillableAutoDisabled(v *bool) *ChannelMonitorUpdate {
+	if v != nil {
+		_u.SetAutoDisabled(*v)
+	}
+	return _u
+}
+
+// SetAutoDisabledAt sets the "auto_disabled_at" field.
+func (_u *ChannelMonitorUpdate) SetAutoDisabledAt(v time.Time) *ChannelMonitorUpdate {
+	_u.mutation.SetAutoDisabledAt(v)
+	return _u
+}
+
+// SetNillableAutoDisabledAt sets the "auto_disabled_at" field if the given value is not nil.
+func (_u *ChannelMonitorUpdate) SetNillableAutoDisabledAt(v *time.Time) *ChannelMonitorUpdate {
+	if v != nil {
+		_u.SetAutoDisabledAt(*v)
+	}
+	return _u
+}
+
+// ClearAutoDisabledAt clears the value of the "auto_disabled_at" field.
+func (_u *ChannelMonitorUpdate) ClearAutoDisabledAt() *ChannelMonitorUpdate {
+	_u.mutation.ClearAutoDisabledAt()
+	return _u
+}
+
+// SetAutoDisabledReason sets the "auto_disabled_reason" field.
+func (_u *ChannelMonitorUpdate) SetAutoDisabledReason(v string) *ChannelMonitorUpdate {
+	_u.mutation.SetAutoDisabledReason(v)
+	return _u
+}
+
+// SetNillableAutoDisabledReason sets the "auto_disabled_reason" field if the given value is not nil.
+func (_u *ChannelMonitorUpdate) SetNillableAutoDisabledReason(v *string) *ChannelMonitorUpdate {
+	if v != nil {
+		_u.SetAutoDisabledReason(*v)
+	}
+	return _u
+}
+
+// ClearAutoDisabledReason clears the value of the "auto_disabled_reason" field.
+func (_u *ChannelMonitorUpdate) ClearAutoDisabledReason() *ChannelMonitorUpdate {
+	_u.mutation.ClearAutoDisabledReason()
+	return _u
+}
+
+// SetAutoRecoveredAt sets the "auto_recovered_at" field.
+func (_u *ChannelMonitorUpdate) SetAutoRecoveredAt(v time.Time) *ChannelMonitorUpdate {
+	_u.mutation.SetAutoRecoveredAt(v)
+	return _u
+}
+
+// SetNillableAutoRecoveredAt sets the "auto_recovered_at" field if the given value is not nil.
+func (_u *ChannelMonitorUpdate) SetNillableAutoRecoveredAt(v *time.Time) *ChannelMonitorUpdate {
+	if v != nil {
+		_u.SetAutoRecoveredAt(*v)
+	}
+	return _u
+}
+
+// ClearAutoRecoveredAt clears the value of the "auto_recovered_at" field.
+func (_u *ChannelMonitorUpdate) ClearAutoRecoveredAt() *ChannelMonitorUpdate {
+	_u.mutation.ClearAutoRecoveredAt()
+	return _u
+}
+
+// SetLastHealthStatus sets the "last_health_status" field.
+func (_u *ChannelMonitorUpdate) SetLastHealthStatus(v string) *ChannelMonitorUpdate {
+	_u.mutation.SetLastHealthStatus(v)
+	return _u
+}
+
+// SetNillableLastHealthStatus sets the "last_health_status" field if the given value is not nil.
+func (_u *ChannelMonitorUpdate) SetNillableLastHealthStatus(v *string) *ChannelMonitorUpdate {
+	if v != nil {
+		_u.SetLastHealthStatus(*v)
+	}
+	return _u
+}
+
 // SetIntervalSeconds sets the "interval_seconds" field.
 func (_u *ChannelMonitorUpdate) SetIntervalSeconds(v int) *ChannelMonitorUpdate {
 	_u.mutation.ResetIntervalSeconds()
@@ -438,6 +526,16 @@ func (_u *ChannelMonitorUpdate) check() error {
 			return &ValidationError{Name: "group_name", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitor.group_name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.AutoDisabledReason(); ok {
+		if err := channelmonitor.AutoDisabledReasonValidator(v); err != nil {
+			return &ValidationError{Name: "auto_disabled_reason", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitor.auto_disabled_reason": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.LastHealthStatus(); ok {
+		if err := channelmonitor.LastHealthStatusValidator(v); err != nil {
+			return &ValidationError{Name: "last_health_status", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitor.last_health_status": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.IntervalSeconds(); ok {
 		if err := channelmonitor.IntervalSecondsValidator(v); err != nil {
 			return &ValidationError{Name: "interval_seconds", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitor.interval_seconds": %w`, err)}
@@ -497,6 +595,30 @@ func (_u *ChannelMonitorUpdate) sqlSave(ctx context.Context) (_node int, err err
 	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(channelmonitor.FieldEnabled, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.AutoDisabled(); ok {
+		_spec.SetField(channelmonitor.FieldAutoDisabled, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.AutoDisabledAt(); ok {
+		_spec.SetField(channelmonitor.FieldAutoDisabledAt, field.TypeTime, value)
+	}
+	if _u.mutation.AutoDisabledAtCleared() {
+		_spec.ClearField(channelmonitor.FieldAutoDisabledAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.AutoDisabledReason(); ok {
+		_spec.SetField(channelmonitor.FieldAutoDisabledReason, field.TypeString, value)
+	}
+	if _u.mutation.AutoDisabledReasonCleared() {
+		_spec.ClearField(channelmonitor.FieldAutoDisabledReason, field.TypeString)
+	}
+	if value, ok := _u.mutation.AutoRecoveredAt(); ok {
+		_spec.SetField(channelmonitor.FieldAutoRecoveredAt, field.TypeTime, value)
+	}
+	if _u.mutation.AutoRecoveredAtCleared() {
+		_spec.ClearField(channelmonitor.FieldAutoRecoveredAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastHealthStatus(); ok {
+		_spec.SetField(channelmonitor.FieldLastHealthStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.IntervalSeconds(); ok {
 		_spec.SetField(channelmonitor.FieldIntervalSeconds, field.TypeInt, value)
@@ -785,6 +907,94 @@ func (_u *ChannelMonitorUpdateOne) SetEnabled(v bool) *ChannelMonitorUpdateOne {
 func (_u *ChannelMonitorUpdateOne) SetNillableEnabled(v *bool) *ChannelMonitorUpdateOne {
 	if v != nil {
 		_u.SetEnabled(*v)
+	}
+	return _u
+}
+
+// SetAutoDisabled sets the "auto_disabled" field.
+func (_u *ChannelMonitorUpdateOne) SetAutoDisabled(v bool) *ChannelMonitorUpdateOne {
+	_u.mutation.SetAutoDisabled(v)
+	return _u
+}
+
+// SetNillableAutoDisabled sets the "auto_disabled" field if the given value is not nil.
+func (_u *ChannelMonitorUpdateOne) SetNillableAutoDisabled(v *bool) *ChannelMonitorUpdateOne {
+	if v != nil {
+		_u.SetAutoDisabled(*v)
+	}
+	return _u
+}
+
+// SetAutoDisabledAt sets the "auto_disabled_at" field.
+func (_u *ChannelMonitorUpdateOne) SetAutoDisabledAt(v time.Time) *ChannelMonitorUpdateOne {
+	_u.mutation.SetAutoDisabledAt(v)
+	return _u
+}
+
+// SetNillableAutoDisabledAt sets the "auto_disabled_at" field if the given value is not nil.
+func (_u *ChannelMonitorUpdateOne) SetNillableAutoDisabledAt(v *time.Time) *ChannelMonitorUpdateOne {
+	if v != nil {
+		_u.SetAutoDisabledAt(*v)
+	}
+	return _u
+}
+
+// ClearAutoDisabledAt clears the value of the "auto_disabled_at" field.
+func (_u *ChannelMonitorUpdateOne) ClearAutoDisabledAt() *ChannelMonitorUpdateOne {
+	_u.mutation.ClearAutoDisabledAt()
+	return _u
+}
+
+// SetAutoDisabledReason sets the "auto_disabled_reason" field.
+func (_u *ChannelMonitorUpdateOne) SetAutoDisabledReason(v string) *ChannelMonitorUpdateOne {
+	_u.mutation.SetAutoDisabledReason(v)
+	return _u
+}
+
+// SetNillableAutoDisabledReason sets the "auto_disabled_reason" field if the given value is not nil.
+func (_u *ChannelMonitorUpdateOne) SetNillableAutoDisabledReason(v *string) *ChannelMonitorUpdateOne {
+	if v != nil {
+		_u.SetAutoDisabledReason(*v)
+	}
+	return _u
+}
+
+// ClearAutoDisabledReason clears the value of the "auto_disabled_reason" field.
+func (_u *ChannelMonitorUpdateOne) ClearAutoDisabledReason() *ChannelMonitorUpdateOne {
+	_u.mutation.ClearAutoDisabledReason()
+	return _u
+}
+
+// SetAutoRecoveredAt sets the "auto_recovered_at" field.
+func (_u *ChannelMonitorUpdateOne) SetAutoRecoveredAt(v time.Time) *ChannelMonitorUpdateOne {
+	_u.mutation.SetAutoRecoveredAt(v)
+	return _u
+}
+
+// SetNillableAutoRecoveredAt sets the "auto_recovered_at" field if the given value is not nil.
+func (_u *ChannelMonitorUpdateOne) SetNillableAutoRecoveredAt(v *time.Time) *ChannelMonitorUpdateOne {
+	if v != nil {
+		_u.SetAutoRecoveredAt(*v)
+	}
+	return _u
+}
+
+// ClearAutoRecoveredAt clears the value of the "auto_recovered_at" field.
+func (_u *ChannelMonitorUpdateOne) ClearAutoRecoveredAt() *ChannelMonitorUpdateOne {
+	_u.mutation.ClearAutoRecoveredAt()
+	return _u
+}
+
+// SetLastHealthStatus sets the "last_health_status" field.
+func (_u *ChannelMonitorUpdateOne) SetLastHealthStatus(v string) *ChannelMonitorUpdateOne {
+	_u.mutation.SetLastHealthStatus(v)
+	return _u
+}
+
+// SetNillableLastHealthStatus sets the "last_health_status" field if the given value is not nil.
+func (_u *ChannelMonitorUpdateOne) SetNillableLastHealthStatus(v *string) *ChannelMonitorUpdateOne {
+	if v != nil {
+		_u.SetLastHealthStatus(*v)
 	}
 	return _u
 }
@@ -1086,6 +1296,16 @@ func (_u *ChannelMonitorUpdateOne) check() error {
 			return &ValidationError{Name: "group_name", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitor.group_name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.AutoDisabledReason(); ok {
+		if err := channelmonitor.AutoDisabledReasonValidator(v); err != nil {
+			return &ValidationError{Name: "auto_disabled_reason", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitor.auto_disabled_reason": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.LastHealthStatus(); ok {
+		if err := channelmonitor.LastHealthStatusValidator(v); err != nil {
+			return &ValidationError{Name: "last_health_status", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitor.last_health_status": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.IntervalSeconds(); ok {
 		if err := channelmonitor.IntervalSecondsValidator(v); err != nil {
 			return &ValidationError{Name: "interval_seconds", err: fmt.Errorf(`ent: validator failed for field "ChannelMonitor.interval_seconds": %w`, err)}
@@ -1162,6 +1382,30 @@ func (_u *ChannelMonitorUpdateOne) sqlSave(ctx context.Context) (_node *ChannelM
 	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(channelmonitor.FieldEnabled, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.AutoDisabled(); ok {
+		_spec.SetField(channelmonitor.FieldAutoDisabled, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.AutoDisabledAt(); ok {
+		_spec.SetField(channelmonitor.FieldAutoDisabledAt, field.TypeTime, value)
+	}
+	if _u.mutation.AutoDisabledAtCleared() {
+		_spec.ClearField(channelmonitor.FieldAutoDisabledAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.AutoDisabledReason(); ok {
+		_spec.SetField(channelmonitor.FieldAutoDisabledReason, field.TypeString, value)
+	}
+	if _u.mutation.AutoDisabledReasonCleared() {
+		_spec.ClearField(channelmonitor.FieldAutoDisabledReason, field.TypeString)
+	}
+	if value, ok := _u.mutation.AutoRecoveredAt(); ok {
+		_spec.SetField(channelmonitor.FieldAutoRecoveredAt, field.TypeTime, value)
+	}
+	if _u.mutation.AutoRecoveredAtCleared() {
+		_spec.ClearField(channelmonitor.FieldAutoRecoveredAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LastHealthStatus(); ok {
+		_spec.SetField(channelmonitor.FieldLastHealthStatus, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.IntervalSeconds(); ok {
 		_spec.SetField(channelmonitor.FieldIntervalSeconds, field.TypeInt, value)
