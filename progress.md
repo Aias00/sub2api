@@ -900,10 +900,13 @@
 - The first server deploy command for the previous admin settings fix lost SSH during the frontend build before restart; the running service was not restarted from that interrupted command.
 
 ### Next
-- Verify locally, commit, push, and redeploy the combined latest state to production.
+- None.
 
 ### Validation
 - `pnpm --dir frontend exec vitest run src/components/layout/__tests__/AppSidebar.spec.ts` passed.
 - `pnpm --dir frontend exec eslint src/components/layout/AppSidebar.vue src/components/layout/__tests__/AppSidebar.spec.ts` passed.
 - `pnpm --dir frontend exec vue-tsc --noEmit` passed.
 - `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
+- Deployed commit `deb60f2c` to production with server-side frontend and backend builds; local server health returned `{"env":"production","status":"ok"}`.
+- `https://cloudbase.eu.org/health`, `https://cloudbase.eu.org/api/v1/settings/public`, and `/dashboard` returned HTTP 200.
+- Browser verification on `https://cloudbase.eu.org/dashboard?verify=deb60f2c` found no `v0.1.x` text in the page/sidebar, no `/check-updates` network request, and no console warnings/errors.
