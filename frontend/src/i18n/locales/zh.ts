@@ -6007,8 +6007,17 @@ export default {
         fromEmailPlaceholder: "noreply{'@'}example.com",
         fromName: '发件人名称',
         fromNamePlaceholder: 'Sub2API',
+        dailyLimit: '单通道日限额',
+        dailyLimitPlaceholder: '0 表示不限',
+        dailyLimitHint: '达到限额后会自动降级到下一个可用邮件通道。',
         useTls: '使用 TLS',
-        useTlsHint: '为 SMTP 连接启用 TLS 加密'
+        useTlsHint: '为 SMTP 连接启用 TLS 加密',
+        fallbackChannels: '备用邮件通道',
+        fallbackChannelsHint: '主 SMTP 达到日限额或发送失败时，会按顺序尝试这些通道。',
+        addChannel: '添加通道',
+        noFallbackChannels: '暂无备用通道',
+        fallbackChannelTitle: '备用通道 {index}',
+        channelNamePlaceholder: '通道名称，例如 Gmail 备用'
       },
       testEmail: {
         title: '发送测试邮件',

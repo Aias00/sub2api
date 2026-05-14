@@ -719,3 +719,16 @@
 
 ### Next
 - Commit, push, deploy to the server, then verify the live invitation-only affiliate signup path.
+
+## 2026-05-14 Multi SMTP Channel Fallback
+### Done
+- Started implementation for multiple SMTP channels with per-channel daily limits.
+- Chose settings-backed JSON configuration to avoid introducing a new database table while preserving existing primary SMTP compatibility.
+- Added backend channel parsing, password preservation, primary-channel daily limit, and fallback-send selection.
+- Added the admin settings form controls for primary daily limit and fallback SMTP channels.
+
+### Failures
+- None so far.
+
+### Next
+- Run backend unit tests, frontend typecheck/build, then fix any regressions before deployment.

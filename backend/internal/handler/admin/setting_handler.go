@@ -171,6 +171,8 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		SMTPFrom:                               settings.SMTPFrom,
 		SMTPFromName:                           settings.SMTPFromName,
 		SMTPUseTLS:                             settings.SMTPUseTLS,
+		SMTPDailyLimit:                         settings.SMTPDailyLimit,
+		SMTPChannels:                           smtpChannelsToDTO(settings.SMTPChannels),
 		TurnstileEnabled:                       settings.TurnstileEnabled,
 		TurnstileSiteKey:                       settings.TurnstileSiteKey,
 		TurnstileSecretKeyConfigured:           settings.TurnstileSecretKeyConfigured,
@@ -369,6 +371,31 @@ func loginAgreementDocumentsToDTO(items []service.LoginAgreementDocument) []dto.
 	return result
 }
 
+func smtpChannelsToDTO(channels []service.SMTPChannelConfig) []dto.SMTPChannelConfig {
+	if len(channels) == 0 {
+		return []dto.SMTPChannelConfig{}
+	}
+	channels = service.CopySMTPChannelsForAdmin(channels)
+	result := make([]dto.SMTPChannelConfig, 0, len(channels))
+	for _, channel := range channels {
+		result = append(result, dto.SMTPChannelConfig{
+			ID:                 channel.ID,
+			Name:               channel.Name,
+			Enabled:            channel.Enabled,
+			Host:               channel.Host,
+			Port:               channel.Port,
+			Username:           channel.Username,
+			PasswordConfigured: channel.PasswordConfigured,
+			From:               channel.From,
+			FromName:           channel.FromName,
+			UseTLS:             channel.UseTLS,
+			DailyLimit:         channel.DailyLimit,
+			SortOrder:          channel.SortOrder,
+		})
+	}
+	return result
+}
+
 func loginAgreementDocumentsToService(items []dto.LoginAgreementDocument) []service.LoginAgreementDocument {
 	result := make([]service.LoginAgreementDocument, 0, len(items))
 	for _, item := range items {
@@ -404,13 +431,15 @@ type UpdateSettingsRequest struct {
 	LoginAgreementDocuments          []dto.LoginAgreementDocument `json:"login_agreement_documents"`
 
 	// 邮件服务设置
-	SMTPHost     string `json:"smtp_host"`
-	SMTPPort     int    `json:"smtp_port"`
-	SMTPUsername string `json:"smtp_username"`
-	SMTPPassword string `json:"smtp_password"`
-	SMTPFrom     string `json:"smtp_from_email"`
-	SMTPFromName string `json:"smtp_from_name"`
-	SMTPUseTLS   bool   `json:"smtp_use_tls"`
+	SMTPHost       string                      `json:"smtp_host"`
+	SMTPPort       int                         `json:"smtp_port"`
+	SMTPUsername   string                      `json:"smtp_username"`
+	SMTPPassword   string                      `json:"smtp_password"`
+	SMTPFrom       string                      `json:"smtp_from_email"`
+	SMTPFromName   string                      `json:"smtp_from_name"`
+	SMTPUseTLS     bool                        `json:"smtp_use_tls"`
+	SMTPDailyLimit *int                        `json:"smtp_daily_limit"`
+	SMTPChannels   []service.SMTPChannelConfig `json:"smtp_channels"`
 
 	// Cloudflare Turnstile 设置
 	TurnstileEnabled   bool   `json:"turnstile_enabled"`
@@ -706,6 +735,18 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	req.SMTPFromName = strings.TrimSpace(req.SMTPFromName)
 	if req.SMTPPort <= 0 {
 		req.SMTPPort = 587
+	}
+	smtpDailyLimit := previousSettings.SMTPDailyLimit
+	if req.SMTPDailyLimit != nil {
+		smtpDailyLimit = *req.SMTPDailyLimit
+	}
+	if smtpDailyLimit < 0 {
+		smtpDailyLimit = 0
+	}
+	if req.SMTPChannels == nil {
+		req.SMTPChannels = previousSettings.SMTPChannels
+	} else {
+		req.SMTPChannels = service.MergeSMTPChannelPasswords(req.SMTPChannels, previousSettings.SMTPChannels)
 	}
 	req.DefaultSubscriptions = normalizeDefaultSubscriptions(req.DefaultSubscriptions)
 	req.AuthSourceDefaultEmailSubscriptions = normalizeOptionalDefaultSubscriptions(req.AuthSourceDefaultEmailSubscriptions)
@@ -1335,6 +1376,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		SMTPFrom:                         req.SMTPFrom,
 		SMTPFromName:                     req.SMTPFromName,
 		SMTPUseTLS:                       req.SMTPUseTLS,
+		SMTPDailyLimit:                   smtpDailyLimit,
+		SMTPChannels:                     req.SMTPChannels,
 		TurnstileEnabled:                 req.TurnstileEnabled,
 		TurnstileSiteKey:                 req.TurnstileSiteKey,
 		TurnstileSecretKey:               req.TurnstileSecretKey,
@@ -1733,6 +1776,8 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		SMTPFrom:                               updatedSettings.SMTPFrom,
 		SMTPFromName:                           updatedSettings.SMTPFromName,
 		SMTPUseTLS:                             updatedSettings.SMTPUseTLS,
+		SMTPDailyLimit:                         updatedSettings.SMTPDailyLimit,
+		SMTPChannels:                           smtpChannelsToDTO(updatedSettings.SMTPChannels),
 		TurnstileEnabled:                       updatedSettings.TurnstileEnabled,
 		TurnstileSiteKey:                       updatedSettings.TurnstileSiteKey,
 		TurnstileSecretKeyConfigured:           updatedSettings.TurnstileSecretKeyConfigured,
@@ -1978,6 +2023,12 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.SMTPUseTLS != after.SMTPUseTLS {
 		changed = append(changed, "smtp_use_tls")
+	}
+	if before.SMTPDailyLimit != after.SMTPDailyLimit {
+		changed = append(changed, "smtp_daily_limit")
+	}
+	if !equalSMTPChannels(before.SMTPChannels, after.SMTPChannels) {
+		changed = append(changed, "smtp_channels")
 	}
 	if before.TurnstileEnabled != after.TurnstileEnabled {
 		changed = append(changed, "turnstile_enabled")
@@ -2476,6 +2527,31 @@ func equalLoginAgreementDocuments(a, b []service.LoginAgreementDocument) bool {
 	}
 	for i := range a {
 		if a[i].ID != b[i].ID || a[i].Title != b[i].Title || a[i].ContentMD != b[i].ContentMD {
+			return false
+		}
+	}
+	return true
+}
+
+func equalSMTPChannels(a, b []service.SMTPChannelConfig) bool {
+	a = service.CopySMTPChannelsForAdmin(a)
+	b = service.CopySMTPChannelsForAdmin(b)
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].ID != b[i].ID ||
+			a[i].Name != b[i].Name ||
+			a[i].Enabled != b[i].Enabled ||
+			a[i].Host != b[i].Host ||
+			a[i].Port != b[i].Port ||
+			a[i].Username != b[i].Username ||
+			a[i].PasswordConfigured != b[i].PasswordConfigured ||
+			a[i].From != b[i].From ||
+			a[i].FromName != b[i].FromName ||
+			a[i].UseTLS != b[i].UseTLS ||
+			a[i].DailyLimit != b[i].DailyLimit ||
+			a[i].SortOrder != b[i].SortOrder {
 			return false
 		}
 	}

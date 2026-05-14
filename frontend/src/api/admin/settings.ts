@@ -37,6 +37,23 @@ export type AuthSourceDefaultsState = Record<
   AuthSourceType,
   AuthSourceDefaultsValue
 >;
+
+export interface EmailChannelConfig {
+  id: string;
+  name: string;
+  enabled: boolean;
+  host: string;
+  port: number;
+  username: string;
+  password?: string;
+  password_configured?: boolean;
+  from_email: string;
+  from_name: string;
+  use_tls: boolean;
+  daily_limit: number;
+  sort_order: number;
+}
+
 export type PaymentVisibleMethod = "alipay" | "wxpay";
 export type PaymentVisibleMethodSource =
   | ""
@@ -387,6 +404,8 @@ export interface SystemSettings {
   smtp_from_email: string;
   smtp_from_name: string;
   smtp_use_tls: boolean;
+  smtp_daily_limit: number;
+  smtp_channels: EmailChannelConfig[];
   // Cloudflare Turnstile settings
   turnstile_enabled: boolean;
   turnstile_site_key: string;
@@ -608,6 +627,8 @@ export interface UpdateSettingsRequest {
   smtp_from_email?: string;
   smtp_from_name?: string;
   smtp_use_tls?: boolean;
+  smtp_daily_limit?: number;
+  smtp_channels?: EmailChannelConfig[];
   turnstile_enabled?: boolean;
   turnstile_site_key?: string;
   turnstile_secret_key?: string;

@@ -40,13 +40,15 @@ type SystemSettings struct {
 	LoginAgreementUpdatedAt          string                   `json:"login_agreement_updated_at"`
 	LoginAgreementDocuments          []LoginAgreementDocument `json:"login_agreement_documents"`
 
-	SMTPHost               string `json:"smtp_host"`
-	SMTPPort               int    `json:"smtp_port"`
-	SMTPUsername           string `json:"smtp_username"`
-	SMTPPasswordConfigured bool   `json:"smtp_password_configured"`
-	SMTPFrom               string `json:"smtp_from_email"`
-	SMTPFromName           string `json:"smtp_from_name"`
-	SMTPUseTLS             bool   `json:"smtp_use_tls"`
+	SMTPHost               string              `json:"smtp_host"`
+	SMTPPort               int                 `json:"smtp_port"`
+	SMTPUsername           string              `json:"smtp_username"`
+	SMTPPasswordConfigured bool                `json:"smtp_password_configured"`
+	SMTPFrom               string              `json:"smtp_from_email"`
+	SMTPFromName           string              `json:"smtp_from_name"`
+	SMTPUseTLS             bool                `json:"smtp_use_tls"`
+	SMTPDailyLimit         int                 `json:"smtp_daily_limit"`
+	SMTPChannels           []SMTPChannelConfig `json:"smtp_channels"`
 
 	TurnstileEnabled             bool   `json:"turnstile_enabled"`
 	TurnstileSiteKey             string `json:"turnstile_site_key"`
@@ -234,6 +236,21 @@ type SystemSettings struct {
 type DefaultSubscriptionSetting struct {
 	GroupID      int64 `json:"group_id"`
 	ValidityDays int   `json:"validity_days"`
+}
+
+type SMTPChannelConfig struct {
+	ID                 string `json:"id"`
+	Name               string `json:"name"`
+	Enabled            bool   `json:"enabled"`
+	Host               string `json:"host"`
+	Port               int    `json:"port"`
+	Username           string `json:"username"`
+	PasswordConfigured bool   `json:"password_configured"`
+	From               string `json:"from_email"`
+	FromName           string `json:"from_name"`
+	UseTLS             bool   `json:"use_tls"`
+	DailyLimit         int    `json:"daily_limit"`
+	SortOrder          int    `json:"sort_order"`
 }
 
 type RechargeProductConfig struct {

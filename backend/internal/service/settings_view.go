@@ -34,6 +34,8 @@ type SystemSettings struct {
 	SMTPFrom               string
 	SMTPFromName           string
 	SMTPUseTLS             bool
+	SMTPDailyLimit         int
+	SMTPChannels           []SMTPChannelConfig
 
 	TurnstileEnabled             bool
 	TurnstileSiteKey             string

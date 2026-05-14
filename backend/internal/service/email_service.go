@@ -6,6 +6,7 @@ import (
 	"crypto/subtle"
 	"crypto/tls"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"log/slog"
 	"math/big"
@@ -20,11 +21,12 @@ import (
 )
 
 var (
-	ErrEmailNotConfigured    = infraerrors.ServiceUnavailable("EMAIL_NOT_CONFIGURED", "email service not configured")
-	ErrInvalidVerifyCode     = infraerrors.BadRequest("INVALID_VERIFY_CODE", "invalid or expired verification code")
-	ErrVerifyCodeTooFrequent = infraerrors.TooManyRequests("VERIFY_CODE_TOO_FREQUENT", "please wait before requesting a new code")
-	ErrVerifyCodeMaxAttempts = infraerrors.TooManyRequests("VERIFY_CODE_MAX_ATTEMPTS", "too many failed attempts, please request a new code")
-	ErrActiveEmailDailyLimit = infraerrors.TooManyRequests("ACTIVE_EMAIL_DAILY_RATE_LIMIT", "too many email requests today, please try again tomorrow")
+	ErrEmailNotConfigured     = infraerrors.ServiceUnavailable("EMAIL_NOT_CONFIGURED", "email service not configured")
+	ErrInvalidVerifyCode      = infraerrors.BadRequest("INVALID_VERIFY_CODE", "invalid or expired verification code")
+	ErrVerifyCodeTooFrequent  = infraerrors.TooManyRequests("VERIFY_CODE_TOO_FREQUENT", "please wait before requesting a new code")
+	ErrVerifyCodeMaxAttempts  = infraerrors.TooManyRequests("VERIFY_CODE_MAX_ATTEMPTS", "too many failed attempts, please request a new code")
+	ErrActiveEmailDailyLimit  = infraerrors.TooManyRequests("ACTIVE_EMAIL_DAILY_RATE_LIMIT", "too many email requests today, please try again tomorrow")
+	ErrEmailChannelDailyLimit = infraerrors.TooManyRequests("EMAIL_CHANNEL_DAILY_LIMIT", "all email channels have reached their daily sending limits")
 
 	// Password reset errors
 	ErrInvalidResetToken = infraerrors.BadRequest("INVALID_RESET_TOKEN", "invalid or expired password reset token")
@@ -93,13 +95,16 @@ const (
 
 // SMTPConfig SMTP配置
 type SMTPConfig struct {
-	Host     string
-	Port     int
-	Username string
-	Password string
-	From     string
-	FromName string
-	UseTLS   bool
+	ID         string
+	Name       string
+	Host       string
+	Port       int
+	Username   string
+	Password   string
+	From       string
+	FromName   string
+	UseTLS     bool
+	DailyLimit int
 }
 
 // EmailService 邮件服务
@@ -118,6 +123,18 @@ func NewEmailService(settingRepo SettingRepository, cache EmailCache) *EmailServ
 
 // GetSMTPConfig 从数据库获取SMTP配置
 func (s *EmailService) GetSMTPConfig(ctx context.Context) (*SMTPConfig, error) {
+	configs, err := s.GetSMTPConfigs(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if len(configs) == 0 {
+		return nil, ErrEmailNotConfigured
+	}
+	return configs[0], nil
+}
+
+// GetSMTPConfigs returns the primary SMTP config followed by enabled fallback channels.
+func (s *EmailService) GetSMTPConfigs(ctx context.Context) ([]*SMTPConfig, error) {
 	keys := []string{
 		SettingKeySMTPHost,
 		SettingKeySMTPPort,
@@ -126,6 +143,8 @@ func (s *EmailService) GetSMTPConfig(ctx context.Context) (*SMTPConfig, error) {
 		SettingKeySMTPFrom,
 		SettingKeySMTPFromName,
 		SettingKeySMTPUseTLS,
+		SettingKeySMTPDailyLimit,
+		SettingKeySMTPChannels,
 	}
 
 	settings, err := s.settingRepo.GetMultiple(ctx, keys)
@@ -133,38 +152,121 @@ func (s *EmailService) GetSMTPConfig(ctx context.Context) (*SMTPConfig, error) {
 		return nil, fmt.Errorf("get smtp settings: %w", err)
 	}
 
+	configs := make([]*SMTPConfig, 0, 1+len(parseSMTPChannels(settings[SettingKeySMTPChannels])))
 	host := strings.TrimSpace(settings[SettingKeySMTPHost])
-	if host == "" {
+	if host != "" {
+		port := 587 // 默认端口
+		if portStr := settings[SettingKeySMTPPort]; portStr != "" {
+			if p, err := strconv.Atoi(portStr); err == nil {
+				port = p
+			}
+		}
+
+		useTLS := settings[SettingKeySMTPUseTLS] == "true"
+		configs = append(configs, &SMTPConfig{
+			ID:         legacySMTPChannelID,
+			Name:       "Primary SMTP",
+			Host:       host,
+			Port:       port,
+			Username:   strings.TrimSpace(settings[SettingKeySMTPUsername]),
+			Password:   strings.TrimSpace(settings[SettingKeySMTPPassword]),
+			From:       strings.TrimSpace(settings[SettingKeySMTPFrom]),
+			FromName:   strings.TrimSpace(settings[SettingKeySMTPFromName]),
+			UseTLS:     useTLS,
+			DailyLimit: parseSMTPDailyLimit(settings[SettingKeySMTPDailyLimit]),
+		})
+	}
+
+	for _, channel := range parseSMTPChannels(settings[SettingKeySMTPChannels]) {
+		if !channel.Enabled || channel.Host == "" {
+			continue
+		}
+		configs = append(configs, &SMTPConfig{
+			ID:         channel.ID,
+			Name:       channel.Name,
+			Host:       channel.Host,
+			Port:       channel.Port,
+			Username:   channel.Username,
+			Password:   channel.Password,
+			From:       channel.From,
+			FromName:   channel.FromName,
+			UseTLS:     channel.UseTLS,
+			DailyLimit: channel.DailyLimit,
+		})
+	}
+
+	if len(configs) == 0 {
 		return nil, ErrEmailNotConfigured
 	}
-
-	port := 587 // 默认端口
-	if portStr := settings[SettingKeySMTPPort]; portStr != "" {
-		if p, err := strconv.Atoi(portStr); err == nil {
-			port = p
-		}
-	}
-
-	useTLS := settings[SettingKeySMTPUseTLS] == "true"
-
-	return &SMTPConfig{
-		Host:     host,
-		Port:     port,
-		Username: strings.TrimSpace(settings[SettingKeySMTPUsername]),
-		Password: strings.TrimSpace(settings[SettingKeySMTPPassword]),
-		From:     strings.TrimSpace(settings[SettingKeySMTPFrom]),
-		FromName: strings.TrimSpace(settings[SettingKeySMTPFromName]),
-		UseTLS:   useTLS,
-	}, nil
+	return configs, nil
 }
 
 // SendEmail 发送邮件（使用数据库中保存的配置）
 func (s *EmailService) SendEmail(ctx context.Context, to, subject, body string) error {
-	config, err := s.GetSMTPConfig(ctx)
+	configs, err := s.GetSMTPConfigs(ctx)
 	if err != nil {
 		return err
 	}
-	return s.SendEmailWithConfig(config, to, subject, body)
+	return s.sendEmailWithFallback(ctx, configs, to, subject, body, s.SendEmailWithConfig)
+}
+
+type smtpSenderFunc func(config *SMTPConfig, to, subject, body string) error
+
+func (s *EmailService) sendEmailWithFallback(ctx context.Context, configs []*SMTPConfig, to, subject, body string, sender smtpSenderFunc) error {
+	var lastErr error
+	var attempted int
+	var limited int
+
+	for _, config := range configs {
+		if config == nil {
+			continue
+		}
+		if err := s.reserveSMTPChannelDailyQuota(ctx, config); err != nil {
+			if errors.Is(err, ErrEmailChannelDailyLimit) {
+				limited++
+				slog.Info("smtp channel skipped due to daily limit", "channel_id", config.ID, "channel_name", config.Name, "daily_limit", config.DailyLimit)
+				continue
+			}
+			return err
+		}
+
+		attempted++
+		if err := sender(config, to, subject, body); err != nil {
+			lastErr = err
+			slog.Warn("smtp channel send failed, trying next channel", "channel_id", config.ID, "channel_name", config.Name, "host", config.Host, "error", err)
+			continue
+		}
+		return nil
+	}
+
+	if attempted == 0 && limited > 0 {
+		return ErrEmailChannelDailyLimit
+	}
+	if lastErr != nil {
+		return fmt.Errorf("send email via all smtp channels: %w", lastErr)
+	}
+	return ErrEmailNotConfigured
+}
+
+func (s *EmailService) reserveSMTPChannelDailyQuota(ctx context.Context, config *SMTPConfig) error {
+	if config == nil || config.DailyLimit <= 0 {
+		return nil
+	}
+	if s.cache == nil {
+		return ErrServiceUnavailable
+	}
+	scope := "smtp_channel:" + strings.TrimSpace(config.ID)
+	if scope == "smtp_channel:" {
+		scope = "smtp_channel:" + strings.ToLower(strings.TrimSpace(config.Host)) + ":" + strings.ToLower(strings.TrimSpace(config.Username))
+	}
+	count, err := s.cache.IncrActiveEmailDailyRate(ctx, scope, durationUntilNextLocalMidnight(time.Now()))
+	if err != nil {
+		return infraerrors.ServiceUnavailable("EMAIL_CHANNEL_RATE_LIMIT_UNAVAILABLE", "email channel rate limit is temporarily unavailable").WithCause(err)
+	}
+	if count > int64(config.DailyLimit) {
+		return ErrEmailChannelDailyLimit
+	}
+	return nil
 }
 
 const smtpDialTimeout = 10 * time.Second

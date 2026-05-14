@@ -1518,6 +1518,12 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeySMTPFrom] = settings.SMTPFrom
 	updates[SettingKeySMTPFromName] = settings.SMTPFromName
 	updates[SettingKeySMTPUseTLS] = strconv.FormatBool(settings.SMTPUseTLS)
+	updates[SettingKeySMTPDailyLimit] = strconv.Itoa(normalizeSMTPDailyLimit(settings.SMTPDailyLimit))
+	smtpChannelsJSON, err := marshalSMTPChannels(settings.SMTPChannels)
+	if err != nil {
+		return nil, fmt.Errorf("marshal smtp channels: %w", err)
+	}
+	updates[SettingKeySMTPChannels] = smtpChannelsJSON
 
 	// Cloudflare Turnstile 设置（只有非空才更新密钥）
 	updates[SettingKeyTurnstileEnabled] = strconv.FormatBool(settings.TurnstileEnabled)
@@ -2450,6 +2456,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyForceEmailOnThirdPartySignup:             "false",
 		SettingKeySMTPPort:                                 "587",
 		SettingKeySMTPUseTLS:                               "false",
+		SettingKeySMTPDailyLimit:                           "0",
+		SettingKeySMTPChannels:                             "[]",
 		// Model fallback defaults
 		SettingKeyEnableModelFallback:      "false",
 		SettingKeyFallbackModelAnthropic:   "claude-3-5-sonnet-20241022",
@@ -2527,6 +2535,8 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		SMTPFrom:                         settings[SettingKeySMTPFrom],
 		SMTPFromName:                     settings[SettingKeySMTPFromName],
 		SMTPUseTLS:                       settings[SettingKeySMTPUseTLS] == "true",
+		SMTPDailyLimit:                   parseSMTPDailyLimit(settings[SettingKeySMTPDailyLimit]),
+		SMTPChannels:                     parseSMTPChannels(settings[SettingKeySMTPChannels]),
 		SMTPPasswordConfigured:           settings[SettingKeySMTPPassword] != "",
 		TurnstileEnabled:                 settings[SettingKeyTurnstileEnabled] == "true",
 		TurnstileSiteKey:                 settings[SettingKeyTurnstileSiteKey],

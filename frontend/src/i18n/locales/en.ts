@@ -5846,8 +5846,17 @@ export default {
         fromEmailPlaceholder: "noreply{'@'}example.com",
         fromName: 'From Name',
         fromNamePlaceholder: 'Sub2API',
+        dailyLimit: 'Daily Channel Limit',
+        dailyLimitPlaceholder: '0 means unlimited',
+        dailyLimitHint: 'When the limit is reached, delivery automatically falls back to the next channel.',
         useTls: 'Use TLS',
-        useTlsHint: 'Enable TLS encryption for SMTP connection'
+        useTlsHint: 'Enable TLS encryption for SMTP connection',
+        fallbackChannels: 'Fallback Email Channels',
+        fallbackChannelsHint: 'When the primary SMTP reaches its daily limit or fails, these channels are tried in order.',
+        addChannel: 'Add Channel',
+        noFallbackChannels: 'No fallback channels',
+        fallbackChannelTitle: 'Fallback Channel {index}',
+        channelNamePlaceholder: 'Channel name, e.g. Backup Gmail'
       },
       testEmail: {
         title: 'Send Test Email',

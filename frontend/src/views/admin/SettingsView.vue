@@ -5872,6 +5872,23 @@
                     :placeholder="t('admin.settings.smtp.fromNamePlaceholder')"
                   />
                 </div>
+                <div>
+                  <label
+                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {{ t("admin.settings.smtp.dailyLimit") }}
+                  </label>
+                  <input
+                    v-model.number="form.smtp_daily_limit"
+                    type="number"
+                    min="0"
+                    class="input"
+                    :placeholder="t('admin.settings.smtp.dailyLimitPlaceholder')"
+                  />
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.smtp.dailyLimitHint") }}
+                  </p>
+                </div>
               </div>
 
               <!-- Use TLS Toggle -->
@@ -5887,6 +5904,137 @@
                   </p>
                 </div>
                 <Toggle v-model="form.smtp_use_tls" />
+              </div>
+
+              <div class="border-t border-gray-100 pt-5 dark:border-dark-700">
+                <div class="flex items-center justify-between gap-4">
+                  <div>
+                    <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ t("admin.settings.smtp.fallbackChannels") }}
+                    </h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      {{ t("admin.settings.smtp.fallbackChannelsHint") }}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    class="btn btn-secondary btn-sm"
+                    @click="addEmailChannel"
+                  >
+                    {{ t("admin.settings.smtp.addChannel") }}
+                  </button>
+                </div>
+
+                <div v-if="form.smtp_channels.length === 0" class="mt-4 rounded-xl border border-dashed border-gray-200 p-4 text-sm text-gray-500 dark:border-dark-700 dark:text-gray-400">
+                  {{ t("admin.settings.smtp.noFallbackChannels") }}
+                </div>
+
+                <div v-else class="mt-4 space-y-4">
+                  <div
+                    v-for="(channel, index) in form.smtp_channels"
+                    :key="channel.id"
+                    class="rounded-2xl border border-gray-200 bg-white/70 p-4 dark:border-dark-700 dark:bg-dark-900/50"
+                  >
+                    <div class="mb-4 flex items-center justify-between gap-4">
+                      <div class="min-w-0">
+                        <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                          {{ channel.name || t("admin.settings.smtp.fallbackChannelTitle", { index: index + 1 }) }}
+                        </div>
+                        <div class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
+                          {{ channel.host || t("admin.settings.smtp.hostPlaceholder") }}
+                        </div>
+                      </div>
+                      <div class="flex items-center gap-3">
+                        <Toggle v-model="channel.enabled" />
+                        <button
+                          type="button"
+                          class="text-sm font-medium text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                          @click="removeEmailChannel(index)"
+                        >
+                          {{ t("common.delete") }}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 md:grid-cols-2">
+                      <input
+                        v-model="channel.name"
+                        type="text"
+                        class="input"
+                        :placeholder="t('admin.settings.smtp.channelNamePlaceholder')"
+                      />
+                      <input
+                        v-model="channel.host"
+                        type="text"
+                        class="input"
+                        :placeholder="t('admin.settings.smtp.hostPlaceholder')"
+                      />
+                      <input
+                        v-model.number="channel.port"
+                        type="number"
+                        min="1"
+                        max="65535"
+                        class="input"
+                        :placeholder="t('admin.settings.smtp.portPlaceholder')"
+                      />
+                      <input
+                        v-model="channel.username"
+                        type="text"
+                        class="input"
+                        :placeholder="t('admin.settings.smtp.usernamePlaceholder')"
+                      />
+                      <div>
+                        <input
+                          v-model="channel.password"
+                          type="password"
+                          class="input"
+                          autocomplete="new-password"
+                          autocapitalize="off"
+                          spellcheck="false"
+                          :placeholder="
+                            channel.password_configured
+                              ? t('admin.settings.smtp.passwordConfiguredPlaceholder')
+                              : t('admin.settings.smtp.passwordPlaceholder')
+                          "
+                        />
+                        <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                          {{
+                            channel.password_configured
+                              ? t("admin.settings.smtp.passwordConfiguredHint")
+                              : t("admin.settings.smtp.passwordHint")
+                          }}
+                        </p>
+                      </div>
+                      <input
+                        v-model="channel.from_email"
+                        type="email"
+                        class="input"
+                        :placeholder="t('admin.settings.smtp.fromEmailPlaceholder')"
+                      />
+                      <input
+                        v-model="channel.from_name"
+                        type="text"
+                        class="input"
+                        :placeholder="t('admin.settings.smtp.fromNamePlaceholder')"
+                      />
+                      <input
+                        v-model.number="channel.daily_limit"
+                        type="number"
+                        min="0"
+                        class="input"
+                        :placeholder="t('admin.settings.smtp.dailyLimitPlaceholder')"
+                      />
+                    </div>
+
+                    <div class="mt-4 flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3 dark:bg-dark-800">
+                      <div>
+                        <div class="text-sm font-medium text-gray-900 dark:text-white">{{ t("admin.settings.smtp.useTls") }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400">{{ t("admin.settings.smtp.useTlsHint") }}</div>
+                      </div>
+                      <Toggle v-model="channel.use_tls" />
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -6286,6 +6434,7 @@ import type {
   AuthSourceType,
   SystemSettings,
   UpdateSettingsRequest,
+  EmailChannelConfig,
   DefaultSubscriptionSetting,
   OpenAIFastPolicyRule,
   WeChatConnectMode,
@@ -6381,6 +6530,53 @@ const testEmailAddress = ref("");
 const registrationEmailSuffixWhitelistTags = ref<string[]>([]);
 const registrationEmailSuffixWhitelistDraft = ref("");
 const tablePageSizeOptionsInput = ref("10, 20, 50, 100");
+
+function createEmailChannel(): EmailChannelConfig {
+  const order = form.smtp_channels.length + 1;
+  return {
+    id: `channel-${Date.now()}-${order}`,
+    name: "",
+    enabled: true,
+    host: "",
+    port: 587,
+    username: "",
+    password: "",
+    password_configured: false,
+    from_email: "",
+    from_name: "",
+    use_tls: true,
+    daily_limit: 0,
+    sort_order: order,
+  };
+}
+
+function normalizeEmailChannelForSave(channel: EmailChannelConfig, index: number): EmailChannelConfig {
+  return {
+    id: String(channel.id || `channel-${index + 1}`),
+    name: String(channel.name || "").trim(),
+    enabled: channel.enabled !== false,
+    host: String(channel.host || "").trim(),
+    port: Math.max(1, Math.min(65535, Math.floor(Number(channel.port) || 587))),
+    username: String(channel.username || "").trim(),
+    password: String(channel.password || "").trim() || undefined,
+    from_email: String(channel.from_email || "").trim(),
+    from_name: String(channel.from_name || "").trim(),
+    use_tls: channel.use_tls === true,
+    daily_limit: Math.max(0, Math.floor(Number(channel.daily_limit) || 0)),
+    sort_order: index + 1,
+  };
+}
+
+function addEmailChannel() {
+  form.smtp_channels.push(createEmailChannel());
+}
+
+function removeEmailChannel(index: number) {
+  form.smtp_channels.splice(index, 1);
+  form.smtp_channels.forEach((channel, idx) => {
+    channel.sort_order = idx + 1;
+  });
+}
 
 // Admin API Key 状态
 const adminApiKeyLoading = ref(true);
@@ -6610,6 +6806,8 @@ const form = reactive<SettingsForm>({
   smtp_from_email: "",
   smtp_from_name: "",
   smtp_use_tls: true,
+  smtp_daily_limit: 0,
+  smtp_channels: [],
   registration_notify_enabled: false,
   registration_notify_provider: "",
   registration_notify_webhook_url: "",
@@ -7399,6 +7597,23 @@ async function loadSettings() {
     );
     registrationEmailSuffixWhitelistDraft.value = "";
     form.smtp_password = "";
+    form.smtp_channels = Array.isArray(settings.smtp_channels)
+      ? settings.smtp_channels.map((channel, index) => ({
+          id: channel.id || `channel-${index + 1}`,
+          name: channel.name || "",
+          enabled: channel.enabled !== false,
+          host: channel.host || "",
+          port: channel.port || 587,
+          username: channel.username || "",
+          password: "",
+          password_configured: channel.password_configured === true,
+          from_email: channel.from_email || "",
+          from_name: channel.from_name || "",
+          use_tls: channel.use_tls === true,
+          daily_limit: Math.max(0, Number(channel.daily_limit) || 0),
+          sort_order: channel.sort_order || index + 1,
+        }))
+      : [];
     smtpPasswordManuallyEdited.value = false;
     form.registration_notify_secret = "";
     form.turnstile_secret_key = "";
@@ -7752,6 +7967,10 @@ async function saveSettings() {
       smtp_from_email: form.smtp_from_email,
       smtp_from_name: form.smtp_from_name,
       smtp_use_tls: form.smtp_use_tls,
+      smtp_daily_limit: Math.max(0, Math.floor(Number(form.smtp_daily_limit) || 0)),
+      smtp_channels: form.smtp_channels.map((channel, index) =>
+        normalizeEmailChannelForSave(channel, index),
+      ),
       turnstile_enabled: form.turnstile_enabled,
       turnstile_site_key: form.turnstile_site_key,
       turnstile_secret_key: form.turnstile_secret_key || undefined,
