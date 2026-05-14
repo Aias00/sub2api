@@ -225,14 +225,17 @@ function syncSidebarActiveLink() {
   activeLink.closest('li')?.classList.add('active')
 
   const sidebar = activeLink.closest('.sidebar') as HTMLElement | null
+  const sidebarNav = activeLink.closest('.sidebar-nav') as HTMLElement | null
   if (!sidebar) return
+  const scrollContainer =
+    sidebarNav && sidebarNav.scrollHeight > sidebarNav.clientHeight + 1 ? sidebarNav : sidebar
   const linkRect = activeLink.getBoundingClientRect()
-  const sidebarRect = sidebar.getBoundingClientRect()
+  const sidebarRect = scrollContainer.getBoundingClientRect()
   const safePadding = 24
   if (linkRect.top < sidebarRect.top + safePadding) {
-    sidebar.scrollTop -= sidebarRect.top + safePadding - linkRect.top
+    scrollContainer.scrollTop -= sidebarRect.top + safePadding - linkRect.top
   } else if (linkRect.bottom > sidebarRect.bottom - safePadding) {
-    sidebar.scrollTop += linkRect.bottom - sidebarRect.bottom + safePadding
+    scrollContainer.scrollTop += linkRect.bottom - sidebarRect.bottom + safePadding
   }
 }
 

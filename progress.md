@@ -830,14 +830,17 @@
 - Removed Docsify sidebar list marker clutter by normalizing sidebar list spacing and list styles.
 - Changed active sidebar links to a full-row pill style so the selected document item stays visible and easier to scan.
 - Added sidebar-only scroll correction after active-link sync so clicking deeper documentation items keeps the selected entry inside the left navigation viewport.
+- Corrected the active-link scroll target from the fixed sidebar shell to Docsify's actual scrollable `.sidebar-nav` container.
 
 ### Failures
-- None so far.
+- First production check on `a86c9ae2` showed the active pill style was applied, but the selected deep link was still below the visible sidebar because `.sidebar-nav`, not `.sidebar`, owns scrolling.
 
 ### Next
-- Push and deploy after committing the verified local changes.
+- Re-run local validation, then commit the scroll-target fix, push, deploy, and verify production again.
 
 ### Validation
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
 - Local browser verification on `http://127.0.0.1:18084/docs?localVerify=docs-sidebar-clean#/advanced/vscode-gui` found marker style `none`, active link display `flex`, selected item visible inside the sidebar, and a 40px sidebar-to-content gap with no console errors.
+- After the production scroll-target issue was fixed locally, `pnpm --dir frontend run typecheck` and `pnpm --dir frontend run build` passed again.
+- Local browser verification on `http://127.0.0.1:18084/docs?localVerify=docs-scroll-target#/advanced/vscode-gui` found marker style `none`, active link display `flex`, selected item visible inside `.sidebar-nav`, `sidebarNavScrollTop=249.5`, and a 40px sidebar-to-content gap with no console errors.
