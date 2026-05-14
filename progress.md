@@ -739,9 +739,10 @@
 - Removed the redundant desktop `margin-left` on Docsify content after the shell had already placed sidebar/content with flex layout.
 - Tightened the desktop sidebar width and changed the Markdown content column from centered to left-aligned inside the content area.
 - Verified the production frontend build and local preview layout: sidebar width dropped from 272px to 248px, and Markdown content now starts at the content column instead of leaving an extra centered gap.
+- Follow-up: made Docsify sidebar active links explicit with a blue pill, left accent, and dark-mode-safe text color so selected menu entries stay visible after clicking.
 
 ### Failures
 - None so far.
 
 ### Next
-- Commit, push, and deploy the layout fix to the Google server.
+- Run frontend validation, then commit/push/deploy the active-menu visibility fix.

@@ -343,6 +343,30 @@ onBeforeUnmount(() => {
   color: inherit;
 }
 
+.docsify-shell :deep(.sidebar-nav li.active > a) {
+  display: block;
+  border-radius: 0.85rem;
+  background: rgba(37, 99, 235, 0.1);
+  box-shadow: inset 3px 0 0 rgba(37, 99, 235, 0.85);
+  color: #2563eb !important;
+  font-weight: 700;
+  padding-left: 0.75rem;
+}
+
+.dark .docsify-shell :deep(.sidebar-nav li.active > a) {
+  background: rgba(96, 165, 250, 0.16);
+  box-shadow: inset 3px 0 0 rgba(96, 165, 250, 0.9);
+  color: #bfdbfe !important;
+}
+
+.docsify-shell :deep(.sidebar-nav a:hover) {
+  color: #2563eb !important;
+}
+
+.dark .docsify-shell :deep(.sidebar-nav a:hover) {
+  color: #bfdbfe !important;
+}
+
 .docsify-shell :deep(.search) {
   margin-bottom: 1rem;
 }
