@@ -846,3 +846,21 @@
 - Local browser verification on `http://127.0.0.1:18084/docs?localVerify=docs-scroll-target#/advanced/vscode-gui` found marker style `none`, active link display `flex`, selected item visible inside `.sidebar-nav`, `sidebarNavScrollTop=249.5`, and a 40px sidebar-to-content gap with no console errors.
 - Deployed commit `15f8d89b` to production; `https://cloudbase.eu.org/api/v1/settings/public`, `/docs`, and `/monitor` returned HTTP 200.
 - Browser verification on `https://cloudbase.eu.org/docs?verify=15f8d89b#/advanced/vscode-gui` found title `VS Code 图形化操作教程`, active link text `VS Code 图形化操作教程`, marker style `none`, active display `flex`, active item visible inside `.sidebar-nav`, `sidebarNavScrollTop=249.5`, a 40px sidebar-to-content gap, and no console errors.
+
+## 2026-05-14 Docs Deep Link Preservation
+### Done
+- Started the next local-first docs interaction pass after production sidebar verification.
+- Preserved existing Docsify hash deep links when `/docs` is opened directly, instead of always replacing the initial hash with the README route.
+- Added a source-level regression check for preserving initial Docsify hash routes.
+
+### Failures
+- None so far.
+
+### Next
+- Commit the verified local changes, push, deploy, and verify production.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/DocsView.spec.ts src/utils/__tests__/docs.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
+- Local browser verification on `http://127.0.0.1:18084/docs?localVerify=docs-deep-link-final#/advanced/vscode-gui` found title `VS Code 图形化操作教程`, hash preserved as `#/advanced/vscode-gui?...`, active link text `VS Code 图形化操作教程`, selected item visible inside `.sidebar-nav`, `sidebarNavScrollTop=249`, and no console errors.

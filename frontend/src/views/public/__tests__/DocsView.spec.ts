@@ -24,7 +24,7 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).toContain("locale.value === 'en' ? '/docs-content/en/' : '/docs-content/'")
     expect(docsViewSource).toContain("loadSidebar: '_sidebar.md'")
     expect(docsViewSource).not.toContain('const docsSidebarPath = computed')
-    expect(docsViewSource).not.toContain("'/.*/_sidebar.md'")
+    expect(docsViewSource).toContain("'/.*/_sidebar.md': '/_sidebar.md'")
     expect(docsViewSource).toContain('window.location.reload()')
   })
 
@@ -35,6 +35,12 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).toContain('window.location.hash = withDocsContentVersion(initialHash)')
     expect(docsViewSource).toContain('namespace: `cloudbase-docs-${locale.value}-${docsContentVersion}`')
     expect(docsViewSource).toContain('link.setAttribute')
+  })
+
+  it('preserves direct Docsify hash deep links on initial load', () => {
+    expect(docsViewSource).toContain('function getInitialDocsHash')
+    expect(docsViewSource).toContain("route.path === '/docs' && window.location.hash.startsWith('#/')")
+    expect(docsViewSource).toContain('const initialHash = getInitialDocsHash()')
   })
 
   it('keeps application route links from being treated as Docsify document routes', () => {
@@ -49,7 +55,7 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).toContain(".docsify-shell :deep(.sidebar)")
     expect(docsViewSource).toContain('position: sticky !important')
     expect(docsViewSource).toContain(".docsify-shell :deep(.content)")
-    expect(docsViewSource).toContain('margin-left: 17rem !important')
+    expect(docsViewSource).toContain('margin-left: 0 !important')
     expect(docsViewSource).toContain(".docsify-shell :deep(.sidebar .app-name)")
     expect(docsViewSource).toContain('display: none !important;')
     expect(docsViewSource).toContain("padding: 0.5rem 0.75rem 1rem !important;")

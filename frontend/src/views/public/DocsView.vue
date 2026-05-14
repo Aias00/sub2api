@@ -243,6 +243,18 @@ function docsVersionPlugin(hook: { mounted: (callback: () => void) => void; done
   const syncDocsLinks = () => {
     rewriteDocsLinks()
     syncSidebarActiveLink()
+    window.requestAnimationFrame(() => {
+      rewriteDocsLinks()
+      syncSidebarActiveLink()
+    })
+    window.setTimeout(() => {
+      rewriteDocsLinks()
+      syncSidebarActiveLink()
+    }, 120)
+    window.setTimeout(() => {
+      rewriteDocsLinks()
+      syncSidebarActiveLink()
+    }, 500)
   }
   hook.mounted(syncDocsLinks)
   hook.doneEach(syncDocsLinks)
@@ -263,6 +275,15 @@ function syncHash(force = false) {
   if (force || window.location.hash !== targetHash) {
     window.location.hash = targetHash
   }
+}
+
+function getInitialDocsHash() {
+  if (typeof window === 'undefined') return docsHash.value
+  if (route.path === '/docs' && window.location.hash.startsWith('#/')) {
+    return window.location.hash
+  }
+
+  return docsHash.value
 }
 
 watch(
@@ -287,7 +308,7 @@ onMounted(async () => {
     await appStore.fetchPublicSettings()
   }
 
-  const initialHash = docsHash.value
+  const initialHash = getInitialDocsHash()
   if (route.path !== '/docs') {
     await router.replace('/docs')
   }
