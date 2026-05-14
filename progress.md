@@ -732,3 +732,16 @@
 
 ### Next
 - Run backend unit tests, frontend typecheck/build, then fix any regressions before deployment.
+
+## 2026-05-14 Docs Layout Spacing
+### Done
+- Investigated the large desktop gap between the Docsify sidebar and documentation content.
+- Removed the redundant desktop `margin-left` on Docsify content after the shell had already placed sidebar/content with flex layout.
+- Tightened the desktop sidebar width and changed the Markdown content column from centered to left-aligned inside the content area.
+- Verified the production frontend build and local preview layout: sidebar width dropped from 272px to 248px, and Markdown content now starts at the content column instead of leaving an extra centered gap.
+
+### Failures
+- None so far.
+
+### Next
+- Commit, push, and deploy the layout fix to the Google server.

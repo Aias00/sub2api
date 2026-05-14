@@ -283,6 +283,7 @@ onBeforeUnmount(() => {
 .docsify-shell :deep(main) {
   position: relative !important;
   display: flex;
+  align-items: flex-start;
   width: 100% !important;
   min-height: 70vh;
   height: auto !important;
@@ -293,8 +294,8 @@ onBeforeUnmount(() => {
   top: 0 !important;
   left: auto !important;
   bottom: auto !important;
-  flex: 0 0 17rem;
-  width: 17rem !important;
+  flex: 0 0 15.5rem;
+  width: 15.5rem !important;
   height: calc(100vh - 12rem) !important;
   border-right: 1px solid rgba(148, 163, 184, 0.18);
   padding: 0.75rem 1rem 2rem !important;
@@ -315,15 +316,17 @@ onBeforeUnmount(() => {
   position: relative !important;
   left: auto !important;
   right: auto !important;
-  margin-left: 17rem !important;
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-left: 0 !important;
   padding-top: 0 !important;
-  width: calc(100% - 17rem) !important;
+  width: auto !important;
 }
 
 .docsify-shell :deep(.markdown-section) {
-  max-width: 920px;
+  max-width: min(980px, 100%);
   min-height: 70vh;
-  margin: 0 auto;
+  margin: 0;
   padding: 1.5rem 2.5rem 3rem;
 }
 
