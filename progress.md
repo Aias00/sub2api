@@ -815,9 +815,11 @@
 - None so far.
 
 ### Next
-- Push and deploy after committing the verified local changes.
+- Continue with the next local-first optimization item.
 
 ### Validation
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
 - Local browser verification on `http://127.0.0.1:4173/monitor?localVerify=empty-state-clean` used mocked API responses and found one framed empty state (`672x274`) with no console errors.
+- Deployed commit `b1ef8bc4` to production; `https://cloudbase.eu.org/api/v1/settings/public` and `/monitor` returned HTTP 200.
+- Browser verification on `https://cloudbase.eu.org/monitor?verify=b1ef8bc4` found one framed empty state (`672x274`) and no console errors.
