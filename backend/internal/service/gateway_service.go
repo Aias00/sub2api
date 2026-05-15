@@ -8928,6 +8928,17 @@ func (s *GatewayService) ForwardCountTokens(ctx context.Context, c *gin.Context,
 
 	// 处理错误响应
 	if resp.StatusCode >= 400 {
+		// 中转站不支持 count_tokens 端点时（404），返回 404 让客户端 fallback 到本地估算。
+		// 普通转发分支需要和 API Key passthrough 分支保持一致，否则 Claude Code 会把
+		// 上游的 Invalid URL 包装错误当成真实失败。
+		if isCountTokensUnsupported404(resp.StatusCode, respBody) {
+			logger.LegacyPrintf("service.gateway",
+				"[count_tokens] Upstream does not support count_tokens (404), returning 404: account=%d name=%s msg=%s",
+				account.ID, account.Name, truncateString(extractUpstreamErrorMessage(respBody), 512))
+			s.countTokensError(c, http.StatusNotFound, "not_found_error", "count_tokens endpoint is not supported by upstream")
+			return nil
+		}
+
 		// 标记账号状态（429/529等）
 		s.rateLimitService.HandleUpstreamError(ctx, account, resp.StatusCode, resp.Header, respBody)
 
