@@ -44,7 +44,7 @@
                 </p>
                 <p class="text-xs">
                   <span class="text-green-600 dark:text-green-400"
-                    >{{ stats.normal_accounts }} {{ t('common.active') }}</span
+                    >{{ stats.normal_accounts }} {{ t('admin.dashboard.schedulable') }}</span
                   >
                   <span v-if="stats.error_accounts > 0" class="ml-1 text-red-500"
                     >{{ stats.error_accounts }} {{ t('common.error') }}</span
