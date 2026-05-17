@@ -984,7 +984,7 @@
 - None.
 
 ### Next
-- If requested, push and deploy to production after the current local changes are reviewed.
+- Continue with focused admin commerce UI polish after the live 商品/套餐 page is reviewed in an authenticated admin session.
 
 ### Validation
 - `pnpm --dir frontend exec vitest run src/views/admin/__tests__/AdminPaymentCatalogView.spec.ts` passed, including a component-level smoke test for rendering the combined catalog shell and switching to the recharge product manager.
@@ -995,3 +995,10 @@
 - `go test ./internal/handler/admin ./internal/service -run 'Test.*(Setting|Email|SMTP)'` passed from `backend/`.
 - `go test ./...` passed from `backend/`.
 - Full local browser smoke test against a real admin session was not available because the backend/API target on `127.0.0.1:18082` refused the connection; a standalone Vite run on `18083` confirmed routing reaches the app and then correctly redirects without local auth/backend.
+- Pushed implementation commit `4d6dced9` to `aias00/main`.
+- Deployed commit `4d6dced9` to the Google server with the server-side build flow:
+  - `pnpm --dir frontend install --frozen-lockfile`
+  - `pnpm --dir frontend run build`
+  - `go build -tags embed -o ../sub2api.new ./cmd/server`
+- Restarted production on `SERVER_PORT=8081` with process `925212`; local server health returned `{"env":"production","status":"ok"}`.
+- `https://cloudbase.eu.org/health`, `https://cloudbase.eu.org/api/v1/settings/public`, `/admin/orders/plans`, and `/login` returned HTTP 200 through Cloudflare.
