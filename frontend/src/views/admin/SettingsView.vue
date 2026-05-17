@@ -5945,6 +5945,39 @@
                         </div>
                       </div>
                       <div class="flex items-center gap-3">
+                        <button
+                          type="button"
+                          class="btn btn-secondary btn-sm"
+                          :data-testid="`smtp-channel-test-${channel.id}`"
+                          :disabled="sendingTestEmail || !testEmailAddress || loadFailed"
+                          @click="sendTestEmail(channel)"
+                        >
+                          <svg
+                            v-if="sendingTestEmailChannelId === channel.id"
+                            class="h-4 w-4 animate-spin"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              class="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              stroke-width="4"
+                            ></circle>
+                            <path
+                              class="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                            ></path>
+                          </svg>
+                          {{
+                            sendingTestEmailChannelId === channel.id
+                              ? t("admin.settings.testEmail.sending")
+                              : t("admin.settings.smtp.sendChannelTestEmail")
+                          }}
+                        </button>
                         <Toggle v-model="channel.enabled" />
                         <button
                           type="button"
@@ -6062,6 +6095,7 @@
                   <input
                     v-model="testEmailAddress"
                     type="email"
+                    data-testid="test-email-recipient"
                     class="input"
                     :placeholder="
                       t('admin.settings.testEmail.recipientEmailPlaceholder')
@@ -6070,7 +6104,7 @@
                 </div>
                 <button
                   type="button"
-                  @click="sendTestEmail"
+                  @click="sendTestEmail()"
                   :disabled="
                     sendingTestEmail || !testEmailAddress || loadFailed
                   "
@@ -6525,6 +6559,7 @@ const loadFailed = ref(false);
 const saving = ref(false);
 const testingSmtp = ref(false);
 const sendingTestEmail = ref(false);
+const sendingTestEmailChannelId = ref("");
 const smtpPasswordManuallyEdited = ref(false);
 const testEmailAddress = ref("");
 const registrationEmailSuffixWhitelistTags = ref<string[]>([]);
@@ -8252,26 +8287,45 @@ async function testSmtpConnection() {
   }
 }
 
-async function sendTestEmail() {
+function buildChannelTestEmailPayload(channel: EmailChannelConfig) {
+  return {
+    smtp_channel_id: channel.id,
+    smtp_host: channel.host,
+    smtp_port: channel.port,
+    smtp_username: channel.username,
+    smtp_password: channel.password || "",
+    smtp_from_email: channel.from_email,
+    smtp_from_name: channel.from_name,
+    smtp_use_tls: channel.use_tls,
+  };
+}
+
+async function sendTestEmail(channel?: EmailChannelConfig) {
   if (!testEmailAddress.value) {
     appStore.showError(t("admin.settings.testEmail.enterRecipientHint"));
     return;
   }
 
   sendingTestEmail.value = true;
+  sendingTestEmailChannelId.value = channel?.id || "primary";
   try {
     const smtpPasswordForSend = smtpPasswordManuallyEdited.value
       ? form.smtp_password
       : "";
+    const smtpPayload = channel
+      ? buildChannelTestEmailPayload(channel)
+      : {
+          smtp_host: form.smtp_host,
+          smtp_port: form.smtp_port,
+          smtp_username: form.smtp_username,
+          smtp_password: smtpPasswordForSend,
+          smtp_from_email: form.smtp_from_email,
+          smtp_from_name: form.smtp_from_name,
+          smtp_use_tls: form.smtp_use_tls,
+        };
     const result = await adminAPI.settings.sendTestEmail({
       email: testEmailAddress.value,
-      smtp_host: form.smtp_host,
-      smtp_port: form.smtp_port,
-      smtp_username: form.smtp_username,
-      smtp_password: smtpPasswordForSend,
-      smtp_from_email: form.smtp_from_email,
-      smtp_from_name: form.smtp_from_name,
-      smtp_use_tls: form.smtp_use_tls,
+      ...smtpPayload,
     });
     // API returns { message: "..." } on success, errors are thrown as exceptions
     appStore.showSuccess(result.message || t("admin.settings.testEmailSent"));
@@ -8281,6 +8335,7 @@ async function sendTestEmail() {
     );
   } finally {
     sendingTestEmail.value = false;
+    sendingTestEmailChannelId.value = "";
   }
 }
 

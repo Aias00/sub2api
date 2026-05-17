@@ -2651,14 +2651,15 @@ func (h *SettingHandler) TestSMTPConnection(c *gin.Context) {
 
 // SendTestEmailRequest 发送测试邮件请求
 type SendTestEmailRequest struct {
-	Email        string `json:"email" binding:"required,email"`
-	SMTPHost     string `json:"smtp_host"`
-	SMTPPort     int    `json:"smtp_port"`
-	SMTPUsername string `json:"smtp_username"`
-	SMTPPassword string `json:"smtp_password"`
-	SMTPFrom     string `json:"smtp_from_email"`
-	SMTPFromName string `json:"smtp_from_name"`
-	SMTPUseTLS   bool   `json:"smtp_use_tls"`
+	Email         string `json:"email" binding:"required,email"`
+	SMTPChannelID string `json:"smtp_channel_id"`
+	SMTPHost      string `json:"smtp_host"`
+	SMTPPort      int    `json:"smtp_port"`
+	SMTPUsername  string `json:"smtp_username"`
+	SMTPPassword  string `json:"smtp_password"`
+	SMTPFrom      string `json:"smtp_from_email"`
+	SMTPFromName  string `json:"smtp_from_name"`
+	SMTPUseTLS    bool   `json:"smtp_use_tls"`
 }
 
 // SendTestEmail 发送测试邮件
@@ -2671,12 +2672,20 @@ func (h *SettingHandler) SendTestEmail(c *gin.Context) {
 	}
 
 	req.SMTPHost = strings.TrimSpace(req.SMTPHost)
+	req.SMTPChannelID = strings.TrimSpace(req.SMTPChannelID)
 	req.SMTPUsername = strings.TrimSpace(req.SMTPUsername)
 	req.SMTPFrom = strings.TrimSpace(req.SMTPFrom)
 	req.SMTPFromName = strings.TrimSpace(req.SMTPFromName)
 
 	var savedConfig *service.SMTPConfig
-	if cfg, err := h.emailService.GetSMTPConfig(c.Request.Context()); err == nil && cfg != nil {
+	if req.SMTPChannelID != "" {
+		if cfg, err := h.emailService.GetSMTPConfigByID(c.Request.Context(), req.SMTPChannelID); err == nil && cfg != nil {
+			savedConfig = cfg
+		} else if req.SMTPHost == "" {
+			response.BadRequest(c, "SMTP channel not found")
+			return
+		}
+	} else if cfg, err := h.emailService.GetSMTPConfig(c.Request.Context()); err == nil && cfg != nil {
 		savedConfig = cfg
 	}
 

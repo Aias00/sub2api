@@ -386,7 +386,7 @@ export default {
     orderManagement: 'Orders',
     paymentDashboard: 'Payment Dashboard',
     paymentConfig: 'Payment Config',
-    paymentPlans: 'Plans',
+    paymentPlans: 'Products & Plans',
     channelManagement: 'Channels',
     channelPricing: 'Channel Pricing',
     channelMonitor: 'Channel Monitor',
@@ -5857,7 +5857,8 @@ export default {
         addChannel: 'Add Channel',
         noFallbackChannels: 'No fallback channels',
         fallbackChannelTitle: 'Fallback Channel {index}',
-        channelNamePlaceholder: 'Channel name, e.g. Backup Gmail'
+        channelNamePlaceholder: 'Channel name, e.g. Backup Gmail',
+        sendChannelTestEmail: 'Test this channel'
       },
       testEmail: {
         title: 'Send Test Email',
@@ -6885,8 +6886,8 @@ export default {
       daySuffix: 'd',
       paymentConfigTitle: 'Payment Config',
       paymentConfigDesc: 'Configure payment providers and settings',
-      plansPageTitle: 'Subscription Plans',
-      plansPageDesc: 'Manage subscription plan configuration',
+      plansPageTitle: 'Products & Plans',
+      plansPageDesc: 'Manage recharge products and subscription plan configuration',
       tabPlanConfig: 'Plan Configuration',
       tabUserSubs: 'User Subscriptions',
       selectGroup: 'Select a group',

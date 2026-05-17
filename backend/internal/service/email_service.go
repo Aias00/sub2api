@@ -27,6 +27,7 @@ var (
 	ErrVerifyCodeMaxAttempts  = infraerrors.TooManyRequests("VERIFY_CODE_MAX_ATTEMPTS", "too many failed attempts, please request a new code")
 	ErrActiveEmailDailyLimit  = infraerrors.TooManyRequests("ACTIVE_EMAIL_DAILY_RATE_LIMIT", "too many email requests today, please try again tomorrow")
 	ErrEmailChannelDailyLimit = infraerrors.TooManyRequests("EMAIL_CHANNEL_DAILY_LIMIT", "all email channels have reached their daily sending limits")
+	ErrSMTPChannelNotFound    = infraerrors.NotFound("SMTP_CHANNEL_NOT_FOUND", "smtp channel not found")
 
 	// Password reset errors
 	ErrInvalidResetToken = infraerrors.BadRequest("INVALID_RESET_TOKEN", "invalid or expired password reset token")
@@ -135,6 +136,33 @@ func (s *EmailService) GetSMTPConfig(ctx context.Context) (*SMTPConfig, error) {
 
 // GetSMTPConfigs returns the primary SMTP config followed by enabled fallback channels.
 func (s *EmailService) GetSMTPConfigs(ctx context.Context) ([]*SMTPConfig, error) {
+	return s.getSMTPConfigs(ctx, false)
+}
+
+// GetSMTPConfigByID returns a saved SMTP channel by ID. Disabled fallback
+// channels are included so admins can test a channel before enabling it.
+func (s *EmailService) GetSMTPConfigByID(ctx context.Context, id string) (*SMTPConfig, error) {
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return nil, ErrSMTPChannelNotFound
+	}
+
+	configs, err := s.getSMTPConfigs(ctx, true)
+	if err != nil {
+		if errors.Is(err, ErrEmailNotConfigured) {
+			return nil, ErrSMTPChannelNotFound
+		}
+		return nil, err
+	}
+	for _, config := range configs {
+		if config != nil && config.ID == id {
+			return config, nil
+		}
+	}
+	return nil, ErrSMTPChannelNotFound
+}
+
+func (s *EmailService) getSMTPConfigs(ctx context.Context, includeDisabled bool) ([]*SMTPConfig, error) {
 	keys := []string{
 		SettingKeySMTPHost,
 		SettingKeySMTPPort,
@@ -178,7 +206,7 @@ func (s *EmailService) GetSMTPConfigs(ctx context.Context) ([]*SMTPConfig, error
 	}
 
 	for _, channel := range parseSMTPChannels(settings[SettingKeySMTPChannels]) {
-		if !channel.Enabled || channel.Host == "" {
+		if (!includeDisabled && !channel.Enabled) || channel.Host == "" {
 			continue
 		}
 		configs = append(configs, &SMTPConfig{

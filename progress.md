@@ -78,6 +78,21 @@
 
 ### Failures
 - The first live API login attempt returned HTTP 403 without a browser user-agent; retrying with a browser-like user-agent succeeded.
+
+## 2026-05-15 Claude Code Gateway Diagnosis
+### Done
+- Investigated production `/v1/messages` failures for Claude Code traffic.
+- Confirmed the API key authenticates and the default group now selects upstream account `10`.
+- Reproduced `/v1/messages` with Claude Code-style headers and `claude-opus-4-7`; the simple message request returned HTTP 200.
+- Reproduced `/v1/messages/count_tokens`; the upstream relay returned HTTP 404 with `Invalid URL (POST /v1/messages/count_tokens)`.
+- Updated the generic count_tokens forwarding branch to return `not_found_error` for unsupported count_tokens 404s, matching the API-key passthrough branch so Claude Code can fall back to local token estimation.
+
+### Failures
+- Production logs also show large streaming Claude Code requests can hit upstream HTTP 504 from `https://www.fkclaude.xyz`; this is separate from the count_tokens fallback issue.
+
+### Next
+- Run focused backend tests for count_tokens fallback.
+- If tests pass, deploy the fix and retest production `/v1/messages/count_tokens`.
 - Full unit tests initially failed because the admin settings API contract expected the old response shape; updated the contract snapshot with the new fields.
 - Deployment health check initially targeted the wrong local port (`8081`) after a default-port restart; corrected by restarting with `SERVER_PORT=8081`.
 
@@ -933,3 +948,50 @@
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend run build` passed with existing Vite chunk warnings.
 - `go test ./...` passed.
+
+## 2026-05-15 Per-Channel SMTP Test Email
+### Done
+- Added per-fallback SMTP channel test email support in the admin settings UI.
+- Extended the admin test-email API with optional `smtp_channel_id` so a selected saved channel can reuse its stored password when the password field is intentionally left blank.
+- Allowed disabled fallback SMTP channels to be selected for admin test sends, so a channel can be verified before enabling production fallback use.
+- Added frontend and backend regression coverage for testing a selected fallback SMTP channel.
+
+### Failures
+- An initial frontend typecheck caught the global send-test button passing the click event into the optional channel parameter; fixed by calling `sendTestEmail()` explicitly.
+- An initial backend test command was run from the repository root, but the Go module lives in `backend/`; reran from the correct directory successfully.
+
+### Next
+- Deploy only when requested; current changes are local and verified.
+
+### Validation
+- `go test ./internal/handler/admin ./internal/service -run 'Test.*(Setting|Email|SMTP)'` passed from `backend/`.
+- `go test ./...` passed from `backend/`.
+- `pnpm --dir frontend exec vitest run src/views/admin/__tests__/SettingsView.spec.ts` passed; existing `router-link` warnings remain in this test file.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
+- `git diff --check` passed.
+
+## 2026-05-17 Products And Plans Catalog
+### Done
+- Started a local-first admin commerce management pass.
+- Reworked the existing admin subscription plan page into a unified 商品/套餐 management entry.
+- Added a recharge product manager that edits `PAYMENT_RECHARGE_PRODUCTS` through the settings API, with add/delete/edit, feature list editing, recommended badge, preview, dirty-state tracking, and a single save action.
+- Kept subscription plan CRUD on the existing `/admin/payment/plans` API path and preserved the existing group-bound plan validation flow.
+- Renamed the admin sidebar route from 订阅套餐 / Plans to 商品/套餐 / Products & Plans.
+- Added source-level regression coverage for the combined page, settings-backed recharge products, and navigation labels.
+
+### Failures
+- None.
+
+### Next
+- If requested, push and deploy to production after the current local changes are reviewed.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/admin/__tests__/AdminPaymentCatalogView.spec.ts` passed, including a component-level smoke test for rendering the combined catalog shell and switching to the recharge product manager.
+- `pnpm --dir frontend exec vitest run src/views/admin/__tests__/AdminPaymentCatalogView.spec.ts src/views/admin/__tests__/SettingsView.spec.ts` passed; existing `router-link` warnings remain in `SettingsView.spec.ts`.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/admin/orders/AdminPaymentPlansView.vue src/views/admin/orders/RechargeProductsManager.vue src/views/admin/__tests__/AdminPaymentCatalogView.spec.ts --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
+- `go test ./internal/handler/admin ./internal/service -run 'Test.*(Setting|Email|SMTP)'` passed from `backend/`.
+- `go test ./...` passed from `backend/`.
+- Full local browser smoke test against a real admin session was not available because the backend/API target on `127.0.0.1:18082` refused the connection; a standalone Vite run on `18083` confirmed routing reaches the app and then correctly redirects without local auth/backend.

@@ -386,7 +386,7 @@ export default {
     orderManagement: '订单管理',
     paymentDashboard: '支付概览',
     paymentConfig: '支付配置',
-    paymentPlans: '订阅套餐',
+    paymentPlans: '商品/套餐',
     channelManagement: '渠道管理',
     channelPricing: '渠道定价',
     channelMonitor: '渠道监控',
@@ -6018,7 +6018,8 @@ export default {
         addChannel: '添加通道',
         noFallbackChannels: '暂无备用通道',
         fallbackChannelTitle: '备用通道 {index}',
-        channelNamePlaceholder: '通道名称，例如 Gmail 备用'
+        channelNamePlaceholder: '通道名称，例如 Gmail 备用',
+        sendChannelTestEmail: '测试此通道'
       },
       testEmail: {
         title: '发送测试邮件',
@@ -7069,8 +7070,8 @@ export default {
       daySuffix: '天',
       paymentConfigTitle: '支付配置',
       paymentConfigDesc: '管理支付服务商与相关设置',
-      plansPageTitle: '订阅套餐管理',
-      plansPageDesc: '管理订阅套餐配置',
+      plansPageTitle: '商品/套餐管理',
+      plansPageDesc: '统一管理充值商品和订阅套餐配置',
       tabPlanConfig: '套餐配置',
       tabUserSubs: '用户订阅',
       selectGroup: '请选择分组',

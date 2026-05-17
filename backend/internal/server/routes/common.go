@@ -23,6 +23,23 @@ func RegisterCommonRoutes(r *gin.Engine, cfg *config.Config) {
 		c.Status(http.StatusOK)
 	})
 
+	// Claude Code v2 遥测日志（忽略，直接返回200）
+	r.POST("/api/event_logging/v2/batch", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	// Claude Code v2 日志（忽略，直接返回200）
+	r.POST("/api/v2/logs", func(c *gin.Context) {
+		c.Status(http.StatusOK)
+	})
+
+	// Claude Code MCP 注册表（返回空列表）
+	r.GET("/mcp-registry/v0/servers", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"servers": []interface{}{},
+		})
+	})
+
 	// Setup status endpoint (always returns needs_setup: false in normal mode)
 	// This is used by the frontend to detect when the service has restarted after setup
 	r.GET("/setup/status", func(c *gin.Context) {

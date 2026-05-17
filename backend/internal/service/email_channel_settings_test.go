@@ -68,6 +68,43 @@ func TestEmailService_GetSMTPConfigs_IncludesPrimaryAndFallbackChannels(t *testi
 	require.Equal(t, "backup-b", configs[2].ID)
 }
 
+func TestEmailService_GetSMTPConfigByID_ReturnsDisabledFallbackChannel(t *testing.T) {
+	repo := &settingRepoStub{values: map[string]string{
+		SettingKeySMTPChannels: `[{
+			"id":"backup-disabled",
+			"name":"Disabled Backup",
+			"enabled":false,
+			"host":"smtp.disabled.test",
+			"port":2525,
+			"username":"disabled-user",
+			"password":"disabled-pass",
+			"from_email":"disabled@example.com",
+			"from_name":"Disabled",
+			"use_tls":false,
+			"daily_limit":10,
+			"sort_order":1
+		}]`,
+	}}
+	svc := NewEmailService(repo, nil)
+
+	config, err := svc.GetSMTPConfigByID(context.Background(), "backup-disabled")
+	require.NoError(t, err)
+	require.Equal(t, "backup-disabled", config.ID)
+	require.Equal(t, "smtp.disabled.test", config.Host)
+	require.Equal(t, "disabled-pass", config.Password)
+	require.False(t, config.UseTLS)
+}
+
+func TestEmailService_GetSMTPConfigByID_ReturnsNotFound(t *testing.T) {
+	repo := &settingRepoStub{values: map[string]string{
+		SettingKeySMTPHost: "smtp.primary.test",
+	}}
+	svc := NewEmailService(repo, nil)
+
+	_, err := svc.GetSMTPConfigByID(context.Background(), "missing")
+	require.ErrorIs(t, err, ErrSMTPChannelNotFound)
+}
+
 func TestEmailService_SendEmailWithFallback_SkipsLimitedChannel(t *testing.T) {
 	cache := &smtpChannelCacheStub{counts: map[string]int64{
 		"smtp_channel:primary": 1,

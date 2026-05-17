@@ -810,6 +810,7 @@ export async function testSmtpConnection(
  */
 export interface SendTestEmailRequest {
   email: string;
+  smtp_channel_id?: string;
   smtp_host: string;
   smtp_port: number;
   smtp_username: string;

@@ -16,6 +16,7 @@ const {
   getStreamTimeoutSettings,
   getRectifierSettings,
   getBetaPolicySettings,
+  sendTestEmail,
   getGroups,
   listProxies,
   getProviders,
@@ -38,6 +39,7 @@ const {
   getStreamTimeoutSettings: vi.fn(),
   getRectifierSettings: vi.fn(),
   getBetaPolicySettings: vi.fn(),
+  sendTestEmail: vi.fn(),
   getGroups: vi.fn(),
   listProxies: vi.fn(),
   getProviders: vi.fn(),
@@ -66,6 +68,7 @@ vi.mock("@/api", () => ({
       getStreamTimeoutSettings,
       getRectifierSettings,
       getBetaPolicySettings,
+      sendTestEmail,
     },
     groups: {
       getAll: getGroups,
@@ -456,6 +459,16 @@ async function openUsersTab(wrapper: ReturnType<typeof mountView>) {
   await flushPromises();
 }
 
+async function openEmailTab(wrapper: ReturnType<typeof mountView>) {
+  const emailTabButton = wrapper
+    .findAll("button")
+    .find((node) => node.text().includes("admin.settings.tabs.email"));
+
+  expect(emailTabButton).toBeDefined();
+  await emailTabButton?.trigger("click");
+  await flushPromises();
+}
+
 describe("admin SettingsView payment visible method controls", () => {
   beforeEach(() => {
     getSettings.mockReset();
@@ -469,6 +482,7 @@ describe("admin SettingsView payment visible method controls", () => {
     getStreamTimeoutSettings.mockReset();
     getRectifierSettings.mockReset();
     getBetaPolicySettings.mockReset();
+    sendTestEmail.mockReset();
     getGroups.mockReset();
     listProxies.mockReset();
     getProviders.mockReset();
@@ -523,6 +537,9 @@ describe("admin SettingsView payment visible method controls", () => {
     });
     getBetaPolicySettings.mockResolvedValue({
       rules: [],
+    });
+    sendTestEmail.mockResolvedValue({
+      message: "sent",
     });
     getGroups.mockResolvedValue([]);
     listProxies.mockResolvedValue({
@@ -726,6 +743,49 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(showSuccess).toHaveBeenCalledWith("admin.settings.settingsSaved");
     expect(wrapper.text()).toContain("体验");
   });
+
+  it("sends a test email through the selected fallback SMTP channel", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      email_verify_enabled: true,
+      smtp_channels: [
+        {
+          id: "backup-mail",
+          name: "Backup Mail",
+          enabled: false,
+          host: "smtp.backup.example.com",
+          port: 465,
+          username: "backup-user",
+          password_configured: true,
+          from_email: "backup@example.com",
+          from_name: "Backup Sender",
+          use_tls: true,
+          daily_limit: 100,
+          sort_order: 1,
+        },
+      ],
+    });
+
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openEmailTab(wrapper);
+    await wrapper.get('[data-testid="test-email-recipient"]').setValue("ops@example.com");
+    await wrapper.get('[data-testid="smtp-channel-test-backup-mail"]').trigger("click");
+    await flushPromises();
+
+    expect(sendTestEmail).toHaveBeenCalledWith({
+      email: "ops@example.com",
+      smtp_channel_id: "backup-mail",
+      smtp_host: "smtp.backup.example.com",
+      smtp_port: 465,
+      smtp_username: "backup-user",
+      smtp_password: "",
+      smtp_from_email: "backup@example.com",
+      smtp_from_name: "Backup Sender",
+      smtp_use_tls: true,
+    });
+  });
 });
 
 describe("admin SettingsView wechat connect controls", () => {
@@ -741,6 +801,7 @@ describe("admin SettingsView wechat connect controls", () => {
     getStreamTimeoutSettings.mockReset();
     getRectifierSettings.mockReset();
     getBetaPolicySettings.mockReset();
+    sendTestEmail.mockReset();
     getGroups.mockReset();
     listProxies.mockReset();
     getProviders.mockReset();
@@ -798,6 +859,9 @@ describe("admin SettingsView wechat connect controls", () => {
     });
     getBetaPolicySettings.mockResolvedValue({
       rules: [],
+    });
+    sendTestEmail.mockResolvedValue({
+      message: "sent",
     });
     getGroups.mockResolvedValue([]);
     listProxies.mockResolvedValue({
