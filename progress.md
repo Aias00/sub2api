@@ -1047,3 +1047,22 @@
 ### Validation
 - `go build ./cmd/server` passed from `backend/`.
 - `go test ./internal/handler/admin -run 'Test.*Setting'` passed from `backend/`.
+
+## 2026-05-18 Persistent Login Agreement Entry
+### Done
+- Updated the shared login agreement prompt so modal-mode legal entry remains visible below the login/register submit buttons even after the user has already accepted the current revision.
+- Kept the existing gate behavior intact: users still cannot submit login/register while a required agreement revision is unaccepted.
+- Added focused component coverage for:
+  - accepted modal mode still showing a persistent “查看条款” entry
+  - unaccepted modal mode still showing the stronger gate copy and agreement CTA
+
+### Failures
+- None.
+
+### Next
+- Commit, push, deploy, and verify production `/login` and `/register` show the persistent agreement entry under the primary action button.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/components/auth/__tests__/LoginAgreementPrompt.spec.ts src/utils/__tests__/loginAgreementTemplates.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.

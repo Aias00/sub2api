@@ -36,23 +36,55 @@
   </div>
 
   <div
-    v-else-if="!accepted && documents.length > 0"
-    class="rounded-lg border border-primary-100 bg-primary-50/70 p-3 text-sm text-primary-900 dark:border-primary-500/20 dark:bg-primary-500/10 dark:text-primary-100"
+    v-else-if="documents.length > 0"
+    class="rounded-lg p-3 text-sm"
+    :class="
+      accepted
+        ? 'border border-gray-200 bg-white/80 text-gray-700 dark:border-dark-700 dark:bg-dark-800/70 dark:text-dark-200'
+        : 'border border-primary-100 bg-primary-50/70 text-primary-900 dark:border-primary-500/20 dark:bg-primary-500/10 dark:text-primary-100'
+    "
   >
     <div class="flex items-start gap-3">
-      <Icon name="shield" size="sm" class="mt-0.5 flex-shrink-0 text-primary-600 dark:text-primary-300" />
+      <Icon
+        name="shield"
+        size="sm"
+        class="mt-0.5 flex-shrink-0"
+        :class="
+          accepted
+            ? 'text-gray-500 dark:text-dark-300'
+            : 'text-primary-600 dark:text-primary-300'
+        "
+      />
       <div class="min-w-0 flex-1">
-        <p class="font-medium">继续登录前需要先同意最新条款。</p>
-        <p class="mt-1 text-primary-700 dark:text-primary-200/80">
-          未同意前，账号密码输入和快捷登录会保持禁用。
+        <p class="font-medium">
+          {{ accepted ? '登录条款入口' : '继续登录前需要先同意最新条款。' }}
+        </p>
+        <p
+          class="mt-1"
+          :class="
+            accepted
+              ? 'text-gray-500 dark:text-dark-400'
+              : 'text-primary-700 dark:text-primary-200/80'
+          "
+        >
+          {{
+            accepted
+              ? '您已同意当前版本条款，可随时重新查看相关文档。'
+              : '未同意前，账号密码输入和快捷登录会保持禁用。'
+          }}
         </p>
       </div>
       <button
         type="button"
-        class="flex-shrink-0 rounded-md bg-primary-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-primary-700"
+        class="flex-shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition"
+        :class="
+          accepted
+            ? 'bg-gray-900 text-white hover:bg-gray-800 dark:bg-dark-700 dark:hover:bg-dark-600'
+            : 'bg-primary-600 text-white hover:bg-primary-700'
+        "
         @click="emit('open')"
       >
-        查看条款
+        {{ accepted ? '查看条款' : '查看并同意' }}
       </button>
     </div>
   </div>
