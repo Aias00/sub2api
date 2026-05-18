@@ -1030,3 +1030,20 @@
 - `pnpm --dir frontend exec vitest run src/utils/__tests__/loginAgreementTemplates.spec.ts` passed.
 - `pnpm --dir frontend run typecheck` passed.
 - Local browser verification confirmed `/legal/terms` now shows one title, dynamic dates, and no hardcoded localhost URL in the正文地址说明。
+
+## 2026-05-18 Production Settings Partial-Update Fix
+### Done
+- Investigated the production brand regression after enabling login agreement content and confirmed `site_name` / `site_logo` were overwritten by empty values.
+- Located the root cause in `admin/settings` partial updates: several OEM branding fields were plain request fields in the backend handler, so omitted JSON fields were treated as zero values and persisted as resets.
+- Changed the affected branding request fields to pointer semantics in the admin settings handler and now preserve previous values when the client omits them.
+- Confirmed the production legal-document data and login-agreement toggle were updated successfully after the hotfix path was identified.
+
+### Failures
+- The first production legal-content update was applied through a partial admin settings API payload before the backend fix existed, which reset branding fields on the live site.
+
+### Next
+- Deploy the partial-update hotfix so future targeted settings writes do not clobber branding and other optional OEM values.
+
+### Validation
+- `go build ./cmd/server` passed from `backend/`.
+- `go test ./internal/handler/admin -run 'Test.*Setting'` passed from `backend/`.

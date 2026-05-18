@@ -424,7 +424,7 @@ type UpdateSettingsRequest struct {
 	PromoCodeEnabled                 bool                         `json:"promo_code_enabled"`
 	PasswordResetEnabled             bool                         `json:"password_reset_enabled"`
 	PasswordMinLength                int                          `json:"password_min_length"`
-	FrontendURL                      string                       `json:"frontend_url"`
+	FrontendURL                      *string                      `json:"frontend_url"`
 	InvitationCodeEnabled            bool                         `json:"invitation_code_enabled"`
 	TotpEnabled                      bool                         `json:"totp_enabled"` // TOTP 双因素认证
 	LoginAgreementEnabled            bool                         `json:"login_agreement_enabled"`
@@ -508,14 +508,14 @@ type UpdateSettingsRequest struct {
 	GoogleOAuthFrontendRedirectURL string `json:"google_oauth_frontend_redirect_url"`
 
 	// OEM设置
-	SiteName                    string                `json:"site_name"`
-	SiteLogo                    string                `json:"site_logo"`
-	SiteSubtitle                string                `json:"site_subtitle"`
-	APIBaseURL                  string                `json:"api_base_url"`
-	ContactInfo                 string                `json:"contact_info"`
-	DocURL                      string                `json:"doc_url"`
-	HomeContent                 string                `json:"home_content"`
-	HideCcsImportButton         bool                  `json:"hide_ccs_import_button"`
+	SiteName                    *string               `json:"site_name"`
+	SiteLogo                    *string               `json:"site_logo"`
+	SiteSubtitle                *string               `json:"site_subtitle"`
+	APIBaseURL                  *string               `json:"api_base_url"`
+	ContactInfo                 *string               `json:"contact_info"`
+	DocURL                      *string               `json:"doc_url"`
+	HomeContent                 *string               `json:"home_content"`
+	HideCcsImportButton         *bool                 `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled *bool                 `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     *string               `json:"purchase_subscription_url"`
 	TableDefaultPageSize        int                   `json:"table_default_page_size"`
@@ -822,6 +822,42 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	loginAgreementDocuments := loginAgreementDocumentsToService(req.LoginAgreementDocuments)
 	if len(loginAgreementDocuments) == 0 {
 		loginAgreementDocuments = previousSettings.LoginAgreementDocuments
+	}
+	frontendURL := previousSettings.FrontendURL
+	if req.FrontendURL != nil {
+		frontendURL = strings.TrimSpace(*req.FrontendURL)
+	}
+	siteName := previousSettings.SiteName
+	if req.SiteName != nil {
+		siteName = strings.TrimSpace(*req.SiteName)
+	}
+	siteLogo := previousSettings.SiteLogo
+	if req.SiteLogo != nil {
+		siteLogo = strings.TrimSpace(*req.SiteLogo)
+	}
+	siteSubtitle := previousSettings.SiteSubtitle
+	if req.SiteSubtitle != nil {
+		siteSubtitle = strings.TrimSpace(*req.SiteSubtitle)
+	}
+	apiBaseURL := previousSettings.APIBaseURL
+	if req.APIBaseURL != nil {
+		apiBaseURL = strings.TrimSpace(*req.APIBaseURL)
+	}
+	contactInfo := previousSettings.ContactInfo
+	if req.ContactInfo != nil {
+		contactInfo = strings.TrimSpace(*req.ContactInfo)
+	}
+	docURL := previousSettings.DocURL
+	if req.DocURL != nil {
+		docURL = strings.TrimSpace(*req.DocURL)
+	}
+	homeContent := previousSettings.HomeContent
+	if req.HomeContent != nil {
+		homeContent = strings.TrimSpace(*req.HomeContent)
+	}
+	hideCcsImportButton := previousSettings.HideCcsImportButton
+	if req.HideCcsImportButton != nil {
+		hideCcsImportButton = *req.HideCcsImportButton
 	}
 	for _, doc := range loginAgreementDocuments {
 		if strings.TrimSpace(doc.Title) == "" {
@@ -1169,11 +1205,14 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	}
 
 	// Frontend URL 验证
-	req.FrontendURL = strings.TrimSpace(req.FrontendURL)
-	if req.FrontendURL != "" {
-		if err := config.ValidateAbsoluteHTTPURL(req.FrontendURL); err != nil {
-			response.BadRequest(c, "Frontend URL must be an absolute http(s) URL")
-			return
+	if req.FrontendURL != nil {
+		trimmedFrontendURL := strings.TrimSpace(*req.FrontendURL)
+		req.FrontendURL = &trimmedFrontendURL
+		if trimmedFrontendURL != "" {
+			if err := config.ValidateAbsoluteHTTPURL(trimmedFrontendURL); err != nil {
+				response.BadRequest(c, "Frontend URL must be an absolute http(s) URL")
+				return
+			}
 		}
 	}
 
@@ -1364,7 +1403,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PromoCodeEnabled:                 req.PromoCodeEnabled,
 		PasswordResetEnabled:             req.PasswordResetEnabled,
 		PasswordMinLength:                req.PasswordMinLength,
-		FrontendURL:                      req.FrontendURL,
+		FrontendURL:                      frontendURL,
 		InvitationCodeEnabled:            req.InvitationCodeEnabled,
 		TotpEnabled:                      req.TotpEnabled,
 		LoginAgreementEnabled:            req.LoginAgreementEnabled,
@@ -1435,14 +1474,14 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		GoogleOAuthClientSecret:          req.GoogleOAuthClientSecret,
 		GoogleOAuthRedirectURL:           req.GoogleOAuthRedirectURL,
 		GoogleOAuthFrontendRedirectURL:   req.GoogleOAuthFrontendRedirectURL,
-		SiteName:                         req.SiteName,
-		SiteLogo:                         req.SiteLogo,
-		SiteSubtitle:                     req.SiteSubtitle,
-		APIBaseURL:                       req.APIBaseURL,
-		ContactInfo:                      req.ContactInfo,
-		DocURL:                           req.DocURL,
-		HomeContent:                      req.HomeContent,
-		HideCcsImportButton:              req.HideCcsImportButton,
+		SiteName:                         siteName,
+		SiteLogo:                         siteLogo,
+		SiteSubtitle:                     siteSubtitle,
+		APIBaseURL:                       apiBaseURL,
+		ContactInfo:                      contactInfo,
+		DocURL:                           docURL,
+		HomeContent:                      homeContent,
+		HideCcsImportButton:              hideCcsImportButton,
 		PurchaseSubscriptionEnabled:      purchaseEnabled,
 		PurchaseSubscriptionURL:          purchaseURL,
 		TableDefaultPageSize:             req.TableDefaultPageSize,
