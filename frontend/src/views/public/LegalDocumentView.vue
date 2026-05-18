@@ -90,6 +90,7 @@ import { marked } from 'marked'
 import DOMPurify from 'dompurify'
 import Icon from '@/components/icons/Icon.vue'
 import { getPublicSettings } from '@/api/auth'
+import { renderLoginAgreementDocumentContent } from '@/utils/loginAgreementTemplates'
 import { sanitizeUrl } from '@/utils/url'
 import type { LoginAgreementDocument, PublicSettings } from '@/types'
 
@@ -125,7 +126,15 @@ const currentDocument = computed<LoginAgreementDocument | null>(() => {
 const hasContent = computed(() => Boolean(currentDocument.value?.content_md?.trim()))
 
 const renderedHtml = computed(() => {
-  const content = currentDocument.value?.content_md?.trim() || ''
+  const content = renderLoginAgreementDocumentContent(
+    currentDocument.value?.content_md?.trim() || '',
+    {
+      documentId: currentDocument.value?.id,
+      updatedAt: updatedAt.value,
+      frontendUrl: '',
+      contactInfo: settings.value?.contact_info || '',
+    },
+  )
   if (!content) {
     return ''
   }

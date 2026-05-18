@@ -4524,14 +4524,24 @@
                       }}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm inline-flex items-center gap-1.5"
-                    @click="addLoginAgreementDocument"
-                  >
-                    <Icon name="plus" size="sm" />
-                    {{ localText("添加文档", "Add document") }}
-                  </button>
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-sm inline-flex items-center gap-1.5"
+                      @click="applyCommercialLoginAgreementTemplate"
+                    >
+                      <Icon name="refresh" size="sm" />
+                      {{ localText("套用商业条款模板", "Apply commercial terms template") }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm inline-flex items-center gap-1.5"
+                      @click="addLoginAgreementDocument"
+                    >
+                      <Icon name="plus" size="sm" />
+                      {{ localText("添加文档", "Add document") }}
+                    </button>
+                  </div>
                 </div>
 
                 <div class="mt-4 space-y-3">
@@ -6508,6 +6518,10 @@ import {
   normalizeRegistrationEmailSuffixDomains,
   parseRegistrationEmailSuffixWhitelistInput,
 } from "@/utils/registrationEmailPolicy";
+import {
+  buildCommercialLoginAgreementDocuments,
+  isLegacyBlankLoginAgreementDocuments,
+} from "@/utils/loginAgreementTemplates";
 
 const { t, locale } = useI18n();
 const appStore = useAppStore();
@@ -6687,28 +6701,10 @@ const tablePageSizeMax = 1000;
 const tablePageSizeDefault = 20;
 
 function defaultLoginAgreementDocuments(): LoginAgreementDocument[] {
-  return [
-    {
-      id: "terms",
-      title: "服务条款",
-      content_md: "",
-    },
-    {
-      id: "usage-policy",
-      title: "使用政策",
-      content_md: "",
-    },
-    {
-      id: "supported-regions",
-      title: "支持的国家和地区",
-      content_md: "",
-    },
-    {
-      id: "service-specific-terms",
-      title: "服务特定条款",
-      content_md: "",
-    },
-  ];
+  return buildCommercialLoginAgreementDocuments({
+    siteName: "Sub2API",
+    effectiveDate: "2026-03-31",
+  });
 }
 
 function normalizeLoginAgreementDocumentId(raw: string): string {
@@ -7475,6 +7471,49 @@ function addLoginAgreementDocument() {
   });
 }
 
+function resolveCommercialLoginAgreementDocuments(): LoginAgreementDocument[] {
+  return buildCommercialLoginAgreementDocuments({
+    siteName: form.site_name,
+    frontendUrl: form.frontend_url || currentOrigin,
+    contactInfo: form.contact_info,
+    effectiveDate: form.login_agreement_updated_at,
+  });
+}
+
+function hasCustomLoginAgreementContent(): boolean {
+  return form.login_agreement_documents.some((doc) => {
+    const title = doc.title?.trim() || "";
+    const content = doc.content_md?.trim() || "";
+    return title !== "" || content !== "";
+  });
+}
+
+function applyCommercialLoginAgreementTemplate() {
+  if (
+    hasCustomLoginAgreementContent() &&
+    !isLegacyBlankLoginAgreementDocuments(form.login_agreement_documents) &&
+    !confirm(
+      localText(
+        "套用模板会覆盖当前协议文档内容，确定继续吗？",
+        "Applying the template will replace the current agreement documents. Continue?",
+      ),
+    )
+  ) {
+    return;
+  }
+
+  form.login_agreement_documents = resolveCommercialLoginAgreementDocuments();
+  if (!form.login_agreement_updated_at.trim()) {
+    form.login_agreement_updated_at = "2026-03-31";
+  }
+  appStore.showSuccess(
+    localText(
+      "已填充商业条款模板，请检查后保存。",
+      "Commercial terms template applied. Review and save the settings.",
+    ),
+  );
+}
+
 function removeLoginAgreementDocument(index: number) {
   form.login_agreement_documents.splice(index, 1);
 }
@@ -7607,7 +7646,7 @@ async function loadSettings() {
       settings.login_agreement_mode === "checkbox" ? "checkbox" : "modal";
     form.login_agreement_updated_at =
       settings.login_agreement_updated_at || "2026-03-31";
-    form.login_agreement_documents =
+    const loadedLoginAgreementDocuments =
       Array.isArray(settings.login_agreement_documents) &&
       settings.login_agreement_documents.length > 0
         ? settings.login_agreement_documents.map((doc) => ({
@@ -7615,7 +7654,16 @@ async function loadSettings() {
             title: doc.title || "",
             content_md: doc.content_md || "",
           }))
-        : defaultLoginAgreementDocuments();
+        : [];
+    form.login_agreement_documents =
+      isLegacyBlankLoginAgreementDocuments(loadedLoginAgreementDocuments)
+        ? buildCommercialLoginAgreementDocuments({
+            siteName: settings.site_name,
+            frontendUrl: settings.frontend_url || currentOrigin,
+            contactInfo: settings.contact_info,
+            effectiveDate: form.login_agreement_updated_at,
+          })
+        : loadedLoginAgreementDocuments;
     Object.assign(authSourceDefaults, buildAuthSourceDefaultsState(settings));
     form.backend_mode_enabled = settings.backend_mode_enabled;
     form.default_subscriptions = normalizeDefaultSubscriptionSettings(

@@ -1002,3 +1002,31 @@
   - `go build -tags embed -o ../sub2api.new ./cmd/server`
 - Restarted production on `SERVER_PORT=8081` with process `925212`; local server health returned `{"env":"production","status":"ok"}`.
 - `https://cloudbase.eu.org/health`, `https://cloudbase.eu.org/api/v1/settings/public`, `/admin/orders/plans`, and `/login` returned HTTP 200 through Cloudflare.
+
+## 2026-05-18 Commercial Legal Templates
+### Done
+- Added a reusable commercial login-agreement template generator for:
+  - 商业服务条款
+  - 使用政策
+  - 支持的国家和地区
+  - 服务特定条款
+- Added a one-click “套用商业条款模板” action in admin settings so non-technical operators can refresh the legal document set without editing raw Markdown line-by-line.
+- Reworked public legal document rendering so effective date / updated date / contact info / site URL are resolved at render time instead of being permanently baked into stored Markdown.
+- Expanded `supported-regions` from a thin policy shell into a fuller operations-facing regional policy with:
+  - general support regions by geography
+  - exception handling
+  - review requirements
+  - dynamic restriction notes
+- Normalized the current local legal-document records so the public `/legal/*` routes match the new template structure.
+
+### Failures
+- The first local pass still showed stale embedded frontend assets because the backend binary had not yet been rebuilt and restarted after the template changes.
+- The first dynamic legal-content implementation used `replaceAll` and a missing public-settings field, which failed frontend typecheck; replaced with compatibility-safe string handling and legal-view local resolution.
+
+### Next
+- Commit, push, deploy the legal template refresh to the server, then verify production `/legal/terms` and `/legal/supported-regions`.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/utils/__tests__/loginAgreementTemplates.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- Local browser verification confirmed `/legal/terms` now shows one title, dynamic dates, and no hardcoded localhost URL in the正文地址说明。
