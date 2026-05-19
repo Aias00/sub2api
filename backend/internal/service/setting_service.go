@@ -346,6 +346,29 @@ func buildLoginAgreementRevision(updatedAt string, docs []LoginAgreementDocument
 	return hex.EncodeToString(sum[:])[:16]
 }
 
+func (s *SettingService) GetCurrentLoginAgreementRequirement(ctx context.Context) (bool, string, error) {
+	if s == nil {
+		return false, "", nil
+	}
+
+	settings, err := s.GetAllSettings(ctx)
+	if err != nil {
+		return false, "", err
+	}
+
+	docs := normalizeLoginAgreementDocuments(settings.LoginAgreementDocuments)
+	if !settings.LoginAgreementEnabled || len(docs) == 0 {
+		return false, "", nil
+	}
+
+	updatedAt := strings.TrimSpace(settings.LoginAgreementUpdatedAt)
+	if updatedAt == "" {
+		updatedAt = defaultLoginAgreementDate
+	}
+
+	return true, buildLoginAgreementRevision(updatedAt, docs), nil
+}
+
 func normalizeWeChatConnectModeSetting(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "mp":

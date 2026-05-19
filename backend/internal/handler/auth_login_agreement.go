@@ -26,17 +26,7 @@ func (h *AuthHandler) loginAgreementRequirement(ctx context.Context) (bool, stri
 		return false, "", nil
 	}
 
-	settings, err := settingSvc.GetPublicSettings(ctx)
-	if err != nil {
-		return false, "", err
-	}
-
-	revision := strings.TrimSpace(settings.LoginAgreementRevision)
-	if !settings.LoginAgreementEnabled || revision == "" {
-		return false, "", nil
-	}
-
-	return true, revision, nil
+	return settingSvc.GetCurrentLoginAgreementRequirement(ctx)
 }
 
 func (h *AuthHandler) ensureAnonymousLoginAgreementAccepted(ctx context.Context, input agreementAcceptanceInput) (string, error) {
