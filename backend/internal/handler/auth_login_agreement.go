@@ -14,11 +14,19 @@ type agreementAcceptanceInput struct {
 }
 
 func (h *AuthHandler) loginAgreementRequirement(ctx context.Context) (bool, string, error) {
-	if h == nil || h.settingSvc == nil {
+	if h == nil {
 		return false, "", nil
 	}
 
-	settings, err := h.settingSvc.GetPublicSettings(ctx)
+	settingSvc := h.settingSvc
+	if settingSvc == nil && h.authService != nil {
+		settingSvc = h.authService.SettingService()
+	}
+	if settingSvc == nil {
+		return false, "", nil
+	}
+
+	settings, err := settingSvc.GetPublicSettings(ctx)
 	if err != nil {
 		return false, "", err
 	}

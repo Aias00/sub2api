@@ -81,6 +81,13 @@ type DefaultSubscriptionAssigner interface {
 	AssignOrExtendSubscription(ctx context.Context, input *AssignSubscriptionInput) (*UserSubscription, bool, error)
 }
 
+func (s *AuthService) SettingService() *SettingService {
+	if s == nil {
+		return nil
+	}
+	return s.settingService
+}
+
 func (s *AuthService) RecordLoginAgreementAcceptance(ctx context.Context, user *User, revision string, acceptedAt time.Time) error {
 	if s == nil || s.userRepo == nil || user == nil || user.ID <= 0 {
 		return ErrServiceUnavailable
