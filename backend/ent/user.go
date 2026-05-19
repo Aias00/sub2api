@@ -55,6 +55,10 @@ type User struct {
 	WelcomeEmailSentAt *time.Time `json:"welcome_email_sent_at,omitempty"`
 	// MarketingEmailsUnsubscribedAt holds the value of the "marketing_emails_unsubscribed_at" field.
 	MarketingEmailsUnsubscribedAt *time.Time `json:"marketing_emails_unsubscribed_at,omitempty"`
+	// LoginAgreementAcceptedRevision holds the value of the "login_agreement_accepted_revision" field.
+	LoginAgreementAcceptedRevision string `json:"login_agreement_accepted_revision,omitempty"`
+	// LoginAgreementAcceptedAt holds the value of the "login_agreement_accepted_at" field.
+	LoginAgreementAcceptedAt *time.Time `json:"login_agreement_accepted_at,omitempty"`
 	// BalanceNotifyEnabled holds the value of the "balance_notify_enabled" field.
 	BalanceNotifyEnabled bool `json:"balance_notify_enabled,omitempty"`
 	// BalanceNotifyThresholdType holds the value of the "balance_notify_threshold_type" field.
@@ -234,9 +238,9 @@ func (*User) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullFloat64)
 		case user.FieldID, user.FieldConcurrency, user.FieldRpmLimit:
 			values[i] = new(sql.NullInt64)
-		case user.FieldEmail, user.FieldPasswordHash, user.FieldRole, user.FieldStatus, user.FieldUsername, user.FieldNotes, user.FieldTotpSecretEncrypted, user.FieldSignupSource, user.FieldBalanceNotifyThresholdType, user.FieldBalanceNotifyExtraEmails:
+		case user.FieldEmail, user.FieldPasswordHash, user.FieldRole, user.FieldStatus, user.FieldUsername, user.FieldNotes, user.FieldTotpSecretEncrypted, user.FieldSignupSource, user.FieldLoginAgreementAcceptedRevision, user.FieldBalanceNotifyThresholdType, user.FieldBalanceNotifyExtraEmails:
 			values[i] = new(sql.NullString)
-		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt, user.FieldTotpEnabledAt, user.FieldLastLoginAt, user.FieldLastActiveAt, user.FieldWelcomeEmailSentAt, user.FieldMarketingEmailsUnsubscribedAt:
+		case user.FieldCreatedAt, user.FieldUpdatedAt, user.FieldDeletedAt, user.FieldTotpEnabledAt, user.FieldLastLoginAt, user.FieldLastActiveAt, user.FieldWelcomeEmailSentAt, user.FieldMarketingEmailsUnsubscribedAt, user.FieldLoginAgreementAcceptedAt:
 			values[i] = new(sql.NullTime)
 		default:
 			values[i] = new(sql.UnknownType)
@@ -379,6 +383,19 @@ func (_m *User) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.MarketingEmailsUnsubscribedAt = new(time.Time)
 				*_m.MarketingEmailsUnsubscribedAt = value.Time
+			}
+		case user.FieldLoginAgreementAcceptedRevision:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field login_agreement_accepted_revision", values[i])
+			} else if value.Valid {
+				_m.LoginAgreementAcceptedRevision = value.String
+			}
+		case user.FieldLoginAgreementAcceptedAt:
+			if value, ok := values[i].(*sql.NullTime); !ok {
+				return fmt.Errorf("unexpected type %T for field login_agreement_accepted_at", values[i])
+			} else if value.Valid {
+				_m.LoginAgreementAcceptedAt = new(time.Time)
+				*_m.LoginAgreementAcceptedAt = value.Time
 			}
 		case user.FieldBalanceNotifyEnabled:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -586,6 +603,14 @@ func (_m *User) String() string {
 	builder.WriteString(", ")
 	if v := _m.MarketingEmailsUnsubscribedAt; v != nil {
 		builder.WriteString("marketing_emails_unsubscribed_at=")
+		builder.WriteString(v.Format(time.ANSIC))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("login_agreement_accepted_revision=")
+	builder.WriteString(_m.LoginAgreementAcceptedRevision)
+	builder.WriteString(", ")
+	if v := _m.LoginAgreementAcceptedAt; v != nil {
+		builder.WriteString("login_agreement_accepted_at=")
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")

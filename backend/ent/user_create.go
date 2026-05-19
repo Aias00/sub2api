@@ -283,6 +283,34 @@ func (_c *UserCreate) SetNillableMarketingEmailsUnsubscribedAt(v *time.Time) *Us
 	return _c
 }
 
+// SetLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field.
+func (_c *UserCreate) SetLoginAgreementAcceptedRevision(v string) *UserCreate {
+	_c.mutation.SetLoginAgreementAcceptedRevision(v)
+	return _c
+}
+
+// SetNillableLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field if the given value is not nil.
+func (_c *UserCreate) SetNillableLoginAgreementAcceptedRevision(v *string) *UserCreate {
+	if v != nil {
+		_c.SetLoginAgreementAcceptedRevision(*v)
+	}
+	return _c
+}
+
+// SetLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field.
+func (_c *UserCreate) SetLoginAgreementAcceptedAt(v time.Time) *UserCreate {
+	_c.mutation.SetLoginAgreementAcceptedAt(v)
+	return _c
+}
+
+// SetNillableLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field if the given value is not nil.
+func (_c *UserCreate) SetNillableLoginAgreementAcceptedAt(v *time.Time) *UserCreate {
+	if v != nil {
+		_c.SetLoginAgreementAcceptedAt(*v)
+	}
+	return _c
+}
+
 // SetBalanceNotifyEnabled sets the "balance_notify_enabled" field.
 func (_c *UserCreate) SetBalanceNotifyEnabled(v bool) *UserCreate {
 	_c.mutation.SetBalanceNotifyEnabled(v)
@@ -630,6 +658,10 @@ func (_c *UserCreate) defaults() error {
 		v := user.DefaultSignupSource
 		_c.mutation.SetSignupSource(v)
 	}
+	if _, ok := _c.mutation.LoginAgreementAcceptedRevision(); !ok {
+		v := user.DefaultLoginAgreementAcceptedRevision
+		_c.mutation.SetLoginAgreementAcceptedRevision(v)
+	}
 	if _, ok := _c.mutation.BalanceNotifyEnabled(); !ok {
 		v := user.DefaultBalanceNotifyEnabled
 		_c.mutation.SetBalanceNotifyEnabled(v)
@@ -720,6 +752,9 @@ func (_c *UserCreate) check() error {
 		if err := user.SignupSourceValidator(v); err != nil {
 			return &ValidationError{Name: "signup_source", err: fmt.Errorf(`ent: validator failed for field "User.signup_source": %w`, err)}
 		}
+	}
+	if _, ok := _c.mutation.LoginAgreementAcceptedRevision(); !ok {
+		return &ValidationError{Name: "login_agreement_accepted_revision", err: errors.New(`ent: missing required field "User.login_agreement_accepted_revision"`)}
 	}
 	if _, ok := _c.mutation.BalanceNotifyEnabled(); !ok {
 		return &ValidationError{Name: "balance_notify_enabled", err: errors.New(`ent: missing required field "User.balance_notify_enabled"`)}
@@ -838,6 +873,14 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.MarketingEmailsUnsubscribedAt(); ok {
 		_spec.SetField(user.FieldMarketingEmailsUnsubscribedAt, field.TypeTime, value)
 		_node.MarketingEmailsUnsubscribedAt = &value
+	}
+	if value, ok := _c.mutation.LoginAgreementAcceptedRevision(); ok {
+		_spec.SetField(user.FieldLoginAgreementAcceptedRevision, field.TypeString, value)
+		_node.LoginAgreementAcceptedRevision = value
+	}
+	if value, ok := _c.mutation.LoginAgreementAcceptedAt(); ok {
+		_spec.SetField(user.FieldLoginAgreementAcceptedAt, field.TypeTime, value)
+		_node.LoginAgreementAcceptedAt = &value
 	}
 	if value, ok := _c.mutation.BalanceNotifyEnabled(); ok {
 		_spec.SetField(user.FieldBalanceNotifyEnabled, field.TypeBool, value)
@@ -1381,6 +1424,36 @@ func (u *UserUpsert) ClearMarketingEmailsUnsubscribedAt() *UserUpsert {
 	return u
 }
 
+// SetLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field.
+func (u *UserUpsert) SetLoginAgreementAcceptedRevision(v string) *UserUpsert {
+	u.Set(user.FieldLoginAgreementAcceptedRevision, v)
+	return u
+}
+
+// UpdateLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field to the value that was provided on create.
+func (u *UserUpsert) UpdateLoginAgreementAcceptedRevision() *UserUpsert {
+	u.SetExcluded(user.FieldLoginAgreementAcceptedRevision)
+	return u
+}
+
+// SetLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field.
+func (u *UserUpsert) SetLoginAgreementAcceptedAt(v time.Time) *UserUpsert {
+	u.Set(user.FieldLoginAgreementAcceptedAt, v)
+	return u
+}
+
+// UpdateLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field to the value that was provided on create.
+func (u *UserUpsert) UpdateLoginAgreementAcceptedAt() *UserUpsert {
+	u.SetExcluded(user.FieldLoginAgreementAcceptedAt)
+	return u
+}
+
+// ClearLoginAgreementAcceptedAt clears the value of the "login_agreement_accepted_at" field.
+func (u *UserUpsert) ClearLoginAgreementAcceptedAt() *UserUpsert {
+	u.SetNull(user.FieldLoginAgreementAcceptedAt)
+	return u
+}
+
 // SetBalanceNotifyEnabled sets the "balance_notify_enabled" field.
 func (u *UserUpsert) SetBalanceNotifyEnabled(v bool) *UserUpsert {
 	u.Set(user.FieldBalanceNotifyEnabled, v)
@@ -1834,6 +1907,41 @@ func (u *UserUpsertOne) UpdateMarketingEmailsUnsubscribedAt() *UserUpsertOne {
 func (u *UserUpsertOne) ClearMarketingEmailsUnsubscribedAt() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearMarketingEmailsUnsubscribedAt()
+	})
+}
+
+// SetLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field.
+func (u *UserUpsertOne) SetLoginAgreementAcceptedRevision(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetLoginAgreementAcceptedRevision(v)
+	})
+}
+
+// UpdateLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateLoginAgreementAcceptedRevision() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateLoginAgreementAcceptedRevision()
+	})
+}
+
+// SetLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field.
+func (u *UserUpsertOne) SetLoginAgreementAcceptedAt(v time.Time) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetLoginAgreementAcceptedAt(v)
+	})
+}
+
+// UpdateLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdateLoginAgreementAcceptedAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateLoginAgreementAcceptedAt()
+	})
+}
+
+// ClearLoginAgreementAcceptedAt clears the value of the "login_agreement_accepted_at" field.
+func (u *UserUpsertOne) ClearLoginAgreementAcceptedAt() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearLoginAgreementAcceptedAt()
 	})
 }
 
@@ -2472,6 +2580,41 @@ func (u *UserUpsertBulk) UpdateMarketingEmailsUnsubscribedAt() *UserUpsertBulk {
 func (u *UserUpsertBulk) ClearMarketingEmailsUnsubscribedAt() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearMarketingEmailsUnsubscribedAt()
+	})
+}
+
+// SetLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field.
+func (u *UserUpsertBulk) SetLoginAgreementAcceptedRevision(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetLoginAgreementAcceptedRevision(v)
+	})
+}
+
+// UpdateLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateLoginAgreementAcceptedRevision() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateLoginAgreementAcceptedRevision()
+	})
+}
+
+// SetLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field.
+func (u *UserUpsertBulk) SetLoginAgreementAcceptedAt(v time.Time) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetLoginAgreementAcceptedAt(v)
+	})
+}
+
+// UpdateLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdateLoginAgreementAcceptedAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdateLoginAgreementAcceptedAt()
+	})
+}
+
+// ClearLoginAgreementAcceptedAt clears the value of the "login_agreement_accepted_at" field.
+func (u *UserUpsertBulk) ClearLoginAgreementAcceptedAt() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.ClearLoginAgreementAcceptedAt()
 	})
 }
 

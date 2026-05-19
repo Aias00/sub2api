@@ -130,6 +130,73 @@ func TestEmailOAuthCallbackExistingEmailLogsInWhenInvitationEnabled(t *testing.T
 	_ = user
 }
 
+func TestEmailOAuthCallbackExistingEmailRequiresAgreementWhenEnabled(t *testing.T) {
+	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		settingValues: loginAgreementTestSettingValues(t),
+	})
+	ctx := context.Background()
+	agreementRevision := currentLoginAgreementTestRevision(t, handler)
+
+	user, err := client.User.Create().
+		SetEmail("existing@example.com").
+		SetUsername("existing").
+		SetPasswordHash("hash").
+		SetRole(service.RoleUser).
+		SetStatus(service.StatusActive).
+		Save(ctx)
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback", nil)
+
+	handler.emailOAuthCallbackWithProfile(c, "google", config.EmailOAuthProviderConfig{
+		Enabled:             true,
+		ClientID:            "google-client",
+		ClientSecret:        "google-secret",
+		RedirectURL:         "https://app.example/api/v1/auth/oauth/google/callback",
+		FrontendRedirectURL: "/auth/oauth/callback",
+	}, "/auth/oauth/callback", "/dashboard", &emailOAuthProfile{
+		Subject:       "google-456",
+		Email:         "existing@example.com",
+		EmailVerified: true,
+		Username:      "existing",
+	})
+
+	require.Equal(t, http.StatusFound, recorder.Code)
+	location := recorder.Header().Get("Location")
+	require.Contains(t, location, "error=login_agreement_required")
+	require.NotContains(t, location, "access_token=")
+
+	recorder = httptest.NewRecorder()
+	c, _ = gin.CreateTestContext(recorder)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/callback", nil)
+	req.AddCookie(&http.Cookie{Name: emailOAuthAgreementRevisionCookie, Value: encodeCookieValue(agreementRevision)})
+	c.Request = req
+
+	handler.emailOAuthCallbackWithProfile(c, "google", config.EmailOAuthProviderConfig{
+		Enabled:             true,
+		ClientID:            "google-client",
+		ClientSecret:        "google-secret",
+		RedirectURL:         "https://app.example/api/v1/auth/oauth/google/callback",
+		FrontendRedirectURL: "/auth/oauth/callback",
+	}, "/auth/oauth/callback", "/dashboard", &emailOAuthProfile{
+		Subject:       "google-456",
+		Email:         "existing@example.com",
+		EmailVerified: true,
+		Username:      "existing",
+	})
+
+	require.Equal(t, http.StatusFound, recorder.Code)
+	location = recorder.Header().Get("Location")
+	require.Contains(t, location, "access_token=")
+
+	updatedUser, err := client.User.Get(ctx, user.ID)
+	require.NoError(t, err)
+	require.Equal(t, agreementRevision, updatedUser.LoginAgreementAcceptedRevision)
+	require.NotNil(t, updatedUser.LoginAgreementAcceptedAt)
+}
+
 func TestEmailOAuthCallbackCreatesPasswordRegistrationSessionForNewEmail(t *testing.T) {
 	affiliateRepo := newOAuthEmailAffiliateRepoStub(map[string]int64{"AFF123": 1001})
 	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{

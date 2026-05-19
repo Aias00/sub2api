@@ -8,6 +8,7 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -2636,7 +2637,9 @@ func (r *oauthPendingFlowUserRepo) Create(ctx context.Context, user *service.Use
 		SetTotpEnabled(user.TotpEnabled).
 		SetNillableTotpEnabledAt(user.TotpEnabledAt).
 		SetTotalRecharged(user.TotalRecharged).
-		SetSignupSource(user.SignupSource).
+		SetSignupSource(oauthPendingFlowSignupSource(user.SignupSource)).
+		SetLoginAgreementAcceptedRevision(user.LoginAgreementAcceptedRevision).
+		SetNillableLoginAgreementAcceptedAt(user.LoginAgreementAcceptedAt).
 		SetNillableLastLoginAt(user.LastLoginAt).
 		SetNillableLastActiveAt(user.LastActiveAt).
 		Save(ctx)
@@ -2689,7 +2692,9 @@ func (r *oauthPendingFlowUserRepo) Update(ctx context.Context, user *service.Use
 		SetTotpEnabled(user.TotpEnabled).
 		SetNillableTotpEnabledAt(user.TotpEnabledAt).
 		SetTotalRecharged(user.TotalRecharged).
-		SetSignupSource(user.SignupSource).
+		SetSignupSource(oauthPendingFlowSignupSource(user.SignupSource)).
+		SetLoginAgreementAcceptedRevision(user.LoginAgreementAcceptedRevision).
+		SetNillableLoginAgreementAcceptedAt(user.LoginAgreementAcceptedAt).
 		SetNillableLastLoginAt(user.LastLoginAt).
 		SetNillableLastActiveAt(user.LastActiveAt).
 		Save(ctx)
@@ -2922,24 +2927,37 @@ func oauthPendingFlowServiceUser(entity *dbent.User) *service.User {
 		return nil
 	}
 	return &service.User{
-		ID:                  entity.ID,
-		Email:               entity.Email,
-		Username:            entity.Username,
-		Notes:               entity.Notes,
-		PasswordHash:        entity.PasswordHash,
-		Role:                entity.Role,
-		Balance:             entity.Balance,
-		Concurrency:         entity.Concurrency,
-		Status:              entity.Status,
-		SignupSource:        entity.SignupSource,
-		LastLoginAt:         entity.LastLoginAt,
-		LastActiveAt:        entity.LastActiveAt,
-		TotpSecretEncrypted: entity.TotpSecretEncrypted,
-		TotpEnabled:         entity.TotpEnabled,
-		TotpEnabledAt:       entity.TotpEnabledAt,
-		TotalRecharged:      entity.TotalRecharged,
-		CreatedAt:           entity.CreatedAt,
-		UpdatedAt:           entity.UpdatedAt,
+		ID:                             entity.ID,
+		Email:                          entity.Email,
+		Username:                       entity.Username,
+		Notes:                          entity.Notes,
+		PasswordHash:                   entity.PasswordHash,
+		Role:                           entity.Role,
+		Balance:                        entity.Balance,
+		Concurrency:                    entity.Concurrency,
+		Status:                         entity.Status,
+		SignupSource:                   entity.SignupSource,
+		LoginAgreementAcceptedRevision: entity.LoginAgreementAcceptedRevision,
+		LoginAgreementAcceptedAt:       entity.LoginAgreementAcceptedAt,
+		LastLoginAt:                    entity.LastLoginAt,
+		LastActiveAt:                   entity.LastActiveAt,
+		TotpSecretEncrypted:            entity.TotpSecretEncrypted,
+		TotpEnabled:                    entity.TotpEnabled,
+		TotpEnabledAt:                  entity.TotpEnabledAt,
+		TotalRecharged:                 entity.TotalRecharged,
+		CreatedAt:                      entity.CreatedAt,
+		UpdatedAt:                      entity.UpdatedAt,
+	}
+}
+
+func oauthPendingFlowSignupSource(raw string) string {
+	switch strings.TrimSpace(raw) {
+	case "", "email":
+		return "email"
+	case "linuxdo", "wechat", "oidc", "github", "google":
+		return strings.TrimSpace(raw)
+	default:
+		return "email"
 	}
 }
 

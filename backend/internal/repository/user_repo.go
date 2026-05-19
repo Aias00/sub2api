@@ -93,6 +93,8 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		SetSignupSource(userSignupSourceOrDefault(userIn.SignupSource)).
 		SetNillableLastLoginAt(userIn.LastLoginAt).
 		SetNillableLastActiveAt(userIn.LastActiveAt).
+		SetLoginAgreementAcceptedRevision(userIn.LoginAgreementAcceptedRevision).
+		SetNillableLoginAgreementAcceptedAt(userIn.LoginAgreementAcceptedAt).
 		SetRpmLimit(userIn.RPMLimit).
 		Save(txCtx)
 	if err != nil {
@@ -216,6 +218,7 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 		SetBalance(userIn.Balance).
 		SetConcurrency(userIn.Concurrency).
 		SetStatus(userIn.Status).
+		SetLoginAgreementAcceptedRevision(userIn.LoginAgreementAcceptedRevision).
 		SetBalanceNotifyEnabled(userIn.BalanceNotifyEnabled).
 		SetBalanceNotifyThresholdType(userIn.BalanceNotifyThresholdType).
 		SetNillableBalanceNotifyThreshold(userIn.BalanceNotifyThreshold).
@@ -233,6 +236,11 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	}
 	if userIn.BalanceNotifyThreshold == nil {
 		updateOp = updateOp.ClearBalanceNotifyThreshold()
+	}
+	if userIn.LoginAgreementAcceptedAt == nil {
+		updateOp = updateOp.ClearLoginAgreementAcceptedAt()
+	} else {
+		updateOp = updateOp.SetLoginAgreementAcceptedAt(*userIn.LoginAgreementAcceptedAt)
 	}
 	updated, err := updateOp.Save(txCtx)
 	if err != nil {
@@ -983,6 +991,8 @@ func applyUserEntityToService(dst *service.User, src *dbent.User) {
 	dst.LastActiveAt = src.LastActiveAt
 	dst.WelcomeEmailSentAt = src.WelcomeEmailSentAt
 	dst.MarketingEmailsUnsubscribedAt = src.MarketingEmailsUnsubscribedAt
+	dst.LoginAgreementAcceptedRevision = src.LoginAgreementAcceptedRevision
+	dst.LoginAgreementAcceptedAt = src.LoginAgreementAcceptedAt
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
 }

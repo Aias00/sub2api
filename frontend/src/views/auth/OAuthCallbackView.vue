@@ -184,6 +184,7 @@ import {
   loadOAuthAffiliateCode,
   oauthAffiliatePayload
 } from '@/utils/oauthAffiliate'
+import { buildLoginAgreementAcceptancePayload } from '@/utils/loginAgreementConsent'
 import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
 
 const route = useRoute()
@@ -395,7 +396,10 @@ async function handleSubmitRegistration() {
     }
     const { data } = await apiClient.post<OAuthTokenResponse>(
       `/auth/oauth/${pendingProvider.value}/complete-registration`,
-      payload
+      {
+        ...payload,
+        ...buildLoginAgreementAcceptancePayload()
+      }
     )
     await finalizeTokenResponse(data, redirectTo.value)
   } catch (e: unknown) {

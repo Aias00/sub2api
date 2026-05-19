@@ -1,3 +1,43 @@
+## 2026-05-19 Backend Login Agreement Enforcement
+### Done
+- Added persistent user-level login agreement acceptance tracking:
+  - `login_agreement_accepted_revision`
+  - `login_agreement_accepted_at`
+- Added migration `096_add_user_login_agreement_acceptance.sql`.
+- Regenerated Ent code and wired the new acceptance fields through:
+  - service user model
+  - repository create/update/entity mapping
+- Added backend login-agreement enforcement helpers so the server now validates the current agreement revision instead of relying on frontend-only localStorage.
+- Enforced the current agreement revision on:
+  - password login
+  - email registration
+  - pending OAuth bind-login
+  - pending OAuth create-account
+  - pending OAuth exchange/token issuance
+  - GitHub/Google complete-registration
+  - LinuxDo / OIDC / WeChat complete-registration
+  - direct GitHub/Google verified-email OAuth callback completion
+- Kept the auth-page UX working by adding agreement payload propagation from browser state to:
+  - login/register submit payloads
+  - email verify registration completion
+  - pending OAuth bind/create/exchange requests
+  - legacy complete-registration requests
+  - GitHub/Google OAuth start URL so direct callback completion can still prove the accepted revision
+- Added/updated regression coverage for:
+  - password login agreement enforcement
+  - email registration agreement enforcement
+  - pending OAuth token-exchange agreement enforcement
+  - direct email OAuth callback agreement enforcement
+  - existing auth callback/auth view payload tests
+
+### Failures
+- `pnpm exec prettier` is not available in this workspace, so formatting was handled with `gofmt` plus the existing frontend lint/build pipeline instead.
+
+### Next
+- Commit the agreement-enforcement changes with a Lore commit message.
+- Push to `main`.
+- Pull on the Google server, rebuild the embedded frontend/backend binary, restart `SERVER_PORT=8081`, and update `contact_info` to `cc@cloudbase.eu.org`.
+
 ## 2026-05-13 Active Email Daily Rate Limit
 ### Done
 - Added a shared daily quota for user-initiated email sends to reduce SMTP abuse risk.

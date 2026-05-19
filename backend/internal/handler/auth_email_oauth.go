@@ -21,13 +21,14 @@ import (
 )
 
 const (
-	emailOAuthCookiePath      = "/api/v1/auth/oauth"
-	emailOAuthStateCookieName = "email_oauth_state"
-	emailOAuthRedirectCookie  = "email_oauth_redirect"
-	emailOAuthProviderCookie  = "email_oauth_provider"
-	emailOAuthAffiliateCookie = "email_oauth_affiliate"
-	emailOAuthCookieMaxAgeSec = 10 * 60
-	emailOAuthDefaultRedirect = "/dashboard"
+	emailOAuthCookiePath              = "/api/v1/auth/oauth"
+	emailOAuthStateCookieName         = "email_oauth_state"
+	emailOAuthRedirectCookie          = "email_oauth_redirect"
+	emailOAuthProviderCookie          = "email_oauth_provider"
+	emailOAuthAffiliateCookie         = "email_oauth_affiliate"
+	emailOAuthAgreementRevisionCookie = "email_oauth_agreement_revision"
+	emailOAuthCookieMaxAgeSec         = 10 * 60
+	emailOAuthDefaultRedirect         = "/dashboard"
 )
 
 type emailOAuthTokenResponse struct {
@@ -78,6 +79,11 @@ func (h *AuthHandler) emailOAuthStart(c *gin.Context, provider string) {
 	emailOAuthSetCookie(c, emailOAuthStateCookieName, encodeCookieValue(state), secureCookie)
 	emailOAuthSetCookie(c, emailOAuthRedirectCookie, encodeCookieValue(redirectTo), secureCookie)
 	emailOAuthSetCookie(c, emailOAuthProviderCookie, encodeCookieValue(provider), secureCookie)
+	if acceptedRevision := strings.TrimSpace(c.Query("agreement_revision")); acceptedRevision != "" {
+		emailOAuthSetCookie(c, emailOAuthAgreementRevisionCookie, encodeCookieValue(acceptedRevision), secureCookie)
+	} else {
+		emailOAuthClearCookie(c, emailOAuthAgreementRevisionCookie, secureCookie)
+	}
 	if affCode := strings.TrimSpace(firstNonEmpty(c.Query("aff_code"), c.Query("aff"))); affCode != "" {
 		emailOAuthSetCookie(c, emailOAuthAffiliateCookie, encodeCookieValue(affCode), secureCookie)
 	} else {
@@ -119,6 +125,7 @@ func (h *AuthHandler) emailOAuthCallback(c *gin.Context, provider string) {
 		emailOAuthClearCookie(c, emailOAuthRedirectCookie, secureCookie)
 		emailOAuthClearCookie(c, emailOAuthProviderCookie, secureCookie)
 		emailOAuthClearCookie(c, emailOAuthAffiliateCookie, secureCookie)
+		emailOAuthClearCookie(c, emailOAuthAgreementRevisionCookie, secureCookie)
 	}()
 	expectedState, err := readCookieDecoded(c, emailOAuthStateCookieName)
 	if err != nil || expectedState == "" || expectedState != state {
@@ -169,7 +176,15 @@ func (h *AuthHandler) emailOAuthCallbackWithProfile(
 		UpstreamMetadata: profile.Metadata,
 	}
 	affiliateCode := h.emailOAuthAffiliateCode(c)
-	if shouldCreate, err := h.emailOAuthShouldCreatePendingRegistration(c.Request.Context(), input); err != nil {
+	agreementInput := agreementAcceptanceInput{
+		Accepted: strings.TrimSpace(c.Query("agreement_revision")) != "",
+	}
+	if agreementRevision, _ := readCookieDecoded(c, emailOAuthAgreementRevisionCookie); strings.TrimSpace(agreementRevision) != "" {
+		agreementInput.Accepted = true
+		agreementInput.Revision = strings.TrimSpace(agreementRevision)
+	}
+	shouldCreate, err := h.emailOAuthShouldCreatePendingRegistration(c.Request.Context(), input)
+	if err != nil {
 		redirectOAuthError(c, frontendCallback, infraerrors.Reason(err), infraerrors.Message(err), "")
 		return
 	} else if shouldCreate && h.emailOAuthRequiresManualCompletion(c.Request.Context(), provider, affiliateCode) {
@@ -179,6 +194,12 @@ func (h *AuthHandler) emailOAuthCallbackWithProfile(
 		}
 		redirectToFrontendCallback(c, frontendCallback)
 		return
+	}
+	if shouldCreate {
+		if _, err := h.ensureAnonymousLoginAgreementAccepted(c.Request.Context(), agreementInput); err != nil {
+			redirectOAuthError(c, frontendCallback, "login_agreement_required", infraerrors.Reason(err), infraerrors.Message(err))
+			return
+		}
 	}
 
 	tokenPair, user, err := h.authService.LoginOrRegisterVerifiedEmailOAuthWithInvitation(c.Request.Context(), input, "", affiliateCode)
@@ -196,6 +217,15 @@ func (h *AuthHandler) emailOAuthCallbackWithProfile(
 	}
 	if err := h.ensureBackendModeAllowsUser(c.Request.Context(), user); err != nil {
 		redirectOAuthError(c, frontendCallback, "login_blocked", infraerrors.Reason(err), infraerrors.Message(err))
+		return
+	}
+	if shouldCreate {
+		if err := h.recordLoginAgreementAcceptance(c.Request.Context(), user, agreementInput.Revision); err != nil {
+			redirectOAuthError(c, frontendCallback, "login_agreement_persist_failed", infraerrors.Reason(err), infraerrors.Message(err))
+			return
+		}
+	} else if err := h.ensureUserAcceptedCurrentLoginAgreement(c.Request.Context(), user, agreementInput); err != nil {
+		redirectOAuthError(c, frontendCallback, "login_agreement_required", infraerrors.Reason(err), infraerrors.Message(err))
 		return
 	}
 
@@ -339,9 +369,11 @@ func (h *AuthHandler) createEmailOAuthRegistrationPendingSession(
 }
 
 type completeEmailOAuthRequest struct {
-	Password       string `json:"password"`
-	InvitationCode string `json:"invitation_code,omitempty"`
-	AffCode        string `json:"aff_code,omitempty"`
+	Password          string `json:"password"`
+	InvitationCode    string `json:"invitation_code,omitempty"`
+	AffCode           string `json:"aff_code,omitempty"`
+	AgreementAccepted bool   `json:"agreement_accepted"`
+	AgreementRevision string `json:"agreement_revision"`
 }
 
 func (h *AuthHandler) completeEmailOAuthRegistration(c *gin.Context, provider string) {
@@ -368,6 +400,14 @@ func (h *AuthHandler) completeEmailOAuthRegistration(c *gin.Context, provider st
 		response.ErrorFrom(c, err)
 		return
 	}
+	currentAgreementRevision, err := h.ensureAnonymousLoginAgreementAccepted(c.Request.Context(), agreementAcceptanceInput{
+		Accepted: req.AgreementAccepted,
+		Revision: req.AgreementRevision,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 
 	affiliateCode := strings.TrimSpace(req.AffCode)
 	if affiliateCode == "" {
@@ -382,6 +422,10 @@ func (h *AuthHandler) completeEmailOAuthRegistration(c *gin.Context, provider st
 		strings.TrimSpace(session.ProviderType),
 	)
 	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if err := h.recordLoginAgreementAcceptance(c.Request.Context(), user, currentAgreementRevision); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}

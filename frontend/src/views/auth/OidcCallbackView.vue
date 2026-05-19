@@ -269,6 +269,7 @@ import {
   loadOAuthAffiliateCode,
   oauthAffiliatePayload
 } from '@/utils/oauthAffiliate'
+import { buildLoginAgreementAcceptancePayload } from '@/utils/loginAgreementConsent'
 
 const route = useRoute()
 const router = useRouter()
@@ -664,7 +665,8 @@ async function handleSubmitInvitation() {
             pending_oauth_token: legacyPendingOAuthToken.value,
             invitation_code: invitationCode.value.trim(),
             ...oauthAffiliatePayload(affCode),
-            ...serializeAdoptionDecision(decision)
+            ...serializeAdoptionDecision(decision),
+            ...buildLoginAgreementAcceptancePayload()
           })
         ).data
       : affCode
@@ -705,7 +707,8 @@ async function handleCreateAccount(payload: PendingOAuthCreateAccountPayload) {
       verify_code: payload.verifyCode || undefined,
       invitation_code: payload.invitationCode || undefined,
       ...oauthAffiliatePayload(loadOAuthAffiliateCode()),
-      ...serializeAdoptionDecision(currentAdoptionDecision())
+      ...serializeAdoptionDecision(currentAdoptionDecision()),
+      ...buildLoginAgreementAcceptancePayload()
     })
     await finalizePendingAccountResponse(data)
   } catch (e: unknown) {
@@ -730,7 +733,8 @@ async function handleBindLogin() {
     const { data } = await apiClient.post<PendingOidcCompletion>('/auth/oauth/pending/bind-login', {
       email,
       password,
-      ...serializeAdoptionDecision(currentAdoptionDecision())
+      ...serializeAdoptionDecision(currentAdoptionDecision()),
+      ...buildLoginAgreementAcceptancePayload()
     })
     await finalizePendingAccountResponse(data)
   } catch (e: unknown) {

@@ -339,6 +339,40 @@ func (_u *UserUpdate) ClearMarketingEmailsUnsubscribedAt() *UserUpdate {
 	return _u
 }
 
+// SetLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field.
+func (_u *UserUpdate) SetLoginAgreementAcceptedRevision(v string) *UserUpdate {
+	_u.mutation.SetLoginAgreementAcceptedRevision(v)
+	return _u
+}
+
+// SetNillableLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableLoginAgreementAcceptedRevision(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetLoginAgreementAcceptedRevision(*v)
+	}
+	return _u
+}
+
+// SetLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field.
+func (_u *UserUpdate) SetLoginAgreementAcceptedAt(v time.Time) *UserUpdate {
+	_u.mutation.SetLoginAgreementAcceptedAt(v)
+	return _u
+}
+
+// SetNillableLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableLoginAgreementAcceptedAt(v *time.Time) *UserUpdate {
+	if v != nil {
+		_u.SetLoginAgreementAcceptedAt(*v)
+	}
+	return _u
+}
+
+// ClearLoginAgreementAcceptedAt clears the value of the "login_agreement_accepted_at" field.
+func (_u *UserUpdate) ClearLoginAgreementAcceptedAt() *UserUpdate {
+	_u.mutation.ClearLoginAgreementAcceptedAt()
+	return _u
+}
+
 // SetBalanceNotifyEnabled sets the "balance_notify_enabled" field.
 func (_u *UserUpdate) SetBalanceNotifyEnabled(v bool) *UserUpdate {
 	_u.mutation.SetBalanceNotifyEnabled(v)
@@ -1056,6 +1090,15 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.MarketingEmailsUnsubscribedAtCleared() {
 		_spec.ClearField(user.FieldMarketingEmailsUnsubscribedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LoginAgreementAcceptedRevision(); ok {
+		_spec.SetField(user.FieldLoginAgreementAcceptedRevision, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LoginAgreementAcceptedAt(); ok {
+		_spec.SetField(user.FieldLoginAgreementAcceptedAt, field.TypeTime, value)
+	}
+	if _u.mutation.LoginAgreementAcceptedAtCleared() {
+		_spec.ClearField(user.FieldLoginAgreementAcceptedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.BalanceNotifyEnabled(); ok {
 		_spec.SetField(user.FieldBalanceNotifyEnabled, field.TypeBool, value)
@@ -1959,6 +2002,40 @@ func (_u *UserUpdateOne) ClearMarketingEmailsUnsubscribedAt() *UserUpdateOne {
 	return _u
 }
 
+// SetLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field.
+func (_u *UserUpdateOne) SetLoginAgreementAcceptedRevision(v string) *UserUpdateOne {
+	_u.mutation.SetLoginAgreementAcceptedRevision(v)
+	return _u
+}
+
+// SetNillableLoginAgreementAcceptedRevision sets the "login_agreement_accepted_revision" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableLoginAgreementAcceptedRevision(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetLoginAgreementAcceptedRevision(*v)
+	}
+	return _u
+}
+
+// SetLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field.
+func (_u *UserUpdateOne) SetLoginAgreementAcceptedAt(v time.Time) *UserUpdateOne {
+	_u.mutation.SetLoginAgreementAcceptedAt(v)
+	return _u
+}
+
+// SetNillableLoginAgreementAcceptedAt sets the "login_agreement_accepted_at" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableLoginAgreementAcceptedAt(v *time.Time) *UserUpdateOne {
+	if v != nil {
+		_u.SetLoginAgreementAcceptedAt(*v)
+	}
+	return _u
+}
+
+// ClearLoginAgreementAcceptedAt clears the value of the "login_agreement_accepted_at" field.
+func (_u *UserUpdateOne) ClearLoginAgreementAcceptedAt() *UserUpdateOne {
+	_u.mutation.ClearLoginAgreementAcceptedAt()
+	return _u
+}
+
 // SetBalanceNotifyEnabled sets the "balance_notify_enabled" field.
 func (_u *UserUpdateOne) SetBalanceNotifyEnabled(v bool) *UserUpdateOne {
 	_u.mutation.SetBalanceNotifyEnabled(v)
@@ -2706,6 +2783,15 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.MarketingEmailsUnsubscribedAtCleared() {
 		_spec.ClearField(user.FieldMarketingEmailsUnsubscribedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.LoginAgreementAcceptedRevision(); ok {
+		_spec.SetField(user.FieldLoginAgreementAcceptedRevision, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.LoginAgreementAcceptedAt(); ok {
+		_spec.SetField(user.FieldLoginAgreementAcceptedAt, field.TypeTime, value)
+	}
+	if _u.mutation.LoginAgreementAcceptedAtCleared() {
+		_spec.ClearField(user.FieldLoginAgreementAcceptedAt, field.TypeTime)
 	}
 	if value, ok := _u.mutation.BalanceNotifyEnabled(); ok {
 		_spec.SetField(user.FieldBalanceNotifyEnabled, field.TypeBool, value)

@@ -150,6 +150,16 @@ func MarketingEmailsUnsubscribedAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldMarketingEmailsUnsubscribedAt, v))
 }
 
+// LoginAgreementAcceptedRevision applies equality check predicate on the "login_agreement_accepted_revision" field. It's identical to LoginAgreementAcceptedRevisionEQ.
+func LoginAgreementAcceptedRevision(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedAt applies equality check predicate on the "login_agreement_accepted_at" field. It's identical to LoginAgreementAcceptedAtEQ.
+func LoginAgreementAcceptedAt(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldLoginAgreementAcceptedAt, v))
+}
+
 // BalanceNotifyEnabled applies equality check predicate on the "balance_notify_enabled" field. It's identical to BalanceNotifyEnabledEQ.
 func BalanceNotifyEnabled(v bool) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldBalanceNotifyEnabled, v))
@@ -1178,6 +1188,121 @@ func MarketingEmailsUnsubscribedAtIsNil() predicate.User {
 // MarketingEmailsUnsubscribedAtNotNil applies the NotNil predicate on the "marketing_emails_unsubscribed_at" field.
 func MarketingEmailsUnsubscribedAtNotNil() predicate.User {
 	return predicate.User(sql.FieldNotNull(FieldMarketingEmailsUnsubscribedAt))
+}
+
+// LoginAgreementAcceptedRevisionEQ applies the EQ predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionEQ(v string) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedRevisionNEQ applies the NEQ predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionNEQ(v string) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedRevisionIn applies the In predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldIn(FieldLoginAgreementAcceptedRevision, vs...))
+}
+
+// LoginAgreementAcceptedRevisionNotIn applies the NotIn predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionNotIn(vs ...string) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldLoginAgreementAcceptedRevision, vs...))
+}
+
+// LoginAgreementAcceptedRevisionGT applies the GT predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionGT(v string) predicate.User {
+	return predicate.User(sql.FieldGT(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedRevisionGTE applies the GTE predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionGTE(v string) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedRevisionLT applies the LT predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionLT(v string) predicate.User {
+	return predicate.User(sql.FieldLT(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedRevisionLTE applies the LTE predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionLTE(v string) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedRevisionContains applies the Contains predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionContains(v string) predicate.User {
+	return predicate.User(sql.FieldContains(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedRevisionHasPrefix applies the HasPrefix predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionHasPrefix(v string) predicate.User {
+	return predicate.User(sql.FieldHasPrefix(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedRevisionHasSuffix applies the HasSuffix predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionHasSuffix(v string) predicate.User {
+	return predicate.User(sql.FieldHasSuffix(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedRevisionEqualFold applies the EqualFold predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionEqualFold(v string) predicate.User {
+	return predicate.User(sql.FieldEqualFold(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedRevisionContainsFold applies the ContainsFold predicate on the "login_agreement_accepted_revision" field.
+func LoginAgreementAcceptedRevisionContainsFold(v string) predicate.User {
+	return predicate.User(sql.FieldContainsFold(FieldLoginAgreementAcceptedRevision, v))
+}
+
+// LoginAgreementAcceptedAtEQ applies the EQ predicate on the "login_agreement_accepted_at" field.
+func LoginAgreementAcceptedAtEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldLoginAgreementAcceptedAt, v))
+}
+
+// LoginAgreementAcceptedAtNEQ applies the NEQ predicate on the "login_agreement_accepted_at" field.
+func LoginAgreementAcceptedAtNEQ(v time.Time) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldLoginAgreementAcceptedAt, v))
+}
+
+// LoginAgreementAcceptedAtIn applies the In predicate on the "login_agreement_accepted_at" field.
+func LoginAgreementAcceptedAtIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldIn(FieldLoginAgreementAcceptedAt, vs...))
+}
+
+// LoginAgreementAcceptedAtNotIn applies the NotIn predicate on the "login_agreement_accepted_at" field.
+func LoginAgreementAcceptedAtNotIn(vs ...time.Time) predicate.User {
+	return predicate.User(sql.FieldNotIn(FieldLoginAgreementAcceptedAt, vs...))
+}
+
+// LoginAgreementAcceptedAtGT applies the GT predicate on the "login_agreement_accepted_at" field.
+func LoginAgreementAcceptedAtGT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGT(FieldLoginAgreementAcceptedAt, v))
+}
+
+// LoginAgreementAcceptedAtGTE applies the GTE predicate on the "login_agreement_accepted_at" field.
+func LoginAgreementAcceptedAtGTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldGTE(FieldLoginAgreementAcceptedAt, v))
+}
+
+// LoginAgreementAcceptedAtLT applies the LT predicate on the "login_agreement_accepted_at" field.
+func LoginAgreementAcceptedAtLT(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLT(FieldLoginAgreementAcceptedAt, v))
+}
+
+// LoginAgreementAcceptedAtLTE applies the LTE predicate on the "login_agreement_accepted_at" field.
+func LoginAgreementAcceptedAtLTE(v time.Time) predicate.User {
+	return predicate.User(sql.FieldLTE(FieldLoginAgreementAcceptedAt, v))
+}
+
+// LoginAgreementAcceptedAtIsNil applies the IsNil predicate on the "login_agreement_accepted_at" field.
+func LoginAgreementAcceptedAtIsNil() predicate.User {
+	return predicate.User(sql.FieldIsNull(FieldLoginAgreementAcceptedAt))
+}
+
+// LoginAgreementAcceptedAtNotNil applies the NotNil predicate on the "login_agreement_accepted_at" field.
+func LoginAgreementAcceptedAtNotNil() predicate.User {
+	return predicate.User(sql.FieldNotNull(FieldLoginAgreementAcceptedAt))
 }
 
 // BalanceNotifyEnabledEQ applies the EQ predicate on the "balance_notify_enabled" field.

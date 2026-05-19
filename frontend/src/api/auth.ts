@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from './client'
+import { buildLoginAgreementAcceptancePayload } from '@/utils/loginAgreementConsent'
 import type {
   LoginRequest,
   RegisterRequest,
@@ -603,7 +604,8 @@ async function createPendingOAuthAccount(
     {
       invitation_code: invitationCode,
       ...(normalizedAffiliateCode ? { aff_code: normalizedAffiliateCode } : {}),
-      ...serializeOAuthAdoptionDecision(decision)
+      ...serializeOAuthAdoptionDecision(decision),
+      ...buildLoginAgreementAcceptancePayload()
     }
   )
   return data
@@ -638,7 +640,10 @@ export async function completePendingOAuthBindLogin(
 ): Promise<PendingOAuthBindLoginResponse> {
   const { data } = await apiClient.post<PendingOAuthBindLoginResponse>(
     '/auth/oauth/pending/exchange',
-    serializeOAuthAdoptionDecision(decision)
+    {
+      ...serializeOAuthAdoptionDecision(decision),
+      ...buildLoginAgreementAcceptancePayload()
+    }
   )
   return data
 }

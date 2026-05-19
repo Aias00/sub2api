@@ -172,6 +172,7 @@ import {
   loadAffiliateReferralCode,
   oauthAffiliatePayload
 } from '@/utils/oauthAffiliate'
+import { buildLoginAgreementAcceptancePayload } from '@/utils/loginAgreementConsent'
 
 const { t, locale } = useI18n()
 
@@ -508,7 +509,8 @@ async function handleVerify(): Promise<void> {
           invitation_code: invitationCode.value || undefined,
           ...oauthAffiliatePayload(affCode.value || loadAffiliateReferralCode()),
           adopt_display_name: pendingAdoptionDecision.value?.adoptDisplayName,
-          adopt_avatar: pendingAdoptionDecision.value?.adoptAvatar
+          adopt_avatar: pendingAdoptionDecision.value?.adoptAvatar,
+          ...buildLoginAgreementAcceptancePayload()
         }
       )
       if (isPendingOAuthSessionResponse(data)) {
@@ -533,7 +535,8 @@ async function handleVerify(): Promise<void> {
         turnstile_token: initialTurnstileToken.value || undefined,
         promo_code: promoCode.value || undefined,
         invitation_code: invitationCode.value || undefined,
-        ...(affCode.value ? { aff_code: affCode.value } : {})
+        ...(affCode.value ? { aff_code: affCode.value } : {}),
+        ...buildLoginAgreementAcceptancePayload()
       })
     }
 

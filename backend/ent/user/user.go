@@ -53,6 +53,10 @@ const (
 	FieldWelcomeEmailSentAt = "welcome_email_sent_at"
 	// FieldMarketingEmailsUnsubscribedAt holds the string denoting the marketing_emails_unsubscribed_at field in the database.
 	FieldMarketingEmailsUnsubscribedAt = "marketing_emails_unsubscribed_at"
+	// FieldLoginAgreementAcceptedRevision holds the string denoting the login_agreement_accepted_revision field in the database.
+	FieldLoginAgreementAcceptedRevision = "login_agreement_accepted_revision"
+	// FieldLoginAgreementAcceptedAt holds the string denoting the login_agreement_accepted_at field in the database.
+	FieldLoginAgreementAcceptedAt = "login_agreement_accepted_at"
 	// FieldBalanceNotifyEnabled holds the string denoting the balance_notify_enabled field in the database.
 	FieldBalanceNotifyEnabled = "balance_notify_enabled"
 	// FieldBalanceNotifyThresholdType holds the string denoting the balance_notify_threshold_type field in the database.
@@ -206,6 +210,8 @@ var Columns = []string{
 	FieldLastActiveAt,
 	FieldWelcomeEmailSentAt,
 	FieldMarketingEmailsUnsubscribedAt,
+	FieldLoginAgreementAcceptedRevision,
+	FieldLoginAgreementAcceptedAt,
 	FieldBalanceNotifyEnabled,
 	FieldBalanceNotifyThresholdType,
 	FieldBalanceNotifyThreshold,
@@ -272,6 +278,8 @@ var (
 	DefaultSignupSource string
 	// SignupSourceValidator is a validator for the "signup_source" field. It is called by the builders before save.
 	SignupSourceValidator func(string) error
+	// DefaultLoginAgreementAcceptedRevision holds the default value on creation for the "login_agreement_accepted_revision" field.
+	DefaultLoginAgreementAcceptedRevision string
 	// DefaultBalanceNotifyEnabled holds the default value on creation for the "balance_notify_enabled" field.
 	DefaultBalanceNotifyEnabled bool
 	// DefaultBalanceNotifyThresholdType holds the default value on creation for the "balance_notify_threshold_type" field.
@@ -385,6 +393,16 @@ func ByWelcomeEmailSentAt(opts ...sql.OrderTermOption) OrderOption {
 // ByMarketingEmailsUnsubscribedAt orders the results by the marketing_emails_unsubscribed_at field.
 func ByMarketingEmailsUnsubscribedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMarketingEmailsUnsubscribedAt, opts...).ToFunc()
+}
+
+// ByLoginAgreementAcceptedRevision orders the results by the login_agreement_accepted_revision field.
+func ByLoginAgreementAcceptedRevision(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLoginAgreementAcceptedRevision, opts...).ToFunc()
+}
+
+// ByLoginAgreementAcceptedAt orders the results by the login_agreement_accepted_at field.
+func ByLoginAgreementAcceptedAt(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldLoginAgreementAcceptedAt, opts...).ToFunc()
 }
 
 // ByBalanceNotifyEnabled orders the results by the balance_notify_enabled field.

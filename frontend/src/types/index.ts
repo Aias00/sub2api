@@ -113,6 +113,8 @@ export interface LoginRequest {
   email: string
   password: string
   turnstile_token?: string
+  agreement_accepted?: boolean
+  agreement_revision?: string
 }
 
 export interface RegisterRequest {
@@ -123,6 +125,8 @@ export interface RegisterRequest {
   promo_code?: string
   invitation_code?: string
   aff_code?: string
+  agreement_accepted?: boolean
+  agreement_revision?: string
 }
 
 export interface AffiliateInvitee {

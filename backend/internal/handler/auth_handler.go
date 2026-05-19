@@ -42,13 +42,15 @@ func NewAuthHandler(cfg *config.Config, authService *service.AuthService, userSe
 
 // RegisterRequest represents the registration request payload
 type RegisterRequest struct {
-	Email          string `json:"email" binding:"required,email"`
-	Password       string `json:"password" binding:"required"`
-	VerifyCode     string `json:"verify_code"`
-	TurnstileToken string `json:"turnstile_token"`
-	PromoCode      string `json:"promo_code"`      // 注册优惠码
-	InvitationCode string `json:"invitation_code"` // 邀请码
-	AffCode        string `json:"aff_code"`        // 邀请返利码
+	Email             string `json:"email" binding:"required,email"`
+	Password          string `json:"password" binding:"required"`
+	VerifyCode        string `json:"verify_code"`
+	TurnstileToken    string `json:"turnstile_token"`
+	PromoCode         string `json:"promo_code"`         // 注册优惠码
+	InvitationCode    string `json:"invitation_code"`    // 邀请码
+	AffCode           string `json:"aff_code"`           // 邀请返利码
+	AgreementAccepted bool   `json:"agreement_accepted"` // 登录条款确认
+	AgreementRevision string `json:"agreement_revision"`
 }
 
 // SendVerifyCodeRequest 发送验证码请求
@@ -65,9 +67,11 @@ type SendVerifyCodeResponse struct {
 
 // LoginRequest represents the login request payload
 type LoginRequest struct {
-	Email          string `json:"email" binding:"required,email"`
-	Password       string `json:"password" binding:"required"`
-	TurnstileToken string `json:"turnstile_token"`
+	Email             string `json:"email" binding:"required,email"`
+	Password          string `json:"password" binding:"required"`
+	TurnstileToken    string `json:"turnstile_token"`
+	AgreementAccepted bool   `json:"agreement_accepted"`
+	AgreementRevision string `json:"agreement_revision"`
 }
 
 // AuthResponse 认证响应格式（匹配前端期望）
@@ -158,6 +162,14 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
 	}
+	currentAgreementRevision, err := h.ensureAnonymousLoginAgreementAccepted(c.Request.Context(), agreementAcceptanceInput{
+		Accepted: req.AgreementAccepted,
+		Revision: req.AgreementRevision,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 
 	// Turnstile 验证（邮箱验证码注册场景避免重复校验一次性 token）
 	if err := h.authService.VerifyTurnstileForRegister(c.Request.Context(), req.TurnstileToken, ip.GetClientIP(c), req.VerifyCode); err != nil {
@@ -175,6 +187,10 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		req.AffCode,
 	)
 	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if err := h.recordLoginAgreementAcceptance(c.Request.Context(), user, currentAgreementRevision); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -226,6 +242,13 @@ func (h *AuthHandler) Login(c *gin.Context) {
 	_ = token // token 由 authService.Login 返回但此处由 respondWithTokenPair 重新生成
 
 	if err := h.ensureBackendModeAllowsUser(c.Request.Context(), user); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if err := h.ensureUserAcceptedCurrentLoginAgreement(c.Request.Context(), user, agreementAcceptanceInput{
+		Accepted: req.AgreementAccepted,
+		Revision: req.AgreementRevision,
+	}); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}

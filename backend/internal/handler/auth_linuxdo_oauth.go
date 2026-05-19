@@ -434,10 +434,12 @@ func (h *AuthHandler) createLinuxDoOAuthChoicePendingSession(
 }
 
 type completeLinuxDoOAuthRequest struct {
-	InvitationCode   string `json:"invitation_code" binding:"required"`
-	AffCode          string `json:"aff_code,omitempty"`
-	AdoptDisplayName *bool  `json:"adopt_display_name,omitempty"`
-	AdoptAvatar      *bool  `json:"adopt_avatar,omitempty"`
+	InvitationCode    string `json:"invitation_code" binding:"required"`
+	AffCode           string `json:"aff_code,omitempty"`
+	AgreementAccepted bool   `json:"agreement_accepted"`
+	AgreementRevision string `json:"agreement_revision"`
+	AdoptDisplayName  *bool  `json:"adopt_display_name,omitempty"`
+	AdoptAvatar       *bool  `json:"adopt_avatar,omitempty"`
 }
 
 // CompleteLinuxDoOAuthRegistration completes a pending OAuth registration by validating
@@ -494,6 +496,28 @@ func (h *AuthHandler) CompleteLinuxDoOAuthRegistration(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	currentAgreementRevision := ""
+	agreementInput := agreementAcceptanceInput{
+		Accepted: req.AgreementAccepted,
+		Revision: req.AgreementRevision,
+	}
+	if session.TargetUserID != nil && *session.TargetUserID > 0 {
+		targetUser, err := h.userService.GetByID(c.Request.Context(), *session.TargetUserID)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+		if err := h.ensureUserAcceptedCurrentLoginAgreement(c.Request.Context(), targetUser, agreementInput); err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+	} else {
+		currentAgreementRevision, err = h.ensureAnonymousLoginAgreementAccepted(c.Request.Context(), agreementInput)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+	}
 
 	email := strings.TrimSpace(session.ResolvedEmail)
 	username := pendingSessionStringValue(session.UpstreamIdentityClaims, "username")
@@ -521,6 +545,10 @@ func (h *AuthHandler) CompleteLinuxDoOAuthRegistration(c *gin.Context) {
 	}
 	tokenPair, user, err := h.authService.LoginOrRegisterOAuthWithTokenPair(c.Request.Context(), email, username, req.InvitationCode, req.AffCode)
 	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if err := h.recordLoginAgreementAcceptance(c.Request.Context(), user, currentAgreementRevision); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}

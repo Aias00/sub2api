@@ -43,6 +43,7 @@ var (
 	ErrInvitationCodeRequired  = infraerrors.BadRequest("INVITATION_CODE_REQUIRED", "invitation code is required")
 	ErrInvitationCodeInvalid   = infraerrors.BadRequest("INVITATION_CODE_INVALID", "invalid or used invitation code")
 	ErrOAuthInvitationRequired = infraerrors.Forbidden("OAUTH_INVITATION_REQUIRED", "invitation code required to complete oauth registration")
+	ErrLoginAgreementRequired  = infraerrors.Forbidden("LOGIN_AGREEMENT_REQUIRED", "please review and accept the latest terms before continuing")
 )
 
 // maxTokenLength 限制 token 大小，避免超长 header 触发解析时的异常内存分配。
@@ -78,6 +79,25 @@ type AuthService struct {
 
 type DefaultSubscriptionAssigner interface {
 	AssignOrExtendSubscription(ctx context.Context, input *AssignSubscriptionInput) (*UserSubscription, bool, error)
+}
+
+func (s *AuthService) RecordLoginAgreementAcceptance(ctx context.Context, user *User, revision string, acceptedAt time.Time) error {
+	if s == nil || s.userRepo == nil || user == nil || user.ID <= 0 {
+		return ErrServiceUnavailable
+	}
+
+	revision = strings.TrimSpace(revision)
+	if revision == "" {
+		return nil
+	}
+	if user.LoginAgreementAcceptedRevision == revision && user.LoginAgreementAcceptedAt != nil {
+		return nil
+	}
+
+	acceptedAt = acceptedAt.UTC()
+	user.LoginAgreementAcceptedRevision = revision
+	user.LoginAgreementAcceptedAt = &acceptedAt
+	return s.userRepo.Update(ctx, user)
 }
 
 type signupGrantPlan struct {

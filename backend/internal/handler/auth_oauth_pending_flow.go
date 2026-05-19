@@ -56,20 +56,24 @@ type oauthAdoptionDecisionRequest struct {
 }
 
 type bindPendingOAuthLoginRequest struct {
-	Email            string `json:"email" binding:"required,email"`
-	Password         string `json:"password" binding:"required"`
-	AdoptDisplayName *bool  `json:"adopt_display_name,omitempty"`
-	AdoptAvatar      *bool  `json:"adopt_avatar,omitempty"`
+	Email             string `json:"email" binding:"required,email"`
+	Password          string `json:"password" binding:"required"`
+	AgreementAccepted bool   `json:"agreement_accepted"`
+	AgreementRevision string `json:"agreement_revision"`
+	AdoptDisplayName  *bool  `json:"adopt_display_name,omitempty"`
+	AdoptAvatar       *bool  `json:"adopt_avatar,omitempty"`
 }
 
 type createPendingOAuthAccountRequest struct {
-	Email            string `json:"email" binding:"required,email"`
-	VerifyCode       string `json:"verify_code,omitempty"`
-	Password         string `json:"password" binding:"required"`
-	InvitationCode   string `json:"invitation_code,omitempty"`
-	AffCode          string `json:"aff_code,omitempty"`
-	AdoptDisplayName *bool  `json:"adopt_display_name,omitempty"`
-	AdoptAvatar      *bool  `json:"adopt_avatar,omitempty"`
+	Email             string `json:"email" binding:"required,email"`
+	VerifyCode        string `json:"verify_code,omitempty"`
+	Password          string `json:"password" binding:"required"`
+	InvitationCode    string `json:"invitation_code,omitempty"`
+	AffCode           string `json:"aff_code,omitempty"`
+	AgreementAccepted bool   `json:"agreement_accepted"`
+	AgreementRevision string `json:"agreement_revision"`
+	AdoptDisplayName  *bool  `json:"adopt_display_name,omitempty"`
+	AdoptAvatar       *bool  `json:"adopt_avatar,omitempty"`
 }
 
 type sendPendingOAuthVerifyCodeRequest struct {
@@ -77,6 +81,13 @@ type sendPendingOAuthVerifyCodeRequest struct {
 	TurnstileToken    string `json:"turnstile_token,omitempty"`
 	PendingAuthToken  string `json:"pending_auth_token,omitempty"`
 	PendingOAuthToken string `json:"pending_oauth_token,omitempty"`
+}
+
+type pendingOAuthCompletionRequest struct {
+	AgreementAccepted bool   `json:"agreement_accepted"`
+	AgreementRevision string `json:"agreement_revision"`
+	AdoptDisplayName  *bool  `json:"adopt_display_name,omitempty"`
+	AdoptAvatar       *bool  `json:"adopt_avatar,omitempty"`
 }
 
 func (r bindPendingOAuthLoginRequest) adoptionDecision() oauthAdoptionDecisionRequest {
@@ -375,8 +386,8 @@ func (r oauthAdoptionDecisionRequest) hasDecision() bool {
 	return r.AdoptDisplayName != nil || r.AdoptAvatar != nil
 }
 
-func bindOptionalOAuthAdoptionDecision(c *gin.Context) (oauthAdoptionDecisionRequest, error) {
-	var req oauthAdoptionDecisionRequest
+func bindOptionalOAuthCompletionRequest(c *gin.Context) (pendingOAuthCompletionRequest, error) {
+	var req pendingOAuthCompletionRequest
 	if c == nil || c.Request == nil || c.Request.Body == nil {
 		return req, nil
 	}
@@ -1563,6 +1574,13 @@ func (h *AuthHandler) bindPendingOAuthLogin(c *gin.Context, provider string) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	if err := h.ensureUserAcceptedCurrentLoginAgreement(c.Request.Context(), user, agreementAcceptanceInput{
+		Accepted: req.AgreementAccepted,
+		Revision: req.AgreementRevision,
+	}); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 
 	decision, err := h.ensurePendingOAuthAdoptionDecision(c, session.ID, req.adoptionDecision())
 	if err != nil {
@@ -1671,6 +1689,14 @@ func (h *AuthHandler) createPendingOAuthAccount(c *gin.Context, provider string)
 		response.ErrorFrom(c, err)
 		return
 	}
+	currentAgreementRevision, err := h.ensureAnonymousLoginAgreementAccepted(c.Request.Context(), agreementAcceptanceInput{
+		Accepted: req.AgreementAccepted,
+		Revision: req.AgreementRevision,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 
 	tokenPair, user, err := h.authService.RegisterOAuthEmailAccount(
 		c.Request.Context(),
@@ -1695,6 +1721,10 @@ func (h *AuthHandler) createPendingOAuthAccount(c *gin.Context, provider string)
 			c.JSON(http.StatusOK, buildPendingOAuthSessionStatusPayload(session))
 			return
 		}
+		response.ErrorFrom(c, err)
+		return
+	}
+	if err := h.recordLoginAgreementAcceptance(c.Request.Context(), user, currentAgreementRevision); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -1804,10 +1834,14 @@ func (h *AuthHandler) ExchangePendingOAuthCompletion(c *gin.Context) {
 		clearOAuthPendingSessionCookie(c, secureCookie)
 		clearOAuthPendingBrowserCookie(c, secureCookie)
 	}
-	adoptionDecision, err := bindOptionalOAuthAdoptionDecision(c)
+	completionRequest, err := bindOptionalOAuthCompletionRequest(c)
 	if err != nil {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
+	}
+	adoptionDecision := oauthAdoptionDecisionRequest{
+		AdoptDisplayName: completionRequest.AdoptDisplayName,
+		AdoptAvatar:      completionRequest.AdoptAvatar,
 	}
 
 	sessionToken, err := readOAuthPendingSessionCookie(c)
@@ -1866,6 +1900,14 @@ func (h *AuthHandler) ExchangePendingOAuthCompletion(c *gin.Context) {
 			return
 		}
 		if err := h.ensureBackendModeAllowsUser(c.Request.Context(), loginUser); err != nil {
+			clearCookies()
+			response.ErrorFrom(c, err)
+			return
+		}
+		if err := h.ensureUserAcceptedCurrentLoginAgreement(c.Request.Context(), loginUser, agreementAcceptanceInput{
+			Accepted: completionRequest.AgreementAccepted,
+			Revision: completionRequest.AgreementRevision,
+		}); err != nil {
 			clearCookies()
 			response.ErrorFrom(c, err)
 			return

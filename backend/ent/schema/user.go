@@ -100,6 +100,13 @@ func (User) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
+		field.String("login_agreement_accepted_revision").
+			Default("").
+			SchemaType(map[string]string{dialect.Postgres: "text"}),
+		field.Time("login_agreement_accepted_at").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
 
 		// 余额不足通知
 		field.Bool("balance_notify_enabled").
