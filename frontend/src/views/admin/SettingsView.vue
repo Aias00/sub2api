@@ -4528,6 +4528,14 @@
                     <button
                       type="button"
                       class="btn btn-secondary btn-sm inline-flex items-center gap-1.5"
+                      @click="appendPrivacyPolicyLoginAgreementDocument"
+                    >
+                      <Icon name="shield" size="sm" />
+                      {{ localText("补充隐私条款", "Append privacy policy") }}
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-sm inline-flex items-center gap-1.5"
                       @click="applyCommercialLoginAgreementTemplate"
                     >
                       <Icon name="refresh" size="sm" />
@@ -4554,15 +4562,7 @@
                       <div class="flex min-w-0 items-center gap-3">
                         <span class="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-gray-100 text-gray-700 dark:bg-dark-700 dark:text-dark-200">
                           <Icon
-                            :name="
-                              index === 1
-                                ? 'shield'
-                                : index === 2
-                                  ? 'globe'
-                                  : index === 3
-                                    ? 'cog'
-                                    : 'document'
-                            "
+                            :name="loginAgreementDocumentIcon(doc.title || '')"
                             size="sm"
                           />
                         </span>
@@ -6520,6 +6520,7 @@ import {
 } from "@/utils/registrationEmailPolicy";
 import {
   buildCommercialLoginAgreementDocuments,
+  mergePrivacyPolicyIntoLoginAgreementDocuments,
   isLegacyBlankLoginAgreementDocuments,
 } from "@/utils/loginAgreementTemplates";
 
@@ -7480,6 +7481,38 @@ function resolveCommercialLoginAgreementDocuments(): LoginAgreementDocument[] {
   });
 }
 
+function appendPrivacyPolicyLoginAgreementDocument() {
+  const beforeSerialized = JSON.stringify(form.login_agreement_documents);
+  const merged = mergePrivacyPolicyIntoLoginAgreementDocuments(
+    form.login_agreement_documents,
+    {
+      siteName: form.site_name,
+      frontendUrl: form.frontend_url || currentOrigin,
+      contactInfo: form.contact_info,
+      effectiveDate: form.login_agreement_updated_at,
+    },
+  );
+  const afterSerialized = JSON.stringify(merged);
+
+  if (beforeSerialized === afterSerialized) {
+    appStore.showInfo(
+      localText(
+        "当前协议列表中已经包含隐私条款，未重复添加。",
+        "A privacy policy document already exists. No duplicate was added.",
+      ),
+    );
+    return;
+  }
+
+  form.login_agreement_documents = merged;
+  appStore.showSuccess(
+    localText(
+      "已在现有协议列表中补充隐私条款，请检查后保存。",
+      "Privacy policy appended to the current agreement list. Review and save the settings.",
+    ),
+  );
+}
+
 function hasCustomLoginAgreementContent(): boolean {
   return form.login_agreement_documents.some((doc) => {
     const title = doc.title?.trim() || "";
@@ -7516,6 +7549,21 @@ function applyCommercialLoginAgreementTemplate() {
 
 function removeLoginAgreementDocument(index: number) {
   form.login_agreement_documents.splice(index, 1);
+}
+
+function loginAgreementDocumentIcon(
+  title: string,
+): "document" | "shield" | "globe" | "cog" {
+  if (title.includes("政策") || title.includes("隐私")) {
+    return "shield";
+  }
+  if (title.includes("国家") || title.includes("地区")) {
+    return "globe";
+  }
+  if (title.includes("特定")) {
+    return "cog";
+  }
+  return "document";
 }
 
 function normalizeLoginAgreementDocumentsForSave(): LoginAgreementDocument[] {

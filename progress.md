@@ -42,6 +42,32 @@
 - Found that a partial `PUT /admin/settings` call could still flip `login_agreement_enabled` back to `false` because the request field was a non-pointer bool.
 - Hardened the admin settings handler so omitted `login_agreement_enabled` keeps the previous value instead of silently defaulting to `false`.
 
+## 2026-05-21 Privacy Policy Login Agreement Addendum
+### Done
+- Added a dedicated `privacy-policy` login-agreement document template with runtime placeholders for effective date, update date, and contact info.
+- Extended the commercial legal template bundle from 4 documents to 5 documents by including:
+  - 商业服务条款
+  - 隐私条款
+  - 使用政策
+  - 支持的国家和地区
+  - 服务特定条款
+- Kept backward compatibility for legacy blank agreement bundles that still only contain the original 4 empty docs.
+- Added a non-destructive admin action to append the privacy policy document into the current agreement list without overwriting existing configured documents.
+- Switched the admin agreement document icon logic from index-based mapping to title-based mapping so adding a fifth document does not mislabel existing cards.
+- Added regression coverage for:
+  - 5-document template generation
+  - privacy-policy rendering contact substitution
+  - non-destructive privacy-policy append behavior
+  - duplicate privacy-policy avoidance
+
+### Failures
+- None during local implementation. Existing Vite chunk-size warnings remain informational only.
+
+### Next
+- Commit and push the privacy-policy additions.
+- Deploy the updated frontend/backend bundle to production.
+- Use the production admin settings flow to append the privacy-policy document without overwriting the existing 4 document bodies.
+
 ## 2026-05-13 Active Email Daily Rate Limit
 ### Done
 - Added a shared daily quota for user-initiated email sends to reduce SMTP abuse risk.

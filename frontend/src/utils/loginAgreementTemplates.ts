@@ -21,6 +21,7 @@ const CONTACT_INFO_PLACEHOLDER = "{{contact_info}}";
 
 const legacyBlankDocuments: LoginAgreementDocument[] = [
   { id: "terms", title: "服务条款", content_md: "" },
+  { id: "privacy-policy", title: "隐私条款", content_md: "" },
   { id: "usage-policy", title: "使用政策", content_md: "" },
   { id: "supported-regions", title: "支持的国家和地区", content_md: "" },
   { id: "service-specific-terms", title: "服务特定条款", content_md: "" },
@@ -54,6 +55,52 @@ function normalizeSiteUrlForDocument(raw?: string): string {
 
 function joinBlocks(blocks: string[]): string {
   return blocks.join("\n\n").trim();
+}
+
+export function buildPrivacyPolicyLoginAgreementDocument(
+  options: CommercialLoginAgreementTemplateOptions = {},
+): LoginAgreementDocument {
+  const siteName = normalizeSiteName(options.siteName);
+
+  return {
+    id: "privacy-policy",
+    title: "隐私条款",
+    content_md: joinBlocks([
+      `**生效日期：** ${EFFECTIVE_DATE_PLACEHOLDER}\n**最后更新：** ${UPDATED_DATE_PLACEHOLDER}`,
+      `本隐私条款说明 ${siteName} 在您访问网站、注册账号、登录控制台、调用 API、使用第三方登录、创建订单、接收通知以及与我们互动时，如何收集、使用、存储、共享和保护与您相关的数据。`,
+      "## 1. 我们收集的信息",
+      "- **账号信息**：如邮箱地址、用户名、密码哈希、用户角色、账户状态、登录时间、最后活跃时间、API Key 与相关授权信息。",
+      "- **身份与认证信息**：如 GitHub、Google、LinuxDo、OIDC、微信等第三方登录返回的身份标识、邮箱验证状态、头像、昵称、绑定渠道信息，以及用于完成认证流程的短期会话信息。",
+      "- **支付与订单信息**：如订单号、商品/套餐、支付方式、支付状态、退款状态、账单金额、币种、渠道交易号与必要的风控信息。",
+      "- **使用与技术信息**：如请求时间、接口路径、模型名称、分组、用量统计、错误日志、浏览器类型、设备标识、IP 地址、地区推断、请求 ID、速率限制和会话安全数据。",
+      "- **通知与联系信息**：如您主动填写的客服沟通内容、通知邮箱、工单材料、申诉说明以及与运营支持相关的信息。",
+      "## 2. 我们如何使用这些信息",
+      "- 提供账号注册、登录、鉴权、订阅交付、额度结算、支付处理、接口转发、用量统计、工单支持和安全风控。",
+      "- 验证您的身份与权限，处理第三方登录绑定、验证码校验、异常登录检测、会话保护和账号找回。",
+      "- 监测服务稳定性、计费准确性、上游兼容性、欺诈风险、滥用行为和合规要求，并在必要时限制、拦截或人工审核相关操作。",
+      "- 向您发送必要的交易、验证码、账单、风险提醒、系统通知、欢迎邮件或您已订阅的运营邮件。您可以按功能设置或邮件页脚入口管理部分邮件偏好。",
+      "## 3. 第三方服务与共享",
+      "- 平台可能调用第三方模型供应商、支付渠道、登录服务、云基础设施、告警通道或安全服务。为完成服务流程，我们可能向这些第三方传递完成该流程所必需的信息。",
+      "- 我们不会因营销目的随意出售您的个人信息；但在法律要求、监管要求、执法配合、争议处理、反欺诈或保护平台及第三方合法权益所必需的范围内，可能依法披露相关信息。",
+      "- 若您使用第三方登录或第三方支付，您还需遵守对应第三方的隐私政策与服务条款。",
+      "## 4. 数据保留与安全",
+      "- 我们会在实现服务目的、满足法定义务、处理争议、进行审计和防止滥用所必需的期限内保留相关数据。不同类型数据的保留时长可能不同。",
+      "- 我们采取合理的技术和管理措施保护数据安全，包括访问控制、密钥保护、传输安全、日志审计、风险检测和最小必要原则；但任何网络传输或存储方式都无法保证绝对安全。",
+      "- 如您发现账号、密钥、支付或隐私相关异常，请尽快联系我们，以便我们采取保护措施。",
+      "## 5. 您的权利与选择",
+      "- 在适用法律允许的范围内，您可以申请访问、更正、更新或删除您的相关信息，也可以申请注销账号、解绑第三方登录、修改通知邮箱或调整营销邮件偏好。",
+      "- 对于依法必须保留的账单、审计、风控或争议处理记录，我们可能无法立即删除，但会在符合法律和业务要求的前提下限制使用范围。",
+      "- 如您不同意本隐私条款或其后续更新，您应停止使用本服务。",
+      "## 6. 跨境与地区合规",
+      "- 因上游模型、支付渠道、登录服务和基础设施可能分布在不同司法辖区，您的部分数据可能在不同国家或地区之间传输、处理或存储。",
+      "- 您应确保自己以及下游用户对相关跨境数据处理具有合法依据，并遵守适用的数据保护和地区合规要求。",
+      "## 7. 未成年人",
+      "- 若适用法律对未成年人使用 AI、支付或在线服务设置额外要求，您应确保相关使用获得必要授权和监护安排。未经合法授权，不应将服务用于面向未成年人提供高风险自动化决策。",
+      "## 8. 条款更新与联系",
+      "- 我们可能因业务、产品、法律、监管或安全要求更新本隐私条款。更新后的版本将在站点、公示页或控制台发布，并自公示之日或指定日期起生效。",
+      `- 如您对本隐私条款、数据处理方式、信息访问、更正、删除、导出或申诉有疑问，请联系：${CONTACT_INFO_PLACEHOLDER}`,
+    ]),
+  };
 }
 
 export function buildCommercialLoginAgreementDocuments(
@@ -119,6 +166,7 @@ export function buildCommercialLoginAgreementDocuments(
         `- 联系方式：${CONTACT_INFO_PLACEHOLDER}`,
       ]),
     },
+    buildPrivacyPolicyLoginAgreementDocument(options),
     {
       id: "usage-policy",
       title: "使用政策",
@@ -260,6 +308,13 @@ export function renderLoginAgreementDocumentContent(
     );
   }
 
+  if (documentId === "privacy-policy") {
+    content = content.replace(
+      /- 如您对本隐私条款、数据处理方式、信息访问、更正、删除、导出或申诉有疑问，请联系：.*$/m,
+      `- 如您对本隐私条款、数据处理方式、信息访问、更正、删除、导出或申诉有疑问，请联系：${contactInfo}`,
+    );
+  }
+
   if (documentId === "supported-regions") {
     content = content.replace(
       /如果您需要确认某个国家、地区或业务类型是否可以接入，请联系：.*$/m,
@@ -284,7 +339,23 @@ export function isLegacyBlankLoginAgreementDocuments(
     return true;
   }
   if (docs.length !== legacyBlankDocuments.length) {
-    return false;
+    const legacyWithoutPrivacy = legacyBlankDocuments.filter(
+      (doc) => doc.id !== "privacy-policy",
+    );
+    if (docs.length !== legacyWithoutPrivacy.length) {
+      return false;
+    }
+    return docs.every((doc, index) => {
+      const legacy = legacyWithoutPrivacy[index];
+      const id = doc.id?.trim() || "";
+      const title = doc.title?.trim() || "";
+      const content = doc.content_md?.trim() || "";
+      return (
+        content === "" &&
+        (id === "" || id === legacy.id) &&
+        (title === "" || title === legacy.title)
+      );
+    });
   }
   return docs.every((doc, index) => {
     const legacy = legacyBlankDocuments[index];
@@ -297,4 +368,35 @@ export function isLegacyBlankLoginAgreementDocuments(
       (title === "" || title === legacy.title)
     );
   });
+}
+
+function isPrivacyPolicyDocument(doc: LoginAgreementDocument): boolean {
+  const id = doc.id?.trim().toLowerCase();
+  const title = doc.title?.trim();
+  return id === "privacy-policy" || title === "隐私条款" || title === "隐私政策";
+}
+
+export function mergePrivacyPolicyIntoLoginAgreementDocuments(
+  docs: LoginAgreementDocument[],
+  options: CommercialLoginAgreementTemplateOptions = {},
+): LoginAgreementDocument[] {
+  const privacyDoc = buildPrivacyPolicyLoginAgreementDocument(options);
+  const existing = docs.map((doc) => ({ ...doc }));
+  const index = existing.findIndex((doc) => isPrivacyPolicyDocument(doc));
+
+  if (index >= 0) {
+    const current = existing[index];
+    if (!current.title?.trim() && !current.content_md?.trim()) {
+      existing[index] = privacyDoc;
+    }
+    return existing;
+  }
+
+  const termsIndex = existing.findIndex((doc) => doc.id === "terms");
+  if (termsIndex >= 0) {
+    existing.splice(termsIndex + 1, 0, privacyDoc);
+    return existing;
+  }
+
+  return [privacyDoc, ...existing];
 }
