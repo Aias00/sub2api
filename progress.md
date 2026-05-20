@@ -38,6 +38,10 @@
 - Push to `main`.
 - Pull on the Google server, rebuild the embedded frontend/backend binary, restart `SERVER_PORT=8081`, and update `contact_info` to `cc@cloudbase.eu.org`.
 
+### Follow-up
+- Found that a partial `PUT /admin/settings` call could still flip `login_agreement_enabled` back to `false` because the request field was a non-pointer bool.
+- Hardened the admin settings handler so omitted `login_agreement_enabled` keeps the previous value instead of silently defaulting to `false`.
+
 ## 2026-05-13 Active Email Daily Rate Limit
 ### Done
 - Added a shared daily quota for user-initiated email sends to reduce SMTP abuse risk.

@@ -427,7 +427,7 @@ type UpdateSettingsRequest struct {
 	FrontendURL                      *string                      `json:"frontend_url"`
 	InvitationCodeEnabled            bool                         `json:"invitation_code_enabled"`
 	TotpEnabled                      bool                         `json:"totp_enabled"` // TOTP 双因素认证
-	LoginAgreementEnabled            bool                         `json:"login_agreement_enabled"`
+	LoginAgreementEnabled            *bool                        `json:"login_agreement_enabled"`
 	LoginAgreementMode               string                       `json:"login_agreement_mode"`
 	LoginAgreementUpdatedAt          string                       `json:"login_agreement_updated_at"`
 	LoginAgreementDocuments          []dto.LoginAgreementDocument `json:"login_agreement_documents"`
@@ -873,7 +873,11 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			return
 		}
 	}
-	if req.LoginAgreementEnabled && len(loginAgreementDocuments) == 0 {
+	loginAgreementEnabled := previousSettings.LoginAgreementEnabled
+	if req.LoginAgreementEnabled != nil {
+		loginAgreementEnabled = *req.LoginAgreementEnabled
+	}
+	if loginAgreementEnabled && len(loginAgreementDocuments) == 0 {
 		response.BadRequest(c, "Login agreement documents are required when enabled")
 		return
 	}
@@ -1406,7 +1410,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		FrontendURL:                      frontendURL,
 		InvitationCodeEnabled:            req.InvitationCodeEnabled,
 		TotpEnabled:                      req.TotpEnabled,
-		LoginAgreementEnabled:            req.LoginAgreementEnabled,
+		LoginAgreementEnabled:            loginAgreementEnabled,
 		LoginAgreementMode:               loginAgreementMode,
 		LoginAgreementUpdatedAt:          loginAgreementUpdatedAt,
 		LoginAgreementDocuments:          loginAgreementDocuments,
