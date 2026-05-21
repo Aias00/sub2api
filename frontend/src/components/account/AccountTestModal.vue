@@ -278,6 +278,7 @@ const terminalRef = ref<HTMLElement | null>(null)
 const status = ref<'idle' | 'connecting' | 'success' | 'error'>('idle')
 const outputLines = ref<OutputLine[]>([])
 const streamingContent = ref('')
+const responseContent = ref('')
 const errorMessage = ref('')
 const availableModels = ref<ClaudeModel[]>([])
 const selectedModelId = ref('')
@@ -374,6 +375,7 @@ const resetState = () => {
   status.value = 'idle'
   outputLines.value = []
   streamingContent.value = ''
+  responseContent.value = ''
   errorMessage.value = ''
   generatedImages.value = []
   previewImageUrl.value = ''
@@ -509,6 +511,7 @@ const handleEvent = (event: {
     case 'content':
       if (event.text) {
         streamingContent.value += event.text
+        responseContent.value += event.text
         scrollToBottom()
       }
       break
@@ -549,7 +552,7 @@ const handleEvent = (event: {
 }
 
 const copyOutput = () => {
-  const text = outputLines.value.map((l) => l.text).join('\n')
+  const text = responseContent.value.trim()
   copyToClipboard(text, t('admin.accounts.outputCopied'))
 }
 </script>

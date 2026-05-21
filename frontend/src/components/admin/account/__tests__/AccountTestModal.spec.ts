@@ -144,4 +144,37 @@ describe('AccountTestModal', () => {
     expect(preview.exists()).toBe(true)
     expect(preview.attributes('src')).toBe('data:image/png;base64,QUJD')
   })
+
+  it('复制按钮只复制响应正文而不是完整日志', async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      createStreamResponse([
+        'data: {"type":"test_start","model":"claude-opus-4-7"}\n',
+        'data: {"type":"content","text":"Hey! "}\n',
+        'data: {"type":"content","text":"What are you working on?"}\n',
+        'data: {"type":"test_complete","success":true}\n'
+      ])
+    ) as any
+
+    const wrapper = mountModal()
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+
+    const buttons = wrapper.findAll('button')
+    const startButton = buttons.find((button) => button.text().includes('admin.accounts.startTest'))
+    expect(startButton).toBeTruthy()
+
+    await startButton!.trigger('click')
+    await flushPromises()
+    await flushPromises()
+
+    const copyButton = wrapper.find('button[title="admin.accounts.copyOutput"]')
+    expect(copyButton.exists()).toBe(true)
+
+    await copyButton.trigger('click')
+
+    expect(copyToClipboard).toHaveBeenCalledWith(
+      'Hey! What are you working on?',
+      'admin.accounts.outputCopied'
+    )
+  })
 })

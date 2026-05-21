@@ -82,6 +82,28 @@
 - Deploy the rebuilt frontend/backend bundle to production.
 - Verify that dashboard no longer shows the onboarding modal and the user dropdown no longer contains the onboarding entry.
 
+## 2026-05-21 Account Test Copy Output
+### Done
+- Added regression coverage for the account-test modal copy button in both:
+  - `frontend/src/components/admin/account/AccountTestModal.vue`
+  - `frontend/src/components/account/AccountTestModal.vue`
+- Verified the old behavior failed the new tests because the copy button concatenated the full terminal log instead of the actual model response body.
+- Updated both modal implementations to maintain a dedicated response-content buffer during streamed test output.
+- Changed the copy button to copy only the streamed response text while keeping the existing terminal log display unchanged.
+- Verified:
+  - `pnpm --dir frontend exec vitest run src/components/admin/account/__tests__/AccountTestModal.spec.ts src/components/account/__tests__/AccountTestModal.spec.ts`
+  - `pnpm --dir frontend exec eslint src/components/admin/account/AccountTestModal.vue src/components/account/AccountTestModal.vue src/components/admin/account/__tests__/AccountTestModal.spec.ts src/components/account/__tests__/AccountTestModal.spec.ts --ext .vue,.ts`
+  - `pnpm --dir frontend run typecheck`
+  - `pnpm --dir frontend run build`
+
+### Failures
+- None. Existing Vite chunk-size warnings remain informational only.
+
+### Next
+- Commit and push the copy-behavior fix.
+- Deploy the rebuilt frontend/backend bundle to production.
+- Open the account-test modal and verify the copy button only copies the response body.
+
 ## 2026-05-13 Active Email Daily Rate Limit
 ### Done
 - Added a shared daily quota for user-initiated email sends to reduce SMTP abuse risk.

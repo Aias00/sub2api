@@ -3,8 +3,9 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { defineComponent } from 'vue'
 import AccountTestModal from '../AccountTestModal.vue'
 
-const { getAvailableModelsMock } = vi.hoisted(() => ({
-  getAvailableModelsMock: vi.fn()
+const { getAvailableModelsMock, copyToClipboardMock } = vi.hoisted(() => ({
+  getAvailableModelsMock: vi.fn(),
+  copyToClipboardMock: vi.fn()
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -17,7 +18,7 @@ vi.mock('@/api/admin', () => ({
 
 vi.mock('@/composables/useClipboard', () => ({
   useClipboard: () => ({
-    copyToClipboard: vi.fn()
+    copyToClipboard: copyToClipboardMock
   })
 }))
 
@@ -96,9 +97,11 @@ function buildAccount() {
 
 describe('AccountTestModal', () => {
   const originalFetch = global.fetch
+  const encoder = new TextEncoder()
 
   beforeEach(() => {
     getAvailableModelsMock.mockReset()
+    copyToClipboardMock.mockReset()
     getAvailableModelsMock.mockResolvedValue([
       { id: 'gpt-5.4', display_name: 'GPT-5.4' }
     ])
@@ -146,5 +149,61 @@ describe('AccountTestModal', () => {
       model_id: 'gpt-5.4',
       mode: 'compact'
     })
+  })
+
+  it('copies only the response body from the output panel', async () => {
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: true,
+      body: {
+        getReader: () => {
+          const chunks = [
+            encoder.encode('data: {"type":"test_start","model":"gpt-5.4"}\n'),
+            encoder.encode('data: {"type":"content","text":"Hey! "}\n'),
+            encoder.encode('data: {"type":"content","text":"What are you working on?"}\n'),
+            encoder.encode('data: {"type":"test_complete","success":true}\n')
+          ]
+          let index = 0
+          return {
+            read: vi.fn().mockImplementation(async () => {
+              if (index < chunks.length) {
+                return { done: false, value: chunks[index++] }
+              }
+              return { done: true, value: undefined }
+            })
+          }
+        }
+      }
+    } as any)
+
+    const wrapper = mount(AccountTestModal, {
+      props: {
+        show: true,
+        account: buildAccount()
+      },
+      global: {
+        stubs: {
+          BaseDialog: BaseDialogStub,
+          Select: SelectStub,
+          TextArea: TextAreaStub,
+          Icon: true
+        }
+      }
+    })
+
+    await flushPromises()
+    ;(wrapper.vm as any).selectedModelId = 'gpt-5.4'
+    await (wrapper.vm as any).startTest()
+    await flushPromises()
+    await flushPromises()
+
+    const copyButton = wrapper.find('button[title="admin.accounts.copyOutput"]')
+    expect(copyButton.exists()).toBe(true)
+
+    await copyButton.trigger('click')
+
+    expect(copyToClipboardMock).toHaveBeenCalledWith(
+      'Hey! What are you working on?',
+      'admin.accounts.outputCopied'
+    )
   })
 })
