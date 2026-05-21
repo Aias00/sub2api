@@ -251,4 +251,60 @@ describe('AccountTestModal', () => {
       'admin.accounts.outputCopied'
     )
   })
+
+  it('passes claude_code mode for Claude compatible accounts', async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      createStreamResponse([
+        'data: {"type":"test_start","model":"claude-opus-4-7"}\n',
+        'data: {"type":"test_complete","success":true}\n'
+      ])
+    ) as any
+
+    const wrapper = mount(AccountTestModal, {
+      props: {
+        show: true,
+        account: {
+          id: 8,
+          name: 'Claude Native',
+          platform: 'anthropic',
+          type: 'apikey',
+          status: 'active',
+          credentials: {},
+          extra: {},
+          concurrency: 1,
+          priority: 1,
+          proxy_id: null,
+          auto_pause_on_expired: false
+        }
+      } as any,
+      global: {
+        stubs: {
+          BaseDialog: BaseDialogStub,
+          Select: SelectStub,
+          TextArea: TextAreaStub,
+          Icon: true
+        }
+      }
+    })
+
+    getAvailableModelsMock.mockResolvedValueOnce([
+      { id: 'claude-opus-4-7', display_name: 'Claude Opus 4.7' }
+    ])
+
+    await flushPromises()
+    ;(wrapper.vm as any).selectedModelId = 'claude-opus-4-7'
+    ;(wrapper.vm as any).testMode = 'claude_code'
+
+    await (wrapper.vm as any).startTest()
+    await flushPromises()
+    await flushPromises()
+
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    const [, options] = (global.fetch as any).mock.calls[0]
+    expect(JSON.parse(options.body)).toEqual({
+      model_id: 'claude-opus-4-7',
+      prompt: '',
+      mode: 'claude_code'
+    })
+  })
 })

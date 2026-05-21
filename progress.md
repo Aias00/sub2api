@@ -125,6 +125,42 @@
 - Deploy to production.
 - Reproduce a failed account test and verify the copy button includes the error response details.
 
+## 2026-05-21 Claude Code Native Account Test Mode
+### Done
+- Added a dedicated `claude_code` account-test mode so Claude-compatible accounts can be tested with a more native Claude Code request fingerprint instead of only the generic account probe.
+- Backend changes:
+  - introduced `AccountTestModeClaudeCode`
+  - added a deterministic Claude Code-native payload builder with stable field order
+  - added native request headers for this mode:
+    - `Accept: application/json`
+    - `X-Stainless-Helper-Method: stream`
+    - `X-Client-Request-Id`
+    - expanded Claude Code mimic beta header set
+  - threaded the mode through Anthropic and Antigravity API-key Claude test paths
+- Frontend changes:
+  - added a request-mode selector for Claude-compatible account test modals
+  - preserved the existing OpenAI default/compact test modes
+  - sent `mode: "claude_code"` to the backend when the native mode is selected
+- Added regression coverage for:
+  - backend native-mode header/payload construction
+  - admin account modal sending `claude_code`
+  - user account modal sending `claude_code`
+- Verified:
+  - `cd backend && go test ./... -count=1`
+  - `pnpm --dir frontend exec vitest run src/components/admin/account/__tests__/AccountTestModal.spec.ts src/components/account/__tests__/AccountTestModal.spec.ts`
+  - `pnpm --dir frontend exec eslint src/components/admin/account/AccountTestModal.vue src/components/account/AccountTestModal.vue src/components/admin/account/__tests__/AccountTestModal.spec.ts src/components/account/__tests__/AccountTestModal.spec.ts src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .vue,.ts`
+  - `pnpm --dir frontend run typecheck`
+  - `pnpm --dir frontend run build`
+  - `git diff --check`
+
+### Failures
+- None locally. Existing Vite chunk-size warnings remain informational only.
+
+### Next
+- Commit and push the native test-mode feature.
+- Deploy the rebuilt frontend/backend bundle to production.
+- Verify the new Claude Code native entry appears on Claude-compatible account tests and reproduces upstream behavior distinctly from the default test mode.
+
 ## 2026-05-13 Active Email Daily Rate Limit
 ### Done
 - Added a shared daily quota for user-initiated email sends to reduce SMTP abuse risk.

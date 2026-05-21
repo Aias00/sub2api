@@ -50,6 +50,35 @@ type TestEvent struct {
 	Error    string `json:"error,omitempty"`
 }
 
+type claudeCodeTestMetadata struct {
+	UserID string `json:"user_id"`
+}
+
+type claudeCodeTestCacheControl struct {
+	Type string `json:"type"`
+}
+
+type claudeCodeTestContentBlock struct {
+	Type         string                      `json:"type"`
+	Text         string                      `json:"text"`
+	CacheControl *claudeCodeTestCacheControl `json:"cache_control,omitempty"`
+}
+
+type claudeCodeTestMessage struct {
+	Role    string                       `json:"role"`
+	Content []claudeCodeTestContentBlock `json:"content"`
+}
+
+type claudeCodeTestPayload struct {
+	Model       string                       `json:"model"`
+	Stream      bool                         `json:"stream"`
+	MaxTokens   int                          `json:"max_tokens"`
+	Metadata    claudeCodeTestMetadata      `json:"metadata"`
+	System      []claudeCodeTestContentBlock `json:"system"`
+	Messages    []claudeCodeTestMessage     `json:"messages"`
+	Temperature int                          `json:"temperature"`
+}
+
 const (
 	defaultGeminiTextTestPrompt  = "hi"
 	defaultGeminiImageTestPrompt = "Generate a cute orange cat astronaut sticker on a clean pastel background."
@@ -166,12 +195,84 @@ func createTestPayload(modelID string) (map[string]any, error) {
 	}, nil
 }
 
+func createClaudeCodeNativePayloadBytes(modelID string, prompt string) ([]byte, error) {
+	sessionID, err := generateSessionString()
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(prompt) == "" {
+		prompt = "hi"
+	}
+
+	payload := claudeCodeTestPayload{
+		Model:     modelID,
+		Stream:    true,
+		MaxTokens: 1024,
+		Metadata: claudeCodeTestMetadata{
+			UserID: sessionID,
+		},
+		System: []claudeCodeTestContentBlock{
+			{
+				Type: "text",
+				Text: claudeCodeSystemPrompt,
+				CacheControl: &claudeCodeTestCacheControl{
+					Type: "ephemeral",
+				},
+			},
+		},
+		Messages: []claudeCodeTestMessage{
+			{
+				Role: "user",
+				Content: []claudeCodeTestContentBlock{
+					{
+						Type: "text",
+						Text: prompt,
+						CacheControl: &claudeCodeTestCacheControl{
+							Type: "ephemeral",
+						},
+					},
+				},
+			},
+		},
+		Temperature: 1,
+	}
+
+	return json.Marshal(payload)
+}
+
+func buildClaudeCodeNativeBetaHeader(useBearer bool) string {
+	if useBearer {
+		return strings.Join(claude.FullClaudeCodeMimicryBetas(), ",")
+	}
+	return strings.Join([]string{
+		claude.BetaClaudeCode,
+		claude.BetaInterleavedThinking,
+		claude.BetaFineGrainedToolStreaming,
+		claude.BetaPromptCachingScope,
+		claude.BetaEffort,
+		claude.BetaContextManagement,
+		claude.BetaExtendedCacheTTL,
+	}, ",")
+}
+
+func applyClaudeCodeNativeTestHeaders(req *http.Request, useBearer bool) {
+	if req == nil {
+		return
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("X-Stainless-Helper-Method", "stream")
+	req.Header.Set("X-Client-Request-Id", uuid.NewString())
+	req.Header.Set("anthropic-beta", buildClaudeCodeNativeBetaHeader(useBearer))
+}
+
 // TestAccountConnection tests an account's connection by sending a test request
 // All account types use full Claude Code client characteristics, only auth header differs
 // modelID is optional - if empty, defaults to claude.DefaultTestModel
 // mode is optional - "compact" routes OpenAI accounts to the /responses/compact probe path
+// and "claude_code" uses a Claude Code-native request shape for Claude-compatible accounts.
 func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int64, modelID string, prompt string, mode string) error {
 	ctx := c.Request.Context()
+	mode = normalizeAccountTestMode(mode)
 
 	// Get account
 	account, err := s.accountRepo.GetByID(ctx, accountID)
@@ -181,7 +282,7 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 
 	// Route to platform-specific test method
 	if account.IsOpenAI() {
-		return s.testOpenAIAccountConnection(c, account, modelID, prompt, normalizeAccountTestMode(mode))
+		return s.testOpenAIAccountConnection(c, account, modelID, prompt, mode)
 	}
 
 	if account.IsGemini() {
@@ -189,14 +290,14 @@ func (s *AccountTestService) TestAccountConnection(c *gin.Context, accountID int
 	}
 
 	if account.Platform == PlatformAntigravity {
-		return s.routeAntigravityTest(c, account, modelID, prompt)
+		return s.routeAntigravityTest(c, account, modelID, prompt, mode)
 	}
 
-	return s.testClaudeAccountConnection(c, account, modelID)
+	return s.testClaudeAccountConnection(c, account, modelID, prompt, mode)
 }
 
 // testClaudeAccountConnection tests an Anthropic Claude account's connection
-func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account *Account, modelID string) error {
+func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account *Account, modelID string, prompt string, mode string) error {
 	ctx := c.Request.Context()
 
 	// Determine the model to use
@@ -259,12 +360,22 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 	c.Writer.Header().Set("X-Accel-Buffering", "no")
 	c.Writer.Flush()
 
-	// Create Claude Code style payload (same for all account types)
-	payload, err := createTestPayload(testModelID)
-	if err != nil {
-		return s.sendErrorAndEnd(c, "Failed to create test payload")
+	// Create payload. Claude Code native mode uses a deterministic request shape that
+	// more closely mirrors the real Claude Code client fingerprint.
+	var payloadBytes []byte
+	if mode == AccountTestModeClaudeCode {
+		nativePayloadBytes, buildErr := createClaudeCodeNativePayloadBytes(testModelID, prompt)
+		if buildErr != nil {
+			return s.sendErrorAndEnd(c, "Failed to create Claude Code native test payload")
+		}
+		payloadBytes = nativePayloadBytes
+	} else {
+		payload, buildErr := createTestPayload(testModelID)
+		if buildErr != nil {
+			return s.sendErrorAndEnd(c, "Failed to create test payload")
+		}
+		payloadBytes, _ = json.Marshal(payload)
 	}
-	payloadBytes, _ := json.Marshal(payload)
 
 	// Send test_start event
 	s.sendEvent(c, TestEvent{Type: "test_start", Model: testModelID})
@@ -283,13 +394,18 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 		req.Header.Set(key, value)
 	}
 
-	// Set authentication header
+	// Set authentication/header profile
 	if useBearer {
-		req.Header.Set("anthropic-beta", claude.DefaultBetaHeader)
 		req.Header.Set("Authorization", "Bearer "+authToken)
 	} else {
-		req.Header.Set("anthropic-beta", claude.APIKeyBetaHeader)
 		req.Header.Set("x-api-key", authToken)
+	}
+	if mode == AccountTestModeClaudeCode {
+		applyClaudeCodeNativeTestHeaders(req, useBearer)
+	} else if useBearer {
+		req.Header.Set("anthropic-beta", claude.DefaultBetaHeader)
+	} else {
+		req.Header.Set("anthropic-beta", claude.APIKeyBetaHeader)
 	}
 
 	// Get proxy URL
@@ -860,12 +976,12 @@ func (s *AccountTestService) testGeminiAccountConnection(c *gin.Context, account
 
 // routeAntigravityTest 路由 Antigravity 账号的测试请求。
 // APIKey 类型走原生协议（与 gateway_handler 路由一致），OAuth/Upstream 走 CRS 中转。
-func (s *AccountTestService) routeAntigravityTest(c *gin.Context, account *Account, modelID string, prompt string) error {
+func (s *AccountTestService) routeAntigravityTest(c *gin.Context, account *Account, modelID string, prompt string, mode string) error {
 	if account.Type == AccountTypeAPIKey {
 		if strings.HasPrefix(modelID, "gemini-") {
 			return s.testGeminiAccountConnection(c, account, modelID, prompt)
 		}
-		return s.testClaudeAccountConnection(c, account, modelID)
+		return s.testClaudeAccountConnection(c, account, modelID, prompt, mode)
 	}
 	return s.testAntigravityAccountConnection(c, account, modelID)
 }

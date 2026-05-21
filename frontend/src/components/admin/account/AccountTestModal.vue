@@ -55,6 +55,17 @@
         />
       </div>
 
+      <div v-if="supportsRequestModeSelector" class="space-y-1.5">
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {{ t('admin.accounts.requestMode') }}
+        </label>
+        <Select
+          v-model="testMode"
+          :options="requestModeOptions"
+          :disabled="status === 'connecting'"
+        />
+      </div>
+
       <div v-if="supportsImageTest" class="space-y-1.5">
         <TextArea
           v-model="testPrompt"
@@ -272,6 +283,7 @@ const errorMessage = ref('')
 const availableModels = ref<ClaudeModel[]>([])
 const selectedModelId = ref('')
 const testPrompt = ref('')
+const testMode = ref<'default' | 'claude_code'>('default')
 const loadingModels = ref(false)
 let abortController: AbortController | null = null
 const generatedImages = ref<PreviewImage[]>([])
@@ -291,6 +303,21 @@ const supportsOpenAIImageTest = computed(() => {
 })
 
 const supportsImageTest = computed(() => supportsGeminiImageTest.value || supportsOpenAIImageTest.value)
+const supportsClaudeCodeNativeTest = computed(() => {
+  const account = props.account
+  if (!account || supportsImageTest.value) return false
+
+  if (account.platform === 'anthropic') return true
+  if (account.platform === 'antigravity' && account.type === 'apikey') {
+    return !selectedModelId.value.toLowerCase().startsWith('gemini-')
+  }
+  return false
+})
+const supportsRequestModeSelector = computed(() => supportsClaudeCodeNativeTest.value)
+const requestModeOptions = computed(() => [
+  { value: 'default', label: t('admin.accounts.requestModeDefault') },
+  { value: 'claude_code', label: t('admin.accounts.requestModeClaudeCode') }
+])
 
 const sortTestModels = (models: ClaudeModel[]) => {
   const priorityMap = new Map(prioritizedGeminiModels.map((id, index) => [id, index]))
@@ -309,6 +336,7 @@ watch(
   async (newVal) => {
     if (newVal && props.account) {
       testPrompt.value = ''
+      testMode.value = 'default'
       resetState()
       await loadAvailableModels()
     } else {
@@ -320,6 +348,9 @@ watch(
 watch(selectedModelId, () => {
   if (supportsImageTest.value && !testPrompt.value.trim()) {
     testPrompt.value = t('admin.accounts.imagePromptDefault')
+  }
+  if (!supportsClaudeCodeNativeTest.value && testMode.value === 'claude_code') {
+    testMode.value = 'default'
   }
 })
 
@@ -412,9 +443,10 @@ const startTest = async () => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-              model_id: selectedModelId.value,
-              prompt: supportsImageTest.value ? testPrompt.value.trim() : ''
-            }),
+        model_id: selectedModelId.value,
+        prompt: supportsImageTest.value ? testPrompt.value.trim() : '',
+        mode: testMode.value
+      }),
       signal: abortController.signal
     })
 

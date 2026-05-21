@@ -137,7 +137,8 @@ describe('AccountTestModal', () => {
     const [, request] = (global.fetch as any).mock.calls[0]
     expect(JSON.parse(request.body)).toEqual({
       model_id: 'gemini-3.1-flash-image',
-      prompt: 'draw a tiny orange cat astronaut'
+      prompt: 'draw a tiny orange cat astronaut',
+      mode: 'default'
     })
 
     const preview = wrapper.find('img[alt="test-image-1"]')
@@ -207,5 +208,63 @@ describe('AccountTestModal', () => {
       'API returned 403: {"error":{"message":"tampered"}}',
       'admin.accounts.outputCopied'
     )
+  })
+
+  it('Claude 兼容账号会把原生 Claude Code 测试模式传给后端', async () => {
+    getAvailableModels.mockResolvedValueOnce([
+      { id: 'claude-opus-4-7', display_name: 'Claude Opus 4.7' }
+    ])
+    global.fetch = vi.fn().mockResolvedValue(
+      createStreamResponse([
+        'data: {"type":"test_start","model":"claude-opus-4-7"}\n',
+        'data: {"type":"test_complete","success":true}\n'
+      ])
+    ) as any
+
+    const wrapper = mount(AccountTestModal, {
+      props: {
+        show: false,
+        account: {
+          id: 77,
+          name: 'Claude Native',
+          platform: 'anthropic',
+          type: 'apikey',
+          status: 'active'
+        }
+      } as any,
+      global: {
+        stubs: {
+          BaseDialog: { template: '<div><slot /><slot name="footer" /></div>' },
+          Select: { template: '<div class="select-stub"></div>' },
+          TextArea: {
+            props: ['modelValue'],
+            emits: ['update:modelValue'],
+            template: '<textarea class="textarea-stub" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'
+          },
+          Icon: true
+        }
+      }
+    })
+
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+
+    ;(wrapper.vm as any).selectedModelId = 'claude-opus-4-7'
+    ;(wrapper.vm as any).testMode = 'claude_code'
+
+    const buttons = wrapper.findAll('button')
+    const startButton = buttons.find((button) => button.text().includes('admin.accounts.startTest'))
+    expect(startButton).toBeTruthy()
+    await startButton!.trigger('click')
+    await flushPromises()
+    await flushPromises()
+
+    expect(global.fetch).toHaveBeenCalledTimes(1)
+    const [, request] = (global.fetch as any).mock.calls[0]
+    expect(JSON.parse(request.body)).toEqual({
+      model_id: 'claude-opus-4-7',
+      prompt: '',
+      mode: 'claude_code'
+    })
   })
 })

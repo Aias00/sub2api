@@ -12,12 +12,16 @@ const (
 	AccountTestModeDefault = "default"
 	// AccountTestModeCompact drives the /responses/compact compact-probe test.
 	AccountTestModeCompact = "compact"
+	// AccountTestModeClaudeCode drives a Claude Code-native /v1/messages probe.
+	AccountTestModeClaudeCode = "claude_code"
 )
 
 func normalizeAccountTestMode(mode string) string {
 	switch strings.ToLower(strings.TrimSpace(mode)) {
 	case AccountTestModeCompact:
 		return AccountTestModeCompact
+	case AccountTestModeClaudeCode:
+		return AccountTestModeClaudeCode
 	default:
 		return AccountTestModeDefault
 	}

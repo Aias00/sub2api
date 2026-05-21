@@ -66,6 +66,17 @@
         />
       </div>
 
+      <div v-else-if="supportsClaudeCodeNativeTest" class="space-y-1.5">
+        <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+          {{ t('admin.accounts.requestMode') }}
+        </label>
+        <Select
+          v-model="testMode"
+          :options="claudeRequestModeOptions"
+          :disabled="status === 'connecting'"
+        />
+      </div>
+
       <div v-if="supportsImageTest" class="space-y-1.5">
         <TextArea
           v-model="testPrompt"
@@ -286,11 +297,25 @@ const testPrompt = ref('')
 const loadingModels = ref(false)
 let abortController: AbortController | null = null
 const generatedImages = ref<PreviewImage[]>([])
-const testMode = ref<'default' | 'compact'>('default')
+const testMode = ref<'default' | 'compact' | 'claude_code'>('default')
 const isOpenAIAccount = computed(() => props.account?.platform === 'openai')
 const openAITestModeOptions = computed(() => [
   { value: 'default', label: t('admin.accounts.openai.testModeDefault') },
   { value: 'compact', label: t('admin.accounts.openai.testModeCompact') }
+])
+const supportsClaudeCodeNativeTest = computed(() => {
+  const account = props.account
+  if (!account || isOpenAIAccount.value || supportsImageTest.value) return false
+
+  if (account.platform === 'anthropic') return true
+  if (account.platform === 'antigravity' && account.type === 'apikey') {
+    return !selectedModelId.value.toLowerCase().startsWith('gemini-')
+  }
+  return false
+})
+const claudeRequestModeOptions = computed(() => [
+  { value: 'default', label: t('admin.accounts.requestModeDefault') },
+  { value: 'claude_code', label: t('admin.accounts.requestModeClaudeCode') }
 ])
 const previewImageUrl = ref('')
 const prioritizedGeminiModels = ['gemini-3.1-flash-image', 'gemini-2.5-flash-image', 'gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-3-flash-preview', 'gemini-3-pro-preview', 'gemini-2.0-flash']
@@ -338,6 +363,10 @@ watch(
 watch(selectedModelId, () => {
   if (supportsImageTest.value && !testPrompt.value.trim()) {
     testPrompt.value = t('admin.accounts.imagePromptDefault')
+  }
+  if (isOpenAIAccount.value) return
+  if (!supportsClaudeCodeNativeTest.value && testMode.value === 'claude_code') {
+    testMode.value = 'default'
   }
 })
 
@@ -432,7 +461,7 @@ const startTest = async () => {
       body: JSON.stringify({
         model_id: selectedModelId.value,
         prompt: supportsImageTest.value ? testPrompt.value.trim() : '',
-        mode: isOpenAIAccount.value ? testMode.value : 'default'
+        mode: isOpenAIAccount.value || supportsClaudeCodeNativeTest.value ? testMode.value : 'default'
       }),
       signal: abortController.signal
     })
