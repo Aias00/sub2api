@@ -66,12 +66,12 @@
         />
       </div>
 
-      <div v-if="supportsImageTest" class="space-y-1.5">
+      <div v-if="supportsEditablePrompt" class="space-y-1.5">
         <TextArea
           v-model="testPrompt"
-          :label="t('admin.accounts.imagePromptLabel')"
-          :placeholder="t('admin.accounts.imagePromptPlaceholder')"
-          :hint="t('admin.accounts.imageTestHint')"
+          :label="promptFieldLabel"
+          :placeholder="promptFieldPlaceholder"
+          :hint="promptFieldHint"
           :disabled="status === 'connecting'"
           rows="3"
         />
@@ -177,20 +177,18 @@
       </Teleport>
 
       <!-- Test Info -->
-      <div class="flex items-center justify-between px-1 text-xs text-gray-500 dark:text-gray-400">
-        <div class="flex items-center gap-3">
-          <span class="flex items-center gap-1">
-            <Icon name="grid" size="sm" :stroke-width="2" />
-            {{ t('admin.accounts.testModel') }}
-          </span>
-        </div>
+      <div class="flex flex-wrap items-center justify-between gap-3 px-1 text-xs text-gray-500 dark:text-gray-400">
         <span class="flex items-center gap-1">
+          <Icon name="grid" size="sm" :stroke-width="2" />
+          {{ t('admin.accounts.testModel') }}：{{ selectedModelId || '-' }}
+        </span>
+        <span class="flex items-center gap-1">
+          <Icon name="link" size="sm" :stroke-width="2" />
+          {{ t('admin.accounts.currentRequestMode') }}：{{ currentRequestModeLabel }}
+        </span>
+        <span class="flex max-w-[320px] items-center gap-1 truncate" :title="effectivePrompt">
           <Icon name="chat" size="sm" :stroke-width="2" />
-          {{
-            supportsImageTest
-              ? t('admin.accounts.imageTestMode')
-              : t('admin.accounts.testPrompt')
-          }}
+          {{ promptInfoLabel }}：{{ effectivePrompt }}
         </span>
       </div>
     </div>
@@ -303,6 +301,8 @@ const supportsOpenAIImageTest = computed(() => {
 })
 
 const supportsImageTest = computed(() => supportsGeminiImageTest.value || supportsOpenAIImageTest.value)
+const supportsTextPrompt = computed(() => !supportsImageTest.value)
+const supportsEditablePrompt = computed(() => supportsImageTest.value || supportsTextPrompt.value)
 const supportsClaudeCodeNativeTest = computed(() => {
   const account = props.account
   if (!account || supportsImageTest.value) return false
@@ -318,6 +318,30 @@ const requestModeOptions = computed(() => [
   { value: 'default', label: t('admin.accounts.requestModeDefault') },
   { value: 'claude_code', label: t('admin.accounts.requestModeClaudeCode') }
 ])
+const currentRequestModeLabel = computed(() =>
+  testMode.value === 'claude_code'
+    ? t('admin.accounts.requestModeClaudeCode')
+    : t('admin.accounts.requestModeDefault')
+)
+const effectivePrompt = computed(() => {
+  const trimmed = testPrompt.value.trim()
+  if (trimmed) return trimmed
+  return supportsImageTest.value
+    ? t('admin.accounts.imagePromptDefault')
+    : t('admin.accounts.textPromptDefault')
+})
+const promptFieldLabel = computed(() =>
+  supportsImageTest.value ? t('admin.accounts.imagePromptLabel') : t('admin.accounts.textPromptLabel')
+)
+const promptFieldPlaceholder = computed(() =>
+  supportsImageTest.value ? t('admin.accounts.imagePromptPlaceholder') : t('admin.accounts.textPromptPlaceholder')
+)
+const promptFieldHint = computed(() =>
+  supportsImageTest.value ? t('admin.accounts.imageTestHint') : t('admin.accounts.textPromptHint')
+)
+const promptInfoLabel = computed(() =>
+  supportsImageTest.value ? t('admin.accounts.imagePromptLabel') : t('admin.accounts.textPromptLabel')
+)
 
 const sortTestModels = (models: ClaudeModel[]) => {
   const priorityMap = new Map(prioritizedGeminiModels.map((id, index) => [id, index]))
@@ -346,8 +370,10 @@ watch(
 )
 
 watch(selectedModelId, () => {
-  if (supportsImageTest.value && !testPrompt.value.trim()) {
-    testPrompt.value = t('admin.accounts.imagePromptDefault')
+  if (!testPrompt.value.trim()) {
+    testPrompt.value = supportsImageTest.value
+      ? t('admin.accounts.imagePromptDefault')
+      : t('admin.accounts.textPromptDefault')
   }
   if (!supportsClaudeCodeNativeTest.value && testMode.value === 'claude_code') {
     testMode.value = 'default'
@@ -425,6 +451,7 @@ const startTest = async () => {
   status.value = 'connecting'
   addLine(t('admin.accounts.startingTestForAccount', { name: props.account.name }), 'text-blue-400')
   addLine(t('admin.accounts.testAccountTypeLabel', { type: props.account.type }), 'text-gray-400')
+  addLine(t('admin.accounts.testRequestModeLabel', { mode: currentRequestModeLabel.value }), 'text-gray-400')
   addLine('', 'text-gray-300')
 
   abortStream()
@@ -444,7 +471,7 @@ const startTest = async () => {
       },
       body: JSON.stringify({
         model_id: selectedModelId.value,
-        prompt: supportsImageTest.value ? testPrompt.value.trim() : '',
+        prompt: testPrompt.value.trim(),
         mode: testMode.value
       }),
       signal: abortController.signal

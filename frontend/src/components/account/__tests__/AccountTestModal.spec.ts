@@ -252,7 +252,7 @@ describe('AccountTestModal', () => {
     )
   })
 
-  it('passes claude_code mode for Claude compatible accounts', async () => {
+  it('passes claude_code mode and custom test content for Claude compatible accounts', async () => {
     global.fetch = vi.fn().mockResolvedValue(
       createStreamResponse([
         'data: {"type":"test_start","model":"claude-opus-4-7"}\n',
@@ -292,6 +292,10 @@ describe('AccountTestModal', () => {
     ])
 
     await flushPromises()
+    const promptInput = wrapper.find('textarea')
+    expect(promptInput.exists()).toBe(true)
+    await promptInput.setValue('summarize the latest request')
+
     ;(wrapper.vm as any).selectedModelId = 'claude-opus-4-7'
     ;(wrapper.vm as any).testMode = 'claude_code'
 
@@ -303,7 +307,7 @@ describe('AccountTestModal', () => {
     const [, options] = (global.fetch as any).mock.calls[0]
     expect(JSON.parse(options.body)).toEqual({
       model_id: 'claude-opus-4-7',
-      prompt: '',
+      prompt: 'summarize the latest request',
       mode: 'claude_code'
     })
   })

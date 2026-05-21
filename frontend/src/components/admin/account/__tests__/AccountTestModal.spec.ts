@@ -210,7 +210,7 @@ describe('AccountTestModal', () => {
     )
   })
 
-  it('Claude 兼容账号会把原生 Claude Code 测试模式传给后端', async () => {
+  it('Claude 兼容账号会把原生 Claude Code 测试模式和自定义内容传给后端', async () => {
     getAvailableModels.mockResolvedValueOnce([
       { id: 'claude-opus-4-7', display_name: 'Claude Opus 4.7' }
     ])
@@ -249,6 +249,10 @@ describe('AccountTestModal', () => {
     await wrapper.setProps({ show: true })
     await flushPromises()
 
+    const promptInput = wrapper.find('textarea.textarea-stub')
+    expect(promptInput.exists()).toBe(true)
+    await promptInput.setValue('summarize the latest request')
+
     ;(wrapper.vm as any).selectedModelId = 'claude-opus-4-7'
     ;(wrapper.vm as any).testMode = 'claude_code'
 
@@ -263,7 +267,7 @@ describe('AccountTestModal', () => {
     const [, request] = (global.fetch as any).mock.calls[0]
     expect(JSON.parse(request.body)).toEqual({
       model_id: 'claude-opus-4-7',
-      prompt: '',
+      prompt: 'summarize the latest request',
       mode: 'claude_code'
     })
   })

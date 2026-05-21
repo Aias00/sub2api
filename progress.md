@@ -145,6 +145,17 @@
   - backend native-mode header/payload construction
   - admin account modal sending `claude_code`
   - user account modal sending `claude_code`
+- Extended account test content editing so non-image probes now send the operator-provided prompt instead of hard-coded `"hi"` for:
+  - Anthropic default probe
+  - Anthropic Claude Code native probe
+  - OpenAI default probe
+  - OpenAI compact probe
+  - Anthropic service-account probe
+  - Bedrock text probe
+- Updated both account test modals to:
+  - show an editable request-content textarea for non-image tests
+  - show the current request mode inside the result panel
+  - show the effective prompt value inside the result panel summary row
 - Verified:
   - `cd backend && go test ./... -count=1`
   - `pnpm --dir frontend exec vitest run src/components/admin/account/__tests__/AccountTestModal.spec.ts src/components/account/__tests__/AccountTestModal.spec.ts`
