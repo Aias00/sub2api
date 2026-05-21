@@ -157,9 +157,13 @@
 - None locally. Existing Vite chunk-size warnings remain informational only.
 
 ### Next
-- Commit and push the native test-mode feature.
-- Deploy the rebuilt frontend/backend bundle to production.
-- Verify the new Claude Code native entry appears on Claude-compatible account tests and reproduces upstream behavior distinctly from the default test mode.
+- Completed:
+  - committed and pushed the native test-mode feature
+  - deployed the rebuilt frontend/backend bundle to production
+  - verified on production that Claude-compatible account tests now expose:
+    - `请求方式 -> 常规请求`
+    - `请求方式 -> Claude Code 原生测试`
+  - confirmed the live request body includes `mode: "claude_code"` when the native mode is selected
 
 ## 2026-05-13 Active Email Daily Rate Limit
 ### Done
