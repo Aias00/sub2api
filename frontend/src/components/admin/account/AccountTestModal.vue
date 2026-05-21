@@ -131,6 +131,28 @@
         </button>
       </div>
 
+      <div v-if="requestDebugText || responseDebugText" class="space-y-2">
+        <div
+          v-if="requestDebugText"
+          class="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-dark-500 dark:bg-dark-700/60"
+        >
+          <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">
+            {{ t('admin.accounts.rawUpstreamRequest') }}
+          </div>
+          <pre class="overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-white/70 p-3 font-mono text-xs text-gray-700 dark:bg-black/30 dark:text-gray-200">{{ requestDebugText }}</pre>
+        </div>
+
+        <div
+          v-if="responseDebugText"
+          class="rounded-xl border border-gray-200 bg-gray-50 p-3 dark:border-dark-500 dark:bg-dark-700/60"
+        >
+          <div class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-300">
+            {{ t('admin.accounts.rawUpstreamResponse') }}
+          </div>
+          <pre class="overflow-x-auto whitespace-pre-wrap break-all rounded-lg bg-white/70 p-3 font-mono text-xs text-gray-700 dark:bg-black/30 dark:text-gray-200">{{ responseDebugText }}</pre>
+        </div>
+      </div>
+
       <div v-if="generatedImages.length > 0" class="space-y-2">
         <div class="text-xs font-medium text-gray-600 dark:text-gray-300">
           {{ t('admin.accounts.imagePreview') }}
@@ -278,6 +300,8 @@ const outputLines = ref<OutputLine[]>([])
 const streamingContent = ref('')
 const responseContent = ref('')
 const errorMessage = ref('')
+const requestDebugText = ref('')
+const responseDebugText = ref('')
 const availableModels = ref<ClaudeModel[]>([])
 const selectedModelId = ref('')
 const testPrompt = ref('')
@@ -416,6 +440,8 @@ const resetState = () => {
   streamingContent.value = ''
   responseContent.value = ''
   errorMessage.value = ''
+  requestDebugText.value = ''
+  responseDebugText.value = ''
   generatedImages.value = []
   previewImageUrl.value = ''
 }
@@ -554,6 +580,14 @@ const handleEvent = (event: {
         responseContent.value += event.text
         scrollToBottom()
       }
+      break
+
+    case 'request_debug':
+      requestDebugText.value = event.text || ''
+      break
+
+    case 'response_debug':
+      responseDebugText.value = event.text || ''
       break
 
     case 'image':

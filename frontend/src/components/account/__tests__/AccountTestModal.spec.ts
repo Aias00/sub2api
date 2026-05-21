@@ -311,4 +311,57 @@ describe('AccountTestModal', () => {
       mode: 'claude_code'
     })
   })
+
+  it('renders upstream request and response debug details', async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      createStreamResponse([
+        'data: {"type":"request_debug","text":"[Upstream Request]\\nPOST https://example.com/v1/messages\\nHeaders:\\nAuthorization: <redacted>"}\n',
+        'data: {"type":"response_debug","text":"[Upstream Response]\\nStatus: 200\\nBody:\\n[streamed response body shown below]"}\n',
+        'data: {"type":"test_start","model":"claude-opus-4-7"}\n',
+        'data: {"type":"test_complete","success":true}\n'
+      ])
+    ) as any
+
+    const wrapper = mount(AccountTestModal, {
+      props: {
+        show: true,
+        account: {
+          id: 9,
+          name: 'Claude Native',
+          platform: 'anthropic',
+          type: 'apikey',
+          status: 'active',
+          credentials: {},
+          extra: {},
+          concurrency: 1,
+          priority: 1,
+          proxy_id: null,
+          auto_pause_on_expired: false
+        }
+      } as any,
+      global: {
+        stubs: {
+          BaseDialog: BaseDialogStub,
+          Select: SelectStub,
+          TextArea: TextAreaStub,
+          Icon: true
+        }
+      }
+    })
+
+    getAvailableModelsMock.mockResolvedValueOnce([
+      { id: 'claude-opus-4-7', display_name: 'Claude Opus 4.7' }
+    ])
+
+    await flushPromises()
+    ;(wrapper.vm as any).selectedModelId = 'claude-opus-4-7'
+    await (wrapper.vm as any).startTest()
+    await flushPromises()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('admin.accounts.rawUpstreamRequest')
+    expect(wrapper.text()).toContain('POST https://example.com/v1/messages')
+    expect(wrapper.text()).toContain('admin.accounts.rawUpstreamResponse')
+    expect(wrapper.text()).toContain('[streamed response body shown below]')
+  })
 })

@@ -3932,6 +3932,8 @@ export default {
       requestModeDefault: 'Default request',
       requestModeClaudeCode: 'Claude Code native test',
       currentRequestMode: 'Current request mode',
+      rawUpstreamRequest: 'Raw upstream request',
+      rawUpstreamResponse: 'Raw upstream response',
       testModel: 'Test model',
       testPrompt: 'Prompt: "hi"',
       textPromptLabel: 'Test content',

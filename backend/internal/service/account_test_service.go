@@ -14,6 +14,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"regexp"
+	"sort"
 	"strings"
 	"time"
 
@@ -84,6 +85,16 @@ const (
 	defaultGeminiImageTestPrompt = "Generate a cute orange cat astronaut sticker on a clean pastel background."
 	defaultOpenAIImageTestPrompt = "Generate a cute orange cat astronaut sticker on a clean pastel background."
 )
+
+var debugSensitiveHeaders = map[string]struct{}{
+	"authorization":       {},
+	"x-api-key":           {},
+	"x-goog-api-key":      {},
+	"cookie":              {},
+	"set-cookie":          {},
+	"proxy-authorization": {},
+	"chatgpt-account-id":  {},
+}
 
 // isOpenAIImageModel checks if the model is an OpenAI image generation model (e.g. gpt-image-2).
 func isOpenAIImageModel(model string) bool {
@@ -268,6 +279,93 @@ func applyClaudeCodeNativeTestHeaders(req *http.Request, useBearer bool) {
 	req.Header.Set("anthropic-beta", buildClaudeCodeNativeBetaHeader(useBearer))
 }
 
+func sanitizeHeadersForDebug(headers http.Header) map[string]string {
+	if len(headers) == 0 {
+		return map[string]string{}
+	}
+
+	sanitized := make(map[string]string, len(headers))
+	for key, values := range headers {
+		lowerKey := strings.ToLower(strings.TrimSpace(key))
+		if _, sensitive := debugSensitiveHeaders[lowerKey]; sensitive {
+			sanitized[key] = "<redacted>"
+			continue
+		}
+		sanitized[key] = strings.Join(values, ", ")
+	}
+	return sanitized
+}
+
+func formatDebugBody(body []byte) string {
+	if len(body) == 0 {
+		return "(empty)"
+	}
+
+	var formatted bytes.Buffer
+	if err := json.Indent(&formatted, body, "", "  "); err == nil {
+		return formatted.String()
+	}
+	return string(body)
+}
+
+func formatDebugHeaders(headers map[string]string) string {
+	if len(headers) == 0 {
+		return "(none)"
+	}
+
+	keys := make([]string, 0, len(headers))
+	for key := range headers {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	var builder strings.Builder
+	for idx, key := range keys {
+		if idx > 0 {
+			builder.WriteByte('\n')
+		}
+		builder.WriteString(key)
+		builder.WriteString(": ")
+		builder.WriteString(headers[key])
+	}
+	return builder.String()
+}
+
+func formatUpstreamRequestDebugText(req *http.Request, body []byte) string {
+	if req == nil || req.URL == nil {
+		return "[Upstream Request]\n(unavailable)"
+	}
+
+	return strings.Join([]string{
+		"[Upstream Request]",
+		req.Method + " " + req.URL.String(),
+		"Headers:",
+		formatDebugHeaders(sanitizeHeadersForDebug(req.Header)),
+		"Body:",
+		formatDebugBody(body),
+	}, "\n")
+}
+
+func formatUpstreamResponseDebugText(resp *http.Response, body []byte, streamed bool) string {
+	if resp == nil {
+		return "[Upstream Response]\n(unavailable)"
+	}
+
+	responseBody := formatDebugBody(body)
+	if streamed && len(body) == 0 {
+		responseBody = "[streamed response body shown below]"
+	}
+
+	return strings.Join([]string{
+		"[Upstream Response]",
+		fmt.Sprintf("Status: %d", resp.StatusCode),
+		"Headers:",
+		formatDebugHeaders(sanitizeHeadersForDebug(resp.Header)),
+		"Body:",
+		responseBody,
+	}, "\n")
+}
+
 // TestAccountConnection tests an account's connection by sending a test request
 // All account types use full Claude Code client characteristics, only auth header differs
 // modelID is optional - if empty, defaults to claude.DefaultTestModel
@@ -410,6 +508,8 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 	} else {
 		req.Header.Set("anthropic-beta", claude.APIKeyBetaHeader)
 	}
+	s.sendEvent(c, TestEvent{Type: "request_debug", Text: formatUpstreamRequestDebugText(req, payloadBytes)})
+	s.sendEvent(c, TestEvent{Type: "request_debug", Text: formatUpstreamRequestDebugText(req, payloadBytes)})
 
 	// Get proxy URL
 	proxyURL := ""
@@ -425,6 +525,7 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, body, false)})
 		errMsg := fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body))
 
 		// 403 表示账号被上游封禁，标记为 error 状态
@@ -434,6 +535,7 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 
 		return s.sendErrorAndEnd(c, errMsg)
 	}
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, nil, true)})
 
 	// Process SSE stream
 	return s.processClaudeStream(c, resp.Body)
@@ -483,6 +585,7 @@ func (s *AccountTestService) testClaudeVertexServiceAccountConnection(c *gin.Con
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+accessToken)
+	s.sendEvent(c, TestEvent{Type: "request_debug", Text: formatUpstreamRequestDebugText(req, vertexBody)})
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -497,12 +600,14 @@ func (s *AccountTestService) testClaudeVertexServiceAccountConnection(c *gin.Con
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, body, false)})
 		errMsg := fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body))
 		if resp.StatusCode == http.StatusForbidden {
 			_ = s.accountRepo.SetError(ctx, account.ID, errMsg)
 		}
 		return s.sendErrorAndEnd(c, errMsg)
 	}
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, nil, true)})
 
 	return s.processClaudeStream(c, resp.Body)
 }
@@ -572,6 +677,7 @@ func (s *AccountTestService) testBedrockAccountConnection(c *gin.Context, ctx co
 			return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to sign request: %s", err.Error()))
 		}
 	}
+	s.sendEvent(c, TestEvent{Type: "request_debug", Text: formatUpstreamRequestDebugText(req, bedrockBody)})
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -585,6 +691,7 @@ func (s *AccountTestService) testBedrockAccountConnection(c *gin.Context, ctx co
 	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(resp.Body)
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, body, false)})
 
 	if resp.StatusCode != http.StatusOK {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body)))
@@ -721,6 +828,7 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 			req.Header.Set("chatgpt-account-id", chatgptAccountID)
 		}
 	}
+	s.sendEvent(c, TestEvent{Type: "request_debug", Text: formatUpstreamRequestDebugText(req, payloadBytes)})
 
 	// Get proxy URL
 	proxyURL := ""
@@ -743,6 +851,7 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, body, false)})
 		if resp.StatusCode == http.StatusTooManyRequests {
 			s.reconcileOpenAI429State(ctx, account, resp.Header, body)
 		}
@@ -753,6 +862,7 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 		}
 		return s.sendErrorAndEnd(c, fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body)))
 	}
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, nil, true)})
 
 	// Process SSE stream
 	return s.processOpenAIStream(c, resp.Body)
@@ -826,6 +936,7 @@ func (s *AccountTestService) testOpenAICompactConnection(c *gin.Context, account
 			req.Header.Set("chatgpt-account-id", chatgptAccountID)
 		}
 	}
+	s.sendEvent(c, TestEvent{Type: "request_debug", Text: formatUpstreamRequestDebugText(req, payloadBytes)})
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -844,6 +955,7 @@ func (s *AccountTestService) testOpenAICompactConnection(c *gin.Context, account
 	defer func() { _ = resp.Body.Close() }()
 
 	body, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, body, false)})
 
 	if s.accountRepo != nil {
 		updates := buildOpenAICompactProbeExtraUpdates(resp, body, nil, time.Now())
@@ -972,8 +1084,10 @@ func (s *AccountTestService) testGeminiAccountConnection(c *gin.Context, account
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, body, false)})
 		return s.sendErrorAndEnd(c, fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body)))
 	}
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, nil, true)})
 
 	// Process SSE stream
 	return s.processGeminiStream(c, resp.Body)
@@ -1483,6 +1597,7 @@ func (s *AccountTestService) testOpenAIImageAPIKey(c *gin.Context, ctx context.C
 	}
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Authorization", "Bearer "+authToken)
+	s.sendEvent(c, TestEvent{Type: "request_debug", Text: formatUpstreamRequestDebugText(req, payloadBytes)})
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -1499,6 +1614,7 @@ func (s *AccountTestService) testOpenAIImageAPIKey(c *gin.Context, ctx context.C
 	if err != nil {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to read response: %s", err.Error()))
 	}
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, body, false)})
 
 	if resp.StatusCode != http.StatusOK {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body)))
@@ -1583,6 +1699,7 @@ func (s *AccountTestService) testOpenAIImageOAuth(c *gin.Context, ctx context.Co
 	if chatgptAccountID := strings.TrimSpace(account.GetChatGPTAccountID()); chatgptAccountID != "" {
 		req.Header.Set("chatgpt-account-id", chatgptAccountID)
 	}
+	s.sendEvent(c, TestEvent{Type: "request_debug", Text: formatUpstreamRequestDebugText(req, responsesBody)})
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {
@@ -1599,6 +1716,7 @@ func (s *AccountTestService) testOpenAIImageOAuth(c *gin.Context, ctx context.Co
 	}()
 	if resp.StatusCode >= 400 {
 		body, _ := io.ReadAll(io.LimitReader(resp.Body, 2<<20))
+		s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, body, false)})
 		message := strings.TrimSpace(extractUpstreamErrorMessage(body))
 		if message == "" {
 			message = fmt.Sprintf("Responses API returned %d", resp.StatusCode)
@@ -1610,6 +1728,7 @@ func (s *AccountTestService) testOpenAIImageOAuth(c *gin.Context, ctx context.Co
 	if err != nil {
 		return s.sendErrorAndEnd(c, fmt.Sprintf("Failed to read image response: %s", err.Error()))
 	}
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, body, false)})
 
 	results, _, _, _, _, err := collectOpenAIImagesFromResponsesBody(body)
 	if err != nil {

@@ -271,4 +271,33 @@ describe('AccountTestModal', () => {
       mode: 'claude_code'
     })
   })
+
+  it('展示脱敏后的上游请求和响应调试详情', async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      createStreamResponse([
+        'data: {"type":"request_debug","text":"[Upstream Request]\\nPOST https://example.com/v1/messages\\nHeaders:\\nAuthorization: <redacted>\\nBody:\\n{\\\"model\\\":\\\"claude-opus-4-7\\\"}"}\n',
+        'data: {"type":"response_debug","text":"[Upstream Response]\\nStatus: 200\\nHeaders:\\nContent-Type: text/event-stream\\nBody:\\n[streamed response body shown below]"}\n',
+        'data: {"type":"test_start","model":"claude-opus-4-7"}\n',
+        'data: {"type":"test_complete","success":true}\n'
+      ])
+    ) as any
+
+    const wrapper = mountModal()
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+
+    const buttons = wrapper.findAll('button')
+    const startButton = buttons.find((button) => button.text().includes('admin.accounts.startTest'))
+    expect(startButton).toBeTruthy()
+
+    await startButton!.trigger('click')
+    await flushPromises()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('admin.accounts.rawUpstreamRequest')
+    expect(wrapper.text()).toContain('POST https://example.com/v1/messages')
+    expect(wrapper.text()).toContain('Authorization: <redacted>')
+    expect(wrapper.text()).toContain('admin.accounts.rawUpstreamResponse')
+    expect(wrapper.text()).toContain('[streamed response body shown below]')
+  })
 })

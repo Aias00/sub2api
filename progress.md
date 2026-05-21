@@ -156,6 +156,12 @@
   - show an editable request-content textarea for non-image tests
   - show the current request mode inside the result panel
   - show the effective prompt value inside the result panel summary row
+  - render raw upstream request / response debug panels with redacted sensitive headers
+- Backend account-test SSE now emits upstream debug blocks for supported test paths, including:
+  - method + URL
+  - redacted request / response headers
+  - request body
+  - response body or a streamed-body marker
 - Verified:
   - `cd backend && go test ./... -count=1`
   - `pnpm --dir frontend exec vitest run src/components/admin/account/__tests__/AccountTestModal.spec.ts src/components/account/__tests__/AccountTestModal.spec.ts`

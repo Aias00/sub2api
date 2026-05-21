@@ -4060,6 +4060,8 @@ export default {
       requestModeDefault: '常规请求',
       requestModeClaudeCode: 'Claude Code 原生测试',
       currentRequestMode: '当前请求方式',
+      rawUpstreamRequest: '上游请求原始报文',
+      rawUpstreamResponse: '上游响应原始报文',
       testModel: '测试模型',
       testPrompt: '提示词："hi"',
       textPromptLabel: '测试内容',
