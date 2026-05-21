@@ -134,7 +134,7 @@
 
               <!-- Contact Support (only show if configured) -->
               <div
-                v-if="contactInfo"
+                v-if="showDropdownContactSupport"
                 class="border-t border-gray-100 px-4 py-2.5 dark:border-dark-700"
               >
                 <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
@@ -213,19 +213,23 @@ const authStore = useAuthStore()
 const adminSettingsStore = useAdminSettingsStore()
 
 const user = computed(() => authStore.user)
+const isAdmin = computed(() => user.value?.role === 'admin')
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => appStore.docUrl)
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
-const showDropdownAccountLinks = computed(() => user.value?.role === 'admin')
-const showGithubLink = computed(() => user.value?.role === 'admin')
+const showDropdownAccountLinks = computed(() => false)
+const showGithubLink = computed(() => false)
 const showDropdownPrimaryActions = computed(
   () => showDropdownAccountLinks.value || showGithubLink.value
 )
+const showDropdownContactSupport = computed(
+  () => !isAdmin.value && Boolean(contactInfo.value)
+)
 
 const compactUserDropdown = computed(() => {
-  return !showDropdownPrimaryActions.value && !contactInfo.value
+  return !showDropdownPrimaryActions.value && !showDropdownContactSupport.value
 })
 
 const userInitials = computed(() => {
