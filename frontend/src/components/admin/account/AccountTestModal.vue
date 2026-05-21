@@ -567,7 +567,7 @@ const handleEvent = (event: {
       addLine(
         supportsImageTest.value
             ? t('admin.accounts.sendingImageRequest')
-            : t('admin.accounts.sendingTestMessage'),
+            : t('admin.accounts.sendingTestMessage', { prompt: effectivePrompt.value }),
         'text-gray-400'
       )
       addLine('', 'text-gray-300')

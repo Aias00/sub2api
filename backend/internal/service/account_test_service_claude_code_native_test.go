@@ -37,7 +37,7 @@ func TestAccountTestService_TestAccountConnection_ClaudeCodeNativeModeUsesClaude
 	upstream := &httpUpstreamRecorder{resp: &http.Response{
 		StatusCode: http.StatusOK,
 		Header:     http.Header{"Content-Type": []string{"text/event-stream"}},
-		Body:       io.NopCloser(strings.NewReader("data: [DONE]\n\n")),
+		Body:       io.NopCloser(strings.NewReader("data: {\"type\":\"content_block_delta\",\"delta\":{\"text\":\"Hi! 👋\"}}\n\ndata: [DONE]\n\n")),
 	}}
 	svc := &AccountTestService{
 		accountRepo:  repo,
@@ -75,4 +75,8 @@ func TestAccountTestService_TestAccountConnection_ClaudeCodeNativeModeUsesClaude
 	bodyStr := string(upstream.lastBody)
 	require.Less(t, strings.Index(bodyStr, `"metadata"`), strings.Index(bodyStr, `"system"`))
 	require.Less(t, strings.Index(bodyStr, `"system"`), strings.Index(bodyStr, `"messages"`))
+	require.Contains(t, rec.Body.String(), "[Upstream Response]")
+	require.Contains(t, rec.Body.String(), "content_block_delta")
+	require.Contains(t, rec.Body.String(), "Hi! 👋")
+	require.NotContains(t, rec.Body.String(), "[streamed response body shown below]")
 }

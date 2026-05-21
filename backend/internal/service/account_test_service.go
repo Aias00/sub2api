@@ -509,7 +509,6 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 		req.Header.Set("anthropic-beta", claude.APIKeyBetaHeader)
 	}
 	s.sendEvent(c, TestEvent{Type: "request_debug", Text: formatUpstreamRequestDebugText(req, payloadBytes)})
-	s.sendEvent(c, TestEvent{Type: "request_debug", Text: formatUpstreamRequestDebugText(req, payloadBytes)})
 
 	// Get proxy URL
 	proxyURL := ""
@@ -535,10 +534,10 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 
 		return s.sendErrorAndEnd(c, errMsg)
 	}
-	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, nil, true)})
-
-	// Process SSE stream
-	return s.processClaudeStream(c, resp.Body)
+	var streamDebug bytes.Buffer
+	err = s.processClaudeStream(c, io.TeeReader(resp.Body, &streamDebug))
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, streamDebug.Bytes(), false)})
+	return err
 }
 
 func (s *AccountTestService) testClaudeVertexServiceAccountConnection(c *gin.Context, ctx context.Context, account *Account, testModelID string, prompt string) error {
@@ -607,9 +606,10 @@ func (s *AccountTestService) testClaudeVertexServiceAccountConnection(c *gin.Con
 		}
 		return s.sendErrorAndEnd(c, errMsg)
 	}
-	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, nil, true)})
-
-	return s.processClaudeStream(c, resp.Body)
+	var streamDebug bytes.Buffer
+	err = s.processClaudeStream(c, io.TeeReader(resp.Body, &streamDebug))
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, streamDebug.Bytes(), false)})
+	return err
 }
 
 // testBedrockAccountConnection tests a Bedrock (SigV4 or API Key) account using non-streaming invoke
@@ -862,10 +862,10 @@ func (s *AccountTestService) testOpenAIAccountConnection(c *gin.Context, account
 		}
 		return s.sendErrorAndEnd(c, fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body)))
 	}
-	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, nil, true)})
-
-	// Process SSE stream
-	return s.processOpenAIStream(c, resp.Body)
+	var streamDebug bytes.Buffer
+	err = s.processOpenAIStream(c, io.TeeReader(resp.Body, &streamDebug))
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, streamDebug.Bytes(), false)})
+	return err
 }
 
 // testOpenAICompactConnection probes /responses/compact and persists the
@@ -1087,10 +1087,10 @@ func (s *AccountTestService) testGeminiAccountConnection(c *gin.Context, account
 		s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, body, false)})
 		return s.sendErrorAndEnd(c, fmt.Sprintf("API returned %d: %s", resp.StatusCode, string(body)))
 	}
-	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, nil, true)})
-
-	// Process SSE stream
-	return s.processGeminiStream(c, resp.Body)
+	var streamDebug bytes.Buffer
+	err = s.processGeminiStream(c, io.TeeReader(resp.Body, &streamDebug))
+	s.sendEvent(c, TestEvent{Type: "response_debug", Text: formatUpstreamResponseDebugText(resp, streamDebug.Bytes(), false)})
+	return err
 }
 
 // routeAntigravityTest 路由 Antigravity 账号的测试请求。
