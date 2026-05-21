@@ -177,4 +177,35 @@ describe('AccountTestModal', () => {
       'admin.accounts.outputCopied'
     )
   })
+
+  it('测试失败时复制按钮会复制错误响应详情', async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      createStreamResponse([
+        'data: {"type":"test_start","model":"claude-opus-4-7"}\n',
+        'data: {"type":"error","error":"API returned 403: {\\\"error\\\":{\\\"message\\\":\\\"tampered\\\"}}"}\n'
+      ])
+    ) as any
+
+    const wrapper = mountModal()
+    await wrapper.setProps({ show: true })
+    await flushPromises()
+
+    const buttons = wrapper.findAll('button')
+    const startButton = buttons.find((button) => button.text().includes('admin.accounts.startTest'))
+    expect(startButton).toBeTruthy()
+
+    await startButton!.trigger('click')
+    await flushPromises()
+    await flushPromises()
+
+    const copyButton = wrapper.find('button[title="admin.accounts.copyOutput"]')
+    expect(copyButton.exists()).toBe(true)
+
+    await copyButton.trigger('click')
+
+    expect(copyToClipboard).toHaveBeenCalledWith(
+      'API returned 403: {"error":{"message":"tampered"}}',
+      'admin.accounts.outputCopied'
+    )
+  })
 })

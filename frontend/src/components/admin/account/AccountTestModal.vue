@@ -533,7 +533,9 @@ const handleEvent = (event: {
 }
 
 const copyOutput = () => {
-  const text = responseContent.value.trim()
+  const text = status.value === 'error'
+    ? errorMessage.value.trim() || responseContent.value.trim()
+    : responseContent.value.trim()
   copyToClipboard(text, t('admin.accounts.outputCopied'))
 }
 </script>

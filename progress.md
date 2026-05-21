@@ -104,6 +104,27 @@
 - Deploy the rebuilt frontend/backend bundle to production.
 - Open the account-test modal and verify the copy button only copies the response body.
 
+## 2026-05-21 Account Test Error Copy Regression
+### Done
+- Added regression coverage for failed account-test runs in both modal variants so the copy button must preserve the surfaced error response payload.
+- Verified the current implementation failed those tests because it only copied streamed response text and returned an empty string when the test completed with an error.
+- Updated both modal variants so copy behavior now:
+  - copies streamed response text on success
+  - copies `errorMessage` on failure
+- Re-verified:
+  - `pnpm --dir frontend exec vitest run src/components/admin/account/__tests__/AccountTestModal.spec.ts src/components/account/__tests__/AccountTestModal.spec.ts`
+  - `pnpm --dir frontend exec eslint src/components/admin/account/AccountTestModal.vue src/components/account/AccountTestModal.vue src/components/admin/account/__tests__/AccountTestModal.spec.ts src/components/account/__tests__/AccountTestModal.spec.ts --ext .vue,.ts`
+  - `pnpm --dir frontend run typecheck`
+  - `pnpm --dir frontend run build`
+
+### Failures
+- None locally. Existing Vite chunk-size warnings remain informational only.
+
+### Next
+- Commit and push the error-copy regression fix.
+- Deploy to production.
+- Reproduce a failed account test and verify the copy button includes the error response details.
+
 ## 2026-05-13 Active Email Daily Rate Limit
 ### Done
 - Added a shared daily quota for user-initiated email sends to reduce SMTP abuse risk.

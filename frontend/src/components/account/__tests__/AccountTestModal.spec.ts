@@ -99,6 +99,25 @@ describe('AccountTestModal', () => {
   const originalFetch = global.fetch
   const encoder = new TextEncoder()
 
+  function createStreamResponse(lines: string[]) {
+    const chunks = lines.map((line) => encoder.encode(line))
+    let index = 0
+
+    return {
+      ok: true,
+      body: {
+        getReader: () => ({
+          read: vi.fn().mockImplementation(async () => {
+            if (index < chunks.length) {
+              return { done: false, value: chunks[index++] }
+            }
+            return { done: true, value: undefined }
+          })
+        })
+      }
+    } as Response
+  }
+
   beforeEach(() => {
     getAvailableModelsMock.mockReset()
     copyToClipboardMock.mockReset()
@@ -152,28 +171,14 @@ describe('AccountTestModal', () => {
   })
 
   it('copies only the response body from the output panel', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
-      ok: true,
-      body: {
-        getReader: () => {
-          const chunks = [
-            encoder.encode('data: {"type":"test_start","model":"gpt-5.4"}\n'),
-            encoder.encode('data: {"type":"content","text":"Hey! "}\n'),
-            encoder.encode('data: {"type":"content","text":"What are you working on?"}\n'),
-            encoder.encode('data: {"type":"test_complete","success":true}\n')
-          ]
-          let index = 0
-          return {
-            read: vi.fn().mockImplementation(async () => {
-              if (index < chunks.length) {
-                return { done: false, value: chunks[index++] }
-              }
-              return { done: true, value: undefined }
-            })
-          }
-        }
-      }
-    } as any)
+    global.fetch = vi.fn().mockResolvedValue(
+      createStreamResponse([
+        'data: {"type":"test_start","model":"gpt-5.4"}\n',
+        'data: {"type":"content","text":"Hey! "}\n',
+        'data: {"type":"content","text":"What are you working on?"}\n',
+        'data: {"type":"test_complete","success":true}\n'
+      ])
+    ) as any
 
     const wrapper = mount(AccountTestModal, {
       props: {
@@ -203,6 +208,46 @@ describe('AccountTestModal', () => {
 
     expect(copyToClipboardMock).toHaveBeenCalledWith(
       'Hey! What are you working on?',
+      'admin.accounts.outputCopied'
+    )
+  })
+
+  it('copies the error response when the test fails', async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      createStreamResponse([
+        'data: {"type":"test_start","model":"gpt-5.4"}\n',
+        'data: {"type":"error","error":"API returned 403: {\\\"error\\\":{\\\"message\\\":\\\"tampered\\\"}}"}\n'
+      ])
+    ) as any
+
+    const wrapper = mount(AccountTestModal, {
+      props: {
+        show: true,
+        account: buildAccount()
+      },
+      global: {
+        stubs: {
+          BaseDialog: BaseDialogStub,
+          Select: SelectStub,
+          TextArea: TextAreaStub,
+          Icon: true
+        }
+      }
+    })
+
+    await flushPromises()
+    ;(wrapper.vm as any).selectedModelId = 'gpt-5.4'
+    await (wrapper.vm as any).startTest()
+    await flushPromises()
+    await flushPromises()
+
+    const copyButton = wrapper.find('button[title="admin.accounts.copyOutput"]')
+    expect(copyButton.exists()).toBe(true)
+
+    await copyButton.trigger('click')
+
+    expect(copyToClipboardMock).toHaveBeenCalledWith(
+      'API returned 403: {"error":{"message":"tampered"}}',
       'admin.accounts.outputCopied'
     )
   })
