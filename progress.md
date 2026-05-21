@@ -68,6 +68,20 @@
 - Deploy the updated frontend/backend bundle to production.
 - Use the production admin settings flow to append the privacy-policy document without overwriting the existing 4 document bodies.
 
+## 2026-05-21 Remove Onboarding Popup And Entry
+### Done
+- Removed the onboarding tour auto-start from the shared app layout so the welcome walkthrough no longer opens automatically on dashboard entry.
+- Removed the user-dropdown entry used to replay/restart the onboarding tour.
+- Left the underlying onboarding store/composable code in place so unrelated guided-step hooks on pages do not break, but they are now inert because no top-level tour is initialized.
+
+### Failures
+- None. Verification only surfaced the existing Vite chunk-size warnings.
+
+### Next
+- Commit and push the onboarding removal.
+- Deploy the rebuilt frontend/backend bundle to production.
+- Verify that dashboard no longer shows the onboarding modal and the user dropdown no longer contains the onboarding entry.
+
 ## 2026-05-13 Active Email Daily Rate Limit
 ### Done
 - Added a shared daily quota for user-initiated email sends to reduce SMTP abuse risk.
