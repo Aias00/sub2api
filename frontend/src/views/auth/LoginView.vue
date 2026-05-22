@@ -199,6 +199,7 @@ import type { LoginAgreementDocument, TotpLoginResponse } from '@/types'
 import { extractI18nErrorMessage } from '@/utils/apiError'
 import { clearAllAffiliateReferralCodes } from '@/utils/oauthAffiliate'
 import {
+  bindAnonymousLoginAgreementAcceptanceToSubject,
   buildLoginAgreementAcceptancePayload,
   clearLoginAgreementAcceptance,
   hasAcceptedLoginAgreement,
@@ -333,23 +334,40 @@ function applyLoginAgreementSettings(settings: {
     settings.login_agreement_revision ||
     `${loginAgreementUpdatedAt.value}:${documents.map((doc) => `${doc.id}:${doc.title}`).join('|')}`
 
-  agreementAccepted.value = !loginAgreementEnabled.value || hasAcceptedLoginAgreement(loginAgreementRevision.value)
-  showAgreementModal.value =
-    loginAgreementEnabled.value && !agreementAccepted.value && loginAgreementMode.value !== 'checkbox'
+  syncLoginAgreementState()
 }
 
 function acceptLoginAgreement(): void {
-  persistLoginAgreementAcceptance(loginAgreementRevision.value)
+  persistLoginAgreementAcceptance(loginAgreementRevision.value, formData.email)
   agreementAccepted.value = true
   showAgreementModal.value = false
 }
 
 function rejectLoginAgreement(): void {
   clearLoginAgreementAcceptance()
+  clearLoginAgreementAcceptance(formData.email)
   agreementAccepted.value = false
   showAgreementModal.value = false
   appStore.showWarning('未同意最新条款前，无法输入账号密码或使用快捷登录。')
 }
+
+function syncLoginAgreementState(): void {
+  agreementAccepted.value =
+    !loginAgreementEnabled.value ||
+    hasAcceptedLoginAgreement(loginAgreementRevision.value, formData.email)
+  showAgreementModal.value =
+    loginAgreementEnabled.value && !agreementAccepted.value && loginAgreementMode.value !== 'checkbox'
+}
+
+watch(
+  () => formData.email,
+  () => {
+    if (!publicSettingsLoaded.value) {
+      return
+    }
+    syncLoginAgreementState()
+  }
+)
 
 // ==================== Validation ====================
 
@@ -404,7 +422,7 @@ async function handleLogin(): Promise<void> {
     const response = await authStore.login({
       email: formData.email,
       password: formData.password,
-      ...buildLoginAgreementAcceptancePayload()
+      ...buildLoginAgreementAcceptancePayload(formData.email)
     })
 
     // Check if 2FA is required
@@ -418,6 +436,8 @@ async function handleLogin(): Promise<void> {
     }
 
     // Show success toast
+    bindAnonymousLoginAgreementAcceptanceToSubject(formData.email)
+    persistLoginAgreementAcceptance(loginAgreementRevision.value, formData.email)
     clearAllAffiliateReferralCodes()
     appStore.showSuccess(t('auth.loginSuccess'))
 
@@ -425,6 +445,22 @@ async function handleLogin(): Promise<void> {
     const redirectTo = (router.currentRoute.value.query.redirect as string) || '/dashboard'
     await router.push(redirectTo)
   } catch (error: unknown) {
+    const agreementReason =
+      (error as { reason?: string }).reason ||
+      (error as { response?: { data?: { reason?: string, metadata?: { agreement_revision?: string } } } }).response?.data?.reason
+    const agreementRevision =
+      (error as { response?: { data?: { metadata?: { agreement_revision?: string } } } }).response?.data?.metadata?.agreement_revision
+    if (agreementReason === 'LOGIN_AGREEMENT_REQUIRED') {
+      if (agreementRevision) {
+        loginAgreementRevision.value = agreementRevision
+      }
+      clearLoginAgreementAcceptance()
+      clearLoginAgreementAcceptance(formData.email)
+      agreementAccepted.value = false
+      if (loginAgreementMode.value !== 'checkbox') {
+        showAgreementModal.value = true
+      }
+    }
     errorMessage.value = extractI18nErrorMessage(error, t, 'auth.errors', t('auth.loginFailed'))
 
     // Also show error toast

@@ -1250,3 +1250,130 @@
 - `pnpm --dir frontend exec vitest run src/components/auth/__tests__/LoginAgreementPrompt.spec.ts src/utils/__tests__/loginAgreementTemplates.spec.ts` passed.
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend run build` passed; only existing Vite chunk/import warnings were reported.
+
+## 2026-05-21 Local Creem/Waffo Payment Integration
+### Done
+- Added `creem` and `waffo` provider support to the payment subsystem and factory wiring.
+- Implemented local provider logic without adding new SDK dependencies:
+  - `Creem` checkout creation / order query / webhook signature verification
+  - `Waffo` signed order creation / query / webhook verification / signed webhook acknowledgement
+- Extended payment provider request shape with:
+  - `customer_email`
+  - `customer_name`
+  - provider-specific product id support for `Creem`
+- Extended admin payment configuration to expose:
+  - `creem` / `waffo` provider options
+  - recharge product `creem_product_id`
+  - subscription plan `creem_product_id`
+  - Waffo callback URL fields in the provider config form
+- Added schema + migration support for `subscription_plans.creem_product_id`.
+- Wired user checkout payloads so recharge orders can send the selected local `product_id` to the backend.
+- Added backend order-time resolution for Creem product ids:
+  - subscription orders use the selected plan’s `creem_product_id`
+  - balance recharge orders use the selected recharge product’s `creem_product_id`
+  - invalid or missing Creem product bindings now fail before order creation.
+- Extended frontend payment method normalization so `creem` and `waffo` appear as first-class hosted payment methods.
+- Added regression coverage for:
+  - Creem provider constructor/create/query/webhook behavior
+  - Waffo provider constructor/create/query/webhook behavior
+  - Creem product id resolution in order creation
+  - frontend payment payload building for `creem`
+
+### Failures
+- I briefly drifted into an unrelated account-test debugging path and rolled that work back before continuing. No unrelated code was kept from that detour.
+- `gofmt` was accidentally invoked against frontend files during verification; it failed fast and did not modify the Vue/TypeScript sources.
+
+### Next
+- Start a local app instance and manually exercise the admin payment configuration flow for:
+  - adding a `creem` provider instance
+  - adding a `waffo` provider instance
+  - assigning `creem_product_id` values to recharge products / plans
+  - confirming the user payment page renders the new methods end-to-end
+- After local manual verification, decide whether to extend the integration further (for example EPay parity or richer provider-specific UX) before any production rollout.
+
+### Validation
+- `cd backend && go test ./internal/payment/provider ./internal/service -run 'Test(NewCreemRequiresKeys|CreemCreatePaymentAndQueryOrder|CreemVerifyNotification|NewWaffoValidatesKeys|WaffoCreateQueryAndWebhook|ResolveProviderProductID.*)' -count=1` passed.
+- `cd backend && go test ./... -count=1` passed.
+- `pnpm --dir frontend exec vitest run src/components/payment/__tests__/paymentFlow.spec.ts src/views/user/__tests__/PaymentView.spec.ts` passed.
+- `pnpm --dir frontend exec eslint src/components/payment/paymentFlow.ts src/components/payment/providerConfig.ts src/components/payment/__tests__/paymentFlow.spec.ts src/views/user/PaymentView.vue src/views/admin/orders/RechargeProductsManager.vue src/views/admin/orders/PlanEditDialog.vue src/types/payment.ts --ext .ts,.vue` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend run build` passed; existing Vite chunk-size warnings remain informational only.
+- `git diff --check` passed.
+- Manual local API verification passed:
+  - started the workspace backend from source on `http://127.0.0.1:18082`
+  - created a local `creem-local-test` provider instance through `POST /api/v1/admin/payment/providers`
+  - created a local `waffo-local-test` provider instance through `POST /api/v1/admin/payment/providers`
+  - updated local payment config so `checkout-info` exposed `["creem", "waffo"]`
+  - ran a balance order against a local Creem mock backend and received `pay_url = https://checkout.creem.local/session/chk_local_123`
+
+## 2026-05-22 Creem/Waffo Follow-up Fixes
+### Done
+- Bound Creem recharge orders to the server-side recharge catalog so:
+  - the selected `product_id` determines the provider product id
+  - the selected `product_id` also determines the local recharge amount used for order creation
+  - local order amounts can no longer drift from the upstream Creem product being purchased
+- Added dedicated `resolveCreemRechargeProduct` coverage for:
+  - configured recharge product binding
+  - non-Creem bypass behavior
+- Fixed Waffo amount formatting so zero-decimal currencies (for example `JPY/KRW/VND/IDR`) are no longer forced into `%.2f`.
+- Extended webhook order-id extraction to support:
+  - Creem `object.request_id`
+  - Waffo `result.merchantOrderId`
+  This allows the existing pinned-order/provider-instance resolution path to work for multi-instance Creem/Waffo setups.
+- Added service/handler regression coverage for:
+  - Creem/Waffo webhook order-id extraction
+  - Creem multi-instance webhook provider resolution with a pinned order
+  - Waffo zero-decimal amount formatting
+- Tightened frontend hosted-method availability so `Creem` is disabled unless:
+  - the selected recharge product has `creem_product_id`
+  - or the selected subscription plan has `creem_product_id`
+- Updated recharge-page tests to lock the Creem selection-support logic in a pure helper.
+
+### Failures
+- I twice invoked `gofmt` against frontend files by mistake while batching verification commands; both invocations failed immediately and did not modify the Vue/TypeScript sources.
+
+### Next
+- Decide whether to add a local Waffo mock checkout/inquiry harness similar to the Creem mock before any production rollout.
+- If rollout is approved later, commit the current payment integration as a single Lore commit and deploy only after one more browser-level user-flow check against a dev build that serves the frontend routes locally.
+
+## 2026-05-22 Per-Account Login Agreement Consent Isolation
+### Done
+- Reworked login-agreement browser persistence from a single global revision record into a structured store with:
+  - anonymous consent (used before identity is known)
+  - per-email consent records
+- Preserved backward compatibility with the old single-record storage shape so existing browsers do not break on upgrade.
+- Updated login/register pages so agreement acceptance is now recalculated against the currently entered email address instead of reusing a browser-global acceptance flag.
+- Added email watchers on both auth forms so switching from one account email to another in the same browser immediately reopens the agreement gate.
+- Changed login/register submit payloads to send the agreement revision associated with the current email rather than a browser-global revision.
+- Bound anonymous agreement acceptance to the authenticated user’s email on successful auth so OAuth and other email-less pre-auth flows do not leave behind a global acceptance token that leaks across accounts.
+- Tightened rejection / server-enforced reaccept flows so both the anonymous record and the current email-specific record are cleared before reopening the agreement prompt.
+- Added regression coverage for:
+  - anonymous-vs-email acceptance isolation
+  - binding anonymous acceptance to a concrete email
+  - multiple email records coexisting independently
+  - backward compatibility with legacy storage
+  - LoginView re-showing the agreement prompt when the operator switches to a different email in the same browser
+
+### Failures
+- None so far during implementation.
+
+### Next
+- Re-run focused frontend tests plus typecheck/lint/build.
+- After local verification, decide whether to apply the same UX tightening to any additional OAuth pre-auth entry pages beyond the shared login/register screens.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/utils/__tests__/loginAgreementConsent.spec.ts src/views/auth/__tests__/LoginView.turnstile.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/utils/loginAgreementConsent.ts src/utils/__tests__/loginAgreementConsent.spec.ts src/views/auth/LoginView.vue src/views/auth/RegisterView.vue src/views/auth/__tests__/LoginView.turnstile.spec.ts src/stores/auth.ts --ext .ts,.vue` passed.
+- `git diff --check` passed.
+
+## 2026-05-22 AdSense Verification Script
+### Done
+- Added the provided Google AdSense verification script to the shared SPA entry HTML head.
+- This places the script into the generated app shell for all frontend routes that are served through `frontend/index.html`.
+
+### Failures
+- None during implementation.
+
+### Next
+- Rebuild the frontend bundle and verify the generated embedded `backend/internal/web/dist/index.html` contains the AdSense script before any production rollout.

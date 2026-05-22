@@ -330,6 +330,7 @@ import {
   resolveAffiliateReferralCode
 } from '@/utils/oauthAffiliate'
 import {
+  bindAnonymousLoginAgreementAcceptanceToSubject,
   buildLoginAgreementAcceptancePayload,
   clearLoginAgreementAcceptance,
   hasAcceptedLoginAgreement,
@@ -542,23 +543,40 @@ function applyLoginAgreementSettings(settings: {
     settings.login_agreement_revision ||
     `${loginAgreementUpdatedAt.value}:${documents.map((doc) => `${doc.id}:${doc.title}`).join('|')}`
 
-  agreementAccepted.value = !loginAgreementEnabled.value || hasAcceptedLoginAgreement(loginAgreementRevision.value)
-  showAgreementModal.value =
-    loginAgreementEnabled.value && !agreementAccepted.value && loginAgreementMode.value !== 'checkbox'
+  syncLoginAgreementState()
 }
 
 function acceptLoginAgreement(): void {
-  persistLoginAgreementAcceptance(loginAgreementRevision.value)
+  persistLoginAgreementAcceptance(loginAgreementRevision.value, formData.email)
   agreementAccepted.value = true
   showAgreementModal.value = false
 }
 
 function rejectLoginAgreement(): void {
   clearLoginAgreementAcceptance()
+  clearLoginAgreementAcceptance(formData.email)
   agreementAccepted.value = false
   showAgreementModal.value = false
   appStore.showWarning('未同意最新条款前，无法注册或使用快捷登录。')
 }
+
+function syncLoginAgreementState(): void {
+  agreementAccepted.value =
+    !loginAgreementEnabled.value ||
+    hasAcceptedLoginAgreement(loginAgreementRevision.value, formData.email)
+  showAgreementModal.value =
+    loginAgreementEnabled.value && !agreementAccepted.value && loginAgreementMode.value !== 'checkbox'
+}
+
+watch(
+  () => formData.email,
+  () => {
+    if (!settingsLoaded.value) {
+      return
+    }
+    syncLoginAgreementState()
+  }
+)
 
 // ==================== Promo Code Validation ====================
 
@@ -860,7 +878,7 @@ async function handleRegister(): Promise<void> {
           promo_code: formData.promo_code || undefined,
           invitation_code: formData.invitation_code || undefined,
           ...(affCode ? { aff_code: affCode } : {}),
-          ...buildLoginAgreementAcceptancePayload()
+          ...buildLoginAgreementAcceptancePayload(formData.email)
         })
       )
 
@@ -877,16 +895,34 @@ async function handleRegister(): Promise<void> {
       promo_code: formData.promo_code || undefined,
       invitation_code: formData.invitation_code || undefined,
       ...(affCode ? { aff_code: affCode } : {}),
-      ...buildLoginAgreementAcceptancePayload()
+      ...buildLoginAgreementAcceptancePayload(formData.email)
     })
     clearAffiliateReferralCode()
 
     // Show success toast
+    bindAnonymousLoginAgreementAcceptanceToSubject(formData.email)
+    persistLoginAgreementAcceptance(loginAgreementRevision.value, formData.email)
     appStore.showSuccess(t('auth.accountCreatedSuccess', { siteName: siteName.value }))
 
     // Redirect to dashboard
     await router.push('/dashboard')
   } catch (error: unknown) {
+    const agreementReason =
+      (error as { reason?: string }).reason ||
+      (error as { response?: { data?: { reason?: string, metadata?: { agreement_revision?: string } } } }).response?.data?.reason
+    const agreementRevision =
+      (error as { response?: { data?: { metadata?: { agreement_revision?: string } } } }).response?.data?.metadata?.agreement_revision
+    if (agreementReason === 'LOGIN_AGREEMENT_REQUIRED') {
+      if (agreementRevision) {
+        loginAgreementRevision.value = agreementRevision
+      }
+      clearLoginAgreementAcceptance()
+      clearLoginAgreementAcceptance(formData.email)
+      agreementAccepted.value = false
+      if (loginAgreementMode.value !== 'checkbox') {
+        showAgreementModal.value = true
+      }
+    }
     // Reset Turnstile on error
     if (turnstileRef.value) {
       turnstileRef.value.reset()

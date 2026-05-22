@@ -129,4 +129,60 @@ describe('LoginView turnstile optimization', () => {
     })
     expect(pushMock).toHaveBeenCalledWith('/dashboard')
   })
+
+  it('re-opens the agreement gate when switching to a different email in the same browser', async () => {
+    getPublicSettingsMock.mockResolvedValue({
+      turnstile_enabled: false,
+      linuxdo_oauth_enabled: false,
+      wechat_oauth_enabled: false,
+      backend_mode_enabled: false,
+      oidc_oauth_enabled: false,
+      oidc_oauth_provider_name: 'OIDC',
+      github_oauth_enabled: false,
+      google_oauth_enabled: false,
+      password_reset_enabled: true,
+      login_agreement_enabled: true,
+      login_agreement_mode: 'modal',
+      login_agreement_updated_at: '2026-05-22',
+      login_agreement_revision: 'rev-login-1',
+      login_agreement_documents: [
+        { id: 'terms', title: '服务条款', content_md: '# 条款' },
+      ],
+    })
+    const wrapper = mount(LoginView, {
+      global: {
+        stubs: {
+          AuthLayout: { template: '<div><slot /><slot name="footer" /></div>' },
+          RouterLink: { template: '<a><slot /></a>' },
+          LoginAgreementPrompt: {
+            name: 'LoginAgreementPrompt',
+            props: ['accepted', 'visible'],
+            template: '<div data-testid="agreement" :data-accepted="String(accepted)" :data-visible="String(visible)" />',
+          },
+          TotpLoginModal: true,
+          Icon: true,
+          EmailOAuthButtons: true,
+          LinuxDoOAuthSection: true,
+          WechatOAuthSection: true,
+          OidcOAuthSection: true,
+        },
+      },
+    })
+
+    await flushPromises()
+    const agreement = wrapper.get('[data-testid="agreement"]')
+    const submit = wrapper.get('button[type="submit"]')
+
+    await wrapper.get('#email').setValue('first@example.com')
+    await flushPromises()
+    await wrapper.findComponent({ name: 'LoginAgreementPrompt' }).vm.$emit('accept')
+    await flushPromises()
+    expect(submit.attributes('disabled')).toBeUndefined()
+    expect(agreement.attributes('data-visible')).toBe('false')
+
+    await wrapper.get('#email').setValue('second@example.com')
+    await flushPromises()
+    expect(submit.attributes('disabled')).toBeDefined()
+    expect(agreement.attributes('data-visible')).toBe('true')
+  })
 })
