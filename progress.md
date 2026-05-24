@@ -1377,3 +1377,16 @@
 
 ### Next
 - Rebuild the frontend bundle and verify the generated embedded `backend/internal/web/dist/index.html` contains the AdSense script before any production rollout.
+
+## 2026-05-24 Homepage Supported-Model Card Trim
+### Done
+- Removed the public homepage “已支持的 AI 模型” cards for:
+  - Gemini
+  - Antigravity
+- Kept the rest of the homepage provider strip unchanged so Claude / GPT / 更多 still render in the same layout.
+
+### Failures
+- None during implementation.
+
+### Next
+- Rebuild the frontend bundle and, if green, deploy this narrow homepage-only change to production without bundling unrelated payment work.
