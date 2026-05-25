@@ -294,6 +294,7 @@ func TestEnhanceCSPPolicy(t *testing.T) {
 
 		assert.Contains(t, enhanced, NonceTemplate)
 		assert.Contains(t, enhanced, CloudflareInsightsDomain)
+		assert.Contains(t, enhanced, AdSenseScriptDomain)
 	})
 
 	t.Run("does_not_duplicate_nonce_placeholder", func(t *testing.T) {
@@ -313,6 +314,14 @@ func TestEnhanceCSPPolicy(t *testing.T) {
 		assert.Equal(t, 1, count)
 	})
 
+	t.Run("does_not_duplicate_adsense_domain", func(t *testing.T) {
+		policy := "default-src 'self'; script-src 'self' https://pagead2.googlesyndication.com"
+		enhanced := enhanceCSPPolicy(policy)
+
+		count := strings.Count(enhanced, AdSenseScriptDomain)
+		assert.Equal(t, 1, count)
+	})
+
 	t.Run("handles_policy_without_script_src", func(t *testing.T) {
 		policy := "default-src 'self'"
 		enhanced := enhanceCSPPolicy(policy)
@@ -320,6 +329,7 @@ func TestEnhanceCSPPolicy(t *testing.T) {
 		assert.Contains(t, enhanced, "script-src")
 		assert.Contains(t, enhanced, NonceTemplate)
 		assert.Contains(t, enhanced, CloudflareInsightsDomain)
+		assert.Contains(t, enhanced, AdSenseScriptDomain)
 	})
 
 	t.Run("preserves_existing_nonce", func(t *testing.T) {

@@ -1391,6 +1391,18 @@
 ### Next
 - If these validations stay green, deploy the Turnstile restoration to production and confirm the live `/login` page visibly renders the Cloudflare challenge again.
 
+## 2026-05-25 Allow AdSense Bootstrap Script In CSP
+### Done
+- Added the Google AdSense bootstrap domain `https://pagead2.googlesyndication.com` to the default CSP `script-src`.
+- Extended the CSP enhancement middleware so older configured policies are automatically upgraded to include the same AdSense domain.
+- Added middleware regression coverage to ensure the AdSense domain is injected exactly once.
+
+### Failures
+- None during implementation.
+
+### Next
+- If backend validation stays green, deploy the CSP adjustment and confirm the browser console no longer reports the AdSense script being blocked by CSP.
+
 ## 2026-05-22 AdSense Verification Script
 ### Done
 - Added the provided Google AdSense verification script to the shared SPA entry HTML head.
