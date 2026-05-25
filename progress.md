@@ -1484,3 +1484,9 @@
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend exec eslint src/components/TurnstileWidget.vue src/views/auth/LoginView.vue --ext .vue` passed.
 - `pnpm --dir frontend run build` passed.
+- Deployed frontend commit `eec50ab4` and then follow-up commit `3d425f34` to production after narrowing the Turnstile callbacks to return truthy values.
+- Production now serves the updated login bundle from commit `3d425f34` and remains healthy on:
+  - `http://127.0.0.1:8081/health`
+  - `https://cloudbase.eu.org/health`
+- Browser verification against `https://cloudbase.eu.org/login?verify=turnstile-noise-fix-final-2` shows the avoidable app-side retry churn and extra callback logging have been reduced.
+- Remaining console noise still originates inside Cloudflare's own Turnstile script under automated/PAT challenge flows (for example the upstream `postMessage`/PAT/`NaN` diagnostics), not from our app code.
