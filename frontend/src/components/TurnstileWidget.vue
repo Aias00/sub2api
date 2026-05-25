@@ -13,8 +13,12 @@ interface TurnstileRenderOptions {
   callback: (token: string) => void
   'expired-callback'?: () => void
   'error-callback'?: () => void
+  'timeout-callback'?: () => void
   theme?: 'light' | 'dark' | 'auto'
   size?: 'normal' | 'compact' | 'flexible'
+  retry?: 'auto' | 'never'
+  'refresh-expired'?: 'auto' | 'manual' | 'never'
+  'refresh-timeout'?: 'auto' | 'manual' | 'never'
 }
 
 interface TurnstileAPI {
@@ -26,7 +30,6 @@ interface TurnstileAPI {
 declare global {
   interface Window {
     turnstile?: TurnstileAPI
-    onTurnstileLoad?: () => void
   }
 }
 
@@ -51,46 +54,69 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLElement | null>(null)
 const widgetId = ref<string | null>(null)
 const scriptLoaded = ref(false)
+const turnstileScriptSrc = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit'
+const turnstileScriptSelector = 'script[data-turnstile-script="true"]'
+
+let scriptLoadPromise: Promise<void> | null = null
 
 const loadScript = (): Promise<void> => {
-  return new Promise((resolve, reject) => {
+  if (scriptLoadPromise) {
+    return scriptLoadPromise
+  }
+
+  scriptLoadPromise = new Promise((resolve, reject) => {
     if (window.turnstile) {
       scriptLoaded.value = true
       resolve()
       return
     }
 
-    // Check if script is already loading
-    const existingScript = document.querySelector('script[src*="turnstile"]')
+    const existingScript = document.querySelector<HTMLScriptElement>(turnstileScriptSelector)
     if (existingScript) {
-      window.onTurnstileLoad = () => {
-        scriptLoaded.value = true
-        resolve()
-      }
+      existingScript.addEventListener(
+        'load',
+        () => {
+          scriptLoaded.value = true
+          resolve()
+        },
+        { once: true }
+      )
+      existingScript.addEventListener(
+        'error',
+        () => {
+          scriptLoadPromise = null
+          reject(new Error('Failed to load Turnstile script'))
+        },
+        { once: true }
+      )
       return
     }
 
     const script = document.createElement('script')
-    script.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?onload=onTurnstileLoad'
+    script.src = turnstileScriptSrc
     script.async = true
     script.defer = true
+    script.dataset.turnstileScript = 'true'
     const nonce = resolveCSPNonce(document)
     if (nonce) {
       script.nonce = nonce
       script.setAttribute('nonce', nonce)
     }
 
-    window.onTurnstileLoad = () => {
+    script.onload = () => {
       scriptLoaded.value = true
       resolve()
     }
 
     script.onerror = () => {
+      scriptLoadPromise = null
       reject(new Error('Failed to load Turnstile script'))
     }
 
     document.head.appendChild(script)
   })
+
+  return scriptLoadPromise
 }
 
 const renderWidget = () => {
@@ -122,8 +148,14 @@ const renderWidget = () => {
     'error-callback': () => {
       emit('error')
     },
+    'timeout-callback': () => {
+      emit('expire')
+    },
     theme: props.theme,
-    size: props.size
+    size: props.size,
+    retry: 'never',
+    'refresh-expired': 'manual',
+    'refresh-timeout': 'manual'
   })
 }
 

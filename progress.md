@@ -1419,6 +1419,21 @@
 ### Next
 - If backend validation stays green, redeploy and confirm the login-page browser console no longer reports AdSense iframe CSP violations.
 
+### Validation
+- `cd backend && go test ./internal/server/middleware -run TestEnhanceCSPPolicy -count=1` passed.
+- `cd backend && go test ./... -count=1` passed.
+- Deployed commit `8dea082a` to the production host and rebuilt the embedded frontend/backend bundle.
+- The production runtime was still serving a stale custom `security.csp.policy` from `config.yaml`, so the live header continued to omit the new iframe domains even though the source and binary were updated.
+- Patched the production `config.yaml` CSP policy to include:
+  - `https://googleads.g.doubleclick.net`
+  - `https://tpc.googlesyndication.com`
+  - `https://ep2.adtrafficquality.google`
+  - `https://www.google.com`
+- Restarted the live service and verified both source-of-truth headers now include the full AdSense allowlist:
+  - `http://127.0.0.1:8081/login`
+  - `https://cloudbase.eu.org/login`
+- Playwright verification against `https://cloudbase.eu.org/login?verify=adsense-csp-fix` no longer reports AdSense CSP violations. Remaining console noise comes from Cloudflare Turnstile, not AdSense.
+
 ## 2026-05-22 AdSense Verification Script
 ### Done
 - Added the provided Google AdSense verification script to the shared SPA entry HTML head.
@@ -1450,3 +1465,22 @@
 - Production health checks passed:
   - `http://127.0.0.1:8081/health`
   - `https://cloudbase.eu.org/health`
+
+## 2026-05-25 Reduce Turnstile Console Noise
+### Done
+- Switched the shared Turnstile widget loader to Cloudflare's explicit render script path instead of the legacy global `onload=onTurnstileLoad` callback pattern.
+- Replaced the global load callback with a module-scoped singleton script promise to avoid callback clobbering across SPA route transitions.
+- Disabled Turnstile automatic retry and automatic refresh-on-expire/timeout so unsupported PAT or unattended challenge flows do not keep spamming the console in the background.
+- Mapped Turnstile timeout events into the existing expire handling path so the login form still clears stale tokens without silent failures.
+
+### Failures
+- None during implementation.
+
+### Next
+- Deploy the frontend bundle update and verify the live login page only shows residual Turnstile-origin noise, not repeated avoidable retries caused by our component lifecycle.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/auth/__tests__/LoginView.turnstile.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/components/TurnstileWidget.vue src/views/auth/LoginView.vue --ext .vue` passed.
+- `pnpm --dir frontend run build` passed.
