@@ -22,6 +22,11 @@ const (
 	StripeDomain = "https://*.stripe.com"
 	// AdSenseScriptDomain is the domain for Google AdSense bootstrap script.
 	AdSenseScriptDomain = "https://pagead2.googlesyndication.com"
+	// AdSense frame/embed domains observed during Google AdSense verification and ad bootstrap.
+	AdSenseGoogleAdsDomain       = "https://googleads.g.doubleclick.net"
+	AdSenseTPCDomain             = "https://tpc.googlesyndication.com"
+	AdSenseTrafficQualityDomain  = "https://ep2.adtrafficquality.google"
+	AdSenseGoogleFrameDomain     = "https://www.google.com"
 )
 
 // GenerateNonce generates a cryptographically secure random nonce.
@@ -125,6 +130,18 @@ func enhanceCSPPolicy(policy string) string {
 	// Add AdSense bootstrap script domain to script-src if not present
 	if !strings.Contains(policy, "pagead2.googlesyndication.com") {
 		policy = addToDirective(policy, "script-src", AdSenseScriptDomain)
+	}
+
+	// Add the known AdSense iframe/embed domains to frame-src if not present.
+	for _, domain := range []string{
+		AdSenseGoogleAdsDomain,
+		AdSenseTPCDomain,
+		AdSenseTrafficQualityDomain,
+		AdSenseGoogleFrameDomain,
+	} {
+		if !strings.Contains(policy, domain) {
+			policy = addToDirective(policy, "frame-src", domain)
+		}
 	}
 
 	return policy

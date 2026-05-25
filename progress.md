@@ -1403,6 +1403,22 @@
 ### Next
 - If backend validation stays green, deploy the CSP adjustment and confirm the browser console no longer reports the AdSense script being blocked by CSP.
 
+## 2026-05-25 Allow AdSense Frame Domains In CSP
+### Done
+- Extended the default CSP `frame-src` to allow the Google ad iframe domains currently used after the AdSense bootstrap script loads:
+  - `https://googleads.g.doubleclick.net`
+  - `https://tpc.googlesyndication.com`
+  - `https://ep2.adtrafficquality.google`
+  - `https://www.google.com`
+- Updated the CSP enhancement middleware so older configured policies are also upgraded with the same iframe allowlist.
+- Added middleware regression coverage for the new AdSense frame/embed domains.
+
+### Failures
+- None during implementation.
+
+### Next
+- If backend validation stays green, redeploy and confirm the login-page browser console no longer reports AdSense iframe CSP violations.
+
 ## 2026-05-22 AdSense Verification Script
 ### Done
 - Added the provided Google AdSense verification script to the shared SPA entry HTML head.
