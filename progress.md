@@ -1490,3 +1490,21 @@
   - `https://cloudbase.eu.org/health`
 - Browser verification against `https://cloudbase.eu.org/login?verify=turnstile-noise-fix-final-2` shows the avoidable app-side retry churn and extra callback logging have been reduced.
 - Remaining console noise still originates inside Cloudflare's own Turnstile script under automated/PAT challenge flows (for example the upstream `postMessage`/PAT/`NaN` diagnostics), not from our app code.
+
+## 2026-05-25 Clarify Dashboard Token Breakdown
+### Done
+- Updated the user dashboard token cards so the large aggregate total continues to include cache tokens, but the supporting copy now also shows:
+  - cache write tokens
+  - cache read tokens
+- Kept the existing aggregate number and split the small print into two lines to avoid cramped wrapping.
+- Added missing top-level dashboard i18n keys for the cache labels in both Chinese and English.
+
+### Failures
+- None during implementation.
+
+### Next
+- Deploy the dashboard copy change so the production token cards match the actual backend aggregation formula.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/components/user/dashboard/UserDashboardStats.vue src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .vue,.ts` passed.
