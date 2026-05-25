@@ -1508,3 +1508,21 @@
 ### Validation
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend exec eslint src/components/user/dashboard/UserDashboardStats.vue src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .vue,.ts` passed.
+
+## 2026-05-25 Remove User-Side Channel Navigation Entries
+### Done
+- Removed both ordinary-user sidebar entries related to channels:
+  - available channels
+  - channel status
+- Kept the underlying routes intact so direct links and future re-exposure remain possible without backend changes.
+- Left the admin-side channel management and monitor navigation unchanged.
+
+### Failures
+- None during implementation.
+
+### Next
+- Rebuild the frontend bundle and deploy this navigation-only simplification to production.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/components/layout/AppSidebar.vue --ext .vue` passed.
