@@ -53,7 +53,7 @@ vi.mock('@/api/auth', () => ({
   isWeChatWebOAuthEnabled: () => false,
 }))
 
-describe('LoginView turnstile optimization', () => {
+describe('LoginView turnstile', () => {
   beforeEach(() => {
     loginMock.mockReset()
     showSuccessMock.mockReset()
@@ -80,7 +80,7 @@ describe('LoginView turnstile optimization', () => {
     })
   })
 
-  it('does not render turnstile or send a turnstile token on password login', async () => {
+  it('renders turnstile and sends the token on password login', async () => {
     loginMock.mockResolvedValue({
       access_token: 'token',
       token_type: 'Bearer',
@@ -109,14 +109,16 @@ describe('LoginView turnstile optimization', () => {
           LinuxDoOAuthSection: true,
           WechatOAuthSection: true,
           OidcOAuthSection: true,
-          TurnstileWidget: { template: '<div data-testid="turnstile-widget" />' },
+          TurnstileWidget: { template: `<button data-testid="turnstile-widget" @click="$emit('verify', 'turnstile-token')">verify</button>` },
         },
       },
     })
 
     await flushPromises()
 
-    expect(wrapper.find('[data-testid="turnstile-widget"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="turnstile-widget"]').exists()).toBe(true)
+    await wrapper.get('[data-testid="turnstile-widget"]').trigger('click')
+    await flushPromises()
 
     await wrapper.get('#email').setValue('user@example.com')
     await wrapper.get('#password').setValue('Aizazadi2024!')
@@ -126,6 +128,7 @@ describe('LoginView turnstile optimization', () => {
     expect(loginMock).toHaveBeenCalledWith({
       email: 'user@example.com',
       password: 'Aizazadi2024!',
+      turnstile_token: 'turnstile-token',
     })
     expect(pushMock).toHaveBeenCalledWith('/dashboard')
   })

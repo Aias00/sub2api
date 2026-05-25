@@ -78,10 +78,21 @@
           </div>
         </div>
 
+        <!-- Turnstile Widget -->
+        <div v-if="turnstileEnabled && turnstileSiteKey">
+          <TurnstileWidget
+            ref="turnstileRef"
+            :site-key="turnstileSiteKey"
+            @verify="onTurnstileVerify"
+            @expire="onTurnstileExpire"
+            @error="onTurnstileError"
+          />
+        </div>
+
         <!-- Submit Button -->
         <button
           type="submit"
-          :disabled="authActionDisabled"
+          :disabled="authActionDisabled || (turnstileEnabled && !turnstileToken)"
           class="btn btn-primary w-full"
         >
           <svg
@@ -192,6 +203,7 @@ import WechatOAuthSection from '@/components/auth/WechatOAuthSection.vue'
 import EmailOAuthButtons from '@/components/auth/EmailOAuthButtons.vue'
 import LoginAgreementPrompt from '@/components/auth/LoginAgreementPrompt.vue'
 import TotpLoginModal from '@/components/auth/TotpLoginModal.vue'
+import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAuthStore, useAppStore } from '@/stores'
 import { getPublicSettings, isTotp2FARequired, isWeChatWebOAuthEnabled } from '@/api/auth'
@@ -238,6 +250,10 @@ const agreementAccepted = ref<boolean>(false)
 const showAgreementModal = ref<boolean>(false)
 
 // Turnstile
+const turnstileEnabled = ref<boolean>(false)
+const turnstileSiteKey = ref<string>('')
+const turnstileRef = ref<InstanceType<typeof TurnstileWidget> | null>(null)
+const turnstileToken = ref<string>('')
 // 2FA state
 const show2FAModal = ref<boolean>(false)
 const totpTempToken = ref<string>('')
@@ -251,11 +267,12 @@ const formData = reactive({
 
 const errors = reactive({
   email: '',
-  password: ''
+  password: '',
+  turnstile: ''
 })
 
 const validationToastMessage = computed(
-  () => errors.email || errors.password || ''
+  () => errors.email || errors.password || errors.turnstile || ''
 )
 
 const agreementGateActive = computed(
@@ -304,6 +321,8 @@ onMounted(async () => {
     googleOAuthEnabled.value = settings.google_oauth_enabled
     backendModeEnabled.value = settings.backend_mode_enabled
     passwordResetEnabled.value = settings.password_reset_enabled
+    turnstileEnabled.value = settings.turnstile_enabled
+    turnstileSiteKey.value = settings.turnstile_site_key || ''
     applyLoginAgreementSettings(settings)
   } catch (error) {
     console.error('Failed to load public settings:', error)
@@ -351,6 +370,21 @@ function rejectLoginAgreement(): void {
   appStore.showWarning('未同意最新条款前，无法输入账号密码或使用快捷登录。')
 }
 
+function onTurnstileVerify(token: string): void {
+  turnstileToken.value = token
+  errors.turnstile = ''
+}
+
+function onTurnstileExpire(): void {
+  turnstileToken.value = ''
+  errors.turnstile = t('auth.turnstileExpired')
+}
+
+function onTurnstileError(): void {
+  turnstileToken.value = ''
+  errors.turnstile = t('auth.turnstileFailed')
+}
+
 function syncLoginAgreementState(): void {
   agreementAccepted.value =
     !loginAgreementEnabled.value ||
@@ -375,6 +409,7 @@ function validateForm(): boolean {
   // Reset errors
   errors.email = ''
   errors.password = ''
+  errors.turnstile = ''
 
   let isValid = true
 
@@ -401,6 +436,11 @@ function validateForm(): boolean {
     isValid = false
   }
 
+  if (turnstileEnabled.value && !turnstileToken.value) {
+    errors.turnstile = t('auth.completeVerification')
+    isValid = false
+  }
+
   return isValid
 }
 
@@ -422,6 +462,7 @@ async function handleLogin(): Promise<void> {
     const response = await authStore.login({
       email: formData.email,
       password: formData.password,
+      turnstile_token: turnstileEnabled.value ? turnstileToken.value : undefined,
       ...buildLoginAgreementAcceptancePayload(formData.email)
     })
 
@@ -445,6 +486,10 @@ async function handleLogin(): Promise<void> {
     const redirectTo = (router.currentRoute.value.query.redirect as string) || '/dashboard'
     await router.push(redirectTo)
   } catch (error: unknown) {
+    if (turnstileRef.value) {
+      turnstileRef.value.reset()
+      turnstileToken.value = ''
+    }
     const agreementReason =
       (error as { reason?: string }).reason ||
       (error as { response?: { data?: { reason?: string, metadata?: { agreement_revision?: string } } } }).response?.data?.reason

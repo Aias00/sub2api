@@ -2126,6 +2126,7 @@ type oauthPendingFlowTestHandlerOptions struct {
 	affiliateFactory   func(*dbent.Client, *service.SettingService) *service.AffiliateService
 	totpCache          service.TotpCache
 	totpEncryptor      service.SecretEncryptor
+	turnstileVerifier  service.TurnstileVerifier
 	userRepoOptions    oauthPendingFlowUserRepoOptions
 }
 
@@ -2221,6 +2222,10 @@ CREATE TABLE IF NOT EXISTS user_affiliates (
 			},
 		}, options.emailCache)
 	}
+	var turnstileService *service.TurnstileService
+	if options.turnstileVerifier != nil {
+		turnstileService = service.NewTurnstileService(settingSvc, options.turnstileVerifier)
+	}
 	authSvc := service.NewAuthService(
 		client,
 		userRepo,
@@ -2229,7 +2234,7 @@ CREATE TABLE IF NOT EXISTS user_affiliates (
 		cfg,
 		settingSvc,
 		emailService,
-		nil,
+		turnstileService,
 		nil,
 		nil,
 		options.defaultSubAssigner,

@@ -1367,6 +1367,30 @@
 - `pnpm --dir frontend exec eslint src/utils/loginAgreementConsent.ts src/utils/__tests__/loginAgreementConsent.spec.ts src/views/auth/LoginView.vue src/views/auth/RegisterView.vue src/views/auth/__tests__/LoginView.turnstile.spec.ts src/stores/auth.ts --ext .ts,.vue` passed.
 - `git diff --check` passed.
 
+## 2026-05-25 Restore Login Turnstile
+### Done
+- Restored the Cloudflare Turnstile widget on the password login page.
+- Reintroduced the login-page public settings wiring for:
+  - `turnstile_enabled`
+  - `turnstile_site_key`
+- Re-enabled login-form validation so password login now requires a verified Turnstile token when the feature is enabled.
+- Added the Turnstile token back into the login request payload.
+- Restored backend `/api/v1/auth/login` Turnstile verification before credential authentication.
+- Extended the auth test helper to allow injecting a Turnstile verifier.
+- Added handler-level regression coverage that `/auth/login`:
+  - rejects when Turnstile is enabled but no token is provided
+  - succeeds and forwards the token when verification passes
+- Updated the existing login-page frontend test to assert:
+  - the Turnstile widget renders on login
+  - the verified token is submitted to the login API
+
+### Failures
+- One LoginView test initially failed because the Turnstile stub did not emit a verify event; switched the stub to a clickable button emitter.
+- One RegisterView compile issue surfaced from a stale `publicSettingsLoaded` identifier and was corrected earlier in the consent-isolation pass.
+
+### Next
+- If these validations stay green, deploy the Turnstile restoration to production and confirm the live `/login` page visibly renders the Cloudflare challenge again.
+
 ## 2026-05-22 AdSense Verification Script
 ### Done
 - Added the provided Google AdSense verification script to the shared SPA entry HTML head.
@@ -1390,3 +1414,11 @@
 
 ### Next
 - Rebuild the frontend bundle and, if green, deploy this narrow homepage-only change to production without bundling unrelated payment work.
+
+### Validation
+- `pnpm --dir frontend run build` passed.
+- Pushed deploy commit `9f251d5e` to `aias00/main`.
+- Pulled commit `9f251d5e` on the production GCE host, rebuilt the embedded frontend/backend bundle, and replaced the live binary.
+- Production health checks passed:
+  - `http://127.0.0.1:8081/health`
+  - `https://cloudbase.eu.org/health`

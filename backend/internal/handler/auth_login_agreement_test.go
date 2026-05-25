@@ -15,6 +15,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+type loginTurnstileVerifierSpy struct {
+	called    int
+	lastToken string
+}
+
+func (s *loginTurnstileVerifierSpy) VerifyToken(_ context.Context, _ string, token, _ string) (*service.TurnstileVerifyResponse, error) {
+	s.called++
+	s.lastToken = token
+	return &service.TurnstileVerifyResponse{Success: true}, nil
+}
+
 func TestLoginRequiresCurrentAgreementWhenEnabled(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
 		settingValues: loginAgreementTestSettingValues(t),
@@ -57,6 +68,54 @@ func TestLoginRequiresCurrentAgreementWhenEnabled(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, agreementRevision, updatedUser.LoginAgreementAcceptedRevision)
 	require.NotNil(t, updatedUser.LoginAgreementAcceptedAt)
+}
+
+func TestLoginRequiresTurnstileWhenEnabled(t *testing.T) {
+	verifier := &loginTurnstileVerifierSpy{}
+	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		turnstileVerifier: verifier,
+		settingValues: map[string]string{
+			service.SettingKeyTurnstileEnabled:   "true",
+			service.SettingKeyTurnstileSiteKey:   "site-key",
+			service.SettingKeyTurnstileSecretKey: "secret",
+		},
+	})
+	ctx := context.Background()
+	passwordHash, err := handler.authService.HashPassword("Aizazadi2024!")
+	require.NoError(t, err)
+	_, err = client.User.Create().
+		SetEmail("turnstile-login@example.com").
+		SetPasswordHash(passwordHash).
+		SetRole(service.RoleUser).
+		SetStatus(service.StatusActive).
+		Save(ctx)
+	require.NoError(t, err)
+
+	recorder := httptest.NewRecorder()
+	ginCtx, _ := gin.CreateTestContext(recorder)
+	body := bytes.NewBufferString(`{"email":"turnstile-login@example.com","password":"Aizazadi2024!"}`)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", body)
+	req.Header.Set("Content-Type", "application/json")
+	ginCtx.Request = req
+
+	handler.Login(ginCtx)
+
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+	require.Contains(t, recorder.Body.String(), "TURNSTILE_VERIFICATION_FAILED")
+	require.Equal(t, 0, verifier.called)
+
+	recorder = httptest.NewRecorder()
+	ginCtx, _ = gin.CreateTestContext(recorder)
+	body = bytes.NewBufferString(`{"email":"turnstile-login@example.com","password":"Aizazadi2024!","turnstile_token":"turnstile-ok"}`)
+	req = httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", body)
+	req.Header.Set("Content-Type", "application/json")
+	ginCtx.Request = req
+
+	handler.Login(ginCtx)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+	require.Equal(t, 1, verifier.called)
+	require.Equal(t, "turnstile-ok", verifier.lastToken)
 }
 
 func TestRegisterRequiresCurrentAgreementWhenEnabled(t *testing.T) {

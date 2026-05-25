@@ -233,6 +233,10 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
 	}
+	if err := h.authService.VerifyTurnstile(c.Request.Context(), req.TurnstileToken, ip.GetClientIP(c)); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 
 	token, user, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
 	if err != nil {
