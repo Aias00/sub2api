@@ -11,9 +11,9 @@ import { resolveCSPNonce } from '@/utils/cspNonce'
 interface TurnstileRenderOptions {
   sitekey: string
   callback: (token: string) => void
-  'expired-callback'?: () => void
-  'error-callback'?: () => void
-  'timeout-callback'?: () => void
+  'expired-callback'?: () => boolean | void
+  'error-callback'?: (errorCode?: string) => boolean | void
+  'timeout-callback'?: () => boolean | void
   theme?: 'light' | 'dark' | 'auto'
   size?: 'normal' | 'compact' | 'flexible'
   retry?: 'auto' | 'never'
@@ -144,12 +144,15 @@ const renderWidget = () => {
     },
     'expired-callback': () => {
       emit('expire')
+      return true
     },
     'error-callback': () => {
       emit('error')
+      return true
     },
     'timeout-callback': () => {
       emit('expire')
+      return true
     },
     theme: props.theme,
     size: props.size,
