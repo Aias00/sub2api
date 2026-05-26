@@ -1548,3 +1548,47 @@
 - The first pass only affected the pure ordinary-user sidebar.
 - The admin "我的账户" section still reused the same self-navigation builder, so administrators checking their personal menu could still see both subscription-related entries.
 - Narrowed the shared self-navigation builder itself so both ordinary users and the admin personal section now expose only the purchase entry while keeping `/subscriptions` reachable by direct link.
+
+## 2026-05-26 Restore My Subscriptions Navigation Entry
+### Done
+- Restored the shared `我的订阅` sidebar entry in the self-navigation builder.
+- This re-enables the menu item for:
+  - ordinary users
+  - the admin personal "我的账户" section
+- Left the rest of the subscription/payment navigation unchanged.
+
+### Failures
+- None during implementation.
+
+### Next
+- Rebuild the frontend bundle and redeploy this navigation reversal to production.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/components/layout/AppSidebar.vue --ext .vue` passed.
+
+## 2026-05-26 Defer Login Agreement Modal Until Submit
+### Done
+- Removed the login-page behavior that reopened the agreement modal immediately when the email field changed to another account.
+- Kept the agreement entry point permanently visible on the login page.
+- Changed the login flow so:
+  - the user can switch accounts and fill credentials without interruption
+  - the backend remains the source of truth for whether the current account must re-accept the latest agreement revision
+  - a `LOGIN_AGREEMENT_REQUIRED` response now opens the agreement modal and records a pending retry
+  - accepting the agreement automatically replays the login request
+- Updated the non-accepted prompt copy so it no longer incorrectly claims that credential inputs are disabled before submit.
+- Added regression coverage for:
+  - switching emails no longer auto-opens the modal
+  - agreement-required login errors open the modal and auto-retry after acceptance
+
+### Failures
+- The first pass left an unused `agreementGateActive` computed in `LoginView`; removed it after `vue-tsc` surfaced the dead state.
+
+### Next
+- Deploy the login-page agreement interaction change to production and verify the live flow against a login that requires agreement confirmation.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/auth/__tests__/LoginView.turnstile.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/auth/LoginView.vue src/components/auth/LoginAgreementPrompt.vue src/views/auth/__tests__/LoginView.turnstile.spec.ts --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed.

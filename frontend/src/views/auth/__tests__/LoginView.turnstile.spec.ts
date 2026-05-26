@@ -133,7 +133,7 @@ describe('LoginView turnstile', () => {
     expect(pushMock).toHaveBeenCalledWith('/dashboard')
   })
 
-  it('re-opens the agreement gate when switching to a different email in the same browser', async () => {
+  it('does not auto-open the agreement modal when switching emails', async () => {
     getPublicSettingsMock.mockResolvedValue({
       turnstile_enabled: false,
       linuxdo_oauth_enabled: false,
@@ -185,7 +185,98 @@ describe('LoginView turnstile', () => {
 
     await wrapper.get('#email').setValue('second@example.com')
     await flushPromises()
-    expect(submit.attributes('disabled')).toBeDefined()
-    expect(agreement.attributes('data-visible')).toBe('true')
+    expect(submit.attributes('disabled')).toBeUndefined()
+    expect(agreement.attributes('data-visible')).toBe('false')
+  })
+
+  it('opens the agreement modal on login requirement and retries automatically after accept', async () => {
+    getPublicSettingsMock.mockResolvedValue({
+      turnstile_enabled: false,
+      linuxdo_oauth_enabled: false,
+      wechat_oauth_enabled: false,
+      backend_mode_enabled: false,
+      oidc_oauth_enabled: false,
+      oidc_oauth_provider_name: 'OIDC',
+      github_oauth_enabled: false,
+      google_oauth_enabled: false,
+      password_reset_enabled: true,
+      login_agreement_enabled: true,
+      login_agreement_mode: 'modal',
+      login_agreement_updated_at: '2026-05-22',
+      login_agreement_revision: 'rev-login-1',
+      login_agreement_documents: [
+        { id: 'terms', title: '服务条款', content_md: '# 条款' },
+      ],
+    })
+
+    loginMock
+      .mockRejectedValueOnce({
+        response: {
+          data: {
+            reason: 'LOGIN_AGREEMENT_REQUIRED',
+            metadata: {
+              agreement_revision: 'rev-login-2',
+            },
+          },
+        },
+      })
+      .mockResolvedValueOnce({
+        access_token: 'token',
+        token_type: 'Bearer',
+        user: {
+          id: 1,
+          email: 'user@example.com',
+          username: 'user',
+          role: 'user',
+          balance: 0,
+          concurrency: 5,
+          status: 'active',
+          allowed_groups: null,
+          created_at: '',
+          updated_at: '',
+        },
+      })
+
+    const wrapper = mount(LoginView, {
+      global: {
+        stubs: {
+          AuthLayout: { template: '<div><slot /><slot name="footer" /></div>' },
+          RouterLink: { template: '<a><slot /></a>' },
+          LoginAgreementPrompt: {
+            name: 'LoginAgreementPrompt',
+            props: ['accepted', 'visible'],
+            template: '<div data-testid="agreement" :data-accepted="String(accepted)" :data-visible="String(visible)" />',
+          },
+          TotpLoginModal: true,
+          Icon: true,
+          EmailOAuthButtons: true,
+          LinuxDoOAuthSection: true,
+          WechatOAuthSection: true,
+          OidcOAuthSection: true,
+        },
+      },
+    })
+
+    await flushPromises()
+    await wrapper.get('#email').setValue('user@example.com')
+    await wrapper.get('#password').setValue('Aizazadi2024!')
+    await wrapper.get('form').trigger('submit.prevent')
+    await flushPromises()
+
+    expect(loginMock).toHaveBeenCalledTimes(1)
+    expect(wrapper.get('[data-testid="agreement"]').attributes('data-visible')).toBe('true')
+
+    await wrapper.findComponent({ name: 'LoginAgreementPrompt' }).vm.$emit('accept')
+    await flushPromises()
+
+    expect(loginMock).toHaveBeenCalledTimes(2)
+    expect(loginMock).toHaveBeenLastCalledWith({
+      email: 'user@example.com',
+      password: 'Aizazadi2024!',
+      turnstile_token: undefined,
+      agreement_accepted: true,
+      agreement_revision: 'rev-login-2',
+    })
+    expect(pushMock).toHaveBeenCalledWith('/dashboard')
   })
 })

@@ -248,6 +248,7 @@ const loginAgreementRevision = ref<string>('')
 const loginAgreementDocuments = ref<LoginAgreementDocument[]>([])
 const agreementAccepted = ref<boolean>(false)
 const showAgreementModal = ref<boolean>(false)
+const pendingAgreementRetry = ref<boolean>(false)
 
 // Turnstile
 const turnstileEnabled = ref<boolean>(false)
@@ -275,12 +276,8 @@ const validationToastMessage = computed(
   () => errors.email || errors.password || errors.turnstile || ''
 )
 
-const agreementGateActive = computed(
-  () => loginAgreementEnabled.value && !agreementAccepted.value
-)
-
 const authActionDisabled = computed(
-  () => isLoading.value || !publicSettingsLoaded.value || agreementGateActive.value
+  () => isLoading.value || !publicSettingsLoaded.value
 )
 
 const showOAuthLogin = computed(
@@ -328,6 +325,7 @@ onMounted(async () => {
     console.error('Failed to load public settings:', error)
     loginAgreementEnabled.value = false
     agreementAccepted.value = true
+    showAgreementModal.value = false
   } finally {
     publicSettingsLoaded.value = true
   }
@@ -360,6 +358,10 @@ function acceptLoginAgreement(): void {
   persistLoginAgreementAcceptance(loginAgreementRevision.value, formData.email)
   agreementAccepted.value = true
   showAgreementModal.value = false
+  if (pendingAgreementRetry.value) {
+    pendingAgreementRetry.value = false
+    void handleLogin()
+  }
 }
 
 function rejectLoginAgreement(): void {
@@ -367,7 +369,8 @@ function rejectLoginAgreement(): void {
   clearLoginAgreementAcceptance(formData.email)
   agreementAccepted.value = false
   showAgreementModal.value = false
-  appStore.showWarning('未同意最新条款前，无法输入账号密码或使用快捷登录。')
+  pendingAgreementRetry.value = false
+  appStore.showWarning('未同意最新条款前，无法继续登录。')
 }
 
 function onTurnstileVerify(token: string): void {
@@ -389,8 +392,6 @@ function syncLoginAgreementState(): void {
   agreementAccepted.value =
     !loginAgreementEnabled.value ||
     hasAcceptedLoginAgreement(loginAgreementRevision.value, formData.email)
-  showAgreementModal.value =
-    loginAgreementEnabled.value && !agreementAccepted.value && loginAgreementMode.value !== 'checkbox'
 }
 
 watch(
@@ -412,14 +413,6 @@ function validateForm(): boolean {
   errors.turnstile = ''
 
   let isValid = true
-
-  if (agreementGateActive.value) {
-    appStore.showWarning('请先阅读并同意最新条款后再登录。')
-    if (loginAgreementMode.value !== 'checkbox') {
-      showAgreementModal.value = true
-    }
-    return false
-  }
 
   // Email validation
   if (!formData.email.trim()) {
@@ -502,9 +495,11 @@ async function handleLogin(): Promise<void> {
       clearLoginAgreementAcceptance()
       clearLoginAgreementAcceptance(formData.email)
       agreementAccepted.value = false
-      if (loginAgreementMode.value !== 'checkbox') {
-        showAgreementModal.value = true
-      }
+      pendingAgreementRetry.value = true
+      showAgreementModal.value = true
+      appStore.showWarning('请先阅读并同意最新条款后再继续登录。')
+      errorMessage.value = ''
+      return
     }
     errorMessage.value = extractI18nErrorMessage(error, t, 'auth.errors', t('auth.loginFailed'))
 
