@@ -1592,3 +1592,6 @@
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend exec eslint src/views/auth/LoginView.vue src/components/auth/LoginAgreementPrompt.vue src/views/auth/__tests__/LoginView.turnstile.spec.ts --ext .vue,.ts` passed.
 - `pnpm --dir frontend run build` passed.
+
+### Follow-up
+- Adjusted the login/register OAuth divider copy so the line below the email/password form no longer says “or continue with email”. It now reads as an alternative-method separator, which matches the actual layout.

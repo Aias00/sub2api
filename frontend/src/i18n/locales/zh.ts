@@ -479,6 +479,7 @@ export default {
     invitationCodeInvalidCannotRegister: '邀请码无效，请检查后重试',
     affiliateInvitationDetected: '已识别好友邀请链接，可直接完成注册并自动绑定邀请关系。',
     oauthOrContinue: '或使用邮箱密码继续',
+    oauthAlternativeMethods: '或使用以下方式继续',
     linuxdo: {
       signIn: '使用 Linux.do 登录',
       orContinue: '或使用邮箱密码继续',
