@@ -2,8 +2,6 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"errors"
 	"fmt"
 	"strings"
@@ -118,24 +116,7 @@ func NewRedeemService(
 
 // GenerateRandomCode 生成随机兑换码
 func (s *RedeemService) GenerateRandomCode() (string, error) {
-	// 生成16字节随机数据
-	bytes := make([]byte, 16)
-	if _, err := rand.Read(bytes); err != nil {
-		return "", fmt.Errorf("generate random bytes: %w", err)
-	}
-
-	// 转换为十六进制字符串
-	code := hex.EncodeToString(bytes)
-
-	// 格式化为 XXXX-XXXX-XXXX-XXXX 格式
-	parts := []string{
-		strings.ToUpper(code[0:8]),
-		strings.ToUpper(code[8:16]),
-		strings.ToUpper(code[16:24]),
-		strings.ToUpper(code[24:32]),
-	}
-
-	return strings.Join(parts, "-"), nil
+	return GenerateRedeemCode()
 }
 
 // GenerateCodes 批量生成兑换码
@@ -166,9 +147,9 @@ func (s *RedeemService) GenerateCodes(ctx context.Context, req GenerateCodesRequ
 
 	codes := make([]RedeemCode, 0, req.Count)
 	for i := 0; i < req.Count; i++ {
-		code, err := s.GenerateRandomCode()
+		code, err := generateUniqueRedeemCode(ctx, s.redeemRepo)
 		if err != nil {
-			return nil, fmt.Errorf("generate code: %w", err)
+			return nil, err
 		}
 
 		codes = append(codes, RedeemCode{
@@ -268,19 +249,25 @@ func (s *RedeemService) releaseRedeemLock(ctx context.Context, code string) {
 
 // Redeem 使用兑换码
 func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (*RedeemCode, error) {
+	code = strings.TrimSpace(code)
+	if code == "" {
+		return nil, ErrRedeemCodeNotFound
+	}
+
 	// 检查限流
 	if err := s.checkRedeemRateLimit(ctx, userID); err != nil {
 		return nil, err
 	}
 
 	// 获取分布式锁，防止同一兑换码并发使用
-	if !s.acquireRedeemLock(ctx, code) {
+	lockCode := canonicalRedeemCodeInput(code)
+	if !s.acquireRedeemLock(ctx, lockCode) {
 		return nil, ErrRedeemCodeLocked
 	}
-	defer s.releaseRedeemLock(ctx, code)
+	defer s.releaseRedeemLock(ctx, lockCode)
 
 	// 查找兑换码
-	redeemCode, err := s.redeemRepo.GetByCode(ctx, code)
+	redeemCode, err := s.findRedeemCodeByInput(ctx, code)
 	if err != nil {
 		if errors.Is(err, ErrRedeemCodeNotFound) {
 			s.incrementRedeemErrorCount(ctx, userID)
@@ -467,11 +454,30 @@ func (s *RedeemService) GetByID(ctx context.Context, id int64) (*RedeemCode, err
 
 // GetByCode 根据Code获取兑换码
 func (s *RedeemService) GetByCode(ctx context.Context, code string) (*RedeemCode, error) {
-	redeemCode, err := s.redeemRepo.GetByCode(ctx, code)
+	redeemCode, err := s.findRedeemCodeByInput(ctx, code)
 	if err != nil {
 		return nil, fmt.Errorf("get redeem code: %w", err)
 	}
 	return redeemCode, nil
+}
+
+func (s *RedeemService) findRedeemCodeByInput(ctx context.Context, code string) (*RedeemCode, error) {
+	trimmed := strings.TrimSpace(code)
+	if trimmed == "" {
+		return nil, ErrRedeemCodeNotFound
+	}
+	redeemCode, err := s.redeemRepo.GetByCode(ctx, trimmed)
+	if err == nil {
+		return redeemCode, nil
+	}
+	if !errors.Is(err, ErrRedeemCodeNotFound) {
+		return nil, err
+	}
+	normalized := canonicalRedeemCodeInput(trimmed)
+	if normalized == trimmed {
+		return nil, ErrRedeemCodeNotFound
+	}
+	return s.redeemRepo.GetByCode(ctx, normalized)
 }
 
 // List 获取兑换码列表（管理员功能）

@@ -20,9 +20,9 @@ export default {
     heroSubtitle: '一个密钥，畅用多个 AI 模型',
     heroDescription: '无需管理多个订阅账号，一站式接入 Claude、GPT、Gemini 等主流 AI 服务',
     tags: {
-      subscriptionToApi: '订阅转 API',
-      stickySession: '会话保持',
-      realtimeBilling: '按量计费'
+      subscriptionToApi: '统一模型接入',
+      stickySession: '稳定路由转发',
+      realtimeBilling: '用量透明计费'
     },
     // 用户痛点区块
     painPoints: {
@@ -97,7 +97,7 @@ export default {
     },
     providers: {
       title: '已支持的 AI 模型',
-      description: '一个 API，多种选择',
+      description: '统一接入 Claude、GPT 等主流模型',
       supported: '已支持',
       soon: '即将推出',
       claude: 'Claude',
@@ -1206,7 +1206,7 @@ export default {
     requests: '请求',
     redeemCodeLabel: '兑换码',
     redeemCodePlaceholder: '请输入兑换码',
-    redeemCodeHint: '兑换码区分大小写',
+    redeemCodeHint: '兑换码支持大写字母和数字，可直接粘贴输入',
     redeeming: '兑换中...',
     redeemButton: '兑换',
     redeemSuccess: '兑换成功！',

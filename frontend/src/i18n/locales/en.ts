@@ -20,9 +20,9 @@ export default {
     heroSubtitle: 'One Key, All AI Models',
     heroDescription: 'No need to manage multiple subscriptions. Access Claude, GPT, Gemini and more with a single API key',
     tags: {
-      subscriptionToApi: 'Subscription to API',
-      stickySession: 'Session Persistence',
-      realtimeBilling: 'Pay As You Go'
+      subscriptionToApi: 'Unified Model Access',
+      stickySession: 'Reliable Routing',
+      realtimeBilling: 'Transparent Usage Billing'
     },
     // Pain points section
     painPoints: {
@@ -97,7 +97,7 @@ export default {
     },
     providers: {
       title: 'Supported AI Models',
-      description: 'One API, Multiple Choices',
+      description: 'Unified access to Claude, GPT, and other mainstream models',
       supported: 'Supported',
       soon: 'Soon',
       claude: 'Claude',
@@ -1202,7 +1202,7 @@ export default {
     requests: 'requests',
     redeemCodeLabel: 'Redeem Code',
     redeemCodePlaceholder: 'Enter your redeem code',
-    redeemCodeHint: 'Redeem codes are case-sensitive',
+    redeemCodeHint: 'Redeem codes use uppercase letters and numbers and can be pasted directly',
     redeeming: 'Redeeming...',
     redeemButton: 'Redeem Code',
     redeemSuccess: 'Code Redeemed Successfully!',

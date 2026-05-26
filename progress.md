@@ -1644,6 +1644,30 @@
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend exec eslint src/views/auth/LoginView.vue src/views/auth/RegisterView.vue src/components/auth/EmailOAuthButtons.vue src/components/auth/LinuxDoOAuthSection.vue src/components/auth/OidcOAuthSection.vue src/components/auth/WechatOAuthSection.vue src/stores/auth.ts src/utils/loginAgreementConsent.ts src/utils/__tests__/loginAgreementConsent.spec.ts src/components/auth/__tests__/EmailOAuthButtons.spec.ts src/views/auth/__tests__/LoginView.turnstile.spec.ts --ext .vue,.ts` passed.
 
+## 2026-05-26 Shorten Generated Redeem Codes To 8-Char Uppercase Alphanumerics
+### Done
+- Changed generated redeem codes from long hex strings to `8`-character uppercase alphanumeric codes.
+- Added a shared uniqueness helper with bounded retries so generated codes are checked against the repository before being used.
+- Updated both user-facing redeem generation and admin-side adjustment code generation to use the same short-code helper.
+- Kept manual/fixed redeem codes untouched.
+- Made redeem lookup backward-compatible:
+  - first try the raw input
+  - then try uppercase canonical form
+  This preserves existing lowercase historical codes while allowing new uppercase codes to be entered in lowercase by users.
+- Updated the user redeem hint copy so it no longer claims codes are case-sensitive.
+
+### Failures
+- None during implementation.
+
+### Next
+- Deploy the redeem-code format change to production and verify newly generated codes use the short format.
+
+### Validation
+- `cd backend && go test ./internal/service -run 'TestGenerateRedeemCodeFormat|TestRedeemServiceFindRedeemCodeByInputFallsBackToUppercase' -count=1` passed.
+- `cd backend && go test ./... -count=1` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .ts` passed.
+
 ## 2026-05-26 Simplify Home Provider Section
 ### Done
 - Removed the three pill-style home-page capability tags below the hero section.
