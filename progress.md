@@ -1526,3 +1526,25 @@
 ### Validation
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend exec eslint src/components/layout/AppSidebar.vue --ext .vue` passed.
+
+## 2026-05-26 Remove Duplicate Subscription Entry For Ordinary Users
+### Done
+- Kept the ordinary-user purchase entry (`充值/订阅`) in the sidebar.
+- Removed the separate ordinary-user `我的订阅` sidebar entry so users no longer see two subscription-related first-level menu items.
+- Left the `/subscriptions` route intact for direct links and internal jump actions.
+- Left the admin-side personal navigation unchanged.
+
+### Failures
+- None during implementation.
+
+### Next
+- Rebuild the frontend bundle and deploy this user-navigation-only simplification to production.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/components/layout/AppSidebar.vue --ext .vue` passed.
+
+### Follow-up
+- The first pass only affected the pure ordinary-user sidebar.
+- The admin "我的账户" section still reused the same self-navigation builder, so administrators checking their personal menu could still see both subscription-related entries.
+- Narrowed the shared self-navigation builder itself so both ordinary users and the admin personal section now expose only the purchase entry while keeping `/subscriptions` reachable by direct link.
