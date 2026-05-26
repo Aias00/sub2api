@@ -3,7 +3,6 @@ package handler
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
@@ -52,23 +51,17 @@ func (h *AuthHandler) ensureUserAcceptedCurrentLoginAgreement(ctx context.Contex
 			"agreement_revision": currentRevision,
 		})
 	}
-	if strings.TrimSpace(user.LoginAgreementAcceptedRevision) == currentRevision {
-		return nil
-	}
 	if !input.Accepted || strings.TrimSpace(input.Revision) != currentRevision {
 		return service.ErrLoginAgreementRequired.WithMetadata(map[string]string{
 			"agreement_revision": currentRevision,
 		})
 	}
-	return h.recordLoginAgreementAcceptance(ctx, user, currentRevision)
+	return nil
 }
 
 func (h *AuthHandler) recordLoginAgreementAcceptance(ctx context.Context, user *service.User, revision string) error {
-	if strings.TrimSpace(revision) == "" {
-		return nil
-	}
-	if h == nil || h.authService == nil {
-		return service.ErrServiceUnavailable
-	}
-	return h.authService.RecordLoginAgreementAcceptance(ctx, user, revision, time.Now().UTC())
+	_ = ctx
+	_ = user
+	_ = revision
+	return nil
 }

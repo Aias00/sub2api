@@ -140,27 +140,31 @@
             <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
           </div>
 
-          <EmailOAuthButtons
-            :disabled="authActionDisabled"
-            :github-enabled="githubOAuthEnabled"
-            :google-enabled="googleOAuthEnabled"
-            :show-divider="false"
-          />
+        <EmailOAuthButtons
+          :disabled="authActionDisabled"
+          :github-enabled="githubOAuthEnabled"
+          :google-enabled="googleOAuthEnabled"
+          :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
+          :show-divider="false"
+        />
 
           <LinuxDoOAuthSection
             v-if="linuxdoOAuthEnabled"
             :disabled="authActionDisabled"
+            :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
             :show-divider="false"
           />
           <WechatOAuthSection
             v-if="wechatOAuthEnabled"
             :disabled="authActionDisabled"
+            :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
             :show-divider="false"
           />
           <OidcOAuthSection
             v-if="oidcOAuthEnabled"
             :disabled="authActionDisabled"
             :provider-name="oidcOAuthProviderName"
+            :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
             :show-divider="false"
           />
         </div>
@@ -211,8 +215,8 @@ import type { LoginAgreementDocument, TotpLoginResponse } from '@/types'
 import { extractI18nErrorMessage } from '@/utils/apiError'
 import { clearAllAffiliateReferralCodes } from '@/utils/oauthAffiliate'
 import {
-  bindAnonymousLoginAgreementAcceptanceToSubject,
   buildLoginAgreementAcceptancePayload,
+  clearAllLoginAgreementAcceptance,
   clearLoginAgreementAcceptance,
   hasAcceptedLoginAgreement,
   persistLoginAgreementAcceptance
@@ -277,7 +281,12 @@ const validationToastMessage = computed(
 )
 
 const authActionDisabled = computed(
-  () => isLoading.value || !publicSettingsLoaded.value
+  () =>
+    isLoading.value ||
+    !publicSettingsLoaded.value ||
+    (loginAgreementEnabled.value &&
+      loginAgreementMode.value === 'checkbox' &&
+      !agreementAccepted.value)
 )
 
 const showOAuthLogin = computed(
@@ -299,6 +308,7 @@ watch(validationToastMessage, (value, previousValue) => {
 // ==================== Lifecycle ====================
 
 onMounted(async () => {
+  clearAllLoginAgreementAcceptance()
   const expiredFlag = sessionStorage.getItem('auth_expired')
   if (expiredFlag) {
     sessionStorage.removeItem('auth_expired')
@@ -391,7 +401,7 @@ function onTurnstileError(): void {
 function syncLoginAgreementState(): void {
   agreementAccepted.value =
     !loginAgreementEnabled.value ||
-    hasAcceptedLoginAgreement(loginAgreementRevision.value, formData.email)
+    hasAcceptedLoginAgreement(loginAgreementRevision.value)
 }
 
 watch(
@@ -470,8 +480,7 @@ async function handleLogin(): Promise<void> {
     }
 
     // Show success toast
-    bindAnonymousLoginAgreementAcceptanceToSubject(formData.email)
-    persistLoginAgreementAcceptance(loginAgreementRevision.value, formData.email)
+    clearAllLoginAgreementAcceptance()
     clearAllAffiliateReferralCodes()
     appStore.showSuccess(t('auth.loginSuccess'))
 

@@ -32,7 +32,6 @@ import { useI18n } from 'vue-i18n'
 import GitHubMark from './GitHubMark.vue'
 import GoogleMark from './GoogleMark.vue'
 import { resolveAffiliateReferralCode, storeOAuthAffiliateCode } from '@/utils/oauthAffiliate'
-import { buildLoginAgreementAcceptancePayload } from '@/utils/loginAgreementConsent'
 
 type EmailOAuthProvider = 'github' | 'google'
 const EMAIL_OAUTH_PENDING_PROVIDER_KEY = 'email_oauth_pending_provider'
@@ -42,6 +41,7 @@ const props = withDefaults(defineProps<{
   affCode?: string
   githubEnabled?: boolean
   googleEnabled?: boolean
+  agreementRevision?: string
   showDivider?: boolean
 }>(), {
   showDivider: true
@@ -82,9 +82,9 @@ function startLogin(provider: EmailOAuthProvider): void {
   if (affiliateCode) {
     params.set('aff_code', affiliateCode)
   }
-  const agreementPayload = buildLoginAgreementAcceptancePayload()
-  if (agreementPayload.agreement_revision) {
-    params.set('agreement_revision', agreementPayload.agreement_revision)
+  const agreementRevision = String(props.agreementRevision || '').trim()
+  if (agreementRevision) {
+    params.set('agreement_revision', agreementRevision)
   }
   const startURL = `${normalized}/auth/oauth/${provider}/start?${params.toString()}`
   window.location.href = startURL

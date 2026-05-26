@@ -7,7 +7,7 @@ import { defineStore } from 'pinia'
 import { ref, computed, readonly } from 'vue'
 import { authAPI, isTotp2FARequired, type LoginResponse } from '@/api'
 import type { User, LoginRequest, RegisterRequest, AuthResponse } from '@/types'
-import { bindAnonymousLoginAgreementAcceptanceToSubject, clearAllLoginAgreementAcceptance } from '@/utils/loginAgreementConsent'
+import { clearAllLoginAgreementAcceptance } from '@/utils/loginAgreementConsent'
 
 const AUTH_TOKEN_KEY = 'auth_token'
 const AUTH_USER_KEY = 'auth_user'
@@ -296,12 +296,11 @@ export const useAuthStore = defineStore('auth', () => {
     }
     const { run_mode: _run_mode, ...userData } = response.user
     user.value = userData
-    bindAnonymousLoginAgreementAcceptanceToSubject(userData.email)
-
     // Persist to localStorage
     localStorage.setItem(AUTH_TOKEN_KEY, response.access_token)
     localStorage.setItem(AUTH_USER_KEY, JSON.stringify(userData))
     clearPendingAuthSession()
+    clearAllLoginAgreementAcceptance()
 
     // Start auto-refresh interval for user data
     startAutoRefresh()

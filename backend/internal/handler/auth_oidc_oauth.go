@@ -39,6 +39,7 @@ const (
 	oidcOAuthRedirectCookie     = "oidc_oauth_redirect"
 	oidcOAuthNonceCookie        = "oidc_oauth_nonce"
 	oidcOAuthIntentCookieName   = "oidc_oauth_intent"
+	oidcOAuthAgreementCookie    = "oidc_oauth_agreement_revision"
 	oidcOAuthBindUserCookieName = "oidc_oauth_bind_user"
 	oidcOAuthCookieMaxAgeSec    = 10 * 60 // 10 minutes
 	oidcOAuthDefaultRedirectTo  = "/dashboard"
@@ -141,6 +142,11 @@ func (h *AuthHandler) OIDCOAuthStart(c *gin.Context) {
 	secureCookie := isRequestHTTPS(c)
 	oidcSetCookie(c, oidcOAuthStateCookieName, encodeCookieValue(state), oidcOAuthCookieMaxAgeSec, secureCookie)
 	oidcSetCookie(c, oidcOAuthRedirectCookie, encodeCookieValue(redirectTo), oidcOAuthCookieMaxAgeSec, secureCookie)
+	if acceptedRevision := strings.TrimSpace(c.Query("agreement_revision")); acceptedRevision != "" {
+		oidcSetCookie(c, oidcOAuthAgreementCookie, encodeCookieValue(acceptedRevision), oidcOAuthCookieMaxAgeSec, secureCookie)
+	} else {
+		oidcClearCookie(c, oidcOAuthAgreementCookie, secureCookie)
+	}
 	intent := normalizeOAuthIntent(c.Query("intent"))
 	oidcSetCookie(c, oidcOAuthIntentCookieName, encodeCookieValue(intent), oidcOAuthCookieMaxAgeSec, secureCookie)
 	setOAuthPendingBrowserCookie(c, browserSessionKey, secureCookie)
@@ -225,6 +231,7 @@ func (h *AuthHandler) OIDCOAuthCallback(c *gin.Context) {
 		oidcClearCookie(c, oidcOAuthRedirectCookie, secureCookie)
 		oidcClearCookie(c, oidcOAuthNonceCookie, secureCookie)
 		oidcClearCookie(c, oidcOAuthIntentCookieName, secureCookie)
+		oidcClearCookie(c, oidcOAuthAgreementCookie, secureCookie)
 		oidcClearCookie(c, oidcOAuthBindUserCookieName, secureCookie)
 	}()
 
@@ -647,6 +654,10 @@ func (h *AuthHandler) CompleteOIDCOAuthRegistration(c *gin.Context) {
 	agreementInput := agreementAcceptanceInput{
 		Accepted: req.AgreementAccepted,
 		Revision: req.AgreementRevision,
+	}
+	if agreementRevision, _ := readCookieDecoded(c, oidcOAuthAgreementCookie); strings.TrimSpace(agreementRevision) != "" {
+		agreementInput.Accepted = true
+		agreementInput.Revision = strings.TrimSpace(agreementRevision)
 	}
 	if session.TargetUserID != nil && *session.TargetUserID > 0 {
 		targetUser, err := h.userService.GetByID(c.Request.Context(), *session.TargetUserID)

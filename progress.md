@@ -1596,6 +1596,29 @@
 ### Follow-up
 - Adjusted the login/register OAuth divider copy so the line below the email/password form no longer says “or continue with email”. It now reads as an alternative-method separator, which matches the actual layout.
 
+## 2026-05-26 Treat Login Agreement Confirmation As Per-Attempt, Not Per-Account
+### Done
+- Replaced the old per-account/per-browser agreement persistence helper with a session-scoped “current auth attempt” helper.
+- Login and register pages now clear any stale agreement attempt state on mount, so a fresh visit always starts unchecked.
+- OAuth start buttons now forward the current in-memory agreement revision through the start URL instead of reading a long-lived remembered acceptance.
+- LinuxDo / OIDC / WeChat OAuth start handlers now preserve the current agreement revision in short-lived OAuth cookies so direct callback logins keep the same “this attempt was confirmed” context.
+- Backend agreement enforcement no longer treats `user.login_agreement_accepted_revision` as a reusable login bypass and no longer persists acceptance back to the user record during login/registration flows.
+- Auth success now clears the current attempt agreement state instead of binding it to the logged-in account.
+
+### Failures
+- The first pass left an unused import in `EmailOAuthButtons.vue`; `vue-tsc` caught it and it was removed before final verification.
+
+### Next
+- Deploy the full per-attempt agreement confirmation behavior to production and validate at least one live login flow that hits `LOGIN_AGREEMENT_REQUIRED`.
+
+### Validation
+- `cd backend && go test ./internal/handler -run 'Test(LoginRequiresCurrentAgreementWhenEnabled|RegisterRequiresCurrentAgreementWhenEnabled|ExchangePendingOAuthCompletionRequiresCurrentAgreementForTokenIssue|EmailOAuthCallbackWithExistingUserRequiresAgreement)' -count=1` passed.
+- `cd backend && go test ./internal/handler -count=1` passed.
+- `pnpm --dir frontend exec vitest run src/utils/__tests__/loginAgreementConsent.spec.ts src/views/auth/__tests__/LoginView.turnstile.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/auth/LoginView.vue src/views/auth/RegisterView.vue src/components/auth/LoginAgreementPrompt.vue src/components/auth/EmailOAuthButtons.vue src/components/auth/LinuxDoOAuthSection.vue src/components/auth/OidcOAuthSection.vue src/components/auth/WechatOAuthSection.vue src/utils/loginAgreementConsent.ts src/utils/__tests__/loginAgreementConsent.spec.ts src/views/auth/__tests__/LoginView.turnstile.spec.ts --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed.
+
 ## 2026-05-26 Simplify Home Provider Section
 ### Done
 - Removed the three pill-style home-page capability tags below the hero section.

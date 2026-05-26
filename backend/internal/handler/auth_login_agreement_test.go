@@ -66,8 +66,8 @@ func TestLoginRequiresCurrentAgreementWhenEnabled(t *testing.T) {
 	require.Equal(t, http.StatusOK, recorder.Code)
 	updatedUser, err := client.User.Get(ctx, user.ID)
 	require.NoError(t, err)
-	require.Equal(t, agreementRevision, updatedUser.LoginAgreementAcceptedRevision)
-	require.NotNil(t, updatedUser.LoginAgreementAcceptedAt)
+	require.Empty(t, updatedUser.LoginAgreementAcceptedRevision)
+	require.Nil(t, updatedUser.LoginAgreementAcceptedAt)
 }
 
 func TestLoginRequiresTurnstileWhenEnabled(t *testing.T) {
@@ -149,8 +149,8 @@ func TestRegisterRequiresCurrentAgreementWhenEnabled(t *testing.T) {
 	require.Equal(t, http.StatusOK, recorder.Code)
 	createdUser, err := client.User.Query().Only(ctx)
 	require.NoError(t, err)
-	require.Equal(t, agreementRevision, createdUser.LoginAgreementAcceptedRevision)
-	require.NotNil(t, createdUser.LoginAgreementAcceptedAt)
+	require.Empty(t, createdUser.LoginAgreementAcceptedRevision)
+	require.Nil(t, createdUser.LoginAgreementAcceptedAt)
 }
 
 func TestExchangePendingOAuthCompletionRequiresCurrentAgreementForTokenIssue(t *testing.T) {
@@ -219,8 +219,8 @@ func TestExchangePendingOAuthCompletionRequiresCurrentAgreementForTokenIssue(t *
 	require.Equal(t, http.StatusOK, recorder.Code)
 	updatedUser, err := client.User.Get(ctx, userEntity.ID)
 	require.NoError(t, err)
-	require.Equal(t, agreementRevision, updatedUser.LoginAgreementAcceptedRevision)
-	require.NotNil(t, updatedUser.LoginAgreementAcceptedAt)
+	require.Empty(t, updatedUser.LoginAgreementAcceptedRevision)
+	require.Nil(t, updatedUser.LoginAgreementAcceptedAt)
 
 	consumed, err := client.PendingAuthSession.Query().
 		Where(pendingauthsession.IDEQ(session.ID)).

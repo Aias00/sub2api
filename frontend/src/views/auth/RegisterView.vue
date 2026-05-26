@@ -260,6 +260,7 @@
           :aff-code="formData.aff_code"
           :github-enabled="githubOAuthEnabled"
           :google-enabled="googleOAuthEnabled"
+          :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
           :show-divider="false"
         />
 
@@ -267,12 +268,14 @@
           v-if="linuxdoOAuthEnabled"
           :disabled="registrationActionDisabled"
           :aff-code="formData.aff_code"
+          :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
           :show-divider="false"
         />
         <WechatOAuthSection
           v-if="wechatOAuthEnabled"
           :disabled="registrationActionDisabled"
           :aff-code="formData.aff_code"
+          :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
           :show-divider="false"
         />
         <OidcOAuthSection
@@ -280,6 +283,7 @@
           :disabled="registrationActionDisabled"
           :provider-name="oidcOAuthProviderName"
           :aff-code="formData.aff_code"
+          :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
           :show-divider="false"
         />
       </div>
@@ -330,8 +334,8 @@ import {
   resolveAffiliateReferralCode
 } from '@/utils/oauthAffiliate'
 import {
-  bindAnonymousLoginAgreementAcceptanceToSubject,
   buildLoginAgreementAcceptancePayload,
+  clearAllLoginAgreementAcceptance,
   clearLoginAgreementAcceptance,
   hasAcceptedLoginAgreement,
   persistLoginAgreementAcceptance
@@ -441,7 +445,12 @@ const agreementGateActive = computed(
 )
 
 const registrationActionDisabled = computed(
-  () => isLoading.value || !settingsLoaded.value || agreementGateActive.value
+  () =>
+    isLoading.value ||
+    !settingsLoaded.value ||
+    (loginAgreementEnabled.value &&
+      loginAgreementMode.value === 'checkbox' &&
+      !agreementAccepted.value)
 )
 const affiliateInviteCodeForGate = computed(() => formData.aff_code.trim() || loadAffiliateReferralCode())
 const invitationGateSatisfiedByAffiliate = computed(
@@ -465,6 +474,7 @@ function syncAffiliateReferralCode(): string {
 // ==================== Lifecycle ====================
 
 onMounted(async () => {
+  clearAllLoginAgreementAcceptance()
   syncAffiliateReferralCode()
 
   try {
@@ -502,6 +512,7 @@ onMounted(async () => {
     console.error('Failed to load public settings:', error)
     loginAgreementEnabled.value = false
     agreementAccepted.value = true
+    showAgreementModal.value = false
   } finally {
     settingsLoaded.value = true
   }
@@ -554,29 +565,16 @@ function acceptLoginAgreement(): void {
 
 function rejectLoginAgreement(): void {
   clearLoginAgreementAcceptance()
-  clearLoginAgreementAcceptance(formData.email)
   agreementAccepted.value = false
   showAgreementModal.value = false
-  appStore.showWarning('未同意最新条款前，无法注册或使用快捷登录。')
+  appStore.showWarning('未同意最新条款前，无法继续注册。')
 }
 
 function syncLoginAgreementState(): void {
   agreementAccepted.value =
     !loginAgreementEnabled.value ||
-    hasAcceptedLoginAgreement(loginAgreementRevision.value, formData.email)
-  showAgreementModal.value =
-    loginAgreementEnabled.value && !agreementAccepted.value && loginAgreementMode.value !== 'checkbox'
+    hasAcceptedLoginAgreement(loginAgreementRevision.value)
 }
-
-watch(
-  () => formData.email,
-  () => {
-    if (!settingsLoaded.value) {
-      return
-    }
-    syncLoginAgreementState()
-  }
-)
 
 // ==================== Promo Code Validation ====================
 
@@ -878,7 +876,7 @@ async function handleRegister(): Promise<void> {
           promo_code: formData.promo_code || undefined,
           invitation_code: formData.invitation_code || undefined,
           ...(affCode ? { aff_code: affCode } : {}),
-          ...buildLoginAgreementAcceptancePayload(formData.email)
+          ...buildLoginAgreementAcceptancePayload()
         })
       )
 
@@ -895,13 +893,12 @@ async function handleRegister(): Promise<void> {
       promo_code: formData.promo_code || undefined,
       invitation_code: formData.invitation_code || undefined,
       ...(affCode ? { aff_code: affCode } : {}),
-      ...buildLoginAgreementAcceptancePayload(formData.email)
+      ...buildLoginAgreementAcceptancePayload()
     })
     clearAffiliateReferralCode()
 
     // Show success toast
-    bindAnonymousLoginAgreementAcceptanceToSubject(formData.email)
-    persistLoginAgreementAcceptance(loginAgreementRevision.value, formData.email)
+    clearAllLoginAgreementAcceptance()
     appStore.showSuccess(t('auth.accountCreatedSuccess', { siteName: siteName.value }))
 
     // Redirect to dashboard

@@ -38,6 +38,7 @@ import { resolveAffiliateReferralCode, storeOAuthAffiliateCode } from '@/utils/o
 const props = withDefaults(defineProps<{
   disabled?: boolean
   affCode?: string
+  agreementRevision?: string
   showDivider?: boolean
 }>(), {
   showDivider: true,
@@ -90,7 +91,15 @@ function startLogin(): void {
   const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) || '/api/v1'
   const normalized = apiBase.replace(/\/$/, '')
   const mode = resolvedStart.value.mode
-  const startURL = `${normalized}/auth/oauth/wechat/start?mode=${mode}&redirect=${encodeURIComponent(redirectTo)}`
+  const params = new URLSearchParams({
+    mode,
+    redirect: redirectTo,
+  })
+  const agreementRevision = String(props.agreementRevision || '').trim()
+  if (agreementRevision) {
+    params.set('agreement_revision', agreementRevision)
+  }
+  const startURL = `${normalized}/auth/oauth/wechat/start?${params.toString()}`
   window.location.href = startURL
 }
 </script>

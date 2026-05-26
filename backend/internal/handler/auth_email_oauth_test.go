@@ -193,8 +193,8 @@ func TestEmailOAuthCallbackExistingEmailRequiresAgreementWhenEnabled(t *testing.
 
 	updatedUser, err := client.User.Get(ctx, user.ID)
 	require.NoError(t, err)
-	require.Equal(t, agreementRevision, updatedUser.LoginAgreementAcceptedRevision)
-	require.NotNil(t, updatedUser.LoginAgreementAcceptedAt)
+	require.Empty(t, updatedUser.LoginAgreementAcceptedRevision)
+	require.Nil(t, updatedUser.LoginAgreementAcceptedAt)
 }
 
 func TestEmailOAuthCallbackCreatesPasswordRegistrationSessionForNewEmail(t *testing.T) {

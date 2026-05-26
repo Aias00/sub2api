@@ -31,6 +31,7 @@ const (
 	wechatOAuthRedirectCookieName = "wechat_oauth_redirect"
 	wechatOAuthIntentCookieName   = "wechat_oauth_intent"
 	wechatOAuthModeCookieName     = "wechat_oauth_mode"
+	wechatOAuthAgreementCookie    = "wechat_oauth_agreement_revision"
 	wechatOAuthBindUserCookieName = "wechat_oauth_bind_user"
 	wechatOAuthDefaultRedirectTo  = "/dashboard"
 	wechatOAuthDefaultFrontendCB  = "/auth/wechat/callback"
@@ -125,6 +126,11 @@ func (h *AuthHandler) WeChatOAuthStart(c *gin.Context) {
 	wechatSetCookie(c, wechatOAuthRedirectCookieName, encodeCookieValue(redirectTo), wechatOAuthCookieMaxAgeSec, secureCookie)
 	wechatSetCookie(c, wechatOAuthIntentCookieName, encodeCookieValue(intent), wechatOAuthCookieMaxAgeSec, secureCookie)
 	wechatSetCookie(c, wechatOAuthModeCookieName, encodeCookieValue(cfg.mode), wechatOAuthCookieMaxAgeSec, secureCookie)
+	if acceptedRevision := strings.TrimSpace(c.Query("agreement_revision")); acceptedRevision != "" {
+		wechatSetCookie(c, wechatOAuthAgreementCookie, encodeCookieValue(acceptedRevision), wechatOAuthCookieMaxAgeSec, secureCookie)
+	} else {
+		wechatClearCookie(c, wechatOAuthAgreementCookie, secureCookie)
+	}
 	setOAuthPendingBrowserCookie(c, browserSessionKey, secureCookie)
 	clearOAuthPendingSessionCookie(c, secureCookie)
 	if intent == oauthIntentBindCurrentUser {
@@ -170,6 +176,7 @@ func (h *AuthHandler) WeChatOAuthCallback(c *gin.Context) {
 		wechatClearCookie(c, wechatOAuthRedirectCookieName, secureCookie)
 		wechatClearCookie(c, wechatOAuthIntentCookieName, secureCookie)
 		wechatClearCookie(c, wechatOAuthModeCookieName, secureCookie)
+		wechatClearCookie(c, wechatOAuthAgreementCookie, secureCookie)
 		wechatClearCookie(c, wechatOAuthBindUserCookieName, secureCookie)
 	}()
 
@@ -546,6 +553,10 @@ func (h *AuthHandler) CompleteWeChatOAuthRegistration(c *gin.Context) {
 	agreementInput := agreementAcceptanceInput{
 		Accepted: req.AgreementAccepted,
 		Revision: req.AgreementRevision,
+	}
+	if agreementRevision, _ := readCookieDecoded(c, wechatOAuthAgreementCookie); strings.TrimSpace(agreementRevision) != "" {
+		agreementInput.Accepted = true
+		agreementInput.Revision = strings.TrimSpace(agreementRevision)
 	}
 	if session.TargetUserID != nil && *session.TargetUserID > 0 {
 		targetUser, err := h.userService.GetByID(c.Request.Context(), *session.TargetUserID)
