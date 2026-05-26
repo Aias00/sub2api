@@ -28,7 +28,7 @@
               required
               autofocus
               autocomplete="email"
-              :disabled="authActionDisabled"
+              :disabled="authFieldDisabled"
               class="input pl-11"
               :class="{ 'input-error': errors.email }"
               :placeholder="t('auth.emailPlaceholder')"
@@ -51,7 +51,7 @@
               :type="showPassword ? 'text' : 'password'"
               required
               autocomplete="current-password"
-              :disabled="authActionDisabled"
+              :disabled="authFieldDisabled"
               class="input pl-11 pr-11"
               :class="{ 'input-error': errors.password }"
               :placeholder="t('auth.passwordPlaceholder')"
@@ -59,7 +59,7 @@
             <button
               type="button"
               @click="showPassword = !showPassword"
-              :disabled="authActionDisabled"
+              :disabled="authFieldDisabled"
               class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
             >
               <Icon v-if="showPassword" name="eyeOff" size="md" />
@@ -287,6 +287,9 @@ const authActionDisabled = computed(
     (loginAgreementEnabled.value &&
       loginAgreementMode.value === 'checkbox' &&
       !agreementAccepted.value)
+)
+const authFieldDisabled = computed(
+  () => isLoading.value || !publicSettingsLoaded.value
 )
 
 const showOAuthLogin = computed(

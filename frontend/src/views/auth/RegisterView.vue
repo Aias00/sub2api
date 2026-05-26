@@ -44,7 +44,7 @@
               required
               autofocus
               autocomplete="email"
-              :disabled="registrationActionDisabled"
+              :disabled="registrationFieldDisabled"
               class="input pl-11"
               :class="{ 'input-error': errors.email }"
               :placeholder="t('auth.emailPlaceholder')"
@@ -67,14 +67,14 @@
               :type="showPassword ? 'text' : 'password'"
               required
               autocomplete="new-password"
-              :disabled="registrationActionDisabled"
+              :disabled="registrationFieldDisabled"
               class="input pl-11 pr-11"
               :class="{ 'input-error': errors.password }"
               :placeholder="t('auth.createPasswordPlaceholder')"
             />
             <button
               type="button"
-              :disabled="registrationActionDisabled"
+              :disabled="registrationFieldDisabled"
               @click="showPassword = !showPassword"
               class="absolute inset-y-0 right-0 flex items-center pr-3.5 text-gray-400 transition-colors hover:text-gray-600 dark:hover:text-dark-300"
             >
@@ -451,6 +451,9 @@ const registrationActionDisabled = computed(
     (loginAgreementEnabled.value &&
       loginAgreementMode.value === 'checkbox' &&
       !agreementAccepted.value)
+)
+const registrationFieldDisabled = computed(
+  () => isLoading.value || !settingsLoaded.value
 )
 const affiliateInviteCodeForGate = computed(() => formData.aff_code.trim() || loadAffiliateReferralCode())
 const invitationGateSatisfiedByAffiliate = computed(
