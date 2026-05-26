@@ -1595,3 +1595,20 @@
 
 ### Follow-up
 - Adjusted the login/register OAuth divider copy so the line below the email/password form no longer says “or continue with email”. It now reads as an alternative-method separator, which matches the actual layout.
+
+## 2026-05-26 Simplify Home Provider Section
+### Done
+- Removed the three pill-style home-page capability tags below the hero section.
+- Removed the helper subtitle under “已支持的 AI 模型”.
+- Kept the rest of the home-page structure, CTA, feature cards, and provider cards intact.
+
+### Failures
+- None during implementation.
+
+### Next
+- Deploy the home-page content trim to production and verify the public page no longer shows the removed capability tags or provider subtitle.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/HomeView.vue --ext .vue` passed.
+- `pnpm --dir frontend run build` passed.
