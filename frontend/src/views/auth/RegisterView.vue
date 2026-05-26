@@ -256,34 +256,38 @@
         </div>
 
         <EmailOAuthButtons
-          :disabled="registrationActionDisabled"
+          :disabled="oauthActionDisabled"
           :aff-code="formData.aff_code"
           :github-enabled="githubOAuthEnabled"
           :google-enabled="googleOAuthEnabled"
           :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
+          :turnstile-token="turnstileToken"
           :show-divider="false"
         />
 
         <LinuxDoOAuthSection
           v-if="linuxdoOAuthEnabled"
-          :disabled="registrationActionDisabled"
+          :disabled="oauthActionDisabled"
           :aff-code="formData.aff_code"
           :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
+          :turnstile-token="turnstileToken"
           :show-divider="false"
         />
         <WechatOAuthSection
           v-if="wechatOAuthEnabled"
-          :disabled="registrationActionDisabled"
+          :disabled="oauthActionDisabled"
           :aff-code="formData.aff_code"
           :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
+          :turnstile-token="turnstileToken"
           :show-divider="false"
         />
         <OidcOAuthSection
           v-if="oidcOAuthEnabled"
-          :disabled="registrationActionDisabled"
+          :disabled="oauthActionDisabled"
           :provider-name="oidcOAuthProviderName"
           :aff-code="formData.aff_code"
           :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
+          :turnstile-token="turnstileToken"
           :show-divider="false"
         />
       </div>
@@ -438,6 +442,9 @@ const showOAuthLogin = computed(
     oidcOAuthEnabled.value ||
     githubOAuthEnabled.value ||
     googleOAuthEnabled.value
+)
+const oauthActionDisabled = computed(
+  () => registrationActionDisabled.value || (turnstileEnabled.value && !turnstileToken.value)
 )
 
 const agreementGateActive = computed(

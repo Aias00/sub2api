@@ -48,6 +48,7 @@ const props = withDefaults(defineProps<{
   disabled?: boolean
   affCode?: string
   agreementRevision?: string
+  turnstileToken?: string
   showDivider?: boolean
 }>(), {
   showDivider: true
@@ -65,6 +66,10 @@ function startLogin(): void {
   const agreementRevision = String(props.agreementRevision || '').trim()
   if (agreementRevision) {
     params.set('agreement_revision', agreementRevision)
+  }
+  const turnstileToken = String(props.turnstileToken || '').trim()
+  if (turnstileToken) {
+    params.set('turnstile_token', turnstileToken)
   }
   const startURL = `${normalized}/auth/oauth/linuxdo/start?${params.toString()}`
   window.location.href = startURL

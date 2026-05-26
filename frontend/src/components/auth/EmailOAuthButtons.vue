@@ -42,6 +42,7 @@ const props = withDefaults(defineProps<{
   githubEnabled?: boolean
   googleEnabled?: boolean
   agreementRevision?: string
+  turnstileToken?: string
   showDivider?: boolean
 }>(), {
   showDivider: true
@@ -85,6 +86,10 @@ function startLogin(provider: EmailOAuthProvider): void {
   const agreementRevision = String(props.agreementRevision || '').trim()
   if (agreementRevision) {
     params.set('agreement_revision', agreementRevision)
+  }
+  const turnstileToken = String(props.turnstileToken || '').trim()
+  if (turnstileToken) {
+    params.set('turnstile_token', turnstileToken)
   }
   const startURL = `${normalized}/auth/oauth/${provider}/start?${params.toString()}`
   window.location.href = startURL

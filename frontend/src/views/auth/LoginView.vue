@@ -141,30 +141,34 @@
           </div>
 
         <EmailOAuthButtons
-          :disabled="authActionDisabled"
+          :disabled="oauthActionDisabled"
           :github-enabled="githubOAuthEnabled"
           :google-enabled="googleOAuthEnabled"
           :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
+          :turnstile-token="turnstileToken"
           :show-divider="false"
         />
 
           <LinuxDoOAuthSection
             v-if="linuxdoOAuthEnabled"
-            :disabled="authActionDisabled"
+            :disabled="oauthActionDisabled"
             :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
+            :turnstile-token="turnstileToken"
             :show-divider="false"
           />
           <WechatOAuthSection
             v-if="wechatOAuthEnabled"
-            :disabled="authActionDisabled"
+            :disabled="oauthActionDisabled"
             :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
+            :turnstile-token="turnstileToken"
             :show-divider="false"
           />
           <OidcOAuthSection
             v-if="oidcOAuthEnabled"
-            :disabled="authActionDisabled"
+            :disabled="oauthActionDisabled"
             :provider-name="oidcOAuthProviderName"
             :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
+            :turnstile-token="turnstileToken"
             :show-divider="false"
           />
         </div>
@@ -300,6 +304,9 @@ const showOAuthLogin = computed(
       oidcOAuthEnabled.value ||
       githubOAuthEnabled.value ||
       googleOAuthEnabled.value)
+)
+const oauthActionDisabled = computed(
+  () => authActionDisabled.value || (turnstileEnabled.value && !turnstileToken.value)
 )
 
 watch(validationToastMessage, (value, previousValue) => {

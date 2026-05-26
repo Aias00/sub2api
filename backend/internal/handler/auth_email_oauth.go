@@ -60,6 +60,10 @@ func (h *AuthHandler) CompleteGoogleOAuthRegistration(c *gin.Context) {
 }
 
 func (h *AuthHandler) emailOAuthStart(c *gin.Context, provider string) {
+	if err := h.verifyTurnstileForOAuthStart(c); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 	cfg, err := h.getEmailOAuthConfig(c.Request.Context(), provider)
 	if err != nil {
 		response.ErrorFrom(c, err)

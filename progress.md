@@ -1619,6 +1619,31 @@
 - `pnpm --dir frontend exec eslint src/views/auth/LoginView.vue src/views/auth/RegisterView.vue src/components/auth/LoginAgreementPrompt.vue src/components/auth/EmailOAuthButtons.vue src/components/auth/LinuxDoOAuthSection.vue src/components/auth/OidcOAuthSection.vue src/components/auth/WechatOAuthSection.vue src/utils/loginAgreementConsent.ts src/utils/__tests__/loginAgreementConsent.spec.ts src/views/auth/__tests__/LoginView.turnstile.spec.ts --ext .vue,.ts` passed.
 - `pnpm --dir frontend run build` passed.
 
+## 2026-05-26 Require Turnstile Before Third-Party Login Starts
+### Done
+- Added a shared handler helper so OAuth start endpoints now verify `turnstile_token` before redirecting to upstream providers.
+- Covered these start endpoints:
+  - GitHub
+  - Google
+  - LinuxDo
+  - OIDC
+  - WeChat
+- Updated all login/register-side OAuth buttons to forward the active Turnstile token in the start URL query.
+- Updated auth-page action gating so third-party login buttons stay disabled until Turnstile completes, matching the password login requirement.
+
+### Failures
+- The first pass tried to add LinuxDo/OIDC/WeChat backend tests through helpers that do not expose Turnstile injection cleanly. Those tests were removed instead of forcing awkward fixture surgery.
+- One Google OAuth start test initially referenced non-existent settings keys for authorize/token/userinfo URLs; those redundant overrides were removed.
+
+### Next
+- Deploy the OAuth-start Turnstile enforcement to production and verify one live third-party login button stays disabled until Turnstile succeeds.
+
+### Validation
+- `cd backend && go test ./internal/handler -run 'Test(GoogleOAuthStartRequiresTurnstileWhenEnabled|LoginRequiresCurrentAgreementWhenEnabled|RegisterRequiresCurrentAgreementWhenEnabled|ExchangePendingOAuthCompletionRequiresCurrentAgreementForTokenIssue|EmailOAuthCallbackWithExistingUserRequiresAgreement)' -count=1` passed.
+- `pnpm --dir frontend exec vitest run src/components/auth/__tests__/EmailOAuthButtons.spec.ts src/utils/__tests__/loginAgreementConsent.spec.ts src/views/auth/__tests__/LoginView.turnstile.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/auth/LoginView.vue src/views/auth/RegisterView.vue src/components/auth/EmailOAuthButtons.vue src/components/auth/LinuxDoOAuthSection.vue src/components/auth/OidcOAuthSection.vue src/components/auth/WechatOAuthSection.vue src/stores/auth.ts src/utils/loginAgreementConsent.ts src/utils/__tests__/loginAgreementConsent.spec.ts src/components/auth/__tests__/EmailOAuthButtons.spec.ts src/views/auth/__tests__/LoginView.turnstile.spec.ts --ext .vue,.ts` passed.
+
 ## 2026-05-26 Simplify Home Provider Section
 ### Done
 - Removed the three pill-style home-page capability tags below the hero section.

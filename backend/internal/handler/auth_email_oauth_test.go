@@ -82,6 +82,33 @@ func TestEmailOAuthCallbackRequiresPendingRegistrationWhenInvitationEnabled(t *t
 	require.NotEmpty(t, findSetCookieValue(recorder.Result().Cookies(), oauthPendingBrowserCookieName))
 }
 
+func TestEmailOAuthStartRequiresTurnstileWhenEnabled(t *testing.T) {
+	verifier := &loginTurnstileVerifierSpy{}
+	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		turnstileVerifier: verifier,
+		settingValues: map[string]string{
+			service.SettingKeyTurnstileEnabled:   "true",
+			service.SettingKeyTurnstileSiteKey:   "site-key",
+			service.SettingKeyTurnstileSecretKey: "secret",
+			service.SettingKeyGoogleOAuthEnabled:             "true",
+			service.SettingKeyGoogleOAuthClientID:            "google-client",
+			service.SettingKeyGoogleOAuthClientSecret:        "google-secret",
+			service.SettingKeyGoogleOAuthRedirectURL:         "https://api.example.com/api/v1/auth/oauth/google/callback",
+			service.SettingKeyGoogleOAuthFrontendRedirectURL: "/auth/oauth/callback",
+		},
+	})
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?redirect=/dashboard", nil)
+
+	handler.GoogleOAuthStart(c)
+
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+	require.Contains(t, recorder.Body.String(), "TURNSTILE_VERIFICATION_FAILED")
+	require.Equal(t, 0, verifier.called)
+}
+
 func TestEmailOAuthCallbackExistingEmailLogsInWhenInvitationEnabled(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandler(t, true)
 	ctx := context.Background()
@@ -128,6 +155,33 @@ func TestEmailOAuthCallbackExistingEmailLogsInWhenInvitationEnabled(t *testing.T
 	require.NoError(t, err)
 	require.Equal(t, 1, identityCount)
 	_ = user
+}
+
+func TestGoogleOAuthStartRequiresTurnstileWhenEnabled(t *testing.T) {
+	verifier := &loginTurnstileVerifierSpy{}
+	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		turnstileVerifier: verifier,
+		settingValues: map[string]string{
+			service.SettingKeyTurnstileEnabled:             "true",
+			service.SettingKeyTurnstileSiteKey:             "site-key",
+			service.SettingKeyTurnstileSecretKey:           "secret",
+			service.SettingKeyGoogleOAuthEnabled:           "true",
+			service.SettingKeyGoogleOAuthClientID:          "google-client",
+			service.SettingKeyGoogleOAuthClientSecret:      "google-secret",
+			service.SettingKeyGoogleOAuthRedirectURL:       "https://api.example.com/api/v1/auth/oauth/google/callback",
+			service.SettingKeyGoogleOAuthFrontendRedirectURL: "/auth/oauth/callback",
+		},
+	})
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?redirect=/dashboard", nil)
+
+	handler.GoogleOAuthStart(c)
+
+	require.Equal(t, http.StatusBadRequest, recorder.Code)
+	require.Contains(t, recorder.Body.String(), "TURNSTILE_VERIFICATION_FAILED")
+	require.Equal(t, 0, verifier.called)
 }
 
 func TestEmailOAuthCallbackExistingEmailRequiresAgreementWhenEnabled(t *testing.T) {
