@@ -38,6 +38,22 @@ const appStoreState = vi.hoisted(() => ({
         sort_order: 10,
       },
       {
+        id: 'gpt-5-3-codex',
+        provider: 'openai',
+        title: 'GPT-5.3 Codex',
+        badge: '编码',
+        description: '高频代码生成与 agent 调用',
+        capability_tags: ['代码生成', 'Agent 调用'],
+        model_ids: ['gpt-5.3-codex'],
+        input_price: '¥1.2000 / 1M Tokens',
+        output_price: '¥6.0000 / 1M Tokens',
+        cache_read_price: '',
+        cache_write_price: '',
+        billing_badge: '按量计费',
+        visible: true,
+        sort_order: 15,
+      },
+      {
         id: 'hidden-model',
         provider: 'openai',
         title: 'Hidden',
@@ -108,10 +124,42 @@ describe('ModelsPlazaView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Claude Opus 4.6')
+    expect(wrapper.text()).toContain('GPT-5.3 Codex')
     expect(wrapper.text()).toContain('复杂推理')
     expect(wrapper.text()).toContain('¥2.0000 / 1M Tokens')
     expect(wrapper.text()).not.toContain('Hidden')
     expect(authStoreState.checkAuth).toHaveBeenCalledTimes(1)
     expect(fetchPublicSettings).not.toHaveBeenCalled()
+  })
+
+  it('filters cards by group and search query', async () => {
+    const wrapper = mount(ModelsPlazaView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
+          },
+          DocsLink: { template: '<a><slot /></a>' },
+          LocaleSwitcher: { template: '<div>locale</div>' },
+          Icon: { template: '<i />' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    const groupButtons = wrapper.findAll('button').filter((button) => button.text().includes('GPT'))
+    expect(groupButtons).toHaveLength(1)
+    await groupButtons[0].trigger('click')
+    expect(wrapper.text()).toContain('GPT-5.3 Codex')
+    expect(wrapper.text()).not.toContain('Claude Opus 4.6')
+
+    const searchInput = wrapper.get('input[type="search"]')
+    await searchInput.setValue('agent')
+    expect(wrapper.text()).toContain('GPT-5.3 Codex')
+
+    await searchInput.setValue('不存在的关键词')
+    expect(wrapper.text()).toContain('没有匹配的模型卡片')
   })
 })

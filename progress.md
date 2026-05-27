@@ -2008,3 +2008,29 @@
 - Admin visual verification passed at:
   - `http://127.0.0.1:18082/admin/settings`
   - dedicated `模型广场` tab is visible and switches to the model-plaza editor content
+
+## 2026-05-27 模型广场左侧分组与搜索
+
+### Done
+- Added a left-side filter rail to `/models` with provider-based grouping:
+  - `全部模型`
+  - provider-derived groups such as `Claude` and `GPT`
+- Added client-side search on the public model plaza page.
+- Search now matches against:
+  - title
+  - provider
+  - badge
+  - description
+  - pricing text
+  - capability tags
+  - model IDs
+- Added a filtered empty state for "no matching cards" so search/group combinations do not fall back to the unconfigured-plaza state.
+- Extended `ModelsPlazaView` tests to cover:
+  - visible-card rendering
+  - group filtering
+  - search filtering
+  - empty search result state
+
+### Next
+- Decide whether provider-based grouping is sufficient, or whether the admin editor should later expose an explicit custom group field for the plaza sidebar.
+- If `/models` grows beyond a few dozen cards, consider adding sticky section anchors or secondary sort options.
