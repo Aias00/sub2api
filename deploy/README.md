@@ -158,6 +158,16 @@ SELECT
 
 ### Commands
 
+For **manual VM process restarts** (non-Docker), use the tracked helper:
+
+```bash
+deploy/restart-sub2api.sh
+```
+
+This helper explicitly forwards `DATA_DIR` into the launched process. That
+prevents the service from accidentally falling back to `/app/data/config.yaml`
+when a different repo-local `config.yaml` should be the active source of truth.
+
 For **local directory version** (docker-compose.local.yml):
 
 ```bash
