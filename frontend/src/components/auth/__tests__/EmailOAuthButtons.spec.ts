@@ -60,6 +60,29 @@ describe('EmailOAuthButtons', () => {
     expect(window.sessionStorage.getItem('email_oauth_pending_provider')).toBe('github')
   })
 
+  it('passes turnstile and agreement revision to the email oauth start URL', async () => {
+    const wrapper = mount(EmailOAuthButtons, {
+      props: {
+        githubEnabled: true,
+        googleEnabled: false,
+        agreementRevision: 'rev-1',
+        turnstileToken: 'ts-token-123',
+      },
+      global: {
+        stubs: {
+          GitHubMark: true,
+          GoogleMark: true,
+        },
+      },
+    })
+
+    await wrapper.get('button').trigger('click')
+
+    expect(locationState.current.href).toBe(
+      '/api/v1/auth/oauth/github/start?redirect=%2Fbilling%3Fplan%3Dpro&aff_code=AFF123&agreement_revision=rev-1&turnstile_token=ts-token-123'
+    )
+  })
+
   it('uses a full-width descriptive button when only GitHub is enabled', () => {
     const wrapper = mount(EmailOAuthButtons, {
       props: {
