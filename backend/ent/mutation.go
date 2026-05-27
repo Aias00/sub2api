@@ -31002,6 +31002,7 @@ type SubscriptionPlanMutation struct {
 	validity_unit     *string
 	features          *string
 	product_name      *string
+	creem_product_id  *string
 	for_sale          *bool
 	sort_order        *int
 	addsort_order     *int
@@ -31529,6 +31530,42 @@ func (m *SubscriptionPlanMutation) ResetProductName() {
 	m.product_name = nil
 }
 
+// SetCreemProductID sets the "creem_product_id" field.
+func (m *SubscriptionPlanMutation) SetCreemProductID(s string) {
+	m.creem_product_id = &s
+}
+
+// CreemProductID returns the value of the "creem_product_id" field in the mutation.
+func (m *SubscriptionPlanMutation) CreemProductID() (r string, exists bool) {
+	v := m.creem_product_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreemProductID returns the old "creem_product_id" field's value of the SubscriptionPlan entity.
+// If the SubscriptionPlan object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionPlanMutation) OldCreemProductID(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreemProductID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreemProductID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreemProductID: %w", err)
+	}
+	return oldValue.CreemProductID, nil
+}
+
+// ResetCreemProductID resets all changes to the "creem_product_id" field.
+func (m *SubscriptionPlanMutation) ResetCreemProductID() {
+	m.creem_product_id = nil
+}
+
 // SetForSale sets the "for_sale" field.
 func (m *SubscriptionPlanMutation) SetForSale(b bool) {
 	m.for_sale = &b
@@ -31727,7 +31764,7 @@ func (m *SubscriptionPlanMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubscriptionPlanMutation) Fields() []string {
-	fields := make([]string, 0, 13)
+	fields := make([]string, 0, 14)
 	if m.group_id != nil {
 		fields = append(fields, subscriptionplan.FieldGroupID)
 	}
@@ -31754,6 +31791,9 @@ func (m *SubscriptionPlanMutation) Fields() []string {
 	}
 	if m.product_name != nil {
 		fields = append(fields, subscriptionplan.FieldProductName)
+	}
+	if m.creem_product_id != nil {
+		fields = append(fields, subscriptionplan.FieldCreemProductID)
 	}
 	if m.for_sale != nil {
 		fields = append(fields, subscriptionplan.FieldForSale)
@@ -31793,6 +31833,8 @@ func (m *SubscriptionPlanMutation) Field(name string) (ent.Value, bool) {
 		return m.Features()
 	case subscriptionplan.FieldProductName:
 		return m.ProductName()
+	case subscriptionplan.FieldCreemProductID:
+		return m.CreemProductID()
 	case subscriptionplan.FieldForSale:
 		return m.ForSale()
 	case subscriptionplan.FieldSortOrder:
@@ -31828,6 +31870,8 @@ func (m *SubscriptionPlanMutation) OldField(ctx context.Context, name string) (e
 		return m.OldFeatures(ctx)
 	case subscriptionplan.FieldProductName:
 		return m.OldProductName(ctx)
+	case subscriptionplan.FieldCreemProductID:
+		return m.OldCreemProductID(ctx)
 	case subscriptionplan.FieldForSale:
 		return m.OldForSale(ctx)
 	case subscriptionplan.FieldSortOrder:
@@ -31907,6 +31951,13 @@ func (m *SubscriptionPlanMutation) SetField(name string, value ent.Value) error 
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetProductName(v)
+		return nil
+	case subscriptionplan.FieldCreemProductID:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreemProductID(v)
 		return nil
 	case subscriptionplan.FieldForSale:
 		v, ok := value.(bool)
@@ -32083,6 +32134,9 @@ func (m *SubscriptionPlanMutation) ResetField(name string) error {
 		return nil
 	case subscriptionplan.FieldProductName:
 		m.ResetProductName()
+		return nil
+	case subscriptionplan.FieldCreemProductID:
+		m.ResetCreemProductID()
 		return nil
 	case subscriptionplan.FieldForSale:
 		m.ResetForSale()

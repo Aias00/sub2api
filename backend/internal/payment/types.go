@@ -17,6 +17,8 @@ const (
 	TypeCard         PaymentType = "card"
 	TypeLink         PaymentType = "link"
 	TypeEasyPay      PaymentType = "easypay"
+	TypeCreem        PaymentType = "creem"
+	TypeWaffo        PaymentType = "waffo"
 )
 
 // Order status constants shared across payment and service layers.
@@ -82,6 +84,10 @@ func GetBasePaymentType(t string) string {
 	switch {
 	case t == TypeEasyPay:
 		return TypeEasyPay
+	case t == TypeCreem:
+		return TypeCreem
+	case t == TypeWaffo:
+		return TypeWaffo
 	case t == TypeStripe || t == TypeCard || t == TypeLink:
 		return TypeStripe
 	case len(t) >= len(TypeAlipay) && t[:len(TypeAlipay)] == TypeAlipay:
@@ -105,6 +111,9 @@ type CreatePaymentRequest struct {
 	ClientIP           string // Payer's IP address
 	IsMobile           bool   // Whether the request comes from a mobile device
 	InstanceSubMethods string // Comma-separated sub-methods from instance supported_types (for Stripe)
+	CustomerEmail      string // Customer email for providers that require it (e.g. Creem/Waffo)
+	CustomerName       string // Customer display name for providers that support it
+	ProviderProductID  string // Provider-specific product identifier (e.g. Creem product id)
 }
 
 // CreatePaymentResultType describes the shape of the create-payment result.
@@ -206,6 +215,11 @@ type Provider interface {
 	VerifyNotification(ctx context.Context, rawBody string, headers map[string]string) (*PaymentNotification, error)
 	// Refund requests a refund from the upstream provider.
 	Refund(ctx context.Context, req RefundRequest) (*RefundResponse, error)
+}
+
+// WebhookResponseProvider lets providers define provider-specific 2xx webhook acknowledgements.
+type WebhookResponseProvider interface {
+	BuildWebhookSuccessResponse() (status int, body string, headers map[string]string, contentType string)
 }
 
 // CancelableProvider extends Provider with the ability to cancel pending payments.

@@ -18,7 +18,7 @@ export type OrderStatus =
   | 'REFUNDED'
   | 'REFUND_FAILED'
 
-export type PaymentType = 'alipay' | 'wxpay' | 'alipay_direct' | 'wxpay_direct' | 'stripe' | 'easypay'
+export type PaymentType = 'alipay' | 'wxpay' | 'alipay_direct' | 'wxpay_direct' | 'stripe' | 'easypay' | 'creem' | 'waffo'
 
 export type OrderType = 'balance' | 'subscription'
 
@@ -77,6 +77,7 @@ export interface RechargeProduct {
   description: string
   amount: number
   credited_amount: number
+  creem_product_id?: string
   badge: string
   recommended: boolean
   features: string[]
@@ -124,6 +125,7 @@ export interface SubscriptionPlan {
   description: string
   price: number
   original_price?: number
+  creem_product_id?: string
   validity_days: number
   validity_unit: string
   /** Stored as JSON string in backend; API layer should parse before use */
@@ -164,6 +166,7 @@ export interface ProviderInstance {
 
 export interface CreateOrderRequest {
   amount: number
+  product_id?: string
   payment_type: string
   order_type: string
   plan_id?: number

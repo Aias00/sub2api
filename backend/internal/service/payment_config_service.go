@@ -79,6 +79,7 @@ type RechargeProduct struct {
 	Description    string   `json:"description"`
 	Amount         float64  `json:"amount"`
 	CreditedAmount float64  `json:"credited_amount"`
+	CreemProductID string   `json:"creem_product_id,omitempty"`
 	Badge          string   `json:"badge"`
 	Recommended    bool     `json:"recommended"`
 	Features       []string `json:"features"`
@@ -164,6 +165,7 @@ type CreatePlanRequest struct {
 	Description   string   `json:"description"`
 	Price         float64  `json:"price"`
 	OriginalPrice *float64 `json:"original_price"`
+	CreemProductID string  `json:"creem_product_id"`
 	ValidityDays  int      `json:"validity_days"`
 	ValidityUnit  string   `json:"validity_unit"`
 	Features      string   `json:"features"`
@@ -178,6 +180,7 @@ type UpdatePlanRequest struct {
 	Description   *string  `json:"description"`
 	Price         *float64 `json:"price"`
 	OriginalPrice *float64 `json:"original_price"`
+	CreemProductID *string `json:"creem_product_id"`
 	ValidityDays  *int     `json:"validity_days"`
 	ValidityUnit  *string  `json:"validity_unit"`
 	Features      *string  `json:"features"`

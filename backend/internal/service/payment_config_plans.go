@@ -126,7 +126,7 @@ func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanReq
 	}
 	b := s.entClient.SubscriptionPlan.Create().
 		SetGroupID(req.GroupID).SetName(req.Name).SetDescription(req.Description).
-		SetPrice(req.Price).SetValidityDays(req.ValidityDays).SetValidityUnit(req.ValidityUnit).
+		SetPrice(req.Price).SetCreemProductID(strings.TrimSpace(req.CreemProductID)).SetValidityDays(req.ValidityDays).SetValidityUnit(req.ValidityUnit).
 		SetFeatures(req.Features).SetProductName(req.ProductName).
 		SetForSale(req.ForSale).SetSortOrder(req.SortOrder)
 	if req.OriginalPrice != nil {
@@ -157,6 +157,9 @@ func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req Upd
 	}
 	if req.OriginalPrice != nil {
 		u.SetOriginalPrice(*req.OriginalPrice)
+	}
+	if req.CreemProductID != nil {
+		u.SetCreemProductID(strings.TrimSpace(*req.CreemProductID))
 	}
 	if req.ValidityDays != nil {
 		u.SetValidityDays(*req.ValidityDays)

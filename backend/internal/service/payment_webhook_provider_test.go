@@ -508,3 +508,72 @@ func TestGetWebhookProviderUsesProviderSnapshotBeforeWxpayFallback(t *testing.T)
 	require.Len(t, providers, 1)
 	require.Equal(t, payment.TypeWxpay, providers[0].ProviderKey())
 }
+
+func TestGetWebhookProvidersUsesPinnedCreemOrderProviderWhenMultipleInstancesExist(t *testing.T) {
+	ctx := context.Background()
+	client := newPaymentConfigServiceTestClient(t)
+	user, err := client.User.Create().
+		SetEmail("creem-webhook@example.com").
+		SetPasswordHash("hash").
+		SetUsername("creem-webhook").
+		Save(ctx)
+	require.NoError(t, err)
+
+	instA, err := client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeCreem).
+		SetName("creem-a").
+		SetConfig(encryptWebhookProviderConfig(t, map[string]string{
+			"apiKey":        "ck_test_a",
+			"webhookSecret": "whsec_a",
+		})).
+		SetSupportedTypes("creem").
+		SetEnabled(true).
+		Save(ctx)
+	require.NoError(t, err)
+	_, err = client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeCreem).
+		SetName("creem-b").
+		SetConfig(encryptWebhookProviderConfig(t, map[string]string{
+			"apiKey":        "ck_test_b",
+			"webhookSecret": "whsec_b",
+		})).
+		SetSupportedTypes("creem").
+		SetEnabled(true).
+		Save(ctx)
+	require.NoError(t, err)
+
+	instanceID := strconv.FormatInt(instA.ID, 10)
+	providerKey := payment.TypeCreem
+	_, err = client.PaymentOrder.Create().
+		SetUserID(user.ID).
+		SetUserEmail(user.Email).
+		SetUserName(user.Username).
+		SetAmount(30).
+		SetPayAmount(30).
+		SetFeeRate(0).
+		SetRechargeCode("CREEM-WEBHOOK").
+		SetOutTradeNo("sub2_test_creem_webhook_order").
+		SetPaymentType(payment.TypeCreem).
+		SetPaymentTradeNo("").
+		SetOrderType(payment.OrderTypeBalance).
+		SetStatus(OrderStatusPending).
+		SetExpiresAt(time.Now().Add(time.Hour)).
+		SetClientIP("127.0.0.1").
+		SetSrcHost("api.example.com").
+		SetProviderInstanceID(instanceID).
+		SetProviderKey(providerKey).
+		Save(ctx)
+	require.NoError(t, err)
+
+	svc := &PaymentService{
+		entClient:       client,
+		loadBalancer:    newWebhookProviderTestLoadBalancer(client),
+		registry:        payment.NewRegistry(),
+		providersLoaded: true,
+	}
+
+	providers, err := svc.GetWebhookProviders(ctx, payment.TypeCreem, "sub2_test_creem_webhook_order")
+	require.NoError(t, err)
+	require.Len(t, providers, 1)
+	require.Equal(t, payment.TypeCreem, providers[0].ProviderKey())
+}

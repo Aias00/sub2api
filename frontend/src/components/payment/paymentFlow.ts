@@ -3,6 +3,8 @@ import type {
   CreateOrderResult,
   MethodLimit,
   OrderType,
+  RechargeProduct,
+  SubscriptionPlan,
   WechatJSAPIPayload,
   WechatOAuthInfo,
 } from '@/types/payment'
@@ -14,10 +16,12 @@ const VISIBLE_METHOD_ALIASES = {
   alipay_direct: 'alipay',
   wxpay: 'wxpay',
   wxpay_direct: 'wxpay',
+  creem: 'creem',
+  waffo: 'waffo',
   stripe: 'stripe',
 } as const
 
-export type VisiblePaymentMethod = 'alipay' | 'wxpay' | 'stripe'
+export type VisiblePaymentMethod = 'alipay' | 'wxpay' | 'creem' | 'waffo' | 'stripe'
 export type StripeVisibleMethod = 'alipay' | 'wechat_pay'
 export type PaymentLaunchKind =
   | 'qr_waiting'
@@ -65,12 +69,19 @@ export interface PaymentLaunchDecision {
 
 export interface BuildCreateOrderPayloadInput {
   amount: number
+  productId?: string
   paymentType: string
   orderType: OrderType
   planId?: number
   origin?: string
   isMobile: boolean
   isWechatBrowser: boolean
+}
+
+export interface PaymentMethodSelectionContext {
+  orderType: OrderType
+  rechargeProduct?: Pick<RechargeProduct, 'creem_product_id'> | null
+  subscriptionPlan?: Pick<SubscriptionPlan, 'creem_product_id'> | null
 }
 
 type CreateOrderFlowResult = CreateOrderResult & {
@@ -117,11 +128,28 @@ export function buildCreateOrderPayload(input: BuildCreateOrderPayloadInput): Cr
   if (input.planId) {
     payload.plan_id = input.planId
   }
+  if (input.productId) {
+    payload.product_id = input.productId
+  }
   if (normalizedOrigin) {
     payload.return_url = `${normalizedOrigin}/payment/result`
   }
 
   return payload
+}
+
+export function supportsPaymentMethodSelection(
+  paymentType: string,
+  context: PaymentMethodSelectionContext,
+): boolean {
+  const visibleMethod = normalizeVisibleMethod(paymentType) || paymentType.trim()
+  if (visibleMethod !== 'creem') {
+    return true
+  }
+  if (context.orderType === 'subscription') {
+    return Boolean(context.subscriptionPlan?.creem_product_id?.trim())
+  }
+  return Boolean(context.rechargeProduct?.creem_product_id?.trim())
 }
 
 export function decidePaymentLaunch(

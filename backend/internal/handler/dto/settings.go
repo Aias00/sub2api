@@ -259,6 +259,7 @@ type RechargeProductConfig struct {
 	Description    string   `json:"description"`
 	Amount         float64  `json:"amount"`
 	CreditedAmount float64  `json:"credited_amount"`
+	CreemProductID string   `json:"creem_product_id,omitempty"`
 	Badge          string   `json:"badge"`
 	Recommended    bool     `json:"recommended"`
 	Features       []string `json:"features"`

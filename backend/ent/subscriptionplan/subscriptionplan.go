@@ -31,6 +31,8 @@ const (
 	FieldFeatures = "features"
 	// FieldProductName holds the string denoting the product_name field in the database.
 	FieldProductName = "product_name"
+	// FieldCreemProductID holds the string denoting the creem_product_id field in the database.
+	FieldCreemProductID = "creem_product_id"
 	// FieldForSale holds the string denoting the for_sale field in the database.
 	FieldForSale = "for_sale"
 	// FieldSortOrder holds the string denoting the sort_order field in the database.
@@ -55,6 +57,7 @@ var Columns = []string{
 	FieldValidityUnit,
 	FieldFeatures,
 	FieldProductName,
+	FieldCreemProductID,
 	FieldForSale,
 	FieldSortOrder,
 	FieldCreatedAt,
@@ -88,6 +91,10 @@ var (
 	DefaultProductName string
 	// ProductNameValidator is a validator for the "product_name" field. It is called by the builders before save.
 	ProductNameValidator func(string) error
+	// DefaultCreemProductID holds the default value on creation for the "creem_product_id" field.
+	DefaultCreemProductID string
+	// CreemProductIDValidator is a validator for the "creem_product_id" field. It is called by the builders before save.
+	CreemProductIDValidator func(string) error
 	// DefaultForSale holds the default value on creation for the "for_sale" field.
 	DefaultForSale bool
 	// DefaultSortOrder holds the default value on creation for the "sort_order" field.
@@ -151,6 +158,11 @@ func ByFeatures(opts ...sql.OrderTermOption) OrderOption {
 // ByProductName orders the results by the product_name field.
 func ByProductName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProductName, opts...).ToFunc()
+}
+
+// ByCreemProductID orders the results by the creem_product_id field.
+func ByCreemProductID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldCreemProductID, opts...).ToFunc()
 }
 
 // ByForSale orders the results by the for_sale field.

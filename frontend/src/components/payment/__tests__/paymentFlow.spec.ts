@@ -5,6 +5,7 @@ import {
   decidePaymentLaunch,
   getVisibleMethods,
   readPaymentRecoverySnapshot,
+  supportsPaymentMethodSelection,
   type PaymentRecoverySnapshot,
 } from '@/components/payment/paymentFlow'
 
@@ -37,12 +38,16 @@ describe('getVisibleMethods', () => {
     const visible = getVisibleMethods({
       alipay_direct: methodLimit({ single_min: 5 }),
       wxpay: methodLimit({ single_max: 100 }),
+      creem: methodLimit({ fee_rate: 1.5 }),
+      waffo: methodLimit({ fee_rate: 2.5 }),
       stripe: methodLimit({ fee_rate: 3 }),
     })
 
     expect(visible).toEqual({
       alipay: methodLimit({ single_min: 5 }),
       wxpay: methodLimit({ single_max: 100 }),
+      creem: methodLimit({ fee_rate: 1.5 }),
+      waffo: methodLimit({ fee_rate: 2.5 }),
       stripe: methodLimit({ fee_rate: 3 }),
     })
   })
@@ -234,6 +239,59 @@ describe('buildCreateOrderPayload', () => {
       is_mobile: false,
       payment_source: 'wechat_in_app_resume',
     })
+  })
+
+  it('passes recharge product ids through for Creem-hosted balance orders', () => {
+    expect(buildCreateOrderPayload({
+      amount: 30,
+      productId: 'starter',
+      paymentType: 'creem',
+      orderType: 'balance',
+      origin: 'https://app.example.com',
+      isMobile: false,
+      isWechatBrowser: false,
+    })).toEqual({
+      amount: 30,
+      product_id: 'starter',
+      payment_type: 'creem',
+      order_type: 'balance',
+      return_url: 'https://app.example.com/payment/result',
+      is_mobile: false,
+      payment_source: 'hosted_redirect',
+    })
+  })
+})
+
+describe('supportsPaymentMethodSelection', () => {
+  it('requires Creem recharge products to have a Creem product id', () => {
+    expect(supportsPaymentMethodSelection('creem', {
+      orderType: 'balance',
+      rechargeProduct: { creem_product_id: '' },
+    })).toBe(false)
+
+    expect(supportsPaymentMethodSelection('creem', {
+      orderType: 'balance',
+      rechargeProduct: { creem_product_id: 'prod_123' },
+    })).toBe(true)
+  })
+
+  it('requires Creem subscription plans to have a Creem product id', () => {
+    expect(supportsPaymentMethodSelection('creem', {
+      orderType: 'subscription',
+      subscriptionPlan: { creem_product_id: '' },
+    })).toBe(false)
+
+    expect(supportsPaymentMethodSelection('creem', {
+      orderType: 'subscription',
+      subscriptionPlan: { creem_product_id: 'plan_prod_123' },
+    })).toBe(true)
+  })
+
+  it('leaves non-Creem methods unaffected', () => {
+    expect(supportsPaymentMethodSelection('waffo', {
+      orderType: 'balance',
+      rechargeProduct: { creem_product_id: '' },
+    })).toBe(true)
   })
 })
 

@@ -273,6 +273,7 @@ import {
   getVisibleMethods,
   normalizeVisibleMethod,
   readPaymentRecoverySnapshot,
+  supportsPaymentMethodSelection,
   type PaymentRecoverySnapshot,
   writePaymentRecoverySnapshot,
 } from '@/components/payment/paymentFlow'
@@ -318,6 +319,7 @@ interface CreateOrderOptions {
   openid?: string
   wechatResumeToken?: string
   paymentType?: string
+  productId?: string
   isResume?: boolean
   mobileQrFallbackAttempted?: boolean
 }
@@ -532,7 +534,13 @@ const methodOptions = computed<PaymentMethodOption[]>(() =>
     return {
       type,
       fee_rate: ml?.fee_rate ?? 0,
-      available: ml?.available !== false && amountFitsMethod(selectionAmount, type),
+      available:
+        ml?.available !== false
+        && amountFitsMethod(selectionAmount, type)
+        && supportsPaymentMethodSelection(type, {
+          orderType: 'balance',
+          rechargeProduct: selectedRechargeProduct.value,
+        }),
     }
   })
 )
@@ -551,7 +559,13 @@ const totalAmount = computed(() =>
 
 const amountError = computed(() => {
   if (!selectedRechargeProduct.value) return ''
-  if (!enabledMethods.value.some((m) => amountFitsMethod(rechargeSelectionAmount.value, m))) {
+  if (!enabledMethods.value.some((m) =>
+    amountFitsMethod(rechargeSelectionAmount.value, m)
+    && supportsPaymentMethodSelection(m, {
+      orderType: 'balance',
+      rechargeProduct: selectedRechargeProduct.value,
+    })
+  )) {
     return t('payment.amountNoMethod')
   }
   const ml = selectedLimit.value
@@ -565,6 +579,10 @@ const amountError = computed(() => {
 const canSubmit = computed(() =>
   rechargeSelectionAmount.value > 0
     && amountFitsMethod(rechargeSelectionAmount.value, selectedMethod.value)
+    && supportsPaymentMethodSelection(selectedMethod.value, {
+      orderType: 'balance',
+      rechargeProduct: selectedRechargeProduct.value,
+    })
     && selectedLimit.value?.available !== false
 )
 const rechargeButtonLabel = computed(() =>
@@ -581,7 +599,13 @@ const subMethodOptions = computed<PaymentMethodOption[]>(() => {
     return {
       type,
       fee_rate: ml?.fee_rate ?? 0,
-      available: ml?.available !== false && amountFitsMethod(planPrice, type),
+      available:
+        ml?.available !== false
+        && amountFitsMethod(planPrice, type)
+        && supportsPaymentMethodSelection(type, {
+          orderType: 'subscription',
+          subscriptionPlan: selectedPlan.value,
+        }),
     }
   })
 })
@@ -601,6 +625,10 @@ const subTotalAmount = computed(() => {
 const canSubmitSubscription = computed(() =>
   selectedPlan.value !== null
     && amountFitsMethod(selectedPlan.value.price, selectedMethod.value)
+    && supportsPaymentMethodSelection(selectedMethod.value, {
+      orderType: 'subscription',
+      subscriptionPlan: selectedPlan.value,
+    })
     && selectedLimit.value?.available !== false
 )
 
@@ -666,7 +694,9 @@ function closeRenewalModal() {
 
 async function handleSubmitRecharge() {
   if (!canSubmit.value || submitting.value) return
-  await createOrder(rechargeSelectionAmount.value, 'balance')
+  await createOrder(rechargeSelectionAmount.value, 'balance', undefined, {
+    productId: selectedRechargeProduct.value?.id,
+  })
 }
 
 async function confirmSubscribe() {
@@ -682,6 +712,7 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
   try {
     const payload = buildCreateOrderPayload({
       amount: orderAmount,
+      productId: options.productId,
       paymentType: requestType,
       orderType,
       planId,
@@ -891,6 +922,7 @@ async function attemptMobileQrFallback(err: unknown, context: MobileQrFallbackCo
     const visibleMethod = normalizeVisibleMethod(context.paymentType) || context.paymentType
     const payload = buildCreateOrderPayload({
       amount: context.orderAmount,
+      productId: context.orderType === 'balance' ? selectedRechargeProduct.value?.id : undefined,
       paymentType: visibleMethod,
       orderType: context.orderType,
       planId: context.planId,

@@ -75,7 +75,7 @@ func TestWriteSuccessResponse(t *testing.T) {
 			w := httptest.NewRecorder()
 			c, _ := gin.CreateTestContext(w)
 
-			writeSuccessResponse(c, tt.providerKey)
+			writeSuccessResponse(c, tt.providerKey, nil)
 
 			assert.Equal(t, tt.wantCode, w.Code)
 			assert.Contains(t, w.Header().Get("Content-Type"), tt.wantContentType)
@@ -124,7 +124,7 @@ func TestUnknownOrderWebhookAcksWithSuccess(t *testing.T) {
 	// to consider the webhook acknowledged.
 	w := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(w)
-	writeSuccessResponse(c, payment.TypeStripe)
+	writeSuccessResponse(c, payment.TypeStripe, nil)
 	require.Equal(t, http.StatusOK, w.Code,
 		"Stripe requires 2xx to stop retrying; anything else restarts the retry loop")
 	require.Empty(t, w.Body.String(), "Stripe expects an empty body on the ack path")
@@ -165,6 +165,18 @@ func TestExtractOutTradeNo(t *testing.T) {
 			rawBody:     "{}",
 			want:        "",
 		},
+		{
+			name:        "creem request id payload",
+			providerKey: payment.TypeCreem,
+			rawBody:     `{"object":{"request_id":"sub2_creem_123"}}`,
+			want:        "sub2_creem_123",
+		},
+		{
+			name:        "waffo merchant order payload",
+			providerKey: payment.TypeWaffo,
+			rawBody:     `{"result":{"merchantOrderId":"sub2_waffo_123","paymentRequestId":"payreq_1"}}`,
+			want:        "sub2_waffo_123",
+		},
 	}
 
 	for _, tt := range tests {
@@ -191,7 +203,7 @@ func TestVerifyNotificationWithProvidersReturnsMatchedProvider(t *testing.T) {
 		},
 	}
 
-	providerKey, notification, err := verifyNotificationWithProviders(context.Background(), providers, "{}", map[string]string{"wechatpay-signature": "sig"})
+	providerKey, _, notification, err := verifyNotificationWithProviders(context.Background(), providers, "{}", map[string]string{"wechatpay-signature": "sig"})
 	require.NoError(t, err)
 	require.Equal(t, payment.TypeWxpay, providerKey)
 	require.NotNil(t, notification)
@@ -210,7 +222,7 @@ func TestVerifyNotificationWithProvidersFailsWhenAllProvidersReject(t *testing.T
 		},
 	}
 
-	_, _, err := verifyNotificationWithProviders(context.Background(), providers, "{}", nil)
+	_, _, _, err := verifyNotificationWithProviders(context.Background(), providers, "{}", nil)
 	require.Error(t, err)
 }
 
@@ -220,7 +232,7 @@ type webhookHandlerProviderStub struct {
 	verifyErr    error
 }
 
-func (p webhookHandlerProviderStub) Name() string { return p.key }
+func (p webhookHandlerProviderStub) Name() string        { return p.key }
 func (p webhookHandlerProviderStub) ProviderKey() string { return p.key }
 func (p webhookHandlerProviderStub) SupportedTypes() []payment.PaymentType {
 	return []payment.PaymentType{payment.PaymentType(p.key)}

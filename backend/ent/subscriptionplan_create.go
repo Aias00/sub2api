@@ -124,6 +124,20 @@ func (_c *SubscriptionPlanCreate) SetNillableProductName(v *string) *Subscriptio
 	return _c
 }
 
+// SetCreemProductID sets the "creem_product_id" field.
+func (_c *SubscriptionPlanCreate) SetCreemProductID(v string) *SubscriptionPlanCreate {
+	_c.mutation.SetCreemProductID(v)
+	return _c
+}
+
+// SetNillableCreemProductID sets the "creem_product_id" field if the given value is not nil.
+func (_c *SubscriptionPlanCreate) SetNillableCreemProductID(v *string) *SubscriptionPlanCreate {
+	if v != nil {
+		_c.SetCreemProductID(*v)
+	}
+	return _c
+}
+
 // SetForSale sets the "for_sale" field.
 func (_c *SubscriptionPlanCreate) SetForSale(v bool) *SubscriptionPlanCreate {
 	_c.mutation.SetForSale(v)
@@ -235,6 +249,10 @@ func (_c *SubscriptionPlanCreate) defaults() {
 		v := subscriptionplan.DefaultProductName
 		_c.mutation.SetProductName(v)
 	}
+	if _, ok := _c.mutation.CreemProductID(); !ok {
+		v := subscriptionplan.DefaultCreemProductID
+		_c.mutation.SetCreemProductID(v)
+	}
 	if _, ok := _c.mutation.ForSale(); !ok {
 		v := subscriptionplan.DefaultForSale
 		_c.mutation.SetForSale(v)
@@ -292,6 +310,14 @@ func (_c *SubscriptionPlanCreate) check() error {
 	if v, ok := _c.mutation.ProductName(); ok {
 		if err := subscriptionplan.ProductNameValidator(v); err != nil {
 			return &ValidationError{Name: "product_name", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.product_name": %w`, err)}
+		}
+	}
+	if _, ok := _c.mutation.CreemProductID(); !ok {
+		return &ValidationError{Name: "creem_product_id", err: errors.New(`ent: missing required field "SubscriptionPlan.creem_product_id"`)}
+	}
+	if v, ok := _c.mutation.CreemProductID(); ok {
+		if err := subscriptionplan.CreemProductIDValidator(v); err != nil {
+			return &ValidationError{Name: "creem_product_id", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.creem_product_id": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.ForSale(); !ok {
@@ -368,6 +394,10 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 	if value, ok := _c.mutation.ProductName(); ok {
 		_spec.SetField(subscriptionplan.FieldProductName, field.TypeString, value)
 		_node.ProductName = value
+	}
+	if value, ok := _c.mutation.CreemProductID(); ok {
+		_spec.SetField(subscriptionplan.FieldCreemProductID, field.TypeString, value)
+		_node.CreemProductID = value
 	}
 	if value, ok := _c.mutation.ForSale(); ok {
 		_spec.SetField(subscriptionplan.FieldForSale, field.TypeBool, value)
@@ -572,6 +602,18 @@ func (u *SubscriptionPlanUpsert) SetProductName(v string) *SubscriptionPlanUpser
 // UpdateProductName sets the "product_name" field to the value that was provided on create.
 func (u *SubscriptionPlanUpsert) UpdateProductName() *SubscriptionPlanUpsert {
 	u.SetExcluded(subscriptionplan.FieldProductName)
+	return u
+}
+
+// SetCreemProductID sets the "creem_product_id" field.
+func (u *SubscriptionPlanUpsert) SetCreemProductID(v string) *SubscriptionPlanUpsert {
+	u.Set(subscriptionplan.FieldCreemProductID, v)
+	return u
+}
+
+// UpdateCreemProductID sets the "creem_product_id" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsert) UpdateCreemProductID() *SubscriptionPlanUpsert {
+	u.SetExcluded(subscriptionplan.FieldCreemProductID)
 	return u
 }
 
@@ -820,6 +862,20 @@ func (u *SubscriptionPlanUpsertOne) SetProductName(v string) *SubscriptionPlanUp
 func (u *SubscriptionPlanUpsertOne) UpdateProductName() *SubscriptionPlanUpsertOne {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdateProductName()
+	})
+}
+
+// SetCreemProductID sets the "creem_product_id" field.
+func (u *SubscriptionPlanUpsertOne) SetCreemProductID(v string) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetCreemProductID(v)
+	})
+}
+
+// UpdateCreemProductID sets the "creem_product_id" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertOne) UpdateCreemProductID() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateCreemProductID()
 	})
 }
 
@@ -1241,6 +1297,20 @@ func (u *SubscriptionPlanUpsertBulk) SetProductName(v string) *SubscriptionPlanU
 func (u *SubscriptionPlanUpsertBulk) UpdateProductName() *SubscriptionPlanUpsertBulk {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdateProductName()
+	})
+}
+
+// SetCreemProductID sets the "creem_product_id" field.
+func (u *SubscriptionPlanUpsertBulk) SetCreemProductID(v string) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetCreemProductID(v)
+	})
+}
+
+// UpdateCreemProductID sets the "creem_product_id" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertBulk) UpdateCreemProductID() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateCreemProductID()
 	})
 }
 

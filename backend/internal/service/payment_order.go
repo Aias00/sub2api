@@ -34,6 +34,13 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if !cfg.Enabled {
 		return nil, infraerrors.Forbidden("PAYMENT_DISABLED", "payment system is disabled")
 	}
+	creemRechargeProduct, err := resolveCreemRechargeProduct(req, cfg)
+	if err != nil {
+		return nil, err
+	}
+	if creemRechargeProduct != nil {
+		req.Amount = creemRechargeProduct.Amount
+	}
 	plan, err := s.validateOrderInput(ctx, req, cfg)
 	if err != nil {
 		return nil, err
@@ -48,11 +55,18 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if user.Status != payment.EntityStatusActive {
 		return nil, infraerrors.Forbidden("USER_INACTIVE", "user account is disabled")
 	}
+	providerProductID, err := resolveProviderProductID(req, plan, cfg)
+	if err != nil {
+		return nil, err
+	}
 	orderAmount := req.Amount
 	limitAmount := req.Amount
 	if plan != nil {
 		orderAmount = plan.Price
 		limitAmount = plan.Price
+	} else if creemRechargeProduct != nil {
+		orderAmount = creemRechargeProduct.CreditedAmount
+		limitAmount = creemRechargeProduct.Amount
 	} else if req.OrderType == payment.OrderTypeBalance {
 		orderAmount = calculateCreditedBalance(req.Amount, cfg.BalanceRechargeMultiplier)
 	}
@@ -77,7 +91,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.invokeProvider(ctx, order, req, cfg, limitAmount, payAmountStr, payAmount, plan, sel)
+	resp, err := s.invokeProvider(ctx, order, req, user, cfg, limitAmount, payAmountStr, payAmount, plan, sel, providerProductID)
 	if err != nil {
 		_, _ = s.entClient.PaymentOrder.UpdateOneID(order.ID).
 			SetStatus(OrderStatusFailed).
@@ -85,6 +99,48 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 		return nil, err
 	}
 	return resp, nil
+}
+
+func resolveCreemRechargeProduct(req CreateOrderRequest, cfg *PaymentConfig) (*RechargeProduct, error) {
+	if payment.GetBasePaymentType(req.PaymentType) != payment.TypeCreem || req.OrderType == payment.OrderTypeSubscription {
+		return nil, nil
+	}
+
+	selectedProductID := strings.TrimSpace(req.ProductID)
+	if selectedProductID == "" {
+		return nil, infraerrors.BadRequest("CREEM_PRODUCT_REQUIRED", "creem recharge requires selecting a configured recharge product")
+	}
+	for idx := range cfg.RechargeProducts {
+		product := &cfg.RechargeProducts[idx]
+		if strings.TrimSpace(product.ID) != selectedProductID {
+			continue
+		}
+		if strings.TrimSpace(product.CreemProductID) == "" {
+			return nil, infraerrors.BadRequest("CREEM_PRODUCT_NOT_CONFIGURED", "selected recharge product is not configured for Creem")
+		}
+		return product, nil
+	}
+	return nil, infraerrors.BadRequest("CREEM_PRODUCT_NOT_FOUND", "selected recharge product does not exist")
+}
+
+func resolveProviderProductID(req CreateOrderRequest, plan *dbent.SubscriptionPlan, cfg *PaymentConfig) (string, error) {
+	if payment.GetBasePaymentType(req.PaymentType) != payment.TypeCreem {
+		return "", nil
+	}
+
+	if plan != nil {
+		productID := strings.TrimSpace(plan.CreemProductID)
+		if productID == "" {
+			return "", infraerrors.BadRequest("CREEM_PRODUCT_NOT_CONFIGURED", "selected subscription plan is not configured for Creem")
+		}
+		return productID, nil
+	}
+
+	product, err := resolveCreemRechargeProduct(req, cfg)
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(product.CreemProductID), nil
 }
 
 func (s *PaymentService) validateOrderInput(ctx context.Context, req CreateOrderRequest, cfg *PaymentConfig) (*dbent.SubscriptionPlan, error) {
@@ -361,7 +417,7 @@ func (s *PaymentService) usesOfficialWxpayVisibleMethod(ctx context.Context) boo
 	return inst.ProviderKey == payment.TypeWxpay
 }
 
-func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.PaymentOrder, req CreateOrderRequest, cfg *PaymentConfig, limitAmount float64, payAmountStr string, payAmount float64, plan *dbent.SubscriptionPlan, sel *payment.InstanceSelection) (*CreateOrderResponse, error) {
+func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.PaymentOrder, req CreateOrderRequest, user *User, cfg *PaymentConfig, limitAmount float64, payAmountStr string, payAmount float64, plan *dbent.SubscriptionPlan, sel *payment.InstanceSelection, providerProductID string) (*CreateOrderResponse, error) {
 	prov, err := provider.CreateProvider(sel.ProviderKey, sel.InstanceID, sel.Config)
 	if err != nil {
 		slog.Error("[PaymentService] CreateProvider failed", "provider", sel.ProviderKey, "instance", sel.InstanceID, "error", err)
@@ -409,7 +465,7 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 		ClientIP:    req.ClientIP,
 		IsMobile:    req.IsMobile,
 		ReturnURL:   providerReturnURL,
-	}, sel, outTradeNo, payAmountStr, subject)
+	}, sel, outTradeNo, payAmountStr, subject, user, providerProductID)
 	pr, err := prov.CreatePayment(ctx, providerReq)
 	if err != nil {
 		slog.Error("[PaymentService] CreatePayment failed", "provider", sel.ProviderKey, "instance", sel.InstanceID, "error", err)
@@ -445,7 +501,14 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 	return resp, nil
 }
 
-func buildProviderCreatePaymentRequest(req CreateOrderRequest, sel *payment.InstanceSelection, orderID, amount, subject string) payment.CreatePaymentRequest {
+func buildProviderCreatePaymentRequest(req CreateOrderRequest, sel *payment.InstanceSelection, orderID, amount, subject string, user *User, providerProductID string) payment.CreatePaymentRequest {
+	customerEmail := ""
+	customerName := ""
+	if user != nil {
+		customerEmail = strings.TrimSpace(user.Email)
+		customerName = strings.TrimSpace(user.Username)
+	}
+
 	return payment.CreatePaymentRequest{
 		OrderID:            orderID,
 		Amount:             amount,
@@ -456,6 +519,9 @@ func buildProviderCreatePaymentRequest(req CreateOrderRequest, sel *payment.Inst
 		ClientIP:           req.ClientIP,
 		IsMobile:           req.IsMobile,
 		InstanceSubMethods: selectedInstanceSupportedTypes(sel),
+		CustomerEmail:      customerEmail,
+		CustomerName:       customerName,
+		ProviderProductID:  strings.TrimSpace(providerProductID),
 	}
 }
 

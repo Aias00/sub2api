@@ -92,6 +92,10 @@
                 <input v-model.number="product.amount" type="number" min="0" step="0.01" class="input" />
               </div>
               <div>
+                <label class="input-label">{{ localText('Creem Product ID', 'Creem Product ID') }}</label>
+                <input v-model="product.creem_product_id" type="text" class="input" :placeholder="localText('可选，仅 Creem 使用', 'Optional, only for Creem')" />
+              </div>
+              <div>
                 <label class="input-label">{{ localText('角标', 'Badge') }}</label>
                 <input v-model="product.badge" type="text" class="input" :placeholder="localText('推荐', 'Recommended')" />
               </div>
@@ -206,6 +210,7 @@ function normalizeProducts(input: RechargeProduct[] | null | undefined): Recharg
       description: product.description || '',
       amount: Number(product.amount) || 0,
       credited_amount: Number(product.credited_amount) || 0,
+      creem_product_id: product.creem_product_id || '',
       badge: product.badge || '',
       recommended: Boolean(product.recommended),
       features: Array.isArray(product.features) ? product.features.filter(Boolean) : [],
@@ -227,6 +232,7 @@ function createProductDraft(): RechargeProduct {
     description: '',
     amount: 0,
     credited_amount: 0,
+    creem_product_id: '',
     badge: '',
     recommended: false,
     features: [],

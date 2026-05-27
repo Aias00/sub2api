@@ -114,6 +114,8 @@ var providerSensitiveConfigFields = map[string]map[string]struct{}{
 	payment.TypeAlipay:  {"privatekey": {}, "publickey": {}, "alipaypublickey": {}},
 	payment.TypeWxpay:   {"privatekey": {}, "apiv3key": {}, "publickey": {}},
 	payment.TypeStripe:  {"secretkey": {}, "webhooksecret": {}},
+	payment.TypeCreem:   {"apikey": {}, "webhooksecret": {}},
+	payment.TypeWaffo:   {"apikey": {}, "privatekey": {}, "waffopublickey": {}},
 }
 
 // providerPendingOrderProtectedConfigFields lists config keys that cannot be
@@ -125,6 +127,8 @@ var providerPendingOrderProtectedConfigFields = map[string]map[string]struct{}{
 	payment.TypeAlipay:  {"privatekey": {}, "publickey": {}, "alipaypublickey": {}, "appid": {}},
 	payment.TypeWxpay:   {"privatekey": {}, "apiv3key": {}, "publickey": {}, "appid": {}, "mpappid": {}, "mchid": {}, "publickeyid": {}, "certserial": {}},
 	payment.TypeStripe:  {"secretkey": {}, "webhooksecret": {}},
+	payment.TypeCreem:   {"apikey": {}, "webhooksecret": {}},
+	payment.TypeWaffo:   {"apikey": {}, "privatekey": {}, "waffopublickey": {}, "merchantid": {}},
 }
 
 func isSensitiveProviderConfigField(providerKey, fieldName string) bool {
@@ -175,7 +179,7 @@ func (s *PaymentConfigService) countPendingOrdersByPlan(ctx context.Context, pla
 }
 
 var validProviderKeys = map[string]bool{
-	payment.TypeEasyPay: true, payment.TypeAlipay: true, payment.TypeWxpay: true, payment.TypeStripe: true,
+	payment.TypeEasyPay: true, payment.TypeAlipay: true, payment.TypeWxpay: true, payment.TypeStripe: true, payment.TypeCreem: true, payment.TypeWaffo: true,
 }
 
 func (s *PaymentConfigService) CreateProviderInstance(ctx context.Context, req CreateProviderInstanceRequest) (*dbent.PaymentProviderInstance, error) {

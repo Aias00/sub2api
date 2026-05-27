@@ -99,6 +99,11 @@ func ProductName(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldProductName, v))
 }
 
+// CreemProductID applies equality check predicate on the "creem_product_id" field. It's identical to CreemProductIDEQ.
+func CreemProductID(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldCreemProductID, v))
+}
+
 // ForSale applies equality check predicate on the "for_sale" field. It's identical to ForSaleEQ.
 func ForSale(v bool) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldForSale, v))
@@ -612,6 +617,71 @@ func ProductNameEqualFold(v string) predicate.SubscriptionPlan {
 // ProductNameContainsFold applies the ContainsFold predicate on the "product_name" field.
 func ProductNameContainsFold(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldContainsFold(FieldProductName, v))
+}
+
+// CreemProductIDEQ applies the EQ predicate on the "creem_product_id" field.
+func CreemProductIDEQ(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldCreemProductID, v))
+}
+
+// CreemProductIDNEQ applies the NEQ predicate on the "creem_product_id" field.
+func CreemProductIDNEQ(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldCreemProductID, v))
+}
+
+// CreemProductIDIn applies the In predicate on the "creem_product_id" field.
+func CreemProductIDIn(vs ...string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldCreemProductID, vs...))
+}
+
+// CreemProductIDNotIn applies the NotIn predicate on the "creem_product_id" field.
+func CreemProductIDNotIn(vs ...string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldCreemProductID, vs...))
+}
+
+// CreemProductIDGT applies the GT predicate on the "creem_product_id" field.
+func CreemProductIDGT(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldCreemProductID, v))
+}
+
+// CreemProductIDGTE applies the GTE predicate on the "creem_product_id" field.
+func CreemProductIDGTE(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldCreemProductID, v))
+}
+
+// CreemProductIDLT applies the LT predicate on the "creem_product_id" field.
+func CreemProductIDLT(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldCreemProductID, v))
+}
+
+// CreemProductIDLTE applies the LTE predicate on the "creem_product_id" field.
+func CreemProductIDLTE(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldCreemProductID, v))
+}
+
+// CreemProductIDContains applies the Contains predicate on the "creem_product_id" field.
+func CreemProductIDContains(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldContains(FieldCreemProductID, v))
+}
+
+// CreemProductIDHasPrefix applies the HasPrefix predicate on the "creem_product_id" field.
+func CreemProductIDHasPrefix(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldHasPrefix(FieldCreemProductID, v))
+}
+
+// CreemProductIDHasSuffix applies the HasSuffix predicate on the "creem_product_id" field.
+func CreemProductIDHasSuffix(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldHasSuffix(FieldCreemProductID, v))
+}
+
+// CreemProductIDEqualFold applies the EqualFold predicate on the "creem_product_id" field.
+func CreemProductIDEqualFold(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEqualFold(FieldCreemProductID, v))
+}
+
+// CreemProductIDContainsFold applies the ContainsFold predicate on the "creem_product_id" field.
+func CreemProductIDContainsFold(v string) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldContainsFold(FieldCreemProductID, v))
 }
 
 // ForSaleEQ applies the EQ predicate on the "for_sale" field.

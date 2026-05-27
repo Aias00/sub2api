@@ -188,6 +188,20 @@ func (_u *SubscriptionPlanUpdate) SetNillableProductName(v *string) *Subscriptio
 	return _u
 }
 
+// SetCreemProductID sets the "creem_product_id" field.
+func (_u *SubscriptionPlanUpdate) SetCreemProductID(v string) *SubscriptionPlanUpdate {
+	_u.mutation.SetCreemProductID(v)
+	return _u
+}
+
+// SetNillableCreemProductID sets the "creem_product_id" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableCreemProductID(v *string) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetCreemProductID(*v)
+	}
+	return _u
+}
+
 // SetForSale sets the "for_sale" field.
 func (_u *SubscriptionPlanUpdate) SetForSale(v bool) *SubscriptionPlanUpdate {
 	_u.mutation.SetForSale(v)
@@ -287,6 +301,11 @@ func (_u *SubscriptionPlanUpdate) check() error {
 			return &ValidationError{Name: "product_name", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.product_name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CreemProductID(); ok {
+		if err := subscriptionplan.CreemProductIDValidator(v); err != nil {
+			return &ValidationError{Name: "creem_product_id", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.creem_product_id": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -343,6 +362,9 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if value, ok := _u.mutation.ProductName(); ok {
 		_spec.SetField(subscriptionplan.FieldProductName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.CreemProductID(); ok {
+		_spec.SetField(subscriptionplan.FieldCreemProductID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ForSale(); ok {
 		_spec.SetField(subscriptionplan.FieldForSale, field.TypeBool, value)
@@ -536,6 +558,20 @@ func (_u *SubscriptionPlanUpdateOne) SetNillableProductName(v *string) *Subscrip
 	return _u
 }
 
+// SetCreemProductID sets the "creem_product_id" field.
+func (_u *SubscriptionPlanUpdateOne) SetCreemProductID(v string) *SubscriptionPlanUpdateOne {
+	_u.mutation.SetCreemProductID(v)
+	return _u
+}
+
+// SetNillableCreemProductID sets the "creem_product_id" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableCreemProductID(v *string) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetCreemProductID(*v)
+	}
+	return _u
+}
+
 // SetForSale sets the "for_sale" field.
 func (_u *SubscriptionPlanUpdateOne) SetForSale(v bool) *SubscriptionPlanUpdateOne {
 	_u.mutation.SetForSale(v)
@@ -648,6 +684,11 @@ func (_u *SubscriptionPlanUpdateOne) check() error {
 			return &ValidationError{Name: "product_name", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.product_name": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.CreemProductID(); ok {
+		if err := subscriptionplan.CreemProductIDValidator(v); err != nil {
+			return &ValidationError{Name: "creem_product_id", err: fmt.Errorf(`ent: validator failed for field "SubscriptionPlan.creem_product_id": %w`, err)}
+		}
+	}
 	return nil
 }
 
@@ -721,6 +762,9 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 	}
 	if value, ok := _u.mutation.ProductName(); ok {
 		_spec.SetField(subscriptionplan.FieldProductName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.CreemProductID(); ok {
+		_spec.SetField(subscriptionplan.FieldCreemProductID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.ForSale(); ok {
 		_spec.SetField(subscriptionplan.FieldForSale, field.TypeBool, value)
