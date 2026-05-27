@@ -355,8 +355,11 @@ export default {
     apiTest: 'API Test',
     usage: 'Usage',
     redeem: 'Redeem',
-    affiliate: 'Affiliate Rebates',
-    affiliateManagement: 'Affiliate Rebates',
+    affiliate: 'Invite Center',
+    affiliateManagement: 'Affiliate Management',
+    affiliateOverview: 'Overview',
+    affiliateRules: 'Rules',
+    affiliateCodeManagement: 'Invite Codes',
     affiliateInviteRecords: 'Invite Records',
     affiliateRebateRecords: 'Rebate Records',
     affiliateTransferRecords: 'Transfer Records',
@@ -1147,8 +1150,8 @@ export default {
   },
 
   affiliate: {
-    title: 'Affiliate Rebates',
-    description: 'Invite new users and convert your rebate quota into account balance',
+    title: 'Invite Center',
+    description: 'Manage invite codes, invitees, rebate records, and rebate transfers in one place.',
     yourCode: 'Your Affiliate Code',
     inviteLink: 'Invite Link',
     copyCode: 'Copy Code',
@@ -1182,6 +1185,31 @@ export default {
         username: 'Username',
         rebate: 'Rebate',
         joinedAt: 'Joined At'
+      }
+    },
+    rebates: {
+      title: 'Rebate Records',
+      empty: 'No rebate records yet',
+      columns: {
+        invitee: 'Invitee',
+        orderAmount: 'Top-up Amount',
+        payAmount: 'Paid Amount',
+        rebateAmount: 'Rebate Amount',
+        paymentType: 'Payment Method',
+        orderStatus: 'Order Status',
+        createdAt: 'Rebated At'
+      }
+    },
+    transfersHistory: {
+      title: 'Transfer Records',
+      empty: 'No transfer records yet',
+      columns: {
+        amount: 'Transferred',
+        balanceAfter: 'Balance After',
+        availableQuotaAfter: 'Available Quota After',
+        frozenQuotaAfter: 'Frozen Quota After',
+        historyQuotaAfter: 'Historical Rebate After',
+        createdAt: 'Transferred At'
       }
     },
     tips: {
@@ -1834,11 +1862,42 @@ export default {
     },
 
     affiliates: {
+      overviewDescription: 'Review affiliate status, rules, and top-level operating metrics',
+      rulesDescription: 'Configure invitation-code signup and affiliate rebate rules',
+      codesDescription: 'Manage user invite codes and exclusive rebate rates',
       invitesDescription: 'View site-wide inviter and invitee relationships',
       rebatesDescription: 'View recharge orders that generated affiliate rebates',
       transfersDescription: 'View affiliate quota transfers into account balance',
       errors: {
         loadFailed: 'Failed to load affiliate records'
+      },
+      moduleOverview: {
+        title: 'Affiliate Module Overview',
+        description: 'Review affiliate switches, rules, and core operating metrics in one place.',
+        affiliateEnabled: 'Affiliate rebates',
+        invitationEnabled: 'Invitation-code signup',
+        rebateRate: 'Default rebate rate',
+        freezeHours: 'Freeze period',
+        durationDays: 'Eligibility window',
+        capPerInvitee: 'Per-invitee cap',
+        invitedUsers: 'Invited users',
+        rebatedInvitees: 'Invitees with rebates',
+        availableQuota: 'Available rebate quota',
+        frozenQuota: 'Frozen rebate quota',
+        historyQuota: 'Historical rebate quota',
+        recentRebates: 'Rebate records in last 7 days',
+        quickLinks: 'Quick links',
+        hoursUnit: '{count} h',
+        daysUnit: '{count} d',
+        noLimit: 'No limit',
+        disabled: 'Disabled',
+        enabled: 'Enabled'
+      },
+      rules: {
+        title: 'Affiliate Rules',
+        description: 'Manage invitation-code signup and affiliate rebate behavior in one place.',
+        save: 'Save rules',
+        saved: 'Affiliate rules updated'
       },
       records: {
         search: 'Search',

@@ -626,6 +626,18 @@ func (r *oauthEmailAffiliateRepoStub) ListInvitees(context.Context, int64, int) 
 	panic("unexpected ListInvitees call")
 }
 
+func (r *oauthEmailAffiliateRepoStub) ListUserRebateRecords(context.Context, int64, service.AffiliateRecordFilter) ([]service.AffiliateRebateRecord, int64, error) {
+	panic("unexpected ListUserRebateRecords call")
+}
+
+func (r *oauthEmailAffiliateRepoStub) ListUserTransferRecords(context.Context, int64, service.AffiliateRecordFilter) ([]service.AffiliateTransferRecord, int64, error) {
+	panic("unexpected ListUserTransferRecords call")
+}
+
+func (r *oauthEmailAffiliateRepoStub) GetAffiliateOverview(context.Context) (*service.AffiliateAdminOverview, error) {
+	panic("unexpected GetAffiliateOverview call")
+}
+
 func (r *oauthEmailAffiliateRepoStub) UpdateUserAffCode(context.Context, int64, string) error {
 	panic("unexpected UpdateUserAffCode call")
 }

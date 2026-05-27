@@ -79,6 +79,15 @@ type AffiliateInvitee struct {
 	TotalRebate float64    `json:"total_rebate"`
 }
 
+type AffiliateRulesSettings struct {
+	AffiliateEnabled            bool    `json:"affiliate_enabled"`
+	InvitationCodeEnabled       bool    `json:"invitation_code_enabled"`
+	AffiliateRebateRate         float64 `json:"affiliate_rebate_rate"`
+	AffiliateRebateFreezeHours  int     `json:"affiliate_rebate_freeze_hours"`
+	AffiliateRebateDurationDays int     `json:"affiliate_rebate_duration_days"`
+	AffiliateRebatePerInviteeCap float64 `json:"affiliate_rebate_per_invitee_cap"`
+}
+
 type AffiliateDetail struct {
 	UserID          int64   `json:"user_id"`
 	AffCode         string  `json:"aff_code"`
@@ -94,6 +103,21 @@ type AffiliateDetail struct {
 	Invitees                   []AffiliateInvitee `json:"invitees"`
 }
 
+type AffiliateAdminOverview struct {
+	AffiliateEnabled            bool    `json:"affiliate_enabled"`
+	InvitationCodeEnabled       bool    `json:"invitation_code_enabled"`
+	AffiliateRebateRate         float64 `json:"affiliate_rebate_rate"`
+	AffiliateRebateFreezeHours  int     `json:"affiliate_rebate_freeze_hours"`
+	AffiliateRebateDurationDays int     `json:"affiliate_rebate_duration_days"`
+	AffiliateRebatePerInviteeCap float64 `json:"affiliate_rebate_per_invitee_cap"`
+	InvitedUserCount           int64   `json:"invited_user_count"`
+	RebatedInviteeCount        int64   `json:"rebated_invitee_count"`
+	AvailableQuotaTotal        float64 `json:"available_quota_total"`
+	FrozenQuotaTotal           float64 `json:"frozen_quota_total"`
+	HistoryQuotaTotal          float64 `json:"history_quota_total"`
+	RecentRebateRecordCount    int64   `json:"recent_rebate_record_count"`
+}
+
 type AffiliateRepository interface {
 	EnsureUserAffiliate(ctx context.Context, userID int64) (*AffiliateSummary, error)
 	GetAffiliateByCode(ctx context.Context, code string) (*AffiliateSummary, error)
@@ -103,6 +127,9 @@ type AffiliateRepository interface {
 	ThawFrozenQuota(ctx context.Context, userID int64) (float64, error)
 	TransferQuotaToBalance(ctx context.Context, userID int64) (float64, float64, error)
 	ListInvitees(ctx context.Context, inviterID int64, limit int) ([]AffiliateInvitee, error)
+	ListUserRebateRecords(ctx context.Context, inviterID int64, filter AffiliateRecordFilter) ([]AffiliateRebateRecord, int64, error)
+	ListUserTransferRecords(ctx context.Context, userID int64, filter AffiliateRecordFilter) ([]AffiliateTransferRecord, int64, error)
+	GetAffiliateOverview(ctx context.Context) (*AffiliateAdminOverview, error)
 
 	// 管理端：用户级专属配置
 	UpdateUserAffCode(ctx context.Context, userID int64, newCode string) error
@@ -447,6 +474,26 @@ func (s *AffiliateService) TransferAffiliateQuota(ctx context.Context, userID in
 	return transferred, balance, nil
 }
 
+func (s *AffiliateService) GetAffiliateRebateRecords(ctx context.Context, inviterID int64, filter AffiliateRecordFilter) ([]AffiliateRebateRecord, int64, error) {
+	if inviterID <= 0 {
+		return nil, 0, infraerrors.BadRequest("INVALID_USER", "invalid user")
+	}
+	if s == nil || s.repo == nil {
+		return nil, 0, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
+	}
+	return s.repo.ListUserRebateRecords(ctx, inviterID, normalizeAffiliateRecordFilter(filter))
+}
+
+func (s *AffiliateService) GetAffiliateTransferRecords(ctx context.Context, userID int64, filter AffiliateRecordFilter) ([]AffiliateTransferRecord, int64, error) {
+	if userID <= 0 {
+		return nil, 0, infraerrors.BadRequest("INVALID_USER", "invalid user")
+	}
+	if s == nil || s.repo == nil {
+		return nil, 0, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
+	}
+	return s.repo.ListUserTransferRecords(ctx, userID, normalizeAffiliateRecordFilter(filter))
+}
+
 func (s *AffiliateService) listInvitees(ctx context.Context, inviterID int64) ([]AffiliateInvitee, error) {
 	if s == nil || s.repo == nil {
 		return nil, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
@@ -629,6 +676,67 @@ func (s *AffiliateService) AdminGetUserOverview(ctx context.Context, userID int6
 		}
 		overview.RebateRatePercent = clampAffiliateRebateRate(overview.RebateRatePercent)
 	}
+	return overview, nil
+}
+
+func (s *AffiliateService) AdminGetRules(ctx context.Context) (*AffiliateRulesSettings, error) {
+	if s == nil || s.settingService == nil {
+		return nil, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate settings unavailable")
+	}
+	return &AffiliateRulesSettings{
+		AffiliateEnabled:             s.settingService.IsAffiliateEnabled(ctx),
+		InvitationCodeEnabled:        s.settingService.IsInvitationCodeEnabled(ctx),
+		AffiliateRebateRate:          s.settingService.GetAffiliateRebateRatePercent(ctx),
+		AffiliateRebateFreezeHours:   s.settingService.GetAffiliateRebateFreezeHours(ctx),
+		AffiliateRebateDurationDays:  s.settingService.GetAffiliateRebateDurationDays(ctx),
+		AffiliateRebatePerInviteeCap: s.settingService.GetAffiliateRebatePerInviteeCap(ctx),
+	}, nil
+}
+
+func (s *AffiliateService) AdminUpdateRules(ctx context.Context, rules AffiliateRulesSettings) (*AffiliateRulesSettings, error) {
+	if s == nil || s.settingService == nil {
+		return nil, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate settings unavailable")
+	}
+
+	settings, err := s.settingService.GetAllSettings(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	settings.AffiliateEnabled = rules.AffiliateEnabled
+	settings.InvitationCodeEnabled = rules.InvitationCodeEnabled
+	settings.AffiliateRebateRate = rules.AffiliateRebateRate
+	settings.AffiliateRebateFreezeHours = rules.AffiliateRebateFreezeHours
+	settings.AffiliateRebateDurationDays = rules.AffiliateRebateDurationDays
+	settings.AffiliateRebatePerInviteeCap = rules.AffiliateRebatePerInviteeCap
+
+	if err := s.settingService.UpdateSettings(ctx, settings); err != nil {
+		return nil, err
+	}
+	return s.AdminGetRules(ctx)
+}
+
+func (s *AffiliateService) AdminGetOverview(ctx context.Context) (*AffiliateAdminOverview, error) {
+	if s == nil || s.repo == nil {
+		return nil, infraerrors.ServiceUnavailable("SERVICE_UNAVAILABLE", "affiliate service unavailable")
+	}
+	overview, err := s.repo.GetAffiliateOverview(ctx)
+	if err != nil {
+		return nil, err
+	}
+	if overview == nil {
+		overview = &AffiliateAdminOverview{}
+	}
+	rules, err := s.AdminGetRules(ctx)
+	if err != nil {
+		return nil, err
+	}
+	overview.AffiliateEnabled = rules.AffiliateEnabled
+	overview.InvitationCodeEnabled = rules.InvitationCodeEnabled
+	overview.AffiliateRebateRate = rules.AffiliateRebateRate
+	overview.AffiliateRebateFreezeHours = rules.AffiliateRebateFreezeHours
+	overview.AffiliateRebateDurationDays = rules.AffiliateRebateDurationDays
+	overview.AffiliateRebatePerInviteeCap = rules.AffiliateRebatePerInviteeCap
 	return overview, nil
 }
 

@@ -576,7 +576,43 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/affiliates',
-    redirect: '/admin/affiliates/invites'
+    redirect: '/admin/affiliates/overview'
+  },
+  {
+    path: '/admin/affiliates/overview',
+    name: 'AdminAffiliateOverview',
+    component: () => import('@/views/admin/affiliates/AdminAffiliateOverviewView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Affiliate Overview',
+      titleKey: 'nav.affiliateOverview',
+      descriptionKey: 'admin.affiliates.overviewDescription'
+    }
+  },
+  {
+    path: '/admin/affiliates/rules',
+    name: 'AdminAffiliateRules',
+    component: () => import('@/views/admin/affiliates/AdminAffiliateRulesView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Affiliate Rules',
+      titleKey: 'nav.affiliateRules',
+      descriptionKey: 'admin.affiliates.rulesDescription'
+    }
+  },
+  {
+    path: '/admin/affiliates/codes',
+    name: 'AdminAffiliateCodes',
+    component: () => import('@/views/admin/affiliates/AdminAffiliateCodesView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Affiliate Codes',
+      titleKey: 'nav.affiliateCodeManagement',
+      descriptionKey: 'admin.affiliates.codesDescription'
+    }
   },
   {
     path: '/admin/affiliates/invites',

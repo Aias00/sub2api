@@ -355,8 +355,11 @@ export default {
     apiTest: '调用测试',
     usage: '使用记录',
     redeem: '兑换',
-    affiliate: '邀请返利',
-    affiliateManagement: '邀请返利',
+    affiliate: '邀请中心',
+    affiliateManagement: '邀请管理',
+    affiliateOverview: '模块概览',
+    affiliateRules: '规则配置',
+    affiliateCodeManagement: '邀请码管理',
     affiliateInviteRecords: '邀请记录',
     affiliateRebateRecords: '返利记录',
     affiliateTransferRecords: '提取记录',
@@ -1151,8 +1154,8 @@ export default {
   },
 
   affiliate: {
-    title: '邀请返利',
-    description: '邀请新用户注册，并将返利额度转入账户余额',
+    title: '邀请中心',
+    description: '统一管理邀请码、邀请记录、返利流水与返利转余额。',
     yourCode: '我的邀请码',
     inviteLink: '邀请链接',
     copyCode: '复制邀请码',
@@ -1186,6 +1189,31 @@ export default {
         username: '用户名',
         rebate: '返利明细',
         joinedAt: '注册时间'
+      }
+    },
+    rebates: {
+      title: '返利记录',
+      empty: '暂无返利记录',
+      columns: {
+        invitee: '被邀请用户',
+        orderAmount: '充值金额',
+        payAmount: '支付金额',
+        rebateAmount: '返利金额',
+        paymentType: '支付方式',
+        orderStatus: '订单状态',
+        createdAt: '返利时间'
+      }
+    },
+    transfersHistory: {
+      title: '转余额记录',
+      empty: '暂无转余额记录',
+      columns: {
+        amount: '转入金额',
+        balanceAfter: '转入后余额',
+        availableQuotaAfter: '转入后可提返利',
+        frozenQuotaAfter: '转入后冻结返利',
+        historyQuotaAfter: '转入后历史返利',
+        createdAt: '转入时间'
       }
     },
     tips: {
@@ -1855,11 +1883,42 @@ export default {
     },
 
     affiliates: {
+      overviewDescription: '查看邀请模块开关、规则与经营概览',
+      rulesDescription: '配置邀请码注册和邀请返利规则',
+      codesDescription: '管理用户邀请码与专属返利比例',
       invitesDescription: '查看全站邀请关系和被邀请用户累计返利',
       rebatesDescription: '查看每一笔产生返利的充值订单',
       transfersDescription: '查看返利额度转入账户余额的提取流水',
       errors: {
         loadFailed: '加载邀请返利记录失败'
+      },
+      moduleOverview: {
+        title: '邀请管理概览',
+        description: '统一查看邀请模块状态、规则与关键经营指标。',
+        affiliateEnabled: '邀请返利',
+        invitationEnabled: '邀请码注册',
+        rebateRate: '默认返利比例',
+        freezeHours: '冻结期',
+        durationDays: '有效期',
+        capPerInvitee: '单人返利上限',
+        invitedUsers: '累计邀请用户',
+        rebatedInvitees: '已产生返利用户',
+        availableQuota: '当前可提返利',
+        frozenQuota: '当前冻结返利',
+        historyQuota: '累计历史返利',
+        recentRebates: '近 7 天返利笔数',
+        quickLinks: '快速入口',
+        hoursUnit: '{count} 小时',
+        daysUnit: '{count} 天',
+        noLimit: '不限',
+        disabled: '已关闭',
+        enabled: '已开启'
+      },
+      rules: {
+        title: '邀请规则配置',
+        description: '集中配置邀请码注册与邀请返利策略。',
+        save: '保存规则',
+        saved: '邀请规则已更新'
       },
       records: {
         search: '搜索',

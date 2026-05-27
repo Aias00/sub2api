@@ -179,6 +179,46 @@ func (h *UserHandler) GetAffiliate(c *gin.Context) {
 	response.Success(c, detail)
 }
 
+// GetAffiliateRebates returns the current user's affiliate rebate records.
+// GET /api/v1/user/aff/rebates
+func (h *UserHandler) GetAffiliateRebates(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	page, pageSize := response.ParsePagination(c)
+	items, total, err := h.affiliateService.GetAffiliateRebateRecords(c.Request.Context(), subject.UserID, service.AffiliateRecordFilter{
+		Page:     page,
+		PageSize: pageSize,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, items, total, page, pageSize)
+}
+
+// GetAffiliateTransfers returns the current user's affiliate transfer records.
+// GET /api/v1/user/aff/transfers
+func (h *UserHandler) GetAffiliateTransfers(c *gin.Context) {
+	subject, ok := middleware2.GetAuthSubjectFromContext(c)
+	if !ok {
+		response.Unauthorized(c, "User not authenticated")
+		return
+	}
+	page, pageSize := response.ParsePagination(c)
+	items, total, err := h.affiliateService.GetAffiliateTransferRecords(c.Request.Context(), subject.UserID, service.AffiliateRecordFilter{
+		Page:     page,
+		PageSize: pageSize,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Paginated(c, items, total, page, pageSize)
+}
+
 // TransferAffiliateQuota transfers all available affiliate quota into current balance.
 // POST /api/v1/user/aff/transfer
 func (h *UserHandler) TransferAffiliateQuota(c *gin.Context) {

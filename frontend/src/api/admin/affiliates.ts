@@ -5,7 +5,20 @@
  */
 
 import { apiClient } from '../client'
-import type { PaginatedResponse } from '@/types'
+import type {
+  PaginatedResponse,
+  AffiliateRebateRecord,
+  AffiliateTransferRecord,
+  AffiliateRulesSettings,
+  AffiliateAdminOverview,
+} from '@/types'
+
+export type {
+  AffiliateRebateRecord,
+  AffiliateTransferRecord,
+  AffiliateRulesSettings,
+  AffiliateAdminOverview,
+} from '@/types'
 
 export interface AffiliateAdminEntry {
   user_id: number
@@ -43,37 +56,6 @@ export interface AffiliateInviteRecord {
   invitee_username: string
   aff_code: string
   total_rebate: number
-  created_at: string
-}
-
-export interface AffiliateRebateRecord {
-  order_id: number
-  out_trade_no: string
-  inviter_id: number
-  inviter_email: string
-  inviter_username: string
-  invitee_id: number
-  invitee_email: string
-  invitee_username: string
-  order_amount: number
-  pay_amount: number
-  rebate_amount: number
-  payment_type: string
-  order_status: string
-  created_at: string
-}
-
-export interface AffiliateTransferRecord {
-  ledger_id: number
-  user_id: number
-  user_email: string
-  username: string
-  amount: number
-  balance_after?: number | null
-  available_quota_after?: number | null
-  frozen_quota_after?: number | null
-  history_quota_after?: number | null
-  snapshot_available: boolean
   created_at: string
 }
 
@@ -206,6 +188,21 @@ export async function listTransferRecords(
   return data
 }
 
+export async function getOverview(): Promise<AffiliateAdminOverview> {
+  const { data } = await apiClient.get<AffiliateAdminOverview>('/admin/affiliates/overview')
+  return data
+}
+
+export async function getRules(): Promise<AffiliateRulesSettings> {
+  const { data } = await apiClient.get<AffiliateRulesSettings>('/admin/affiliates/rules')
+  return data
+}
+
+export async function updateRules(payload: AffiliateRulesSettings): Promise<AffiliateRulesSettings> {
+  const { data } = await apiClient.put<AffiliateRulesSettings>('/admin/affiliates/rules', payload)
+  return data
+}
+
 export async function getUserOverview(
   userId: number,
 ): Promise<AffiliateUserOverview> {
@@ -221,6 +218,9 @@ export const affiliatesAPI = {
   updateUserSettings,
   clearUserSettings,
   batchSetRate,
+  getOverview,
+  getRules,
+  updateRules,
   listInviteRecords,
   listRebateRecords,
   listTransferRecords,

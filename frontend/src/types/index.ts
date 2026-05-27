@@ -137,6 +137,55 @@ export interface AffiliateInvitee {
   total_rebate: number
 }
 
+export interface AffiliateRebateRecord {
+  order_id: number
+  out_trade_no: string
+  inviter_id: number
+  inviter_email: string
+  inviter_username: string
+  invitee_id: number
+  invitee_email: string
+  invitee_username: string
+  order_amount: number
+  pay_amount: number
+  rebate_amount: number
+  payment_type: string
+  order_status: string
+  created_at: string
+}
+
+export interface AffiliateTransferRecord {
+  ledger_id: number
+  user_id: number
+  user_email: string
+  username: string
+  amount: number
+  balance_after?: number | null
+  available_quota_after?: number | null
+  frozen_quota_after?: number | null
+  history_quota_after?: number | null
+  snapshot_available: boolean
+  created_at: string
+}
+
+export interface AffiliateRulesSettings {
+  affiliate_enabled: boolean
+  invitation_code_enabled: boolean
+  affiliate_rebate_rate: number
+  affiliate_rebate_freeze_hours: number
+  affiliate_rebate_duration_days: number
+  affiliate_rebate_per_invitee_cap: number
+}
+
+export interface AffiliateAdminOverview extends AffiliateRulesSettings {
+  invited_user_count: number
+  rebated_invitee_count: number
+  available_quota_total: number
+  frozen_quota_total: number
+  history_quota_total: number
+  recent_rebate_record_count: number
+}
+
 export interface UserAffiliateDetail {
   user_id: number
   aff_code: string

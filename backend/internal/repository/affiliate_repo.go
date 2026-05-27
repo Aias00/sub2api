@@ -383,6 +383,209 @@ LIMIT $2`, inviterID, limit)
 	return invitees, nil
 }
 
+func (r *affiliateRepository) ListUserRebateRecords(ctx context.Context, inviterID int64, filter service.AffiliateRecordFilter) ([]service.AffiliateRebateRecord, int64, error) {
+	client := clientFromContext(ctx, r.client)
+	if inviterID <= 0 {
+		return nil, 0, service.ErrUserNotFound
+	}
+	filter = service.AffiliateRecordFilter{
+		Page:     filter.Page,
+		PageSize: filter.PageSize,
+	}
+	if filter.Page <= 0 {
+		filter.Page = 1
+	}
+	if filter.PageSize <= 0 || filter.PageSize > 100 {
+		filter.PageSize = 20
+	}
+	offset := (filter.Page - 1) * filter.PageSize
+
+	total, err := scanInt64(ctx, client, `
+SELECT COUNT(*)
+FROM user_affiliate_ledger ual
+WHERE ual.action = 'accrue'
+  AND ual.source_order_id IS NOT NULL
+  AND ual.user_id = $1`, inviterID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count user affiliate rebate records: %w", err)
+	}
+
+	rows, err := client.QueryContext(ctx, `
+SELECT po.id,
+       po.out_trade_no,
+       ual.user_id,
+       '' AS inviter_email,
+       '' AS inviter_username,
+       ual.source_user_id,
+       COALESCE(invitee.email, ''),
+       COALESCE(invitee.username, ''),
+       po.amount::double precision,
+       po.pay_amount::double precision,
+       ual.amount::double precision,
+       po.payment_type,
+       po.status,
+       ual.created_at
+FROM user_affiliate_ledger ual
+JOIN payment_orders po ON po.id = ual.source_order_id
+JOIN users invitee ON invitee.id = ual.source_user_id
+WHERE ual.action = 'accrue'
+  AND ual.source_order_id IS NOT NULL
+  AND ual.user_id = $1
+ORDER BY ual.created_at DESC
+LIMIT $2 OFFSET $3`, inviterID, filter.PageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list user affiliate rebate records: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	items := make([]service.AffiliateRebateRecord, 0)
+	for rows.Next() {
+		var item service.AffiliateRebateRecord
+		if err := rows.Scan(
+			&item.OrderID,
+			&item.OutTradeNo,
+			&item.InviterID,
+			&item.InviterEmail,
+			&item.InviterUsername,
+			&item.InviteeID,
+			&item.InviteeEmail,
+			&item.InviteeUsername,
+			&item.OrderAmount,
+			&item.PayAmount,
+			&item.RebateAmount,
+			&item.PaymentType,
+			&item.OrderStatus,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, 0, err
+		}
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
+}
+
+func (r *affiliateRepository) ListUserTransferRecords(ctx context.Context, userID int64, filter service.AffiliateRecordFilter) ([]service.AffiliateTransferRecord, int64, error) {
+	client := clientFromContext(ctx, r.client)
+	if userID <= 0 {
+		return nil, 0, service.ErrUserNotFound
+	}
+	filter = service.AffiliateRecordFilter{
+		Page:     filter.Page,
+		PageSize: filter.PageSize,
+	}
+	if filter.Page <= 0 {
+		filter.Page = 1
+	}
+	if filter.PageSize <= 0 || filter.PageSize > 100 {
+		filter.PageSize = 20
+	}
+	offset := (filter.Page - 1) * filter.PageSize
+
+	total, err := scanInt64(ctx, client, `
+SELECT COUNT(*)
+FROM user_affiliate_ledger ual
+WHERE ual.action = 'transfer'
+  AND ual.user_id = $1`, userID)
+	if err != nil {
+		return nil, 0, fmt.Errorf("count user affiliate transfer records: %w", err)
+	}
+
+	rows, err := client.QueryContext(ctx, `
+SELECT ual.id,
+       ual.user_id,
+       COALESCE(u.email, ''),
+       COALESCE(u.username, ''),
+       ual.amount::double precision,
+       ual.balance_after::double precision,
+       ual.aff_quota_after::double precision,
+       ual.aff_frozen_quota_after::double precision,
+       ual.aff_history_quota_after::double precision,
+       ual.created_at
+FROM user_affiliate_ledger ual
+JOIN users u ON u.id = ual.user_id
+WHERE ual.action = 'transfer'
+  AND ual.user_id = $1
+ORDER BY ual.created_at DESC
+LIMIT $2 OFFSET $3`, userID, filter.PageSize, offset)
+	if err != nil {
+		return nil, 0, fmt.Errorf("list user affiliate transfer records: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+
+	items := make([]service.AffiliateTransferRecord, 0)
+	for rows.Next() {
+		var item service.AffiliateTransferRecord
+		var balanceAfter sql.NullFloat64
+		var availableQuotaAfter sql.NullFloat64
+		var frozenQuotaAfter sql.NullFloat64
+		var historyQuotaAfter sql.NullFloat64
+		if err := rows.Scan(
+			&item.LedgerID,
+			&item.UserID,
+			&item.UserEmail,
+			&item.Username,
+			&item.Amount,
+			&balanceAfter,
+			&availableQuotaAfter,
+			&frozenQuotaAfter,
+			&historyQuotaAfter,
+			&item.CreatedAt,
+		); err != nil {
+			return nil, 0, err
+		}
+		item.BalanceAfter = nullableFloat64Ptr(balanceAfter)
+		item.AvailableQuotaAfter = nullableFloat64Ptr(availableQuotaAfter)
+		item.FrozenQuotaAfter = nullableFloat64Ptr(frozenQuotaAfter)
+		item.HistoryQuotaAfter = nullableFloat64Ptr(historyQuotaAfter)
+		item.SnapshotAvailable = balanceAfter.Valid &&
+			availableQuotaAfter.Valid &&
+			frozenQuotaAfter.Valid &&
+			historyQuotaAfter.Valid
+		items = append(items, item)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, 0, err
+	}
+	return items, total, nil
+}
+
+func (r *affiliateRepository) GetAffiliateOverview(ctx context.Context) (*service.AffiliateAdminOverview, error) {
+	client := clientFromContext(ctx, r.client)
+	rows, err := client.QueryContext(ctx, `
+SELECT
+  COALESCE((SELECT COUNT(*) FROM user_affiliates WHERE inviter_id IS NOT NULL), 0)::bigint,
+  COALESCE((SELECT COUNT(DISTINCT source_user_id) FROM user_affiliate_ledger WHERE action = 'accrue' AND source_user_id IS NOT NULL), 0)::bigint,
+  COALESCE((SELECT SUM(aff_quota)::double precision FROM user_affiliates), 0)::double precision,
+  COALESCE((SELECT SUM(aff_frozen_quota)::double precision FROM user_affiliates), 0)::double precision,
+  COALESCE((SELECT SUM(aff_history_quota)::double precision FROM user_affiliates), 0)::double precision,
+  COALESCE((SELECT COUNT(*) FROM user_affiliate_ledger WHERE action = 'accrue' AND created_at >= NOW() - INTERVAL '7 days'), 0)::bigint`)
+	if err != nil {
+		return nil, fmt.Errorf("query affiliate overview: %w", err)
+	}
+	defer func() { _ = rows.Close() }()
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+		return &service.AffiliateAdminOverview{}, nil
+	}
+	var overview service.AffiliateAdminOverview
+	if err := rows.Scan(
+		&overview.InvitedUserCount,
+		&overview.RebatedInviteeCount,
+		&overview.AvailableQuotaTotal,
+		&overview.FrozenQuotaTotal,
+		&overview.HistoryQuotaTotal,
+		&overview.RecentRebateRecordCount,
+	); err != nil {
+		return nil, err
+	}
+	return &overview, rows.Err()
+}
+
 func (r *affiliateRepository) ListAffiliateInviteRecords(ctx context.Context, filter service.AffiliateRecordFilter) ([]service.AffiliateInviteRecord, int64, error) {
 	client := clientFromContext(ctx, r.client)
 	where, args := buildAffiliateRecordWhere(filter, "ua.created_at", []string{

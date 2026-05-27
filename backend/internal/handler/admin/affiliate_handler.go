@@ -20,12 +20,67 @@ type AffiliateHandler struct {
 	adminService     service.AdminService
 }
 
+type UpdateAffiliateRulesRequest struct {
+	AffiliateEnabled             bool    `json:"affiliate_enabled"`
+	InvitationCodeEnabled        bool    `json:"invitation_code_enabled"`
+	AffiliateRebateRate          float64 `json:"affiliate_rebate_rate"`
+	AffiliateRebateFreezeHours   int     `json:"affiliate_rebate_freeze_hours"`
+	AffiliateRebateDurationDays  int     `json:"affiliate_rebate_duration_days"`
+	AffiliateRebatePerInviteeCap float64 `json:"affiliate_rebate_per_invitee_cap"`
+}
+
 // NewAffiliateHandler creates a new admin affiliate handler.
 func NewAffiliateHandler(affiliateService *service.AffiliateService, adminService service.AdminService) *AffiliateHandler {
 	return &AffiliateHandler{
 		affiliateService: affiliateService,
 		adminService:     adminService,
 	}
+}
+
+// GetOverview returns affiliate module overview metrics and current rules.
+// GET /api/v1/admin/affiliates/overview
+func (h *AffiliateHandler) GetOverview(c *gin.Context) {
+	overview, err := h.affiliateService.AdminGetOverview(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, overview)
+}
+
+// GetRules returns the current affiliate rules.
+// GET /api/v1/admin/affiliates/rules
+func (h *AffiliateHandler) GetRules(c *gin.Context) {
+	rules, err := h.affiliateService.AdminGetRules(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, rules)
+}
+
+// UpdateRules updates the current affiliate rules.
+// PUT /api/v1/admin/affiliates/rules
+func (h *AffiliateHandler) UpdateRules(c *gin.Context) {
+	var req UpdateAffiliateRulesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	updated, err := h.affiliateService.AdminUpdateRules(c.Request.Context(), service.AffiliateRulesSettings{
+		AffiliateEnabled:             req.AffiliateEnabled,
+		InvitationCodeEnabled:        req.InvitationCodeEnabled,
+		AffiliateRebateRate:          req.AffiliateRebateRate,
+		AffiliateRebateFreezeHours:   req.AffiliateRebateFreezeHours,
+		AffiliateRebateDurationDays:  req.AffiliateRebateDurationDays,
+		AffiliateRebatePerInviteeCap: req.AffiliateRebatePerInviteeCap,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, updated)
 }
 
 // ListUsers returns paginated users with custom affiliate settings.

@@ -134,6 +134,105 @@
             </table>
           </div>
         </div>
+
+        <div class="card p-6">
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('affiliate.rebates.title') }}</h3>
+          <div v-if="rebateLoading" class="flex justify-center py-8">
+            <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
+          </div>
+          <div v-else-if="rebateRecords.length === 0" class="mt-4 rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-dark-700 dark:text-dark-400">
+            {{ t('affiliate.rebates.empty') }}
+          </div>
+          <div v-else class="mt-4 overflow-x-auto">
+            <table class="w-full min-w-[820px] text-left text-sm">
+              <thead>
+                <tr class="border-b border-gray-200 text-gray-500 dark:border-dark-700 dark:text-dark-400">
+                  <th class="px-3 py-2 font-medium">{{ t('affiliate.rebates.columns.invitee') }}</th>
+                  <th class="px-3 py-2 font-medium text-right">{{ t('affiliate.rebates.columns.orderAmount') }}</th>
+                  <th class="px-3 py-2 font-medium text-right">{{ t('affiliate.rebates.columns.payAmount') }}</th>
+                  <th class="px-3 py-2 font-medium text-right">{{ t('affiliate.rebates.columns.rebateAmount') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('affiliate.rebates.columns.paymentType') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('affiliate.rebates.columns.orderStatus') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('affiliate.rebates.columns.createdAt') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="item in rebateRecords"
+                  :key="`${item.order_id}-${item.created_at}`"
+                  class="border-b border-gray-100 last:border-b-0 dark:border-dark-800"
+                >
+                  <td class="px-3 py-3">
+                    <div class="text-gray-900 dark:text-white">{{ item.invitee_email || '-' }}</div>
+                    <div class="text-xs text-gray-500 dark:text-dark-400">{{ item.invitee_username || '-' }}</div>
+                  </td>
+                  <td class="px-3 py-3 text-right text-gray-700 dark:text-gray-300">{{ formatCurrency(item.order_amount) }}</td>
+                  <td class="px-3 py-3 text-right text-gray-700 dark:text-gray-300">{{ formatCurrency(item.pay_amount) }}</td>
+                  <td class="px-3 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">{{ formatCurrency(item.rebate_amount) }}</td>
+                  <td class="px-3 py-3 text-gray-700 dark:text-gray-300">{{ formatPaymentType(item.payment_type) }}</td>
+                  <td class="px-3 py-3"><OrderStatusBadge :status="asOrderStatus(item.order_status)" /></td>
+                  <td class="px-3 py-3 text-gray-700 dark:text-gray-300">{{ formatDateTime(item.created_at) || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            v-if="rebateTotal > rebatePageSize"
+            class="mt-4"
+            :page="rebatePage"
+            :total="rebateTotal"
+            :page-size="rebatePageSize"
+            @update:page="changeRebatePage"
+            @update:pageSize="changeRebatePageSize"
+          />
+        </div>
+
+        <div class="card p-6">
+          <h3 class="text-base font-semibold text-gray-900 dark:text-white">{{ t('affiliate.transfersHistory.title') }}</h3>
+          <div v-if="transferRecordLoading" class="flex justify-center py-8">
+            <div class="h-6 w-6 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
+          </div>
+          <div v-else-if="transferRecords.length === 0" class="mt-4 rounded-xl border border-dashed border-gray-300 p-6 text-center text-sm text-gray-500 dark:border-dark-700 dark:text-dark-400">
+            {{ t('affiliate.transfersHistory.empty') }}
+          </div>
+          <div v-else class="mt-4 overflow-x-auto">
+            <table class="w-full min-w-[820px] text-left text-sm">
+              <thead>
+                <tr class="border-b border-gray-200 text-gray-500 dark:border-dark-700 dark:text-dark-400">
+                  <th class="px-3 py-2 font-medium text-right">{{ t('affiliate.transfersHistory.columns.amount') }}</th>
+                  <th class="px-3 py-2 font-medium text-right">{{ t('affiliate.transfersHistory.columns.balanceAfter') }}</th>
+                  <th class="px-3 py-2 font-medium text-right">{{ t('affiliate.transfersHistory.columns.availableQuotaAfter') }}</th>
+                  <th class="px-3 py-2 font-medium text-right">{{ t('affiliate.transfersHistory.columns.frozenQuotaAfter') }}</th>
+                  <th class="px-3 py-2 font-medium text-right">{{ t('affiliate.transfersHistory.columns.historyQuotaAfter') }}</th>
+                  <th class="px-3 py-2 font-medium">{{ t('affiliate.transfersHistory.columns.createdAt') }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr
+                  v-for="item in transferRecords"
+                  :key="`${item.ledger_id}-${item.created_at}`"
+                  class="border-b border-gray-100 last:border-b-0 dark:border-dark-800"
+                >
+                  <td class="px-3 py-3 text-right font-medium text-emerald-600 dark:text-emerald-400">{{ formatCurrency(item.amount) }}</td>
+                  <td class="px-3 py-3 text-right text-gray-700 dark:text-gray-300">{{ formatNullableCurrency(item.balance_after) }}</td>
+                  <td class="px-3 py-3 text-right text-gray-700 dark:text-gray-300">{{ formatNullableCurrency(item.available_quota_after) }}</td>
+                  <td class="px-3 py-3 text-right text-gray-700 dark:text-gray-300">{{ formatNullableCurrency(item.frozen_quota_after) }}</td>
+                  <td class="px-3 py-3 text-right text-gray-700 dark:text-gray-300">{{ formatNullableCurrency(item.history_quota_after) }}</td>
+                  <td class="px-3 py-3 text-gray-700 dark:text-gray-300">{{ formatDateTime(item.created_at) || '-' }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <Pagination
+            v-if="transferTotal > transferPageSize"
+            class="mt-4"
+            :page="transferPage"
+            :total="transferTotal"
+            :page-size="transferPageSize"
+            @update:page="changeTransferPage"
+            @update:pageSize="changeTransferPageSize"
+          />
+        </div>
       </template>
     </div>
   </AppLayout>
@@ -144,22 +243,35 @@ import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
+import Pagination from '@/components/common/Pagination.vue'
+import OrderStatusBadge from '@/components/payment/OrderStatusBadge.vue'
 import userAPI from '@/api/user'
-import type { UserAffiliateDetail } from '@/types'
+import type { UserAffiliateDetail, AffiliateRebateRecord, AffiliateTransferRecord } from '@/types'
+import type { OrderStatus } from '@/types/payment'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import { useClipboard } from '@/composables/useClipboard'
 import { formatCurrency, formatDateTime } from '@/utils/format'
 import { extractApiErrorMessage } from '@/utils/apiError'
 
-const { t } = useI18n()
+const { t, te } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const { copyToClipboard } = useClipboard()
 
 const loading = ref(true)
+const rebateLoading = ref(false)
+const transferRecordLoading = ref(false)
 const transferring = ref(false)
 const detail = ref<UserAffiliateDetail | null>(null)
+const rebateRecords = ref<AffiliateRebateRecord[]>([])
+const rebatePage = ref(1)
+const rebatePageSize = ref(10)
+const rebateTotal = ref(0)
+const transferRecords = ref<AffiliateTransferRecord[]>([])
+const transferPage = ref(1)
+const transferPageSize = ref(10)
+const transferTotal = ref(0)
 
 const inviteLink = computed(() => {
   if (!detail.value) return ''
@@ -167,8 +279,6 @@ const inviteLink = computed(() => {
   return `${window.location.origin}/register?aff=${encodeURIComponent(detail.value.aff_code)}`
 })
 
-// Rebate rate is a percentage in the range [0, 100]; backend already clamps it.
-// We trim trailing zeros (e.g. 20.00 → "20", 12.50 → "12.5") for a cleaner UI.
 const formattedRebateRate = computed(() => {
   const v = detail.value?.effective_rebate_rate_percent ?? 0
   const rounded = Math.round(v * 100) / 100
@@ -177,6 +287,19 @@ const formattedRebateRate = computed(() => {
 
 function formatCount(value: number): string {
   return value.toLocaleString()
+}
+
+function formatNullableCurrency(value?: number | null): string {
+  return typeof value === 'number' ? formatCurrency(value) : '-'
+}
+
+function formatPaymentType(paymentType: string): string {
+  const key = `payment.methods.${paymentType}`
+  return te(key) ? t(key) : paymentType || '-'
+}
+
+function asOrderStatus(status: string): OrderStatus {
+  return status as OrderStatus
 }
 
 async function loadAffiliateDetail(silent = false): Promise<void> {
@@ -191,6 +314,32 @@ async function loadAffiliateDetail(silent = false): Promise<void> {
     if (!silent) {
       loading.value = false
     }
+  }
+}
+
+async function loadRebateRecords(): Promise<void> {
+  rebateLoading.value = true
+  try {
+    const res = await userAPI.getAffiliateRebates({ page: rebatePage.value, page_size: rebatePageSize.value })
+    rebateRecords.value = res.items ?? []
+    rebateTotal.value = res.total ?? 0
+  } catch (error) {
+    appStore.showError(extractApiErrorMessage(error, t('affiliate.loadFailed')))
+  } finally {
+    rebateLoading.value = false
+  }
+}
+
+async function loadTransferRecords(): Promise<void> {
+  transferRecordLoading.value = true
+  try {
+    const res = await userAPI.getAffiliateTransfers({ page: transferPage.value, page_size: transferPageSize.value })
+    transferRecords.value = res.items ?? []
+    transferTotal.value = res.total ?? 0
+  } catch (error) {
+    appStore.showError(extractApiErrorMessage(error, t('affiliate.loadFailed')))
+  } finally {
+    transferRecordLoading.value = false
   }
 }
 
@@ -212,6 +361,7 @@ async function transferQuota(): Promise<void> {
     appStore.showSuccess(t('affiliate.transfer.success', { amount: formatCurrency(resp.transferred_quota) }))
     await Promise.all([
       loadAffiliateDetail(true),
+      loadTransferRecords(),
       authStore.refreshUser().catch(() => undefined),
     ])
   } catch (error) {
@@ -221,7 +371,33 @@ async function transferQuota(): Promise<void> {
   }
 }
 
+function changeRebatePage(page: number) {
+  rebatePage.value = page
+  void loadRebateRecords()
+}
+
+function changeRebatePageSize(pageSize: number) {
+  rebatePageSize.value = pageSize
+  rebatePage.value = 1
+  void loadRebateRecords()
+}
+
+function changeTransferPage(page: number) {
+  transferPage.value = page
+  void loadTransferRecords()
+}
+
+function changeTransferPageSize(pageSize: number) {
+  transferPageSize.value = pageSize
+  transferPage.value = 1
+  void loadTransferRecords()
+}
+
 onMounted(() => {
-  void loadAffiliateDetail()
+  void Promise.all([
+    loadAffiliateDetail(),
+    loadRebateRecords(),
+    loadTransferRecords(),
+  ])
 })
 </script>
