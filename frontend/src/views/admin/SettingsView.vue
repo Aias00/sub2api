@@ -6098,6 +6098,176 @@
         </div>
         <!-- /Tab: Email -->
 
+        <!-- Tab: Model Plaza -->
+        <div v-show="activeTab === 'modelPlaza'" class="space-y-6">
+          <div class="card">
+            <div
+              class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
+            >
+              <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
+                {{ localText("模型广场", "Model Plaza") }}
+              </h2>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{
+                  localText(
+                    "配置公开 /models 页展示的模型卡片。支持自定义名称、能力标签和价格文案。",
+                    "Configure the cards shown on the public /models page, including labels, capability tags, and pricing copy.",
+                  )
+                }}
+              </p>
+            </div>
+            <div class="space-y-4 p-6">
+              <div class="flex items-center justify-between">
+                <div class="text-sm text-gray-500 dark:text-gray-400">
+                  {{
+                    localText(
+                      "每张卡片都可以独立控制展示名称、标签、价格文案和公开可见性。",
+                      "Each card can independently control display text, tags, pricing copy, and public visibility.",
+                    )
+                  }}
+                </div>
+                <button
+                  type="button"
+                  class="btn btn-secondary btn-sm"
+                  @click="addModelPlazaItem"
+                >
+                  {{ localText("添加模型", "Add model") }}
+                </button>
+              </div>
+
+              <div
+                v-if="form.model_plaza_items.length === 0"
+                class="rounded-xl border border-dashed border-gray-300 bg-gray-50/70 px-4 py-4 text-sm text-gray-500 dark:border-dark-600 dark:bg-dark-800/50 dark:text-gray-400"
+              >
+                {{
+                  localText(
+                    "当前未配置模型广场卡片，公开 /models 页面会显示空状态。",
+                    "No model plaza cards are configured yet. The public /models page will show an empty state.",
+                  )
+                }}
+              </div>
+
+              <div class="space-y-4">
+                <div
+                  v-for="(item, index) in form.model_plaza_items"
+                  :key="item.id || index"
+                  class="space-y-4 rounded-2xl border border-gray-200 bg-gray-50/70 p-4 dark:border-dark-700 dark:bg-dark-800/50"
+                >
+                  <div class="flex items-center justify-between">
+                    <div class="text-sm font-semibold text-gray-900 dark:text-white">
+                      {{ item.title || localText("未命名模型卡", "Untitled model card") }}
+                    </div>
+                    <button
+                      type="button"
+                      class="btn btn-secondary btn-sm"
+                      @click="removeModelPlazaItem(index)"
+                    >
+                      {{ t("common.delete") }}
+                    </button>
+                  </div>
+
+                  <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div>
+                      <label class="input-label">{{ localText("卡片 ID", "Card ID") }}</label>
+                      <input v-model="item.id" type="text" class="input" :placeholder="localText('例如：claude-opus-4-6', 'e.g. claude-opus-4-6')" />
+                    </div>
+                    <div>
+                      <label class="input-label">{{ localText("平台标识", "Provider key") }}</label>
+                      <input v-model="item.provider" type="text" class="input" :placeholder="localText('例如：anthropic / openai', 'e.g. anthropic / openai')" />
+                    </div>
+                    <div>
+                      <label class="input-label">{{ localText("展示名称", "Display title") }}</label>
+                      <input v-model="item.title" type="text" class="input" :placeholder="localText('例如：Claude Opus 4.6', 'e.g. Claude Opus 4.6')" />
+                    </div>
+                    <div>
+                      <label class="input-label">{{ localText("角标", "Badge") }}</label>
+                      <input v-model="item.badge" type="text" class="input" :placeholder="localText('热门 / 推荐', 'Popular / Featured')" />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                    <div>
+                      <label class="input-label">{{ localText("简介", "Description") }}</label>
+                      <textarea
+                        v-model="item.description"
+                        rows="3"
+                        class="input"
+                        :placeholder="localText('一句话介绍这个模型适合做什么。', 'One sentence about what this model is good for.')"
+                      ></textarea>
+                    </div>
+                    <div>
+                      <label class="input-label">{{ localText("能力标签（每行一个）", "Capability tags (one per line)") }}</label>
+                      <textarea
+                        :value="item.capability_tags.join('\n')"
+                        rows="3"
+                        class="input"
+                        :placeholder="localText('复杂推理\\n代码生成\\nAgent 调用', 'Complex Reasoning\\nCode Generation\\nAgent Workflows')"
+                        @input="updateModelPlazaItemCapabilityTags(index, ($event.target as HTMLTextAreaElement).value)"
+                      ></textarea>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label class="input-label">{{ localText("关联模型 ID（每行一个）", "Related model IDs (one per line)") }}</label>
+                    <textarea
+                      :value="item.model_ids.join('\n')"
+                      rows="3"
+                      class="input font-mono text-sm"
+                      :placeholder="localText('claude-opus-4-6\\nclaude-opus-4-7', 'claude-opus-4-6\\nclaude-opus-4-7')"
+                      @input="updateModelPlazaItemModels(index, ($event.target as HTMLTextAreaElement).value)"
+                    ></textarea>
+                  </div>
+
+                  <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
+                    <div>
+                      <label class="input-label">{{ localText("输入价格", "Input price") }}</label>
+                      <input v-model="item.input_price" type="text" class="input" :placeholder="localText('¥2.0000 / 1M Tokens', '¥2.0000 / 1M Tokens')" />
+                    </div>
+                    <div>
+                      <label class="input-label">{{ localText("输出价格", "Output price") }}</label>
+                      <input v-model="item.output_price" type="text" class="input" :placeholder="localText('¥10.0000 / 1M Tokens', '¥10.0000 / 1M Tokens')" />
+                    </div>
+                    <div>
+                      <label class="input-label">{{ localText("缓存读取价格", "Cache read price") }}</label>
+                      <input v-model="item.cache_read_price" type="text" class="input" :placeholder="localText('¥0.2000 / 1M Tokens', '¥0.2000 / 1M Tokens')" />
+                    </div>
+                    <div>
+                      <label class="input-label">{{ localText("缓存创建价格", "Cache write price") }}</label>
+                      <input v-model="item.cache_write_price" type="text" class="input" :placeholder="localText('¥2.5000 / 1M Tokens', '¥2.5000 / 1M Tokens')" />
+                    </div>
+                    <div>
+                      <label class="input-label">{{ localText("计费标记", "Billing badge") }}</label>
+                      <input v-model="item.billing_badge" type="text" class="input" :placeholder="localText('按量计费', 'Usage based')" />
+                    </div>
+                  </div>
+
+                  <div class="grid grid-cols-1 gap-3 md:grid-cols-[120px_160px_1fr] md:items-end">
+                    <div>
+                      <label class="input-label">{{ localText("排序", "Sort order") }}</label>
+                      <input v-model.number="item.sort_order" type="number" min="0" step="1" class="input" />
+                    </div>
+                    <div>
+                      <label class="input-label">{{ localText("公开显示", "Visible") }}</label>
+                      <div class="flex h-[42px] items-center">
+                        <Toggle v-model="item.visible" />
+                      </div>
+                    </div>
+                    <p class="text-xs text-gray-500 dark:text-gray-400">
+                      {{
+                        localText(
+                          "隐藏后保留配置但不会在公开 /models 页面展示。",
+                          "Hidden items stay configured but do not render on the public /models page.",
+                        )
+                      }}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- /Tab: Model Plaza -->
+
         <!-- Tab: Backup -->
         <div v-show="activeTab === 'backup'">
           <BackupSettings />
@@ -6193,6 +6363,7 @@ import type {
 import type {
   AdminGroup,
   LoginAgreementDocument,
+  ModelPlazaItem,
   NotifyEmailEntry,
   Proxy,
 } from "@/types";
@@ -6250,6 +6421,7 @@ const paymentMethodsHref = computed(() =>
 
 type SettingsTab =
   | "general"
+  | "modelPlaza"
   | "agreement"
   | "features"
   | "security"
@@ -6261,6 +6433,7 @@ type SettingsTab =
 const activeTab = ref<SettingsTab>("general");
 const settingsTabs = [
   { key: "general" as SettingsTab, icon: "home" as const },
+  { key: "modelPlaza" as SettingsTab, icon: "grid" as const },
   { key: "agreement" as SettingsTab, icon: "document" as const },
   { key: "features" as SettingsTab, icon: "bolt" as const },
   { key: "security" as SettingsTab, icon: "shield" as const },
@@ -6493,6 +6666,7 @@ const form = reactive<SettingsForm>({
   contact_info: "",
   doc_url: "",
   home_content: "",
+  model_plaza_items: [] as ModelPlazaItem[],
   backend_mode_enabled: false,
   hide_ccs_import_button: false,
   payment_enabled: false,
@@ -7158,6 +7332,78 @@ function moveMenuItem(index: number, direction: -1 | 1) {
   });
 }
 
+function normalizeModelPlazaItems(
+  items: ModelPlazaItem[] | null | undefined,
+): ModelPlazaItem[] {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((item, index) => ({
+      id: String(item.id || "").trim(),
+      provider: String(item.provider || "").trim(),
+      title: String(item.title || "").trim(),
+      badge: String(item.badge || "").trim(),
+      description: String(item.description || "").trim(),
+      capability_tags: Array.isArray(item.capability_tags)
+        ? item.capability_tags.map((tag) => String(tag || "").trim()).filter(Boolean)
+        : [],
+      model_ids: Array.isArray(item.model_ids)
+        ? item.model_ids.map((model) => String(model || "").trim()).filter(Boolean)
+        : [],
+      input_price: String(item.input_price || "").trim(),
+      output_price: String(item.output_price || "").trim(),
+      cache_read_price: String(item.cache_read_price || "").trim(),
+      cache_write_price: String(item.cache_write_price || "").trim(),
+      billing_badge: String(item.billing_badge || "").trim(),
+      visible: item.visible !== false,
+      sort_order: Number.isFinite(Number(item.sort_order)) ? Number(item.sort_order) : index,
+    }))
+    .filter((item) => item.id || item.title);
+}
+
+function createModelPlazaItemDraft(): ModelPlazaItem {
+  return {
+    id: "",
+    provider: "",
+    title: "",
+    badge: "",
+    description: "",
+    capability_tags: [],
+    model_ids: [],
+    input_price: "",
+    output_price: "",
+    cache_read_price: "",
+    cache_write_price: "",
+    billing_badge: localText("按量计费", "Usage based"),
+    visible: true,
+    sort_order: form.model_plaza_items.length,
+  };
+}
+
+function addModelPlazaItem() {
+  form.model_plaza_items.push(createModelPlazaItemDraft());
+}
+
+function removeModelPlazaItem(index: number) {
+  form.model_plaza_items.splice(index, 1);
+  form.model_plaza_items.forEach((item, i) => {
+    item.sort_order = i;
+  });
+}
+
+function updateModelPlazaItemCapabilityTags(index: number, raw: string) {
+  form.model_plaza_items[index].capability_tags = raw
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+function updateModelPlazaItemModels(index: number, raw: string) {
+  form.model_plaza_items[index].model_ids = raw
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
 // Custom endpoint management
 function addEndpoint() {
   form.custom_endpoints.push({ name: "", endpoint: "", description: "" });
@@ -7392,6 +7638,9 @@ async function loadSettings() {
     }
     form.payment_recharge_products = normalizeRechargeProducts(
       settings.payment_recharge_products,
+    );
+    form.model_plaza_items = normalizeModelPlazaItems(
+      settings.model_plaza_items,
     );
     form.login_agreement_mode =
       settings.login_agreement_mode === "checkbox" ? "checkbox" : "modal";
@@ -7787,6 +8036,7 @@ async function saveSettings() {
       contact_info: form.contact_info,
       doc_url: form.doc_url,
       home_content: form.home_content,
+      model_plaza_items: normalizeModelPlazaItems(form.model_plaza_items),
       backend_mode_enabled: form.backend_mode_enabled,
       hide_ccs_import_button: form.hide_ccs_import_button,
       table_default_page_size: form.table_default_page_size,

@@ -709,6 +709,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyContactInfo,
 		SettingKeyDocURL,
 		SettingKeyHomeContent,
+		SettingKeyModelPlazaItems,
 		SettingKeyHideCcsImportButton,
 		SettingKeyPurchaseSubscriptionEnabled,
 		SettingKeyPurchaseSubscriptionURL,
@@ -827,6 +828,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		ContactInfo:                      settings[SettingKeyContactInfo],
 		DocURL:                           settings[SettingKeyDocURL],
 		HomeContent:                      settings[SettingKeyHomeContent],
+		ModelPlazaItems:                  settings[SettingKeyModelPlazaItems],
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
 		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
@@ -982,6 +984,7 @@ type PublicSettingsInjectionPayload struct {
 	ContactInfo                      string                   `json:"contact_info"`
 	DocURL                           string                   `json:"doc_url"`
 	HomeContent                      string                   `json:"home_content"`
+	ModelPlazaItems                  json.RawMessage          `json:"model_plaza_items"`
 	HideCcsImportButton              bool                     `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled      bool                     `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL          string                   `json:"purchase_subscription_url"`
@@ -1047,6 +1050,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		ContactInfo:                      settings.ContactInfo,
 		DocURL:                           settings.DocURL,
 		HomeContent:                      settings.HomeContent,
+		ModelPlazaItems:                  safeRawJSONArray(settings.ModelPlazaItems),
 		HideCcsImportButton:              settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:      settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:          settings.PurchaseSubscriptionURL,
@@ -1275,6 +1279,78 @@ func safeRawJSONArray(raw string) json.RawMessage {
 		return json.RawMessage(raw)
 	}
 	return json.RawMessage("[]")
+}
+
+func parseModelPlazaItems(raw string) []ModelPlazaItem {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "[]" {
+		return []ModelPlazaItem{}
+	}
+	var items []ModelPlazaItem
+	if err := json.Unmarshal([]byte(raw), &items); err != nil {
+		return []ModelPlazaItem{}
+	}
+	return normalizeModelPlazaItems(items)
+}
+
+func normalizeModelPlazaItems(items []ModelPlazaItem) []ModelPlazaItem {
+	if len(items) == 0 {
+		return []ModelPlazaItem{}
+	}
+	normalized := make([]ModelPlazaItem, 0, len(items))
+	seen := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		item.ID = strings.TrimSpace(item.ID)
+		item.Provider = strings.TrimSpace(item.Provider)
+		item.Title = strings.TrimSpace(item.Title)
+		item.Badge = strings.TrimSpace(item.Badge)
+		item.Description = strings.TrimSpace(item.Description)
+		item.InputPrice = strings.TrimSpace(item.InputPrice)
+		item.OutputPrice = strings.TrimSpace(item.OutputPrice)
+		item.CacheReadPrice = strings.TrimSpace(item.CacheReadPrice)
+		item.CacheWritePrice = strings.TrimSpace(item.CacheWritePrice)
+		item.BillingBadge = strings.TrimSpace(item.BillingBadge)
+		if item.ID == "" || item.Title == "" {
+			continue
+		}
+		if _, exists := seen[item.ID]; exists {
+			continue
+		}
+		item.CapabilityTags = cleanStringSlice(item.CapabilityTags)
+		item.ModelIDs = cleanStringSlice(item.ModelIDs)
+		seen[item.ID] = struct{}{}
+		normalized = append(normalized, item)
+	}
+	sort.SliceStable(normalized, func(i, j int) bool {
+		if normalized[i].SortOrder == normalized[j].SortOrder {
+			return normalized[i].Title < normalized[j].Title
+		}
+		return normalized[i].SortOrder < normalized[j].SortOrder
+	})
+	return normalized
+}
+
+func marshalModelPlazaItems(items []ModelPlazaItem) (string, error) {
+	normalized := normalizeModelPlazaItems(items)
+	payload, err := json.Marshal(normalized)
+	if err != nil {
+		return "", err
+	}
+	return string(payload), nil
+}
+
+func cleanStringSlice(values []string) []string {
+	if len(values) == 0 {
+		return []string{}
+	}
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			out = append(out, value)
+		}
+	}
+	return out
 }
 
 // GetFrameSrcOrigins returns deduplicated http(s) origins from home_content URL,
@@ -1639,6 +1715,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyContactInfo] = settings.ContactInfo
 	updates[SettingKeyDocURL] = settings.DocURL
 	updates[SettingKeyHomeContent] = settings.HomeContent
+	updates[SettingKeyModelPlazaItems] = settings.ModelPlazaItems
 	updates[SettingKeyHideCcsImportButton] = strconv.FormatBool(settings.HideCcsImportButton)
 	updates[SettingKeyPurchaseSubscriptionEnabled] = strconv.FormatBool(settings.PurchaseSubscriptionEnabled)
 	updates[SettingKeyPurchaseSubscriptionURL] = strings.TrimSpace(settings.PurchaseSubscriptionURL)
@@ -2384,6 +2461,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyLoginAgreementDocuments:                  loginAgreementDocumentsJSON,
 		SettingKeySiteName:                                 "Sub2API",
 		SettingKeySiteLogo:                                 "",
+		SettingKeyModelPlazaItems:                          "[]",
 		SettingKeyPurchaseSubscriptionEnabled:              "false",
 		SettingKeyPurchaseSubscriptionURL:                  "",
 		SettingKeyTableDefaultPageSize:                     "20",
@@ -2571,6 +2649,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		ContactInfo:                      settings[SettingKeyContactInfo],
 		DocURL:                           settings[SettingKeyDocURL],
 		HomeContent:                      settings[SettingKeyHomeContent],
+		ModelPlazaItems:                  settings[SettingKeyModelPlazaItems],
 		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
 		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
 		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),

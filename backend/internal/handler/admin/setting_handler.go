@@ -239,6 +239,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		ContactInfo:                            settings.ContactInfo,
 		DocURL:                                 settings.DocURL,
 		HomeContent:                            settings.HomeContent,
+		ModelPlazaItems:                        dto.ParseModelPlazaItems(settings.ModelPlazaItems),
 		HideCcsImportButton:                    settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:            settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:                settings.PurchaseSubscriptionURL,
@@ -517,6 +518,7 @@ type UpdateSettingsRequest struct {
 	ContactInfo                 *string               `json:"contact_info"`
 	DocURL                      *string               `json:"doc_url"`
 	HomeContent                 *string               `json:"home_content"`
+	ModelPlazaItems             *[]dto.ModelPlazaItem `json:"model_plaza_items"`
 	HideCcsImportButton         *bool                 `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled *bool                 `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     *string               `json:"purchase_subscription_url"`
@@ -1359,6 +1361,17 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		customEndpointsJSON = string(endpointBytes)
 	}
 
+	modelPlazaJSON := previousSettings.ModelPlazaItems
+	if req.ModelPlazaItems != nil {
+		items := dto.NormalizeModelPlazaItems(*req.ModelPlazaItems)
+		payload, err := json.Marshal(items)
+		if err != nil {
+			response.BadRequest(c, "Failed to serialize model plaza items")
+			return
+		}
+		modelPlazaJSON = string(payload)
+	}
+
 	// Ops metrics collector interval validation (seconds).
 	if req.OpsMetricsIntervalSeconds != nil {
 		v := *req.OpsMetricsIntervalSeconds
@@ -1487,6 +1500,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ContactInfo:                      contactInfo,
 		DocURL:                           docURL,
 		HomeContent:                      homeContent,
+		ModelPlazaItems:                  modelPlazaJSON,
 		HideCcsImportButton:              hideCcsImportButton,
 		PurchaseSubscriptionEnabled:      purchaseEnabled,
 		PurchaseSubscriptionURL:          purchaseURL,
@@ -1887,6 +1901,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		ContactInfo:                            updatedSettings.ContactInfo,
 		DocURL:                                 updatedSettings.DocURL,
 		HomeContent:                            updatedSettings.HomeContent,
+		ModelPlazaItems:                        dto.ParseModelPlazaItems(updatedSettings.ModelPlazaItems),
 		HideCcsImportButton:                    updatedSettings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:            updatedSettings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:                updatedSettings.PurchaseSubscriptionURL,

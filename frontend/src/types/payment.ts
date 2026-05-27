@@ -71,6 +71,12 @@ export interface CheckoutInfoResponse {
   stripe_publishable_key: string
 }
 
+/** Public homepage catalog for landing-page model/pricing sections. */
+export interface HomeCatalogResponse {
+  recharge_products: RechargeProduct[]
+  plans: SubscriptionPlan[]
+}
+
 export interface RechargeProduct {
   id: string
   name: string

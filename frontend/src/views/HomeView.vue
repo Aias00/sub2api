@@ -1,320 +1,268 @@
 <template>
-  <!-- Custom Home Content: Full Page Mode -->
   <div v-if="homeContent" class="min-h-screen">
-    <!-- iframe mode -->
     <iframe
       v-if="isHomeContentUrl"
       :src="homeContent.trim()"
       class="h-screen w-full border-0"
       allowfullscreen
     ></iframe>
-    <!-- HTML mode - SECURITY: homeContent is admin-only setting, XSS risk is acceptable -->
     <div v-else v-html="homeContent"></div>
   </div>
 
-  <!-- Default Home Page -->
   <div
     v-else
-    class="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-50 via-primary-50/30 to-gray-100 dark:from-dark-950 dark:via-dark-900 dark:to-dark-950"
+    class="relative min-h-screen overflow-x-hidden bg-white text-slate-900 dark:bg-dark-950 dark:text-white"
   >
-    <!-- Background Decorations -->
     <div class="pointer-events-none absolute inset-0 overflow-hidden">
-      <div
-        class="absolute -right-40 -top-40 h-96 w-96 rounded-full bg-primary-400/20 blur-3xl"
-      ></div>
-      <div
-        class="absolute -bottom-40 -left-40 h-96 w-96 rounded-full bg-primary-500/15 blur-3xl"
-      ></div>
-      <div
-        class="absolute left-1/3 top-1/4 h-72 w-72 rounded-full bg-primary-300/10 blur-3xl"
-      ></div>
-      <div
-        class="absolute bottom-1/4 right-1/4 h-64 w-64 rounded-full bg-primary-400/10 blur-3xl"
-      ></div>
-      <div
-        class="absolute inset-0 bg-[linear-gradient(rgba(20,184,166,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(20,184,166,0.03)_1px,transparent_1px)] bg-[size:64px_64px]"
-      ></div>
+      <div class="absolute inset-x-0 top-0 h-[36rem] bg-[radial-gradient(circle_at_20%_60%,rgba(59,130,246,0.24),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(96,165,250,0.18),transparent_28%),linear-gradient(180deg,rgba(239,246,255,0.95),rgba(255,255,255,0.96))] dark:bg-[radial-gradient(circle_at_20%_60%,rgba(59,130,246,0.18),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(96,165,250,0.12),transparent_28%),linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,1))]"></div>
+      <div class="absolute left-[-8rem] top-48 h-64 w-64 rounded-full bg-blue-500/20 blur-3xl"></div>
+      <div class="absolute right-[-6rem] top-16 h-72 w-72 rounded-full bg-sky-300/30 blur-3xl"></div>
+      <div class="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:72px_72px] opacity-40 dark:opacity-10"></div>
     </div>
 
-    <!-- Header -->
-    <header class="relative z-20 px-6 py-4">
-      <nav class="mx-auto flex max-w-6xl items-center justify-between">
-        <!-- Logo -->
-        <div class="flex items-center">
-          <div class="h-10 w-10 overflow-hidden rounded-xl shadow-md">
+    <header class="relative z-20 px-6 py-5">
+      <nav class="mx-auto flex max-w-5xl items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="h-9 w-9 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-900">
             <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ siteName }}</span>
           </div>
         </div>
 
-        <!-- Nav Actions -->
-        <div class="flex items-center gap-3">
-          <!-- Language Switcher -->
-          <LocaleSwitcher />
+        <div class="hidden items-center gap-8 text-xs font-medium tracking-[0.12em] text-slate-500 lg:flex">
+          <template v-for="item in navItems" :key="item.label">
+            <router-link
+              v-if="item.to"
+              :to="item.to"
+              class="transition-colors hover:text-slate-900 dark:hover:text-white"
+            >
+              {{ item.label }}
+            </router-link>
+            <a
+              v-else
+              :href="item.href"
+              class="transition-colors hover:text-slate-900 dark:hover:text-white"
+            >
+              {{ item.label }}
+            </a>
+          </template>
+        </div>
 
-          <!-- Doc Link -->
+        <div class="flex items-center gap-3">
+          <LocaleSwitcher />
           <DocsLink
             v-if="docUrl"
             :doc-url="docUrl"
-            class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
-            :title="t('home.viewDocs')"
+            class="hidden rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-dark-700 dark:text-dark-200 dark:hover:border-dark-500 dark:hover:text-white sm:inline-flex"
           >
-            <Icon name="book" size="md" />
+            {{ t('home.viewDocs') }}
           </DocsLink>
-
-          <!-- Login / Dashboard Button -->
           <router-link
-            v-if="isAuthenticated"
-            :to="dashboardPath"
-            class="inline-flex items-center gap-1.5 rounded-full bg-gray-900 py-1 pl-1 pr-2.5 transition-colors hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700"
+            :to="isAuthenticated ? dashboardPath : '/login'"
+            class="inline-flex items-center rounded-full border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 dark:border-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
           >
-            <span
-              class="flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-[10px] font-semibold text-white"
-            >
-              {{ userInitial }}
-            </span>
-            <span class="text-xs font-medium text-white">{{ t('home.dashboard') }}</span>
-            <svg
-              class="h-3 w-3 text-gray-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-              stroke-width="2"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M4.5 19.5l15-15m0 0H8.25m11.25 0v11.25"
-              />
-            </svg>
-          </router-link>
-          <router-link
-            v-else
-            to="/login"
-            class="inline-flex items-center rounded-full bg-gray-900 px-3 py-1 text-xs font-medium text-white transition-colors hover:bg-gray-800 dark:bg-gray-800 dark:hover:bg-gray-700"
-          >
-            {{ t('home.login') }}
+            {{ isAuthenticated ? t('home.goToDashboard') : t('home.login') }}
           </router-link>
         </div>
       </nav>
     </header>
 
-    <!-- Main Content -->
-    <main class="relative z-10 flex-1 px-6 py-16">
-      <div class="mx-auto max-w-6xl">
-        <!-- Hero Section - Left/Right Layout -->
-        <div class="mb-12 flex flex-col items-center justify-between gap-12 lg:flex-row lg:gap-16">
-          <!-- Left: Text Content -->
-          <div class="flex-1 text-center lg:text-left">
-            <h1
-              class="mb-4 text-4xl font-bold text-gray-900 dark:text-white md:text-5xl lg:text-6xl"
+    <main class="relative z-10">
+      <section id="top" class="px-6 pb-28 pt-12 sm:pb-32 sm:pt-16">
+        <div class="mx-auto flex max-w-5xl flex-col items-center text-center">
+          <div class="mb-6 inline-flex items-center rounded-full border border-slate-300/80 bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 backdrop-blur dark:border-dark-600 dark:bg-dark-900/70 dark:text-dark-100">
+            {{ t('home.heroBadge') }}
+          </div>
+          <h1 class="max-w-3xl text-balance text-5xl font-black tracking-tight text-slate-950 dark:text-white sm:text-6xl lg:text-7xl">
+            {{ t('home.heroTitle') }}
+          </h1>
+          <p class="mt-6 max-w-3xl text-balance text-base leading-8 text-slate-600 dark:text-dark-200 sm:text-lg">
+            {{ t('home.heroDescription') }}
+          </p>
+          <div class="mt-10 flex flex-col items-center gap-3 sm:flex-row">
+            <router-link
+              :to="isAuthenticated ? dashboardPath : '/login'"
+              class="inline-flex items-center rounded-full bg-slate-950 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
             >
-              {{ siteName }}
-            </h1>
-            <p class="mb-8 text-lg text-gray-600 dark:text-dark-300 md:text-xl">
-              {{ siteSubtitle }}
-            </p>
+              {{ isAuthenticated ? t('home.goToDashboard') : t('home.primaryCta') }}
+            </router-link>
+            <router-link
+              to="/models"
+              class="inline-flex items-center rounded-full border border-slate-300 bg-white/70 px-7 py-3 text-sm font-semibold text-slate-700 backdrop-blur transition hover:border-slate-400 hover:text-slate-950 dark:border-dark-600 dark:bg-dark-900/60 dark:text-dark-100 dark:hover:border-dark-400 dark:hover:text-white"
+            >
+              {{ t('home.secondaryCta') }}
+            </router-link>
+          </div>
+        </div>
+      </section>
 
-            <!-- CTA Button -->
-            <div>
-              <router-link
-                :to="isAuthenticated ? dashboardPath : '/login'"
-                class="btn btn-primary px-8 py-3 text-base shadow-lg shadow-primary-500/30"
-              >
-                {{ isAuthenticated ? t('home.goToDashboard') : t('home.getStarted') }}
-                <Icon name="arrowRight" size="md" class="ml-2" :stroke-width="2" />
-              </router-link>
-            </div>
+      <section id="models" class="px-6 py-12 sm:py-16">
+        <div class="mx-auto max-w-5xl">
+          <div class="text-center">
+            <p class="text-sm font-medium uppercase tracking-[0.2em] text-sky-600 dark:text-sky-400">
+              {{ t('home.modelMatrixKicker') }}
+            </p>
+            <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+              {{ t('home.modelMatrixTitle') }}
+            </h2>
+            <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-500 dark:text-dark-300 sm:text-base">
+              {{ t('home.modelMatrixDescription') }}
+            </p>
           </div>
 
-          <!-- Right: Terminal Animation -->
-          <div class="flex flex-1 justify-center lg:justify-end">
-            <div class="terminal-container">
-              <div class="terminal-window">
-                <!-- Window header -->
-                <div class="terminal-header">
-                  <div class="terminal-buttons">
-                    <span class="btn-close"></span>
-                    <span class="btn-minimize"></span>
-                    <span class="btn-maximize"></span>
-                  </div>
-                  <span class="terminal-title">terminal</span>
+          <div v-if="catalogLoading" class="mt-10 flex justify-center py-10">
+            <div class="h-8 w-8 animate-spin rounded-full border-2 border-sky-500 border-t-transparent"></div>
+          </div>
+
+          <div
+            v-else
+            data-home-model-grid
+            class="mt-12 grid gap-5"
+            :class="modelGridClass"
+          >
+            <article
+              v-for="family in visibleModelFamilies"
+              :key="family.key"
+              class="rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_12px_50px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_18px_65px_rgba(15,23,42,0.08)] dark:border-dark-700 dark:bg-dark-900 dark:shadow-none"
+            >
+              <div class="flex items-start justify-between gap-4">
+                <div>
+                  <p class="text-sm font-medium uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400">
+                    {{ familyBadge(family.key) }}
+                  </p>
+                  <h3 class="mt-3 text-2xl font-bold text-slate-950 dark:text-white">
+                    {{ family.name }}
+                  </h3>
                 </div>
-                <!-- Terminal content -->
-                <div class="terminal-body">
-                  <div class="code-line line-1">
-                    <span class="code-prompt">$</span>
-                    <span class="code-cmd">curl</span>
-                    <span class="code-flag">-X POST</span>
-                    <span class="code-url">/v1/messages</span>
-                  </div>
-                  <div class="code-line line-2">
-                    <span class="code-comment"># Routing to upstream...</span>
-                  </div>
-                  <div class="code-line line-3">
-                    <span class="code-success">200 OK</span>
-                    <span class="code-response">{ "content": "Hello!" }</span>
-                  </div>
-                  <div class="code-line line-4">
-                    <span class="code-prompt">$</span>
-                    <span class="cursor"></span>
-                  </div>
+                <div
+                  class="flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-bold text-white"
+                  :class="familyIconClass(family.key)"
+                >
+                  {{ family.name[0] }}
                 </div>
               </div>
-            </div>
+              <p class="mt-6 text-sm font-semibold text-slate-800 dark:text-dark-100">
+                {{ familyTagline(family.key) }}
+              </p>
+              <p class="mt-2 max-w-xs text-sm leading-7 text-slate-500 dark:text-dark-300">
+                {{ family.models.length > 0 ? familyDescription(family.key) : t('home.modelMatrixEmptyCard') }}
+              </p>
+              <div v-if="family.models.length > 0" class="mt-6 flex flex-wrap gap-2">
+                <span
+                  v-for="capability in familyCapabilities(family.key)"
+                  :key="capability"
+                  class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-200"
+                >
+                  {{ capability }}
+                </span>
+              </div>
+              <div v-else class="mt-6">
+                <span class="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-medium text-slate-500 dark:border-dark-600 dark:text-dark-300">
+                  {{ t('home.modelMatrixEmptyPill') }}
+                </span>
+              </div>
+            </article>
           </div>
         </div>
+      </section>
 
-        <!-- Features Grid -->
-        <div class="mb-12 grid gap-6 md:grid-cols-3">
-          <!-- Feature 1: Unified Gateway -->
-          <div
-            class="group rounded-2xl border border-gray-200/50 bg-white/60 p-6 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/10 dark:border-dark-700/50 dark:bg-dark-800/60"
-          >
-            <div
-              class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30 transition-transform group-hover:scale-110"
-            >
-              <Icon name="server" size="lg" class="text-white" />
-            </div>
-            <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-              {{ t('home.features.unifiedGateway') }}
-            </h3>
-            <p class="text-sm leading-relaxed text-gray-600 dark:text-dark-400">
-              {{ t('home.features.unifiedGatewayDesc') }}
+      <section class="border-y border-sky-100/80 bg-sky-50/70 px-6 py-24 dark:border-dark-800 dark:bg-dark-950/50">
+        <div id="experience" class="mx-auto max-w-5xl">
+          <div class="text-center">
+            <p class="text-sm font-medium uppercase tracking-[0.2em] text-sky-600 dark:text-sky-400">
+              {{ t('home.experienceKicker') }}
+            </p>
+            <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+              {{ t('home.experienceTitle') }}
+            </h2>
+            <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-500 dark:text-dark-300 sm:text-base">
+              {{ t('home.experienceDescription') }}
             </p>
           </div>
 
-          <!-- Feature 2: Account Pool -->
-          <div
-            class="group rounded-2xl border border-gray-200/50 bg-white/60 p-6 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/10 dark:border-dark-700/50 dark:bg-dark-800/60"
-          >
-            <div
-              class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 shadow-lg shadow-primary-500/30 transition-transform group-hover:scale-110"
+          <div class="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+            <article
+              v-for="feature in experienceCards"
+              :key="feature.title"
+              class="rounded-[24px] border border-white/90 bg-white/85 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur dark:border-dark-800 dark:bg-dark-900/80 dark:shadow-none"
             >
-              <svg
-                class="h-6 w-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.5"
+              <div
+                class="flex h-12 w-12 items-center justify-center rounded-2xl text-white"
+                :class="feature.iconClass"
               >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M18 18.72a9.094 9.094 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m.94-3.197a5.971 5.971 0 00-.94 3.197M15 6.75a3 3 0 11-6 0 3 3 0 016 0zm6 3a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0zm-13.5 0a2.25 2.25 0 11-4.5 0 2.25 2.25 0 014.5 0z"
-                />
-              </svg>
-            </div>
-            <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-              {{ t('home.features.multiAccount') }}
-            </h3>
-            <p class="text-sm leading-relaxed text-gray-600 dark:text-dark-400">
-              {{ t('home.features.multiAccountDesc') }}
+                <Icon :name="feature.icon" size="lg" />
+              </div>
+              <h3 class="mt-5 text-lg font-bold text-slate-950 dark:text-white">{{ feature.title }}</h3>
+              <p class="mt-3 text-sm leading-7 text-slate-500 dark:text-dark-300">{{ feature.description }}</p>
+            </article>
+          </div>
+
+          <div class="mt-24 text-center">
+            <p class="text-sm font-medium uppercase tracking-[0.2em] text-sky-600 dark:text-sky-400">
+              {{ t('home.whyChooseKicker') }}
+            </p>
+            <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+              {{ t('home.whyChooseTitle') }}
+            </h2>
+            <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-500 dark:text-dark-300 sm:text-base">
+              {{ t('home.whyChooseDescription') }}
             </p>
           </div>
 
-          <!-- Feature 3: Billing & Quota -->
-          <div
-            class="group rounded-2xl border border-gray-200/50 bg-white/60 p-6 backdrop-blur-sm transition-all duration-300 hover:shadow-xl hover:shadow-primary-500/10 dark:border-dark-700/50 dark:bg-dark-800/60"
-          >
-            <div
-              class="mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-lg shadow-purple-500/30 transition-transform group-hover:scale-110"
+          <div class="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+            <article
+              v-for="point in whyChooseCards"
+              :key="point.title"
+              class="rounded-[24px] border border-white/90 bg-white/80 p-5 backdrop-blur dark:border-dark-800 dark:bg-dark-900/80"
             >
-              <svg
-                class="h-6 w-6 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                stroke-width="1.5"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"
-                />
-              </svg>
-            </div>
-            <h3 class="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-              {{ t('home.features.balanceQuota') }}
-            </h3>
-            <p class="text-sm leading-relaxed text-gray-600 dark:text-dark-400">
-              {{ t('home.features.balanceQuotaDesc') }}
-            </p>
+              <h3 class="text-lg font-semibold text-slate-950 dark:text-white">{{ point.title }}</h3>
+              <p class="mt-3 text-sm leading-7 text-slate-500 dark:text-dark-300">{{ point.description }}</p>
+            </article>
           </div>
         </div>
-
-        <!-- Supported Providers -->
-        <div class="mb-8 text-center">
-          <h2 class="mb-3 text-2xl font-bold text-gray-900 dark:text-white">
-            {{ t('home.providers.title') }}
-          </h2>
-        </div>
-
-        <div class="mb-16 flex flex-wrap items-center justify-center gap-4">
-          <!-- Claude - Supported -->
-          <div
-            class="flex items-center gap-2 rounded-xl border border-primary-200 bg-white/60 px-5 py-3 ring-1 ring-primary-500/20 backdrop-blur-sm dark:border-primary-800 dark:bg-dark-800/60"
-          >
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-400 to-orange-500"
-            >
-              <span class="text-xs font-bold text-white">C</span>
-            </div>
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">{{ t('home.providers.claude') }}</span>
-            <span
-              class="rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
-              >{{ t('home.providers.supported') }}</span
-            >
-          </div>
-          <!-- GPT - Supported -->
-          <div
-            class="flex items-center gap-2 rounded-xl border border-primary-200 bg-white/60 px-5 py-3 ring-1 ring-primary-500/20 backdrop-blur-sm dark:border-primary-800 dark:bg-dark-800/60"
-          >
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-green-600"
-            >
-              <span class="text-xs font-bold text-white">G</span>
-            </div>
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">GPT</span>
-            <span
-              class="rounded bg-primary-100 px-1.5 py-0.5 text-[10px] font-medium text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
-              >{{ t('home.providers.supported') }}</span
-            >
-          </div>
-          <!-- More - Coming Soon -->
-          <div
-            class="flex items-center gap-2 rounded-xl border border-gray-200/50 bg-white/40 px-5 py-3 opacity-60 backdrop-blur-sm dark:border-dark-700/50 dark:bg-dark-800/40"
-          >
-            <div
-              class="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-gray-500 to-gray-600"
-            >
-              <span class="text-xs font-bold text-white">+</span>
-            </div>
-            <span class="text-sm font-medium text-gray-700 dark:text-dark-200">{{ t('home.providers.more') }}</span>
-            <span
-              class="rounded bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-500 dark:bg-dark-700 dark:text-dark-400"
-              >{{ t('home.providers.soon') }}</span
-            >
-          </div>
-        </div>
-      </div>
+      </section>
     </main>
 
-    <!-- Footer -->
-    <footer class="relative z-10 border-t border-gray-200/50 px-6 py-8 dark:border-dark-800/50">
-      <div
-        class="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 text-center sm:flex-row sm:text-left"
-      >
-        <p class="text-sm text-gray-500 dark:text-dark-400">
-          &copy; {{ currentYear }} {{ siteName }}. {{ t('home.footer.allRightsReserved') }}
-        </p>
-        <div class="flex items-center gap-4">
-          <DocsLink
-            v-if="docUrl"
-            :doc-url="docUrl"
-            class="text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-white"
-          >
-            {{ t('home.docs') }}
-          </DocsLink>
+    <footer class="border-t border-slate-200/80 px-6 py-14 dark:border-dark-800">
+      <div class="mx-auto max-w-5xl">
+        <div class="grid gap-12 md:grid-cols-[1.5fr_repeat(3,minmax(0,1fr))]">
+          <div>
+            <div class="flex items-center gap-3">
+              <div class="h-9 w-9 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-900">
+                <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+              </div>
+              <span class="text-sm font-semibold text-slate-950 dark:text-white">{{ siteName }}</span>
+            </div>
+            <p class="mt-4 max-w-xs text-sm leading-7 text-slate-500 dark:text-dark-300">
+              {{ t('home.footerDescription') }}
+            </p>
+          </div>
+
+          <div v-for="section in footerSections" :key="section.title">
+            <h3 class="text-sm font-semibold text-slate-950 dark:text-white">{{ section.title }}</h3>
+            <ul class="mt-4 space-y-3">
+              <li v-for="item in section.items" :key="item.label">
+                <a
+                  v-if="item.href"
+                  :href="item.href"
+                  class="text-sm text-slate-500 transition-colors hover:text-slate-900 dark:text-dark-300 dark:hover:text-white"
+                >
+                  {{ item.label }}
+                </a>
+                <span v-else class="text-sm text-slate-500 dark:text-dark-300">{{ item.label }}</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <div class="mt-12 flex flex-col gap-4 border-t border-slate-200 pt-6 text-sm text-slate-500 dark:border-dark-800 dark:text-dark-300 sm:flex-row sm:items-center sm:justify-between">
+          <p>&copy; {{ currentYear }} {{ siteName }}. {{ t('home.footer.allRightsReserved') }}</p>
+          <div class="flex flex-wrap items-center gap-4">
+            <a href="/legal/terms" class="hover:text-slate-900 dark:hover:text-white">{{ t('home.termsLink') }}</a>
+            <a href="/legal/privacy-policy" class="hover:text-slate-900 dark:hover:text-white">{{ t('home.privacyLink') }}</a>
+          </div>
         </div>
       </div>
     </footer>
@@ -322,214 +270,223 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useAppStore } from '@/stores'
 import DocsLink from '@/components/common/DocsLink.vue'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
+import { paymentAPI } from '@/api/payment'
+import type { HomeCatalogResponse } from '@/types/payment'
+import { buildHomeModelFamilies } from '@/views/home/homeCatalog'
 
 const { t } = useI18n()
-
 const authStore = useAuthStore()
 const appStore = useAppStore()
 
-// Site settings - directly from appStore (already initialized from injected config)
+const emptyCatalog: HomeCatalogResponse = {
+  recharge_products: [],
+  plans: [],
+}
+
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Sub2API')
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
-const siteSubtitle = computed(() => appStore.cachedPublicSettings?.site_subtitle || 'AI API Gateway Platform')
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const homeContent = computed(() => appStore.cachedPublicSettings?.home_content || '')
 
-// Check if homeContent is a URL (for iframe display)
 const isHomeContentUrl = computed(() => {
   const content = homeContent.value.trim()
   return content.startsWith('http://') || content.startsWith('https://')
 })
 
-// Auth state
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
-const dashboardPath = computed(() => isAdmin.value ? '/admin/dashboard' : '/dashboard')
-const userInitial = computed(() => {
-  const user = authStore.user
-  if (!user || !user.email) return ''
-  return user.email.charAt(0).toUpperCase()
-})
-
-// Current year for footer
+const dashboardPath = computed(() => (isAdmin.value ? '/admin/dashboard' : '/dashboard'))
 const currentYear = computed(() => new Date().getFullYear())
 
-onMounted(() => {
-  // Check auth state
-  authStore.checkAuth()
+const navItems = computed(() => [
+  { href: '#top', label: t('home.nav.home') },
+  { to: '/models', label: t('home.nav.models') },
+  { href: '#experience', label: t('home.nav.experience') },
+])
 
-  // Ensure public settings are loaded (will use cache if already loaded from injected config)
+const publicCatalog = ref<HomeCatalogResponse>(emptyCatalog)
+const catalogLoading = ref(false)
+
+const modelFamilies = computed(() => buildHomeModelFamilies(publicCatalog.value))
+const visibleModelFamilies = computed(() =>
+  modelFamilies.value.length > 0
+    ? modelFamilies.value
+    : [
+        { key: 'claude' as const, name: 'Claude', models: [] },
+        { key: 'gpt' as const, name: 'GPT', models: [] },
+      ],
+)
+const modelGridClass = computed(() => {
+  if (visibleModelFamilies.value.length <= 1) {
+    return 'mx-auto max-w-xl grid-cols-1'
+  }
+  if (visibleModelFamilies.value.length === 2) {
+    return 'mx-auto max-w-4xl md:grid-cols-2'
+  }
+  return 'lg:grid-cols-3'
+})
+
+const experienceCards = computed(() => [
+  {
+    icon: 'server' as const,
+    iconClass: 'bg-gradient-to-br from-sky-500 to-blue-600',
+    title: t('home.cards.unified.title'),
+    description: t('home.cards.unified.description'),
+  },
+  {
+    icon: 'key' as const,
+    iconClass: 'bg-gradient-to-br from-indigo-500 to-violet-600',
+    title: t('home.cards.setup.title'),
+    description: t('home.cards.setup.description'),
+  },
+  {
+    icon: 'sparkles' as const,
+    iconClass: 'bg-gradient-to-br from-emerald-500 to-teal-600',
+    title: t('home.cards.stability.title'),
+    description: t('home.cards.stability.description'),
+  },
+  {
+    icon: 'chart' as const,
+    iconClass: 'bg-gradient-to-br from-fuchsia-500 to-purple-600',
+    title: t('home.cards.billing.title'),
+    description: t('home.cards.billing.description'),
+  },
+])
+
+const whyChooseCards = computed(() => [
+  {
+    title: t('home.whyCards.lowFriction.title'),
+    description: t('home.whyCards.lowFriction.description'),
+  },
+  {
+    title: t('home.whyCards.transparent.title'),
+    description: t('home.whyCards.transparent.description'),
+  },
+  {
+    title: t('home.whyCards.routing.title'),
+    description: t('home.whyCards.routing.description'),
+  },
+  {
+    title: t('home.whyCards.team.title'),
+    description: t('home.whyCards.team.description'),
+  },
+])
+
+const footerSections = computed(() => [
+  {
+    title: t('home.footerSections.product'),
+    items: [
+      { label: t('home.nav.home'), href: '#top' },
+      { label: t('home.nav.models'), href: '/models' },
+      { label: isAuthenticated.value ? t('home.goToDashboard') : t('home.login'), href: isAuthenticated.value ? dashboardPath.value : '/login' },
+    ],
+  },
+  {
+    title: t('home.footerSections.catalog'),
+    items: [
+      { label: t('home.nav.models'), href: '/models' },
+      { label: t('home.nav.experience'), href: '#experience' },
+    ],
+  },
+  {
+    title: t('home.footerSections.support'),
+    items: [
+      { label: t('home.viewDocs'), href: docUrl.value || '/docs' },
+      { label: t('home.termsLink'), href: '/legal/terms' },
+      { label: t('home.privacyLink'), href: '/legal/privacy-policy' },
+    ],
+  },
+])
+
+function familyBadge(key: string): string {
+  switch (key) {
+    case 'claude':
+      return t('home.familyBadges.claude')
+    case 'gpt':
+      return t('home.familyBadges.gpt')
+    default:
+      return siteName.value
+  }
+}
+
+function familyTagline(key: string): string {
+  switch (key) {
+    case 'claude':
+      return t('home.familyContent.claude.tagline')
+    case 'gpt':
+      return t('home.familyContent.gpt.tagline')
+    default:
+      return ''
+  }
+}
+
+function familyDescription(key: string): string {
+  switch (key) {
+    case 'claude':
+      return t('home.familyContent.claude.description')
+    case 'gpt':
+      return t('home.familyContent.gpt.description')
+    default:
+      return ''
+  }
+}
+
+function familyCapabilities(key: string): string[] {
+  switch (key) {
+    case 'claude':
+      return [
+        t('home.familyCapabilities.claude.reasoning'),
+        t('home.familyCapabilities.claude.architecture'),
+        t('home.familyCapabilities.claude.review'),
+      ]
+    case 'gpt':
+      return [
+        t('home.familyCapabilities.gpt.coding'),
+        t('home.familyCapabilities.gpt.iteration'),
+        t('home.familyCapabilities.gpt.agents'),
+      ]
+    default:
+      return []
+  }
+}
+
+function familyIconClass(key: string): string {
+  switch (key) {
+    case 'claude':
+      return 'bg-gradient-to-br from-orange-400 to-orange-500'
+    case 'gpt':
+      return 'bg-gradient-to-br from-emerald-500 to-green-600'
+    default:
+      return 'bg-gradient-to-br from-slate-500 to-slate-700'
+  }
+}
+
+async function loadPublicCatalog() {
+  catalogLoading.value = true
+  try {
+    const response = await paymentAPI.getPublicCatalog()
+    publicCatalog.value = response.data || emptyCatalog
+  } catch (error) {
+    console.error('[home] failed to load public catalog', error)
+    publicCatalog.value = emptyCatalog
+  } finally {
+    catalogLoading.value = false
+  }
+}
+
+onMounted(() => {
+  authStore.checkAuth()
   if (!appStore.publicSettingsLoaded) {
     appStore.fetchPublicSettings()
   }
+  if (!homeContent.value.trim()) {
+    void loadPublicCatalog()
+  }
 })
 </script>
-
-<style scoped>
-/* Terminal Container */
-.terminal-container {
-  position: relative;
-  display: inline-block;
-}
-
-/* Terminal Window */
-.terminal-window {
-  width: 420px;
-  background: linear-gradient(145deg, #1e293b 0%, #0f172a 100%);
-  border-radius: 14px;
-  box-shadow:
-    0 25px 50px -12px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 255, 255, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-  overflow: hidden;
-  transform: perspective(1000px) rotateX(2deg) rotateY(-2deg);
-  transition: transform 0.3s ease;
-}
-
-.terminal-window:hover {
-  transform: perspective(1000px) rotateX(0deg) rotateY(0deg) translateY(-4px);
-}
-
-/* Terminal Header */
-.terminal-header {
-  display: flex;
-  align-items: center;
-  padding: 12px 16px;
-  background: rgba(30, 41, 59, 0.8);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.terminal-buttons {
-  display: flex;
-  gap: 8px;
-}
-
-.terminal-buttons span {
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-}
-
-.btn-close {
-  background: #ef4444;
-}
-.btn-minimize {
-  background: #eab308;
-}
-.btn-maximize {
-  background: #22c55e;
-}
-
-.terminal-title {
-  flex: 1;
-  text-align: center;
-  font-size: 12px;
-  font-family: ui-monospace, monospace;
-  color: #64748b;
-  margin-right: 52px;
-}
-
-/* Terminal Body */
-.terminal-body {
-  padding: 20px 24px;
-  font-family: ui-monospace, 'Fira Code', monospace;
-  font-size: 14px;
-  line-height: 2;
-}
-
-.code-line {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  opacity: 0;
-  animation: line-appear 0.5s ease forwards;
-}
-
-.line-1 {
-  animation-delay: 0.3s;
-}
-.line-2 {
-  animation-delay: 1s;
-}
-.line-3 {
-  animation-delay: 1.8s;
-}
-.line-4 {
-  animation-delay: 2.5s;
-}
-
-@keyframes line-appear {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.code-prompt {
-  color: #22c55e;
-  font-weight: bold;
-}
-.code-cmd {
-  color: #38bdf8;
-}
-.code-flag {
-  color: #a78bfa;
-}
-.code-url {
-  color: #14b8a6;
-}
-.code-comment {
-  color: #64748b;
-  font-style: italic;
-}
-.code-success {
-  color: #22c55e;
-  background: rgba(34, 197, 94, 0.15);
-  padding: 2px 8px;
-  border-radius: 4px;
-  font-weight: 600;
-}
-.code-response {
-  color: #fbbf24;
-}
-
-/* Blinking Cursor */
-.cursor {
-  display: inline-block;
-  width: 8px;
-  height: 16px;
-  background: #22c55e;
-  animation: blink 1s step-end infinite;
-}
-
-@keyframes blink {
-  0%,
-  50% {
-    opacity: 1;
-  }
-  51%,
-  100% {
-    opacity: 0;
-  }
-}
-
-/* Dark mode adjustments */
-:deep(.dark) .terminal-window {
-  box-shadow:
-    0 25px 50px -12px rgba(0, 0, 0, 0.6),
-    0 0 0 1px rgba(20, 184, 166, 0.2),
-    0 0 40px rgba(20, 184, 166, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
-}
-</style>

@@ -10,6 +10,117 @@ export default {
     login: 'Login',
     getStarted: 'Get Started',
     goToDashboard: 'Go to Dashboard',
+    nav: {
+      home: 'Home',
+      models: 'Model Matrix',
+      experience: 'Core Experience'
+    },
+    heroBadge: 'Developer First',
+    heroTitle: 'AI Coding Workspace',
+    primaryCta: 'Try It Now',
+    secondaryCta: 'Browse Models',
+    modelMatrixKicker: 'Model Matrix',
+    modelMatrixTitle: 'Core models, compared in public ✦',
+    modelMatrixDescription: 'Show the major model families for coding, reasoning, and visual work directly from the current sellable catalog.',
+    modelMatrixEmpty: 'No public model catalog is available yet. Publish sellable plans first to surface models here.',
+    modelMatrixEmptyCard: 'Model families will appear here automatically once the public catalog is ready.',
+    modelMatrixEmptyPill: 'Catalog syncing',
+    pricingKicker: 'Pricing & Plans',
+    pricingTitle: 'Public pricing, directly on the homepage ✦',
+    pricingDescription: 'Pull public plans and top-up pricing straight from the backend catalog so the homepage stays aligned with what is actually sellable.',
+    rechargeProductsTitle: 'Top-up Products',
+    subscriptionPlansTitle: 'Subscription Plans',
+    pricingUnavailable: 'No public pricing is available right now',
+    pricingEmptyRecharge: 'Top-up options will appear here as soon as the public payment catalog is ready.',
+    pricingEmptyPlans: 'Subscription plans will appear here automatically once they are available for public sale.',
+    topUpPriceLabel: 'Top-up Price',
+    topUpCreditLine: 'Credits delivered: ¥{amount}',
+    experienceKicker: 'Core Experience',
+    experienceTitle: 'A coding workflow designed for daily use ✦',
+    experienceDescription: 'Less setup friction, less account switching, and less time decoding admin pages. More time spent shipping code.',
+    whyChooseKicker: 'Why Choose Us',
+    whyChooseTitle: 'Built for solo developers and small teams ✦',
+    whyChooseDescription: 'A more restrained product shape, clearer pricing, and a workflow that stays closer to day-to-day coding.',
+    cards: {
+      unified: {
+        title: 'One key, unified access',
+        description: 'Use one consistent domain and key format instead of juggling multiple providers and setup flows.'
+      },
+      setup: {
+        title: 'Lower setup friction',
+        description: 'Designed to fit better with CLI tools, IDE plugins, and the development habits people already have.'
+      },
+      stability: {
+        title: 'More stable routing',
+        description: 'Account-pool and routing capabilities help reduce interruptions caused by single-path limits.'
+      },
+      billing: {
+        title: 'More transparent billing',
+        description: 'Recharge products, plans, and usage stay visible so developers can control spend.'
+      }
+    },
+    whyCards: {
+      lowFriction: {
+        title: 'Less setup overhead',
+        description: 'Compress scattered model and provider setup into a more unified experience built for repeat coding use.'
+      },
+      transparent: {
+        title: 'Models visible at a glance',
+        description: 'The homepage surfaces the core model families directly so developers can judge the fit before signing in.'
+      },
+      routing: {
+        title: 'Focused on coding throughput',
+        description: 'The product emphasizes coding workflows and routing stability instead of loading the homepage with unrelated platform features.'
+      },
+      team: {
+        title: 'Fits solo devs and small teams',
+        description: 'Simple enough for individual developers to adopt quickly, while still giving small teams a cleaner shared entry point.'
+      }
+    },
+    familyBadges: {
+      claude: 'System Design',
+      gpt: 'Feature Delivery',
+      gemini: 'Visual Tasks'
+    },
+    familyContent: {
+      claude: {
+        tagline: 'Complex reasoning and system design',
+        description: 'Best for architecture decisions, code review, and complex reasoning.'
+      },
+      gpt: {
+        tagline: 'Code generation and implementation',
+        description: 'A strong fit for day-to-day coding, feature work, and high-frequency implementation.'
+      },
+      gemini: {
+        tagline: 'Visual understanding and multimodal help',
+        description: 'Useful for screenshots, visual interpretation, and multimodal support.'
+      }
+    },
+    familyCapabilities: {
+      claude: {
+        reasoning: 'Complex Reasoning',
+        architecture: 'System Design',
+        review: 'Code Review'
+      },
+      gpt: {
+        coding: 'Code Generation',
+        iteration: 'Feature Iteration',
+        agents: 'Agent Workflows'
+      }
+    },
+    footerDescription: 'A simpler entry point for model access, visible pricing, and day-to-day AI-assisted coding.',
+    footerSections: {
+      product: 'Product',
+      catalog: 'Catalog',
+      resources: 'Resources',
+      models: 'Models',
+      support: 'Support'
+    },
+    termsLink: 'Terms',
+    privacyLink: 'Privacy',
+    planValidityDays: '{count} day validity',
+    planValidityMonths: '{count} month validity',
+    planValidityYears: '{count} year validity',
     geminiGateway: {
       title: 'Gemini Web Login Entry',
       description: 'Expose gemini-command-gateway startup, session import, and status checks directly from the main entry page. Admins can jump into the login center and activate Gemini Web with exported browser cookies.',
@@ -18,7 +129,7 @@ export default {
     },
     // User-focused value proposition
     heroSubtitle: 'One Key, All AI Models',
-    heroDescription: 'No need to manage multiple subscriptions. Access Claude, GPT, Gemini and more with a single API key',
+    heroDescription: 'No need to manage multiple subscriptions. Access Claude, GPT, and other core coding models with a single API key',
     tags: {
       subscriptionToApi: 'Unified Model Access',
       stickySession: 'Reliable Routing',
@@ -5341,6 +5452,7 @@ export default {
       description: 'Manage registration, email verification, default values, and SMTP settings',
       tabs: {
         general: 'General',
+        modelPlaza: 'Model Plaza',
         agreement: 'Agreement',
         features: 'Feature Switches',
         security: 'Security',

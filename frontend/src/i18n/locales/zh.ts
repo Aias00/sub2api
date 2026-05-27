@@ -10,6 +10,117 @@ export default {
     login: '登录',
     getStarted: '立即开始',
     goToDashboard: '进入控制台',
+    nav: {
+      home: '首页',
+      models: '模型矩阵',
+      experience: '核心体验'
+    },
+    heroBadge: '开发者首选',
+    heroTitle: 'AI 编码工作台',
+    primaryCta: '立即体验',
+    secondaryCta: '查看模型',
+    modelMatrixKicker: '模型矩阵',
+    modelMatrixTitle: '主力模型，公开对比 ✦',
+    modelMatrixDescription: '根据当前可售目录，公开展示适合编码、推理与视觉任务的主流模型家族。',
+    modelMatrixEmpty: '当前后台尚未配置公开模型目录，请先上架可售套餐后再展示。',
+    modelMatrixEmptyCard: '模型目录会在后台可售套餐准备好之后自动同步到这里。',
+    modelMatrixEmptyPill: '目录同步中',
+    pricingKicker: '价格与套餐',
+    pricingTitle: '公开展示，直接对比 ✦',
+    pricingDescription: '直接读取当前后台支付配置，把公开套餐和充值价格放在首页，减少决策成本。',
+    rechargeProductsTitle: '充值商品',
+    subscriptionPlansTitle: '订阅套餐',
+    pricingUnavailable: '当前暂无公开价格信息',
+    pricingEmptyRecharge: '充值档位上线后会自动出现在这里，适合先展示公开价格，再逐步补齐目录。',
+    pricingEmptyPlans: '订阅套餐发布后会同步到这里，首页会自动接入新的公开售卖信息。',
+    topUpPriceLabel: '充值价格',
+    topUpCreditLine: '到账额度 ¥{amount}',
+    experienceKicker: '核心体验',
+    experienceTitle: '专为日常编码而设计的一站式体验 ✦',
+    experienceDescription: '减少接线、切号和查后台的时间，把精力留给真正的开发与交付。',
+    whyChooseKicker: '为什么选择我们',
+    whyChooseTitle: '为个人开发者与小团队准备的编码工作流 ✦',
+    whyChooseDescription: '更克制的产品形态，更清晰的价格表达，以及更贴近日常编码的接入方式。',
+    cards: {
+      unified: {
+        title: '一个密钥统一接入',
+        description: '统一域名和密钥格式，减少在不同模型和工具之间来回切换。'
+      },
+      setup: {
+        title: '配置更轻',
+        description: '更贴近 CLI、IDE 与日常开发习惯，不把大量时间花在环境变量和接线细节上。'
+      },
+      stability: {
+        title: '链路更稳',
+        description: '通过账号池与路由能力降低单点限制带来的中断，让高频编码更连续。'
+      },
+      billing: {
+        title: '计费更透明',
+        description: '充值、订阅和后续用量都公开可见，个人和小团队更容易控成本。'
+      }
+    },
+    whyCards: {
+      lowFriction: {
+        title: '少折腾配置',
+        description: '把分散在多个模型入口和订阅账号里的接入复杂度压缩成统一体验。'
+      },
+      transparent: {
+        title: '模型一眼看清',
+        description: '首页直接展示主力模型家族，开发者在登录前就能判断是否适合自己的工作流。'
+      },
+      routing: {
+        title: '更适合高频编码',
+        description: '强调链路稳定性与编码工作流，而不是堆叠泛化功能。'
+      },
+      team: {
+        title: '适配个人与小团队',
+        description: '既适合独立开发者快速上手，也方便小团队统一入口和管理预算。'
+      }
+    },
+    familyBadges: {
+      claude: '系统设计',
+      gpt: '功能开发',
+      gemini: '视觉任务'
+    },
+    familyContent: {
+      claude: {
+        tagline: '复杂推理与系统设计',
+        description: '适合方案设计、代码审查和复杂推理。'
+      },
+      gpt: {
+        tagline: '代码生成与功能开发',
+        description: '适合日常编码、功能迭代与高频实现。'
+      },
+      gemini: {
+        tagline: '图像理解与多模态辅助',
+        description: '适合截图分析、视觉理解与多模态辅助。'
+      }
+    },
+    familyCapabilities: {
+      claude: {
+        reasoning: '复杂推理',
+        architecture: '系统设计',
+        review: '代码审查'
+      },
+      gpt: {
+        coding: '代码生成',
+        iteration: '功能迭代',
+        agents: 'Agent 调用'
+      }
+    },
+    footerDescription: '把模型接入、价格展示和日常编码工作流收拢到一个更简单的入口里。',
+    footerSections: {
+      product: '产品',
+      catalog: '目录',
+      resources: '资源',
+      models: '模型',
+      support: '支持'
+    },
+    termsLink: '服务条款',
+    privacyLink: '隐私条款',
+    planValidityDays: '{count} 天有效',
+    planValidityMonths: '{count} 月有效',
+    planValidityYears: '{count} 年有效',
     geminiGateway: {
       title: 'Gemini Web 登录入口',
       description: '把 gemini-command-gateway 的启动、会话导入和状态检查直接挂到主入口。管理员登录后可一键进入登录中心，导入浏览器 cookies 激活 Gemini Web。',
@@ -18,7 +129,7 @@ export default {
     },
     // 新增：面向用户的价值主张
     heroSubtitle: '一个密钥，畅用多个 AI 模型',
-    heroDescription: '无需管理多个订阅账号，一站式接入 Claude、GPT、Gemini 等主流 AI 服务',
+    heroDescription: '无需管理多个订阅账号，一站式接入 Claude、GPT 等主流 AI 服务',
     tags: {
       subscriptionToApi: '统一模型接入',
       stickySession: '稳定路由转发',
@@ -5504,6 +5615,7 @@ export default {
       description: '管理注册、邮箱验证、默认值和 SMTP 设置',
       tabs: {
         general: '通用设置',
+        modelPlaza: '模型广场',
         agreement: '登录条款',
         features: '功能开关',
         security: '安全与认证',

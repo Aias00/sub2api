@@ -197,3 +197,38 @@ func TestSettingHandler_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *
 	require.True(t, resp.Data.WeChatOAuthOpenEnabled)
 	require.True(t, resp.Data.WeChatOAuthMPEnabled)
 }
+
+func TestSettingHandler_GetPublicSettings_ExposesModelPlazaItems(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	h := NewSettingHandler(service.NewSettingService(&settingHandlerPublicRepoStub{
+		values: map[string]string{
+			service.SettingKeyModelPlazaItems: `[{"id":"claude-opus-4-6","provider":"anthropic","title":"Claude Opus 4.6","visible":true,"sort_order":10}]`,
+		},
+	}, &config.Config{}), "test-version")
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/settings/public", nil)
+
+	h.GetPublicSettings(c)
+
+	require.Equal(t, http.StatusOK, recorder.Code)
+
+	var resp struct {
+		Code int `json:"code"`
+		Data struct {
+			ModelPlazaItems []struct {
+				ID      string `json:"id"`
+				Title   string `json:"title"`
+				Visible bool   `json:"visible"`
+			} `json:"model_plaza_items"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
+	require.Equal(t, 0, resp.Code)
+	require.Len(t, resp.Data.ModelPlazaItems, 1)
+	require.Equal(t, "claude-opus-4-6", resp.Data.ModelPlazaItems[0].ID)
+	require.Equal(t, "Claude Opus 4.6", resp.Data.ModelPlazaItems[0].Title)
+	require.True(t, resp.Data.ModelPlazaItems[0].Visible)
+}

@@ -23,6 +23,23 @@ type CustomEndpoint struct {
 	Description string `json:"description"`
 }
 
+type ModelPlazaItem struct {
+	ID              string   `json:"id"`
+	Provider        string   `json:"provider"`
+	Title           string   `json:"title"`
+	Badge           string   `json:"badge"`
+	Description     string   `json:"description"`
+	CapabilityTags  []string `json:"capability_tags"`
+	ModelIDs        []string `json:"model_ids"`
+	InputPrice      string   `json:"input_price"`
+	OutputPrice     string   `json:"output_price"`
+	CacheReadPrice  string   `json:"cache_read_price"`
+	CacheWritePrice string   `json:"cache_write_price"`
+	BillingBadge    string   `json:"billing_badge"`
+	Visible         bool     `json:"visible"`
+	SortOrder       int      `json:"sort_order"`
+}
+
 // SystemSettings represents the admin settings API response payload.
 type SystemSettings struct {
 	RegistrationEnabled              bool                     `json:"registration_enabled"`
@@ -117,6 +134,7 @@ type SystemSettings struct {
 	ContactInfo                 string           `json:"contact_info"`
 	DocURL                      string           `json:"doc_url"`
 	HomeContent                 string           `json:"home_content"`
+	ModelPlazaItems             []ModelPlazaItem `json:"model_plaza_items"`
 	HideCcsImportButton         bool             `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled bool             `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL     string           `json:"purchase_subscription_url"`
@@ -290,6 +308,7 @@ type PublicSettings struct {
 	ContactInfo                      string                   `json:"contact_info"`
 	DocURL                           string                   `json:"doc_url"`
 	HomeContent                      string                   `json:"home_content"`
+	ModelPlazaItems                  []ModelPlazaItem         `json:"model_plaza_items"`
 	HideCcsImportButton              bool                     `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled      bool                     `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL          string                   `json:"purchase_subscription_url"`
@@ -431,4 +450,61 @@ func ParseCustomEndpoints(raw string) []CustomEndpoint {
 		return []CustomEndpoint{}
 	}
 	return items
+}
+
+func ParseModelPlazaItems(raw string) []ModelPlazaItem {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "[]" {
+		return []ModelPlazaItem{}
+	}
+	var items []ModelPlazaItem
+	if err := json.Unmarshal([]byte(raw), &items); err != nil {
+		return []ModelPlazaItem{}
+	}
+	return NormalizeModelPlazaItems(items)
+}
+
+func NormalizeModelPlazaItems(items []ModelPlazaItem) []ModelPlazaItem {
+	if len(items) == 0 {
+		return []ModelPlazaItem{}
+	}
+	normalized := make([]ModelPlazaItem, 0, len(items))
+	seen := make(map[string]struct{}, len(items))
+	for _, item := range items {
+		item.ID = strings.TrimSpace(item.ID)
+		item.Provider = strings.TrimSpace(item.Provider)
+		item.Title = strings.TrimSpace(item.Title)
+		item.Badge = strings.TrimSpace(item.Badge)
+		item.Description = strings.TrimSpace(item.Description)
+		item.InputPrice = strings.TrimSpace(item.InputPrice)
+		item.OutputPrice = strings.TrimSpace(item.OutputPrice)
+		item.CacheReadPrice = strings.TrimSpace(item.CacheReadPrice)
+		item.CacheWritePrice = strings.TrimSpace(item.CacheWritePrice)
+		item.BillingBadge = strings.TrimSpace(item.BillingBadge)
+		item.CapabilityTags = normalizeStringList(item.CapabilityTags)
+		item.ModelIDs = normalizeStringList(item.ModelIDs)
+		if item.ID == "" || item.Title == "" {
+			continue
+		}
+		if _, exists := seen[item.ID]; exists {
+			continue
+		}
+		seen[item.ID] = struct{}{}
+		normalized = append(normalized, item)
+	}
+	return normalized
+}
+
+func normalizeStringList(values []string) []string {
+	if len(values) == 0 {
+		return []string{}
+	}
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			out = append(out, value)
+		}
+	}
+	return out
 }

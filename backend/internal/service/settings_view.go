@@ -117,6 +117,7 @@ type SystemSettings struct {
 	ContactInfo                 string
 	DocURL                      string
 	HomeContent                 string
+	ModelPlazaItems             string // JSON array of model plaza items
 	HideCcsImportButton         bool
 	PurchaseSubscriptionEnabled bool
 	PurchaseSubscriptionURL     string
@@ -234,6 +235,7 @@ type PublicSettings struct {
 	ContactInfo                      string
 	DocURL                           string
 	HomeContent                      string
+	ModelPlazaItems                  string // JSON array of model plaza items
 	HideCcsImportButton              bool
 
 	PurchaseSubscriptionEnabled bool
@@ -273,6 +275,23 @@ type PublicSettings struct {
 
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
+}
+
+type ModelPlazaItem struct {
+	ID              string   `json:"id"`
+	Provider        string   `json:"provider"`
+	Title           string   `json:"title"`
+	Badge           string   `json:"badge"`
+	Description     string   `json:"description"`
+	CapabilityTags  []string `json:"capability_tags"`
+	ModelIDs        []string `json:"model_ids"`
+	InputPrice      string   `json:"input_price"`
+	OutputPrice     string   `json:"output_price"`
+	CacheReadPrice  string   `json:"cache_read_price"`
+	CacheWritePrice string   `json:"cache_write_price"`
+	BillingBadge    string   `json:"billing_badge"`
+	Visible         bool     `json:"visible"`
+	SortOrder       int      `json:"sort_order"`
 }
 
 type LoginAgreementDocument struct {

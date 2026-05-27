@@ -238,6 +238,23 @@ export interface LoginAgreementDocument {
   content_md: string
 }
 
+export interface ModelPlazaItem {
+  id: string
+  provider: string
+  title: string
+  badge: string
+  description: string
+  capability_tags: string[]
+  model_ids: string[]
+  input_price: string
+  output_price: string
+  cache_read_price: string
+  cache_write_price: string
+  billing_badge: string
+  visible: boolean
+  sort_order: number
+}
+
 export interface PublicSettings {
   registration_enabled: boolean
   email_verify_enabled: boolean
@@ -262,6 +279,7 @@ export interface PublicSettings {
   contact_info: string
   doc_url: string
   home_content: string
+  model_plaza_items: ModelPlazaItem[]
   hide_ccs_import_button: boolean
   payment_enabled: boolean
   risk_control_enabled: boolean

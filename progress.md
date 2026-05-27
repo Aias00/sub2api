@@ -1821,3 +1821,190 @@
 ### Validation
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend exec eslint src/views/admin/SettingsView.vue src/views/admin/affiliates/AdminAffiliateOverviewView.vue src/views/admin/affiliates/AdminAffiliateRulesView.vue src/views/admin/affiliates/AdminAffiliateCodesView.vue src/views/admin/affiliates/AdminAffiliateRecordsTable.vue src/views/user/AffiliateView.vue src/api/admin/affiliates.ts src/api/user.ts src/router/index.ts src/components/layout/AppSidebar.vue src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .vue,.ts` passed.
+
+## 2026-05-27 DragonCode-Style Homepage Redesign
+### Done
+- Replaced the old split hero/feature-grid homepage structure with a new landing-page skeleton modeled on the pacing of `dragoncode.codes`:
+  - minimal top navigation
+  - centered hero
+  - model matrix directly below the hero
+  - pricing section directly below the model matrix
+  - experience section
+  - why-choose-us section
+  - grouped footer
+- Preserved `homeContent` override behavior exactly as before, including iframe mode and raw HTML mode.
+- Added a new public payment catalog endpoint:
+  - `GET /api/v1/payment/public/catalog`
+  - exposes public recharge products and for-sale plans for homepage rendering without requiring login
+- Added a frontend homepage catalog helper:
+  - derives visible model families from current plan platforms / model scopes
+  - groups pricing into recharge products and subscription plans
+- Reworked `HomeView.vue` to consume the new public catalog endpoint and render model/pricing sections dynamically from backend/payment configuration instead of a separately maintained static marketing table.
+- Added regression coverage for:
+  - homepage catalog helper mapping
+  - public payment catalog handler
+  - `HomeView` rendering the new hero and dynamic pricing sections
+
+### Failures
+- The first typecheck pass failed because `Icon` does not support a `signal` name; changed the experience-card icon to an existing supported icon.
+- Local browser verification initially still showed the old homepage because the running local `go run -tags embed ./cmd/server` process had started before the homepage rewrite. Restarting the local embedded server fixed the mismatch.
+
+### Next
+- Decide whether the homepage should keep showing empty-state model/pricing blocks when the public catalog is empty, or hide those sections entirely until products/plans are configured.
+- Optional follow-up: further tune the visual fidelity (spacing, copy, decorative background treatment) after a side-by-side screenshot review against the reference site.
+
+### Validation
+- `cd backend && env https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 GOPROXY=https://proxy.golang.org,direct GOSUMDB=sum.golang.org go test -tags=unit ./internal/handler -run 'TestPaymentHandlerGetPublicCatalog' -count=1` passed.
+- `pnpm --dir frontend exec vitest run src/views/home/__tests__/homeCatalog.spec.ts src/views/__tests__/HomeView.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/HomeView.vue src/views/home/homeCatalog.ts src/views/home/__tests__/homeCatalog.spec.ts src/views/__tests__/HomeView.spec.ts src/api/payment.ts src/types/payment.ts src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed.
+- Local visual check passed at `http://127.0.0.1:18082/` after restarting the embedded local server.
+
+## 2026-05-27 DragonCode-Style Homepage Redesign — Visual Polish Pass 2
+### Done
+- Tightened the post-hero sections so the page reads more like a product landing page and less like an operational dashboard:
+  - narrower top nav width
+  - more whitespace in the hero
+  - lighter model matrix / pricing section copy
+  - removed pricing item counters
+  - replaced the heavy dark "why choose us" block with a pale blue band and lighter cards
+  - simplified the footer into a sparser brand + 3-column layout
+- Kept the public catalog-driven model/pricing sections intact while making their empty states more marketing-friendly.
+- Rebuilt the frontend bundle and restarted the local embedded backend so the rendered page reflects the latest `HomeView` implementation.
+
+### Failures
+- None in this pass.
+
+### Next
+- Decide whether the homepage should be committed as-is or receive a final content pass once public recharge products and plans exist in local/production data.
+- Optional follow-up: if you want even closer similarity, the next pass should reduce copy density further instead of adding more sections.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/home/__tests__/homeCatalog.spec.ts src/views/__tests__/HomeView.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/HomeView.vue src/views/home/homeCatalog.ts src/views/home/__tests__/homeCatalog.spec.ts src/views/__tests__/HomeView.spec.ts src/api/payment.ts src/types/payment.ts src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed.
+- `git diff --check` passed.
+- Local health check: `curl -sS http://127.0.0.1:18082/health` -> `{"env":"production","status":"ok"}`
+- Local homepage rebuilt bundle confirmed in HTML:
+  - `/assets/index-Dow1BNoA.js`
+  - `/assets/index-ClB7GPr7.css`
+
+## 2026-05-27 Homepage Public Catalog Demo Data
+### Done
+- Added a reproducible local seed file at [backend/dev/seed_homepage_public_catalog.sql](/Users/aias/Work/github/sub2api/backend/dev/seed_homepage_public_catalog.sql) to populate the homepage's public pricing/model catalog.
+- Seeded local payment settings with:
+  - `payment_enabled = true`
+  - `BALANCE_RECHARGE_MULTIPLIER = 1.2`
+  - three recharge products: `体验包` / `开发包` / `团队包`
+- Seeded local group + plan data for public homepage rendering:
+  - `Claude`
+  - `GPT`
+  - `Gemini`
+  - four sellable plans across those families
+- Verified that the local homepage now replaces the placeholder cards with real model names, real recharge products, and real subscription plans.
+
+### Failures
+- None in this pass.
+
+### Next
+- If you want the same non-placeholder effect on production, the next step is not more frontend work — it is populating the production payment catalog with real sellable products and plans.
+
+### Validation
+- `docker exec -i sub2api-local-postgres psql -U sub2api -d sub2api < backend/dev/seed_homepage_public_catalog.sql` applied successfully.
+- `curl -sS http://127.0.0.1:18082/api/v1/payment/public/catalog | jq '.data.recharge_products, .data.plans | length'` returned `3` and `4`.
+- `curl -sS http://127.0.0.1:18082/api/v1/payment/public/catalog | jq '.data.recharge_products[].name, .data.plans[].name'` returned the seeded product and plan names.
+- Local visual verification passed at `http://127.0.0.1:18082/home` after refreshing the page against the seeded catalog.
+
+## 2026-05-27 Homepage Content Reduction
+### Done
+- Hid Gemini-related content from the homepage display layer:
+  - removed Gemini from the visible model matrix
+  - filtered Gemini plans out of homepage-facing helpers
+  - updated hero and model-matrix copy so it no longer promises Gemini on the homepage
+- Removed the entire homepage pricing / plans section:
+  - deleted the pricing anchor from homepage navigation
+  - changed the secondary hero CTA from pricing to model browsing
+  - removed pricing links from the footer
+  - updated supporting copy so the remaining cards no longer claim public homepage pricing
+- Made the homepage model matrix auto-optimize by card count:
+  - one card -> single centered column
+  - two cards -> centered two-column grid
+  - three or more cards -> standard three-column layout
+- Replaced model-name pills on the homepage with capability tags:
+  - Claude -> `复杂推理 / 系统设计 / 代码审查`
+  - GPT -> `代码生成 / 功能迭代 / Agent 调用`
+  - the homepage no longer exposes concrete model identifiers like `Claude Opus 4.6` or `GPT-5.4`
+- Removed the homepage model-matrix section entirely:
+  - removed the section body
+  - removed the "查看模型" secondary CTA
+  - removed model-matrix navigation / footer links
+  - stopped homepage-side public catalog loading
+- Later restored the model-matrix section and the "查看模型" CTA:
+  - model matrix is visible again
+  - hero secondary CTA is visible again
+  - model-matrix nav / footer links are restored
+  - homepage-side public catalog loading is re-enabled
+  - Gemini remains hidden from the homepage
+  - pricing section remains removed from the homepage
+
+### Failures
+- After deleting the pricing section, `platformLabel` became unused and broke `vue-tsc`; removed the dead helper and reran verification.
+
+### Next
+- If you later want pricing back, restore it as a separate decision instead of letting homepage copy drift into talking about packages that are no longer shown.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/home/__tests__/homeCatalog.spec.ts src/views/__tests__/HomeView.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/HomeView.vue src/views/home/homeCatalog.ts src/views/home/__tests__/homeCatalog.spec.ts src/views/__tests__/HomeView.spec.ts src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed.
+- Local embedded server restarted successfully on `http://127.0.0.1:18082`.
+- Visual verification passed at `http://127.0.0.1:18082/home`: pricing section absent, Gemini card absent, capability tags removed with the whole model-matrix section, and `查看模型` text absent.
+- Final visual verification passed at `http://127.0.0.1:18082/home`: model matrix visible again, `查看模型` text restored, Gemini still absent, pricing section still absent.
+
+## 2026-05-27 Model Plaza
+### Done
+- Added a backend-configurable model plaza data path using a new settings key:
+  - `model_plaza_items`
+- Extended public settings so the frontend can read configured model plaza cards without requiring auth.
+- Extended admin settings save/load so model plaza items can be edited from the existing settings backend.
+- Added a new public page:
+  - `/models`
+- Wired homepage discovery back in:
+  - Hero secondary CTA now links to `/models`
+  - `模型矩阵` navigation/footer entries point to `/models`
+- Implemented a dark card-grid public plaza page inspired by the reference structure but driven by local config:
+  - provider-aware card styling
+  - capability tags
+  - pricing text lines
+  - copy model ID button
+  - hidden-item filtering
+- Seeded local demo data for the plaza with 4 Claude-family cards:
+  - `claude-haiku-4-5-20251001`
+  - `claude-opus-4-6`
+  - `claude-opus-4-7`
+  - `claude-sonnet-4-6`
+- Promoted the admin-side model plaza editor from a subsection inside `通用设置` to its own dedicated `模型广场` tab in `SettingsView`.
+
+### Failures
+- `ModelsPlazaView` initially forgot to expose `t()` from `useI18n`, which broke the page test and typecheck; fixed by pulling `t` into the component setup.
+- Adding `model_plaza_items` to `PublicSettings` surfaced a fallback-object type error in `appStore.fetchPublicSettings`; fixed by adding an empty array to the fallback shape.
+
+### Next
+- Decide whether the model plaza should stay under `SettingsView` or be moved into a dedicated admin page later if this list grows.
+- Decide whether homepage should eventually drop the preview matrix and only keep `/models` as the canonical public catalog.
+
+### Validation
+- `cd backend && env https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 GOPROXY=https://proxy.golang.org,direct GOSUMDB=sum.golang.org go test -tags=unit ./internal/handler ./internal/handler/admin ./internal/service -run 'TestSettingHandler_GetPublicSettings_(ExposesModelPlazaItems|ExposesForceEmailOnThirdPartySignup|ExposesPasswordMinLength)|TestPaymentHandlerGetPublicCatalog' -count=1` passed.
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/ModelsPlazaView.spec.ts src/views/__tests__/HomeView.spec.ts src/views/home/__tests__/homeCatalog.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/public/ModelsPlazaView.vue src/views/public/__tests__/ModelsPlazaView.spec.ts src/views/HomeView.vue src/views/__tests__/HomeView.spec.ts src/views/home/homeCatalog.ts src/views/home/__tests__/homeCatalog.spec.ts src/views/admin/SettingsView.vue src/i18n/locales/zh.ts src/i18n/locales/en.ts src/router/index.ts src/types/index.ts src/api/admin/settings.ts src/stores/app.ts --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed.
+- Local visual verification passed at:
+  - `http://127.0.0.1:18082/models`
+  - `http://127.0.0.1:18082/home`
+- Admin visual verification passed at:
+  - `http://127.0.0.1:18082/admin/settings`
+  - dedicated `模型广场` tab is visible and switches to the model-plaza editor content

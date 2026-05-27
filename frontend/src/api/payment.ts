@@ -10,6 +10,7 @@ import type {
   PaymentChannel,
   MethodLimitsResponse,
   CheckoutInfoResponse,
+  HomeCatalogResponse,
   CreateOrderRequest,
   CreateOrderResult,
   PaymentOrder
@@ -35,6 +36,11 @@ export const paymentAPI = {
   /** Get all checkout page data in a single call */
   getCheckoutInfo() {
     return apiClient.get<CheckoutInfoResponse>('/payment/checkout-info')
+  },
+
+  /** Get public landing-page catalog data without auth */
+  getPublicCatalog() {
+    return apiClient.get<HomeCatalogResponse>('/payment/public/catalog')
   },
 
   /** Get payment method limits and fee rates */
