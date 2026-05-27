@@ -1336,6 +1336,46 @@
 - Decide whether to add a local Waffo mock checkout/inquiry harness similar to the Creem mock before any production rollout.
 - If rollout is approved later, commit the current payment integration as a single Lore commit and deploy only after one more browser-level user-flow check against a dev build that serves the frontend routes locally.
 
+## 2026-05-27 Waffo Service-Level End-to-End Verification Follow-up
+### Done
+- Added a new service-level unit test scaffold at:
+  - `backend/internal/service/payment_order_waffo_test.go`
+- The new test exercises the real `PaymentService.CreateOrder` path for `waffo` with:
+  - a temporary provider instance stored through `PaymentConfigService`
+  - a local `httptest.Server` simulating Waffo `/order/create`
+  - assertion that the created payment order returns the hosted `pay_url`
+  - assertion that the upstream request body includes the generated merchant order id and customer email
+- Re-ran the existing frontend payment regression coverage after the recent payment integration work:
+  - `src/components/payment/__tests__/paymentFlow.spec.ts`
+  - `src/views/user/__tests__/PaymentView.spec.ts`
+- Re-ran the new Waffo service-level test with working proxy settings and fixed the test fixture:
+  - created the backing user row in the Ent sqlite test database
+  - aligned the mock-user repository with that real user ID
+  - fixed the provider-instance creation call to reuse the existing `err` binding
+- Verified the new service-level Waffo path now passes end-to-end.
+
+### Failures
+- The first two reruns were blocked by Go module proxy timeouts until proxy environment variables were provided.
+- After network access was restored, the new Waffo service test exposed two real fixture issues:
+  - duplicate `err :=` declaration in the test
+  - missing persisted user row for the payment-order foreign key path
+  Both issues were fixed in the test fixture.
+
+### Next
+- Decide whether to also add a manual local API verification path for Waffo comparable to the earlier Creem mock flow.
+- If not, the current local verification bar is now:
+  - provider-level Waffo tests
+  - service-level Waffo order-creation path
+  - existing frontend payment flow tests
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/components/payment/__tests__/paymentFlow.spec.ts src/views/user/__tests__/PaymentView.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/components/payment/paymentFlow.ts src/components/payment/providerConfig.ts src/components/payment/__tests__/paymentFlow.spec.ts src/views/user/PaymentView.vue src/views/user/__tests__/PaymentView.spec.ts src/views/admin/orders/RechargeProductsManager.vue src/views/admin/orders/PlanEditDialog.vue src/types/payment.ts --ext .ts,.vue` passed.
+- `cd backend && env https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 GOPROXY=https://proxy.golang.org,direct GOSUMDB=sum.golang.org go test -tags=unit ./internal/service -run 'TestCreateOrderWithWaffoProviderInstance' -count=1` passed.
+- `cd backend && env https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 GOPROXY=https://proxy.golang.org,direct GOSUMDB=sum.golang.org go test -tags=unit ./internal/payment/provider -run 'TestWaffoCreateQueryAndWebhook|TestFormatWaffoAmountHonorsZeroDecimalCurrencies' -count=1` passed.
+- `cd backend && env https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 GOPROXY=https://proxy.golang.org,direct GOSUMDB=sum.golang.org go test -tags=unit ./internal/service -run 'Test(CreateOrderWithWaffoProviderInstance|ResolveCreemRechargeProductUsesConfiguredCatalogValues|GetWebhookProvidersUsesPinnedCreemOrderProviderWhenMultipleInstancesExist)' -count=1` passed.
+
 ## 2026-05-22 Per-Account Login Agreement Consent Isolation
 ### Done
 - Reworked login-agreement browser persistence from a single global revision record into a structured store with:
@@ -1684,3 +1724,100 @@
 - `pnpm --dir frontend run typecheck` passed.
 - `pnpm --dir frontend exec eslint src/views/HomeView.vue --ext .vue` passed.
 - `pnpm --dir frontend run build` passed.
+
+## 2026-05-26 Affiliate Center / Affiliate Management Design
+### Done
+- Audited the current affiliate/invitation implementation surface:
+  - user page `/affiliate`
+  - admin record pages under `/admin/affiliates/*`
+  - invitation-code and affiliate rules embedded in `SettingsView`
+  - backend `AffiliateService` and existing admin/user APIs
+- Confirmed this round should not change rebate calculation rules; scope is module boundaries, entry points, and information architecture only.
+- Completed the approved A2 design:
+  - user-side “邀请中心”
+  - admin-side “邀请管理” module
+  - reuse existing invite binding / rebate accrual / freeze / transfer logic
+  - add focused user/admin APIs where current surfaces are missing
+- Wrote the design spec to:
+  - `docs/superpowers/specs/2026-05-26-affiliate-center-design.md`
+
+### Failures
+- Did not run the brainstorming skill's requested subagent spec-review loop because this session's higher-priority tool policy only permits spawning child agents when the user explicitly requests delegation.
+
+### Next
+- Ask the user to review `docs/superpowers/specs/2026-05-26-affiliate-center-design.md`.
+- After approval, convert the design into an implementation plan and then execute milestone-by-milestone.
+
+## 2026-05-26 Affiliate Center / Affiliate Management Implementation
+### Done
+- Added backend affiliate module APIs:
+  - user rebate records
+  - user transfer records
+  - admin affiliate overview
+  - admin affiliate rules read/update
+- Added backend handler coverage for:
+  - `GET /api/v1/user/aff/rebates`
+  - `GET /api/v1/user/aff/transfers`
+  - `GET /api/v1/admin/affiliates/overview`
+  - `GET /api/v1/admin/affiliates/rules`
+  - `PUT /api/v1/admin/affiliates/rules`
+- Extended the affiliate repository/service layer with:
+  - current-user rebate/transfer list queries
+  - admin overview aggregation query
+  - dedicated affiliate rules read/update service methods
+- Expanded admin affiliate routing/navigation into a standalone module:
+  - `/admin/affiliates/overview`
+  - `/admin/affiliates/rules`
+  - `/admin/affiliates/codes`
+  - existing invites/rebates/transfers pages kept intact under the same namespace
+- Added new admin pages for:
+  - module overview
+  - rules configuration
+  - invite-code management
+- Reworked `/affiliate` into a fuller invite center:
+  - retained overview/share/transfer actions
+  - added rebate-records section
+  - added transfer-records section
+- Updated related API clients, shared frontend types, routing metadata, sidebar labels, and i18n copy.
+
+### Failures
+- The first focused handler run missed the `unit` build tag and reported “no tests to run”; reran with `-tags=unit`.
+- Initial handler tests assumed paginated responses returned raw arrays instead of the project’s `{ data: { items, total, ... } }` envelope; fixed the test contracts.
+- `AdminUpdateRules` tests initially panicked because the minimal settings stub used `SettingService.GetAllSettings()` without a config default; fixed by providing a minimal config object in the test.
+
+### Next
+- Optional follow-up: move the legacy affiliate settings/custom-user UI out of `SettingsView` and replace it with a module jump/notice once the new module is accepted as the primary entry.
+- Optional follow-up: add focused Vitest coverage for the new admin affiliate pages and the expanded user invite-center sections.
+
+### Validation
+- `cd backend && go test -tags=unit ./internal/handler ./internal/handler/admin -run 'Test(UserHandlerAffiliate|AffiliateHandlerOverviewAndRulesEndpoints)' -count=1` passed.
+- `cd backend && go test ./... -count=1` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/admin/affiliates/AdminAffiliateOverviewView.vue src/views/admin/affiliates/AdminAffiliateRulesView.vue src/views/admin/affiliates/AdminAffiliateCodesView.vue src/views/admin/affiliates/AdminAffiliateRecordsTable.vue src/views/user/AffiliateView.vue src/api/admin/affiliates.ts src/api/user.ts src/router/index.ts src/components/layout/AppSidebar.vue src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed.
+
+## 2026-05-27 SettingsView Affiliate Entry Shrink
+### Done
+- Replaced the old `SettingsView` invitation-code toggle area with a lightweight status summary plus a jump button into `/admin/affiliates/rules`.
+- Replaced the old `SettingsView` affiliate card that previously contained:
+  - rebate rule form fields
+  - custom-user invite code table
+  - add/edit/reset/batch dialogs
+  with a transition-state summary card plus direct links into:
+  - `/admin/affiliates/overview`
+  - `/admin/affiliates/rules`
+  - `/admin/affiliates/codes`
+  - `/admin/affiliates/rebates`
+- Removed the now-dead affiliate management state, modal, batch action, and confirm-dialog logic from `SettingsView`.
+- Kept the underlying form fields in `SettingsView` state so saving unrelated settings continues to round-trip current affiliate values instead of forcing them to defaults.
+
+### Failures
+- Initial large `apply_patch` deletions were too broad and failed to match cleanly inside `SettingsView`; switched to smaller targeted patches.
+- The first cleanup pass left an unused `watch` import, which `vue-tsc`/ESLint surfaced and was removed immediately.
+
+### Next
+- Optional follow-up: stop including affiliate fields in the generic settings save payload only after the backend `UpdateSettingsRequest` safely supports omitted `invitation_code_enabled` and related values without coercing them to false/defaults.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/admin/SettingsView.vue src/views/admin/affiliates/AdminAffiliateOverviewView.vue src/views/admin/affiliates/AdminAffiliateRulesView.vue src/views/admin/affiliates/AdminAffiliateCodesView.vue src/views/admin/affiliates/AdminAffiliateRecordsTable.vue src/views/user/AffiliateView.vue src/api/admin/affiliates.ts src/api/user.ts src/router/index.ts src/components/layout/AppSidebar.vue src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .vue,.ts` passed.
