@@ -123,6 +123,20 @@ func runSetupServer() {
 		IdleTimeout:       120 * time.Second,
 	}
 
+	// Handle graceful shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	go func() {
+		<-quit
+		log.Println("Shutting down setup server...")
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+		if err := server.Shutdown(ctx); err != nil {
+			log.Printf("Setup server forced to shutdown: %v", err)
+		}
+	}()
+
 	if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		log.Fatalf("Failed to start setup server: %v", err)
 	}

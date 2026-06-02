@@ -485,25 +485,40 @@ func provideCleanup(
 			}},
 		}
 
-		runParallel := func(steps []cleanupStep) {
-			var wg sync.WaitGroup
-			for i := range steps {
-				step := steps[i]
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					if err := step.fn(); err != nil {
-						log.Printf("[Cleanup] %s failed: %v", step.name, err)
-						return
-					}
-					log.Printf("[Cleanup] %s succeeded", step.name)
-				}()
+		runParallel := func(ctx context.Context, steps []cleanupStep) {
+			done := make(chan struct{})
+			go func() {
+				var wg sync.WaitGroup
+				for i := range steps {
+					step := steps[i]
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						if err := step.fn(); err != nil {
+							log.Printf("[Cleanup] %s failed: %v", step.name, err)
+							return
+						}
+						log.Printf("[Cleanup] %s succeeded", step.name)
+					}()
+				}
+				wg.Wait()
+				close(done)
+			}()
+			select {
+			case <-done:
+			case <-ctx.Done():
+				log.Printf("[Cleanup] Warning: parallel cleanup timed out after 10s, proceeding with remaining steps")
 			}
-			wg.Wait()
 		}
 
-		runSequential := func(steps []cleanupStep) {
+		runSequential := func(ctx context.Context, steps []cleanupStep) {
 			for i := range steps {
+				select {
+				case <-ctx.Done():
+					log.Printf("[Cleanup] Warning: sequential cleanup timed out before %s", steps[i].name)
+					return
+				default:
+				}
 				step := steps[i]
 				if err := step.fn(); err != nil {
 					log.Printf("[Cleanup] %s failed: %v", step.name, err)
@@ -513,13 +528,12 @@ func provideCleanup(
 			}
 		}
 
-		runParallel(parallelSteps)
-		runSequential(infraSteps)
+		runParallel(ctx, parallelSteps)
+		runSequential(ctx, infraSteps)
 
-		select {
-		case <-ctx.Done():
-			log.Printf("[Cleanup] Warning: cleanup timed out after 10 seconds")
-		default:
+		if ctx.Err() != nil {
+			log.Printf("[Cleanup] Warning: cleanup did not finish within 10 seconds")
+		} else {
 			log.Printf("[Cleanup] All cleanup steps completed")
 		}
 	}
