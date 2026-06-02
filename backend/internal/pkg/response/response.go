@@ -100,6 +100,32 @@ func BadRequest(c *gin.Context, message string) {
 	Error(c, http.StatusBadRequest, message)
 }
 
+// BadRequestWithError logs the real error server-side and returns a generic "Invalid request" to the client.
+// Use this for ShouldBindJSON / validation errors to avoid leaking internal details.
+func BadRequestWithError(c *gin.Context, err error) {
+	if c.Request != nil {
+		log.Printf("[BAD_REQUEST] %s %s: %v", c.Request.Method, c.Request.URL.Path, err)
+	}
+	Error(c, http.StatusBadRequest, "Invalid request")
+}
+
+// InternalErrorWithError logs the real error server-side and returns a generic "Internal error" to the client.
+// Use this instead of passing err.Error() directly to InternalError.
+func InternalErrorWithError(c *gin.Context, err error) {
+	if c.Request != nil {
+		log.Printf("[INTERNAL_ERROR] %s %s: %v", c.Request.Method, c.Request.URL.Path, err)
+	}
+	Error(c, http.StatusInternalServerError, "Internal error")
+}
+
+// BadRequestError logs the real error and returns a custom prefix message without leaking details.
+func BadRequestError(c *gin.Context, err error, prefix string) {
+	if c.Request != nil {
+		log.Printf("[BAD_REQUEST] %s %s: %v", c.Request.Method, c.Request.URL.Path, err)
+	}
+	Error(c, http.StatusBadRequest, prefix)
+}
+
 // Unauthorized 返回401错误
 func Unauthorized(c *gin.Context, message string) {
 	Error(c, http.StatusUnauthorized, message)

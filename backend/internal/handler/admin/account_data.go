@@ -88,7 +88,7 @@ func (h *AccountHandler) ExportData(c *gin.Context) {
 
 	selectedIDs, err := parseAccountIDs(c)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -100,7 +100,7 @@ func (h *AccountHandler) ExportData(c *gin.Context) {
 
 	includeProxies, err := parseIncludeProxies(c)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -175,12 +175,12 @@ func (h *AccountHandler) ExportData(c *gin.Context) {
 func (h *AccountHandler) ImportData(c *gin.Context) {
 	var req DataImportRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
 	if err := validateDataHeader(req.Data); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 

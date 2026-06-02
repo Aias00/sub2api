@@ -117,7 +117,7 @@ func (h *UsageHandler) List(c *gin.Context) {
 	if requestTypeStr := strings.TrimSpace(c.Query("request_type")); requestTypeStr != "" {
 		parsed, err := service.ParseUsageRequestType(requestTypeStr)
 		if err != nil {
-			response.BadRequest(c, err.Error())
+			response.BadRequestWithError(c, err)
 			return
 		}
 		value := int16(parsed)
@@ -248,7 +248,7 @@ func (h *UsageHandler) Stats(c *gin.Context) {
 	if requestTypeStr := strings.TrimSpace(c.Query("request_type")); requestTypeStr != "" {
 		parsed, err := service.ParseUsageRequestType(requestTypeStr)
 		if err != nil {
-			response.BadRequest(c, err.Error())
+			response.BadRequestWithError(c, err)
 			return
 		}
 		value := int16(parsed)
@@ -451,7 +451,7 @@ func (h *UsageHandler) CreateCleanupTask(c *gin.Context) {
 
 	var req CreateUsageCleanupTaskRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	req.StartDate = strings.TrimSpace(req.StartDate)
@@ -478,7 +478,7 @@ func (h *UsageHandler) CreateCleanupTask(c *gin.Context) {
 	if req.RequestType != nil {
 		parsed, err := service.ParseUsageRequestType(*req.RequestType)
 		if err != nil {
-			response.BadRequest(c, err.Error())
+			response.BadRequestWithError(c, err)
 			return
 		}
 		value := int16(parsed)

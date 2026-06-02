@@ -26,7 +26,7 @@ func (h *OpsHandler) GetDashboardOverview(c *gin.Context) {
 
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -67,7 +67,7 @@ func (h *OpsHandler) GetDashboardThroughputTrend(c *gin.Context) {
 
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -109,7 +109,7 @@ func (h *OpsHandler) GetDashboardLatencyHistogram(c *gin.Context) {
 
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -150,7 +150,7 @@ func (h *OpsHandler) GetDashboardErrorTrend(c *gin.Context) {
 
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -192,7 +192,7 @@ func (h *OpsHandler) GetDashboardErrorDistribution(c *gin.Context) {
 
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -233,7 +233,7 @@ func (h *OpsHandler) GetDashboardOpenAITokenStats(c *gin.Context) {
 
 	filter, err := parseOpsOpenAITokenStatsFilter(c)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 

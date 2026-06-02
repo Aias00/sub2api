@@ -123,7 +123,7 @@ func (h *ChannelMonitorRequestTemplateHandler) Get(c *gin.Context) {
 func (h *ChannelMonitorRequestTemplateHandler) Create(c *gin.Context) {
 	var req channelMonitorTemplateCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", "validation failed"))
 		return
 	}
 	t, err := h.templateService.Create(c.Request.Context(), service.ChannelMonitorRequestTemplateCreateParams{
@@ -149,7 +149,7 @@ func (h *ChannelMonitorRequestTemplateHandler) Update(c *gin.Context) {
 	}
 	var req channelMonitorTemplateUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", "validation failed"))
 		return
 	}
 	t, err := h.templateService.Update(c.Request.Context(), id, service.ChannelMonitorRequestTemplateUpdateParams{
@@ -194,7 +194,7 @@ func (h *ChannelMonitorRequestTemplateHandler) Apply(c *gin.Context) {
 	}
 	var req channelMonitorTemplateApplyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", "validation failed"))
 		return
 	}
 	affected, err := h.templateService.ApplyToMonitors(c.Request.Context(), id, req.MonitorIDs)

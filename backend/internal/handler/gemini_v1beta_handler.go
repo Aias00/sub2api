@@ -61,13 +61,13 @@ func (h *GatewayHandler) GeminiV1BetaListModels(c *gin.Context) {
 			c.JSON(http.StatusOK, gemini.FallbackModelsList())
 			return
 		}
-		googleError(c, http.StatusServiceUnavailable, "No available Gemini accounts: "+err.Error())
+		googleError(c, http.StatusServiceUnavailable, "No available Gemini accounts")
 		return
 	}
 
 	res, err := h.geminiCompatService.ForwardAIStudioGET(c.Request.Context(), account, "/v1beta/models")
 	if err != nil {
-		googleError(c, http.StatusBadGateway, err.Error())
+		googleError(c, http.StatusBadGateway, "Upstream error")
 		return
 	}
 	if shouldFallbackGeminiModels(res) {
@@ -113,13 +113,13 @@ func (h *GatewayHandler) GeminiV1BetaGetModel(c *gin.Context) {
 			c.JSON(http.StatusOK, gemini.FallbackModel(modelName))
 			return
 		}
-		googleError(c, http.StatusServiceUnavailable, "No available Gemini accounts: "+err.Error())
+		googleError(c, http.StatusServiceUnavailable, "No available Gemini accounts")
 		return
 	}
 
 	res, err := h.geminiCompatService.ForwardAIStudioGET(c.Request.Context(), account, "/v1beta/models/"+modelName)
 	if err != nil {
-		googleError(c, http.StatusBadGateway, err.Error())
+		googleError(c, http.StatusBadGateway, "Upstream error")
 		return
 	}
 	if shouldFallbackGeminiModel(modelName, res) {
@@ -161,7 +161,7 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 
 	modelName, action, err := parseGeminiModelAction(strings.TrimPrefix(c.Param("modelAction"), "/"))
 	if err != nil {
-		googleError(c, http.StatusNotFound, err.Error())
+		googleError(c, http.StatusNotFound, "Resource not found")
 		return
 	}
 
@@ -231,7 +231,7 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 	userReleaseFunc, err := geminiConcurrency.AcquireUserSlotWithWait(c, authSubject.UserID, authSubject.Concurrency, stream, &streamStarted)
 	if err != nil {
 		reqLog.Warn("gemini.user_slot_acquire_failed", zap.Error(err))
-		googleError(c, http.StatusTooManyRequests, err.Error())
+		googleError(c, http.StatusTooManyRequests, "Rate limited")
 		return
 	}
 	if waitCounted {
@@ -372,7 +372,7 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 		selection, err := h.gatewayService.SelectAccountWithLoadAwareness(c.Request.Context(), apiKey.GroupID, sessionKey, modelName, fs.FailedAccountIDs, "", int64(0)) // Gemini 不使用会话限制
 		if err != nil {
 			if len(fs.FailedAccountIDs) == 0 {
-				googleError(c, http.StatusServiceUnavailable, "No available Gemini accounts: "+err.Error())
+				googleError(c, http.StatusServiceUnavailable, "No available Gemini accounts")
 				return
 			}
 			action := fs.HandleSelectionExhausted(c.Request.Context())
@@ -453,7 +453,7 @@ func (h *GatewayHandler) GeminiV1BetaModels(c *gin.Context) {
 			)
 			if err != nil {
 				reqLog.Warn("gemini.account_slot_acquire_failed", zap.Int64("account_id", account.ID), zap.Error(err))
-				googleError(c, http.StatusTooManyRequests, err.Error())
+				googleError(c, http.StatusTooManyRequests, "Rate limited")
 				return
 			}
 			if accountWaitCounted {

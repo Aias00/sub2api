@@ -342,7 +342,7 @@ func (h *ChannelHandler) GetByID(c *gin.Context) {
 func (h *ChannelHandler) Create(c *gin.Context) {
 	var req createChannelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", "validation failed"))
 		return
 	}
 
@@ -403,7 +403,7 @@ func (h *ChannelHandler) Update(c *gin.Context) {
 
 	var req updateChannelRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", "validation failed"))
 		return
 	}
 

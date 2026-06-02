@@ -23,13 +23,13 @@ type AntigravityGenerateAuthURLRequest struct {
 func (h *AntigravityOAuthHandler) GenerateAuthURL(c *gin.Context) {
 	var req AntigravityGenerateAuthURLRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "请求无效: "+err.Error())
+		response.BadRequestError(c, err, "请求无效")
 		return
 	}
 
 	result, err := h.antigravityOAuthService.GenerateAuthURL(c.Request.Context(), req.ProxyID)
 	if err != nil {
-		response.InternalError(c, "生成授权链接失败: "+err.Error())
+		response.InternalErrorWithError(c, err)
 		return
 	}
 
@@ -48,7 +48,7 @@ type AntigravityExchangeCodeRequest struct {
 func (h *AntigravityOAuthHandler) ExchangeCode(c *gin.Context) {
 	var req AntigravityExchangeCodeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "请求无效: "+err.Error())
+		response.BadRequestError(c, err, "请求无效")
 		return
 	}
 
@@ -59,7 +59,7 @@ func (h *AntigravityOAuthHandler) ExchangeCode(c *gin.Context) {
 		ProxyID:   req.ProxyID,
 	})
 	if err != nil {
-		response.BadRequest(c, "Token 交换失败: "+err.Error())
+		response.BadRequestError(c, err, "Token 交换失败")
 		return
 	}
 
@@ -77,7 +77,7 @@ type AntigravityRefreshTokenRequest struct {
 func (h *AntigravityOAuthHandler) RefreshToken(c *gin.Context) {
 	var req AntigravityRefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "请求无效: "+err.Error())
+		response.BadRequestError(c, err, "请求无效")
 		return
 	}
 

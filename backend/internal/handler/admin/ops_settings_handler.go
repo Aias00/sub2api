@@ -50,7 +50,7 @@ func (h *OpsHandler) UpdateEmailNotificationConfig(c *gin.Context) {
 	updated, err := h.opsService.UpdateEmailNotificationConfig(c.Request.Context(), &req)
 	if err != nil {
 		// Most failures here are validation errors from request payload; treat as 400.
-		response.Error(c, http.StatusBadRequest, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	response.Success(c, updated)
@@ -96,7 +96,7 @@ func (h *OpsHandler) UpdateAlertRuntimeSettings(c *gin.Context) {
 
 	updated, err := h.opsService.UpdateOpsAlertRuntimeSettings(c.Request.Context(), &req)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	response.Success(c, updated)
@@ -148,7 +148,7 @@ func (h *OpsHandler) UpdateRuntimeLogConfig(c *gin.Context) {
 
 	updated, err := h.opsService.UpdateRuntimeLogConfig(c.Request.Context(), &req, subject.UserID)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	response.Success(c, updated)
@@ -174,7 +174,7 @@ func (h *OpsHandler) ResetRuntimeLogConfig(c *gin.Context) {
 
 	updated, err := h.opsService.ResetRuntimeLogConfig(c.Request.Context(), subject.UserID)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	response.Success(c, updated)
@@ -220,7 +220,7 @@ func (h *OpsHandler) UpdateAdvancedSettings(c *gin.Context) {
 
 	updated, err := h.opsService.UpdateOpsAdvancedSettings(c.Request.Context(), &req)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	response.Success(c, updated)
@@ -266,7 +266,7 @@ func (h *OpsHandler) UpdateMetricThresholds(c *gin.Context) {
 
 	updated, err := h.opsService.UpdateMetricThresholds(c.Request.Context(), &req)
 	if err != nil {
-		response.Error(c, http.StatusBadRequest, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	response.Success(c, updated)

@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -70,7 +71,8 @@ func (h *OpenAIGatewayHandler) Images(c *gin.Context) {
 
 	parsed, err := h.gatewayService.ParseOpenAIImagesRequest(c, body)
 	if err != nil {
-		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", err.Error())
+		log.Printf("[OPENAI_IMAGES] parse error: %v", err)
+		h.errorResponse(c, http.StatusBadRequest, "invalid_request_error", "Invalid request")
 		return
 	}
 

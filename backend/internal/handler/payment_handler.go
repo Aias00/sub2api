@@ -285,7 +285,7 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 
 	var req CreateOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	if strings.TrimSpace(req.WechatResumeToken) != "" {
@@ -453,7 +453,7 @@ func (h *PaymentHandler) RequestRefund(c *gin.Context) {
 
 	var req RefundRequestBody
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -494,7 +494,7 @@ func (h *PaymentHandler) VerifyOrder(c *gin.Context) {
 
 	var req VerifyOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -558,7 +558,7 @@ func buildPublicOrderResult(order *dbent.PaymentOrder) PublicOrderResult {
 func (h *PaymentHandler) VerifyOrderPublic(c *gin.Context) {
 	var req VerifyOrderRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -575,7 +575,7 @@ func (h *PaymentHandler) VerifyOrderPublic(c *gin.Context) {
 func (h *PaymentHandler) ResolveOrderPublicByResumeToken(c *gin.Context) {
 	var req ResolveOrderByResumeTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 

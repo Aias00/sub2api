@@ -273,7 +273,7 @@ func (h *OpsHandler) CreateAlertRule(c *gin.Context) {
 	}
 	validated, err := validateOpsAlertRulePayload(raw)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -327,7 +327,7 @@ func (h *OpsHandler) UpdateAlertRule(c *gin.Context) {
 	}
 	validated, err := validateOpsAlertRulePayload(raw)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -599,7 +599,7 @@ func (h *OpsHandler) ListAlertEvents(c *gin.Context) {
 			filter.EndTime = &endTime
 		}
 	} else {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 

@@ -46,7 +46,7 @@ func (h *OpsHandler) ListSystemLogs(c *gin.Context) {
 
 	start, end, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 

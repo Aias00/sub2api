@@ -91,7 +91,7 @@ func (h *ErrorPassthroughHandler) GetByID(c *gin.Context) {
 func (h *ErrorPassthroughHandler) Create(c *gin.Context) {
 	var req CreateErrorPassthroughRuleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -145,7 +145,7 @@ func (h *ErrorPassthroughHandler) Create(c *gin.Context) {
 	created, err := h.service.Create(c.Request.Context(), rule)
 	if err != nil {
 		if _, ok := err.(*model.ValidationError); ok {
-			response.BadRequest(c, err.Error())
+			response.BadRequestWithError(c, err)
 			return
 		}
 		response.ErrorFrom(c, err)
@@ -166,7 +166,7 @@ func (h *ErrorPassthroughHandler) Update(c *gin.Context) {
 
 	var req UpdateErrorPassthroughRuleRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -254,7 +254,7 @@ func (h *ErrorPassthroughHandler) Update(c *gin.Context) {
 	updated, err := h.service.Update(c.Request.Context(), rule)
 	if err != nil {
 		if _, ok := err.(*model.ValidationError); ok {
-			response.BadRequest(c, err.Error())
+			response.BadRequestWithError(c, err)
 			return
 		}
 		response.ErrorFrom(c, err)

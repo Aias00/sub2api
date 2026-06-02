@@ -149,7 +149,7 @@ func (h *APIKeyHandler) Create(c *gin.Context) {
 
 	var req CreateAPIKeyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -200,7 +200,7 @@ func (h *APIKeyHandler) Update(c *gin.Context) {
 
 	var req UpdateAPIKeyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -230,7 +230,7 @@ func (h *APIKeyHandler) Update(c *gin.Context) {
 		} else {
 			t, err := time.Parse(time.RFC3339, *req.ExpiresAt)
 			if err != nil {
-				response.BadRequest(c, "Invalid expires_at format: "+err.Error())
+				response.BadRequestError(c, err, "Invalid expires_at format")
 				return
 			}
 			svcReq.ExpiresAt = &t

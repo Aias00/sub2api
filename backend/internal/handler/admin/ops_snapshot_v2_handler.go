@@ -46,7 +46,7 @@ func (h *OpsHandler) GetDashboardSnapshotV2(c *gin.Context) {
 
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 

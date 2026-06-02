@@ -88,7 +88,7 @@ func (h *DashboardHandler) GetSnapshotV2(c *gin.Context) {
 
 	filters, err := parseDashboardSnapshotV2Filters(c)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -129,7 +129,7 @@ func (h *DashboardHandler) GetSnapshotV2(c *gin.Context) {
 		)
 	})
 	if err != nil {
-		response.Error(c, 500, err.Error())
+		response.InternalErrorWithError(c, err)
 		return
 	}
 	if cached.ETag != "" {

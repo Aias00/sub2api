@@ -606,7 +606,7 @@ type completeOIDCOAuthRequest struct {
 func (h *AuthHandler) CompleteOIDCOAuthRegistration(c *gin.Context) {
 	var req completeOIDCOAuthRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_REQUEST", "message": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error": "INVALID_REQUEST", "message": "Invalid request"})
 		return
 	}
 

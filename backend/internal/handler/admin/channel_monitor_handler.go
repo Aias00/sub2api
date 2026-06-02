@@ -370,7 +370,7 @@ func (h *ChannelMonitorHandler) Get(c *gin.Context) {
 func (h *ChannelMonitorHandler) Create(c *gin.Context) {
 	var req channelMonitorCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", "validation failed"))
 		return
 	}
 
@@ -412,7 +412,7 @@ func (h *ChannelMonitorHandler) Update(c *gin.Context) {
 	}
 	var req channelMonitorUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", err.Error()))
+		response.ErrorFrom(c, infraerrors.BadRequest("VALIDATION_ERROR", "validation failed"))
 		return
 	}
 

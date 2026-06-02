@@ -56,7 +56,7 @@ func (h *ScheduledTestHandler) ListByAccount(c *gin.Context) {
 func (h *ScheduledTestHandler) Create(c *gin.Context) {
 	var req createScheduledTestPlanRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -76,7 +76,7 @@ func (h *ScheduledTestHandler) Create(c *gin.Context) {
 
 	created, err := h.scheduledTestSvc.CreatePlan(c.Request.Context(), plan)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, created)
@@ -98,7 +98,7 @@ func (h *ScheduledTestHandler) Update(c *gin.Context) {
 
 	var req updateScheduledTestPlanRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -120,7 +120,7 @@ func (h *ScheduledTestHandler) Update(c *gin.Context) {
 
 	updated, err := h.scheduledTestSvc.UpdatePlan(c.Request.Context(), existing)
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, updated)

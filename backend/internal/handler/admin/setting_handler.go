@@ -667,7 +667,7 @@ type UpdateSettingsRequest struct {
 func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	var req UpdateSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -1744,7 +1744,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	// Update OpenAI fast policy (stored under dedicated key, only when provided).
 	if req.OpenAIFastPolicySettings != nil {
 		if err := h.settingService.SetOpenAIFastPolicySettings(c.Request.Context(), openaiFastPolicySettingsFromDTO(req.OpenAIFastPolicySettings)); err != nil {
-			response.BadRequest(c, err.Error())
+			response.BadRequestWithError(c, err)
 			return
 		}
 	}
@@ -2658,7 +2658,7 @@ type TestSMTPRequest struct {
 func (h *SettingHandler) TestSMTPConnection(c *gin.Context) {
 	var req TestSMTPRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -2702,7 +2702,7 @@ func (h *SettingHandler) TestSMTPConnection(c *gin.Context) {
 
 	err := h.emailService.TestSMTPConnectionWithConfig(config)
 	if err != nil {
-		response.BadRequest(c, "SMTP connection test failed: "+err.Error())
+		response.BadRequestError(c, err, "SMTP connection test failed")
 		return
 	}
 
@@ -2727,7 +2727,7 @@ type SendTestEmailRequest struct {
 func (h *SettingHandler) SendTestEmail(c *gin.Context) {
 	var req SendTestEmailRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -2792,7 +2792,7 @@ func (h *SettingHandler) SendTestEmail(c *gin.Context) {
 	body := service.BuildTestEmailBodyWithLogo(siteName, h.settingService.GetEmailLogoURL(c.Request.Context()))
 
 	if err := h.emailService.SendEmailWithConfig(config, req.Email, subject, body); err != nil {
-		response.BadRequest(c, "Failed to send test email: "+err.Error())
+		response.BadRequestError(c, err, "Failed to send test email")
 		return
 	}
 
@@ -2865,7 +2865,7 @@ type UpdateOverloadCooldownSettingsRequest struct {
 func (h *SettingHandler) UpdateOverloadCooldownSettings(c *gin.Context) {
 	var req UpdateOverloadCooldownSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -2875,7 +2875,7 @@ func (h *SettingHandler) UpdateOverloadCooldownSettings(c *gin.Context) {
 	}
 
 	if err := h.settingService.SetOverloadCooldownSettings(c.Request.Context(), settings); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -2917,7 +2917,7 @@ type UpdateRateLimit429CooldownSettingsRequest struct {
 func (h *SettingHandler) UpdateRateLimit429CooldownSettings(c *gin.Context) {
 	var req UpdateRateLimit429CooldownSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -2927,7 +2927,7 @@ func (h *SettingHandler) UpdateRateLimit429CooldownSettings(c *gin.Context) {
 	}
 
 	if err := h.settingService.SetRateLimit429CooldownSettings(c.Request.Context(), settings); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -2997,7 +2997,7 @@ type UpdateRectifierSettingsRequest struct {
 func (h *SettingHandler) UpdateRectifierSettings(c *gin.Context) {
 	var req UpdateRectifierSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -3030,7 +3030,7 @@ func (h *SettingHandler) UpdateRectifierSettings(c *gin.Context) {
 	}
 
 	if err := h.settingService.SetRectifierSettings(c.Request.Context(), settings); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -3080,7 +3080,7 @@ type UpdateBetaPolicySettingsRequest struct {
 func (h *SettingHandler) UpdateBetaPolicySettings(c *gin.Context) {
 	var req UpdateBetaPolicySettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -3091,7 +3091,7 @@ func (h *SettingHandler) UpdateBetaPolicySettings(c *gin.Context) {
 
 	settings := &service.BetaPolicySettings{Rules: rules}
 	if err := h.settingService.SetBetaPolicySettings(c.Request.Context(), settings); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -3123,7 +3123,7 @@ type UpdateStreamTimeoutSettingsRequest struct {
 func (h *SettingHandler) UpdateStreamTimeoutSettings(c *gin.Context) {
 	var req UpdateStreamTimeoutSettingsRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -3136,7 +3136,7 @@ func (h *SettingHandler) UpdateStreamTimeoutSettings(c *gin.Context) {
 	}
 
 	if err := h.settingService.SetStreamTimeoutSettings(c.Request.Context(), settings); err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -3172,7 +3172,7 @@ func (h *SettingHandler) GetWebSearchEmulationConfig(c *gin.Context) {
 func (h *SettingHandler) UpdateWebSearchEmulationConfig(c *gin.Context) {
 	var cfg service.WebSearchEmulationConfig
 	if err := c.ShouldBindJSON(&cfg); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -3197,7 +3197,7 @@ func (h *SettingHandler) ResetWebSearchUsage(c *gin.Context) {
 		ProviderType string `json:"provider_type"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	if req.ProviderType == "" {
@@ -3218,7 +3218,7 @@ func (h *SettingHandler) TestWebSearchEmulation(c *gin.Context) {
 		Query string `json:"query"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	if strings.TrimSpace(req.Query) == "" {

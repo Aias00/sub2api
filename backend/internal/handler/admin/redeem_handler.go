@@ -103,7 +103,7 @@ func (h *RedeemHandler) GetByID(c *gin.Context) {
 func (h *RedeemHandler) Generate(c *gin.Context) {
 	var req GenerateRedeemCodesRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -137,7 +137,7 @@ func (h *RedeemHandler) CreateAndRedeem(c *gin.Context) {
 
 	var req CreateAndRedeemCodeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	req.Code = strings.TrimSpace(req.Code)
@@ -245,7 +245,7 @@ func (h *RedeemHandler) BatchDelete(c *gin.Context) {
 		IDs []int64 `json:"ids" binding:"required,min=1"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -322,7 +322,7 @@ func (h *RedeemHandler) Export(c *gin.Context) {
 
 	// Write header
 	if err := writer.Write([]string{"id", "code", "type", "value", "status", "used_by", "used_by_email", "used_at", "created_at"}); err != nil {
-		response.InternalError(c, "Failed to export redeem codes: "+err.Error())
+		response.InternalErrorWithError(c, err)
 		return
 	}
 
@@ -351,14 +351,14 @@ func (h *RedeemHandler) Export(c *gin.Context) {
 			usedAt,
 			code.CreatedAt.Format("2006-01-02 15:04:05"),
 		}); err != nil {
-			response.InternalError(c, "Failed to export redeem codes: "+err.Error())
+			response.InternalErrorWithError(c, err)
 			return
 		}
 	}
 
 	writer.Flush()
 	if err := writer.Error(); err != nil {
-		response.InternalError(c, "Failed to export redeem codes: "+err.Error())
+		response.InternalErrorWithError(c, err)
 		return
 	}
 

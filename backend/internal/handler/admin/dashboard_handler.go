@@ -227,7 +227,7 @@ func (h *DashboardHandler) GetUsageTrend(c *gin.Context) {
 	if requestTypeStr := strings.TrimSpace(c.Query("request_type")); requestTypeStr != "" {
 		parsed, err := service.ParseUsageRequestType(requestTypeStr)
 		if err != nil {
-			response.BadRequest(c, err.Error())
+			response.BadRequestWithError(c, err)
 			return
 		}
 		value := int16(parsed)
@@ -308,7 +308,7 @@ func (h *DashboardHandler) GetModelStats(c *gin.Context) {
 	if requestTypeStr := strings.TrimSpace(c.Query("request_type")); requestTypeStr != "" {
 		parsed, err := service.ParseUsageRequestType(requestTypeStr)
 		if err != nil {
-			response.BadRequest(c, err.Error())
+			response.BadRequestWithError(c, err)
 			return
 		}
 		value := int16(parsed)
@@ -379,7 +379,7 @@ func (h *DashboardHandler) GetGroupStats(c *gin.Context) {
 	if requestTypeStr := strings.TrimSpace(c.Query("request_type")); requestTypeStr != "" {
 		parsed, err := service.ParseUsageRequestType(requestTypeStr)
 		if err != nil {
-			response.BadRequest(c, err.Error())
+			response.BadRequestWithError(c, err)
 			return
 		}
 		value := int16(parsed)
@@ -536,7 +536,7 @@ func (h *DashboardHandler) GetUserSpendingRanking(c *gin.Context) {
 func (h *DashboardHandler) GetBatchUsersUsage(c *gin.Context) {
 	var req BatchUsersUsageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -580,7 +580,7 @@ type BatchAPIKeysUsageRequest struct {
 func (h *DashboardHandler) GetBatchAPIKeysUsage(c *gin.Context) {
 	var req BatchAPIKeysUsageRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 

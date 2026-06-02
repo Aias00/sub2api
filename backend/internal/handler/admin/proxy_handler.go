@@ -129,7 +129,7 @@ func (h *ProxyHandler) GetByID(c *gin.Context) {
 func (h *ProxyHandler) Create(c *gin.Context) {
 	var req CreateProxyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -160,7 +160,7 @@ func (h *ProxyHandler) Update(c *gin.Context) {
 
 	var req UpdateProxyRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -208,7 +208,7 @@ func (h *ProxyHandler) BatchDelete(c *gin.Context) {
 
 	var req BatchDeleteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -318,7 +318,7 @@ type BatchCreateRequest struct {
 func (h *ProxyHandler) BatchCreate(c *gin.Context) {
 	var req BatchCreateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 

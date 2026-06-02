@@ -94,7 +94,7 @@ func (h *OpsHandler) GetErrorLogs(c *gin.Context) {
 
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -196,7 +196,7 @@ func (h *OpsHandler) ListRequestErrors(c *gin.Context) {
 	}
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -329,7 +329,7 @@ func (h *OpsHandler) ListRequestErrorUpstreamErrors(c *gin.Context) {
 	// are discoverable even when UI defaults to 1h elsewhere.
 	startTime, endTime, err := parseOpsTimeRange(c, "30d")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -481,7 +481,7 @@ func (h *OpsHandler) ListUpstreamErrors(c *gin.Context) {
 	}
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -624,7 +624,7 @@ func (h *OpsHandler) ListRequestDetails(c *gin.Context) {
 
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
-		response.BadRequest(c, err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -696,7 +696,7 @@ func (h *OpsHandler) ListRequestDetails(c *gin.Context) {
 	if err != nil {
 		// Invalid sort/kind/platform etc should be a bad request; keep it simple.
 		if strings.Contains(strings.ToLower(err.Error()), "invalid") {
-			response.BadRequest(c, err.Error())
+			response.BadRequestWithError(c, err)
 			return
 		}
 		response.Error(c, http.StatusInternalServerError, "Failed to list request details")
@@ -743,7 +743,7 @@ func (h *OpsHandler) RetryErrorRequest(c *gin.Context) {
 
 	req := opsRetryRequest{Mode: service.OpsRetryModeClient}
 	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, io.EOF) {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	if strings.TrimSpace(req.Mode) == "" {
@@ -833,7 +833,7 @@ func (h *OpsHandler) UpdateErrorResolution(c *gin.Context) {
 
 	var req opsResolveRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	uid := subject.UserID

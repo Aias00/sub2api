@@ -73,7 +73,7 @@ type OpenAIExchangeCodeRequest struct {
 func (h *OpenAIOAuthHandler) ExchangeCode(c *gin.Context) {
 	var req OpenAIExchangeCodeRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
@@ -105,7 +105,7 @@ type OpenAIRefreshTokenRequest struct {
 func (h *OpenAIOAuthHandler) RefreshToken(c *gin.Context) {
 	var req OpenAIRefreshTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 	refreshToken := strings.TrimSpace(req.RefreshToken)
@@ -212,7 +212,7 @@ func (h *OpenAIOAuthHandler) CreateAccountFromOAuth(c *gin.Context) {
 		GroupIDs    []int64 `json:"group_ids"`
 	}
 	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request: "+err.Error())
+		response.BadRequestWithError(c, err)
 		return
 	}
 
