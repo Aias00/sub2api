@@ -2092,3 +2092,31 @@
 ### Next
 - Decide whether `可用分组` should eventually replace part of the current `可用渠道` mental model for regular users.
 - If users need stronger purchase guidance later, connect each group card to the relevant subscription / purchase path.
+
+## 2026-06-02 Merge upstream main into local main
+
+### Done
+- Fetched the latest `origin/main` from `Wei-Shaw/sub2api` and merged it into the local `main` branch.
+- Used a local-favoring merge strategy for overlapping hunks, then repaired the merge fallout explicitly where upstream additions were required to keep the branch buildable.
+- Reconciled payment/provider type declarations so local `creem` / `waffo` support and upstream `airwallex` support coexist.
+- Restored missing frontend exports and typings introduced by the upstream merge:
+  - account upstream model sync APIs
+  - user platform quota API
+  - airwallex-visible payment method typing
+- Reconciled backend service/runtime merge gaps:
+  - regenerated / repaired ent-generated files around `platform_quotas`
+  - reconnected `UserPlatformQuotaUsageFlusher` into `wire_gen.go`
+  - restored OpenAI gateway upstream error helpers
+  - restored DingTalk settings write-through fields
+  - removed stale ops retry handler endpoints that no longer matched current service APIs
+- Confirmed the merged local branch is buildable again after the merge.
+
+### Validation
+- `pnpm --dir frontend install --frozen-lockfile` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend run build` passed.
+- `cd backend && env https_proxy=http://127.0.0.1:7890 http_proxy=http://127.0.0.1:7890 all_proxy=socks5://127.0.0.1:7890 GOPROXY=https://proxy.golang.org,direct GOSUMDB=sum.golang.org go test ./cmd/server ./internal/payment/provider ./internal/repository ./internal/service ./internal/handler ./internal/handler/admin -count=1` passed.
+
+### Next
+- Decide whether to push the local upstream-merge result to `aias00/main`.
+- Review the remaining untracked local-only assets (`assets/branding`, `.superpowers`, screenshots) separately from the code merge.

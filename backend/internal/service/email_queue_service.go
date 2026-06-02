@@ -22,6 +22,7 @@ type EmailTask struct {
 	SiteName       string
 	TaskType       string
 	ResetURL       string // Only used for password_reset task type
+	Locale         string // Optional Accept-Language locale hint
 	DisplayName    string
 	DashboardURL   string
 	ManageURL      string

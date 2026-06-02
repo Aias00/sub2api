@@ -3326,7 +3326,7 @@
                         </td>
                         <td class="pr-4 py-1">
                           <input
-                            v-model.number="form.default_platform_quotas[p]!.daily"
+                            v-model.number="form.default_platform_quotas![p]!.daily"
                             type="number"
                             step="0.01"
                             min="0"
@@ -3336,7 +3336,7 @@
                         </td>
                         <td class="pr-4 py-1">
                           <input
-                            v-model.number="form.default_platform_quotas[p]!.weekly"
+                            v-model.number="form.default_platform_quotas![p]!.weekly"
                             type="number"
                             step="0.01"
                             min="0"
@@ -3346,7 +3346,7 @@
                         </td>
                         <td class="py-1">
                           <input
-                            v-model.number="form.default_platform_quotas[p]!.monthly"
+                            v-model.number="form.default_platform_quotas![p]!.monthly"
                             type="number"
                             step="0.01"
                             min="0"
@@ -6962,7 +6962,6 @@ import Toggle from "@/components/common/Toggle.vue";
 import ProxySelector from "@/components/common/ProxySelector.vue";
 import ImageUpload from "@/components/common/ImageUpload.vue";
 import BackupSettings from "@/views/admin/BackupView.vue";
-import EmailTemplateEditor from "@/views/admin/settings/EmailTemplateEditor.vue";
 import { useClipboard } from "@/composables/useClipboard";
 import { extractApiErrorMessage, extractI18nErrorMessage } from "@/utils/apiError";
 import { useAppStore } from "@/stores";

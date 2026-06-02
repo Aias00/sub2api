@@ -22,7 +22,7 @@ const VISIBLE_METHOD_ALIASES = {
   airwallex: 'airwallex',
 } as const
 
-export type VisiblePaymentMethod = 'alipay' | 'wxpay' | 'creem' | 'waffo' | 'stripe'
+export type VisiblePaymentMethod = 'alipay' | 'wxpay' | 'creem' | 'waffo' | 'stripe' | 'airwallex'
 export type StripeVisibleMethod = 'alipay' | 'wechat_pay'
 export type PaymentLaunchKind =
   | 'qr_waiting'

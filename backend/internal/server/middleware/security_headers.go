@@ -20,6 +20,14 @@ const (
 	CloudflareInsightsDomain = "https://static.cloudflareinsights.com"
 	// StripeDomain is the domain for Stripe.js SDK
 	StripeDomain = "https://*.stripe.com"
+	// AirwallexStaticDomain 是 Airwallex 生产环境 SDK 脚本域名。
+	AirwallexStaticDomain = "https://static.airwallex.com"
+	// AirwallexCheckoutDomain 是 Airwallex 生产环境收银台元素和 iframe 域名。
+	AirwallexCheckoutDomain = "https://checkout.airwallex.com"
+	// AirwallexDemoStaticDomain 是 Airwallex 沙箱环境 SDK 脚本域名。
+	AirwallexDemoStaticDomain = "https://static-demo.airwallex.com"
+	// AirwallexDemoCheckoutDomain 是 Airwallex 沙箱环境收银台元素和 iframe 域名。
+	AirwallexDemoCheckoutDomain = "https://checkout-demo.airwallex.com"
 	// AdSenseScriptDomain is the domain for Google AdSense bootstrap script.
 	AdSenseScriptDomain = "https://pagead2.googlesyndication.com"
 	// AdSense frame/embed domains observed during Google AdSense verification and ad bootstrap.

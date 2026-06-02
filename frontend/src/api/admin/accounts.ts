@@ -474,6 +474,29 @@ export async function getAvailableModels(id: number): Promise<ClaudeModel[]> {
   return data
 }
 
+export interface SyncUpstreamModelsResult {
+  models: string[]
+}
+
+export async function syncUpstreamModels(id: number): Promise<SyncUpstreamModelsResult> {
+  const { data } = await apiClient.post<SyncUpstreamModelsResult>(`/admin/accounts/${id}/models/sync-upstream`)
+  return data
+}
+
+export interface SyncUpstreamPreviewParams {
+  platform: string
+  type: string
+  base_url?: string
+  api_key?: string
+  proxy_id?: number | null
+  extra?: Record<string, unknown>
+}
+
+export async function syncUpstreamModelsPreview(params: SyncUpstreamPreviewParams): Promise<SyncUpstreamModelsResult> {
+  const { data } = await apiClient.post<SyncUpstreamModelsResult>('/admin/accounts/models/sync-upstream-preview', params)
+  return data
+}
+
 export async function startGeminiWebLogin(
   id: number,
   payload?: { login_mode?: 'auto' | 'remote' | 'local' }
@@ -715,6 +738,8 @@ export const accountsAPI = {
   resetTempUnschedulable,
   setSchedulable,
   getAvailableModels,
+  syncUpstreamModels,
+  syncUpstreamModelsPreview,
   startGeminiWebLogin,
   getGeminiWebLoginStatus,
   importGeminiWebCookies,

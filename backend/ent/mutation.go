@@ -10043,7 +10043,7 @@ func (m *ChannelMonitorMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *ChannelMonitorMutation) Fields() []string {
-	fields := make([]string, 0, 22)
+	fields := make([]string, 0, 23)
 	if m.created_at != nil {
 		fields = append(fields, channelmonitor.FieldCreatedAt)
 	}
@@ -38674,6 +38674,9 @@ type UserMutation struct {
 	pending_auth_sessions             map[int64]struct{}
 	removedpending_auth_sessions      map[int64]struct{}
 	clearedpending_auth_sessions      bool
+	platform_quotas                   map[int64]struct{}
+	removedplatform_quotas            map[int64]struct{}
+	clearedplatform_quotas            bool
 	done                              bool
 	oldValue                          func(context.Context) (*User, error)
 	predicates                        []predicate.User

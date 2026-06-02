@@ -696,7 +696,7 @@ func TestGatewayService_CountTokensUnsupported404ReturnsNotFoundForClientFallbac
 	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages/count_tokens", nil)
 
 	body := []byte(`{"model":"claude-opus-4-7","messages":[{"role":"user","content":"hi"}]}`)
-	parsed := &ParsedRequest{Body: body, Model: "claude-opus-4-7"}
+	parsed := &ParsedRequest{Body: NewRequestBodyRef(body), Model: "claude-opus-4-7"}
 
 	upstream := &anthropicHTTPUpstreamRecorder{
 		resp: &http.Response{

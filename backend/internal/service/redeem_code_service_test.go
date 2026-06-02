@@ -41,6 +41,9 @@ func (s *redeemLookupStub) ListByUserPaginated(context.Context, int64, paginatio
 func (s *redeemLookupStub) SumPositiveBalanceByUser(context.Context, int64) (float64, error) {
 	return 0, nil
 }
+func (s *redeemLookupStub) BatchUpdate(context.Context, []int64, RedeemCodeBatchUpdateFields) (int64, error) {
+	return 0, nil
+}
 
 func TestGenerateRedeemCodeFormat(t *testing.T) {
 	code, err := GenerateRedeemCode()

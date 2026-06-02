@@ -684,6 +684,7 @@ type UpdateSettingsRequest struct {
 	BalanceLowNotifyEnabled      *bool                   `json:"balance_low_notify_enabled"`
 	BalanceLowNotifyThreshold    *float64                `json:"balance_low_notify_threshold"`
 	BalanceLowNotifyRechargeURL  *string                 `json:"balance_low_notify_recharge_url"`
+	SubscriptionExpiryNotifyEnabled *bool                `json:"subscription_expiry_notify_enabled"`
 	AccountQuotaNotifyEnabled    *bool                   `json:"account_quota_notify_enabled"`
 	AccountQuotaNotifyEmails     *[]dto.NotifyEmailEntry `json:"account_quota_notify_emails"`
 	RegistrationNotifyEnabled    *bool                   `json:"registration_notify_enabled"`
@@ -1646,6 +1647,22 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		LinuxDoConnectClientID:           req.LinuxDoConnectClientID,
 		LinuxDoConnectClientSecret:       req.LinuxDoConnectClientSecret,
 		LinuxDoConnectRedirectURL:        req.LinuxDoConnectRedirectURL,
+		DingTalkConnectEnabled:           req.DingTalkConnectEnabled,
+		DingTalkConnectClientID:          req.DingTalkConnectClientID,
+		DingTalkConnectClientSecret:      req.DingTalkConnectClientSecret,
+		DingTalkConnectRedirectURL:       req.DingTalkConnectRedirectURL,
+		DingTalkConnectCorpRestrictionPolicy:   req.DingTalkConnectCorpRestrictionPolicy,
+		DingTalkConnectInternalCorpID:          req.DingTalkConnectInternalCorpID,
+		DingTalkConnectBypassRegistration:      req.DingTalkConnectBypassRegistration,
+		DingTalkConnectSyncCorpEmail:           req.DingTalkConnectSyncCorpEmail,
+		DingTalkConnectSyncDisplayName:         req.DingTalkConnectSyncDisplayName,
+		DingTalkConnectSyncDept:                req.DingTalkConnectSyncDept,
+		DingTalkConnectSyncCorpEmailAttrKey:    req.DingTalkConnectSyncCorpEmailAttrKey,
+		DingTalkConnectSyncDisplayNameAttrKey:  req.DingTalkConnectSyncDisplayNameAttrKey,
+		DingTalkConnectSyncDeptAttrKey:         req.DingTalkConnectSyncDeptAttrKey,
+		DingTalkConnectSyncCorpEmailAttrName:   req.DingTalkConnectSyncCorpEmailAttrName,
+		DingTalkConnectSyncDisplayNameAttrName: req.DingTalkConnectSyncDisplayNameAttrName,
+		DingTalkConnectSyncDeptAttrName:        req.DingTalkConnectSyncDeptAttrName,
 		WeChatConnectEnabled:             req.WeChatConnectEnabled,
 		WeChatConnectAppID:               req.WeChatConnectAppID,
 		WeChatConnectAppSecret:           req.WeChatConnectAppSecret,
