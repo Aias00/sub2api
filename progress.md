@@ -2034,3 +2034,61 @@
 ### Next
 - Decide whether provider-based grouping is sufficient, or whether the admin editor should later expose an explicit custom group field for the plaza sidebar.
 - If `/models` grows beyond a few dozen cards, consider adding sticky section anchors or secondary sort options.
+
+## 2026-05-27 cloudbase logo and icon candidates
+
+### Done
+- Created three production-oriented `cloudbase` branding candidate pairs under:
+  - `assets/branding/cloudbase/`
+- Added these SVG deliverables:
+  - `cloud-gate-logo.svg`
+  - `cloud-gate-icon.svg`
+  - `neural-portal-logo.svg`
+  - `neural-portal-icon.svg`
+  - `orbit-gateway-logo.svg`
+  - `orbit-gateway-icon.svg`
+- Added usage notes and a local preview page:
+  - `assets/branding/cloudbase/README.md`
+  - `assets/branding/cloudbase/preview.html`
+- Kept the current live logo untouched; these are candidate assets, not a live brand swap.
+
+### Validation
+- `xmllint --noout assets/branding/cloudbase/*.svg` passed.
+- `git diff --check` passed.
+- Rendered the SVGs to PNG thumbnails with Quick Look to confirm they display correctly:
+  - `/tmp/cloudbase-brand-renders/cloud-gate-logo.svg.png`
+  - `/tmp/cloudbase-brand-renders/neural-portal-logo.svg.png`
+  - `/tmp/cloudbase-brand-renders/orbit-gateway-logo.svg.png`
+
+### Next
+- Pick one direction as the canonical live logo.
+- If one direction is selected, generate the final rollout set next:
+  - favicon-sized PNGs
+  - high-resolution app icon exports
+  - replacement for `frontend/public/logo.png`
+
+## 2026-06-02 用户可用分组入口
+
+### Done
+- Added a dedicated user-facing `可用分组 / Available Groups` page powered by the existing `/groups/available` API.
+- Added a clear sidebar entry for regular users:
+  - `/available-groups`
+- Split the page into two user-facing sections:
+  - public groups
+  - exclusive / subscription groups
+- Reused existing group rate data from `/groups/rates` so user-specific multipliers stay visible.
+- Added search across group name, description, platform, and type.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/user/__tests__/AvailableGroupsView.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/views/user/AvailableGroupsView.vue src/views/user/__tests__/AvailableGroupsView.spec.ts src/components/layout/AppSidebar.vue src/router/index.ts src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed.
+- Local browser verification passed at `http://127.0.0.1:18082/available-groups`:
+  - sidebar entry visible
+  - page title renders
+  - public group cards render from `/groups/available`
+
+### Next
+- Decide whether `可用分组` should eventually replace part of the current `可用渠道` mental model for regular users.
+- If users need stronger purchase guidance later, connect each group card to the relevant subscription / purchase path.
