@@ -220,6 +220,7 @@ const props = withDefaults(
   defineProps<{
     user: User | null
     linuxdoEnabled?: boolean
+    dingtalkEnabled?: boolean
     oidcEnabled?: boolean
     oidcProviderName?: string
     wechatEnabled?: boolean
@@ -230,6 +231,7 @@ const props = withDefaults(
   }>(),
   {
     linuxdoEnabled: false,
+    dingtalkEnabled: false,
     oidcEnabled: false,
     oidcProviderName: 'OIDC',
     wechatEnabled: false,
@@ -412,6 +414,9 @@ function isProviderEnabledForBinding(provider: BindableProvider): boolean {
   if (provider === 'linuxdo') {
     return props.linuxdoEnabled
   }
+  if (provider === 'dingtalk') {
+    return props.dingtalkEnabled
+  }
   if (provider === 'oidc') {
     return props.oidcEnabled
   }
@@ -437,6 +442,17 @@ const providerItems = computed(() => [
       (getBindingDetails('linuxdo')?.can_bind ?? true),
     canUnbind: Boolean(getBindingStatus('linuxdo') && getBindingDetails('linuxdo')?.can_unbind),
     details: getBindingDetails('linuxdo'),
+  },
+  {
+    provider: 'dingtalk' as const,
+    label: t('profile.authBindings.providers.dingtalk'),
+    bound: getBindingStatus('dingtalk'),
+    canBind:
+      !getBindingStatus('dingtalk') &&
+      isProviderEnabledForBinding('dingtalk') &&
+      (getBindingDetails('dingtalk')?.can_bind ?? true),
+    canUnbind: Boolean(getBindingStatus('dingtalk') && getBindingDetails('dingtalk')?.can_unbind),
+    details: getBindingDetails('dingtalk'),
   },
   {
     provider: 'oidc' as const,
@@ -475,6 +491,9 @@ function providerInitial(provider: UserAuthProvider): string {
   if (provider === 'linuxdo') {
     return 'L'
   }
+  if (provider === 'dingtalk') {
+    return 'D'
+  }
   if (provider === 'wechat') {
     return 'W'
   }
@@ -487,6 +506,9 @@ function providerInitial(provider: UserAuthProvider): string {
 function providerIconClass(provider: UserAuthProvider): string {
   if (provider === 'linuxdo') {
     return 'bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-300'
+  }
+  if (provider === 'dingtalk') {
+    return 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'
   }
   if (provider === 'wechat') {
     return 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-300'

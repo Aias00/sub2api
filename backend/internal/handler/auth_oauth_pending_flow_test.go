@@ -2239,6 +2239,7 @@ CREATE TABLE IF NOT EXISTS user_affiliates (
 		nil,
 		options.defaultSubAssigner,
 		affiliateService,
+		nil,
 	)
 	userSvc := service.NewUserService(userRepo, nil, nil, nil)
 	var totpSvc *service.TotpService
@@ -2504,6 +2505,10 @@ func (r *oauthPendingFlowRedeemCodeRepo) Update(ctx context.Context, code *servi
 	}
 	_, err := update.Save(ctx)
 	return err
+}
+
+func (r *oauthPendingFlowRedeemCodeRepo) BatchUpdate(context.Context, []int64, service.RedeemCodeBatchUpdateFields) (int64, error) {
+	panic("unexpected BatchUpdate call")
 }
 
 func (r *oauthPendingFlowRedeemCodeRepo) Delete(context.Context, int64) error {
@@ -2925,6 +2930,10 @@ func (r *oauthPendingFlowUserRepo) DisableTotp(ctx context.Context, userID int64
 		ClearTotpSecretEncrypted().
 		ClearTotpEnabledAt().
 		Exec(ctx)
+}
+
+func (r *oauthPendingFlowUserRepo) GetByIDIncludeDeleted(ctx context.Context, id int64) (*service.User, error) {
+	return r.GetByID(ctx, id)
 }
 
 func oauthPendingFlowServiceUser(entity *dbent.User) *service.User {

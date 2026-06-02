@@ -100,7 +100,7 @@ func (s *AuthService) BindEmailIdentity(
 }
 
 // SendEmailIdentityBindCode sends a verification code for authenticated email binding flows.
-func (s *AuthService) SendEmailIdentityBindCode(ctx context.Context, userID int64, email string) error {
+func (s *AuthService) SendEmailIdentityBindCode(ctx context.Context, userID int64, email string, locale ...string) error {
 	if s == nil {
 		return ErrServiceUnavailable
 	}

@@ -4250,6 +4250,12 @@ export default {
         title: '站点设置',
         uploadImage: '上传图片'
       },
+      subscriptionExpiryNotify: {
+        title: '订阅到期提醒',
+        description: '控制是否向用户发送订阅即将到期的邮件提醒。',
+        enabled: '启用订阅到期提醒',
+        enabledHint: '开启后，系统会在订阅到期前 7 天、3 天、1 天各发送一次提醒。'
+      },
       smtp: {
         addChannel: '添加通道',
         channelNamePlaceholder: '通道名称，例如 Gmail 备用',

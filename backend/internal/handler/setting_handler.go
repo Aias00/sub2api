@@ -13,8 +13,9 @@ import (
 
 // SettingHandler 公开设置处理器（无需认证）
 type SettingHandler struct {
-	settingService *service.SettingService
-	version        string
+	settingService           *service.SettingService
+	notificationEmailService *service.NotificationEmailService
+	version                  string
 }
 
 // NewSettingHandler 创建公开设置处理器
@@ -23,6 +24,12 @@ func NewSettingHandler(settingService *service.SettingService, version string) *
 		settingService: settingService,
 		version:        version,
 	}
+}
+
+// SetNotificationEmailService attaches the public notification email service without
+// changing the constructor signature used by existing tests.
+func (h *SettingHandler) SetNotificationEmailService(notificationEmailService *service.NotificationEmailService) {
+	h.notificationEmailService = notificationEmailService
 }
 
 // GetPublicSettings 获取公开设置
@@ -66,6 +73,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		TablePageSizeOptions:             settings.TablePageSizeOptions,
 		CustomMenuItems:                  dto.ParseUserVisibleMenuItems(settings.CustomMenuItems),
 		CustomEndpoints:                  dto.ParseCustomEndpoints(settings.CustomEndpoints),
+		DingTalkOAuthEnabled:             settings.DingTalkOAuthEnabled,
 		LinuxDoOAuthEnabled:              settings.LinuxDoOAuthEnabled,
 		WeChatOAuthEnabled:               settings.WeChatOAuthEnabled,
 		WeChatOAuthOpenEnabled:           settings.WeChatOAuthOpenEnabled,

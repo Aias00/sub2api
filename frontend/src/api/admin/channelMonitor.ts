@@ -22,11 +22,13 @@ export type MonitorErrorCategory =
   | 'invalid_request'
   | 'unknown'
 export type BodyOverrideMode = 'off' | 'merge' | 'replace'
+export type APIMode = 'chat_completions' | 'responses'
 
 export interface ChannelMonitor {
   id: number
   name: string
   provider: Provider
+  api_mode: APIMode
   endpoint: string
   api_key_masked: string
   /**
@@ -89,6 +91,7 @@ export interface ListResponse {
 export interface CreateParams {
   name: string
   provider: Provider
+  api_mode?: APIMode
   endpoint: string
   api_key: string
   primary_model: string

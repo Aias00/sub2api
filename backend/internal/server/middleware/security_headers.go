@@ -29,6 +29,25 @@ const (
 	AdSenseGoogleFrameDomain     = "https://www.google.com"
 )
 
+var requiredCSPDirectiveValues = []struct {
+	directive string
+	value     string
+}{
+	{"script-src", CloudflareInsightsDomain},
+	{"script-src", StripeDomain},
+	{"frame-src", StripeDomain},
+	{"script-src", AirwallexStaticDomain},
+	{"script-src", AirwallexCheckoutDomain},
+	{"style-src", AirwallexStaticDomain},
+	{"style-src", AirwallexCheckoutDomain},
+	{"frame-src", AirwallexCheckoutDomain},
+	{"script-src", AirwallexDemoStaticDomain},
+	{"script-src", AirwallexDemoCheckoutDomain},
+	{"style-src", AirwallexDemoStaticDomain},
+	{"style-src", AirwallexDemoCheckoutDomain},
+	{"frame-src", AirwallexDemoCheckoutDomain},
+}
+
 // GenerateNonce generates a cryptographically secure random nonce.
 // 返回 error 以确保调用方在 crypto/rand 失败时能正确降级。
 func GenerateNonce() (string, error) {
@@ -116,15 +135,10 @@ func enhanceCSPPolicy(policy string) string {
 		policy = addToDirective(policy, "script-src", NonceTemplate)
 	}
 
-	// Add Cloudflare Insights domain to script-src if not present
-	if !strings.Contains(policy, CloudflareInsightsDomain) {
-		policy = addToDirective(policy, "script-src", CloudflareInsightsDomain)
-	}
-
-	// Add Stripe.js domain to script-src and frame-src if not present
-	if !strings.Contains(policy, "stripe.com") {
-		policy = addToDirective(policy, "script-src", StripeDomain)
-		policy = addToDirective(policy, "frame-src", StripeDomain)
+	for _, required := range requiredCSPDirectiveValues {
+		if !directiveHasValue(policy, required.directive, required.value) {
+			policy = addToDirective(policy, required.directive, required.value)
+		}
 	}
 
 	// Add AdSense bootstrap script domain to script-src if not present
@@ -145,6 +159,22 @@ func enhanceCSPPolicy(policy string) string {
 	}
 
 	return policy
+}
+
+func directiveHasValue(policy, directive, value string) bool {
+	for _, rawDirective := range strings.Split(policy, ";") {
+		fields := strings.Fields(strings.TrimSpace(rawDirective))
+		if len(fields) == 0 || fields[0] != directive {
+			continue
+		}
+		for _, field := range fields[1:] {
+			if field == value {
+				return true
+			}
+		}
+		return false
+	}
+	return false
 }
 
 // addToDirective adds a value to a specific CSP directive.
