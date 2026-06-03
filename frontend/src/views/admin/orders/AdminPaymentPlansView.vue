@@ -4,19 +4,19 @@
       <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-900">
         <div class="grid gap-5 p-5 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
           <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-500">{{ localText('商品中台', 'Commerce catalog') }}</p>
-            <h1 class="mt-2 text-2xl font-black tracking-tight text-gray-950 dark:text-white">{{ localText('商品/套餐管理', 'Products & plans') }}</h1>
+            <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-500">{{ t('payment.admin.catalog.badge') }}</p>
+            <h1 class="mt-2 text-2xl font-black tracking-tight text-gray-950 dark:text-white">{{ t('payment.admin.catalog.title') }}</h1>
             <p class="mt-2 max-w-2xl text-sm leading-6 text-gray-500 dark:text-gray-400">
-              {{ localText('统一维护用户端充值页展示的余额商品和订阅套餐。充值商品写入系统配置；订阅套餐绑定订阅分组并生成订阅订单。', 'Manage balance top-up products and subscription plans in one place. Products are stored in settings; plans bind to subscription groups and create subscription orders.') }}
+              {{ t('payment.admin.catalog.description') }}
             </p>
           </div>
           <div class="grid grid-cols-2 gap-3">
             <div class="rounded-2xl bg-gray-50 p-4 dark:bg-dark-800/70">
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ localText('订阅套餐', 'Plans') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.admin.catalog.stats.plans') }}</p>
               <p class="mt-1 text-2xl font-black text-gray-950 dark:text-white">{{ plans.length }}</p>
             </div>
             <div class="rounded-2xl bg-gray-50 p-4 dark:bg-dark-800/70">
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ localText('已上架', 'On sale') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.admin.catalog.stats.onSale') }}</p>
               <p class="mt-1 text-2xl font-black text-gray-950 dark:text-white">{{ onSalePlanCount }}</p>
             </div>
           </div>
@@ -49,9 +49,9 @@
         <div class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-900">
           <div class="flex flex-col gap-4 border-b border-gray-100 p-5 dark:border-dark-700 md:flex-row md:items-center md:justify-between">
             <div>
-              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-500">{{ localText('订阅售卖', 'Subscription sales') }}</p>
+              <p class="text-xs font-semibold uppercase tracking-[0.24em] text-primary-500">{{ t('payment.admin.catalog.salesBadge') }}</p>
               <h2 class="mt-2 text-xl font-bold text-gray-950 dark:text-white">{{ t('payment.admin.plansPageTitle') }}</h2>
-              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ localText('套餐必须绑定订阅分组；只有上架套餐会展示在用户端订阅 Tab。', 'Plans must bind to subscription groups. Only on-sale plans appear on the user subscription tab.') }}</p>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ t('payment.admin.catalog.salesDescription') }}</p>
             </div>
             <div class="flex items-center gap-2">
               <button @click="loadPlans" :disabled="plansLoading" class="btn btn-secondary" :title="t('common.refresh')">
@@ -155,14 +155,13 @@ type CatalogTab = {
   icon: 'gift' | 'creditCard'
 }
 
-const { t, locale } = useI18n()
+const { t } = useI18n()
 const appStore = useAppStore()
-const localText = (zh: string, en: string) => locale.value.startsWith('zh') ? zh : en
 
 const activeTab = ref<CatalogTabKey>('plans')
 const catalogTabs = computed<CatalogTab[]>(() => [
-  { key: 'recharge' as const, label: localText('充值商品', 'Recharge products'), icon: 'gift' },
-  { key: 'plans' as const, label: localText('订阅套餐', 'Subscription plans'), icon: 'creditCard' },
+  { key: 'recharge' as const, label: t('payment.admin.catalog.tabs.recharge'), icon: 'gift' },
+  { key: 'plans' as const, label: t('payment.admin.catalog.tabs.plans'), icon: 'creditCard' },
 ])
 
 // ==================== Groups ====================

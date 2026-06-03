@@ -17,7 +17,7 @@
             for="login-agreement-consent"
             class="cursor-pointer text-gray-700 dark:text-dark-200"
           >
-            我已阅读并同意
+            {{ t('auth.loginAgreementPrompt.checkboxPrefix') }}
           </label>
           <template v-for="(doc, index) in documents" :key="doc.id || doc.title">
             <RouterLink
@@ -57,7 +57,7 @@
       />
       <div class="min-w-0 flex-1">
         <p class="font-medium">
-          {{ accepted ? '登录条款入口' : '继续登录前可能需要确认最新条款。' }}
+          {{ accepted ? t('auth.loginAgreementPrompt.acceptedTitle') : t('auth.loginAgreementPrompt.reviewTitle') }}
         </p>
         <p
           class="mt-1"
@@ -69,8 +69,8 @@
         >
           {{
             accepted
-              ? '您已同意当前版本条款，可随时重新查看相关文档。'
-              : '您可以先输入账号信息；如果当前账号尚未确认最新条款，我们会在提交登录时提示确认。'
+              ? t('auth.loginAgreementPrompt.acceptedDescription')
+              : t('auth.loginAgreementPrompt.reviewDescription')
           }}
         </p>
       </div>
@@ -84,7 +84,7 @@
         "
         @click="emit('open')"
       >
-        {{ accepted ? '查看条款' : '查看并同意' }}
+        {{ accepted ? t('auth.loginAgreementPrompt.viewTerms') : t('auth.loginAgreementPrompt.viewAndAccept') }}
       </button>
     </div>
   </div>
@@ -104,7 +104,7 @@
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
                   <h2 class="text-xl font-bold tracking-normal text-gray-950 dark:text-white">
-                    条款更新通知
+                    {{ t('auth.loginAgreementPrompt.termsUpdateTitle') }}
                   </h2>
                   <span
                     v-if="updatedAt"
@@ -114,7 +114,7 @@
                   </span>
                 </div>
                 <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-dark-300">
-                  我们的服务条款已于 {{ updatedAt || '近期' }} 更新。在继续使用服务之前，请仔细阅读并同意以下条款。
+                  {{ t('auth.loginAgreementPrompt.agreementUpdatedAt', { date: updatedAt || t('auth.loginAgreementPrompt.recent') }) }}
                 </p>
               </div>
             </div>
@@ -122,7 +122,7 @@
 
           <div class="max-h-[58vh] overflow-y-auto px-6 py-5">
             <div class="mb-3 flex items-center justify-between gap-3">
-              <p class="text-sm font-semibold text-gray-900 dark:text-white">相关文档</p>
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('auth.loginAgreementPrompt.relevantDocuments') }}</p>
             </div>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <RouterLink
@@ -153,14 +153,14 @@
                 class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-200 dark:hover:bg-dark-700"
                 @click="emit('reject')"
               >
-                拒绝
+                {{ t('auth.loginAgreementPrompt.reject') }}
               </button>
               <button
                 type="button"
                 class="rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-primary-600/20 transition hover:bg-primary-700"
                 @click="emit('accept')"
               >
-                同意并继续
+                {{ t('auth.loginAgreementPrompt.acceptAndContinue') }}
               </button>
             </div>
           </div>
@@ -172,6 +172,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import type { LoginAgreementDocument } from '@/types'
 
@@ -190,6 +191,7 @@ const emit = defineEmits<{
   reject: []
   open: []
 }>()
+const { t } = useI18n()
 
 const dialogVisible = computed(() => props.visible && documents.value.length > 0)
 const documents = computed(() => props.documents.filter((doc) => doc.title.trim()))

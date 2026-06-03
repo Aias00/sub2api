@@ -2869,6 +2869,55 @@ export default {
       result: 'Result',
       retryFailed: 'Retry failed',
       riskyStatus: 'At Risk',
+      systemLogs: {
+        cleanupByFilter: 'Clean Up by Current Filter',
+        cleanupConfirm: 'Clean up system logs using the current filter? This action cannot be undone.',
+        cleanupFailed: 'Failed to clean up system logs',
+        cleanupSuccess: 'Cleanup complete. Deleted {count} logs',
+        component: 'Component',
+        componentPlaceholder: 'e.g. http.access',
+        dropped: 'Dropped',
+        empty: 'No system logs',
+        endTimeOptional: 'End Time (optional)',
+        failed: 'Failed',
+        healthRefresh: 'Refresh Health Metrics',
+        heading: 'System Logs',
+        keyword: 'Keyword',
+        keywordPlaceholder: 'message/request_id',
+        level: 'Level',
+        loading: 'Loading...',
+        loadFailed: 'Failed to load system logs',
+        model: 'Model',
+        platform: 'Platform',
+        queue: 'Queue',
+        recentWriteError: 'Recent write error: {error}',
+        refreshReset: 'Reset',
+        runtimeConfig: 'Runtime Log Configuration (applies immediately)',
+        runtimeConfigLoading: 'Loading...',
+        runtimeConfigResetConfirm: 'Revert to the startup log configuration (env/yaml) and apply it immediately?',
+        runtimeConfigResetFailed: 'Failed to revert runtime log configuration',
+        runtimeConfigResetSuccess: 'Reverted to the startup log configuration',
+        runtimeConfigSaveFailed: 'Failed to save runtime log configuration',
+        runtimeConfigSaved: 'Runtime log configuration applied',
+        runtimeSaveAndApply: 'Save and Apply',
+        runtimeSaving: 'Saving...',
+        runtimeResetDefaults: 'Restore Defaults',
+        runtimeCaller: 'caller',
+        runtimeSampling: 'sampling',
+        runtimeLevel: 'Level',
+        runtimeRetentionDays: 'Retention Days',
+        runtimeSamplingInitial: 'Sampling Initial',
+        runtimeSamplingThereafter: 'Sampling Thereafter',
+        runtimeStacktraceLevel: 'Stacktrace Threshold',
+        search: 'Search',
+        startTimeOptional: 'Start Time (optional)',
+        subheading: 'Sorted by newest first. Supports filtering, search, and cleanup by current filter.',
+        tableDetail: 'Log Details',
+        tableLevel: 'Level',
+        tableTime: 'Time',
+        timeRange: 'Time Range',
+        written: 'Written'
+      },
       runtime: {
         advancedSettingsSummary: 'Advanced settings (Distributed Lock)',
         alertTitle: 'Alert Evaluator',
@@ -3783,9 +3832,21 @@ export default {
         requireEmailHint: 'When enabled, Linux DO, OIDC, and WeChat signups must provide an email before account creation.',
         requireEmailLabel: 'Require email on third-party signup',
         sources: {
+          dingtalk: {
+            description: 'Default quota grants for first-time DingTalk signup or first-time DingTalk binding.',
+            title: 'DingTalk signup'
+          },
           email: {
             description: 'Default quota grants for email-password signups.',
             title: 'Email signup'
+          },
+          github: {
+            description: 'Default quota grants for first-time signup or first-time binding through a verified GitHub email.',
+            title: 'GitHub signup'
+          },
+          google: {
+            description: 'Default quota grants for first-time signup or first-time binding through a verified Google email.',
+            title: 'Google signup'
           },
           linuxdo: {
             description: 'Default quota grants for Linux DO signups.',
@@ -4121,9 +4182,46 @@ export default {
         userinfoUsernamePathPlaceholder: 'for example data.username',
         validateIdToken: 'Validate ID Token'
       },
+      oauthRedirectUrlSetAndCopied: 'Callback URL set and copied.',
       openaiExperimentalScheduler: {
         description: 'Disabled by default. When enabled, this only changes the gateway\'s experimental account-selection policy for OpenAI traffic; it does not indicate an upstream OpenAI capability.',
         title: 'OpenAI experimental scheduler policy'
+      },
+      modelPlazaEditor: {
+        addModel: 'Add Model',
+        badge: 'Badge',
+        badgePlaceholder: 'Popular / Featured',
+        billingBadge: 'Billing Badge',
+        billingBadgeDefault: 'Usage based',
+        billingBadgePlaceholder: 'Usage based',
+        cacheReadPrice: 'Cache Read Price',
+        cacheReadPricePlaceholder: '¥0.2000 / 1M Tokens',
+        cacheWritePrice: 'Cache Write Price',
+        cacheWritePricePlaceholder: '¥2.5000 / 1M Tokens',
+        capabilityTags: 'Capability Tags (One Per Line)',
+        capabilityTagsPlaceholder: 'Complex Reasoning\nCode Generation\nAgent Workflows',
+        cardId: 'Card ID',
+        cardIdPlaceholder: 'e.g. claude-opus-4-6',
+        description: 'Configure the cards shown on the public /models page, including custom titles, capability tags, and pricing copy.',
+        descriptionLabel: 'Description',
+        descriptionPlaceholder: 'One sentence about what this model is good for.',
+        displayTitle: 'Display Title',
+        displayTitlePlaceholder: 'e.g. Claude Opus 4.6',
+        empty: 'No model plaza cards are configured yet. The public /models page will show an empty state.',
+        helper: 'Each card can independently control display text, tags, pricing copy, and public visibility.',
+        hiddenHint: 'Hidden items stay configured but do not render on the public /models page.',
+        inputPrice: 'Input Price',
+        inputPricePlaceholder: '¥2.0000 / 1M Tokens',
+        modelIds: 'Related Model IDs (One Per Line)',
+        modelIdsPlaceholder: 'claude-opus-4-6\nclaude-opus-4-7',
+        outputPrice: 'Output Price',
+        outputPricePlaceholder: '¥10.0000 / 1M Tokens',
+        providerKey: 'Provider Key',
+        providerKeyPlaceholder: 'e.g. anthropic / openai',
+        sortOrder: 'Sort Order',
+        title: 'Model Plaza',
+        untitled: 'Untitled Model Card',
+        visible: 'Visible'
       },
       openaiFastPolicy: {
         action: 'Action',
@@ -4160,7 +4258,82 @@ export default {
       emailTemplates: {
         title: 'Email Templates',
         description: 'Customize notification email subjects and HTML content for each event and locale.',
+        badges: {
+          optional: 'Optional',
+          transactional: 'Transactional'
+        },
+        categories: {
+          admin: 'Admin',
+          auth: 'Auth',
+          billing: 'Billing',
+          notification: 'Notification',
+          ops: 'Ops',
+          riskControl: 'Risk Control',
+          subscription: 'Subscription'
+        },
         event: 'Event',
+        events: {
+          accountQuotaAlert: {
+            category: 'Admin',
+            label: 'Account Quota Alert',
+            timing: 'Sent to admin notification emails when an upstream account reaches the configured quota alert threshold.'
+          },
+          authPasswordReset: {
+            category: 'Auth',
+            label: 'Password Reset',
+            timing: 'Sent when a user requests a password reset link.'
+          },
+          authVerifyCode: {
+            category: 'Auth',
+            label: 'Email Verification Code',
+            timing: 'Sent for registration, email binding, OAuth pending email completion, or TOTP email verification.'
+          },
+          balanceLow: {
+            category: 'Billing',
+            label: 'Low Balance Alert',
+            timing: 'Sent when a user\'s balance drops below the global or personal reminder threshold.'
+          },
+          balanceRechargeSuccess: {
+            category: 'Billing',
+            label: 'Balance Recharge Success',
+            timing: 'Sent after a balance recharge order is paid and credited.'
+          },
+          contentModerationAccountDisabled: {
+            category: 'Risk Control',
+            label: 'Risk Control Account Disabled',
+            timing: 'Sent when content moderation reaches the ban threshold and automatically disables the user account.'
+          },
+          contentModerationViolationNotice: {
+            category: 'Risk Control',
+            label: 'Risk Control Violation Notice',
+            timing: 'Sent when a user request triggers content moderation or risk-control rules but the account is not disabled yet.'
+          },
+          notificationEmailVerifyCode: {
+            category: 'Auth',
+            label: 'Notification Email Verification',
+            timing: 'Sent when a user adds and verifies an extra notification email address.'
+          },
+          opsAlert: {
+            category: 'Ops',
+            label: 'Ops Alert',
+            timing: 'Sent to ops recipients when an ops monitoring rule fires and email notification settings allow it.'
+          },
+          opsScheduledReport: {
+            category: 'Ops',
+            label: 'Ops Scheduled Report',
+            timing: 'Sent when a configured daily, weekly, error digest, or account health report reaches its scheduled send time.'
+          },
+          subscriptionExpiryReminder: {
+            category: 'Subscription',
+            label: 'Subscription Expiry Reminder',
+            timing: 'Sent by the background job when an active subscription has 7, 3, or 1 day remaining. It can be disabled in Email settings.'
+          },
+          subscriptionPurchaseSuccess: {
+            category: 'Subscription',
+            label: 'Subscription Activated',
+            timing: 'Sent after a subscription order is paid and the subscription is activated or extended.'
+          }
+        },
         locale: 'Locale',
         localeEn: 'English',
         localeZh: 'Chinese',
@@ -4186,6 +4359,53 @@ export default {
         empty: 'No email template events or locales are available yet.',
         noPreview: 'Refresh the preview to see the rendered email subject.',
         customized: 'Customized'
+      },
+      emailOAuth: {
+        backendRedirectUrl: 'Backend Callback URL',
+        clientSecretConfiguredHint: 'Secret configured. Leave empty to keep the current value.',
+        description: 'After GitHub or Google email OAuth is enabled, the system reads a verified email, signs in matching users, and auto-registers missing users.',
+        frontendRedirectUrl: 'Frontend Callback URL',
+        generateAndCopy: 'Generate and copy',
+        github: {
+          description: 'GitHub OAuth Apps need the read:user and user:email scopes. Use the backend callback URL below.',
+          setupGuide: 'Setup guide: GitHub Settings → Developer settings → OAuth Apps → New OAuth App. Use your site origin as Homepage URL and the backend callback URL below as Authorization callback URL.'
+        },
+        google: {
+          description: 'Google OAuth clients need the openid email profile scopes and the backend callback URL registered in the credentials.',
+          setupGuide: 'Setup guide: Google Cloud Console → APIs & Services → OAuth consent screen, then Credentials → Create Credentials → OAuth client ID. Choose Web application and add the URL below to Authorized redirect URIs.'
+        },
+        title: 'Email OAuth Sign-in'
+      },
+      loginAgreement: {
+        addDocument: 'Add Document',
+        applyCommercialTemplate: 'Apply Commercial Terms Template',
+        applyCommercialTemplateConfirm: 'Applying the template will replace the current agreement documents. Continue?',
+        applyCommercialTemplateSuccess: 'Commercial terms template applied. Review and save the settings.',
+        appendPrivacyPolicy: 'Append Privacy Policy',
+        checkbox: 'Checkbox',
+        checkboxHint: 'The checkbox appears below the login button and gates all login actions.',
+        description: 'Control whether the login page requires users to accept terms, privacy policy, or other Markdown documents before continuing.',
+        disabled: 'Disabled',
+        displayMode: 'Display Mode',
+        documentTitle: 'Document Title',
+        documentTitlePlaceholder: 'Example: Terms of Service',
+        documentsDescription: 'Document titles are customizable and the content is stored as Markdown. Typical docs include Terms of Service, Usage Policy, Supported Regions, and service-specific terms.',
+        documentsTitle: 'Agreement Documents',
+        duplicateRoute: 'Login agreement document routes cannot be duplicated: /legal/{slug}',
+        enabled: 'Enabled',
+        markdownContent: 'Markdown Content',
+        markdownContentPlaceholder: 'Write the final Markdown content here.',
+        minOneRequired: 'At least one document is required when login agreement is enabled.',
+        modal: 'Modal',
+        modalHint: 'The modal opens on the login page and keeps all login actions disabled until the user accepts.',
+        privacyAlreadyExists: 'A privacy policy document already exists. No duplicate was added.',
+        privacyAppendSuccess: 'Privacy policy appended to the current agreement list. Review and save the settings.',
+        routeSlug: 'Route Slug',
+        title: 'Login Agreement',
+        titleRequired: 'Login agreement document title cannot be empty.',
+        untitledDocument: 'Untitled Document',
+        updatedAt: 'Updated Date',
+        updatedAtHint: 'Changing the date or content requires users to accept again.'
       },
       opsMonitoring: {
         description: 'Enable ops monitoring for troubleshooting and health visibility',
@@ -4320,6 +4540,12 @@ export default {
         preview: 'Preview',
         productNamePrefix: 'Product Name Prefix',
         productNameSuffix: 'Product Name Suffix',
+        rechargeProductsSection: {
+          amount: 'Amount',
+          description: 'Each configured product appears on the recharge tab. Leave empty to show an empty recharge catalog.',
+          empty: 'No recharge products configured. The user page will show an empty recharge catalog.',
+          title: 'Recharge Products'
+        },
         providerAlipay: 'Alipay (Direct)',
         providerAirwallex: 'Airwallex',
         providerConfig: 'Credentials',
@@ -4771,11 +4997,33 @@ export default {
         frontendRedirectUrlLabel: 'Frontend redirect URL',
         frontendRedirectUrlPlaceholder: '/auth/wechat/callback',
         generateAndCopy: 'Generate & Copy (current site)',
+        browserRedirectHint: 'Used by PC App and Official Account browser callbacks. Native mobile SDK flows do not start from this browser callback directly.',
+        browserRedirectUrlLabel: 'Browser Redirect URL',
         modeLabel: 'Mode',
+        modeConflict: 'Official Account and Mobile App cannot be enabled at the same time.',
+        mpAppIdLabel: 'Official Account App ID',
+        mpAppIdPlaceholder: 'Official Account App ID',
+        mpAppSecretLabel: 'Official Account App Secret',
+        mpAppSecretPlaceholder: 'Official Account App Secret',
+        mpCardDescription: 'Only available inside the WeChat browser. It is shown as unavailable outside WeChat.',
+        mpCardTitle: 'Official Account',
         mpModeHint: 'Use Official Account authorization inside the WeChat browser.',
         mpModeLabel: 'Use MP inside WeChat',
+        mobileAppIdLabel: 'Mobile App ID',
+        mobileAppIdPlaceholder: 'Mobile App ID',
+        mobileAppSecretLabel: 'Mobile App Secret',
+        mobileAppSecretPlaceholder: 'Mobile App Secret',
+        mobileCardDescription: 'Native mobile clients start authorization through the WeChat SDK. The web UI does not launch this flow directly.',
+        mobileCardTitle: 'Mobile App',
         openModeHint: 'Use Open Platform QR authorization outside the WeChat browser.',
         openModeLabel: 'Use Open outside WeChat',
+        openPlatformAppIdLabel: 'PC App ID',
+        openPlatformAppIdPlaceholder: 'WeChat Open Platform PC App ID',
+        openPlatformAppSecretLabel: 'PC App Secret',
+        openPlatformAppSecretPlaceholder: 'WeChat Open Platform PC App Secret',
+        openPlatformCardDescription: 'Desktop browsers sign in through WeChat Open Platform QR login. This can coexist with Official Account or Mobile App.',
+        openPlatformCardTitle: 'PC App',
+        unionIdHint: 'When PC App is enabled together with Official Account or Mobile App, they should belong to the same WeChat Open Platform account so UnionID can merge identities reliably.',
         redirectUrlLabel: 'Redirect URL',
         redirectUrlPlaceholder: 'https://your-site.com/api/v1/auth/oauth/wechat/callback',
         redirectUrlSetAndCopied: 'Redirect URL generated and copied to clipboard',
@@ -5474,6 +5722,7 @@ export default {
     noGroupAssigned: 'No group assigned',
     noKeysDescription: 'Create an API key and assign a group before running live gateway tests here.',
     noKeysTitle: 'No API key available yet',
+    noSelection: 'Select an API key',
     notReady: 'Not ready',
     openGuide: 'Open API Guide',
     openUsage: 'Open Usage Records',
@@ -5620,9 +5869,25 @@ export default {
       verifyAndContinue: 'Verify and continue',
       wechatAvailabilityUnknown: 'WeChat sign-in availability could not be confirmed. Refresh and retry.',
       wechatBrowserOnly: 'This WeChat sign-in flow is only available inside the WeChat browser.',
+      wechatNativeAppOnly: 'This site only has WeChat mobile app login configured. Continue from the native app through the WeChat SDK.',
       wechatNotConfigured: 'WeChat sign-in is not configured yet.',
       wechatSystemBrowserOnly: 'This WeChat sign-in flow is only available in your system browser.',
       yourAccount: 'your account'
+    },
+    loginAgreementPrompt: {
+      acceptAndContinue: 'Accept and continue',
+      acceptedDescription: 'You have already accepted the current agreement version and can review the documents again at any time.',
+      acceptedTitle: 'Agreement entry',
+      agreementUpdatedAt: 'Our terms of service were updated on {date}. Please review and accept the following documents before continuing.',
+      checkboxPrefix: 'I have read and agree to',
+      recent: 'recently',
+      reject: 'Reject',
+      relevantDocuments: 'Related documents',
+      reviewDescription: 'You can enter your account details first. If this account has not accepted the latest agreement yet, we will prompt for confirmation when you submit sign-in.',
+      reviewTitle: 'You may need to confirm the latest agreement before signing in.',
+      termsUpdateTitle: 'Terms update notice',
+      viewAndAccept: 'View and accept',
+      viewTerms: 'View terms'
     },
     oauthOrContinue: 'or continue with email',
     oidc: {
@@ -5874,6 +6139,7 @@ export default {
     copy: 'Copy',
     copyFailed: 'Failed to copy',
     create: 'Create',
+    creating: 'Creating...',
     critical: 'Critical',
     delete: 'Delete',
     deleted: 'Deleted successfully',
@@ -5911,6 +6177,7 @@ export default {
     save: 'Save',
     saved: 'Saved successfully',
     saving: 'Saving...',
+    sending: 'Sending...',
     search: 'Search',
     searchPlaceholder: 'Search...',
     selectAll: 'Select all',
@@ -5921,6 +6188,11 @@ export default {
     submit: 'Submit',
     submitting: 'Submitting...',
     success: 'Success',
+    apply: 'Apply',
+    change: 'Change',
+    clear: 'Clear',
+    required: 'Required',
+    tryAgain: 'Try again',
     time: {
       countdown: {
         daysHours: '{d}d {h}h',
@@ -5981,6 +6253,17 @@ export default {
     noUsageRecords: 'No usage records',
     output: 'Output',
     performance: 'Performance',
+    platformBreakdown: 'Platform breakdown',
+    platformCount: '{count} platforms',
+    platformOther: 'Other',
+    platformQuota: {
+      daily: 'Day',
+      disabled: 'Disabled',
+      monthly: 'Month',
+      resetsAt: 'Resets at {time}',
+      title: 'Platform quota',
+      weekly: 'Week'
+    },
     quickActions: 'Quick Actions',
     recentUsage: 'Recent Usage',
     redeemCode: 'Redeem Code',
@@ -6317,11 +6600,15 @@ export default {
     apply: 'Apply',
     avgDuration: 'Avg Duration',
     cacheCreationTokens: 'Cache Creation',
+    cacheWriteTokens: 'Cache Write',
     cacheReadTokens: 'Cache Read',
     cost: 'Cost',
+    dailyDetail: 'Daily Detail',
+    date: 'Date',
     dateRange: 'Date Range:',
     dateRange30d: '30 Days',
     dateRange7d: '7 Days',
+    dateRange90d: '90 Days',
     dateRangeCustom: 'Custom',
     dateRangeToday: 'Today',
     daysLeft: '({days} days)',
@@ -6336,6 +6623,7 @@ export default {
     limitWeekly: 'Weekly Limit',
     model: 'Model',
     modelStats: 'Model Usage Statistics',
+    noDailyUsage: 'No daily usage details in the current range',
     outputTokens: 'Output Tokens',
     placeholder: 'sk-ant-mirror-xxxxxxxxxxxx',
     privacyNote: 'Your Key is processed locally in the browser and will not be stored',
@@ -6774,6 +7062,8 @@ export default {
     to: 'to'
   },
   payment: {
+    airwallexLoadFailed: 'Failed to load Airwallex checkout',
+    airwallexMissingParams: 'Missing Airwallex payment parameters',
     activeSubscription: 'Active Subscription',
     actualPay: 'Actual Payment',
     admin: {
@@ -6785,6 +7075,21 @@ export default {
       approveRefund: 'Approve Refund',
       auditLogs: 'Audit Logs',
       avgAmount: 'Average Amount',
+      catalog: {
+        badge: 'Commerce Catalog',
+        description: 'Manage balance top-up products and subscription plans in one place. Products are stored in settings; plans bind to subscription groups and create subscription orders.',
+        salesBadge: 'Subscription Sales',
+        salesDescription: 'Plans must bind to subscription groups. Only on-sale plans appear on the user subscription tab.',
+        stats: {
+          onSale: 'On Sale',
+          plans: 'Plans'
+        },
+        tabs: {
+          plans: 'Subscription Plans',
+          recharge: 'Recharge Products'
+        },
+        title: 'Products & Plans'
+      },
       balanceOrder: 'Balance Top-Up',
       channelDescription: 'Channel Description',
       channelName: 'Channel Name',
@@ -6878,6 +7183,49 @@ export default {
       retry: 'Retry',
       retryRefund: 'Retry Refund',
       retrySuccess: 'Retry successful',
+      rechargeProductsEditor: {
+        addProduct: 'Add Recharge Product',
+        amountCny: 'Amount (CNY)',
+        badge: 'Balance Top-Up',
+        badgeLabel: 'Badge',
+        badgePlaceholder: 'Recommended',
+        createFirst: 'Create First Product',
+        delete: 'Delete',
+        description: 'Each product renders one card on the recharge tab. Credited balance is calculated from the global recharge multiplier.',
+        emptyDescription: 'Add products and they will appear on the recharge tab in sort order.',
+        emptyTitle: 'No Recharge Products Yet',
+        featureList: 'Feature List',
+        featureListPlaceholder: 'One feature per line',
+        featuredBadge: 'Featured',
+        featuredState: 'Featured',
+        featuredToggle: 'Featured',
+        loadFailed: 'Failed to Load Recharge Products',
+        loading: 'Loading Recharge Products...',
+        name: 'Product Name',
+        namePlaceholder: 'e.g. Starter',
+        previewCreditedAmountHint: 'Credited balance is calculated automatically',
+        previewFallbackSubtitle: 'Subtitle',
+        previewFallbackTitle: 'Product Name',
+        previewRecommendedBadge: 'Recommended',
+        previewTitle: 'User Preview',
+        save: 'Save Recharge Products',
+        saveFailed: 'Failed to Save Recharge Products',
+        saveSuccess: 'Recharge Products Saved',
+        saving: 'Saving...',
+        standardState: 'Standard',
+        stats: {
+          featured: 'Featured',
+          highestAmount: 'Highest Amount',
+          products: 'Products'
+        },
+        subtitle: 'Subtitle',
+        subtitlePlaceholder: 'e.g. For first-time users',
+        syncClean: 'Product catalog is in sync',
+        syncDirty: 'Unsaved product changes',
+        syncHint: 'Saving overwrites the current recharge product list.',
+        title: 'Recharge Products',
+        untitled: 'Untitled Product'
+      },
       revenue: 'Revenue',
       searchOrders: 'Search orders...',
       searchUserSubs: 'Search user subscriptions...',
@@ -6974,6 +7322,7 @@ export default {
     methods: {
       alipay: 'Alipay',
       alipay_direct: 'Alipay (Direct)',
+      airwallex: 'Airwallex',
       card: 'Card',
       creem: 'Creem',
       easypay: 'EasyPay',
@@ -7424,7 +7773,20 @@ export default {
     exportingProgress: 'Exporting data...',
     failedToLoad: 'Failed to load usage logs',
     firstToken: 'First Token',
+    imageBillingSize: 'Billing size',
     imageCount: 'Image count',
+    imageInputSize: 'Input size',
+    imageOutputSize: 'Output size',
+    imageSizeBreakdown: 'Size breakdown',
+    imageSizeLegacyUnstandardized: 'Legacy unstandardized',
+    imageSizeNotRecorded: 'Not recorded',
+    imageSizeSource: 'Size source',
+    imageSizeSourceDefault: 'Default billing tier',
+    imageSizeSourceInput: 'Request input',
+    imageSizeSourceLegacy: 'Legacy record',
+    imageSizeSourceMissing: 'Not recorded',
+    imageSizeSourceOutput: 'Upstream output',
+    imageSizeUnknown: 'Unknown',
     imageTotalPrice: 'Image total price',
     imageUnit: ' images',
     imageUnitPrice: 'Per-image price',
@@ -7434,6 +7796,8 @@ export default {
     inboundEndpoint: 'Inbound Endpoint',
     inputTokenPrice: 'Input price',
     model: 'Model',
+    mapping: 'Mapped model',
+    requestedModel: 'Requested model',
     noDataToExport: 'No data to export',
     noRecords: 'No usage records found. Try adjusting your filters.',
     original: 'Original',
@@ -7465,6 +7829,7 @@ export default {
     unknown: 'Unknown',
     upstream: 'Upstream',
     upstreamEndpoint: 'Upstream Endpoint',
+    upstreamModel: 'Upstream model',
     userAgent: 'User-Agent',
     userBilled: 'User billed',
     ws: 'WS'
@@ -7480,6 +7845,7 @@ export default {
     noActiveSubscriptions: 'No Active Subscriptions',
     noActiveSubscriptionsDesc: 'You don\'t have any active subscriptions. Contact administrator to get one.',
     noExpiration: 'No expiration',
+    quotaEndsIn: 'Quota resets in {time}',
     resetIn: 'Resets in {time}',
     status: {
       active: 'Active',

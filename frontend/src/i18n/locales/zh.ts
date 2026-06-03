@@ -2869,6 +2869,55 @@ export default {
       result: '结果',
       retryFailed: '重试失败',
       riskyStatus: '风险',
+      systemLogs: {
+        cleanupByFilter: '按当前筛选清理',
+        cleanupConfirm: '确认按当前筛选条件清理系统日志？该操作不可撤销。',
+        cleanupFailed: '清理系统日志失败',
+        cleanupSuccess: '清理完成，删除 {count} 条日志',
+        component: '组件',
+        componentPlaceholder: '如 http.access',
+        dropped: '丢弃',
+        empty: '暂无系统日志',
+        endTimeOptional: '结束时间（可选）',
+        failed: '失败',
+        healthRefresh: '刷新健康指标',
+        heading: '系统日志',
+        keyword: '关键词',
+        keywordPlaceholder: '消息/request_id',
+        level: '级别',
+        loading: '加载中...',
+        loadFailed: '系统日志加载失败',
+        model: '模型',
+        platform: '平台',
+        queue: '队列',
+        recentWriteError: '最近写入错误：{error}',
+        refreshReset: '重置',
+        runtimeConfig: '运行时日志配置（实时生效）',
+        runtimeConfigLoading: '加载中...',
+        runtimeConfigResetConfirm: '确认回滚为启动配置（env/yaml）并立即生效？',
+        runtimeConfigResetFailed: '回滚日志配置失败',
+        runtimeConfigResetSuccess: '已回滚到启动日志配置',
+        runtimeConfigSaveFailed: '保存日志配置失败',
+        runtimeConfigSaved: '日志运行时配置已生效',
+        runtimeSaveAndApply: '保存并生效',
+        runtimeSaving: '保存中...',
+        runtimeResetDefaults: '回滚默认值',
+        runtimeCaller: 'caller',
+        runtimeSampling: 'sampling',
+        runtimeLevel: '级别',
+        runtimeRetentionDays: '保留天数',
+        runtimeSamplingInitial: '采样初始',
+        runtimeSamplingThereafter: '采样后续',
+        runtimeStacktraceLevel: '堆栈阈值',
+        search: '查询',
+        startTimeOptional: '开始时间（可选）',
+        subheading: '默认按最新时间倒序，支持筛选搜索与按条件清理。',
+        tableDetail: '日志详细信息',
+        tableLevel: '级别',
+        tableTime: '时间',
+        timeRange: '时间范围',
+        written: '写入'
+      },
       runtime: {
         advancedSettingsSummary: '高级设置 (分布式锁)',
         alertTitle: '告警评估器',
@@ -3783,9 +3832,21 @@ export default {
         requireEmailHint: '启用后，Linux DO、OIDC、微信注册缺少邮箱时必须先补充邮箱地址。',
         requireEmailLabel: '第三方注册强制补充邮箱',
         sources: {
+          dingtalk: {
+            description: '适用于钉钉首次注册或首次绑定时的默认配额。',
+            title: '钉钉登录'
+          },
           email: {
             description: '适用于邮箱密码注册的新用户默认配额。',
             title: '邮箱注册'
+          },
+          github: {
+            description: '适用于通过 GitHub 已验证邮箱首次注册或首次绑定时的默认配额。',
+            title: 'GitHub 登录'
+          },
+          google: {
+            description: '适用于通过 Google 已验证邮箱首次注册或首次绑定时的默认配额。',
+            title: 'Google 登录'
           },
           linuxdo: {
             description: '适用于 Linux DO 第三方注册的新用户默认配额。',
@@ -3946,7 +4007,82 @@ export default {
       emailTemplates: {
         title: '邮件模板',
         description: '按事件与语言自定义通知邮件主题和 HTML 正文。',
+        badges: {
+          optional: '可退订通知',
+          transactional: '事务邮件'
+        },
+        categories: {
+          admin: '管理告警',
+          auth: '认证安全',
+          billing: '计费',
+          notification: '通知',
+          ops: '运维',
+          riskControl: '风控',
+          subscription: '订阅'
+        },
         event: '事件',
+        events: {
+          accountQuotaAlert: {
+            category: '管理告警',
+            label: '账号限额告警',
+            timing: '上游账号的用量达到配置的额度告警阈值时发送给管理员通知邮箱。'
+          },
+          authPasswordReset: {
+            category: '认证安全',
+            label: '密码重置',
+            timing: '用户请求密码重置链接时发送。'
+          },
+          authVerifyCode: {
+            category: '认证安全',
+            label: '邮箱验证码',
+            timing: '注册、绑定邮箱、OAuth 补全邮箱或 TOTP 邮箱校验时发送。'
+          },
+          balanceLow: {
+            category: '计费',
+            label: '余额不足提醒',
+            timing: '用户余额低于全局或个人配置的提醒阈值时发送。'
+          },
+          balanceRechargeSuccess: {
+            category: '计费',
+            label: '余额充值成功',
+            timing: '余额充值订单支付完成并入账后发送。'
+          },
+          contentModerationAccountDisabled: {
+            category: '风控',
+            label: '内容审计禁用账号',
+            timing: '内容审计违规次数达到封禁阈值并自动禁用用户账号时发送。'
+          },
+          contentModerationViolationNotice: {
+            category: '风控',
+            label: '内容审计违规提醒',
+            timing: '用户请求命中内容审计或风控规则、但尚未被禁用时发送。'
+          },
+          notificationEmailVerifyCode: {
+            category: '认证安全',
+            label: '通知邮箱验证码',
+            timing: '用户添加并验证额外通知邮箱时发送。'
+          },
+          opsAlert: {
+            category: '运维',
+            label: '运维告警',
+            timing: '运维监控规则触发告警并满足邮件通知配置时发送给运维收件人。'
+          },
+          opsScheduledReport: {
+            category: '运维',
+            label: '运维定时报表',
+            timing: '运维日报、周报、错误摘要或账号健康报表到达配置的发送时间时发送。'
+          },
+          subscriptionExpiryReminder: {
+            category: '订阅',
+            label: '订阅到期提醒',
+            timing: '后台任务在订阅仍有效且距离到期剩余 7 天、3 天、1 天时各发送一次，可通过邮件设置中的开关关闭。'
+          },
+          subscriptionPurchaseSuccess: {
+            category: '订阅',
+            label: '订阅开通成功',
+            timing: '订阅订单完成支付并成功开通或续期后发送。'
+          }
+        },
         locale: '语言',
         localeEn: '英文',
         localeZh: '中文',
@@ -3972,6 +4108,53 @@ export default {
         empty: '当前暂无可配置的邮件模板事件或语言。',
         noPreview: '刷新预览后可查看渲染后的邮件主题。',
         customized: '已自定义'
+      },
+      emailOAuth: {
+        backendRedirectUrl: '后端回调地址',
+        clientSecretConfiguredHint: '密钥已配置，留空以保留当前值。',
+        description: '开启 GitHub 或 Google 邮箱授权登录后，系统会读取已验证邮箱，存在则直接登录，不存在则自动注册。',
+        frontendRedirectUrl: '前端回跳地址',
+        generateAndCopy: '生成并复制',
+        github: {
+          description: 'GitHub OAuth App 需要 read:user user:email 权限，回调地址填写下方后端地址。',
+          setupGuide: '开通引导：GitHub Settings → Developer settings → OAuth Apps → New OAuth App；Homepage URL 填站点域名，Authorization callback URL 填下面的后端回调地址。'
+        },
+        google: {
+          description: 'Google OAuth 客户端需要 openid email profile 范围，并在凭据里登记后端回调地址。',
+          setupGuide: '开通引导：Google Cloud Console → APIs & Services → OAuth consent screen 完成同意屏幕；Credentials → Create Credentials → OAuth client ID，类型选择 Web application，并把下面地址加入 Authorized redirect URIs。'
+        },
+        title: '邮箱快捷登录'
+      },
+      loginAgreement: {
+        addDocument: '添加文档',
+        applyCommercialTemplate: '套用商业条款模板',
+        applyCommercialTemplateConfirm: '套用模板会覆盖当前协议文档内容，确定继续吗？',
+        applyCommercialTemplateSuccess: '已填充商业条款模板，请检查后保存。',
+        appendPrivacyPolicy: '补充隐私条款',
+        checkbox: '复选框',
+        checkboxHint: '复选框会显示在登录按钮下方，未勾选前所有登录入口禁用。',
+        description: '控制登录页是否要求用户先阅读并同意服务条款、隐私政策或其他 Markdown 文档。',
+        disabled: '未启用',
+        displayMode: '展示形式',
+        documentTitle: '文档名称',
+        documentTitlePlaceholder: '例如：服务条款',
+        documentsDescription: '文档名称可自定义，内容按 Markdown 保存。可参考：服务条款、使用政策、支持的国家和地区、服务特定条款。',
+        documentsTitle: '协议文档',
+        duplicateRoute: '登录条款文档路由不能重复：/legal/{slug}',
+        enabled: '已启用',
+        markdownContent: 'Markdown 内容',
+        markdownContentPlaceholder: '在这里填写正式 Markdown 内容。',
+        minOneRequired: '启用登录条款确认时，至少需要保留一份文档。',
+        modal: '弹窗',
+        modalHint: '弹窗会在登录页打开，用户拒绝后所有登录入口保持禁用。',
+        privacyAlreadyExists: '当前协议列表中已经包含隐私条款，未重复添加。',
+        privacyAppendSuccess: '已在现有协议列表中补充隐私条款，请检查后保存。',
+        routeSlug: '路由标识',
+        title: '登录条款确认',
+        titleRequired: '登录条款文档名称不能为空。',
+        untitledDocument: '未命名文档',
+        updatedAt: '条款更新日期',
+        updatedAtHint: '日期或文档内容变化后，用户需要重新同意。'
       },
       features: {
         affiliate: {
@@ -4145,9 +4328,46 @@ export default {
         userinfoUsernamePathPlaceholder: '例如 data.username',
         validateIdToken: '校验 ID Token'
       },
+      oauthRedirectUrlSetAndCopied: '回调地址已写入并复制。',
       openaiExperimentalScheduler: {
         description: '默认关闭。开启后仅影响本网关在 OpenAI 账号间的实验性调度选择逻辑，不代表上游 OpenAI 官方能力。',
         title: 'OpenAI 实验调度策略'
+      },
+      modelPlazaEditor: {
+        addModel: '添加模型',
+        badge: '角标',
+        badgePlaceholder: '热门 / 推荐',
+        billingBadge: '计费标记',
+        billingBadgeDefault: '按量计费',
+        billingBadgePlaceholder: '按量计费',
+        cacheReadPrice: '缓存读取价格',
+        cacheReadPricePlaceholder: '¥0.2000 / 1M Tokens',
+        cacheWritePrice: '缓存创建价格',
+        cacheWritePricePlaceholder: '¥2.5000 / 1M Tokens',
+        capabilityTags: '能力标签（每行一个）',
+        capabilityTagsPlaceholder: '复杂推理\n代码生成\nAgent 调用',
+        cardId: '卡片 ID',
+        cardIdPlaceholder: '例如：claude-opus-4-6',
+        description: '配置公开 /models 页展示的模型卡片。支持自定义名称、能力标签和价格文案。',
+        descriptionLabel: '简介',
+        descriptionPlaceholder: '一句话介绍这个模型适合做什么。',
+        displayTitle: '展示名称',
+        displayTitlePlaceholder: '例如：Claude Opus 4.6',
+        empty: '当前未配置模型广场卡片，公开 /models 页面会显示空状态。',
+        helper: '每张卡片都可以独立控制展示名称、标签、价格文案和公开可见性。',
+        hiddenHint: '隐藏后保留配置但不会在公开 /models 页面展示。',
+        inputPrice: '输入价格',
+        inputPricePlaceholder: '¥2.0000 / 1M Tokens',
+        modelIds: '关联模型 ID（每行一个）',
+        modelIdsPlaceholder: 'claude-opus-4-6\nclaude-opus-4-7',
+        outputPrice: '输出价格',
+        outputPricePlaceholder: '¥10.0000 / 1M Tokens',
+        providerKey: '平台标识',
+        providerKeyPlaceholder: '例如：anthropic / openai',
+        sortOrder: '排序',
+        title: '模型广场',
+        untitled: '未命名模型卡',
+        visible: '公开显示'
       },
       openaiFastPolicy: {
         action: '处理方式',
@@ -4314,6 +4534,12 @@ export default {
         preview: '预览',
         productNamePrefix: '商品名前缀',
         productNameSuffix: '商品名后缀',
+        rechargeProductsSection: {
+          amount: '金额',
+          description: '配置一个就展示一个；为空时用户端显示暂无可用充值商品。',
+          empty: '当前未配置充值商品，用户端将显示暂无可用充值商品。',
+          title: '充值商品列表'
+        },
         providerAlipay: '支付宝官方',
         providerAirwallex: 'Airwallex',
         providerConfig: '凭证配置',
@@ -4771,11 +4997,33 @@ export default {
         frontendRedirectUrlLabel: '前端回调地址',
         frontendRedirectUrlPlaceholder: '/auth/wechat/callback',
         generateAndCopy: '使用当前站点生成并复制',
+        browserRedirectHint: '用于 PC 应用和公众号的网页回调。移动应用走原生 SDK 时不直接使用这个浏览器回调。',
+        browserRedirectUrlLabel: '浏览器回调地址',
         modeLabel: '模式',
+        modeConflict: '公众号和移动应用不能同时启用。',
+        mpAppIdLabel: '公众号 AppID',
+        mpAppIdPlaceholder: '公众号 AppID',
+        mpAppSecretLabel: '公众号 AppSecret',
+        mpAppSecretPlaceholder: '公众号 AppSecret',
+        mpCardDescription: '仅在微信内浏览器可用；非微信环境下会显示不可用。',
+        mpCardTitle: '公众号',
         mpModeHint: '浏览器在微信内时，自动走公众号授权。',
         mpModeLabel: '微信环境使用公众号',
+        mobileAppIdLabel: '移动应用 AppID',
+        mobileAppIdPlaceholder: '移动应用 AppID',
+        mobileAppSecretLabel: '移动应用 AppSecret',
+        mobileAppSecretPlaceholder: '移动应用 AppSecret',
+        mobileCardDescription: '原生移动端通过微信 SDK 唤起授权，网页端不会直接发起该流程。',
+        mobileCardTitle: '移动应用',
         openModeHint: '浏览器不在微信内时，自动走开放平台扫码授权。',
         openModeLabel: '非微信环境使用开放平台',
+        openPlatformAppIdLabel: 'PC AppID',
+        openPlatformAppIdPlaceholder: '微信开放平台 PC 应用 AppID',
+        openPlatformAppSecretLabel: 'PC AppSecret',
+        openPlatformAppSecretPlaceholder: '微信开放平台 PC 应用 AppSecret',
+        openPlatformCardDescription: '桌面浏览器通过微信开放平台扫码登录。可与公众号或移动应用同时存在。',
+        openPlatformCardTitle: 'PC 应用',
+        unionIdHint: '如果同时启用 PC 应用和公众号/移动应用，这些应用需要挂在同一个微信开放平台主体下，否则 UnionID 无法稳定归并账号。',
         redirectUrlLabel: '回调地址',
         redirectUrlPlaceholder: 'https://your-site.com/api/v1/auth/oauth/wechat/callback',
         redirectUrlSetAndCopied: '已使用当前站点生成回调地址并复制到剪贴板',
@@ -5474,6 +5722,7 @@ export default {
     noGroupAssigned: '未分配分组',
     noKeysDescription: '先创建一个 API Key 并分配分组，才能在这里直接发起测试调用。',
     noKeysTitle: '还没有可用的 API Key',
+    noSelection: '请选择一个 API Key',
     notReady: '未就绪',
     openGuide: '查看调用说明',
     openUsage: '查看用量记录',
@@ -5620,9 +5869,25 @@ export default {
       verifyAndContinue: '验证并继续',
       wechatAvailabilityUnknown: '暂时无法确认微信登录可用性，请刷新后重试。',
       wechatBrowserOnly: '当前微信登录流程仅支持在微信内置浏览器中继续。',
+      wechatNativeAppOnly: '当前仅配置微信移动应用登录，需要在原生 App 中通过微信 SDK 发起授权。',
       wechatNotConfigured: '微信登录尚未配置。',
       wechatSystemBrowserOnly: '当前微信登录流程仅支持在系统浏览器中继续。',
       yourAccount: '当前账户'
+    },
+    loginAgreementPrompt: {
+      acceptAndContinue: '同意并继续',
+      acceptedDescription: '您已同意当前版本条款，可随时重新查看相关文档。',
+      acceptedTitle: '登录条款入口',
+      agreementUpdatedAt: '我们的服务条款已于 {date} 更新。在继续使用服务之前，请仔细阅读并同意以下条款。',
+      checkboxPrefix: '我已阅读并同意',
+      recent: '近期',
+      reject: '拒绝',
+      relevantDocuments: '相关文档',
+      reviewDescription: '您可以先输入账号信息；如果当前账号尚未确认最新条款，我们会在提交登录时提示确认。',
+      reviewTitle: '继续登录前可能需要确认最新条款。',
+      termsUpdateTitle: '条款更新通知',
+      viewAndAccept: '查看并同意',
+      viewTerms: '查看条款'
     },
     oauthOrContinue: '或使用邮箱密码继续',
     oidc: {
@@ -5874,6 +6139,7 @@ export default {
     copy: '复制',
     copyFailed: '复制失败',
     create: '创建',
+    creating: '创建中...',
     critical: '严重',
     delete: '删除',
     deleted: '删除成功',
@@ -5911,6 +6177,7 @@ export default {
     save: '保存',
     saved: '保存成功',
     saving: '保存中...',
+    sending: '发送中...',
     search: '搜索',
     searchPlaceholder: '搜索...',
     selectAll: '全选',
@@ -5921,6 +6188,11 @@ export default {
     submit: '提交',
     submitting: '提交中...',
     success: '成功',
+    apply: '应用',
+    change: '更换',
+    clear: '清空',
+    required: '必填',
+    tryAgain: '请重试',
     time: {
       countdown: {
         daysHours: '{d}d {h}h',
@@ -5981,6 +6253,17 @@ export default {
     noUsageRecords: '暂无使用记录',
     output: '输出',
     performance: '性能指标',
+    platformBreakdown: '平台拆分',
+    platformCount: '{count} 个平台',
+    platformOther: '其他',
+    platformQuota: {
+      daily: '日',
+      disabled: '已禁用',
+      monthly: '月',
+      resetsAt: '重置时间：{time}',
+      title: '平台额度',
+      weekly: '周'
+    },
     quickActions: '快捷操作',
     recentUsage: '最近使用',
     redeemCode: '兑换码',
@@ -6317,11 +6600,15 @@ export default {
     apply: '应用',
     avgDuration: '平均耗时',
     cacheCreationTokens: '缓存创建',
+    cacheWriteTokens: '缓存写入',
     cacheReadTokens: '缓存读取',
     cost: '费用',
+    dailyDetail: '每日明细',
+    date: '日期',
     dateRange: '统计范围:',
     dateRange30d: '30 天',
     dateRange7d: '7 天',
+    dateRange90d: '90 天',
     dateRangeCustom: '自定义',
     dateRangeToday: '今日',
     daysLeft: '({days} 天)',
@@ -6336,6 +6623,7 @@ export default {
     limitWeekly: '周限额',
     model: '模型',
     modelStats: '模型用量统计',
+    noDailyUsage: '当前筛选范围内没有每日明细数据',
     outputTokens: '输出 Tokens',
     placeholder: 'sk-ant-mirror-xxxxxxxxxxxx',
     privacyNote: '您的 Key 仅在浏览器本地处理，不会被存储',
@@ -6774,6 +7062,8 @@ export default {
     to: '至'
   },
   payment: {
+    airwallexLoadFailed: 'Airwallex 支付组件加载失败',
+    airwallexMissingParams: '缺少 Airwallex 支付参数',
     activeSubscription: '当前订阅',
     actualPay: '实付金额',
     admin: {
@@ -6786,6 +7076,21 @@ export default {
       auditLogs: '操作日志',
       avgAmount: '平均金额',
       balanceOrder: '余额充值',
+      catalog: {
+        badge: '商品中台',
+        description: '统一维护用户端充值页展示的余额商品和订阅套餐。充值商品写入系统配置；订阅套餐绑定订阅分组并生成订阅订单。',
+        salesBadge: '订阅售卖',
+        salesDescription: '套餐必须绑定订阅分组；只有上架套餐会展示在用户端订阅 Tab。',
+        stats: {
+          onSale: '已上架',
+          plans: '订阅套餐'
+        },
+        tabs: {
+          plans: '订阅套餐',
+          recharge: '充值商品'
+        },
+        title: '商品/套餐管理'
+      },
       channelDescription: '渠道描述',
       channelName: '渠道名称',
       colUser: '用户',
@@ -6878,6 +7183,49 @@ export default {
       retry: '重试',
       retryRefund: '重试退款',
       retrySuccess: '重试成功',
+      rechargeProductsEditor: {
+        addProduct: '添加充值商品',
+        amountCny: '金额（CNY）',
+        badge: '余额充值',
+        badgeLabel: '角标',
+        badgePlaceholder: '推荐',
+        createFirst: '创建第一个商品',
+        delete: '删除',
+        description: '配置一个商品，用户端充值页就展示一个卡片。实际到账额度由充值倍率统一计算。',
+        emptyDescription: '添加后用户端充值页会立即按排序展示。',
+        emptyTitle: '还没有充值商品',
+        featureList: '卖点列表',
+        featureListPlaceholder: '每行一个卖点',
+        featuredBadge: '推荐',
+        featuredState: '已推荐',
+        featuredToggle: '推荐卡',
+        loadFailed: '加载充值商品失败',
+        loading: '正在加载充值商品...',
+        name: '商品名称',
+        namePlaceholder: '例如：体验',
+        previewCreditedAmountHint: '到账额度由倍率自动计算',
+        previewFallbackSubtitle: '副标题说明',
+        previewFallbackTitle: '商品名称',
+        previewRecommendedBadge: '推荐',
+        previewTitle: '用户端预览',
+        save: '保存充值商品',
+        saveFailed: '保存充值商品失败',
+        saveSuccess: '充值商品已保存',
+        saving: '保存中...',
+        standardState: '普通',
+        stats: {
+          featured: '推荐卡片',
+          highestAmount: '最高面额',
+          products: '商品数量'
+        },
+        subtitle: '副标题',
+        subtitlePlaceholder: '例如：适合初次体验',
+        syncClean: '商品配置已同步',
+        syncDirty: '有未保存的商品修改',
+        syncHint: '保存后会覆盖当前充值商品列表。',
+        title: '充值商品',
+        untitled: '未命名商品'
+      },
       revenue: '收入',
       searchOrders: '搜索订单...',
       searchUserSubs: '搜索用户订阅...',
@@ -6974,6 +7322,7 @@ export default {
     methods: {
       alipay: '支付宝',
       alipay_direct: '支付宝（直连）',
+      airwallex: 'Airwallex',
       card: '银行卡',
       creem: 'Creem',
       easypay: '易支付',
@@ -7424,7 +7773,20 @@ export default {
     exportingProgress: '正在导出数据...',
     failedToLoad: '加载使用记录失败',
     firstToken: '首 Token',
+    imageBillingSize: '计费尺寸',
     imageCount: '图片张数',
+    imageInputSize: '输入尺寸',
+    imageOutputSize: '输出尺寸',
+    imageSizeBreakdown: '尺寸拆分',
+    imageSizeLegacyUnstandardized: '旧版非标准尺寸',
+    imageSizeNotRecorded: '未记录尺寸',
+    imageSizeSource: '尺寸来源',
+    imageSizeSourceDefault: '默认计费档位',
+    imageSizeSourceInput: '请求输入',
+    imageSizeSourceLegacy: '旧版记录',
+    imageSizeSourceMissing: '未记录',
+    imageSizeSourceOutput: '上游输出',
+    imageSizeUnknown: '未知',
     imageTotalPrice: '图片总价',
     imageUnit: '张',
     imageUnitPrice: '单张价格',
@@ -7434,6 +7796,8 @@ export default {
     inboundEndpoint: '入站端点',
     inputTokenPrice: '输入单价',
     model: '模型',
+    mapping: '映射后模型',
+    requestedModel: '请求模型',
     noDataToExport: '没有可导出的数据',
     noRecords: '未找到使用记录，请尝试调整筛选条件。',
     original: '原始',
@@ -7465,6 +7829,7 @@ export default {
     unknown: '未知',
     upstream: '上游',
     upstreamEndpoint: '上游端点',
+    upstreamModel: '上游模型',
     userAgent: 'User-Agent',
     userBilled: '用户扣费',
     ws: 'WS'
@@ -7480,6 +7845,7 @@ export default {
     noActiveSubscriptions: '暂无有效订阅',
     noActiveSubscriptionsDesc: '您没有任何有效订阅。请联系管理员获取订阅。',
     noExpiration: '无到期时间',
+    quotaEndsIn: '额度将在 {time} 后重置',
     resetIn: '{time} 后重置',
     status: {
       active: '有效',

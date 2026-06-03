@@ -1826,15 +1826,10 @@
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
             >
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {{ localText("邮箱快捷登录", "Email OAuth Sign-in") }}
+                {{ t("admin.settings.emailOAuth.title") }}
               </h2>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {{
-                  localText(
-                    "开启 GitHub 或 Google 邮箱授权登录后，系统会读取已验证邮箱，存在则直接登录，不存在则自动注册。",
-                    "After GitHub or Google email OAuth is enabled, the system reads a verified email, signs in matching users, and auto-registers missing users.",
-                  )
-                }}
+                {{ t("admin.settings.emailOAuth.description") }}
               </p>
             </div>
             <div class="space-y-6 p-6">
@@ -1846,12 +1841,7 @@
                         GitHub
                       </h3>
                       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {{
-                          localText(
-                            "GitHub OAuth App 需要 read:user user:email 权限，回调地址填写下方后端地址。",
-                            "GitHub OAuth App needs read:user user:email scopes. Use the backend callback URL below.",
-                          )
-                        }}
+                        {{ t("admin.settings.emailOAuth.github.description") }}
                       </p>
                     </div>
                     <Toggle v-model="form.github_oauth_enabled" />
@@ -1859,28 +1849,14 @@
 
                   <div v-if="form.github_oauth_enabled" class="mt-4 space-y-4">
                     <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300">
-                      <template v-if="isZhLocale">
-                        开通引导：GitHub Settings → Developer settings →
-                        <a
-                          data-testid="github-oauth-apps-guide-link"
-                          href="https://github.com/settings/developers"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="font-medium text-primary-600 hover:underline dark:text-primary-400"
-                        >OAuth Apps</a>
-                        → New OAuth App；Homepage URL 填站点域名，Authorization callback URL 填下面的后端回调地址。
-                      </template>
-                      <template v-else>
-                        Setup guide: GitHub Settings → Developer settings →
-                        <a
-                          data-testid="github-oauth-apps-guide-link"
-                          href="https://github.com/settings/developers"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          class="font-medium text-primary-600 hover:underline dark:text-primary-400"
-                        >OAuth Apps</a>
-                        → New OAuth App. Use your site origin as Homepage URL and the backend callback URL below as Authorization callback URL.
-                      </template>
+                      {{ t("admin.settings.emailOAuth.github.setupGuide") }}
+                      <a
+                        data-testid="github-oauth-apps-guide-link"
+                        href="https://github.com/settings/developers"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        class="font-medium text-primary-600 hover:underline dark:text-primary-400"
+                      >OAuth Apps</a>
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -1901,7 +1877,7 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             form.github_oauth_client_secret_configured
-                              ? localText('密钥已配置，留空以保留当前值。', 'Secret configured. Leave empty to keep the current value.')
+                              ? t('admin.settings.emailOAuth.clientSecretConfiguredHint')
                               : 'GitHub OAuth Client Secret'
                           "
                         />
@@ -1910,7 +1886,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("后端回调地址", "Backend Callback URL") }}
+                        {{ t("admin.settings.emailOAuth.backendRedirectUrl") }}
                       </label>
                       <input
                         v-model="form.github_oauth_redirect_url"
@@ -1924,7 +1900,7 @@
                           class="btn btn-secondary btn-sm w-fit"
                           @click="setAndCopyEmailOAuthRedirectUrl('github')"
                         >
-                          {{ localText("生成并复制", "Generate and copy") }}
+                          {{ t("admin.settings.emailOAuth.generateAndCopy") }}
                         </button>
                         <code
                           v-if="githubOAuthRedirectUrlSuggestion"
@@ -1937,7 +1913,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("前端回跳地址", "Frontend Callback URL") }}
+                        {{ t("admin.settings.emailOAuth.frontendRedirectUrl") }}
                       </label>
                       <input
                         v-model="form.github_oauth_frontend_redirect_url"
@@ -1956,12 +1932,7 @@
                         Google
                       </h3>
                       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                        {{
-                          localText(
-                            "Google OAuth 客户端需要 openid email profile 范围，并在凭据里登记后端回调地址。",
-                            "Google OAuth client needs openid email profile scopes and the backend callback URL registered in credentials.",
-                          )
-                        }}
+                        {{ t("admin.settings.emailOAuth.google.description") }}
                       </p>
                     </div>
                     <Toggle v-model="form.google_oauth_enabled" />
@@ -1969,12 +1940,7 @@
 
                   <div v-if="form.google_oauth_enabled" class="mt-4 space-y-4">
                     <div class="rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600 dark:bg-dark-800 dark:text-gray-300">
-                      {{
-                        localText(
-                          "开通引导：Google Cloud Console → APIs & Services → OAuth consent screen 完成同意屏幕；Credentials → Create Credentials → OAuth client ID，类型选择 Web application，并把下面地址加入 Authorized redirect URIs。",
-                          "Setup guide: Google Cloud Console → APIs & Services → OAuth consent screen, then Credentials → Create Credentials → OAuth client ID, choose Web application, and add the URL below to Authorized redirect URIs.",
-                        )
-                      }}
+                      {{ t("admin.settings.emailOAuth.google.setupGuide") }}
                     </div>
 
                     <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
@@ -1995,7 +1961,7 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             form.google_oauth_client_secret_configured
-                              ? localText('密钥已配置，留空以保留当前值。', 'Secret configured. Leave empty to keep the current value.')
+                              ? t('admin.settings.emailOAuth.clientSecretConfiguredHint')
                               : 'Google OAuth Client Secret'
                           "
                         />
@@ -2004,7 +1970,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("后端回调地址", "Backend Callback URL") }}
+                        {{ t("admin.settings.emailOAuth.backendRedirectUrl") }}
                       </label>
                       <input
                         v-model="form.google_oauth_redirect_url"
@@ -2018,7 +1984,7 @@
                           class="btn btn-secondary btn-sm w-fit"
                           @click="setAndCopyEmailOAuthRedirectUrl('google')"
                         >
-                          {{ localText("生成并复制", "Generate and copy") }}
+                          {{ t("admin.settings.emailOAuth.generateAndCopy") }}
                         </button>
                         <code
                           v-if="googleOAuthRedirectUrlSuggestion"
@@ -2031,7 +1997,7 @@
 
                     <div>
                       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ localText("前端回跳地址", "Frontend Callback URL") }}
+                        {{ t("admin.settings.emailOAuth.frontendRedirectUrl") }}
                       </label>
                       <input
                         v-model="form.google_oauth_frontend_redirect_url"
@@ -2085,15 +2051,10 @@
                     <div class="flex items-start justify-between gap-4">
                       <div>
                         <h3 class="font-medium text-gray-900 dark:text-white">
-                          {{ localText("PC 应用", "PC App") }}
+                          {{ t("admin.settings.wechatConnect.openPlatformCardTitle") }}
                         </h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          {{
-                            localText(
-                              "桌面浏览器通过微信开放平台扫码登录。可与公众号或移动应用同时存在。",
-                              "Desktop browsers sign in through WeChat Open Platform QR login. This can coexist with Official Account or Mobile App.",
-                            )
-                          }}
+                          {{ t("admin.settings.wechatConnect.openPlatformCardDescription") }}
                         </p>
                       </div>
                       <Toggle
@@ -2110,26 +2071,21 @@
                         <label
                           class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                         >
-                          {{ localText("PC AppID", "PC App ID") }}
+                          {{ t("admin.settings.wechatConnect.openPlatformAppIdLabel") }}
                         </label>
                         <input
                           v-model="form.wechat_connect_open_app_id"
                           data-testid="wechat-connect-open-app-id"
                           type="text"
                           class="input font-mono text-sm"
-                          :placeholder="
-                            localText(
-                              '微信开放平台 PC 应用 AppID',
-                              'WeChat Open Platform PC App ID',
-                            )
-                          "
+                          :placeholder="t('admin.settings.wechatConnect.openPlatformAppIdPlaceholder')"
                         />
                       </div>
                       <div>
                         <label
                           class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                         >
-                          {{ localText("PC AppSecret", "PC App Secret") }}
+                          {{ t("admin.settings.wechatConnect.openPlatformAppSecretLabel") }}
                         </label>
                         <input
                           v-model="form.wechat_connect_open_app_secret"
@@ -2138,14 +2094,8 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             form.wechat_connect_open_app_secret_configured
-                              ? localText(
-                                  '密钥已配置，留空以保留当前值。',
-                                  'Secret configured. Leave empty to keep the current value.',
-                                )
-                              : localText(
-                                  '微信开放平台 PC 应用 AppSecret',
-                                  'WeChat Open Platform PC App Secret',
-                                )
+                              ? t('admin.settings.wechatConnect.appSecretConfiguredHint')
+                              : t('admin.settings.wechatConnect.openPlatformAppSecretPlaceholder')
                           "
                         />
                       </div>
@@ -2158,15 +2108,10 @@
                     <div class="flex items-start justify-between gap-4">
                       <div>
                         <h3 class="font-medium text-gray-900 dark:text-white">
-                          {{ localText("公众号", "Official Account") }}
+                          {{ t("admin.settings.wechatConnect.mpCardTitle") }}
                         </h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          {{
-                            localText(
-                              "仅在微信内浏览器可用；非微信环境下会显示不可用。",
-                              "Only available inside the WeChat browser. It is shown as unavailable outside WeChat.",
-                            )
-                          }}
+                          {{ t("admin.settings.wechatConnect.mpCardDescription") }}
                         </p>
                       </div>
                       <Toggle
@@ -2183,31 +2128,21 @@
                         <label
                           class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                         >
-                          {{ localText("公众号 AppID", "Official Account App ID") }}
+                          {{ t("admin.settings.wechatConnect.mpAppIdLabel") }}
                         </label>
                         <input
                           v-model="form.wechat_connect_mp_app_id"
                           data-testid="wechat-connect-mp-app-id"
                           type="text"
                           class="input font-mono text-sm"
-                          :placeholder="
-                            localText(
-                              '公众号 AppID',
-                              'Official Account App ID',
-                            )
-                          "
+                          :placeholder="t('admin.settings.wechatConnect.mpAppIdPlaceholder')"
                         />
                       </div>
                       <div>
                         <label
                           class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                         >
-                          {{
-                            localText(
-                              "公众号 AppSecret",
-                              "Official Account App Secret",
-                            )
-                          }}
+                          {{ t("admin.settings.wechatConnect.mpAppSecretLabel") }}
                         </label>
                         <input
                           v-model="form.wechat_connect_mp_app_secret"
@@ -2216,14 +2151,8 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             form.wechat_connect_mp_app_secret_configured
-                              ? localText(
-                                  '密钥已配置，留空以保留当前值。',
-                                  'Secret configured. Leave empty to keep the current value.',
-                                )
-                              : localText(
-                                  '公众号 AppSecret',
-                                  'Official Account App Secret',
-                                )
+                              ? t('admin.settings.wechatConnect.appSecretConfiguredHint')
+                              : t('admin.settings.wechatConnect.mpAppSecretPlaceholder')
                           "
                         />
                       </div>
@@ -2236,15 +2165,10 @@
                     <div class="flex items-start justify-between gap-4">
                       <div>
                         <h3 class="font-medium text-gray-900 dark:text-white">
-                          {{ localText("移动应用", "Mobile App") }}
+                          {{ t("admin.settings.wechatConnect.mobileCardTitle") }}
                         </h3>
                         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                          {{
-                            localText(
-                              "原生移动端通过微信 SDK 唤起授权，网页端不会直接发起该流程。",
-                              "Native mobile clients start authorization through the WeChat SDK. The web UI does not launch this flow directly.",
-                            )
-                          }}
+                          {{ t("admin.settings.wechatConnect.mobileCardDescription") }}
                         </p>
                       </div>
                       <Toggle
@@ -2261,26 +2185,21 @@
                         <label
                           class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                         >
-                          {{ localText("移动应用 AppID", "Mobile App ID") }}
+                          {{ t("admin.settings.wechatConnect.mobileAppIdLabel") }}
                         </label>
                         <input
                           v-model="form.wechat_connect_mobile_app_id"
                           data-testid="wechat-connect-mobile-app-id"
                           type="text"
                           class="input font-mono text-sm"
-                          :placeholder="
-                            localText(
-                              '移动应用 AppID',
-                              'Mobile App ID',
-                            )
-                          "
+                          :placeholder="t('admin.settings.wechatConnect.mobileAppIdPlaceholder')"
                         />
                       </div>
                       <div>
                         <label
                           class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                         >
-                          {{ localText("移动应用 AppSecret", "Mobile App Secret") }}
+                          {{ t("admin.settings.wechatConnect.mobileAppSecretLabel") }}
                         </label>
                         <input
                           v-model="form.wechat_connect_mobile_app_secret"
@@ -2289,14 +2208,8 @@
                           class="input font-mono text-sm"
                           :placeholder="
                             form.wechat_connect_mobile_app_secret_configured
-                              ? localText(
-                                  '密钥已配置，留空以保留当前值。',
-                                  'Secret configured. Leave empty to keep the current value.',
-                                )
-                              : localText(
-                                  '移动应用 AppSecret',
-                                  'Mobile App Secret',
-                                )
+                              ? t('admin.settings.wechatConnect.appSecretConfiguredHint')
+                              : t('admin.settings.wechatConnect.mobileAppSecretPlaceholder')
                           "
                         />
                       </div>
@@ -2312,12 +2225,7 @@
                   "
                   class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-700 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-300"
                 >
-                  {{
-                    localText(
-                      "如果同时启用 PC 应用和公众号/移动应用，这些应用需要挂在同一个微信开放平台主体下，否则 UnionID 无法稳定归并账号。",
-                      "When PC App is enabled together with Official Account or Mobile App, they should belong to the same WeChat Open Platform account so UnionID can merge identities reliably.",
-                    )
-                  }}
+                  {{ t("admin.settings.wechatConnect.unionIdHint") }}
                 </div>
 
                 <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -2325,12 +2233,7 @@
                     <label
                       class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
                     >
-                      {{
-                        localText(
-                          "浏览器回调地址",
-                          "Browser Redirect URL",
-                        )
-                      }}
+                      {{ t("admin.settings.wechatConnect.browserRedirectUrlLabel") }}
                     </label>
                     <input
                       data-testid="wechat-connect-redirect-url"
@@ -2340,12 +2243,7 @@
                       :placeholder="t('admin.settings.wechatConnect.redirectUrlPlaceholder')"
                     />
                     <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                      {{
-                        localText(
-                          "用于 PC 应用和公众号的网页回调。移动应用走原生 SDK 时不直接使用这个浏览器回调。",
-                          "Used by PC App and Official Account browser callbacks. Native mobile SDK flows do not start from this browser callback directly.",
-                        )
-                      }}
+                      {{ t("admin.settings.wechatConnect.browserRedirectHint") }}
                     </p>
                     <div
                       class="mt-2 flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3"
@@ -4990,20 +4888,15 @@
 	              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 	                <div>
 	                  <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-	                    {{ localText("登录条款确认", "Login agreement") }}
+	                    {{ t("admin.settings.loginAgreement.title") }}
 	                  </h2>
 	                  <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-	                    {{
-	                      localText(
-	                        "控制登录页是否要求用户先阅读并同意服务条款、隐私政策或其他 Markdown 文档。",
-	                        "Control whether the login page requires users to accept Markdown policy documents first.",
-	                      )
-	                    }}
+	                    {{ t("admin.settings.loginAgreement.description") }}
 	                  </p>
 	                </div>
 	                <div class="flex items-center gap-3">
 	                  <span class="text-sm text-gray-600 dark:text-gray-300">
-	                    {{ form.login_agreement_enabled ? localText("已启用", "Enabled") : localText("未启用", "Disabled") }}
+	                    {{ form.login_agreement_enabled ? t("admin.settings.loginAgreement.enabled") : t("admin.settings.loginAgreement.disabled") }}
 	                  </span>
 	                  <Toggle v-model="form.login_agreement_enabled" />
 	                </div>
@@ -5014,7 +4907,7 @@
 	              <div class="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_220px]">
 	                <div>
 	                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-	                    {{ localText("展示形式", "Display mode") }}
+	                    {{ t("admin.settings.loginAgreement.displayMode") }}
 	                  </label>
 	                  <div class="grid grid-cols-2 gap-2 rounded-lg bg-gray-100 p-1 dark:bg-dark-700">
                     <button
@@ -5028,7 +4921,7 @@
                       @click="form.login_agreement_mode = 'modal'"
                     >
                       <Icon name="shield" size="sm" />
-                      {{ localText("弹窗", "Modal") }}
+                      {{ t("admin.settings.loginAgreement.modal") }}
                     </button>
                     <button
                       type="button"
@@ -5041,21 +4934,17 @@
                       @click="form.login_agreement_mode = 'checkbox'"
                     >
                       <Icon name="checkCircle" size="sm" />
-                      {{ localText("复选框", "Checkbox") }}
+                      {{ t("admin.settings.loginAgreement.checkbox") }}
                     </button>
                   </div>
                   <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                    {{
-                      form.login_agreement_mode === "checkbox"
-                        ? localText("复选框会显示在登录按钮下方，未勾选前所有登录入口禁用。", "The checkbox appears below the login button and gates all login actions.")
-                        : localText("弹窗会在登录页打开，用户拒绝后所有登录入口保持禁用。", "The modal opens on the login page and gates all login actions until accepted.")
-                    }}
+                    {{ form.login_agreement_mode === "checkbox" ? t("admin.settings.loginAgreement.checkboxHint") : t("admin.settings.loginAgreement.modalHint") }}
                   </p>
                 </div>
 
                 <div>
                   <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {{ localText("条款更新日期", "Updated date") }}
+                    {{ t("admin.settings.loginAgreement.updatedAt") }}
                   </label>
                   <input
                     v-model="form.login_agreement_updated_at"
@@ -5063,7 +4952,7 @@
                     class="input"
                   />
                   <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                    {{ localText("日期或文档内容变化后，用户需要重新同意。", "Changing the date or content requires fresh consent.") }}
+                    {{ t("admin.settings.loginAgreement.updatedAtHint") }}
                   </p>
                 </div>
               </div>
@@ -5072,15 +4961,10 @@
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <h3 class="text-sm font-medium text-gray-900 dark:text-white">
-                      {{ localText("协议文档", "Agreement documents") }}
+                      {{ t("admin.settings.loginAgreement.documentsTitle") }}
                     </h3>
                     <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      {{
-                        localText(
-                          "文档名称可自定义，内容按 Markdown 保存。可参考：服务条款、使用政策、支持的国家和地区、服务特定条款。",
-                          "Document titles are customizable and content is saved as Markdown.",
-                        )
-                      }}
+                      {{ t("admin.settings.loginAgreement.documentsDescription") }}
                     </p>
                   </div>
                   <div class="flex items-center gap-2">
@@ -5090,7 +4974,7 @@
                       @click="appendPrivacyPolicyLoginAgreementDocument"
                     >
                       <Icon name="shield" size="sm" />
-                      {{ localText("补充隐私条款", "Append privacy policy") }}
+                      {{ t("admin.settings.loginAgreement.appendPrivacyPolicy") }}
                     </button>
                     <button
                       type="button"
@@ -5098,7 +4982,7 @@
                       @click="applyCommercialLoginAgreementTemplate"
                     >
                       <Icon name="refresh" size="sm" />
-                      {{ localText("套用商业条款模板", "Apply commercial terms template") }}
+                      {{ t("admin.settings.loginAgreement.applyCommercialTemplate") }}
                     </button>
                     <button
                       type="button"
@@ -5106,7 +4990,7 @@
                       @click="addLoginAgreementDocument"
                     >
                       <Icon name="plus" size="sm" />
-                      {{ localText("添加文档", "Add document") }}
+                      {{ t("admin.settings.loginAgreement.addDocument") }}
                     </button>
                   </div>
                 </div>
@@ -5127,7 +5011,7 @@
                         </span>
                         <div class="min-w-0">
                           <p class="truncate text-sm font-semibold text-gray-900 dark:text-white">
-                            {{ doc.title || localText("未命名文档", "Untitled document") }}
+                            {{ doc.title || t("admin.settings.loginAgreement.untitledDocument") }}
                           </p>
                           <p class="truncate text-xs text-gray-500 dark:text-gray-400">
                             {{ loginAgreementRoutePath(doc, index) }}
@@ -5150,18 +5034,18 @@
                     <div class="grid grid-cols-1 gap-3 lg:grid-cols-2">
                       <div>
                         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-                          {{ localText("文档名称", "Document title") }}
+                          {{ t("admin.settings.loginAgreement.documentTitle") }}
                         </label>
                         <input
                           v-model="doc.title"
                           type="text"
                           class="input text-sm"
-                          :placeholder="localText('例如：服务条款', 'Example: Terms of Service')"
+                          :placeholder="t('admin.settings.loginAgreement.documentTitlePlaceholder')"
                         />
                       </div>
                       <div>
                         <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-                          {{ localText("路由标识", "Route slug") }}
+                          {{ t("admin.settings.loginAgreement.routeSlug") }}
                         </label>
                         <div class="flex overflow-hidden rounded-lg border border-gray-300 bg-white focus-within:border-primary-500 focus-within:ring-1 focus-within:ring-primary-500 dark:border-dark-600 dark:bg-dark-900">
                           <span class="inline-flex flex-shrink-0 items-center border-r border-gray-200 bg-gray-50 px-3 text-sm text-gray-500 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-400">
@@ -5178,13 +5062,13 @@
                     </div>
                     <div class="mt-3">
                       <label class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400">
-                        {{ localText("Markdown 内容", "Markdown content") }}
+                        {{ t("admin.settings.loginAgreement.markdownContent") }}
                       </label>
                         <textarea
                           v-model="doc.content_md"
                           rows="8"
                           class="input font-mono text-sm"
-                          :placeholder="localText('在这里填写正式 Markdown 内容。', 'Write the final Markdown content here.')"
+                          :placeholder="t('admin.settings.loginAgreement.markdownContentPlaceholder')"
                         ></textarea>
                     </div>
                   </div>
@@ -5669,15 +5553,10 @@
                   <div class="flex items-center justify-between">
                     <div>
                       <label class="font-medium text-gray-900 dark:text-white">
-                        {{ localText("充值商品列表", "Recharge products") }}
+                        {{ t("admin.settings.payment.rechargeProductsSection.title") }}
                       </label>
                       <p class="text-sm text-gray-500 dark:text-gray-400">
-                        {{
-                          localText(
-                            "配置一个就展示一个；为空时用户端显示暂无可用充值商品。",
-                            "Each configured product appears on the recharge tab. Leave empty to show an empty recharge catalog.",
-                          )
-                        }}
+                        {{ t("admin.settings.payment.rechargeProductsSection.description") }}
                       </p>
                     </div>
                     <button
@@ -5685,7 +5564,7 @@
                       class="btn btn-secondary btn-sm"
                       @click="addRechargeProduct"
                     >
-                      {{ localText("添加商品", "Add product") }}
+                      {{ t("payment.admin.rechargeProductsEditor.addProduct") }}
                     </button>
                   </div>
 
@@ -5693,12 +5572,7 @@
                     v-if="form.payment_recharge_products.length === 0"
                     class="rounded-xl border border-dashed border-gray-300 bg-gray-50/70 px-4 py-4 text-sm text-gray-500 dark:border-dark-600 dark:bg-dark-800/50 dark:text-gray-400"
                   >
-                    {{
-                      localText(
-                        "当前未配置充值商品，用户端将显示暂无可用充值商品。",
-                        "No recharge products configured. The user page will show an empty recharge catalog.",
-                      )
-                    }}
+                    {{ t("admin.settings.payment.rechargeProductsSection.empty") }}
                   </div>
 
                   <div
@@ -5708,7 +5582,7 @@
                   >
                     <div class="flex items-center justify-between">
                       <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                        {{ product.name || localText("未命名商品", "Untitled product") }}
+                        {{ product.name || t("payment.admin.rechargeProductsEditor.untitled") }}
                       </div>
                       <button
                         type="button"
@@ -5721,30 +5595,30 @@
 
                     <div class="grid grid-cols-2 gap-3">
                       <div>
-                        <label class="input-label">{{ localText("商品名称", "Product name") }}</label>
+                        <label class="input-label">{{ t("payment.admin.rechargeProductsEditor.name") }}</label>
                         <input v-model="product.name" type="text" class="input" />
                       </div>
                       <div>
-                        <label class="input-label">{{ localText("副标题", "Subtitle") }}</label>
+                        <label class="input-label">{{ t("payment.admin.rechargeProductsEditor.subtitle") }}</label>
                         <input v-model="product.description" type="text" class="input" />
                       </div>
                     </div>
 
                     <div class="grid grid-cols-4 gap-3">
                       <div>
-                        <label class="input-label">{{ localText("金额", "Amount") }}</label>
+                        <label class="input-label">{{ t("admin.settings.payment.rechargeProductsSection.amount") }}</label>
                         <input v-model.number="product.amount" type="number" min="0" step="0.01" class="input" />
                       </div>
                       <div>
-                        <label class="input-label">{{ localText("角标", "Badge") }}</label>
-                        <input v-model="product.badge" type="text" class="input" :placeholder="localText('推荐', 'Recommended')" />
+                        <label class="input-label">{{ t("payment.admin.rechargeProductsEditor.badgeLabel") }}</label>
+                        <input v-model="product.badge" type="text" class="input" :placeholder="t('payment.admin.rechargeProductsEditor.badgePlaceholder')" />
                       </div>
                       <div>
                         <label class="input-label">{{ t("payment.admin.sortOrder") }}</label>
                         <input v-model.number="product.sort_order" type="number" min="0" step="1" class="input" />
                       </div>
                       <div>
-                        <label class="input-label">{{ localText("推荐卡", "Featured") }}</label>
+                        <label class="input-label">{{ t("payment.admin.rechargeProductsEditor.featuredToggle") }}</label>
                         <div class="flex h-[42px] items-center">
                           <Toggle v-model="product.recommended" />
                         </div>
@@ -5752,12 +5626,12 @@
                     </div>
 
                     <div>
-                      <label class="input-label">{{ localText("卖点列表", "Feature list") }}</label>
+                      <label class="input-label">{{ t("payment.admin.rechargeProductsEditor.featureList") }}</label>
                       <textarea
                         :value="product.features.join('\n')"
                         rows="3"
                         class="input"
-                        :placeholder="localText('每行一个卖点', 'One feature per line')"
+                        :placeholder="t('payment.admin.rechargeProductsEditor.featureListPlaceholder')"
                         @input="updateRechargeProductFeatures(index, ($event.target as HTMLTextAreaElement).value)"
                       ></textarea>
                     </div>
@@ -6683,33 +6557,23 @@
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
             >
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {{ localText("模型广场", "Model Plaza") }}
+                {{ t("admin.settings.modelPlazaEditor.title") }}
               </h2>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {{
-                  localText(
-                    "配置公开 /models 页展示的模型卡片。支持自定义名称、能力标签和价格文案。",
-                    "Configure the cards shown on the public /models page, including labels, capability tags, and pricing copy.",
-                  )
-                }}
+                {{ t("admin.settings.modelPlazaEditor.description") }}
               </p>
             </div>
             <div class="space-y-4 p-6">
               <div class="flex items-center justify-between">
                 <div class="text-sm text-gray-500 dark:text-gray-400">
-                  {{
-                    localText(
-                      "每张卡片都可以独立控制展示名称、标签、价格文案和公开可见性。",
-                      "Each card can independently control display text, tags, pricing copy, and public visibility.",
-                    )
-                  }}
+                  {{ t("admin.settings.modelPlazaEditor.helper") }}
                 </div>
                 <button
                   type="button"
                   class="btn btn-secondary btn-sm"
                   @click="addModelPlazaItem"
                 >
-                  {{ localText("添加模型", "Add model") }}
+                  {{ t("admin.settings.modelPlazaEditor.addModel") }}
                 </button>
               </div>
 
@@ -6717,12 +6581,7 @@
                 v-if="form.model_plaza_items.length === 0"
                 class="rounded-xl border border-dashed border-gray-300 bg-gray-50/70 px-4 py-4 text-sm text-gray-500 dark:border-dark-600 dark:bg-dark-800/50 dark:text-gray-400"
               >
-                {{
-                  localText(
-                    "当前未配置模型广场卡片，公开 /models 页面会显示空状态。",
-                    "No model plaza cards are configured yet. The public /models page will show an empty state.",
-                  )
-                }}
+                {{ t("admin.settings.modelPlazaEditor.empty") }}
               </div>
 
               <div class="space-y-4">
@@ -6733,7 +6592,7 @@
                 >
                   <div class="flex items-center justify-between">
                     <div class="text-sm font-semibold text-gray-900 dark:text-white">
-                      {{ item.title || localText("未命名模型卡", "Untitled model card") }}
+                      {{ item.title || t("admin.settings.modelPlazaEditor.untitled") }}
                     </div>
                     <button
                       type="button"
@@ -6746,97 +6605,92 @@
 
                   <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div>
-                      <label class="input-label">{{ localText("卡片 ID", "Card ID") }}</label>
-                      <input v-model="item.id" type="text" class="input" :placeholder="localText('例如：claude-opus-4-6', 'e.g. claude-opus-4-6')" />
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.cardId") }}</label>
+                      <input v-model="item.id" type="text" class="input" :placeholder="t('admin.settings.modelPlazaEditor.cardIdPlaceholder')" />
                     </div>
                     <div>
-                      <label class="input-label">{{ localText("平台标识", "Provider key") }}</label>
-                      <input v-model="item.provider" type="text" class="input" :placeholder="localText('例如：anthropic / openai', 'e.g. anthropic / openai')" />
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.providerKey") }}</label>
+                      <input v-model="item.provider" type="text" class="input" :placeholder="t('admin.settings.modelPlazaEditor.providerKeyPlaceholder')" />
                     </div>
                     <div>
-                      <label class="input-label">{{ localText("展示名称", "Display title") }}</label>
-                      <input v-model="item.title" type="text" class="input" :placeholder="localText('例如：Claude Opus 4.6', 'e.g. Claude Opus 4.6')" />
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.displayTitle") }}</label>
+                      <input v-model="item.title" type="text" class="input" :placeholder="t('admin.settings.modelPlazaEditor.displayTitlePlaceholder')" />
                     </div>
                     <div>
-                      <label class="input-label">{{ localText("角标", "Badge") }}</label>
-                      <input v-model="item.badge" type="text" class="input" :placeholder="localText('热门 / 推荐', 'Popular / Featured')" />
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.badge") }}</label>
+                      <input v-model="item.badge" type="text" class="input" :placeholder="t('admin.settings.modelPlazaEditor.badgePlaceholder')" />
                     </div>
                   </div>
 
                   <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
                     <div>
-                      <label class="input-label">{{ localText("简介", "Description") }}</label>
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.descriptionLabel") }}</label>
                       <textarea
                         v-model="item.description"
                         rows="3"
                         class="input"
-                        :placeholder="localText('一句话介绍这个模型适合做什么。', 'One sentence about what this model is good for.')"
+                        :placeholder="t('admin.settings.modelPlazaEditor.descriptionPlaceholder')"
                       ></textarea>
                     </div>
                     <div>
-                      <label class="input-label">{{ localText("能力标签（每行一个）", "Capability tags (one per line)") }}</label>
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.capabilityTags") }}</label>
                       <textarea
                         :value="item.capability_tags.join('\n')"
                         rows="3"
                         class="input"
-                        :placeholder="localText('复杂推理\\n代码生成\\nAgent 调用', 'Complex Reasoning\\nCode Generation\\nAgent Workflows')"
+                        :placeholder="t('admin.settings.modelPlazaEditor.capabilityTagsPlaceholder')"
                         @input="updateModelPlazaItemCapabilityTags(index, ($event.target as HTMLTextAreaElement).value)"
                       ></textarea>
                     </div>
                   </div>
 
                   <div>
-                    <label class="input-label">{{ localText("关联模型 ID（每行一个）", "Related model IDs (one per line)") }}</label>
+                    <label class="input-label">{{ t("admin.settings.modelPlazaEditor.modelIds") }}</label>
                     <textarea
                       :value="item.model_ids.join('\n')"
                       rows="3"
                       class="input font-mono text-sm"
-                      :placeholder="localText('claude-opus-4-6\\nclaude-opus-4-7', 'claude-opus-4-6\\nclaude-opus-4-7')"
+                      :placeholder="t('admin.settings.modelPlazaEditor.modelIdsPlaceholder')"
                       @input="updateModelPlazaItemModels(index, ($event.target as HTMLTextAreaElement).value)"
                     ></textarea>
                   </div>
 
                   <div class="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-5">
                     <div>
-                      <label class="input-label">{{ localText("输入价格", "Input price") }}</label>
-                      <input v-model="item.input_price" type="text" class="input" :placeholder="localText('¥2.0000 / 1M Tokens', '¥2.0000 / 1M Tokens')" />
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.inputPrice") }}</label>
+                      <input v-model="item.input_price" type="text" class="input" :placeholder="t('admin.settings.modelPlazaEditor.inputPricePlaceholder')" />
                     </div>
                     <div>
-                      <label class="input-label">{{ localText("输出价格", "Output price") }}</label>
-                      <input v-model="item.output_price" type="text" class="input" :placeholder="localText('¥10.0000 / 1M Tokens', '¥10.0000 / 1M Tokens')" />
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.outputPrice") }}</label>
+                      <input v-model="item.output_price" type="text" class="input" :placeholder="t('admin.settings.modelPlazaEditor.outputPricePlaceholder')" />
                     </div>
                     <div>
-                      <label class="input-label">{{ localText("缓存读取价格", "Cache read price") }}</label>
-                      <input v-model="item.cache_read_price" type="text" class="input" :placeholder="localText('¥0.2000 / 1M Tokens', '¥0.2000 / 1M Tokens')" />
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.cacheReadPrice") }}</label>
+                      <input v-model="item.cache_read_price" type="text" class="input" :placeholder="t('admin.settings.modelPlazaEditor.cacheReadPricePlaceholder')" />
                     </div>
                     <div>
-                      <label class="input-label">{{ localText("缓存创建价格", "Cache write price") }}</label>
-                      <input v-model="item.cache_write_price" type="text" class="input" :placeholder="localText('¥2.5000 / 1M Tokens', '¥2.5000 / 1M Tokens')" />
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.cacheWritePrice") }}</label>
+                      <input v-model="item.cache_write_price" type="text" class="input" :placeholder="t('admin.settings.modelPlazaEditor.cacheWritePricePlaceholder')" />
                     </div>
                     <div>
-                      <label class="input-label">{{ localText("计费标记", "Billing badge") }}</label>
-                      <input v-model="item.billing_badge" type="text" class="input" :placeholder="localText('按量计费', 'Usage based')" />
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.billingBadge") }}</label>
+                      <input v-model="item.billing_badge" type="text" class="input" :placeholder="t('admin.settings.modelPlazaEditor.billingBadgePlaceholder')" />
                     </div>
                   </div>
 
                   <div class="grid grid-cols-1 gap-3 md:grid-cols-[120px_160px_1fr] md:items-end">
                     <div>
-                      <label class="input-label">{{ localText("排序", "Sort order") }}</label>
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.sortOrder") }}</label>
                       <input v-model.number="item.sort_order" type="number" min="0" step="1" class="input" />
                     </div>
                     <div>
-                      <label class="input-label">{{ localText("公开显示", "Visible") }}</label>
+                      <label class="input-label">{{ t("admin.settings.modelPlazaEditor.visible") }}</label>
                       <div class="flex h-[42px] items-center">
                         <Toggle v-model="item.visible" />
                       </div>
                     </div>
                     <p class="text-xs text-gray-500 dark:text-gray-400">
-                      {{
-                        localText(
-                          "隐藏后保留配置但不会在公开 /models 页面展示。",
-                          "Hidden items stay configured but do not render on the public /models page.",
-                        )
-                      }}
+                      {{ t("admin.settings.modelPlazaEditor.hiddenHint") }}
                     </p>
                   </div>
                 </div>
@@ -6982,11 +6836,6 @@ import {
 const { t, locale } = useI18n();
 const appStore = useAppStore();
 const adminSettingsStore = useAdminSettingsStore();
-const isZhLocale = computed(() => locale.value.startsWith("zh"));
-
-function localText(zh: string, en: string): string {
-  return isZhLocale.value ? zh : en;
-}
 
 const paymentGuideHref = computed(() =>
   locale.value.startsWith("zh")
@@ -7516,27 +7365,18 @@ const authSourceDefaultsMeta = computed(() => [
   },
   {
     source: "github" as AuthSourceType,
-    title: "GitHub",
-    description: localText(
-      "通过 GitHub 已验证邮箱首次注册或首次绑定时应用。",
-      "Applied on first signup or first bind through a verified GitHub email.",
-    ),
+    title: t("admin.settings.authSourceDefaults.sources.github.title"),
+    description: t("admin.settings.authSourceDefaults.sources.github.description"),
   },
   {
     source: "google" as AuthSourceType,
-    title: "Google",
-    description: localText(
-      "通过 Google 已验证邮箱首次注册或首次绑定时应用。",
-      "Applied on first signup or first bind through a verified Google email.",
-    ),
+    title: t("admin.settings.authSourceDefaults.sources.google.title"),
+    description: t("admin.settings.authSourceDefaults.sources.google.description"),
   },
   {
     source: "dingtalk" as AuthSourceType,
-    title: "钉钉",
-    description: localText(
-      "通过钉钉首次注册或首次绑定时应用。",
-      "Applied on first signup or first bind through DingTalk.",
-    ),
+    title: t("admin.settings.authSourceDefaults.sources.dingtalk.title"),
+    description: t("admin.settings.authSourceDefaults.sources.dingtalk.description"),
   },
 ]);
 
@@ -7877,7 +7717,7 @@ async function setAndCopyEmailOAuthRedirectUrl(provider: EmailOAuthProvider) {
   }
   await copyToClipboard(
     url,
-    localText("回调地址已写入并复制。", "Callback URL set and copied."),
+    t("admin.settings.oauthRedirectUrlSetAndCopied"),
   );
 }
 
@@ -8040,7 +7880,7 @@ function createModelPlazaItemDraft(): ModelPlazaItem {
     output_price: "",
     cache_read_price: "",
     cache_write_price: "",
-    billing_badge: localText("按量计费", "Usage based"),
+    billing_badge: t("admin.settings.modelPlazaEditor.billingBadgeDefault"),
     visible: true,
     sort_order: form.model_plaza_items.length,
   };
@@ -8112,20 +7952,14 @@ function appendPrivacyPolicyLoginAgreementDocument() {
 
   if (beforeSerialized === afterSerialized) {
     appStore.showInfo(
-      localText(
-        "当前协议列表中已经包含隐私条款，未重复添加。",
-        "A privacy policy document already exists. No duplicate was added.",
-      ),
+      t("admin.settings.loginAgreement.privacyAlreadyExists"),
     );
     return;
   }
 
   form.login_agreement_documents = merged;
   appStore.showSuccess(
-    localText(
-      "已在现有协议列表中补充隐私条款，请检查后保存。",
-      "Privacy policy appended to the current agreement list. Review and save the settings.",
-    ),
+    t("admin.settings.loginAgreement.privacyAppendSuccess"),
   );
 }
 
@@ -8141,12 +7975,7 @@ function applyCommercialLoginAgreementTemplate() {
   if (
     hasCustomLoginAgreementContent() &&
     !isLegacyBlankLoginAgreementDocuments(form.login_agreement_documents) &&
-    !confirm(
-      localText(
-        "套用模板会覆盖当前协议文档内容，确定继续吗？",
-        "Applying the template will replace the current agreement documents. Continue?",
-      ),
-    )
+    !confirm(t("admin.settings.loginAgreement.applyCommercialTemplateConfirm"))
   ) {
     return;
   }
@@ -8156,10 +7985,7 @@ function applyCommercialLoginAgreementTemplate() {
     form.login_agreement_updated_at = "2026-03-31";
   }
   appStore.showSuccess(
-    localText(
-      "已填充商业条款模板，请检查后保存。",
-      "Commercial terms template applied. Review and save the settings.",
-    ),
+    t("admin.settings.loginAgreement.applyCommercialTemplateSuccess"),
   );
 }
 
@@ -8566,10 +8392,7 @@ async function saveSettings() {
       normalizeLoginAgreementDocumentsForSave();
     if (form.login_agreement_enabled && normalizedLoginAgreementDocuments.length === 0) {
       appStore.showError(
-        localText(
-          "启用登录条款确认时，至少需要保留一份文档。",
-          "At least one document is required when login agreement is enabled.",
-        ),
+        t("admin.settings.loginAgreement.minOneRequired"),
       );
       return;
     }
@@ -8578,10 +8401,7 @@ async function saveSettings() {
     );
     if (emptyTitleDocument) {
       appStore.showError(
-        localText(
-          "登录条款文档名称不能为空。",
-          "Login agreement document title cannot be empty.",
-        ),
+        t("admin.settings.loginAgreement.titleRequired"),
       );
       return;
     }
@@ -8589,10 +8409,9 @@ async function saveSettings() {
       findDuplicateLoginAgreementDocumentId(normalizedLoginAgreementDocuments);
     if (duplicateLoginAgreementDocumentId) {
       appStore.showError(
-        localText(
-          `登录条款文档路由不能重复：/legal/${duplicateLoginAgreementDocumentId}`,
-          `Login agreement document routes cannot be duplicated: /legal/${duplicateLoginAgreementDocumentId}`,
-        ),
+        t("admin.settings.loginAgreement.duplicateRoute", {
+          slug: duplicateLoginAgreementDocumentId,
+        }),
       );
       return;
     }
@@ -8642,10 +8461,7 @@ async function saveSettings() {
 
     if (form.wechat_connect_mp_enabled && form.wechat_connect_mobile_enabled) {
       appStore.showError(
-        localText(
-          "公众号和移动应用不能同时启用。",
-          "Official Account and Mobile App cannot be enabled at the same time.",
-        ),
+        t("admin.settings.wechatConnect.modeConflict"),
       );
       return;
     }

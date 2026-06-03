@@ -57,15 +57,29 @@
 - Verified with automated scans that:
   - missing key count for all `admin.*` namespaces is now `0`
   - Chinese-value leak count in `en.ts` for all `admin.*` namespaces is now `0`
+- Continued the global frontend locale sweep beyond `admin.*` and fixed the remaining referenced missing keys for:
+  - `apiTest`
+  - `dashboard`
+  - `keyUsage`
+  - `payment`
+  - `usage`
+  - `userSubscriptions`
+  - shared `common.*` action/status copy
+- Fixed two obvious runtime hardcoded strings by routing them through locale keys:
+  - `frontend/src/components/account/UsageProgressBar.vue`
+  - `frontend/src/views/admin/ops/components/OpsSystemLogTable.vue`
+- Verified with automated scans that:
+  - missing key count for the entire frontend locale tree is now `0`
+  - Chinese-value leak count in `frontend/src/i18n/locales/en.ts` is now `0`
 
 ### Failures
 - No functional failures. Frontend build still reports the existing Vite dynamic-import chunk warnings and stale Browserslist data warning; neither is introduced by this i18n cleanup.
 
 ### Next
-- If needed, continue scanning for non-locale-managed hardcoded runtime copy in shared/admin components such as:
-  - account OAuth flows
-  - some modal fallback strings
-  - legacy `localText(...)` helper usage
+- If needed, continue converting intentionally bilingual helper-based copy into centralized locale keys in shared/public/admin components such as:
+  - `views/admin/SettingsView.vue` legacy `localText(...)` sections
+  - `views/admin/orders/*` bilingual helper-based marketing/config copy
+  - `utils/loginAgreementTemplates.ts` document titles/templates that are currently authored as fixed source content
 - If the current scope is acceptable, commit and push this i18n cleanup as a standalone frontend/docs-quality change.
 
 ## 2026-05-19 Backend Login Agreement Enforcement
@@ -2220,3 +2234,26 @@
 ### Next
 - Consider adding a dedicated `Gateway Guide` docs page if users still need a more explicit bridge from console-generated configuration to client setup.
 - Consider polishing docs branding and shell styling later if you want the visual language to move closer to the reference site, not just the information architecture.
+
+## 2026-06-03 Frontend i18n tree unification
+
+### Done
+- Eliminated the last frontend missing locale keys and Chinese leaks in `en.ts`.
+- Migrated helper-based bilingual copy in:
+  - `AdminPaymentPlansView.vue`
+  - `RechargeProductsManager.vue`
+  - `EmailTemplateEditor.vue`
+- Migrated the `SettingsView.vue` login-agreement, payment recharge-product, and model-plaza sections from `localText(...)` helper copy into the locale tree.
+- Replaced remaining runtime strings tied to those sections with locale-backed messages, including agreement validation errors and model-plaza defaults.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/i18n/__tests__/localeCoverage.spec.ts src/i18n/__tests__/adminNamespaceLocaleAudit.spec.ts` passed.
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/components/auth/LoginAgreementPrompt.vue src/components/auth/WechatOAuthSection.vue src/views/admin/ops/components/OpsSystemLogTable.vue src/views/admin/SettingsView.vue src/views/admin/orders/AdminPaymentPlansView.vue src/views/admin/orders/RechargeProductsManager.vue src/views/admin/settings/EmailTemplateEditor.vue src/i18n/locales/zh.ts src/i18n/locales/en.ts src/components/account/UsageProgressBar.vue --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed.
+
+### Next
+- If needed, continue beyond locale-tree completeness into deeper content governance:
+  - authored legal template content in `frontend/src/utils/loginAgreementTemplates.ts`
+  - hardcoded product labels in model-whitelist mapping helpers
+  - non-user-facing comments and developer annotations
