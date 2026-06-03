@@ -34,18 +34,13 @@
       <section class="relative z-10 px-6 pb-16 pt-10 sm:pb-20 sm:pt-14">
         <div class="mx-auto max-w-5xl text-center">
           <div class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 backdrop-blur">
-            {{ localText('模型广场', 'Model Plaza') }}
+            {{ t('modelsPlaza.badge') }}
           </div>
           <h1 class="mt-6 text-balance text-5xl font-black tracking-tight text-white sm:text-6xl">
-            {{ localText('公开模型目录', 'Public Model Catalog') }}
+            {{ t('modelsPlaza.title') }}
           </h1>
           <p class="mx-auto mt-5 max-w-3xl text-balance text-base leading-8 text-white/60 sm:text-lg">
-            {{
-              localText(
-                '从后台直接配置并公开展示可售模型卡片。适合做模型能力说明、价格展示和统一入口。',
-                'Configure and publish model cards directly from the admin backend for capability overviews, pricing communication, and a unified entry point.',
-              )
-            }}
+            {{ t('modelsPlaza.description') }}
           </p>
         </div>
       </section>
@@ -62,15 +57,10 @@
           class="rounded-[32px] border border-white/10 bg-white/[0.03] px-8 py-16 text-center"
         >
           <h2 class="text-2xl font-bold text-white">
-            {{ localText('模型广场暂未配置', 'Model plaza is not configured yet') }}
+            {{ t('modelsPlaza.emptyTitle') }}
           </h2>
           <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/60 sm:text-base">
-            {{
-              localText(
-                '管理员完成模型广场配置后，这里会展示公开模型卡片。',
-                'Once the admin configures model plaza items, public model cards will appear here.',
-              )
-            }}
+            {{ t('modelsPlaza.emptyDescription') }}
           </p>
         </div>
 
@@ -79,22 +69,22 @@
             <div class="rounded-[28px] border border-white/10 bg-[#17181d] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.22)]">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/35">
-                  {{ localText('快速查找', 'Quick find') }}
+                  {{ t('modelsPlaza.quickFind') }}
                 </p>
                 <label class="mt-3 block">
-                  <span class="sr-only">{{ localText('搜索模型广场', 'Search model plaza') }}</span>
+                  <span class="sr-only">{{ t('modelsPlaza.searchLabel') }}</span>
                   <input
                     v-model.trim="searchQuery"
                     type="search"
                     class="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/20 focus:bg-white/[0.06]"
-                    :placeholder="localText('搜索模型、能力或标签', 'Search models, capabilities, or tags')"
+                    :placeholder="t('modelsPlaza.searchPlaceholder')"
                   />
                 </label>
               </div>
 
               <div class="mt-6">
                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/35">
-                  {{ localText('平台分组', 'Groups') }}
+                  {{ t('modelsPlaza.groupsTitle') }}
                 </p>
                 <div class="mt-3 space-y-2">
                   <button
@@ -131,13 +121,13 @@
                 <p class="mt-1 text-sm text-white/45">
                   {{
                     searchQuery
-                      ? localText(`当前搜索：${searchQuery}`, `Current search: ${searchQuery}`)
-                      : localText('按平台分组浏览公开模型卡片。', 'Browse public model cards by provider group.')
+                      ? t('modelsPlaza.currentSearch', { query: searchQuery })
+                      : t('modelsPlaza.browseHint')
                   }}
                 </p>
               </div>
               <div class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/70">
-                {{ localText('结果', 'Results') }} · {{ filteredItems.length }}
+                {{ t('modelsPlaza.results') }} · {{ filteredItems.length }}
               </div>
             </div>
 
@@ -146,15 +136,10 @@
               class="rounded-[32px] border border-white/10 bg-white/[0.03] px-8 py-16 text-center"
             >
               <h2 class="text-2xl font-bold text-white">
-                {{ localText('没有匹配的模型卡片', 'No matching model cards') }}
+                {{ t('modelsPlaza.emptyFilteredTitle') }}
               </h2>
               <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/60 sm:text-base">
-                {{
-                  localText(
-                    '试试切换分组，或者换一个更宽松的关键词搜索。',
-                    'Try another group or broaden the search terms.',
-                  )
-                }}
+                {{ t('modelsPlaza.emptyFilteredDescription') }}
               </p>
             </div>
 
@@ -197,18 +182,18 @@
                     v-if="item.model_ids.length > 0"
                     type="button"
                     class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-white/60 transition hover:border-white/20 hover:text-white"
-                    :title="localText('复制模型 ID', 'Copy model IDs')"
-                    @click="copyToClipboard(item.model_ids.join('\n'), localText('模型 ID 已复制', 'Model IDs copied'))"
+                    :title="t('modelsPlaza.copyModelIds')"
+                    @click="copyToClipboard(item.model_ids.join('\n'), t('modelsPlaza.modelIdsCopied'))"
                   >
                     <Icon name="copy" size="sm" />
                   </button>
                 </div>
 
                 <div class="mt-8 space-y-2 text-sm text-white/78 sm:text-base">
-                  <p v-if="item.input_price">{{ localText('输入价格', 'Input price') }} {{ item.input_price }}</p>
-                  <p v-if="item.output_price">{{ localText('输出价格', 'Output price') }} {{ item.output_price }}</p>
-                  <p v-if="item.cache_read_price">{{ localText('缓存读取价格', 'Cache read price') }} {{ item.cache_read_price }}</p>
-                  <p v-if="item.cache_write_price">{{ localText('缓存创建价格', 'Cache write price') }} {{ item.cache_write_price }}</p>
+                  <p v-if="item.input_price">{{ t('modelsPlaza.inputPrice') }} {{ item.input_price }}</p>
+                  <p v-if="item.output_price">{{ t('modelsPlaza.outputPrice') }} {{ item.output_price }}</p>
+                  <p v-if="item.cache_read_price">{{ t('modelsPlaza.cacheReadPrice') }} {{ item.cache_read_price }}</p>
+                  <p v-if="item.cache_write_price">{{ t('modelsPlaza.cacheWritePrice') }} {{ item.cache_write_price }}</p>
                 </div>
 
                 <div class="mt-8 flex flex-wrap gap-2">
@@ -230,7 +215,7 @@
                   </span>
                   <div v-else></div>
                   <p v-if="item.model_ids.length > 0" class="text-xs text-white/35">
-                    {{ localText('已配置模型 ID', 'Model IDs configured') }} · {{ item.model_ids.length }}
+                    {{ t('modelsPlaza.modelIdsConfigured') }} · {{ item.model_ids.length }}
                   </p>
                 </div>
               </article>
@@ -253,7 +238,7 @@ import { useAuthStore, useAppStore } from '@/stores'
 import { useClipboard } from '@/composables/useClipboard'
 import type { ModelPlazaItem } from '@/types'
 
-const { locale, t } = useI18n()
+const { t } = useI18n()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 const { copyToClipboard } = useClipboard()
@@ -295,7 +280,7 @@ const groupOptions = computed(() => {
   return [
     {
       key: 'all',
-      label: localText('全部模型', 'All models'),
+      label: t('modelsPlaza.groups.all'),
       count: items.value.length,
       rank: -1,
     },
@@ -305,7 +290,7 @@ const groupOptions = computed(() => {
 
 const activeGroupLabel = computed(() => {
   const match = groupOptions.value.find((group) => group.key === activeGroup.value)
-  return match?.label || localText('全部模型', 'All models')
+  return match?.label || t('modelsPlaza.groups.all')
 })
 
 const filteredItems = computed(() =>
@@ -316,10 +301,6 @@ const filteredItems = computed(() =>
     return matchesSearch(item, searchQuery.value)
   }),
 )
-
-function localText(zh: string, en: string): string {
-  return locale.value.startsWith('zh') ? zh : en
-}
 
 function providerGroupKey(provider: string): string {
   const normalized = provider.trim().toLowerCase()
@@ -333,7 +314,7 @@ function providerGroupLabel(groupKey: string): string {
   if (groupKey === 'claude') return 'Claude'
   if (groupKey === 'gpt') return 'GPT'
   if (groupKey === 'gemini') return 'Gemini'
-  if (groupKey === 'other') return localText('其他', 'Other')
+  if (groupKey === 'other') return t('modelsPlaza.groups.other')
   return groupKey.toUpperCase()
 }
 

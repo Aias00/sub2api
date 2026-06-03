@@ -1,3 +1,47 @@
+## 2026-06-03 Frontend i18n Coverage Cleanup
+### Done
+- Fixed high-priority public/auth i18n gaps and hardcoded runtime copy by wiring these pages back to shared locale keys:
+  - `frontend/src/views/public/LegalDocumentView.vue`
+  - `frontend/src/views/public/DocsView.vue`
+  - `frontend/src/views/public/ModelsPlazaView.vue`
+  - `frontend/src/views/auth/LoginView.vue`
+  - `frontend/src/views/auth/RegisterView.vue`
+- Added missing public/auth locale coverage in both `zh.ts` and `en.ts` for:
+  - login-agreement warnings
+  - DingTalk auth flow labels
+  - legal document page copy
+  - model plaza public-page copy
+  - email suffix overflow wording
+  - DingTalk provider labels in profile binding UI
+- Filled the targeted missing i18n keys for:
+  - `admin.settings`
+  - `admin.users`
+  - `admin.accounts`
+- Added the previously missing locale trees for:
+  - `admin.settings.apiKeyAcl`
+  - `admin.settings.dingtalk`
+  - `admin.settings.emailTemplates` (zh)
+  - `admin.settings.subscriptionExpiryNotify` (en)
+  - `admin.settings.platformQuota`
+  - `admin.users.platformQuota`
+  - multiple `admin.accounts.openai/*` and account scheduling labels
+- Cleaned the remaining English-locale Chinese leftovers inside the same targeted admin modules.
+- Added a focused locale regression test:
+  - `frontend/src/i18n/__tests__/localeCoverage.spec.ts`
+- Verified with automated scans that:
+  - missing key count for `admin.settings / admin.users / admin.accounts / auth.dingtalk` is now `0`
+  - Chinese-value leak count in `en.ts` for `admin.settings / admin.users / admin.accounts` is now `0`
+
+### Failures
+- No functional failures. Frontend build still reports the existing Vite dynamic-import chunk warnings and stale Browserslist data warning; neither is introduced by this i18n cleanup.
+
+### Next
+- If needed, continue from targeted modules into the remaining admin namespaces with missing locale coverage:
+  - `admin.riskControl`
+  - `admin.redeem`
+  - `admin.subscriptions`
+- If the current scope is acceptable, commit and push this i18n cleanup as a standalone frontend/docs-quality change.
+
 ## 2026-05-19 Backend Login Agreement Enforcement
 ### Done
 - Added persistent user-level login agreement acceptance tracking:

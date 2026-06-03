@@ -76,10 +76,32 @@ const appStoreState = vi.hoisted(() => ({
 
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
+  const messages: Record<string, string> = {
+    'home.viewDocs': '查看文档',
+    'home.goToDashboard': '前往控制台',
+    'home.login': '登录',
+    'modelsPlaza.badge': '模型广场',
+    'modelsPlaza.title': '公开模型目录',
+    'modelsPlaza.description': '从后台直接配置并公开展示可售模型卡片。',
+    'modelsPlaza.quickFind': '快速查找',
+    'modelsPlaza.searchLabel': '搜索模型广场',
+    'modelsPlaza.searchPlaceholder': '搜索模型、能力或标签',
+    'modelsPlaza.groupsTitle': '平台分组',
+    'modelsPlaza.results': '结果',
+    'modelsPlaza.emptyFilteredTitle': '没有匹配的模型卡片',
+    'modelsPlaza.emptyFilteredDescription': '试试切换分组，或者换一个更宽松的关键词搜索。',
+    'modelsPlaza.groups.all': '全部模型',
+    'modelsPlaza.groups.other': '其他',
+  }
   return {
     ...actual,
     useI18n: () => ({
-      t: (key: string) => key,
+      t: (key: string, params?: Record<string, string | number>) => {
+        if (key === 'modelsPlaza.currentSearch') {
+          return `当前搜索：${params?.query ?? ''}`
+        }
+        return messages[key] ?? key
+      },
       locale: { value: 'zh-CN' },
     }),
   }

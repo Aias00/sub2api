@@ -399,7 +399,7 @@ function rejectLoginAgreement(): void {
   agreementAccepted.value = false
   showAgreementModal.value = false
   pendingAgreementRetry.value = false
-  appStore.showWarning('未同意最新条款前，无法继续登录。')
+  appStore.showWarning(t('auth.loginAgreementRejectedLogin'))
 }
 
 function onTurnstileVerify(token: string): void {
@@ -525,7 +525,7 @@ async function handleLogin(): Promise<void> {
       agreementAccepted.value = false
       pendingAgreementRetry.value = true
       showAgreementModal.value = true
-      appStore.showWarning('请先阅读并同意最新条款后再继续登录。')
+      appStore.showWarning(t('auth.loginAgreementMustAcceptLogin'))
       errorMessage.value = ''
       return
     }

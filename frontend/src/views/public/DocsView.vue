@@ -165,8 +165,8 @@ function configureDocsify() {
     plugins: [docsVersionPlugin],
     search: {
       namespace: `cloudbase-docs-${locale.value}-${docsContentVersion}`,
-      placeholder: locale.value === 'zh' ? '搜索文档' : 'Search docs',
-      noData: locale.value === 'zh' ? '没有找到结果' : 'No results',
+      placeholder: t('docs.searchPlaceholder'),
+      noData: t('empty.noData'),
       depth: 4,
     },
   }
