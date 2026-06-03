@@ -158,6 +158,12 @@ SELECT
 
 ### Commands
 
+For the current `cloudbase.eu.org` VM production host, use the dedicated runbook:
+
+```bash
+deploy/PRODUCTION_SERVER_RUNBOOK.md
+```
+
 For **manual VM process restarts** (non-Docker), use the tracked helper:
 
 ```bash

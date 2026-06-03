@@ -2271,3 +2271,34 @@
 
 ### Next
 - Redeploy this small dashboard patch to production.
+
+## 2026-06-03 Production server runbook
+
+### Done
+- Added a dedicated production runbook at `deploy/PRODUCTION_SERVER_RUNBOOK.md`.
+- Recorded the current GCE project / zone / instance, runtime paths, deploy flow, binary output rule, health checks, disk layout, and low-space cleanup procedure.
+- Linked `deploy/README.md` to the production runbook so future server work defaults to the tracked repo document.
+
+### Validation
+- `git diff --check` passed.
+
+### Next
+- Use `deploy/PRODUCTION_SERVER_RUNBOOK.md` as the default reference for future production operations.
+
+## 2026-06-03 Docs entry restoration
+
+### Done
+- Confirmed `/docs` still worked, but the public docs entry had been hidden by UI conditions rather than broken routing.
+- Restored a stable docs entry in the logged-in header by removing the `docUrl`-required gate.
+- Restored a stable docs entry on the public home page by:
+  - keeping the header docs button visible even when `doc_url` is empty
+  - adding an explicit `文档 / Docs` item back into the top nav
+- Kept the existing fallback behavior so empty `doc_url` still resolves to the internal `/docs` route.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/components/layout/AppHeader.vue src/views/HomeView.vue --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed.
+
+### Next
+- Deploy the docs-entry fix if the current local patch should go live immediately.

@@ -33,8 +33,15 @@
 
         <div class="hidden items-center gap-8 text-xs font-medium tracking-[0.12em] text-slate-500 lg:flex">
           <template v-for="item in navItems" :key="item.label">
+            <DocsLink
+              v-if="item.doc"
+              :doc-url="docUrl"
+              class="transition-colors hover:text-slate-900 dark:hover:text-white"
+            >
+              {{ item.label }}
+            </DocsLink>
             <router-link
-              v-if="item.to"
+              v-else-if="item.to"
               :to="item.to"
               class="transition-colors hover:text-slate-900 dark:hover:text-white"
             >
@@ -53,9 +60,8 @@
         <div class="flex items-center gap-3">
           <LocaleSwitcher />
           <DocsLink
-            v-if="docUrl"
             :doc-url="docUrl"
-            class="hidden rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-dark-700 dark:text-dark-200 dark:hover:border-dark-500 dark:hover:text-white sm:inline-flex"
+            class="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-dark-700 dark:text-dark-200 dark:hover:border-dark-500 dark:hover:text-white"
           >
             {{ t('home.viewDocs') }}
           </DocsLink>
@@ -306,6 +312,7 @@ const currentYear = computed(() => new Date().getFullYear())
 
 const navItems = computed(() => [
   { href: '#top', label: t('home.nav.home') },
+  { doc: true, label: t('nav.docs') },
   { to: '/models', label: t('home.nav.models') },
   { href: '#experience', label: t('home.nav.experience') },
 ])
