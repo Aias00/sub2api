@@ -1,59 +1,117 @@
 # cloudbase Guide
 
-cloudbase is a unified gateway for AI development tools. It lets you connect Claude Code, Codex, Cherry Studio, Claude Desktop, and similar clients through one platform account, one billing system, and managed API keys.
+Welcome to **cloudbase**. It is a unified workspace for AI development tools such as Claude Code, Codex, Gemini CLI, Cherry Studio, and Claude Desktop.
 
 Console entry: [Home](/home) / [Dashboard](/dashboard)
 
 ## What is cloudbase?
 
-cloudbase puts multiple upstream AI services behind a controlled gateway.
+cloudbase is not just “another proxy URL.” It is meant to centralize the parts developers repeatedly need:
 
-- Manage balance, subscriptions, orders, and API keys in one account.
-- Use one gateway endpoint for multiple developer tools.
-- Route models through groups with different channel and pricing policies.
-- Track requests, token usage, spend, and latency from the dashboard.
+- one account for balance, subscriptions, orders, and API keys
+- one gateway entry for multiple clients and workflows
+- group-based control over models, channels, pricing, and permissions
+- dashboard and usage pages for cost, model usage, and failures
 
-## Core Features
+If you currently switch between multiple clients, maintain scattered keys, or need clearer cost visibility, cloudbase works more like a shared AI access workspace.
 
-### Unified API Keys
+## Who it is for
 
-Create an API key in the console and use it in Claude Code, Codex, Cherry Studio, Claude Desktop, or any client that supports a custom provider.
+- **Solo developers** who want one place to manage Claude Code, Codex, and Gemini CLI access
+- **Small teams** that need groups, subscriptions, permissions, and cost visibility
+- **Integrators** who want one stable gateway instead of wiring every tool to separate upstreams
 
-### Gateway Guide
+## Core capabilities
 
-The Gateway Guide page generates the Base URL, authentication header, and examples for the selected key and group. Prefer the values shown in the console over hard-coded examples.
+### Unified API keys
 
-### Balance and Subscriptions
+Create API keys in the console and reuse them across tools. A practical pattern is:
 
-The purchase page shows only products configured and enabled by administrators.
+- one key for local development
+- one key for automation
+- one key for shared team tooling
 
-### Usage Visibility
+That makes revocation, usage review, and cost attribution much easier.
 
-Use the dashboard and usage records to understand cost, model usage, and failed requests.
+### Group-driven model access
 
-## Quick Start
+cloudbase does not expose every model to every user by default. Groups define:
+
+- which models a key can access
+- which platform capabilities are available
+- what rate multiplier and quota rules apply
+
+Regular users can inspect their current **available groups** directly in the console.
+
+### Gateway guide and quick setup
+
+The **Gateway Guide** page generates the active:
+
+- Base URL
+- auth header
+- suggested model
+- usage examples
+
+Always prefer the values shown in the console over older copied snippets.
+
+### Balance, subscriptions, and orders
+
+cloudbase supports both balance products and subscription plans. What a user can buy depends on the current site configuration.
+
+### Usage and cost visibility
+
+Use the dashboard, usage records, and key usage pages to inspect:
+
+- token trends
+- model consumption
+- failed requests
+- balance changes
+
+## Recommended onboarding path
 
 ### 1. Create an account
 
-Open [Register](/register) and create an account with email or an enabled third-party login provider.
+Open [Register](/register) and create an account with email or an enabled third-party sign-in method.
 
 ### 2. Add credit or subscribe
 
-Open [Purchase](/purchase) and select an available product.
+Open [Purchase](/purchase) and select one of the currently available products or plans.
 
-### 3. Create an API key
+### 3. Check your available groups
 
-Open **API Keys** and create a key. Use separate keys for separate tools whenever possible.
+Before configuring tools, open **Available Groups** and confirm what your account can actually use.
+This helps explain why some models appear and others do not.
 
-### 4. Configure your tool
+### 4. Create an API key
 
-Choose the matching quickstart:
+Open **API Keys** and create a key for the tool or workflow you want to connect.
+
+### 5. Open the gateway guide
+
+Use the selected key’s gateway instructions as the source of truth for client configuration.
+
+### 6. Pick the matching quickstart
 
 - [Claude Code Quickstart](quickstart/claude-code)
 - [Codex Quickstart](quickstart/codex)
+- [Gemini CLI Quickstart](quickstart/gemini-cli)
 - [Cherry Studio Quickstart](quickstart/cherry-studio)
 - [Claude Desktop Third-party Provider](quickstart/claude-desktop)
 
-## Getting Help
+## Console concepts worth learning first
 
-When asking for help, provide the tool name, tool version, Base URL shown in the console, error logs, model name, and request time. Never expose a full API key in screenshots or messages.
+- [API Keys](console/api-keys)
+- [Available Groups](console/available-groups)
+- [Model Plaza](console/models-plaza)
+
+## Getting help
+
+When asking for help, prepare:
+
+- the tool name and version
+- the Base URL shown in the console
+- terminal logs or screenshots
+- the model name you tried
+- the approximate request time
+
+Never expose a full API key in messages or screenshots.

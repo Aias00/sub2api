@@ -2120,3 +2120,33 @@
 ### Next
 - Decide whether to push the local upstream-merge result to `aias00/main`.
 - Review the remaining untracked local-only assets (`assets/branding`, `.superpowers`, screenshots) separately from the code merge.
+
+## 2026-06-02 Public docs refresh
+
+### Done
+- Restructured the docs landing page to feel more like a product guide instead of a loose article collection.
+- Rewrote the Chinese and English docs homepages to better explain:
+  - what cloudbase is
+  - who it is for
+  - the recommended onboarding path
+  - the console concepts users should learn first
+- Added a new `控制台能力 / Console` section in the docs sidebar.
+- Added new docs pages for:
+  - API keys
+  - available groups
+  - model plaza
+  - Gemini CLI quickstart
+- Kept the existing docs shell and docsify setup; only improved content architecture and coverage.
+
+### Validation
+- Verified all new markdown files exist in both zh/en trees.
+- `git diff --check` passed.
+- `pnpm --dir frontend run build` passed.
+- Local docs preview verified after rebuilding embedded frontend assets:
+  - `/docs`
+  - `/docs#/console/available-groups`
+- Confirmed the new sidebar sections and the new pages render in the local browser.
+
+### Next
+- Consider adding a dedicated `Gateway Guide` docs page if users still need a more explicit bridge from console-generated configuration to client setup.
+- Consider polishing docs branding and shell styling later if you want the visual language to move closer to the reference site, not just the information architecture.
