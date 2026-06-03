@@ -2257,3 +2257,17 @@
   - authored legal template content in `frontend/src/utils/loginAgreementTemplates.ts`
   - hardcoded product labels in model-whitelist mapping helpers
   - non-user-facing comments and developer annotations
+
+## 2026-06-03 Dashboard i18n hotfix
+
+### Done
+- Verified the production deployment reached commit `48204a53` but the dashboard still rendered raw `dashboard.platformBreakdown` and `dashboard.platformCount` keys.
+- Added a narrow fallback in `UserDashboardStats.vue` so the platform-breakdown heading and platform-count summary still render localized copy even if those two runtime keys fail to resolve.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/components/user/dashboard/UserDashboardStats.vue --ext .vue,.ts` passed.
+- `pnpm --dir frontend run build` passed.
+
+### Next
+- Redeploy this small dashboard patch to production.

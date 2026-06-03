@@ -141,9 +141,9 @@
   <!-- Row 3: Per-platform breakdown -->
   <div v-if="!isSimple && platformCards.length > 0" class="card p-4">
     <div class="mb-3 flex items-center justify-between">
-      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('dashboard.platformBreakdown') }}</h3>
+      <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ platformBreakdownLabel }}</h3>
       <span class="text-xs text-gray-500 dark:text-gray-400">
-        {{ t('dashboard.platformCount', { count: sortedPlatforms.length }) }}
+        {{ platformCountLabel }}
       </span>
     </div>
     <div class="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -251,7 +251,7 @@ const props = defineProps<{
   isSimple: boolean
   platformQuotas?: PlatformQuotaItem[] | null
 }>()
-const { t } = useI18n()
+const { t, te, locale } = useI18n()
 
 const PLATFORM_LABELS: Record<string, string> = {
   anthropic: 'Claude',
@@ -261,6 +261,20 @@ const PLATFORM_LABELS: Record<string, string> = {
 }
 
 const platformLabel = (p: string) => PLATFORM_LABELS[p] ?? p
+
+const platformBreakdownLabel = computed(() =>
+  te('dashboard.platformBreakdown')
+    ? t('dashboard.platformBreakdown')
+    : (locale.value.startsWith('zh') ? '平台拆分' : 'Platform breakdown'),
+)
+
+const platformCountLabel = computed(() =>
+  te('dashboard.platformCount')
+    ? t('dashboard.platformCount', { count: sortedPlatforms.value.length })
+    : (locale.value.startsWith('zh')
+        ? `${sortedPlatforms.value.length} 个平台`
+        : `${sortedPlatforms.value.length} platforms`),
+)
 
 const sortedPlatforms = computed(() => {
   const list = props.stats?.by_platform ?? []
