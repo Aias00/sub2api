@@ -28,18 +28,44 @@
 - Cleaned the remaining English-locale Chinese leftovers inside the same targeted admin modules.
 - Added a focused locale regression test:
   - `frontend/src/i18n/__tests__/localeCoverage.spec.ts`
+  - `frontend/src/i18n/__tests__/adminNamespaceLocaleAudit.spec.ts`
 - Verified with automated scans that:
   - missing key count for `admin.settings / admin.users / admin.accounts / auth.dingtalk` is now `0`
   - Chinese-value leak count in `en.ts` for `admin.settings / admin.users / admin.accounts` is now `0`
+- Continued the admin sweep for:
+  - `admin.riskControl`
+  - `admin.redeem`
+  - `admin.subscriptions`
+- Added the missing locale keys for those three namespaces and cleaned the English-locale Chinese leftovers in `admin.redeem`.
+- Verified with automated scans that:
+  - missing key count for `admin.riskControl / admin.redeem / admin.subscriptions` is now `0`
+  - Chinese-value leak count in `en.ts` for those three namespaces is now `0`
+- Continued the remaining admin namespace sweep for:
+  - `admin.ops`
+  - `admin.groups`
+  - `admin.channels`
+  - `admin.backup`
+  - `admin.channelMonitor`
+  - `admin.proxies`
+  - `admin.dashboard`
+  - `admin.usage`
+- Added the remaining missing keys for those namespaces and cleaned the final English-locale Chinese leftovers in:
+  - `admin.groups`
+  - `admin.dashboard`
+  - `admin.proxies`
+  - `admin.ops`
+- Verified with automated scans that:
+  - missing key count for all `admin.*` namespaces is now `0`
+  - Chinese-value leak count in `en.ts` for all `admin.*` namespaces is now `0`
 
 ### Failures
 - No functional failures. Frontend build still reports the existing Vite dynamic-import chunk warnings and stale Browserslist data warning; neither is introduced by this i18n cleanup.
 
 ### Next
-- If needed, continue from targeted modules into the remaining admin namespaces with missing locale coverage:
-  - `admin.riskControl`
-  - `admin.redeem`
-  - `admin.subscriptions`
+- If needed, continue scanning for non-locale-managed hardcoded runtime copy in shared/admin components such as:
+  - account OAuth flows
+  - some modal fallback strings
+  - legacy `localText(...)` helper usage
 - If the current scope is acceptable, commit and push this i18n cleanup as a standalone frontend/docs-quality change.
 
 ## 2026-05-19 Backend Login Agreement Enforcement
