@@ -6504,8 +6504,8 @@ export default {
     login: '登录',
     modelMatrixDescription: '根据当前可售目录，公开展示适合编码、推理与视觉任务的主流模型家族。',
     modelMatrixEmpty: '当前后台尚未配置公开模型目录，请先上架可售套餐后再展示。',
-    modelMatrixEmptyCard: '模型目录会在后台可售套餐准备好之后自动同步到这里。',
-    modelMatrixEmptyPill: '目录同步中',
+    modelMatrixEmptyCard: '覆盖复杂推理、代码生成和 Agent 工作流的主力能力入口。',
+    modelMatrixEmptyPill: '能力入口',
     modelMatrixKicker: '模型矩阵',
     modelMatrixTitle: '主力模型，公开对比 ✦',
     nav: {

@@ -15,7 +15,6 @@
           <div class="flex items-center gap-3">
             <LocaleSwitcher />
             <DocsLink
-              v-if="docUrl"
               :doc-url="docUrl"
               class="hidden rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition hover:border-white/20 hover:text-white sm:inline-flex"
             >
@@ -64,9 +63,9 @@
           </p>
         </div>
 
-        <div v-else class="grid gap-8 lg:grid-cols-[260px_minmax(0,1fr)]">
+        <div v-else class="grid gap-6 lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-8">
           <aside class="lg:sticky lg:top-6 lg:self-start">
-            <div class="rounded-[28px] border border-white/10 bg-[#17181d] p-5 shadow-[0_20px_50px_rgba(0,0,0,0.22)]">
+            <div class="rounded-3xl border border-white/10 bg-[#17181d] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.22)] sm:p-5">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/35">
                   {{ t('modelsPlaza.quickFind') }}
@@ -86,12 +85,12 @@
                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/35">
                   {{ t('modelsPlaza.groupsTitle') }}
                 </p>
-                <div class="mt-3 space-y-2">
+                <div class="mt-3 flex gap-2 overflow-x-auto pb-1 lg:block lg:space-y-2 lg:overflow-visible lg:pb-0">
                   <button
                     v-for="group in groupOptions"
                     :key="group.key"
                     type="button"
-                    class="flex w-full items-center justify-between rounded-2xl px-4 py-3 text-left text-sm transition"
+                    class="flex min-w-max items-center justify-between gap-4 rounded-2xl px-4 py-3 text-left text-sm transition lg:w-full lg:min-w-0"
                     :class="
                       activeGroup === group.key
                         ? 'border border-white/15 bg-white text-slate-950 shadow-[0_12px_30px_rgba(255,255,255,0.08)]'
@@ -113,7 +112,7 @@
           </aside>
 
           <section class="min-w-0">
-            <div class="mb-6 flex flex-col gap-3 rounded-[28px] border border-white/10 bg-white/[0.03] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+            <div class="mb-6 flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/[0.03] px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p class="text-sm font-semibold text-white/80">
                   {{ activeGroupLabel }}
@@ -147,19 +146,19 @@
               <article
                 v-for="item in filteredItems"
                 :key="item.id"
-                class="rounded-[32px] border border-white/10 bg-[#17181d] p-7 shadow-[0_20px_60px_rgba(0,0,0,0.28)]"
+                class="rounded-3xl border border-white/10 bg-[#17181d] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.28)] sm:p-7"
               >
                 <div class="flex items-start justify-between gap-4">
-                  <div class="flex items-start gap-4">
+                  <div class="flex min-w-0 items-start gap-4">
                     <div
-                      class="flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-black text-white"
+                      class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-black text-white sm:h-14 sm:w-14 sm:text-xl"
                       :class="providerIconClass(item.provider)"
                     >
                       {{ providerInitial(item.provider) }}
                     </div>
-                    <div>
+                    <div class="min-w-0">
                       <div class="flex flex-wrap items-center gap-2">
-                        <h2 class="text-2xl font-black text-white sm:text-[2rem]">
+                        <h2 class="max-w-full break-words text-2xl font-black leading-tight text-white sm:text-[2rem]">
                           {{ item.title }}
                         </h2>
                         <span
@@ -181,7 +180,7 @@
                   <button
                     v-if="item.model_ids.length > 0"
                     type="button"
-                    class="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/10 text-white/60 transition hover:border-white/20 hover:text-white"
+                    class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 text-white/60 transition hover:border-white/20 hover:text-white"
                     :title="t('modelsPlaza.copyModelIds')"
                     @click="copyToClipboard(item.model_ids.join('\n'), t('modelsPlaza.modelIdsCopied'))"
                   >
@@ -189,11 +188,11 @@
                   </button>
                 </div>
 
-                <div class="mt-8 space-y-2 text-sm text-white/78 sm:text-base">
-                  <p v-if="item.input_price">{{ t('modelsPlaza.inputPrice') }} {{ item.input_price }}</p>
-                  <p v-if="item.output_price">{{ t('modelsPlaza.outputPrice') }} {{ item.output_price }}</p>
-                  <p v-if="item.cache_read_price">{{ t('modelsPlaza.cacheReadPrice') }} {{ item.cache_read_price }}</p>
-                  <p v-if="item.cache_write_price">{{ t('modelsPlaza.cacheWritePrice') }} {{ item.cache_write_price }}</p>
+                <div class="mt-8 grid gap-2 text-sm text-white/78 sm:grid-cols-2 sm:text-base">
+                  <p v-if="item.input_price" class="rounded-2xl border border-white/8 bg-white/[0.025] px-3 py-2">{{ t('modelsPlaza.inputPrice') }} {{ item.input_price }}</p>
+                  <p v-if="item.output_price" class="rounded-2xl border border-white/8 bg-white/[0.025] px-3 py-2">{{ t('modelsPlaza.outputPrice') }} {{ item.output_price }}</p>
+                  <p v-if="item.cache_read_price" class="rounded-2xl border border-white/8 bg-white/[0.018] px-3 py-2 text-white/58">{{ t('modelsPlaza.cacheReadPrice') }} {{ item.cache_read_price }}</p>
+                  <p v-if="item.cache_write_price" class="rounded-2xl border border-white/8 bg-white/[0.018] px-3 py-2 text-white/58">{{ t('modelsPlaza.cacheWritePrice') }} {{ item.cache_write_price }}</p>
                 </div>
 
                 <div class="mt-8 flex flex-wrap gap-2">

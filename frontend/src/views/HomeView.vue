@@ -61,7 +61,7 @@
           <LocaleSwitcher />
           <DocsLink
             :doc-url="docUrl"
-            class="inline-flex rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-dark-700 dark:text-dark-200 dark:hover:border-dark-500 dark:hover:text-white"
+            class="hidden rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-dark-700 dark:text-dark-200 dark:hover:border-dark-500 dark:hover:text-white sm:inline-flex"
           >
             {{ t('home.viewDocs') }}
           </DocsLink>
@@ -165,7 +165,7 @@
                 </span>
               </div>
               <div v-else class="mt-6">
-                <span class="rounded-full border border-dashed border-slate-300 px-3 py-1 text-xs font-medium text-slate-500 dark:border-dark-600 dark:text-dark-300">
+                <span class="rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 dark:border-sky-900/50 dark:bg-sky-950/30 dark:text-sky-300">
                   {{ t('home.modelMatrixEmptyPill') }}
                 </span>
               </div>

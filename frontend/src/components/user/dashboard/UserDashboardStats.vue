@@ -278,7 +278,7 @@ const platformCountLabel = computed(() =>
 
 const sortedPlatforms = computed(() => {
   const list = props.stats?.by_platform ?? []
-  return [...list].sort((a, b) => b.total_actual_cost - a.total_actual_cost)
+  return [...list].sort((a, b) => safeNumber(b.total_actual_cost) - safeNumber(a.total_actual_cost))
 })
 
 // 处理"各平台之和 < 总值"的差值：后端按平台聚合时过滤了无法归属平台的行
@@ -376,9 +376,14 @@ const usdFormatter = new Intl.NumberFormat('en-US', {
   minimumFractionDigits: 2,
   maximumFractionDigits: 2,
 })
+
+function safeNumber(value: unknown): number {
+  const numberValue = Number(value)
+  return Number.isFinite(numberValue) ? numberValue : 0
+}
+
 function formatUsd(n: number): string {
-  if (!Number.isFinite(n)) return '0.00'
-  return usdFormatter.format(n)
+  return usdFormatter.format(safeNumber(n))
 }
 
 function formatResetTime(iso: string | null | undefined): string {
@@ -398,14 +403,18 @@ const formatBalance = (b: number) =>
   new Intl.NumberFormat('en-US', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2
-  }).format(b)
+  }).format(safeNumber(b))
 
-const formatNumber = (n: number) => n.toLocaleString()
-const formatCost = (c: number) => c.toFixed(4)
+const formatNumber = (n: number) => safeNumber(n).toLocaleString()
+const formatCost = (c: number) => safeNumber(c).toFixed(4)
 const formatTokens = (t: number) => {
-  if (t >= 1_000_000) return `${(t / 1_000_000).toFixed(1)}M`
-  if (t >= 1000) return `${(t / 1000).toFixed(1)}K`
-  return t.toString()
+  const tokens = safeNumber(t)
+  if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`
+  if (tokens >= 1000) return `${(tokens / 1000).toFixed(1)}K`
+  return tokens.toString()
 }
-const formatDuration = (ms: number) => ms >= 1000 ? `${(ms / 1000).toFixed(2)}s` : `${ms.toFixed(0)}ms`
+const formatDuration = (ms: number) => {
+  const durationMs = safeNumber(ms)
+  return durationMs >= 1000 ? `${(durationMs / 1000).toFixed(2)}s` : `${durationMs.toFixed(0)}ms`
+}
 </script>

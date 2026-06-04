@@ -6504,8 +6504,8 @@ export default {
     login: 'Login',
     modelMatrixDescription: 'Show the major model families for coding, reasoning, and visual work directly from the current sellable catalog.',
     modelMatrixEmpty: 'No public model catalog is available yet. Publish sellable plans first to surface models here.',
-    modelMatrixEmptyCard: 'Model families will appear here automatically once the public catalog is ready.',
-    modelMatrixEmptyPill: 'Catalog syncing',
+    modelMatrixEmptyCard: 'A focused entry point for reasoning, coding, and agent workflows.',
+    modelMatrixEmptyPill: 'Capability entry',
     modelMatrixKicker: 'Model Matrix',
     modelMatrixTitle: 'Core models, compared in public ✦',
     nav: {

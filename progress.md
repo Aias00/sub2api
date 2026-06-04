@@ -2346,3 +2346,32 @@
 
 ### Next
 - Commit and deploy the docsify nested-link hotfix so production matches the verified local state.
+
+## 2026-06-04 Public UI audit polish
+
+### Done
+- Audited the production public pages across desktop and mobile:
+  - `/home`
+  - `/models`
+  - `/docs#/quickstart/README`
+  - `/login`
+- Added defensive numeric formatting in the user dashboard stats component so incomplete platform usage data does not throw on `toFixed`.
+- Reduced mobile header pressure on the public home page by hiding the secondary docs button below the `sm` breakpoint.
+- Reworded the public home model-card empty state so it reads as a capability entry instead of an internal catalog-sync status.
+- Tightened the models plaza mobile layout:
+  - compacted the filter sidebar on narrow viewports
+  - changed group filters into horizontal chips on mobile
+  - improved long model-title wrapping
+  - split model pricing into a clearer two-column grid on larger cards
+- Restyled the auth shell and login button to better match the home page's white/slate/sky direction without changing the global admin button style.
+
+### Validation
+- `pnpm --dir frontend run typecheck` passed.
+- `pnpm --dir frontend exec eslint src/components/user/dashboard/UserDashboardStats.vue src/components/user/dashboard/__tests__/UserDashboardStats.spec.ts src/views/HomeView.vue src/views/public/ModelsPlazaView.vue src/components/layout/AuthLayout.vue src/views/auth/LoginView.vue src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .vue,.ts` passed.
+- `pnpm --dir frontend exec vitest run src/components/user/dashboard/__tests__/UserDashboardStats.spec.ts src/views/public/__tests__/ModelsPlazaView.spec.ts src/views/__tests__/HomeView.spec.ts src/views/auth/__tests__/LoginView.turnstile.spec.ts src/views/user/__tests__/dashboardNoHero.spec.ts` passed.
+- `pnpm --dir frontend run build` passed with existing Vite chunk warnings.
+- `git diff --check` passed.
+- Local preview is running at `http://127.0.0.1:18082/` with the dev proxy pointed at the production API.
+
+### Next
+- Review the local preview and decide whether to deploy this UI polish patch.
