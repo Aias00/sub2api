@@ -5,6 +5,9 @@ export interface DocsLinkTarget {
 }
 
 const INTERNAL_DOCS_PATH = '/docs'
+const DOCS_SECTION_INDEX_PATHS = new Set([
+  'quickstart',
+])
 
 export function resolveDocsLink(docUrl: string, currentOrigin: string): DocsLinkTarget {
   const trimmed = docUrl.trim()
@@ -59,5 +62,11 @@ export function normalizeDocsHashPath(pathMatch: string | string[] | undefined):
       : ''
 
   const trimmed = normalized.trim().replace(/^\/+|\/+$/g, '')
-  return trimmed ? `#/${trimmed}` : '#/'
+  if (!trimmed) return '#/'
+
+  const normalizedIndexPath = DOCS_SECTION_INDEX_PATHS.has(trimmed)
+    ? `${trimmed}/README`
+    : trimmed
+
+  return `#/${normalizedIndexPath}`
 }
