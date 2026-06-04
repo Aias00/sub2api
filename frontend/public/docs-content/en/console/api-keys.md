@@ -35,7 +35,7 @@ The selected group determines:
 - which platform it uses
 - what multiplier and quota rules apply
 
-If you are not sure which one to pick, check [Available Groups](./available-groups) first.
+If you are not sure which one to pick, check [Available Groups](#/console/available-groups) first.
 
 ### Expiration / quota / IP restrictions
 

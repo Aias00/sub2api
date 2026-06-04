@@ -17,7 +17,7 @@ This guide is useful when:
 - you have already created an API key
 - your account actually has access to a Gemini-capable group
 
-If you are not sure about the last point, check [Available Groups](../console/available-groups) first.
+If you are not sure about the last point, check [Available Groups](#/console/available-groups) first.
 
 ## Setup steps
 
@@ -55,7 +55,7 @@ This is usually not a CLI bug. More often:
 - the account does not have access to a Gemini group
 - the key is bound to a different group
 
-Check [Available Groups](../console/available-groups).
+Check [Available Groups](#/console/available-groups).
 
 ### Requests still go to an older endpoint
 

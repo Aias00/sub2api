@@ -20,14 +20,14 @@ Before following a client-specific guide, confirm these three items:
 
 Pick the guide that matches the tool you are using:
 
-- [Claude Code Quickstart](./claude-code)
-- [Codex Quickstart](./codex)
-- [Gemini CLI Quickstart](./gemini-cli)
-- [OpenClaw Quickstart](./openclaw)
-- [Hermes Quickstart](./hermes)
-- [Cherry Studio Quickstart](./cherry-studio)
-- [Claude Desktop Third-party Provider](./claude-desktop)
-- [GPT-Image-2 Guide](./gpt-image-2)
+- [Claude Code Quickstart](#/quickstart/claude-code)
+- [Codex Quickstart](#/quickstart/codex)
+- [Gemini CLI Quickstart](#/quickstart/gemini-cli)
+- [OpenClaw Quickstart](#/quickstart/openclaw)
+- [Hermes Quickstart](#/quickstart/hermes)
+- [Cherry Studio Quickstart](#/quickstart/cherry-studio)
+- [Claude Desktop Third-party Provider](#/quickstart/claude-desktop)
+- [GPT-Image-2 Guide](#/quickstart/gpt-image-2)
 
 ## How To Choose The Right Guide
 

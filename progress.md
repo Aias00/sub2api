@@ -2325,3 +2325,24 @@
 
 ### Next
 - Commit the docs shell and docs-content fixes together, then deploy to production.
+
+## 2026-06-04 Docsify nested-link hotfix
+
+### Done
+- Identified a second docs-specific issue after the first production rollout: nested docs pages were still relying on docsify-relative `./` and `../` links, which rendered as malformed hash targets in production.
+- Replaced those links with explicit hash targets in:
+  - `quickstart/README.md`
+  - `en/quickstart/README.md`
+  - `console/api-keys.md`
+  - `en/console/api-keys.md`
+  - `console/models-plaza.md`
+  - `en/console/models-plaza.md`
+  - `quickstart/gemini-cli.md`
+  - `en/quickstart/gemini-cli.md`
+
+### Validation
+- Relative-link scan returned `[]`.
+- `pnpm --dir frontend run build` passed.
+
+### Next
+- Commit and deploy the docsify nested-link hotfix so production matches the verified local state.

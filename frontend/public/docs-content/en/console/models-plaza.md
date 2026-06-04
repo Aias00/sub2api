@@ -45,8 +45,8 @@ Before buying anything or creating a key, you can use Model Plaza to decide whet
 
 If you are already signed in and about to make real requests:
 
-1. check [Available Groups](./available-groups)
-2. create or inspect [API Keys](./api-keys)
+1. check [Available Groups](#/console/available-groups)
+2. create or inspect [API Keys](#/console/api-keys)
 3. use the console’s API Guide for the final configuration
 
 That is the full path from public information to actual access.

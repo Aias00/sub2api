@@ -17,7 +17,7 @@
 - 已创建 API Key
 - 已确认当前账号有可用的 Gemini 分组
 
-如果还没确认分组，先看 [可用分组](../console/available-groups)。
+如果还没确认分组，先看 [可用分组](#/console/available-groups)。
 
 ## 配置步骤
 
@@ -55,7 +55,7 @@ export GEMINI_BASE_URL="以控制台调用说明页展示为准"
 - 当前账号没有 Gemini 分组权限
 - 当前 Key 没绑定到正确分组
 
-先检查 [可用分组](../console/available-groups)。
+先检查 [可用分组](#/console/available-groups)。
 
 ### 调用走错了旧地址
 

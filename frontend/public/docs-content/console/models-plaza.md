@@ -46,8 +46,8 @@
 
 如果你已经登录，并且准备真正开始调用：
 
-1. 看 [可用分组](./available-groups)
-2. 创建或检查 [API 密钥](./api-keys)
+1. 看 [可用分组](#/console/available-groups)
+2. 创建或检查 [API 密钥](#/console/api-keys)
 3. 再去控制台的调用说明页面拿接入参数
 
 这样才是完整链路。

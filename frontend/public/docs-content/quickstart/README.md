@@ -20,14 +20,14 @@
 
 如果你不确定从哪篇开始，按你当前使用的工具进入：
 
-- [Claude Code 快速开始指南](./claude-code)
-- [Codex 快速开始指南](./codex)
-- [Gemini CLI 快速开始指南](./gemini-cli)
-- [OpenClaw 快速开始指南](./openclaw)
-- [Hermes 快速开始指南](./hermes)
-- [Cherry Studio 快速开始指南](./cherry-studio)
-- [Claude Desktop 第三方 Provider 配置指南](./claude-desktop)
-- [GPT-Image-2 使用指南](./gpt-image-2)
+- [Claude Code 快速开始指南](#/quickstart/claude-code)
+- [Codex 快速开始指南](#/quickstart/codex)
+- [Gemini CLI 快速开始指南](#/quickstart/gemini-cli)
+- [OpenClaw 快速开始指南](#/quickstart/openclaw)
+- [Hermes 快速开始指南](#/quickstart/hermes)
+- [Cherry Studio 快速开始指南](#/quickstart/cherry-studio)
+- [Claude Desktop 第三方 Provider 配置指南](#/quickstart/claude-desktop)
+- [GPT-Image-2 使用指南](#/quickstart/gpt-image-2)
 
 ## 选择指南时的原则
 
