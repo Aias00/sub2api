@@ -74,7 +74,7 @@ cd /home/aias94coffee/sub2api-work/sub2api-main
 git pull origin main
 pnpm --dir frontend install --frozen-lockfile
 pnpm --dir frontend run build
-/usr/local/go/bin/go build -tags embed -o sub2api ./backend/cmd/server
+(cd backend && /usr/local/go/bin/go build -tags embed -o ../sub2api ./cmd/server)
 /home/aias94coffee/sub2api-work/runtime/restart-sub2api.sh
 curl --max-time 15 -fsS http://127.0.0.1:8081/health
 '"
@@ -88,22 +88,25 @@ curl --max-time 15 -fsS https://cloudbase.eu.org/health
 
 ## Critical Deployment Pitfall
 
-Do **not** rely on this command:
+Do **not** rely on either of these commands:
 
 ```bash
 cd backend && /usr/local/go/bin/go build -tags embed ./cmd/server
+/usr/local/go/bin/go build -tags embed -o sub2api ./backend/cmd/server
 ```
 
-That writes a binary like `backend/server`, but the restart script launches the
-repo-root binary `./sub2api`.
+The first writes a binary like `backend/server`, but the restart script launches
+the repo-root binary `./sub2api`. The second runs from the repo root, but this
+repository's Go module is under `backend/`, so root builds fail with
+`go: cannot find main module`.
 
-If you build only inside `backend/`, the running service may continue using the
-old root binary even though the compile step succeeded.
+If you build only inside `backend/` without `-o ../sub2api`, the running service
+may continue using the old root binary even though the compile step succeeded.
 
-Always build with an explicit root output:
+Always build from the backend module with an explicit repo-root output:
 
 ```bash
-/usr/local/go/bin/go build -tags embed -o sub2api ./backend/cmd/server
+cd backend && /usr/local/go/bin/go build -tags embed -o ../sub2api ./cmd/server
 ```
 
 ## Restart Behavior
