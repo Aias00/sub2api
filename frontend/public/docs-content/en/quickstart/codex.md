@@ -6,12 +6,12 @@ Codex is useful for repository reading, code edits, test runs, and pre-commit ch
 
 - Codex or a Codex-compatible client installed.
 - cloudbase API key.
-- Base URL copied from **Gateway Guide**.
+- Base URL copied from **API Guide**.
 
 ## Configure
 
 ```text
-Base URL: value from cloudbase Gateway Guide
+Base URL: value from cloudbase API Guide
 API Key: your cloudbase API key
 Model: model enabled by the current group
 ```

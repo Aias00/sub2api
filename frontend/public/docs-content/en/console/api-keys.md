@@ -35,7 +35,7 @@ The selected group determines:
 - which platform it uses
 - what multiplier and quota rules apply
 
-If you are not sure which one to pick, check [Available Groups](available-groups) first.
+If you are not sure which one to pick, check [Available Groups](./available-groups) first.
 
 ### Expiration / quota / IP restrictions
 
@@ -49,7 +49,7 @@ These fields are useful when:
 
 After creating a key, go to:
 
-1. **Gateway Guide** to copy the Base URL, auth header, and examples
+1. **API Guide** to copy the Base URL, auth header, and examples
 2. **Available Groups** to confirm the capability scope behind the key
 3. **Usage records** to verify that traffic is actually going through cloudbase
 
@@ -80,5 +80,5 @@ Avoid putting them into:
 - whether the key is disabled
 - whether the key is bound to the intended group
 - whether the client is really using this key
-- whether the Base URL comes from the current gateway guide
+- whether the Base URL comes from the current API Guide
 - whether the request is still going to an older provider

@@ -43,9 +43,9 @@ cloudbase does not expose every model to every user by default. Groups define:
 
 Regular users can inspect their current **available groups** directly in the console.
 
-### Gateway guide and quick setup
+### API Guide and quick setup
 
-The **Gateway Guide** page generates the active:
+The **API Guide** page generates the active:
 
 - Base URL
 - auth header
@@ -86,7 +86,7 @@ This helps explain why some models appear and others do not.
 
 Open **API Keys** and create a key for the tool or workflow you want to connect.
 
-### 5. Open the gateway guide
+### 5. Open the API Guide
 
 Use the selected key’s gateway instructions as the source of truth for client configuration.
 
@@ -95,8 +95,11 @@ Use the selected key’s gateway instructions as the source of truth for client 
 - [Claude Code Quickstart](quickstart/claude-code)
 - [Codex Quickstart](quickstart/codex)
 - [Gemini CLI Quickstart](quickstart/gemini-cli)
+- [OpenClaw Quickstart](quickstart/openclaw)
+- [Hermes Quickstart](quickstart/hermes)
 - [Cherry Studio Quickstart](quickstart/cherry-studio)
 - [Claude Desktop Third-party Provider](quickstart/claude-desktop)
+- [GPT-Image-2 Guide](quickstart/gpt-image-2)
 
 ## Console concepts worth learning first
 

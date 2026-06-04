@@ -12,7 +12,7 @@ This page explains how to connect Claude Code to cloudbase. Claude Code configur
 ## Configure
 
 1. Open the cloudbase console.
-2. Go to **Gateway Guide**.
+2. Go to **API Guide**.
 3. Select the API key for Claude Code.
 4. Copy Base URL, API key, and model name.
 5. Put those values into the configuration required by your Claude Code version.
@@ -20,7 +20,7 @@ This page explains how to connect Claude Code to cloudbase. Claude Code configur
 Common environment-variable shape:
 
 ```bash
-export ANTHROPIC_BASE_URL="value from Gateway Guide"
+export ANTHROPIC_BASE_URL="value from API Guide"
 export ANTHROPIC_API_KEY="your cloudbase API key"
 ```
 

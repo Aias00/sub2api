@@ -32,7 +32,7 @@ Before finishing:
 
 ```text
 For cloudbase integrations:
-- Use the console Gateway Guide as the source of truth for Base URL and models.
+- Use the console API Guide as the source of truth for Base URL and models.
 - Never paste full API keys into issue comments, screenshots, or commits.
 - Use separate keys for separate tools.
 - Check usage records when debugging unexpected cost or failures.

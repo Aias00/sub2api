@@ -1,11 +1,16 @@
 <template>
-  <div class="docs-page min-h-screen bg-[#f7f6f1] text-gray-950 dark:bg-primary-950 dark:text-white">
-    <header class="sticky top-0 z-40 border-b border-primary-100/80 bg-[#fffefb]/95 backdrop-blur-xl dark:border-primary-500/20 dark:bg-primary-950/80">
+  <div class="docs-page relative min-h-screen overflow-x-hidden bg-white text-slate-900 dark:bg-dark-950 dark:text-white">
+    <div class="pointer-events-none absolute inset-0 overflow-hidden">
+      <div class="absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(circle_at_18%_16%,rgba(125,211,252,0.22),transparent_24%),radial-gradient(circle_at_86%_0%,rgba(191,219,254,0.2),transparent_26%),linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0))] dark:bg-[radial-gradient(circle_at_18%_16%,rgba(56,189,248,0.12),transparent_24%),radial-gradient(circle_at_86%_0%,rgba(59,130,246,0.1),transparent_26%),linear-gradient(180deg,rgba(15,23,42,0.9),rgba(2,6,23,0))]"></div>
+      <div class="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:72px_72px] opacity-30 dark:opacity-10"></div>
+    </div>
+
+    <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/92 backdrop-blur-xl dark:border-dark-700/80 dark:bg-dark-950/88">
       <div class="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 md:px-6">
         <div class="flex min-w-0 items-center gap-3">
           <RouterLink
             to="/home"
-            class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-primary-100 bg-white shadow-sm shadow-primary-500/10 dark:border-primary-400/20 dark:bg-white/5"
+            class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 dark:border-dark-700 dark:bg-white/5"
           >
             <img
               v-if="siteLogo"
@@ -21,10 +26,10 @@
             </span>
           </RouterLink>
           <div class="min-w-0">
-            <p class="truncate text-sm font-semibold tracking-[0.24em] text-primary-600 dark:text-primary-300">
+            <p class="truncate text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
               {{ siteName }}
             </p>
-            <h1 class="truncate text-lg font-semibold text-gray-950 dark:text-white">
+            <h1 class="truncate text-lg font-semibold text-slate-950 dark:text-white">
               {{ t('nav.docs') }}
             </h1>
           </div>
@@ -35,7 +40,7 @@
           <router-link
             v-if="isAuthenticated"
             :to="dashboardPath"
-            class="inline-flex items-center rounded-2xl bg-primary-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-800 sm:px-4 dark:bg-primary-200 dark:text-primary-950 dark:hover:bg-primary-100"
+            class="inline-flex items-center rounded-2xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:px-4 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
           >
             <span class="hidden sm:inline">{{ t('home.goToDashboard') }}</span>
             <span class="sm:hidden">{{ t('nav.dashboard') }}</span>
@@ -43,7 +48,7 @@
           <router-link
             v-else
             to="/login"
-            class="inline-flex items-center rounded-2xl bg-primary-700 px-3 py-2 text-sm font-semibold text-white transition hover:bg-primary-800 sm:px-4 dark:bg-primary-200 dark:text-primary-950 dark:hover:bg-primary-100"
+            class="inline-flex items-center rounded-2xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:px-4 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
           >
             {{ t('home.login') }}
           </router-link>
@@ -51,9 +56,9 @@
       </div>
     </header>
 
-    <main class="mx-auto max-w-[1600px] px-4 py-4 md:px-6 md:py-6">
-      <div class="rounded-[36px] border border-primary-100/70 bg-[#fffefb]/94 shadow-[0_30px_80px_-48px_rgba(76,64,156,0.36)] dark:border-primary-500/20 dark:bg-primary-950/70">
-        <div class="docsify-shell px-2 py-3 md:px-4">
+    <main class="relative z-10 mx-auto max-w-[1600px] px-4 py-4 md:px-6 md:py-6">
+      <div class="rounded-[36px] border border-slate-200/80 bg-white shadow-[0_28px_90px_-54px_rgba(15,23,42,0.22)] dark:border-dark-700 dark:bg-dark-950/72">
+        <div class="docsify-shell px-2 py-3 md:px-4 md:py-4">
           <div id="docsify-app" ref="docsifyRoot" class="min-h-[70vh]"></div>
         </div>
       </div>
@@ -364,11 +369,16 @@ onBeforeUnmount(() => {
   flex: 0 0 15.5rem;
   width: 15.5rem !important;
   height: calc(100vh - 12rem) !important;
-  border-right: 1px solid rgba(219, 212, 255, 0.72);
+  border-right: 1px solid rgba(226, 232, 240, 0.96);
   padding: 0.75rem 1rem 2rem !important;
   overflow-y: auto;
-  background: transparent;
+  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.92));
   z-index: 1;
+}
+
+.dark .docsify-shell :deep(.sidebar) {
+  border-right-color: rgba(51, 65, 85, 0.82);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.76), rgba(2, 6, 23, 0.7));
 }
 
 .docsify-shell :deep(.sidebar .app-name) {
@@ -420,8 +430,27 @@ onBeforeUnmount(() => {
 .docsify-shell :deep(.markdown-section h2),
 .docsify-shell :deep(.markdown-section h3),
 .docsify-shell :deep(.markdown-section h4) {
-  color: #4c409c;
+  color: #0f172a;
   font-weight: 800;
+}
+
+.dark .docsify-shell :deep(.markdown-section h1),
+.dark .docsify-shell :deep(.markdown-section h2),
+.dark .docsify-shell :deep(.markdown-section h3),
+.dark .docsify-shell :deep(.markdown-section h4) {
+  color: #f8fafc;
+}
+
+.docsify-shell :deep(.markdown-section a) {
+  color: #0369a1;
+}
+
+.docsify-shell :deep(.markdown-section a:hover) {
+  color: #0f172a;
+}
+
+.dark .docsify-shell :deep(.markdown-section a:hover) {
+  color: #e2e8f0;
 }
 
 .docsify-shell :deep(.app-name-link),
@@ -453,31 +482,32 @@ onBeforeUnmount(() => {
 }
 
 .docsify-shell :deep(.sidebar-nav li.active > a) {
-  border: 1px solid #6656d9;
+  border: 1px solid rgba(56, 189, 248, 0.35);
   border-radius: 999px;
-  background: #ece8ff;
-  box-shadow: none;
-  color: #4c409c !important;
+  background: rgba(224, 242, 254, 0.88);
+  box-shadow: 0 8px 20px -18px rgba(14, 165, 233, 0.8);
+  color: #0f172a !important;
   font-weight: 800;
   line-height: 1.25;
   text-decoration: none;
 }
 
 .dark .docsify-shell :deep(.sidebar-nav li.active > a) {
-  border-color: #bfb4ff;
-  background: rgba(102, 86, 217, 0.24);
+  border-color: rgba(56, 189, 248, 0.38);
+  background: rgba(14, 165, 233, 0.14);
   box-shadow: none;
-  color: #ece8ff !important;
+  color: #e0f2fe !important;
 }
 
 .docsify-shell :deep(.sidebar-nav a:hover) {
-  border-color: rgba(102, 86, 217, 0.22);
-  background: rgba(236, 232, 255, 0.58);
-  color: #4c409c !important;
+  border-color: rgba(148, 163, 184, 0.28);
+  background: rgba(248, 250, 252, 0.96);
+  color: #0f172a !important;
 }
 
 .dark .docsify-shell :deep(.sidebar-nav a:hover) {
-  color: #ece8ff !important;
+  background: rgba(15, 23, 42, 0.72);
+  color: #e2e8f0 !important;
 }
 
 .docsify-shell :deep(.search) {
@@ -486,8 +516,16 @@ onBeforeUnmount(() => {
 
 .docsify-shell :deep(.search input) {
   border-radius: 999px;
-  border-color: rgba(191, 180, 255, 0.68);
-  background: rgba(255, 255, 255, 0.72);
+  border-color: rgba(203, 213, 225, 0.92);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+  color: #0f172a;
+}
+
+.dark .docsify-shell :deep(.search input) {
+  border-color: rgba(51, 65, 85, 0.9);
+  background: rgba(15, 23, 42, 0.78);
+  color: #f8fafc;
 }
 
 .docsify-shell :deep(.sidebar-toggle) {

@@ -1,12 +1,12 @@
 # GPT-Image-2 Guide
 
-If the current cloudbase group exposes image models, you can use the unified gateway for image generation or editing. Availability depends on administrator configuration and the Gateway Guide page.
+If the current cloudbase group exposes image models, you can use the unified gateway for image generation or editing. Availability depends on administrator configuration and the API Guide page.
 
 ## Check before use
 
 - Account has balance or subscription.
 - The API key group exposes the image model.
-- Gateway Guide shows the model or endpoint.
+- API Guide shows the model or endpoint.
 
 ## Prompting tips
 

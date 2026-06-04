@@ -7,7 +7,7 @@ Cherry Studio can manage multiple model providers. Add cloudbase as a custom pro
 ```text
 Name: cloudbase
 API Key: your cloudbase API key
-API Base: value from Gateway Guide
+API Base: value from API Guide
 Model: model enabled by the selected group
 ```
 

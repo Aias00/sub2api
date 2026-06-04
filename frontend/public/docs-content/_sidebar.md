@@ -9,7 +9,7 @@
   * [API 密钥](console/api-keys)
   * [可用分组](console/available-groups)
   * [模型广场](console/models-plaza)
-* 快速接入
+* [快速接入](quickstart/)
   * [Claude Code 快速开始指南](quickstart/claude-code)
   * [Codex 快速开始指南](quickstart/codex)
   * [Gemini CLI 快速开始指南](quickstart/gemini-cli)

@@ -24,7 +24,7 @@ If you are not sure about the last point, check [Available Groups](../console/av
 1. Sign in to the cloudbase console
 2. Open **API Keys**
 3. Choose or create a key for Gemini CLI
-4. Open **Gateway Guide**
+4. Open **API Guide**
 5. Copy the Base URL, auth details, and model name shown there
 
 A common environment-based setup looks like this:

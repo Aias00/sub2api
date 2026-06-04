@@ -6,7 +6,7 @@ Hermes connects to cloudbase like other custom-provider clients: configure Base 
 
 1. Log in to [cloudbase](/home).
 2. Create an API key.
-3. Copy the call parameters from **Gateway Guide**.
+3. Copy the call parameters from **API Guide**.
 4. Add cloudbase as a model provider in Hermes.
 5. Save and send a test request.
 

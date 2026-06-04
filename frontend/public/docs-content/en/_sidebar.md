@@ -9,7 +9,7 @@
   * [API Keys](console/api-keys)
   * [Available Groups](console/available-groups)
   * [Model Plaza](console/models-plaza)
-* Quickstart
+* [Quickstart](quickstart/)
   * [Claude Code Quickstart](quickstart/claude-code)
   * [Codex Quickstart](quickstart/codex)
   * [Gemini CLI Quickstart](quickstart/gemini-cli)

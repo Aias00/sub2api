@@ -2,7 +2,7 @@
 
 Most custom-provider clients need three values:
 
-- Base URL from the cloudbase Gateway Guide.
+- Base URL from the cloudbase API Guide.
 - API Key from the API Keys page.
 - Model name allowed by the selected group.
 
@@ -10,7 +10,7 @@ Most custom-provider clients need three values:
 
 1. Log in to the [cloudbase dashboard](/dashboard).
 2. Create or select an API key.
-3. Open **Gateway Guide**.
+3. Open **API Guide**.
 4. Copy the generated Base URL and authentication values.
 5. Paste them into your target client.
 6. Send a small test request.
@@ -19,7 +19,7 @@ Most custom-provider clients need three values:
 
 ```text
 Provider Name: cloudbase
-Base URL: use the value shown in Gateway Guide
+Base URL: use the value shown in API Guide
 API Key: sk-********
 Model: choose a model enabled by the current group
 ```

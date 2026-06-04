@@ -35,7 +35,7 @@ A terminal is where you run commands. When a guide shows `node -v`, `npm -v`, or
 
 An API is a programmatic entry point. In cloudbase, your client usually needs:
 
-- Base URL from the Gateway Guide page.
+- Base URL from the API Guide page.
 - API key from the API Keys page.
 - Model name allowed by the selected group.
 
@@ -44,7 +44,7 @@ An API is a programmatic entry point. In cloudbase, your client usually needs:
 1. Register from [Register](/register).
 2. Add credit or subscribe from [Purchase](/purchase).
 3. Create an API key from **API Keys**.
-4. Open **Gateway Guide** and copy the generated values.
+4. Open **API Guide** and copy the generated values.
 5. Configure your client and send a small test request.
 
 ## Troubleshooting

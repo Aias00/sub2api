@@ -2302,3 +2302,26 @@
 
 ### Next
 - Deploy the docs-entry fix if the current local patch should go live immediately.
+
+## 2026-06-04 Docs content review fixes
+
+### Done
+- Reviewed the current docs tree for navigation completeness, cross-page link correctness, and zh/en naming consistency.
+- Fixed the broken relative links inside:
+  - `quickstart/README.md`
+  - `en/quickstart/README.md`
+  - `console/api-keys.md`
+  - `en/console/api-keys.md`
+  - `console/models-plaza.md`
+  - `en/console/models-plaza.md`
+- Unified the English docs terminology around the console access page to `API Guide`.
+- Expanded the zh/en docs homepages so their quickstart recommendation lists match the actual sidebar coverage.
+- Kept the docs shell visual refresh in `DocsView.vue` as a presentation-only change; content fixes remain in markdown.
+
+### Validation
+- Relative-link scan confirms only the docsify directory-index entries in `_sidebar.md` still use directory targets such as `quickstart/`, which is expected.
+- `pnpm --dir frontend run build` passed.
+- `git diff --check` pending final pre-commit rerun.
+
+### Next
+- Commit the docs shell and docs-content fixes together, then deploy to production.

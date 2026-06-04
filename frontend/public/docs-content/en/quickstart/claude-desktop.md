@@ -6,12 +6,12 @@ Claude Desktop third-party provider support depends on the client version and pl
 
 - Claude Desktop installed.
 - cloudbase API key created.
-- Gateway Guide opens normally.
+- API Guide opens normally.
 
 ## Configuration idea
 
 ```text
-Base URL: value from cloudbase Gateway Guide
+Base URL: value from cloudbase API Guide
 API Key: your cloudbase API key
 Model: model enabled by the current group
 ```
