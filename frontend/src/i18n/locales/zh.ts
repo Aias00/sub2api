@@ -6156,6 +6156,7 @@ export default {
     info: '提示',
     invalidEmail: '请输入有效的邮箱地址',
     justNow: '刚刚',
+    login: '登录',
     loading: '加载中...',
     minutes: '分钟',
     more: '更多',

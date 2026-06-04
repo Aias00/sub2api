@@ -6156,6 +6156,7 @@ export default {
     info: 'Info',
     invalidEmail: 'Please enter a valid email address',
     justNow: 'just now',
+    login: 'Login',
     loading: 'Loading...',
     minutes: 'min',
     more: 'More',

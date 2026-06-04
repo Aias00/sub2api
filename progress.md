@@ -2347,6 +2347,18 @@
 ### Next
 - Commit and deploy the docsify nested-link hotfix so production matches the verified local state.
 
+## 2026-06-04 common.login i18n key
+
+Done:
+- Added the missing `common.login` key in zh/en locale files for the login route title.
+
+Validation:
+- `pnpm --dir frontend exec eslint src/i18n/locales/zh.ts src/i18n/locales/en.ts --ext .ts` passed.
+- A focused key-presence check confirmed `common.login` exists in both locale files.
+
+Next:
+- No follow-up needed for this key.
+
 ## 2026-06-04 Public UI audit polish
 
 ### Done
