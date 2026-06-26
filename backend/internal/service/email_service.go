@@ -340,11 +340,18 @@ func (s *EmailService) SendEmailWithConfig(config *SMTPConfig, to, subject, body
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 	auth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
 
-	if config.UseTLS {
+	if shouldUseImplicitSMTPTLS(config) {
 		return s.sendMailTLS(addr, auth, config.From, to, []byte(msg), config.Host)
 	}
 
 	return s.sendMailPlain(addr, auth, config.From, to, []byte(msg), config.Host)
+}
+
+func shouldUseImplicitSMTPTLS(config *SMTPConfig) bool {
+	if config == nil || !config.UseTLS {
+		return false
+	}
+	return config.Port == 465
 }
 
 // sendMailPlain sends mail without TLS using a dialer with timeout.
@@ -574,7 +581,7 @@ func (s *EmailService) buildVerifyCodeEmailBodyWithLogo(code, siteName, logoURL 
 func (s *EmailService) TestSMTPConnectionWithConfig(config *SMTPConfig) error {
 	addr := fmt.Sprintf("%s:%d", config.Host, config.Port)
 
-	if config.UseTLS {
+	if shouldUseImplicitSMTPTLS(config) {
 		tlsConfig := &tls.Config{
 			ServerName: config.Host,
 			// 与发送逻辑一致，显式要求 TLS 1.2+。
@@ -606,6 +613,14 @@ func (s *EmailService) TestSMTPConnectionWithConfig(config *SMTPConfig) error {
 		return fmt.Errorf("smtp connection failed: %w", err)
 	}
 	defer func() { _ = client.Close() }()
+
+	if config.UseTLS {
+		if ok, _ := client.Extension("STARTTLS"); ok {
+			if err = client.StartTLS(&tls.Config{ServerName: config.Host, MinVersion: tls.VersionTLS12}); err != nil {
+				return fmt.Errorf("starttls failed: %w", err)
+			}
+		}
+	}
 
 	auth := smtp.PlainAuth("", config.Username, config.Password, config.Host)
 	if err = client.Auth(auth); err != nil {
