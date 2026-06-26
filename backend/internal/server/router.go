@@ -102,6 +102,12 @@ func registerRoutes(
 ) {
 	// 通用路由（健康检查、状态等）
 	routes.RegisterCommonRoutes(r, cfg)
+	if h != nil && h.Setting != nil {
+		r.GET("/ads.txt", h.Setting.GetAdsTxt)
+		r.GET("/favicon.ico", h.Setting.GetFaviconICO)
+		r.GET("/robots.txt", h.Setting.GetRobotsTxt)
+		r.GET("/sitemap.xml", h.Setting.GetSitemapXML)
+	}
 
 	// API v1
 	v1 := r.Group("/api/v1")
@@ -112,6 +118,9 @@ func registerRoutes(
 	routes.RegisterAdminRoutes(v1, h, adminAuth)
 	routes.RegisterGatewayRoutes(r, h, apiKeyAuth, apiKeyService, subscriptionService, opsService, settingService, cfg)
 	routes.RegisterPaymentRoutes(v1, h.Payment, h.PaymentWebhook, h.Admin.Payment, jwtAuth, adminAuth, settingService)
+	routes.RegisterPromptRoutes(v1, h, adminAuth)
+	routes.RegisterWeChatExportRoutes(v1, h, jwtAuth, settingService)
+	routes.RegisterWebRoutes(v1, h)
 
 	handler.RegisterPageRoutes(v1, cfg.Pricing.DataDir, gin.HandlerFunc(jwtAuth), gin.HandlerFunc(adminAuth), settingService)
 }

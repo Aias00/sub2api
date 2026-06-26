@@ -9,8 +9,8 @@
     <!-- Logo/Brand -->
     <div class="sidebar-header" :class="{ 'sidebar-header-collapsed': sidebarCollapsed }">
       <!-- Custom Logo or Default Logo -->
-      <div class="sidebar-logo flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-glow">
-        <img v-if="settingsLoaded" :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+      <div v-if="settingsLoaded && siteLogo" class="sidebar-logo flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-glow">
+        <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
       </div>
       <div class="sidebar-brand" :class="{ 'sidebar-brand-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">
         <span class="sidebar-brand-title text-lg font-bold text-gray-900 dark:text-white">
@@ -24,8 +24,12 @@
       <!-- Admin View: Admin menu first, then personal menu -->
       <template v-if="isAdmin">
         <!-- Admin Section -->
-        <div class="sidebar-section">
-          <template v-for="item in adminNavItems" :key="item.path">
+        <div
+          v-for="section in adminNavSections"
+          :key="section.id"
+          class="sidebar-section"
+        >
+          <template v-for="item in section.items" :key="item.path">
             <!-- Collapsible group (has children) -->
             <template v-if="item.children?.length">
               <button
@@ -74,11 +78,11 @@
               :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
               :title="sidebarCollapsed ? item.label : undefined"
               :id="
-                item.path === '/admin/accounts'
+                item.path === adminSidebarPaths.adminAccountsPath
                   ? 'sidebar-channel-manage'
-                  : item.path === '/admin/groups'
+                  : item.path === adminSidebarPaths.adminGroupsPath
                     ? 'sidebar-group-manage'
-                    : item.path === '/admin/redeem'
+                    : item.path === adminSidebarPaths.adminRedeemPath
                       ? 'sidebar-wallet'
                       : undefined
               "
@@ -92,41 +96,56 @@
         </div>
 
         <!-- Personal Section for Admin (hidden in simple mode) -->
-        <div v-if="!authStore.isSimpleMode" class="sidebar-section">
-          <div class="sidebar-section-title" :class="{ 'sidebar-section-title-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">
-            <span class="sidebar-section-title-text" :class="{ 'sidebar-section-title-text-collapsed': sidebarCollapsed }">
-              {{ t('nav.myAccount') }}
-            </span>
-          </div>
-
-          <router-link
-            v-for="item in personalNavItems"
-            :key="item.path"
-            :to="item.path"
-            class="sidebar-link mb-1"
-            :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
-            :title="sidebarCollapsed ? item.label : undefined"
-            :data-tour="item.path === '/keys' ? 'sidebar-my-keys' : undefined"
-            @click="handleMenuItemClick(item.path)"
+        <template v-if="!authStore.isSimpleMode">
+          <div
+            v-for="section in personalNavSections"
+            :key="section.id"
+            class="sidebar-section"
           >
-            <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
-            <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
-            <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
-          </router-link>
-        </div>
+            <div
+              v-if="section.showTitle"
+              class="sidebar-section-title"
+              :class="{ 'sidebar-section-title-collapsed': sidebarCollapsed }"
+              :aria-hidden="sidebarCollapsed ? 'true' : 'false'"
+            >
+              <span class="sidebar-section-title-text" :class="{ 'sidebar-section-title-text-collapsed': sidebarCollapsed }">
+                {{ section.title }}
+              </span>
+            </div>
+
+            <router-link
+              v-for="item in section.items"
+              :key="item.path"
+              :to="item.path"
+              class="sidebar-link mb-1"
+              :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
+              :title="sidebarCollapsed ? item.label : undefined"
+              :data-tour="item.path === authRouteDefaults.apiKeysPath ? 'sidebar-my-keys' : undefined"
+              @click="handleMenuItemClick(item.path)"
+            >
+              <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
+              <component v-else :is="item.icon" class="h-5 w-5 flex-shrink-0" />
+              <span class="sidebar-label" :class="{ 'sidebar-label-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">{{ item.label }}</span>
+            </router-link>
+          </div>
+        </template>
       </template>
 
       <!-- Regular User View -->
       <template v-else-if="!appStore.backendModeEnabled">
-        <div class="sidebar-section">
+        <div
+          v-for="section in userNavSections"
+          :key="section.id"
+          class="sidebar-section"
+        >
           <router-link
-            v-for="item in userNavItems"
+            v-for="item in section.items"
             :key="item.path"
             :to="item.path"
             class="sidebar-link mb-1"
             :class="{ 'sidebar-link-active': isActive(item.path), 'sidebar-link-collapsed': sidebarCollapsed }"
             :title="sidebarCollapsed ? item.label : undefined"
-            :data-tour="item.path === '/keys' ? 'sidebar-my-keys' : undefined"
+            :data-tour="item.path === authRouteDefaults.apiKeysPath ? 'sidebar-my-keys' : undefined"
             @click="handleMenuItemClick(item.path)"
           >
             <span v-if="item.iconSvg" class="h-5 w-5 flex-shrink-0 sidebar-svg-icon" v-html="sanitizeSvg(item.iconSvg)"></span>
@@ -167,11 +186,27 @@
 import { computed, h, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
+import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import { useAdminSettingsStore, useAppStore, useAuthStore, useOnboardingStore } from '@/stores'
 import { sanitizeSvg } from '@/utils/sanitize'
+import { resolveAdminSidebarRouteDefaults } from '@/utils/adminSidebarShell'
+import {
+  resolveAdminSidebarSections,
+  type AdminSidebarItemKey,
+  type AdminSidebarSection,
+  resolveSelfSidebarSections,
+  type SelfSidebarItemKey,
+  type SelfSidebarSection,
+} from '@/utils/adminSidebarSchema'
 import { FeatureFlags, makeSidebarFlag } from '@/utils/featureFlags'
+import {
+  buildSidebarSections,
+  buildSidebarVisibleItemMap,
+  type SidebarNavItem,
+  type SidebarNavSection,
+} from './sidebarRuntime'
 
-interface NavItem {
+interface NavItem extends SidebarNavItem {
   path: string
   label: string
   icon: unknown
@@ -192,22 +227,18 @@ interface NavItem {
   featureFlag?: () => boolean | undefined
 }
 
-// applyFeatureFlags 递归过滤掉 featureFlag() === false 的节点（含子节点）。
-// 使用 `!== false` 宽容语义：undefined（设置未加载）或 true 都视为显示。
-function applyFeatureFlags(items: NavItem[]): NavItem[] {
-  const out: NavItem[] = []
-  for (const item of items) {
-    if (item.featureFlag && item.featureFlag() === false) continue
-    if (item.children) {
-      out.push({ ...item, children: applyFeatureFlags(item.children) })
-    } else {
-      out.push(item)
-    }
-  }
-  return out
+type NavSection = SidebarNavSection & {
+  id: string
+  items: NavItem[]
 }
 
-const { t } = useI18n()
+type TitledNavSection = NavSection & {
+  title?: string
+  showTitle?: boolean
+}
+
+const i18n = useI18n()
+const { t, locale } = i18n
 
 const route = useRoute()
 const router = useRouter()
@@ -215,6 +246,7 @@ const appStore = useAppStore()
 const authStore = useAuthStore()
 const onboardingStore = useOnboardingStore()
 const adminSettingsStore = useAdminSettingsStore()
+const { authRouteDefaults } = useAuthRouteDefaults()
 
 const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)
 const mobileOpen = computed(() => appStore.mobileOpen)
@@ -227,6 +259,18 @@ const expandedGroups = ref<Set<string>>(new Set())
 const siteName = computed(() => appStore.siteName)
 const siteLogo = computed(() => appStore.siteLogo)
 const settingsLoaded = computed(() => appStore.publicSettingsLoaded)
+const adminSidebarPaths = computed(() =>
+  resolveAdminSidebarRouteDefaults(appStore.cachedPublicSettings?.auth_shell_config, locale.value),
+)
+const configuredAdminSidebarSections = computed(() =>
+  resolveAdminSidebarSections(appStore.cachedPublicSettings?.auth_shell_config, locale.value),
+)
+const configuredUserSidebarSections = computed(() =>
+  resolveSelfSidebarSections(appStore.cachedPublicSettings?.auth_shell_config, locale.value, 'userSidebarSections'),
+)
+const configuredAdminPersonalSidebarSections = computed(() =>
+  resolveSelfSidebarSections(appStore.cachedPublicSettings?.auth_shell_config, locale.value, 'adminPersonalSidebarSections'),
+)
 
 // SVG Icon Components
 const DashboardIcon = {
@@ -605,50 +649,6 @@ const flagRiskControl = makeSidebarFlag(FeatureFlags.riskControl)
 const flagOpsMonitoring = () => adminSettingsStore.opsMonitoringEnabled
 const flagAdminPayment = () => adminSettingsStore.paymentEnabled
 
-// buildSelfNavItems 构造用户自己的导航项（用户端主菜单和管理员的"我的账户"子菜单共享这组声明）。
-// withDashboard=true 时包含仪表盘（用户端），false 时不含（管理员的个人区已经有独立仪表盘入口）。
-//
-// 条目顺序：密钥 → 用量 → 可用渠道 → 我的订阅 → 充值/订阅 → 订单 → 兑换/资料。
-function buildSelfNavItems(withDashboard: boolean): NavItem[] {
-  const items: NavItem[] = []
-  if (withDashboard) {
-    items.push({ path: '/dashboard', label: t('nav.dashboard'), icon: DashboardIcon })
-  }
-  items.push(
-    { path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon },
-    { path: '/usage', label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
-    { path: '/available-channels', label: t('nav.availableChannels'), icon: ChannelIcon, hideInSimpleMode: true, featureFlag: flagAvailableChannels },
-    { path: '/available-groups', label: t('nav.availableGroups'), icon: FolderIcon },
-    { path: '/subscriptions', label: t('nav.mySubscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },
-    { path: '/purchase', label: t('nav.buySubscription'), icon: RechargeSubscriptionIcon, hideInSimpleMode: true, featureFlag: flagPayment },
-    { path: '/orders', label: t('nav.myOrders'), icon: OrderListIcon, hideInSimpleMode: true, featureFlag: flagPayment },
-    { path: '/redeem', label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
-    { path: '/affiliate', label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagAffiliate },
-    { path: '/profile', label: t('nav.profile'), icon: UserIcon },
-    ...customMenuItemsForUser.value.map((item): NavItem => ({
-      path: `/custom/${item.id}`,
-      label: item.label,
-      icon: null,
-      iconSvg: item.icon_svg,
-    })),
-  )
-  return items
-}
-
-// finalizeNav 合并三重过滤：featureFlag 过滤 + simple 模式过滤。
-function finalizeNav(items: NavItem[]): NavItem[] {
-  const visible = applyFeatureFlags(items)
-  return authStore.isSimpleMode ? visible.filter(item => !item.hideInSimpleMode) : visible
-}
-
-// User navigation items (for regular users).
-const userNavItems = computed((): NavItem[] => finalizeNav(buildSelfNavItems(true)))
-
-// Personal navigation items (for admin's "My Account" section, without Dashboard).
-// Admins access 可用渠道 from this section just like regular users — there is no
-// separate admin entry, since the page is purely a user-facing view.
-const personalNavItems = computed((): NavItem[] => finalizeNav(buildSelfNavItems(false)))
-
 // Custom menu items filtered by visibility
 const customMenuItemsForUser = computed(() => {
   const items = appStore.cachedPublicSettings?.custom_menu_items ?? []
@@ -663,81 +663,237 @@ const customMenuItemsForAdmin = computed(() => {
     .sort((a, b) => a.sort_order - b.sort_order)
 })
 
-// Admin navigation items
-const adminNavItems = computed((): NavItem[] => {
-  const baseItems: NavItem[] = [
-    { path: '/admin/dashboard', label: t('nav.dashboard'), icon: DashboardIcon },
-    { path: '/admin/ops', label: t('nav.ops'), icon: ChartIcon, featureFlag: flagOpsMonitoring },
-    { path: '/admin/users', label: t('nav.users'), icon: UsersIcon, hideInSimpleMode: true },
-    { path: '/admin/groups', label: t('nav.groups'), icon: FolderIcon, hideInSimpleMode: true },
+function buildSelfNavItemMap(withDashboard: boolean): Partial<Record<SelfSidebarItemKey, NavItem>> {
+  const navPaths = authRouteDefaults.value
+  const itemMap: Partial<Record<SelfSidebarItemKey, NavItem>> = {
+    apiKeys: { path: navPaths.apiKeysPath, label: t('nav.apiKeys'), icon: KeyIcon },
+    usage: { path: navPaths.usagePath, label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
+    availableChannels: { path: navPaths.availableChannelsPath, label: t('nav.availableChannels'), icon: ChannelIcon, hideInSimpleMode: true, featureFlag: flagAvailableChannels },
+    availableGroups: { path: navPaths.availableGroupsPath, label: t('nav.availableGroups'), icon: FolderIcon },
+    subscriptions: { path: navPaths.subscriptionsPath, label: t('nav.mySubscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },
+    purchase: { path: navPaths.purchasePath, label: t('nav.buySubscription'), icon: RechargeSubscriptionIcon, hideInSimpleMode: true, featureFlag: flagPayment },
+    orders: { path: navPaths.ordersPath, label: t('nav.myOrders'), icon: OrderListIcon, hideInSimpleMode: true, featureFlag: flagPayment },
+    redeem: { path: navPaths.redeemPath, label: t('nav.redeem'), icon: GiftIcon, hideInSimpleMode: true },
+    affiliate: { path: navPaths.affiliatePath, label: t('nav.affiliate'), icon: UsersIcon, hideInSimpleMode: true, featureFlag: flagAffiliate },
+    profile: { path: navPaths.profilePath, label: t('nav.profile'), icon: UserIcon },
+  }
+  if (withDashboard) {
+    itemMap.dashboard = { path: navPaths.userRedirectPath, label: t('nav.dashboard'), icon: DashboardIcon }
+  }
+
+  return buildSidebarVisibleItemMap(
+    itemMap,
+    authStore.isSimpleMode,
+  ) as Partial<Record<SelfSidebarItemKey, NavItem>>
+}
+
+function buildSelfNavSections(
+  configuredSections: SelfSidebarSection[],
+  defaultSections: SelfSidebarSection[],
+  visibleMap: Partial<Record<SelfSidebarItemKey, NavItem>>,
+  customItems: NavItem[],
+): NavSection[] {
+  return buildSidebarSections(
+    configuredSections,
+    defaultSections,
+    visibleMap,
+    customItems,
+    'self-more',
+    'self-custom',
+  ) as NavSection[]
+}
+
+const userNavSections = computed((): NavSection[] => {
+  const visibleMap = buildSelfNavItemMap(true)
+  const defaultSections: SelfSidebarSection[] = [
     {
-      path: '/admin/channels',
+      id: 'user-main',
+      items: [
+        'dashboard',
+        'apiKeys',
+        'usage',
+        'availableChannels',
+        'availableGroups',
+        'subscriptions',
+        'purchase',
+        'orders',
+        'redeem',
+        'affiliate',
+        'profile',
+      ],
+    },
+  ]
+  const customItems = customMenuItemsForUser.value.map((item): NavItem => ({
+    path: `/custom/${item.id}`,
+    label: item.label,
+    icon: null,
+    iconSvg: item.icon_svg,
+  }))
+  return buildSelfNavSections(configuredUserSidebarSections.value, defaultSections, visibleMap, customItems)
+})
+
+const personalNavSections = computed((): TitledNavSection[] => {
+  const visibleMap = buildSelfNavItemMap(false)
+  const defaultSections: SelfSidebarSection[] = [
+    {
+      id: 'admin-personal',
+      items: [
+        'apiKeys',
+        'usage',
+        'availableChannels',
+        'availableGroups',
+        'subscriptions',
+        'purchase',
+        'orders',
+        'redeem',
+        'affiliate',
+        'profile',
+      ],
+    },
+  ]
+  const sections = buildSelfNavSections(
+    configuredAdminPersonalSidebarSections.value,
+    defaultSections,
+    visibleMap,
+    [],
+  )
+  return sections.map((section, index) => ({
+    ...section,
+    title: t('nav.myAccount'),
+    showTitle: index === 0,
+  }))
+})
+
+// Admin navigation sections
+const adminNavSections = computed((): NavSection[] => {
+  const navPaths = authRouteDefaults.value
+  const adminPaths = adminSidebarPaths.value
+  const builtInItemMap: Record<AdminSidebarItemKey, NavItem> = {
+    dashboard: { path: navPaths.adminRedirectPath, label: t('nav.dashboard'), icon: DashboardIcon },
+    ops: { path: adminPaths.adminOpsPath, label: t('nav.ops'), icon: ChartIcon, featureFlag: flagOpsMonitoring },
+    users: { path: adminPaths.adminUsersPath, label: t('nav.users'), icon: UsersIcon, hideInSimpleMode: true },
+    groups: { path: adminPaths.adminGroupsPath, label: t('nav.groups'), icon: FolderIcon, hideInSimpleMode: true },
+    channels: {
+      path: adminPaths.adminChannelsPath,
       label: t('nav.channelManagement'),
       icon: ChannelIcon,
       hideInSimpleMode: true,
       expandOnly: true,
       children: [
-        { path: '/admin/channels/pricing', label: t('nav.channelPricing'), icon: PriceTagIcon },
-        { path: '/admin/channels/monitor', label: t('nav.channelMonitor'), icon: SignalIcon, featureFlag: flagChannelMonitor },
+        { path: adminPaths.adminChannelPricingPath, label: t('nav.channelPricing'), icon: PriceTagIcon },
+        { path: adminPaths.adminChannelMonitorPath, label: t('nav.channelMonitor'), icon: SignalIcon, featureFlag: flagChannelMonitor },
       ],
     },
-    { path: '/admin/subscriptions', label: t('nav.subscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },
-    { path: '/admin/accounts', label: t('nav.accounts'), icon: GlobeIcon },
-    { path: '/admin/announcements', label: t('nav.announcements'), icon: BellIcon },
-    { path: '/admin/proxies', label: t('nav.proxies'), icon: ServerIcon },
-    { path: '/admin/risk-control', label: t('nav.riskControl'), icon: ShieldIcon, hideInSimpleMode: true, featureFlag: flagRiskControl },
-    { path: '/admin/redeem', label: t('nav.redeemCodes'), icon: TicketIcon, hideInSimpleMode: true },
-    { path: '/admin/promo-codes', label: t('nav.promoCodes'), icon: GiftIcon, hideInSimpleMode: true },
-    {
-      path: '/admin/affiliates',
+    subscriptions: { path: adminPaths.adminSubscriptionsPath, label: t('nav.subscriptions'), icon: CreditCardIcon, hideInSimpleMode: true },
+    accounts: { path: adminPaths.adminAccountsPath, label: t('nav.accounts'), icon: GlobeIcon },
+    announcements: { path: adminPaths.adminAnnouncementsPath, label: t('nav.announcements'), icon: BellIcon },
+    proxies: { path: adminPaths.adminProxiesPath, label: t('nav.proxies'), icon: ServerIcon },
+    riskControl: { path: adminPaths.adminRiskControlPath, label: t('nav.riskControl'), icon: ShieldIcon, hideInSimpleMode: true, featureFlag: flagRiskControl },
+    redeem: { path: adminPaths.adminRedeemPath, label: t('nav.redeemCodes'), icon: TicketIcon, hideInSimpleMode: true },
+    promoCodes: { path: adminPaths.adminPromoCodesPath, label: t('nav.promoCodes'), icon: GiftIcon, hideInSimpleMode: true },
+    affiliates: {
+      path: adminPaths.adminAffiliatesPath,
       label: t('nav.affiliateManagement'),
       icon: UsersIcon,
       hideInSimpleMode: true,
       expandOnly: true,
       featureFlag: flagAffiliate,
       children: [
-        { path: '/admin/affiliates/overview', label: t('nav.affiliateOverview'), icon: DashboardIcon },
-        { path: '/admin/affiliates/rules', label: t('nav.affiliateRules'), icon: CogIcon },
-        { path: '/admin/affiliates/codes', label: t('nav.affiliateCodeManagement'), icon: TicketIcon },
-        { path: '/admin/affiliates/invites', label: t('nav.affiliateInviteRecords'), icon: UsersIcon },
-        { path: '/admin/affiliates/rebates', label: t('nav.affiliateRebateRecords'), icon: OrderIcon },
-        { path: '/admin/affiliates/transfers', label: t('nav.affiliateTransferRecords'), icon: CreditCardIcon },
+        { path: adminPaths.adminAffiliateOverviewPath, label: t('nav.affiliateOverview'), icon: DashboardIcon },
+        { path: adminPaths.adminAffiliateRulesPath, label: t('nav.affiliateRules'), icon: CogIcon },
+        { path: adminPaths.adminAffiliateCodesPath, label: t('nav.affiliateCodeManagement'), icon: TicketIcon },
+        { path: adminPaths.adminAffiliateInvitesPath, label: t('nav.affiliateInviteRecords'), icon: UsersIcon },
+        { path: adminPaths.adminAffiliateRebatesPath, label: t('nav.affiliateRebateRecords'), icon: OrderIcon },
+        { path: adminPaths.adminAffiliateTransfersPath, label: t('nav.affiliateTransferRecords'), icon: CreditCardIcon },
       ],
     },
-    {
-      path: '/admin/orders',
+    orders: {
+      path: adminPaths.adminOrdersRootPath,
       label: t('nav.orderManagement'),
       icon: OrderIcon,
       hideInSimpleMode: true,
       expandOnly: true,
       featureFlag: flagAdminPayment,
       children: [
-        { path: '/admin/orders/dashboard', label: t('nav.paymentDashboard'), icon: ChartIcon },
-        { path: '/admin/orders', label: t('nav.orderManagement'), icon: OrderIcon },
-        { path: '/admin/orders/plans', label: t('nav.paymentPlans'), icon: CreditCardIcon },
+        { path: adminPaths.adminOrdersDashboardPath, label: t('nav.paymentDashboard'), icon: ChartIcon },
+        { path: adminPaths.adminOrdersRootPath, label: t('nav.orderManagement'), icon: OrderIcon },
+        { path: adminPaths.adminPaymentPlansPath, label: t('nav.paymentPlans'), icon: CreditCardIcon },
       ],
     },
-    { path: '/admin/usage', label: t('nav.usage'), icon: ChartIcon }
-  ]
-
-  const visible = applyFeatureFlags(baseItems)
-
-  // 简单模式下，在系统设置前插入 API密钥
-  if (authStore.isSimpleMode) {
-    const filtered = visible.filter(item => !item.hideInSimpleMode)
-    filtered.push({ path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon })
-    filtered.push({ path: '/admin/settings', label: t('nav.settings'), icon: CogIcon })
-    for (const cm of customMenuItemsForAdmin.value) {
-      filtered.push({ path: `/custom/${cm.id}`, label: cm.label, icon: null, iconSvg: cm.icon_svg })
-    }
-    return filtered
+    usage: { path: adminPaths.adminUsagePath, label: t('nav.usage'), icon: ChartIcon },
+    apiKeys: { path: authRouteDefaults.value.apiKeysPath, label: t('nav.apiKeys'), icon: KeyIcon },
+    runtimeSettings: { path: navPaths.adminRuntimeSettingsPath, label: t('nav.runtimeSettings'), icon: CogIcon },
+    settings: { path: navPaths.adminSettingsPath, label: t('nav.settings'), icon: CogIcon },
   }
 
-  visible.push({ path: '/admin/settings', label: t('nav.settings'), icon: CogIcon })
-  for (const cm of customMenuItemsForAdmin.value) {
-    visible.push({ path: `/custom/${cm.id}`, label: cm.label, icon: null, iconSvg: cm.icon_svg })
-  }
-  return visible
+  const visibleMap = buildSidebarVisibleItemMap(
+    builtInItemMap,
+    authStore.isSimpleMode,
+  ) as Partial<Record<AdminSidebarItemKey, NavItem>>
+
+  const defaultSections: AdminSidebarSection[] = authStore.isSimpleMode
+    ? [
+        {
+          id: 'admin-main',
+          items: [
+            'dashboard',
+            'ops',
+            'accounts',
+            'announcements',
+            'proxies',
+            'usage',
+            'apiKeys',
+            'runtimeSettings',
+            'settings',
+          ],
+        },
+      ]
+    : [
+        {
+          id: 'admin-main',
+          items: [
+            'dashboard',
+            'ops',
+            'users',
+            'groups',
+            'channels',
+            'subscriptions',
+            'accounts',
+            'announcements',
+            'proxies',
+            'riskControl',
+            'redeem',
+            'promoCodes',
+            'affiliates',
+            'orders',
+            'usage',
+          ],
+        },
+        {
+          id: 'admin-settings',
+          items: ['runtimeSettings', 'settings'],
+        },
+      ]
+
+  const configuredSections =
+    configuredAdminSidebarSections.value.length > 0 && !authStore.isSimpleMode
+      ? configuredAdminSidebarSections.value
+      : defaultSections
+
+  const customItems = customMenuItemsForAdmin.value.map((cm): NavItem => ({
+    path: `/custom/${cm.id}`,
+    label: cm.label,
+    icon: null,
+    iconSvg: cm.icon_svg,
+  }))
+  return buildSidebarSections(
+    configuredSections,
+    defaultSections,
+    visibleMap,
+    customItems,
+    'admin-more',
+    'admin-custom',
+  ) as NavSection[]
 })
 
 function toggleSidebar() {
@@ -757,9 +913,9 @@ function handleMenuItemClick(itemPath: string) {
 
   // Map paths to tour selectors
   const pathToSelector: Record<string, string> = {
-    '/admin/groups': '#sidebar-group-manage',
-    '/admin/accounts': '#sidebar-channel-manage',
-    '/keys': '[data-tour="sidebar-my-keys"]'
+    [adminSidebarPaths.value.adminGroupsPath]: '#sidebar-group-manage',
+    [adminSidebarPaths.value.adminAccountsPath]: '#sidebar-channel-manage',
+    [authRouteDefaults.value.apiKeysPath]: '[data-tour="sidebar-my-keys"]'
   }
 
   const selector = pathToSelector[itemPath]

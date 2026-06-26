@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import axios from 'axios'
 import type { AxiosInstance } from 'axios'
+import { readFileSync } from 'node:fs'
 
 // 需要在导入 client 之前设置 mock
 vi.mock('@/i18n', () => ({
@@ -12,6 +13,7 @@ describe('API Client', () => {
 
   beforeEach(async () => {
     localStorage.clear()
+    delete window.__APP_CONFIG__
     // 每次测试重新导入以获取干净的模块状态
     vi.resetModules()
     const mod = await import('@/api/client')
@@ -20,6 +22,71 @@ describe('API Client', () => {
 
   afterEach(() => {
     vi.restoreAllMocks()
+    vi.unstubAllEnvs()
+  })
+
+  describe('API URL runtime settings', () => {
+    it('builds API URLs from explicit public settings before runtime defaults', async () => {
+      const { buildApiUrl, resolveApiBaseUrl } = await import('@/api/client')
+
+      expect(resolveApiBaseUrl({ api_base_url: 'https://runtime.example.com/api/v1/' })).toBe(
+        'https://runtime.example.com/api/v1'
+      )
+      expect(buildApiUrl('/auth/oauth/github/start', { api_base_url: 'https://runtime.example.com/api/v1/' })).toBe(
+        'https://runtime.example.com/api/v1/auth/oauth/github/start'
+      )
+    })
+
+    it('builds API URLs from injected runtime config before using the default', async () => {
+      const { buildApiUrl, resolveApiBaseUrl } = await import('@/api/client')
+
+      window.__APP_CONFIG__ = { api_base_url: 'https://injected.example.com/api/v1/' } as typeof window.__APP_CONFIG__
+
+      expect(resolveApiBaseUrl()).toBe('https://injected.example.com/api/v1')
+      expect(buildApiUrl('auth/oauth/google/start')).toBe(
+        'https://injected.example.com/api/v1/auth/oauth/google/start'
+      )
+    })
+
+    it('ignores build-time API env and falls back to the same-origin API path', async () => {
+      vi.stubEnv('VITE_API_BASE_URL', 'https://env.example.com/api/v1')
+      vi.resetModules()
+      const { buildApiUrl, resolveApiBaseUrl } = await import('@/api/client')
+
+      expect(resolveApiBaseUrl()).toBe('/api/v1')
+      expect(buildApiUrl('/auth/me')).toBe('/api/v1/auth/me')
+    })
+
+    it('resolves browser redirect routes from injected auth shell settings', async () => {
+      const { resolveClientAuthRouteDefaults } = await import('@/api/client')
+
+      window.__APP_CONFIG__ = {
+        auth_shell_config: JSON.stringify({
+          zh: {
+            defaults: {
+              loginPath: '/configured-login',
+              adminSettingsPath: '/configured-admin-settings',
+            },
+          },
+        }),
+      } as typeof window.__APP_CONFIG__
+
+      const defaults = resolveClientAuthRouteDefaults()
+
+      expect(defaults.loginPath).toBe('/configured-login')
+      expect(defaults.adminSettingsPath).toBe('/configured-admin-settings')
+    })
+
+    it('does not keep page-local browser redirect route literals in the client interceptor', () => {
+      const source = readFileSync('src/api/client.ts', 'utf8')
+
+      expect(source).toContain('resolveClientAuthRouteDefaults().loginPath')
+      expect(source).toContain('resolveClientAuthRouteDefaults().adminSettingsPath')
+      expect(source).not.toContain("window.location.href = '/login'")
+      expect(source).not.toContain('window.location.href = "/login"')
+      expect(source).not.toContain("window.location.href = '/admin/settings'")
+      expect(source).not.toContain('window.location.href = "/admin/settings"')
+    })
   })
 
   // --- 请求拦截器 ---

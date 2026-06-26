@@ -31,10 +31,10 @@ const (
 	// AdSenseScriptDomain is the domain for Google AdSense bootstrap script.
 	AdSenseScriptDomain = "https://pagead2.googlesyndication.com"
 	// AdSense frame/embed domains observed during Google AdSense verification and ad bootstrap.
-	AdSenseGoogleAdsDomain       = "https://googleads.g.doubleclick.net"
-	AdSenseTPCDomain             = "https://tpc.googlesyndication.com"
-	AdSenseTrafficQualityDomain  = "https://ep2.adtrafficquality.google"
-	AdSenseGoogleFrameDomain     = "https://www.google.com"
+	AdSenseGoogleAdsDomain      = "https://googleads.g.doubleclick.net"
+	AdSenseTPCDomain            = "https://tpc.googlesyndication.com"
+	AdSenseTrafficQualityDomain = "https://ep2.adtrafficquality.google"
+	AdSenseGoogleFrameDomain    = "https://www.google.com"
 )
 
 var requiredCSPDirectiveValues = []struct {

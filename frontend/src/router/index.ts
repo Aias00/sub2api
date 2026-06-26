@@ -10,7 +10,11 @@ import { useAdminSettingsStore } from '@/stores/adminSettings'
 import { useNavigationLoadingState } from '@/composables/useNavigationLoading'
 import { useRoutePrefetch } from '@/composables/useRoutePrefetch'
 import { getSetupStatus } from '@/api/setup'
-import { resolveCompletedSetupRedirectPath } from './setupRedirect'
+import {
+  resolveAuthRouteDefaults,
+  resolveCompletedSetupRedirectPath,
+  resolveRoleHomeRedirect,
+} from './setupRedirect'
 import { resolveDocumentTitle } from './title'
 
 /**
@@ -39,12 +43,57 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/sub',
+    name: 'SubHome',
+    component: () => import('@/views/HomeView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Sub Home'
+    }
+  },
+  {
     path: '/models',
     name: 'ModelsPlaza',
     component: () => import('@/views/public/ModelsPlazaView.vue'),
     meta: {
       requiresAuth: false,
       title: 'Models'
+    }
+  },
+  {
+    path: '/prompts',
+    name: 'PromptCatalog',
+    component: () => import('@/views/public/PromptCatalogView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Prompt Catalog'
+    }
+  },
+  {
+    path: '/image-generator',
+    name: 'ImageGenerator',
+    component: () => import('@/views/public/ImageGeneratorView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Image Generator'
+    }
+  },
+  {
+    path: '/wechat-export',
+    name: 'WeChatExport',
+    component: () => import('@/views/public/WeChatExportView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'WeChat Export'
+    }
+  },
+  {
+    path: '/pricing',
+    name: 'Pricing',
+    component: () => import('@/views/public/PricingView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Pricing'
     }
   },
   {
@@ -79,12 +128,22 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/auth/callback',
     name: 'OAuthCallback',
-    alias: '/auth/oauth/callback',
+    alias: ['/auth/oauth/callback', '/auth-callback', '/en/auth-callback', '/zh/auth-callback'],
     component: () => import('@/views/auth/OAuthCallbackView.vue'),
     meta: {
       requiresAuth: false,
       title: 'OAuth Callback',
       titleKey: 'auth.oauthCallbackPageTitle'
+    }
+  },
+  {
+    path: '/auth-popup',
+    name: 'AuthPopup',
+    alias: ['/en/auth-popup', '/zh/auth-popup'],
+    component: () => import('@/views/auth/AuthPopupView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Login'
     }
   },
   {
@@ -206,9 +265,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'Dashboard',
-      titleKey: 'dashboard.title',
-      descriptionKey: 'dashboard.welcomeMessage'
+      title: 'Dashboard'
     }
   },
   {
@@ -218,9 +275,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'API Keys',
-      titleKey: 'keys.title',
-      descriptionKey: 'keys.description'
+      title: 'API Keys'
     }
   },
   {
@@ -230,9 +285,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'API Guide',
-      titleKey: 'apiGuide.title',
-      descriptionKey: 'apiGuide.description'
+      title: 'API Guide'
     }
   },
   {
@@ -242,9 +295,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'API Tester',
-      titleKey: 'apiTest.title',
-      descriptionKey: 'apiTest.description'
+      title: 'API Tester'
     }
   },
   {
@@ -254,9 +305,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'Usage Records',
-      titleKey: 'usage.title',
-      descriptionKey: 'usage.description'
+      title: 'Usage Records'
     }
   },
   {
@@ -266,9 +315,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'Redeem Code',
-      titleKey: 'redeem.title',
-      descriptionKey: 'redeem.description'
+      title: 'Redeem Code'
     }
   },
   {
@@ -278,9 +325,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'Affiliate',
-      titleKey: 'affiliate.title',
-      descriptionKey: 'affiliate.description'
+      title: 'Affiliate'
     }
   },
   {
@@ -290,9 +335,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'Available Channels',
-      titleKey: 'availableChannels.title',
-      descriptionKey: 'availableChannels.description'
+      title: 'Available Channels'
     }
   },
   {
@@ -302,9 +345,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'Available Groups',
-      titleKey: 'availableGroups.title',
-      descriptionKey: 'availableGroups.description'
+      title: 'Available Groups'
     }
   },
   {
@@ -342,6 +383,16 @@ const routes: RouteRecordRaw[] = [
       titleKey: 'nav.buySubscription',
       descriptionKey: 'purchase.description',
       requiresPayment: true
+    }
+  },
+  {
+    path: '/settings/credits',
+    name: 'Credits',
+    component: () => import('@/views/user/CreditsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Credits'
     }
   },
   {
@@ -515,8 +566,7 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       requiresAdmin: false,
-      title: 'Channel Status',
-      titleKey: 'nav.channelStatus'
+      title: 'Channel Status'
     }
   },
   {
@@ -601,6 +651,18 @@ const routes: RouteRecordRaw[] = [
       title: 'System Settings',
       titleKey: 'admin.settings.title',
       descriptionKey: 'admin.settings.description'
+    }
+  },
+  {
+    path: '/admin/runtime-settings',
+    name: 'AdminRuntimeSettings',
+    component: () => import('@/views/admin/RuntimeSettingsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Runtime Settings',
+      titleKey: 'admin.settings.runtime.title',
+      descriptionKey: 'admin.settings.runtime.description'
     }
   },
   {
@@ -783,6 +845,12 @@ let routePrefetch: ReturnType<typeof useRoutePrefetch> | null = null
 const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/setup', '/payment/result', '/payment/airwallex', '/legal']
 const BACKEND_MODE_CALLBACK_PATHS = [
   '/auth/callback',
+  '/auth-callback',
+  '/auth-popup',
+  '/en/auth-callback',
+  '/zh/auth-callback',
+  '/en/auth-popup',
+  '/zh/auth-popup',
   '/auth/linuxdo/callback',
   '/auth/dingtalk/callback',
   '/auth/dingtalk/email-completion',
@@ -822,6 +890,7 @@ router.beforeEach(async (to, _from, next) => {
 
   // Set page title
   const appStore = useAppStore()
+  const authRouteDefaults = resolveAuthRouteDefaults(appStore.cachedPublicSettings?.auth_shell_config)
   // For custom pages, use menu item label as document title
   if (to.name === 'CustomPage') {
     const id = to.params.id as string
@@ -830,8 +899,7 @@ router.beforeEach(async (to, _from, next) => {
     const menuItem = publicItems.find((item) => item.id === id)
       ?? (authStore.isAdmin ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
     if (menuItem?.label) {
-      const siteName = appStore.siteName || 'Sub2API'
-      document.title = `${menuItem.label} - ${siteName}`
+      document.title = appStore.siteName ? `${menuItem.label} - ${appStore.siteName}` : menuItem.label
     } else {
       document.title = resolveDocumentTitle(to.meta.title, appStore.siteName, to.meta.titleKey as string)
     }
@@ -847,7 +915,7 @@ router.beforeEach(async (to, _from, next) => {
     try {
       const status = await getSetupStatus()
       if (!status.needs_setup) {
-        next(resolveCompletedSetupRedirectPath(authStore.isAuthenticated, authStore.isAdmin))
+        next(resolveCompletedSetupRedirectPath(authStore.isAuthenticated, authStore.isAdmin, authRouteDefaults))
         return
       }
     } catch {
@@ -866,14 +934,14 @@ router.beforeEach(async (to, _from, next) => {
         return
       }
       // Admin users go to admin dashboard, regular users go to user dashboard
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+      next(resolveRoleHomeRedirect(authStore.isAdmin, authRouteDefaults))
       return
     }
     // Backend mode: block public pages for unauthenticated users (except login, key-usage, setup)
     if (appStore.backendModeEnabled && !authStore.isAuthenticated) {
       const isAllowed = isBackendModePublicRouteAllowed(to.path, authStore.hasPendingAuthSession)
       if (!isAllowed) {
-        next('/login')
+        next(authRouteDefaults.loginPath)
         return
       }
     }
@@ -885,7 +953,7 @@ router.beforeEach(async (to, _from, next) => {
   if (!authStore.isAuthenticated) {
     // Not authenticated, redirect to login
     next({
-      path: '/login',
+      path: authRouteDefaults.loginPath,
       query: { redirect: to.fullPath } // Save intended destination
     })
     return
@@ -894,7 +962,7 @@ router.beforeEach(async (to, _from, next) => {
   // Check admin requirement
   if (requiresAdmin && !authStore.isAdmin) {
     // User is authenticated but not admin, redirect to user dashboard
-    next('/dashboard')
+    next(authRouteDefaults.userRedirectPath)
     return
   }
 
@@ -903,7 +971,7 @@ router.beforeEach(async (to, _from, next) => {
   if (to.meta.requiresPayment) {
     const paymentEnabled = appStore.cachedPublicSettings?.payment_enabled
     if (!paymentEnabled) {
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+      next(resolveRoleHomeRedirect(authStore.isAdmin, authRouteDefaults))
       return
     }
   }
@@ -911,7 +979,7 @@ router.beforeEach(async (to, _from, next) => {
   if (to.meta.requiresRiskControl) {
     const riskControlEnabled = appStore.cachedPublicSettings?.risk_control_enabled === true
     if (!riskControlEnabled) {
-      next(authStore.isAdmin ? '/admin/settings' : '/dashboard')
+      next(authStore.isAdmin ? authRouteDefaults.adminSettingsPath : authRouteDefaults.userRedirectPath)
       return
     }
   }
@@ -928,7 +996,7 @@ router.beforeEach(async (to, _from, next) => {
 
     if (restrictedPaths.some((path) => to.path.startsWith(path))) {
       // 简易模式下访问受限页面,重定向到仪表板
-      next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')
+      next(resolveRoleHomeRedirect(authStore.isAdmin, authRouteDefaults))
       return
     }
   }
@@ -941,7 +1009,7 @@ router.beforeEach(async (to, _from, next) => {
     }
     const isAllowed = isBackendModePublicRouteAllowed(to.path, authStore.hasPendingAuthSession)
     if (!isAllowed) {
-      next('/login')
+      next(authRouteDefaults.loginPath)
       return
     }
   }

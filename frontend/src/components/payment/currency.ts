@@ -1,8 +1,11 @@
-export const DEFAULT_PAYMENT_CURRENCY = 'CNY'
-
 export function normalizePaymentCurrency(currency?: string | null): string {
   const normalized = String(currency || '').trim().toUpperCase()
-  return /^[A-Z]{3}$/.test(normalized) ? normalized : DEFAULT_PAYMENT_CURRENCY
+  return /^[A-Z]{3}$/.test(normalized) ? normalized : ''
+}
+
+export function normalizePaymentCountryCode(countryCode?: string | null): string {
+  const normalized = String(countryCode || '').trim().toUpperCase()
+  return /^[A-Z]{2}$/.test(normalized) ? normalized : ''
 }
 
 function paymentCurrencyFractionDigits(currency: string): number {
@@ -18,6 +21,9 @@ function paymentCurrencyFractionDigits(currency: string): number {
 
 export function formatPaymentAmount(amount: number, currency?: string | null, locale?: string): string {
   const normalized = normalizePaymentCurrency(currency)
+  if (!normalized) {
+    return (Number.isFinite(amount) ? amount : 0).toFixed(2)
+  }
   const fractionDigits = paymentCurrencyFractionDigits(normalized)
   try {
     return new Intl.NumberFormat(locale || undefined, {

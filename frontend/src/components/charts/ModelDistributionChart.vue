@@ -19,7 +19,7 @@
               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
             @click="emit('update:source', 'requested')"
           >
-            {{ t('usage.requestedModel') }}
+            {{ t('common.usageRouting.requestedModel') }}
           </button>
           <button
             type="button"
@@ -29,7 +29,7 @@
               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
             @click="emit('update:source', 'upstream')"
           >
-            {{ t('usage.upstreamModel') }}
+            {{ t('common.usageRouting.upstreamModel') }}
           </button>
           <button
             type="button"
@@ -39,7 +39,7 @@
               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
             @click="emit('update:source', 'mapping')"
           >
-            {{ t('usage.mapping') }}
+            {{ t('common.usageRouting.mapping') }}
           </button>
         </div>
         <div

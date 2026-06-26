@@ -3,10 +3,10 @@
     <div class="space-y-6">
       <div class="text-center">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-          {{ t('auth.dingtalk.createAccountTitle') }}
+          {{ authText('oauthFlowCreateAccountTitle', { providerName }) }}
         </h2>
         <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-          {{ t('auth.oauthFlow.createAccountHint') }}
+          {{ authText('oauthFlowCreateAccountHint') }}
         </p>
       </div>
 
@@ -23,46 +23,39 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { AuthLayout } from '@/components/layout'
 import PendingOAuthCreateAccountForm, {
   type PendingOAuthCreateAccountPayload
 } from '@/components/auth/PendingOAuthCreateAccountForm.vue'
+import { useAuthShellText } from '@/composables/useAuthShellText'
 import { apiClient } from '@/api/client'
 import { useAuthStore, useAppStore } from '@/stores'
+import { getRequestErrorMessage } from './requestError'
 import {
-  persistOAuthTokenContext,
+  type OAuthTokenResponse,
   type PendingOAuthExchangeResponse
 } from '@/api/auth'
-import { clearAllAffiliateReferralCodes } from '@/utils/oauthAffiliate'
+import { finalizeAuthLoginSuccess } from './finalizeAuthLogin'
+import { sanitizeAuthRedirectPath } from '@/utils/authRedirect'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const { authText, authRouteDefaults, defaultRedirectPath, loadAuthShellConfig } = useAuthShellText()
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
+const providerName = computed(() => authText('dingtalkProviderName'))
+
+void loadAuthShellConfig()
 
 const isSubmitting = ref(false)
 const accountActionError = ref('')
 
 const initialEmail = (route.query.email as string | undefined) || ''
-
-function sanitizeRedirectPath(path: string | null | undefined): string {
-  if (!path) return '/dashboard'
-  if (!path.startsWith('/')) return '/dashboard'
-  if (path.startsWith('//')) return '/dashboard'
-  if (path.includes('://')) return '/dashboard'
-  if (path.includes('\n') || path.includes('\r')) return '/dashboard'
-  return path
-}
-
-function getRequestErrorMessage(error: unknown, fallback: string): string {
-  const err = error as { message?: string; response?: { data?: { detail?: string; message?: string } } }
-  return err.response?.data?.detail || err.response?.data?.message || err.message || fallback
-}
 
 async function handleCreateAccount(payload: PendingOAuthCreateAccountPayload) {
   accountActionError.value = ''
@@ -86,14 +79,20 @@ async function handleCreateAccount(payload: PendingOAuthCreateAccountPayload) {
       }
     )
 
-    const redirect = sanitizeRedirectPath(data.redirect || (route.query.redirect as string | undefined))
+    const redirect = sanitizeAuthRedirectPath(
+      data.redirect || (route.query.redirect as string | undefined) || defaultRedirectPath.value,
+      defaultRedirectPath.value
+    )
 
     if (data.access_token) {
-      persistOAuthTokenContext(data)
-      await authStore.setToken(data.access_token)
-      clearAllAffiliateReferralCodes()
-      appStore.showSuccess(t('auth.loginSuccess'))
-      await router.replace(redirect)
+      await finalizeAuthLoginSuccess({
+        tokenResponse: data as OAuthTokenResponse,
+        redirect,
+        authStore,
+        appStore,
+        router,
+        successMessage: t('auth.loginSuccess'),
+      })
       return
     }
 
@@ -123,7 +122,7 @@ function navigateToBindLogin(email: string) {
   if (email) query.email = email
   const redirect = route.query.redirect as string | undefined
   if (redirect) query.redirect = redirect
-  router.replace({ path: '/auth/dingtalk/callback', query })
+  router.replace({ path: authRouteDefaults.value.dingtalkCallbackPath, query })
 }
 
 function handleSwitchToBind(email: string) {

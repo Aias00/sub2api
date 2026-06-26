@@ -45,11 +45,11 @@
     <!-- Metrics -->
     <MonitorMetricPair
       primary-icon="bolt"
-      :primary-label="t('monitorCommon.dialogLatency')"
+      :primary-label="labels.latency"
       :primary-value="formatLatency(item.primary_latency_ms)"
       primary-unit="ms"
       secondary-icon="globe"
-      :secondary-label="t('monitorCommon.endpointPing')"
+      :secondary-label="labels.ping"
       :secondary-value="formatLatency(item.primary_ping_latency_ms)"
       secondary-unit="ms"
     />
@@ -74,12 +74,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { UserMonitorView } from '@/api/channelMonitor'
 import {
   useChannelMonitorFormat,
   providerGradient,
 } from '@/composables/useChannelMonitorFormat'
+import type { ChannelStatusShellLabels } from '@/utils/channelStatusShell'
 import ProviderIcon from './ProviderIcon.vue'
 import MonitorMetricPair from './MonitorMetricPair.vue'
 import MonitorAvailabilityRow from './MonitorAvailabilityRow.vue'
@@ -96,13 +96,13 @@ const props = defineProps<{
   window: '7d' | '15d' | '30d'
   availabilityValue: number | null
   countdownSeconds: number
+  labels: Pick<ChannelStatusShellLabels, 'latency' | 'ping' | 'availabilityPrefix' | 'extraModelsCount' | 'windowTab'>
 }>()
 
 const emit = defineEmits<{
   (e: 'click'): void
 }>()
 
-const { t } = useI18n()
 const {
   statusLabel,
   statusBadgeClass,
@@ -116,13 +116,13 @@ const providerTintClass = computed(() =>
 )
 
 const availabilityLabel = computed(() => {
-  const win = t(`channelStatus.windowTab.${props.window}`)
-  return `${t('monitorCommon.availabilityPrefix')} · ${win}`
+  const win = props.labels.windowTab[props.window]
+  return `${props.labels.availabilityPrefix} · ${win}`
 })
 
 const extraModelsCountLabel = computed(() => {
   const count = props.item.extra_models?.length ?? 0
   if (count === 0) return undefined
-  return t('monitorCommon.extraModelsCount', { n: count })
+  return props.labels.extraModelsCount.replace(/\{n\}/g, String(count))
 })
 </script>

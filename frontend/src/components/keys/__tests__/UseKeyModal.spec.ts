@@ -1,12 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => key
-  })
-}))
+import type { ApiKeysShellLabels } from '@/utils/apiKeysShell'
 
 vi.mock('@/composables/useClipboard', () => ({
   useClipboard: () => ({
@@ -16,14 +11,70 @@ vi.mock('@/composables/useClipboard', () => ({
 
 import UseKeyModal from '../UseKeyModal.vue'
 
+const shellLabels: ApiKeysShellLabels = {
+  cancel: 'Configured Close',
+  useKeyModalAntigravityClaudeNote: 'Configured Antigravity Claude note',
+  useKeyModalAntigravityDescription: 'Configured Antigravity description',
+  useKeyModalAntigravityGeminiNote: 'Configured Antigravity Gemini note',
+  useKeyModalCliClaudeCode: 'Claude Code',
+  useKeyModalCliCodexCli: 'Codex CLI',
+  useKeyModalCliCodexCliWs: 'Codex CLI (WebSocket)',
+  useKeyModalCliGeminiCli: 'Gemini CLI',
+  useKeyModalCliOpencode: 'OpenCode',
+  useKeyModalCopied: 'Copied',
+  useKeyModalCopy: 'Copy',
+  useKeyModalDescription: 'Configured description',
+  useKeyModalGeminiDescription: 'Configured Gemini description',
+  useKeyModalGeminiModelComment: 'Configured Gemini model comment',
+  useKeyModalGeminiNote: 'Configured Gemini note',
+  useKeyModalNoGroupDescription: 'Configured no group description',
+  useKeyModalNoGroupTitle: 'Configured no group title',
+  useKeyModalNote: 'Configured note',
+  useKeyModalOpenAIConfigTomlHint: 'Configured config hint',
+  useKeyModalOpenAIDescription: 'Configured OpenAI description',
+  useKeyModalOpenAINote: 'Configured OpenAI note',
+  useKeyModalOpenAINoteWindows: 'Configured OpenAI Windows note',
+  useKeyModalOpencodeHint: 'Configured OpenCode hint',
+  useKeyModalTitle: 'Configured Use Key',
+}
+
 describe('UseKeyModal', () => {
+  it('uses configured shell labels for modal chrome and warnings', () => {
+    const wrapper = mount(UseKeyModal, {
+      props: {
+        show: true,
+        apiKey: 'sk-test',
+        baseUrl: 'https://example.com/v1',
+        platform: null,
+        shellLabels,
+      },
+      global: {
+        stubs: {
+          BaseDialog: {
+            props: ['title'],
+            template: '<div><h1>{{ title }}</h1><slot /><slot name="footer" /></div>'
+          },
+          Icon: {
+            template: '<span />'
+          }
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('Configured Use Key')
+    expect(wrapper.text()).toContain('Configured no group title')
+    expect(wrapper.text()).toContain('Configured no group description')
+    expect(wrapper.text()).toContain('Configured Close')
+  })
+
   it('renders GPT-5.5 and goals feature in OpenAI Codex config', () => {
     const wrapper = mount(UseKeyModal, {
       props: {
         show: true,
         apiKey: 'sk-test',
         baseUrl: 'https://example.com/v1',
-        platform: 'openai'
+        platform: 'openai',
+        shellLabels,
       },
       global: {
         stubs: {
@@ -55,7 +106,8 @@ describe('UseKeyModal', () => {
         show: true,
         apiKey: 'sk-test',
         baseUrl: 'https://example.com/v1',
-        platform: 'openai'
+        platform: 'openai',
+        shellLabels,
       },
       global: {
         stubs: {
@@ -70,7 +122,7 @@ describe('UseKeyModal', () => {
     })
 
     const wsTab = wrapper.findAll('button').find((button) =>
-      button.text().includes('keys.useKeyModal.cliTabs.codexCliWs')
+      button.text().includes('Codex CLI (WebSocket)')
     )
 
     expect(wsTab).toBeDefined()
@@ -95,7 +147,8 @@ describe('UseKeyModal', () => {
         show: true,
         apiKey: 'sk-test',
         baseUrl: 'https://example.com/v1',
-        platform: 'openai'
+        platform: 'openai',
+        shellLabels,
       },
       global: {
         stubs: {
@@ -110,7 +163,7 @@ describe('UseKeyModal', () => {
     })
 
     const opencodeTab = wrapper.findAll('button').find((button) =>
-      button.text().includes('keys.useKeyModal.cliTabs.opencode')
+      button.text().includes('OpenCode')
     )
 
     expect(opencodeTab).toBeDefined()

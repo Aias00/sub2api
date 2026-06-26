@@ -408,10 +408,8 @@ func (h *AuthHandler) createLinuxDoOAuthChoicePendingSession(
 		"email":                     suggestionEmail,
 		"resolved_email":            canonicalEmail,
 		"existing_account_email":    "",
-		"existing_account_bindable": false,
 		"create_account_allowed":    true,
 		"force_email_on_signup":     forceEmailOnSignup,
-		"choice_reason":             "third_party_signup",
 	}
 	if strings.TrimSpace(compatEmail) != "" {
 		completionResponse["compat_email"] = strings.TrimSpace(compatEmail)
@@ -420,12 +418,7 @@ func (h *AuthHandler) createLinuxDoOAuthChoicePendingSession(
 	if compatEmailUser != nil {
 		completionResponse["email"] = strings.TrimSpace(compatEmailUser.Email)
 		completionResponse["existing_account_email"] = strings.TrimSpace(compatEmailUser.Email)
-		completionResponse["existing_account_bindable"] = true
-		completionResponse["choice_reason"] = "compat_email_match"
 		resolvedChoiceEmail = strings.TrimSpace(compatEmailUser.Email)
-	}
-	if forceEmailOnSignup && compatEmailUser == nil {
-		completionResponse["choice_reason"] = "force_email_on_signup"
 	}
 
 	var targetUserID *int64
@@ -495,14 +488,14 @@ func (h *AuthHandler) CompleteLinuxDoOAuthRegistration(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	if updatedSession, handled, err := h.legacyCompleteRegistrationSessionStatus(c, session); err != nil {
+	if currentSession, handled, err := currentCompleteRegistrationSessionStatus(session); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	} else if handled {
-		c.JSON(http.StatusOK, buildPendingOAuthSessionStatusPayload(updatedSession))
+		c.JSON(http.StatusOK, buildPendingOAuthSessionStatusPayload(currentSession))
 		return
 	} else {
-		session = updatedSession
+		session = currentSession
 	}
 	if err := h.ensureBackendModeAllowsNewUserLogin(c.Request.Context()); err != nil {
 		response.ErrorFrom(c, err)

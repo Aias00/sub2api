@@ -2,10 +2,10 @@
   <div class="card">
     <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
       <h2 class="text-lg font-medium text-gray-900 dark:text-white">
-        {{ t('profile.totp.title') }}
+        {{ totpText('totpTitle') }}
       </h2>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        {{ t('profile.totp.description') }}
+        {{ totpText('totpDescription') }}
       </p>
     </div>
     <div class="px-6 py-6">
@@ -23,10 +23,10 @@
         </div>
         <div>
           <p class="font-medium text-gray-700 dark:text-gray-300">
-            {{ t('profile.totp.featureDisabled') }}
+            {{ totpText('totpFeatureDisabled') }}
           </p>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ t('profile.totp.featureDisabledHint') }}
+            {{ totpText('totpFeatureDisabledHint') }}
           </p>
         </div>
       </div>
@@ -41,10 +41,10 @@
           </div>
           <div>
             <p class="font-medium text-gray-900 dark:text-white">
-              {{ t('profile.totp.enabled') }}
+              {{ totpText('totpEnabled') }}
             </p>
             <p v-if="status.enabled_at" class="text-sm text-gray-500 dark:text-gray-400">
-              {{ t('profile.totp.enabledAt') }}: {{ formatDate(status.enabled_at) }}
+              {{ totpText('totpEnabledAt') }}: {{ formatDate(status.enabled_at) }}
             </p>
           </div>
         </div>
@@ -53,7 +53,7 @@
           class="btn btn-outline-danger"
           @click="showDisableDialog = true"
         >
-          {{ t('profile.totp.disable') }}
+          {{ totpText('totpDisable') }}
         </button>
       </div>
 
@@ -67,10 +67,10 @@
           </div>
           <div>
             <p class="font-medium text-gray-700 dark:text-gray-300">
-              {{ t('profile.totp.notEnabled') }}
+              {{ totpText('totpNotEnabled') }}
             </p>
             <p class="text-sm text-gray-500 dark:text-gray-400">
-              {{ t('profile.totp.notEnabledHint') }}
+              {{ totpText('totpNotEnabledHint') }}
             </p>
           </div>
         </div>
@@ -79,7 +79,7 @@
           class="btn btn-primary"
           @click="showSetupModal = true"
         >
-          {{ t('profile.totp.enable') }}
+          {{ totpText('totpEnable') }}
         </button>
       </div>
     </div>
@@ -87,6 +87,7 @@
     <!-- Setup Modal -->
     <TotpSetupModal
       v-if="showSetupModal"
+      :labels="labels"
       @close="showSetupModal = false"
       @success="handleSetupSuccess"
     />
@@ -94,6 +95,7 @@
     <!-- Disable Dialog -->
     <TotpDisableDialog
       v-if="showDisableDialog"
+      :labels="labels"
       @close="showDisableDialog = false"
       @success="handleDisableSuccess"
     />
@@ -101,19 +103,28 @@
 </template>
 
 <script setup lang="ts">
+import type { ProfileLabelKey, ProfileLabels } from '@/utils/profileShell'
 import { ref, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { totpAPI } from '@/api'
 import type { TotpStatus } from '@/types'
 import TotpSetupModal from './TotpSetupModal.vue'
 import TotpDisableDialog from './TotpDisableDialog.vue'
 
-const { t } = useI18n()
+const props = withDefaults(defineProps<{
+  labels?: ProfileLabels
+}>(), {
+  labels: () => ({}),
+})
 
 const loading = ref(true)
 const status = ref<TotpStatus | null>(null)
 const showSetupModal = ref(false)
 const showDisableDialog = ref(false)
+
+
+function totpText(key: ProfileLabelKey): string {
+  return props.labels?.[key] || ''
+}
 
 const loadStatus = async () => {
   loading.value = true

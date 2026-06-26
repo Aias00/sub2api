@@ -1,7 +1,7 @@
 <template>
   <BaseDialog
     :show="show"
-    :title="t('keys.useKeyModal.title')"
+    :title="modalText('useKeyModalTitle')"
     width="wide"
     @close="emit('close')"
   >
@@ -13,10 +13,10 @@
         </svg>
         <div>
           <p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-            {{ t('keys.useKeyModal.noGroupTitle') }}
+            {{ modalText('useKeyModalNoGroupTitle') }}
           </p>
           <p class="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-            {{ t('keys.useKeyModal.noGroupDescription') }}
+            {{ modalText('useKeyModalNoGroupDescription') }}
           </p>
         </div>
       </div>
@@ -101,7 +101,7 @@
                   <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                     <path stroke-linecap="round" stroke-linejoin="round" d="M15.666 3.888A2.25 2.25 0 0013.5 2.25h-3c-1.03 0-1.9.693-2.166 1.638m7.332 0c.055.194.084.4.084.612v0a.75.75 0 01-.75.75H9a.75.75 0 01-.75-.75v0c0-.212.03-.418.084-.612m7.332 0c.646.049 1.288.11 1.927.184 1.1.128 1.907 1.077 1.907 2.185V19.5a2.25 2.25 0 01-2.25 2.25H6.75A2.25 2.25 0 014.5 19.5V6.257c0-1.108.806-2.057 1.907-2.185a48.208 48.208 0 011.927-.184" />
                   </svg>
-                  {{ copiedIndex === index ? t('keys.useKeyModal.copied') : t('keys.useKeyModal.copy') }}
+                  {{ copiedIndex === index ? modalText('useKeyModalCopied') : modalText('useKeyModalCopy') }}
                 </button>
               </div>
               <!-- Code Content -->
@@ -126,7 +126,7 @@
           @click="emit('close')"
           class="btn btn-secondary"
         >
-          {{ t('common.close') }}
+          {{ modalText('cancel') }}
         </button>
       </div>
     </template>
@@ -135,11 +135,11 @@
 
 <script setup lang="ts">
 import { ref, computed, h, watch, type Component } from 'vue'
-import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useClipboard } from '@/composables/useClipboard'
 import type { GroupPlatform } from '@/types'
+import { renderApiKeysShellText, type ApiKeysShellLabelKey, type ApiKeysShellLabels } from '@/utils/apiKeysShell'
 
 interface Props {
   show: boolean
@@ -147,6 +147,7 @@ interface Props {
   baseUrl: string
   platform: GroupPlatform | null
   allowMessagesDispatch?: boolean
+  shellLabels?: ApiKeysShellLabels
 }
 
 interface Emits {
@@ -169,8 +170,11 @@ interface FileConfig {
 const props = defineProps<Props>()
 const emit = defineEmits<Emits>()
 
-const { t } = useI18n()
 const { copyToClipboard: clipboardCopy } = useClipboard()
+
+const modalText = (key: ApiKeysShellLabelKey) => {
+  return renderApiKeysShellText(props.shellLabels || {}, key)
+}
 
 const copiedIndex = ref<number | null>(null)
 const activeTab = ref<string>('unix')
@@ -268,30 +272,30 @@ const clientTabs = computed((): TabConfig[] => {
   switch (props.platform) {
     case 'openai': {
       const tabs: TabConfig[] = [
-        { id: 'codex', label: t('keys.useKeyModal.cliTabs.codexCli'), icon: TerminalIcon },
-        { id: 'codex-ws', label: t('keys.useKeyModal.cliTabs.codexCliWs'), icon: TerminalIcon },
+        { id: 'codex', label: modalText('useKeyModalCliCodexCli'), icon: TerminalIcon },
+        { id: 'codex-ws', label: modalText('useKeyModalCliCodexCliWs'), icon: TerminalIcon },
       ]
       if (props.allowMessagesDispatch) {
-        tabs.push({ id: 'claude', label: t('keys.useKeyModal.cliTabs.claudeCode'), icon: TerminalIcon })
+        tabs.push({ id: 'claude', label: modalText('useKeyModalCliClaudeCode'), icon: TerminalIcon })
       }
-      tabs.push({ id: 'opencode', label: t('keys.useKeyModal.cliTabs.opencode'), icon: TerminalIcon })
+      tabs.push({ id: 'opencode', label: modalText('useKeyModalCliOpencode'), icon: TerminalIcon })
       return tabs
     }
     case 'gemini':
       return [
-        { id: 'gemini', label: t('keys.useKeyModal.cliTabs.geminiCli'), icon: SparkleIcon },
-        { id: 'opencode', label: t('keys.useKeyModal.cliTabs.opencode'), icon: TerminalIcon }
+        { id: 'gemini', label: modalText('useKeyModalCliGeminiCli'), icon: SparkleIcon },
+        { id: 'opencode', label: modalText('useKeyModalCliOpencode'), icon: TerminalIcon }
       ]
     case 'antigravity':
       return [
-        { id: 'claude', label: t('keys.useKeyModal.cliTabs.claudeCode'), icon: TerminalIcon },
-        { id: 'gemini', label: t('keys.useKeyModal.cliTabs.geminiCli'), icon: SparkleIcon },
-        { id: 'opencode', label: t('keys.useKeyModal.cliTabs.opencode'), icon: TerminalIcon }
+        { id: 'claude', label: modalText('useKeyModalCliClaudeCode'), icon: TerminalIcon },
+        { id: 'gemini', label: modalText('useKeyModalCliGeminiCli'), icon: SparkleIcon },
+        { id: 'opencode', label: modalText('useKeyModalCliOpencode'), icon: TerminalIcon }
       ]
     default:
       return [
-        { id: 'claude', label: t('keys.useKeyModal.cliTabs.claudeCode'), icon: TerminalIcon },
-        { id: 'opencode', label: t('keys.useKeyModal.cliTabs.opencode'), icon: TerminalIcon }
+        { id: 'claude', label: modalText('useKeyModalCliClaudeCode'), icon: TerminalIcon },
+        { id: 'opencode', label: modalText('useKeyModalCliOpencode'), icon: TerminalIcon }
       ]
   }
 })
@@ -323,15 +327,15 @@ const platformDescription = computed(() => {
   switch (props.platform) {
     case 'openai':
       if (activeClientTab.value === 'claude') {
-        return t('keys.useKeyModal.description')
+        return modalText('useKeyModalDescription')
       }
-      return t('keys.useKeyModal.openai.description')
+      return modalText('useKeyModalOpenAIDescription')
     case 'gemini':
-      return t('keys.useKeyModal.gemini.description')
+      return modalText('useKeyModalGeminiDescription')
     case 'antigravity':
-      return t('keys.useKeyModal.antigravity.description')
+      return modalText('useKeyModalAntigravityDescription')
     default:
-      return t('keys.useKeyModal.description')
+      return modalText('useKeyModalDescription')
   }
 })
 
@@ -339,19 +343,19 @@ const platformNote = computed(() => {
   switch (props.platform) {
     case 'openai':
       if (activeClientTab.value === 'claude') {
-        return t('keys.useKeyModal.note')
+        return modalText('useKeyModalNote')
       }
       return activeTab.value === 'windows'
-        ? t('keys.useKeyModal.openai.noteWindows')
-        : t('keys.useKeyModal.openai.note')
+        ? modalText('useKeyModalOpenAINoteWindows')
+        : modalText('useKeyModalOpenAINote')
     case 'gemini':
-      return t('keys.useKeyModal.gemini.note')
+      return modalText('useKeyModalGeminiNote')
     case 'antigravity':
       return activeClientTab.value === 'claude'
-        ? t('keys.useKeyModal.antigravity.claudeNote')
-        : t('keys.useKeyModal.antigravity.geminiNote')
+        ? modalText('useKeyModalAntigravityClaudeNote')
+        : modalText('useKeyModalAntigravityGeminiNote')
     default:
-      return t('keys.useKeyModal.note')
+      return modalText('useKeyModalNote')
   }
 })
 
@@ -482,7 +486,7 @@ $env:CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC=1`
 
 function generateGeminiCliContent(baseUrl: string, apiKey: string): FileConfig {
   const model = 'gemini-2.0-flash'
-  const modelComment = t('keys.useKeyModal.gemini.modelComment')
+  const modelComment = modalText('useKeyModalGeminiModelComment')
   let path: string
   let content: string
   let highlighted: string
@@ -556,7 +560,7 @@ goals = true`
     {
       path: `${configDir}/config.toml`,
       content: configContent,
-      hint: t('keys.useKeyModal.openai.configTomlHint')
+      hint: modalText('useKeyModalOpenAIConfigTomlHint')
     },
     {
       path: `${configDir}/auth.json`,
@@ -598,7 +602,7 @@ goals = true`
     {
       path: `${configDir}/config.toml`,
       content: configContent,
-      hint: t('keys.useKeyModal.openai.configTomlHint')
+      hint: modalText('useKeyModalOpenAIConfigTomlHint')
     },
     {
       path: `${configDir}/auth.json`,
@@ -1048,12 +1052,12 @@ function generateOpenCodeConfig(platform: string, baseUrl: string, apiKey: strin
   return {
     path: pathLabel ?? 'opencode.json',
     content,
-    hint: t('keys.useKeyModal.opencode.hint')
+    hint: modalText('useKeyModalOpencodeHint')
   }
 }
 
 const copyContent = async (content: string, index: number) => {
-  const success = await clipboardCopy(content, t('keys.copied'))
+  const success = await clipboardCopy(content, modalText('useKeyModalCopied'))
   if (success) {
     copiedIndex.value = index
     setTimeout(() => {

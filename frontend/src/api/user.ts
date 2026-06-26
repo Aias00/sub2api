@@ -3,12 +3,13 @@
  * Handles user profile management and password changes
  */
 
-import { apiClient } from './client'
+import { apiClient, buildApiUrl } from './client'
 import {
   resolveWeChatOAuthStartStrict,
   prepareOAuthBindAccessTokenCookie,
   type WeChatOAuthPublicSettings,
 } from './auth'
+import { resolveAuthBindRedirect } from '@/utils/authRedirect'
 import type {
   User,
   ChangePasswordRequest,
@@ -124,6 +125,7 @@ export type BindableOAuthProvider = Exclude<UserAuthProvider, 'email'>
 
 interface BuildOAuthBindingStartURLOptions {
   redirectTo?: string
+  apiBaseSettings?: { api_base_url?: string | null } | null
   wechatOAuthSettings?: WeChatOAuthPublicSettings | null
 }
 
@@ -147,9 +149,7 @@ export function buildOAuthBindingStartURL(
   provider: BindableOAuthProvider,
   options: BuildOAuthBindingStartURLOptions = {}
 ): string | null {
-  const redirectTo = options.redirectTo?.trim() || '/profile'
-  const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) || '/api/v1'
-  const normalized = apiBase.replace(/\/$/, '')
+  const redirectTo = resolveAuthBindRedirect(options.redirectTo)
   const params = new URLSearchParams({
     redirect: redirectTo,
     intent: 'bind_current_user'
@@ -163,7 +163,7 @@ export function buildOAuthBindingStartURL(
     params.set('mode', mode)
   }
 
-  return `${normalized}/auth/oauth/${provider}/bind/start?${params.toString()}`
+  return buildApiUrl(`/auth/oauth/${provider}/bind/start?${params.toString()}`, options.apiBaseSettings)
 }
 
 export async function startOAuthBinding(

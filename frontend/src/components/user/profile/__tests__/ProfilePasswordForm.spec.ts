@@ -1,5 +1,5 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import ProfilePasswordForm from '@/components/user/profile/ProfilePasswordForm.vue'
 
 const { changePasswordMock, showSuccessMock, showErrorMock } = vi.hoisted(() => ({
@@ -16,6 +16,9 @@ vi.mock('@/api', () => ({
 
 vi.mock('@/stores/app', () => ({
   useAppStore: () => ({
+    cachedPublicSettings: {
+      password_min_length: 8,
+    },
     showSuccess: showSuccessMock,
     showError: showErrorMock
   })
@@ -47,6 +50,41 @@ vi.mock('vue-i18n', async (importOriginal) => {
 })
 
 describe('ProfilePasswordForm', () => {
+  beforeEach(() => {
+    changePasswordMock.mockReset()
+    showSuccessMock.mockReset()
+    showErrorMock.mockReset()
+  })
+
+  it('renders configured shell labels and interpolates validation text', async () => {
+    const wrapper = mount(ProfilePasswordForm, {
+      props: {
+        labels: {
+          changePassword: 'Configured Password Title',
+          currentPassword: 'Configured Current Password',
+          newPassword: 'Configured New Password',
+          confirmNewPassword: 'Configured Confirm Password',
+          passwordHint: 'Configured minimum {count} chars',
+          passwordTooShort: 'Configured too short: {count}',
+        },
+      },
+    })
+
+    expect(wrapper.text()).toContain('Configured Password Title')
+    expect(wrapper.text()).toContain('Configured Current Password')
+    expect(wrapper.text()).toContain('Configured New Password')
+    expect(wrapper.text()).toContain('Configured Confirm Password')
+    expect(wrapper.text()).toContain('Configured minimum 8 chars')
+
+    await wrapper.get('#old_password').setValue('old-password')
+    await wrapper.get('#new_password').setValue('short')
+    await wrapper.get('#confirm_password').setValue('short')
+    await wrapper.get('form').trigger('submit.prevent')
+
+    expect(changePasswordMock).not.toHaveBeenCalled()
+    expect(showErrorMock).toHaveBeenCalledWith('Configured too short: 8')
+  })
+
   it('shows validation failures as toast messages instead of inline errors', async () => {
     const wrapper = mount(ProfilePasswordForm)
 
@@ -56,7 +94,7 @@ describe('ProfilePasswordForm', () => {
     await wrapper.get('form').trigger('submit.prevent')
 
     expect(changePasswordMock).not.toHaveBeenCalled()
-    expect(showErrorMock).toHaveBeenCalledWith('New passwords do not match')
+    expect(showErrorMock).toHaveBeenCalledWith('passwordsNotMatch')
     expect(wrapper.find('.input-error-text').exists()).toBe(false)
   })
 

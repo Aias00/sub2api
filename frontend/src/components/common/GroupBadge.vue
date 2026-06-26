@@ -46,7 +46,6 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  subscriptionType: 'standard',
   showRate: true,
   daysRemaining: null,
   userRateMultiplier: null,

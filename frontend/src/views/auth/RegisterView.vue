@@ -4,10 +4,10 @@
       <!-- Title -->
       <div class="text-center">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-          {{ t('auth.createAccount') }}
+          {{ authText('createAccount') }}
         </h2>
         <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-          {{ t('auth.signUpToStart', { siteName }) }}
+          {{ authText('signUpToStart', { siteName }) }}
         </p>
       </div>
 
@@ -21,7 +21,7 @@
             <Icon name="exclamationCircle" size="md" class="text-amber-500" />
           </div>
           <p class="text-sm text-amber-700 dark:text-amber-400">
-            {{ t('auth.registrationDisabled') }}
+            {{ authText('registrationDisabled') }}
           </p>
         </div>
       </div>
@@ -31,7 +31,7 @@
         <!-- Email Input -->
         <div>
           <label for="email" class="input-label">
-            {{ t('auth.emailLabel') }}
+            {{ authText('emailLabel') }}
           </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -47,7 +47,7 @@
               :disabled="registrationFieldDisabled"
               class="input pl-11"
               :class="{ 'input-error': errors.email }"
-              :placeholder="t('auth.emailPlaceholder')"
+              :placeholder="authText('emailPlaceholder')"
             />
           </div>
         </div>
@@ -55,7 +55,7 @@
         <!-- Password Input -->
         <div>
           <label for="password" class="input-label">
-            {{ t('auth.passwordLabel') }}
+            {{ authText('passwordLabel') }}
           </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -70,7 +70,7 @@
               :disabled="registrationFieldDisabled"
               class="input pl-11 pr-11"
               :class="{ 'input-error': errors.password }"
-              :placeholder="t('auth.createPasswordPlaceholder')"
+              :placeholder="authText('createPasswordPlaceholder')"
             />
             <button
               type="button"
@@ -83,14 +83,14 @@
             </button>
           </div>
           <p class="input-hint">
-            {{ t('auth.passwordHint', { count: passwordMinLength }) }}
+            {{ authText('passwordHint', { count: passwordMinLength }) }}
           </p>
         </div>
 
         <!-- Invitation Code Input (Required when enabled) -->
         <div v-if="invitationCodeEnabled">
           <label for="invitation_code" class="input-label">
-            {{ t('auth.invitationCodeLabel') }}
+            {{ authText('invitationCodeLabel') }}
           </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -106,7 +106,7 @@
                 'border-green-500 focus:border-green-500 focus:ring-green-500': invitationValidation.valid,
                 'border-red-500 focus:border-red-500 focus:ring-red-500': invitationValidation.invalid || errors.invitation_code
               }"
-              :placeholder="t('auth.invitationCodePlaceholder')"
+              :placeholder="authText('invitationCodePlaceholder')"
               @input="handleInvitationCodeInput"
             />
             <!-- Validation indicator -->
@@ -128,20 +128,20 @@
             <div v-if="invitationValidation.valid" class="mt-2 flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 dark:bg-green-900/20">
               <Icon name="checkCircle" size="sm" class="text-green-600 dark:text-green-400" />
               <span class="text-sm text-green-700 dark:text-green-400">
-                {{ t('auth.invitationCodeValid') }}
+                {{ authText('invitationCodeValid') }}
               </span>
             </div>
           </transition>
           <p v-if="invitationGateSatisfiedByAffiliate" class="mt-2 text-xs text-primary-700 dark:text-primary-300">
-            {{ t('auth.affiliateInvitationDetected') }}
+            {{ authText('affiliateInvitationDetected') }}
           </p>
         </div>
 
         <!-- Promo Code Input (Optional) -->
         <div v-if="promoCodeEnabled">
           <label for="promo_code" class="input-label">
-            {{ t('auth.promoCodeLabel') }}
-            <span class="ml-1 text-xs font-normal text-gray-400 dark:text-dark-500">({{ t('common.optional') }})</span>
+            {{ authText('promoCodeLabel') }}
+            <span class="ml-1 text-xs font-normal text-gray-400 dark:text-dark-500">({{ authText('optional') }})</span>
           </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -157,7 +157,7 @@
                 'border-green-500 focus:border-green-500 focus:ring-green-500': promoValidation.valid,
                 'border-red-500 focus:border-red-500 focus:ring-red-500': promoValidation.invalid
               }"
-              :placeholder="t('auth.promoCodePlaceholder')"
+              :placeholder="authText('promoCodePlaceholder')"
               @input="handlePromoCodeInput"
             />
             <!-- Validation indicator -->
@@ -179,7 +179,7 @@
             <div v-if="promoValidation.valid" class="mt-2 flex items-center gap-2 rounded-lg bg-green-50 px-3 py-2 dark:bg-green-900/20">
               <Icon name="gift" size="sm" class="text-green-600 dark:text-green-400" />
               <span class="text-sm text-green-700 dark:text-green-400">
-                {{ t('auth.promoCodeValid', { amount: promoValidation.bonusAmount?.toFixed(2) }) }}
+                {{ authText('promoCodeValid', { amount: promoValidation.bonusAmount?.toFixed(2) || '' }) }}
               </span>
             </div>
           </transition>
@@ -201,6 +201,7 @@
           :accepted="agreementAccepted"
           :documents="loginAgreementDocuments"
           :mode="loginAgreementMode"
+          :shell-labels="authShellLabels"
           :updated-at="loginAgreementUpdatedAt"
           :visible="showAgreementModal"
           @accept="acceptLoginAgreement"
@@ -237,10 +238,10 @@
           <Icon v-else name="userPlus" size="md" class="mr-2" />
           {{
             isLoading
-              ? t('auth.processing')
+              ? authText('processing')
               : emailVerifyEnabled
-                ? t('auth.continue')
-                : t('auth.createAccount')
+                ? authText('continue')
+                : authText('createAccount')
           }}
         </button>
 
@@ -250,7 +251,7 @@
         <div class="flex items-center gap-3">
           <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
           <span class="text-xs text-gray-500 dark:text-dark-400">
-            {{ t('auth.oauthAlternativeMethods') }}
+            {{ authText('oauthAlternativeMethods') }}
           </span>
           <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
         </div>
@@ -263,6 +264,7 @@
           :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
           :turnstile-token="turnstileToken"
           :show-divider="false"
+          :shell-labels="authShellLabels"
         />
 
         <LinuxDoOAuthSection
@@ -272,6 +274,7 @@
           :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
           :turnstile-token="turnstileToken"
           :show-divider="false"
+          :shell-labels="authShellLabels"
         />
         <WechatOAuthSection
           v-if="wechatOAuthEnabled"
@@ -280,6 +283,7 @@
           :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
           :turnstile-token="turnstileToken"
           :show-divider="false"
+          :shell-labels="authShellLabels"
         />
         <OidcOAuthSection
           v-if="oidcOAuthEnabled"
@@ -289,6 +293,7 @@
           :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
           :turnstile-token="turnstileToken"
           :show-divider="false"
+          :shell-labels="authShellLabels"
         />
       </div>
     </div>
@@ -296,12 +301,12 @@
     <!-- Footer -->
     <template #footer>
       <p class="text-gray-500 dark:text-dark-400">
-        {{ t('auth.alreadyHaveAccount') }}
+        {{ authText('alreadyHaveAccount') }}
         <router-link
-          to="/login"
+          :to="authRouteDefaults.loginPath"
           class="font-medium text-primary-600 transition-colors hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
         >
-          {{ t('auth.signIn') }}
+          {{ authText('signIn') }}
         </router-link>
       </p>
     </template>
@@ -328,6 +333,7 @@ import {
   validateInvitationCode
 } from '@/api/auth'
 import { buildAuthErrorMessage } from '@/utils/authError'
+import { resolveRuntimeLanguage } from '@/utils/runtimeLocale'
 import {
   formatRegistrationEmailSuffixWhitelistForMessage,
   isRegistrationEmailSuffixAllowed,
@@ -347,6 +353,7 @@ import {
 } from '@/utils/loginAgreementConsent'
 import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
 import type { LoginAgreementDocument } from '@/types'
+import { useAuthShellText } from '@/composables/useAuthShellText'
 
 const { t, locale } = useI18n()
 
@@ -356,6 +363,7 @@ const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 const appStore = useAppStore()
+const { authText, authShellLabels, authRouteDefaults, defaultRedirectPath, applyAuthShellConfig } = useAuthShellText()
 
 // ==================== State ====================
 
@@ -372,11 +380,11 @@ const invitationCodeEnabled = ref<boolean>(false)
 const turnstileEnabled = ref<boolean>(false)
 const turnstileSiteKey = ref<string>('')
 const passwordMinLength = ref<number>(8)
-const siteName = ref<string>('Sub2API')
+const siteName = ref<string>('')
 const linuxdoOAuthEnabled = ref<boolean>(false)
 const wechatOAuthEnabled = ref<boolean>(false)
 const oidcOAuthEnabled = ref<boolean>(false)
-const oidcOAuthProviderName = ref<string>('OIDC')
+const oidcOAuthProviderName = ref<string>('')
 const githubOAuthEnabled = ref<boolean>(false)
 const googleOAuthEnabled = ref<boolean>(false)
 const registrationEmailSuffixWhitelist = ref<string[]>([])
@@ -497,13 +505,14 @@ onMounted(async () => {
     turnstileEnabled.value = settings.turnstile_enabled
     turnstileSiteKey.value = settings.turnstile_site_key || ''
     passwordMinLength.value = resolvePasswordMinLength(settings)
-    siteName.value = settings.site_name || 'Sub2API'
+    siteName.value = settings.site_name || ''
     linuxdoOAuthEnabled.value = settings.linuxdo_oauth_enabled
     wechatOAuthEnabled.value = isWeChatWebOAuthEnabled(settings)
     oidcOAuthEnabled.value = settings.oidc_oauth_enabled
-    oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || 'OIDC'
+    oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || ''
     githubOAuthEnabled.value = settings.github_oauth_enabled
     googleOAuthEnabled.value = settings.google_oauth_enabled
+    applyAuthShellConfig(settings.auth_shell_config)
     registrationEmailSuffixWhitelist.value = normalizeRegistrationEmailSuffixWhitelist(
       settings.registration_email_suffix_whitelist || []
     )
@@ -755,7 +764,7 @@ function buildEmailSuffixNotAllowedMessage(): string {
   if (normalizedWhitelist.length === 0) {
     return t('auth.emailSuffixNotAllowed')
   }
-  const separator = String(locale.value || '').toLowerCase().startsWith('zh') ? '、' : ', '
+  const separator = resolveRuntimeLanguage(locale) === 'zh' ? '、' : ', '
   return t('auth.emailSuffixNotAllowedWithAllowed', {
     suffixes: formatRegistrationEmailSuffixWhitelistForMessage(normalizedWhitelist, {
       separator,
@@ -895,7 +904,7 @@ async function handleRegister(): Promise<void> {
       )
 
       // Navigate to email verification page
-      await router.push('/email-verify')
+      await router.push(authRouteDefaults.value.emailVerifyPath)
       return
     }
 
@@ -916,7 +925,7 @@ async function handleRegister(): Promise<void> {
     appStore.showSuccess(t('auth.accountCreatedSuccess', { siteName: siteName.value }))
 
     // Redirect to dashboard
-    await router.push('/dashboard')
+    await router.push(defaultRedirectPath.value)
   } catch (error: unknown) {
     const agreementReason =
       (error as { reason?: string }).reason ||

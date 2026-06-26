@@ -17,7 +17,7 @@
             for="login-agreement-consent"
             class="cursor-pointer text-gray-700 dark:text-dark-200"
           >
-            {{ t('auth.loginAgreementPrompt.checkboxPrefix') }}
+            {{ authText('agreementCheckboxPrefix') }}
           </label>
           <template v-for="(doc, index) in documents" :key="doc.id || doc.title">
             <RouterLink
@@ -57,7 +57,7 @@
       />
       <div class="min-w-0 flex-1">
         <p class="font-medium">
-          {{ accepted ? t('auth.loginAgreementPrompt.acceptedTitle') : t('auth.loginAgreementPrompt.reviewTitle') }}
+          {{ accepted ? authText('agreementAcceptedTitle') : authText('agreementReviewTitle') }}
         </p>
         <p
           class="mt-1"
@@ -69,8 +69,8 @@
         >
           {{
             accepted
-              ? t('auth.loginAgreementPrompt.acceptedDescription')
-              : t('auth.loginAgreementPrompt.reviewDescription')
+              ? authText('agreementAcceptedDescription')
+              : authText('agreementReviewDescription')
           }}
         </p>
       </div>
@@ -84,7 +84,7 @@
         "
         @click="emit('open')"
       >
-        {{ accepted ? t('auth.loginAgreementPrompt.viewTerms') : t('auth.loginAgreementPrompt.viewAndAccept') }}
+        {{ accepted ? authText('agreementViewTerms') : authText('agreementViewAndAccept') }}
       </button>
     </div>
   </div>
@@ -104,7 +104,7 @@
               <div class="min-w-0 flex-1">
                 <div class="flex flex-wrap items-center gap-2">
                   <h2 class="text-xl font-bold tracking-normal text-gray-950 dark:text-white">
-                    {{ t('auth.loginAgreementPrompt.termsUpdateTitle') }}
+                    {{ authText('agreementTermsUpdateTitle') }}
                   </h2>
                   <span
                     v-if="updatedAt"
@@ -114,7 +114,7 @@
                   </span>
                 </div>
                 <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-dark-300">
-                  {{ t('auth.loginAgreementPrompt.agreementUpdatedAt', { date: updatedAt || t('auth.loginAgreementPrompt.recent') }) }}
+                  {{ authText('agreementUpdatedAt', { date: updatedAt || authText('agreementRecent') }) }}
                 </p>
               </div>
             </div>
@@ -122,7 +122,7 @@
 
           <div class="max-h-[58vh] overflow-y-auto px-6 py-5">
             <div class="mb-3 flex items-center justify-between gap-3">
-              <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('auth.loginAgreementPrompt.relevantDocuments') }}</p>
+              <p class="text-sm font-semibold text-gray-900 dark:text-white">{{ authText('agreementRelevantDocuments') }}</p>
             </div>
             <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <RouterLink
@@ -153,14 +153,14 @@
                 class="rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 transition hover:bg-gray-100 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-200 dark:hover:bg-dark-700"
                 @click="emit('reject')"
               >
-                {{ t('auth.loginAgreementPrompt.reject') }}
+                {{ authText('agreementReject') }}
               </button>
               <button
                 type="button"
                 class="rounded-xl bg-primary-600 px-4 py-3 text-sm font-semibold text-white shadow-sm shadow-primary-600/20 transition hover:bg-primary-700"
                 @click="emit('accept')"
               >
-                {{ t('auth.loginAgreementPrompt.acceptAndContinue') }}
+                {{ authText('agreementAcceptAndContinue') }}
               </button>
             </div>
           </div>
@@ -172,17 +172,19 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import type { LoginAgreementDocument } from '@/types'
+import { renderAuthShellText, type AuthShellLabelKey, type AuthShellLabels } from '@/utils/authShell'
 
 const props = withDefaults(defineProps<{
   accepted: boolean
   documents: LoginAgreementDocument[]
   mode: 'modal' | 'checkbox' | string
+  shellLabels?: AuthShellLabels
   updatedAt?: string
   visible: boolean
 }>(), {
+  shellLabels: () => ({}),
   updatedAt: ''
 })
 
@@ -191,13 +193,15 @@ const emit = defineEmits<{
   reject: []
   open: []
 }>()
-const { t } = useI18n()
-
 const dialogVisible = computed(() => props.visible && documents.value.length > 0)
 const documents = computed(() => props.documents.filter((doc) => doc.title.trim()))
 const updatedAt = computed(() => props.updatedAt || '')
 const accepted = computed(() => props.accepted)
 const mode = computed(() => props.mode === 'checkbox' ? 'checkbox' : 'modal')
+
+function authText(key: AuthShellLabelKey, params: Record<string, string | number> = {}): string {
+  return renderAuthShellText(props.shellLabels || {}, key, params)
+}
 
 function documentRoute(doc: LoginAgreementDocument) {
   return {

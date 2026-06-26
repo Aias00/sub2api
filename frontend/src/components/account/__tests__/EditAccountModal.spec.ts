@@ -70,6 +70,10 @@ const ModelWhitelistSelectorStub = defineComponent({
     modelValue: {
       type: Array,
       default: () => []
+    },
+    platform: {
+      type: String,
+      default: ''
     }
   },
   emits: ['update:modelValue'],
@@ -85,6 +89,7 @@ const ModelWhitelistSelectorStub = defineComponent({
       <span data-testid="model-whitelist-value">
         {{ Array.isArray(modelValue) ? modelValue.join(',') : '' }}
       </span>
+      <span data-testid="model-whitelist-platform">{{ platform }}</span>
     </div>
   `
 })
@@ -239,6 +244,15 @@ describe('EditAccountModal', () => {
       'gpt-5.2-2025-12-11': 'gpt-5.2-2025-12-11',
       'gpt-latest': 'gpt-5.2'
     })
+  })
+
+  it('does not synthesize a missing account platform as Anthropic for model selectors', () => {
+    const account = buildAccount()
+    delete account.platform
+
+    const wrapper = mountModal(account)
+
+    expect(wrapper.get('[data-testid="model-whitelist-platform"]').text()).toBe('')
   })
 
   it('submits OpenAI compact mode and compact-only model mapping', async () => {

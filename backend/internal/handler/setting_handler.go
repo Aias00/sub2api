@@ -1,8 +1,11 @@
 package handler
 
 import (
+	"bytes"
+	"encoding/xml"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
@@ -64,8 +67,28 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		APIBaseURL:                       settings.APIBaseURL,
 		ContactInfo:                      settings.ContactInfo,
 		DocURL:                           settings.DocURL,
+		DocsContentBasePath:              settings.DocsContentBasePath,
 		HomeContent:                      settings.HomeContent,
+		HomeShellConfig:                  settings.HomeShellConfig,
+		HomeBusinessShellConfig:          settings.HomeBusinessShellConfig,
 		ModelPlazaItems:                  dto.ParseModelPlazaItems(settings.ModelPlazaItems),
+		ModelPlazaShellConfig:            settings.ModelPlazaShellConfig,
+		DocsShellConfig:                  settings.DocsShellConfig,
+		LegalDocumentShellConfig:         settings.LegalDocumentShellConfig,
+		APIKeysShellConfig:               settings.APIKeysShellConfig,
+		KeyUsageShellConfig:              settings.KeyUsageShellConfig,
+		DashboardShellConfig:             settings.DashboardShellConfig,
+		UsageShellConfig:                 settings.UsageShellConfig,
+		APIGuideShellConfig:              settings.APIGuideShellConfig,
+		APITestShellConfig:               settings.APITestShellConfig,
+		AvailableGroupsShellConfig:       settings.AvailableGroupsShellConfig,
+		RedeemShellConfig:                settings.RedeemShellConfig,
+		AffiliateShellConfig:             settings.AffiliateShellConfig,
+		AvailableChannelsShellConfig:     settings.AvailableChannelsShellConfig,
+		ChannelStatusShellConfig:         settings.ChannelStatusShellConfig,
+		CustomPageShellConfig:            settings.CustomPageShellConfig,
+		ProfileShellConfig:               settings.ProfileShellConfig,
+		AuthShellConfig:                  settings.AuthShellConfig,
 		HideCcsImportButton:              settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:      settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:          settings.PurchaseSubscriptionURL,
@@ -86,6 +109,7 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		BackendModeEnabled:               settings.BackendModeEnabled,
 		PaymentEnabled:                   settings.PaymentEnabled,
 		Version:                          h.version,
+		DefaultLocale:                    settings.WebDefaultLocale,
 		BalanceLowNotifyEnabled:          settings.BalanceLowNotifyEnabled,
 		AccountQuotaNotifyEnabled:        settings.AccountQuotaNotifyEnabled,
 		BalanceLowNotifyThreshold:        settings.BalanceLowNotifyThreshold,
@@ -99,6 +123,42 @@ func (h *SettingHandler) GetPublicSettings(c *gin.Context) {
 		AffiliateEnabled: settings.AffiliateEnabled,
 
 		RiskControlEnabled: settings.RiskControlEnabled,
+
+		PromptCasesTitle:           settings.PromptCasesTitle,
+		PromptCasesDescription:     settings.PromptCasesDescription,
+		PromptTemplatesTitle:       settings.PromptTemplatesTitle,
+		PromptTemplatesDescription: settings.PromptTemplatesDescription,
+		PromptCatalogShellConfig:   settings.PromptCatalogShellConfig,
+		WorkspaceShellConfig:       settings.WorkspaceShellConfig,
+		PricingTitle:               settings.PricingTitle,
+		PricingDescription:         settings.PricingDescription,
+		PricingShellConfig:         settings.PricingShellConfig,
+		PaymentShellConfig:         settings.PaymentShellConfig,
+		PricingCurrencySymbol:      settings.PricingCurrencySymbol,
+		CreditsTitle:               settings.CreditsTitle,
+		CreditsDescription:         settings.CreditsDescription,
+		CreditsPurchaseLabel:       settings.CreditsPurchaseLabel,
+		CreditsBalanceLabel:        settings.CreditsBalanceLabel,
+		CreditsPerBalance:          settings.CreditsPerBalance,
+		CreditsShellConfig:         settings.CreditsShellConfig,
+		GoogleAnalyticsID:          settings.GoogleAnalyticsID,
+		ClarityID:                  settings.ClarityID,
+		PlausibleDomain:            settings.PlausibleDomain,
+		PlausibleSrc:               settings.PlausibleSrc,
+		OpenPanelClientID:          settings.OpenPanelClientID,
+		PublicIntegrationsEnabled:  settings.PublicIntegrationsEnabled,
+		VercelAnalyticsEnabled:     settings.VercelAnalyticsEnabled,
+		AdsenseCode:                settings.AdsenseCode,
+		AffonsoEnabled:             settings.AffonsoEnabled,
+		AffonsoID:                  settings.AffonsoID,
+		AffonsoCookieDuration:      settings.AffonsoCookieDuration,
+		PromoteKitEnabled:          settings.PromoteKitEnabled,
+		PromoteKitID:               settings.PromoteKitID,
+		CrispEnabled:               settings.CrispEnabled,
+		CrispWebsiteID:             settings.CrispWebsiteID,
+		TawkEnabled:                settings.TawkEnabled,
+		TawkPropertyID:             settings.TawkPropertyID,
+		TawkWidgetID:               settings.TawkWidgetID,
 	})
 }
 
@@ -123,6 +183,179 @@ func (h *SettingHandler) GetSiteLogo(c *gin.Context) {
 	c.Header("ETag", logo.ETag)
 	c.Header("X-Content-Type-Options", "nosniff")
 	c.Data(http.StatusOK, logo.ContentType, logo.Data)
+}
+
+// GetAdsTxt serves the public web marketing ads.txt content from public settings.
+// GET /ads.txt
+func (h *SettingHandler) GetAdsTxt(c *gin.Context) {
+	settings, err := h.settingService.GetPublicSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	adsenseCode := strings.TrimSpace(settings.WebAdsenseCode)
+	if adsenseCode == "" {
+		response.NotFound(c, "ads.txt is not configured")
+		return
+	}
+
+	adsenseCode = strings.TrimPrefix(adsenseCode, "ca-")
+	c.Header("Cache-Control", "public, max-age=300")
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.String(http.StatusOK, "google.com, %s, DIRECT, f08c47fec0942fa0", adsenseCode)
+}
+
+// GetFaviconICO redirects the legacy browser favicon request to the configured
+// public web favicon or the embedded Vue static fallback.
+// GET /favicon.ico
+func (h *SettingHandler) GetFaviconICO(c *gin.Context) {
+	settings, err := h.settingService.GetPublicSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	c.Header("Cache-Control", "public, max-age=300")
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.Redirect(http.StatusPermanentRedirect, publicFaviconRedirectTarget(settings.WebAppFavicon))
+}
+
+// GetRobotsTxt serves robots.txt for the public frontend shell.
+// GET /robots.txt
+func (h *SettingHandler) GetRobotsTxt(c *gin.Context) {
+	settings, err := h.settingService.GetPublicSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	baseURL := publicBaseURLFromSettingsOrRequest(settings.WebAppURL, c)
+	c.Header("Cache-Control", "public, max-age=300")
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.String(http.StatusOK, strings.Join([]string{
+		"User-agent: *",
+		"Allow: /",
+		"Disallow: /*?*q=",
+		"Disallow: /settings/*",
+		"Disallow: /admin/*",
+		"Disallow: /api/*",
+		"Sitemap: " + baseURL + "/sitemap.xml",
+		"",
+	}, "\n"))
+}
+
+// GetSitemapXML serves the public sitemap for the Vue web routes.
+// GET /sitemap.xml
+func (h *SettingHandler) GetSitemapXML(c *gin.Context) {
+	settings, err := h.settingService.GetPublicSettings(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	baseURL := publicBaseURLFromSettingsOrRequest(settings.WebAppURL, c)
+	entries := webSitemapURLs(baseURL, settings.WebDefaultLocale)
+	now := time.Now().UTC().Format(time.RFC3339)
+
+	var buf bytes.Buffer
+	_, _ = buf.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
+	_, _ = buf.WriteString(`<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">` + "\n")
+	for _, entry := range entries {
+		_, _ = buf.WriteString("  <url>\n")
+		_, _ = buf.WriteString("    <loc>")
+		_ = xml.EscapeText(&buf, []byte(entry.loc))
+		_, _ = buf.WriteString("</loc>\n")
+		_, _ = buf.WriteString("    <lastmod>")
+		_ = xml.EscapeText(&buf, []byte(now))
+		_, _ = buf.WriteString("</lastmod>\n")
+		_, _ = buf.WriteString("    <changefreq>")
+		_ = xml.EscapeText(&buf, []byte(entry.changefreq))
+		_, _ = buf.WriteString("</changefreq>\n")
+		_, _ = buf.WriteString("    <priority>")
+		_ = xml.EscapeText(&buf, []byte(entry.priority))
+		_, _ = buf.WriteString("</priority>\n")
+		_, _ = buf.WriteString("  </url>\n")
+	}
+	_, _ = buf.WriteString("</urlset>\n")
+
+	c.Header("Cache-Control", "public, max-age=300")
+	c.Header("X-Content-Type-Options", "nosniff")
+	c.Data(http.StatusOK, "application/xml; charset=utf-8", buf.Bytes())
+}
+
+type sitemapEntry struct {
+	loc        string
+	changefreq string
+	priority   string
+}
+
+func webSitemapURLs(baseURL, defaultLocale string) []sitemapEntry {
+	if defaultLocale == "" {
+		defaultLocale = "en"
+	}
+	locales := []string{"en", "zh"}
+	unlocalized := []string{"/docs", "/pricing", "/prompts", "/image-generator"}
+	seen := make(map[string]bool, len(locales)+len(unlocalized))
+	entries := make([]sitemapEntry, 0, len(locales)+len(unlocalized))
+
+	for _, locale := range locales {
+		path := "/"
+		if locale != defaultLocale {
+			path = "/" + locale
+		}
+		loc := baseURL + path
+		if !seen[loc] {
+			entries = append(entries, sitemapEntry{loc: loc, changefreq: "weekly", priority: "1"})
+			seen[loc] = true
+		}
+	}
+
+	for _, path := range unlocalized {
+		loc := baseURL + path
+		if !seen[loc] {
+			entries = append(entries, sitemapEntry{loc: loc, changefreq: "monthly", priority: "0.7"})
+			seen[loc] = true
+		}
+	}
+
+	return entries
+}
+
+func publicBaseURLFromSettingsOrRequest(configured string, c *gin.Context) string {
+	if baseURL := strings.TrimRight(strings.TrimSpace(configured), "/"); baseURL != "" {
+		return baseURL
+	}
+
+	proto := strings.TrimSpace(c.GetHeader("X-Forwarded-Proto"))
+	if proto == "" {
+		proto = "http"
+		if c.Request != nil && c.Request.TLS != nil {
+			proto = "https"
+		}
+	}
+	if comma := strings.Index(proto, ","); comma >= 0 {
+		proto = strings.TrimSpace(proto[:comma])
+	}
+	host := strings.TrimSpace(c.GetHeader("X-Forwarded-Host"))
+	if host == "" && c.Request != nil {
+		host = c.Request.Host
+	}
+	if comma := strings.Index(host, ","); comma >= 0 {
+		host = strings.TrimSpace(host[:comma])
+	}
+	if host == "" {
+		return ""
+	}
+	return strings.TrimRight(proto+"://"+host, "/")
+}
+
+func publicFaviconRedirectTarget(configured string) string {
+	target := strings.TrimSpace(configured)
+	if target == "" || target == "/favicon.ico" {
+		return "/favicon.svg"
+	}
+	return target
 }
 
 func siteLogoETagMatches(ifNoneMatch, etag string) bool {

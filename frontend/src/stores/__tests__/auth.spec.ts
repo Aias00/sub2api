@@ -217,7 +217,6 @@ describe('useAuthStore', () => {
         'pending_auth_session',
         JSON.stringify({
           token: 'pending-token',
-          token_field: 'pending_auth_token',
           provider: 'wechat',
           redirect: '/profile',
         })
@@ -229,7 +228,6 @@ describe('useAuthStore', () => {
       expect(store.hasPendingAuthSession).toBe(true)
       expect(store.pendingAuthSession).toEqual({
         token: 'pending-token',
-        token_field: 'pending_auth_token',
         provider: 'wechat',
         redirect: '/profile',
       })
@@ -242,7 +240,6 @@ describe('useAuthStore', () => {
 
       store.setPendingAuthSession({
         token: 'pending-token',
-        token_field: 'pending_auth_token',
         provider: 'wechat',
         redirect: '/profile',
       })
@@ -250,7 +247,6 @@ describe('useAuthStore', () => {
       expect(store.hasPendingAuthSession).toBe(true)
       expect(JSON.parse(localStorage.getItem('pending_auth_session') || 'null')).toEqual({
         token: 'pending-token',
-        token_field: 'pending_auth_token',
         provider: 'wechat',
         redirect: '/profile',
       })
@@ -266,7 +262,6 @@ describe('useAuthStore', () => {
 
       firstStore.setPendingAuthSession({
         token: '',
-        token_field: 'pending_oauth_token',
         provider: 'oidc',
         redirect: '/welcome',
         adoption_required: true,
@@ -281,7 +276,6 @@ describe('useAuthStore', () => {
       expect(restoredStore.hasPendingAuthSession).toBe(true)
       expect(restoredStore.pendingAuthSession).toEqual({
         token: '',
-        token_field: 'pending_oauth_token',
         provider: 'oidc',
         redirect: '/welcome',
         adoption_required: true,
@@ -294,7 +288,6 @@ describe('useAuthStore', () => {
       const store = useAuthStore()
       store.setPendingAuthSession({
         token: 'pending-token',
-        token_field: 'pending_auth_token',
         provider: 'oidc',
         redirect: '/register',
       })
@@ -307,7 +300,6 @@ describe('useAuthStore', () => {
       expect(store.hasPendingAuthSession).toBe(true)
       expect(store.pendingAuthSession).toEqual({
         token: 'pending-token',
-        token_field: 'pending_auth_token',
         provider: 'oidc',
         redirect: '/register',
       })

@@ -72,8 +72,8 @@ gcloud compute ssh --zone "us-central1-a" \
 set -euo pipefail
 cd /home/aias94coffee/sub2api-work/sub2api-main
 git pull origin main
-pnpm --dir frontend install --frozen-lockfile
-pnpm --dir frontend run build
+pnpm install --frozen-lockfile
+pnpm run frontend:build
 (cd backend && /usr/local/go/bin/go build -tags embed -o ../sub2api ./cmd/server)
 /home/aias94coffee/sub2api-work/runtime/restart-sub2api.sh
 curl --max-time 15 -fsS http://127.0.0.1:8081/health

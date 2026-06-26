@@ -36,8 +36,8 @@ func TestWeChatOAuthStartRedirectsAndSetsPendingCookies(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler, client := newWeChatOAuthTestHandlerWithSettings(t, false, map[string]string{
 		service.SettingKeyWeChatConnectEnabled:             "true",
-		service.SettingKeyWeChatConnectAppID:               "wx-open-app",
-		service.SettingKeyWeChatConnectAppSecret:           "wx-open-secret",
+		service.SettingKeyWeChatConnectOpenAppID:           "wx-open-app",
+		service.SettingKeyWeChatConnectOpenAppSecret:       "wx-open-secret",
 		service.SettingKeyWeChatConnectMode:                "open",
 		service.SettingKeyWeChatConnectScopes:              "snsapi_login",
 		service.SettingKeyWeChatConnectRedirectURL:         "https://api.example.com/api/v1/auth/oauth/wechat/callback",
@@ -69,8 +69,10 @@ func TestWeChatOAuthStart_AllowsOpenModeWhenBothCapabilitiesEnabled(t *testing.T
 	gin.SetMode(gin.TestMode)
 	handler, client := newWeChatOAuthTestHandlerWithSettings(t, false, map[string]string{
 		service.SettingKeyWeChatConnectEnabled:             "true",
-		service.SettingKeyWeChatConnectAppID:               "wx-shared-app",
-		service.SettingKeyWeChatConnectAppSecret:           "wx-shared-secret",
+		service.SettingKeyWeChatConnectOpenAppID:           "wx-shared-app",
+		service.SettingKeyWeChatConnectOpenAppSecret:       "wx-shared-secret",
+		service.SettingKeyWeChatConnectMPAppID:             "wx-shared-app",
+		service.SettingKeyWeChatConnectMPAppSecret:         "wx-shared-secret",
 		service.SettingKeyWeChatConnectMode:                "mp",
 		service.SettingKeyWeChatConnectScopes:              "snsapi_base",
 		service.SettingKeyWeChatConnectOpenEnabled:         "true",
@@ -1339,8 +1341,10 @@ func newWeChatOAuthTestHandler(t *testing.T, invitationEnabled bool) (*AuthHandl
 func wechatOAuthTestSettings(mode, appID, secret, frontendRedirect string) map[string]string {
 	return map[string]string{
 		service.SettingKeyWeChatConnectEnabled:             "true",
-		service.SettingKeyWeChatConnectAppID:               appID,
-		service.SettingKeyWeChatConnectAppSecret:           secret,
+		service.SettingKeyWeChatConnectOpenAppID:           appID,
+		service.SettingKeyWeChatConnectOpenAppSecret:       secret,
+		service.SettingKeyWeChatConnectMPAppID:             appID,
+		service.SettingKeyWeChatConnectMPAppSecret:         secret,
 		service.SettingKeyWeChatConnectMode:                mode,
 		service.SettingKeyWeChatConnectScopes:              service.DefaultWeChatConnectScopesForMode(mode),
 		service.SettingKeyWeChatConnectRedirectURL:         "https://api.example.com/api/v1/auth/oauth/wechat/callback",

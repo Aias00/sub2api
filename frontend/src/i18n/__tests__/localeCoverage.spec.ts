@@ -4,14 +4,12 @@ import en from '../locales/en'
 import zh from '../locales/zh'
 
 describe('locale coverage for recent public/auth and admin additions', () => {
-  it('covers legal document and model plaza copy in both locales', () => {
+  it('covers legal document copy in both locales and keeps model plaza copy in shell config', () => {
     expect(zh.legalDocument.loadFailedTitle).toBe('文档加载失败')
     expect(en.legalDocument.loadFailedTitle).toBe('Failed to load document')
 
-    expect(zh.modelsPlaza.title).toBe('公开模型目录')
-    expect(en.modelsPlaza.title).toBe('Public Model Catalog')
-    expect(zh.modelsPlaza.groups.all).toBe('全部模型')
-    expect(en.modelsPlaza.groups.all).toBe('All models')
+    expect('modelsPlaza' in zh).toBe(false)
+    expect('modelsPlaza' in en).toBe(false)
   })
 
   it('covers login agreement warnings and DingTalk auth copy in both locales', () => {

@@ -24,7 +24,7 @@ export function resolveCcSwitchImportConfig(
   clientType: CcSwitchClientType,
   baseUrl: string
 ): CcSwitchImportConfig {
-  switch (platform || 'anthropic') {
+  switch (platform) {
     case 'antigravity':
       return {
         app: clientType === 'gemini' ? 'gemini' : 'claude',

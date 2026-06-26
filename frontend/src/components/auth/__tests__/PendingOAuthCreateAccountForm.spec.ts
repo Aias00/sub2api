@@ -8,6 +8,24 @@ const sendPendingOAuthVerifyCode = vi.fn()
 const getPublicSettings = vi.fn()
 const showError = vi.fn()
 
+const authShellConfig = JSON.stringify({
+  en: {
+    labels: {
+      alreadyHaveAccount: 'Configured already have account',
+      codeSentSuccess: 'Configured code sent',
+      createAccount: 'Configured create account',
+      emailPlaceholder: 'configured-email',
+      invitationCodePlaceholder: 'configured-invitation',
+      passwordPlaceholder: 'configured-password',
+      processing: 'Configured processing',
+      resendCountdown: 'Configured resend {countdown}',
+      sendCode: 'Configured send code',
+      sendingCode: 'Configured sending',
+      verificationCodeHint: 'Configured verification hint',
+    },
+  },
+})
+
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
   return {
@@ -41,6 +59,7 @@ describe('PendingOAuthCreateAccountForm', () => {
     getPublicSettings.mockReset()
     showError.mockReset()
     getPublicSettings.mockResolvedValue({
+      auth_shell_config: authShellConfig,
       turnstile_enabled: false,
       turnstile_site_key: ''
     })
@@ -72,7 +91,7 @@ describe('PendingOAuthCreateAccountForm', () => {
     ])
   })
 
-  it('renders action labels through i18n keys', () => {
+  it('renders visible form labels from auth shell settings', async () => {
     const wrapper = mount(PendingOAuthCreateAccountForm, {
       props: {
         testIdPrefix: 'linuxdo',
@@ -81,12 +100,19 @@ describe('PendingOAuthCreateAccountForm', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('auth.createAccount')
-    expect(wrapper.text()).toContain('auth.alreadyHaveAccount')
+    await flushPromises()
+
+    expect(wrapper.get('[data-testid="linuxdo-create-account-email"]').attributes('placeholder')).toBe('configured-email')
+    expect(wrapper.get('[data-testid="linuxdo-create-account-password"]').attributes('placeholder')).toBe('configured-password')
+    expect(wrapper.text()).toContain('Configured send code')
+    expect(wrapper.text()).toContain('Configured verification hint')
+    expect(wrapper.text()).toContain('Configured create account')
+    expect(wrapper.text()).toContain('Configured already have account')
   })
 
   it('shows and emits invitation code when invitation-only signup is enabled', async () => {
     getPublicSettings.mockResolvedValue({
+      auth_shell_config: authShellConfig,
       invitation_code_enabled: true,
       turnstile_enabled: false,
       turnstile_site_key: ''
@@ -102,6 +128,7 @@ describe('PendingOAuthCreateAccountForm', () => {
     })
 
     await flushPromises()
+    expect(wrapper.get('[data-testid="linuxdo-create-account-invitation-code"]').attributes('placeholder')).toBe('configured-invitation')
     await wrapper.get('[data-testid="linuxdo-create-account-password"]').setValue('secret-123')
     await wrapper.get('[data-testid="linuxdo-create-account-verify-code"]').setValue('246810')
     await wrapper.get('[data-testid="linuxdo-create-account-invitation-code"]').setValue(' INVITE123 ')
@@ -164,6 +191,7 @@ describe('PendingOAuthCreateAccountForm', () => {
 
   it('requires a turnstile token before sending a verify code when turnstile is enabled', async () => {
     getPublicSettings.mockResolvedValue({
+      auth_shell_config: authShellConfig,
       turnstile_enabled: true,
       turnstile_site_key: 'site-key'
     })

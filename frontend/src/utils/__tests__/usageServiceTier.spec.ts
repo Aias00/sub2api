@@ -26,9 +26,9 @@ describe('usageServiceTier utils', () => {
 
   it('maps tiers to translated labels', () => {
     const translate = (key: string) => ({
-      'usage.serviceTierPriority': 'Fast',
-      'usage.serviceTierFlex': 'Flex',
-      'usage.serviceTierStandard': 'Standard',
+      'common.serviceTier.priority': 'Fast',
+      'common.serviceTier.flex': 'Flex',
+      'common.serviceTier.standard': 'Standard',
     })[key] ?? key
 
     expect(getUsageServiceTierLabel('fast', translate)).toBe('Fast')

@@ -44,6 +44,10 @@ func (s *balanceRedeemRepoStub) Create(ctx context.Context, code *RedeemCode) er
 	return nil
 }
 
+func (s *balanceRedeemRepoStub) GetByCode(ctx context.Context, code string) (*RedeemCode, error) {
+	return nil, ErrRedeemCodeNotFound
+}
+
 type authCacheInvalidatorStub struct {
 	userIDs  []int64
 	groupIDs []int64

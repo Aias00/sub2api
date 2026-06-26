@@ -422,13 +422,12 @@ cd sub2api
 npm install -g pnpm
 
 # 3. フロントエンドをビルド
-cd frontend
 pnpm install
-pnpm run build
-# 出力先: ../backend/internal/web/dist/
+pnpm run frontend:build
+# 出力先: backend/internal/web/dist/
 
 # 4. フロントエンドを組み込んだバックエンドをビルド
-cd ../backend
+cd backend
 go build -tags embed -o sub2api ./cmd/server
 
 # 5. 設定ファイルを作成
@@ -543,8 +542,7 @@ cd backend
 go run ./cmd/server
 
 # フロントエンド（ホットリロード付き）
-cd frontend
-pnpm run dev
+pnpm run frontend:dev
 ```
 
 #### コード生成

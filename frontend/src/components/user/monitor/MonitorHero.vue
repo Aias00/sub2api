@@ -36,7 +36,7 @@
         type="button"
         class="h-8 w-8 rounded-lg flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 dark:text-gray-400 dark:hover:text-gray-200 dark:hover:bg-dark-700 transition-colors disabled:opacity-50"
         :disabled="loading"
-        :title="t('common.refresh')"
+        :title="labels.refreshTitle"
         @click="emit('refresh')"
       >
         <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
@@ -57,9 +57,9 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import AutoRefreshButton from '@/components/common/AutoRefreshButton.vue'
+import type { ChannelStatusShellLabels } from '@/utils/channelStatusShell'
 export type MonitorWindow = '7d' | '15d' | '30d'
 export type OverallStatus = 'operational' | 'degraded'
 
@@ -68,6 +68,7 @@ const props = defineProps<{
   intervalSeconds: number
   window: MonitorWindow
   loading: boolean
+  labels: Pick<ChannelStatusShellLabels, 'refreshTitle' | 'windowTab' | 'overall'>
   autoRefresh?: {
     enabled: { value: boolean }
     intervalSeconds: { value: number }
@@ -83,15 +84,15 @@ const emit = defineEmits<{
   (e: 'refresh'): void
 }>()
 
-const { t } = useI18n()
-
 const windowOptions = computed<{ value: MonitorWindow; label: string }[]>(() => [
-  { value: '7d', label: t('channelStatus.windowTab.7d') },
-  { value: '15d', label: t('channelStatus.windowTab.15d') },
-  { value: '30d', label: t('channelStatus.windowTab.30d') },
+  { value: '7d', label: props.labels.windowTab['7d'] },
+  { value: '15d', label: props.labels.windowTab['15d'] },
+  { value: '30d', label: props.labels.windowTab['30d'] },
 ])
 
-const overallLabel = computed(() => t(`channelStatus.overall.${props.overallStatus}`))
+const overallLabel = computed(() =>
+  props.labels.overall[props.overallStatus],
+)
 
 const overallChipClass = computed(() => {
   switch (props.overallStatus) {

@@ -97,8 +97,6 @@ type SystemSettings struct {
 	DingTalkConnectSyncDeptAttrName        string `json:"dingtalk_connect_sync_dept_attr_name"`
 
 	WeChatConnectEnabled                   bool   `json:"wechat_connect_enabled"`
-	WeChatConnectAppID                     string `json:"wechat_connect_app_id"`
-	WeChatConnectAppSecretConfigured       bool   `json:"wechat_connect_app_secret_configured"`
 	WeChatConnectOpenAppID                 string `json:"wechat_connect_open_app_id"`
 	WeChatConnectOpenAppSecretConfigured   bool   `json:"wechat_connect_open_app_secret_configured"`
 	WeChatConnectMPAppID                   string `json:"wechat_connect_mp_app_id"`
@@ -147,21 +145,91 @@ type SystemSettings struct {
 	GoogleOAuthRedirectURL            string `json:"google_oauth_redirect_url"`
 	GoogleOAuthFrontendRedirectURL    string `json:"google_oauth_frontend_redirect_url"`
 
-	SiteName                    string           `json:"site_name"`
-	SiteLogo                    string           `json:"site_logo"`
-	SiteSubtitle                string           `json:"site_subtitle"`
-	APIBaseURL                  string           `json:"api_base_url"`
-	ContactInfo                 string           `json:"contact_info"`
-	DocURL                      string           `json:"doc_url"`
-	HomeContent                 string           `json:"home_content"`
-	ModelPlazaItems             []ModelPlazaItem `json:"model_plaza_items"`
-	HideCcsImportButton         bool             `json:"hide_ccs_import_button"`
-	PurchaseSubscriptionEnabled bool             `json:"purchase_subscription_enabled"`
-	PurchaseSubscriptionURL     string           `json:"purchase_subscription_url"`
-	TableDefaultPageSize        int              `json:"table_default_page_size"`
-	TablePageSizeOptions        []int            `json:"table_page_size_options"`
-	CustomMenuItems             []CustomMenuItem `json:"custom_menu_items"`
-	CustomEndpoints             []CustomEndpoint `json:"custom_endpoints"`
+	SiteName                     string           `json:"site_name"`
+	SiteLogo                     string           `json:"site_logo"`
+	SiteSubtitle                 string           `json:"site_subtitle"`
+	APIBaseURL                   string           `json:"api_base_url"`
+	ContactInfo                  string           `json:"contact_info"`
+	DocURL                       string           `json:"doc_url"`
+	DocsContentBasePath          string           `json:"docs_content_base_path"`
+	HomeContent                  string           `json:"home_content"`
+	HomeShellConfig              string           `json:"home_shell_config"`
+	HomeBusinessShellConfig      string           `json:"home_business_shell_config"`
+	ModelPlazaItems              []ModelPlazaItem `json:"model_plaza_items"`
+	ModelPlazaShellConfig        string           `json:"model_plaza_shell_config"`
+	DocsShellConfig              string           `json:"docs_shell_config"`
+	LegalDocumentShellConfig     string           `json:"legal_document_shell_config"`
+	APIKeysShellConfig           string           `json:"api_keys_shell_config"`
+	KeyUsageShellConfig          string           `json:"key_usage_shell_config"`
+	DashboardShellConfig         string           `json:"dashboard_shell_config"`
+	UsageShellConfig             string           `json:"usage_shell_config"`
+	APIGuideShellConfig          string           `json:"api_guide_shell_config"`
+	APITestShellConfig           string           `json:"api_test_shell_config"`
+	AvailableGroupsShellConfig   string           `json:"available_groups_shell_config"`
+	RedeemShellConfig            string           `json:"redeem_shell_config"`
+	AffiliateShellConfig         string           `json:"affiliate_shell_config"`
+	AvailableChannelsShellConfig string           `json:"available_channels_shell_config"`
+	ChannelStatusShellConfig     string           `json:"channel_status_shell_config"`
+	CustomPageShellConfig        string           `json:"custom_page_shell_config"`
+	ProfileShellConfig           string           `json:"profile_shell_config"`
+	AuthShellConfig              string           `json:"auth_shell_config"`
+	HideCcsImportButton          bool             `json:"hide_ccs_import_button"`
+	PurchaseSubscriptionEnabled  bool             `json:"purchase_subscription_enabled"`
+	PurchaseSubscriptionURL      string           `json:"purchase_subscription_url"`
+	TableDefaultPageSize         int              `json:"table_default_page_size"`
+	TablePageSizeOptions         []int            `json:"table_page_size_options"`
+	CustomMenuItems              []CustomMenuItem `json:"custom_menu_items"`
+	CustomEndpoints              []CustomEndpoint `json:"custom_endpoints"`
+
+	AppURL                     string `json:"app_url"`
+	AppName                    string `json:"app_name"`
+	AppDescription             string `json:"app_description"`
+	AppLogo                    string `json:"app_logo"`
+	AppFavicon                 string `json:"app_favicon"`
+	AppPreviewImage            string `json:"app_preview_image"`
+	Theme                      string `json:"theme"`
+	Appearance                 string `json:"appearance"`
+	DefaultLocale              string `json:"default_locale"`
+	PromptCasesTitle           string `json:"prompt_cases_title"`
+	PromptCasesDescription     string `json:"prompt_cases_description"`
+	PromptTemplatesTitle       string `json:"prompt_templates_title"`
+	PromptTemplatesDescription string `json:"prompt_templates_description"`
+	WorkspaceShellConfig       string `json:"workspace_shell_config"`
+	PricingTitle               string `json:"pricing_title"`
+	PricingDescription         string `json:"pricing_description"`
+	PricingShellConfig         string `json:"pricing_shell_config"`
+	PaymentShellConfig         string `json:"payment_shell_config"`
+	PricingCurrencySymbol      string `json:"pricing_currency_symbol"`
+	CreditsTitle               string `json:"credits_title"`
+	CreditsDescription         string `json:"credits_description"`
+	CreditsPurchaseLabel       string `json:"credits_purchase_label"`
+	CreditsBalanceLabel        string `json:"credits_balance_label"`
+	CreditsPerBalance          string `json:"credits_per_balance"`
+	LocaleDetectEnabled        bool   `json:"locale_detect_enabled"`
+	EmailAuthVisible           bool   `json:"email_auth_visible"`
+	GoogleAuthVisible          bool   `json:"google_auth_visible"`
+	GitHubAuthVisible          bool   `json:"github_auth_visible"`
+
+	PromptCatalogShellConfig  string `json:"prompt_catalog_shell_config"`
+	CreditsShellConfig        string `json:"credits_shell_config"`
+	GoogleAnalyticsID         string `json:"google_analytics_id"`
+	ClarityID                 string `json:"clarity_id"`
+	PlausibleDomain           string `json:"plausible_domain"`
+	PlausibleSrc              string `json:"plausible_src"`
+	OpenPanelClientID         string `json:"openpanel_client_id"`
+	PublicIntegrationsEnabled bool   `json:"public_integrations_enabled"`
+	VercelAnalyticsEnabled    bool   `json:"vercel_analytics_enabled"`
+	AdsenseCode               string `json:"adsense_code"`
+	AffonsoEnabled            bool   `json:"affonso_enabled"`
+	AffonsoID                 string `json:"affonso_id"`
+	AffonsoCookieDuration     string `json:"affonso_cookie_duration"`
+	PromoteKitEnabled         bool   `json:"promotekit_enabled"`
+	PromoteKitID              string `json:"promotekit_id"`
+	CrispEnabled              bool   `json:"crisp_enabled"`
+	CrispWebsiteID            string `json:"crisp_website_id"`
+	TawkEnabled               bool   `json:"tawk_enabled"`
+	TawkPropertyID            string `json:"tawk_property_id"`
+	TawkWidgetID              string `json:"tawk_widget_id"`
 
 	DefaultConcurrency           int                          `json:"default_concurrency"`
 	DefaultBalance               float64                      `json:"default_balance"`
@@ -338,8 +406,28 @@ type PublicSettings struct {
 	APIBaseURL                       string                   `json:"api_base_url"`
 	ContactInfo                      string                   `json:"contact_info"`
 	DocURL                           string                   `json:"doc_url"`
+	DocsContentBasePath              string                   `json:"docs_content_base_path"`
 	HomeContent                      string                   `json:"home_content"`
+	HomeShellConfig                  string                   `json:"home_shell_config"`
+	HomeBusinessShellConfig          string                   `json:"home_business_shell_config"`
 	ModelPlazaItems                  []ModelPlazaItem         `json:"model_plaza_items"`
+	ModelPlazaShellConfig            string                   `json:"model_plaza_shell_config"`
+	DocsShellConfig                  string                   `json:"docs_shell_config"`
+	LegalDocumentShellConfig         string                   `json:"legal_document_shell_config"`
+	APIKeysShellConfig               string                   `json:"api_keys_shell_config"`
+	KeyUsageShellConfig              string                   `json:"key_usage_shell_config"`
+	DashboardShellConfig             string                   `json:"dashboard_shell_config"`
+	UsageShellConfig                 string                   `json:"usage_shell_config"`
+	APIGuideShellConfig              string                   `json:"api_guide_shell_config"`
+	APITestShellConfig               string                   `json:"api_test_shell_config"`
+	AvailableGroupsShellConfig       string                   `json:"available_groups_shell_config"`
+	RedeemShellConfig                string                   `json:"redeem_shell_config"`
+	AffiliateShellConfig             string                   `json:"affiliate_shell_config"`
+	AvailableChannelsShellConfig     string                   `json:"available_channels_shell_config"`
+	ChannelStatusShellConfig         string                   `json:"channel_status_shell_config"`
+	CustomPageShellConfig            string                   `json:"custom_page_shell_config"`
+	ProfileShellConfig               string                   `json:"profile_shell_config"`
+	AuthShellConfig                  string                   `json:"auth_shell_config"`
 	HideCcsImportButton              bool                     `json:"hide_ccs_import_button"`
 	PurchaseSubscriptionEnabled      bool                     `json:"purchase_subscription_enabled"`
 	PurchaseSubscriptionURL          string                   `json:"purchase_subscription_url"`
@@ -361,6 +449,7 @@ type PublicSettings struct {
 	BackendModeEnabled               bool                     `json:"backend_mode_enabled"`
 	PaymentEnabled                   bool                     `json:"payment_enabled"`
 	Version                          string                   `json:"version"`
+	DefaultLocale                    string                   `json:"default_locale"`
 	BalanceLowNotifyEnabled          bool                     `json:"balance_low_notify_enabled"`
 	AccountQuotaNotifyEnabled        bool                     `json:"account_quota_notify_enabled"`
 	BalanceLowNotifyThreshold        float64                  `json:"balance_low_notify_threshold"`
@@ -374,6 +463,42 @@ type PublicSettings struct {
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
 	RiskControlEnabled bool `json:"risk_control_enabled"`
+
+	PromptCasesTitle           string `json:"prompt_cases_title"`
+	PromptCasesDescription     string `json:"prompt_cases_description"`
+	PromptTemplatesTitle       string `json:"prompt_templates_title"`
+	PromptTemplatesDescription string `json:"prompt_templates_description"`
+	PromptCatalogShellConfig   string `json:"prompt_catalog_shell_config"`
+	WorkspaceShellConfig       string `json:"workspace_shell_config"`
+	PricingTitle               string `json:"pricing_title"`
+	PricingDescription         string `json:"pricing_description"`
+	PricingShellConfig         string `json:"pricing_shell_config"`
+	PaymentShellConfig         string `json:"payment_shell_config"`
+	PricingCurrencySymbol      string `json:"pricing_currency_symbol"`
+	CreditsTitle               string `json:"credits_title"`
+	CreditsDescription         string `json:"credits_description"`
+	CreditsPurchaseLabel       string `json:"credits_purchase_label"`
+	CreditsBalanceLabel        string `json:"credits_balance_label"`
+	CreditsPerBalance          string `json:"credits_per_balance"`
+	CreditsShellConfig         string `json:"credits_shell_config"`
+	GoogleAnalyticsID          string `json:"google_analytics_id"`
+	ClarityID                  string `json:"clarity_id"`
+	PlausibleDomain            string `json:"plausible_domain"`
+	PlausibleSrc               string `json:"plausible_src"`
+	OpenPanelClientID          string `json:"openpanel_client_id"`
+	PublicIntegrationsEnabled  bool   `json:"public_integrations_enabled"`
+	VercelAnalyticsEnabled     bool   `json:"vercel_analytics_enabled"`
+	AdsenseCode                string `json:"adsense_code"`
+	AffonsoEnabled             bool   `json:"affonso_enabled"`
+	AffonsoID                  string `json:"affonso_id"`
+	AffonsoCookieDuration      string `json:"affonso_cookie_duration"`
+	PromoteKitEnabled          bool   `json:"promotekit_enabled"`
+	PromoteKitID               string `json:"promotekit_id"`
+	CrispEnabled               bool   `json:"crisp_enabled"`
+	CrispWebsiteID             string `json:"crisp_website_id"`
+	TawkEnabled                bool   `json:"tawk_enabled"`
+	TawkPropertyID             string `json:"tawk_property_id"`
+	TawkWidgetID               string `json:"tawk_widget_id"`
 }
 
 type LoginAgreementDocument struct {

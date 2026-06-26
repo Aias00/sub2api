@@ -15,20 +15,20 @@
       <template v-else>
         <div class="flex flex-col items-center py-4">
           <div class="h-10 w-10 animate-spin rounded-full border-4 border-primary-500 border-t-transparent"></div>
-          <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">{{ t('payment.qr.payInNewWindowHint') }}</p>
+          <p class="mt-4 text-sm text-gray-500 dark:text-gray-400">{{ paymentText('payInNewWindowHint') }}</p>
           <button v-if="payUrl" class="btn btn-secondary mt-3 text-sm" @click="reopenPopup">
-            {{ t('payment.qr.openPayWindow') }}
+            {{ paymentText('openPayWindow') }}
           </button>
         </div>
       </template>
       <!-- Countdown -->
       <div v-if="expired" class="text-center">
-        <p class="text-lg font-medium text-red-500">{{ t('payment.qr.expired') }}</p>
+        <p class="text-lg font-medium text-red-500">{{ paymentText('expired') }}</p>
       </div>
       <div v-else class="text-center">
-        <p class="text-sm text-gray-500 dark:text-gray-400">{{ qrUrl ? t('payment.qr.expiresIn') : '' }}</p>
+        <p class="text-sm text-gray-500 dark:text-gray-400">{{ qrUrl ? paymentText('expiresIn') : '' }}</p>
         <p class="mt-1 text-2xl font-bold tabular-nums text-gray-900 dark:text-white">{{ countdownDisplay }}</p>
-        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ t('payment.qr.waitingPayment') }}</p>
+        <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ paymentText('waitingPayment') }}</p>
       </div>
     </div>
     <!-- Success State -->
@@ -36,20 +36,20 @@
       <div class="flex h-16 w-16 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
         <Icon name="check" size="lg" class="text-green-500" />
       </div>
-      <p class="text-lg font-bold text-gray-900 dark:text-white">{{ t('payment.result.success') }}</p>
+      <p class="text-lg font-bold text-gray-900 dark:text-white">{{ paymentText('success') }}</p>
       <div v-if="paidOrder" class="w-full rounded-xl bg-gray-50 p-4 dark:bg-dark-800">
         <div class="space-y-2 text-sm">
           <div class="flex justify-between">
-            <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</span>
+            <span class="text-gray-500 dark:text-gray-400">{{ paymentText('orderId') }}</span>
             <span class="font-medium text-gray-900 dark:text-white">#{{ paidOrder.id }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.amount') }}</span>
-            <span class="font-medium text-gray-900 dark:text-white">{{ paidOrder.order_type === 'balance' ? '$' : '¥' }}{{ paidOrder.amount.toFixed(2) }}</span>
+            <span class="text-gray-500 dark:text-gray-400">{{ paymentText('amount') }}</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ paidOrder.order_type === 'balance' ? '$' + paidOrder.amount.toFixed(2) : formatOrderPaymentAmount(paidOrder.amount) }}</span>
           </div>
           <div class="flex justify-between">
-            <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</span>
-            <span class="font-medium text-gray-900 dark:text-white">¥{{ paidOrder.pay_amount.toFixed(2) }}</span>
+            <span class="text-gray-500 dark:text-gray-400">{{ paymentText('payAmount') }}</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ formatOrderPaymentAmount(paidOrder.pay_amount) }}</span>
           </div>
         </div>
       </div>
@@ -57,13 +57,13 @@
     <template #footer>
       <div class="flex justify-end gap-3">
         <button v-if="!success && !expired" class="btn btn-secondary" :disabled="cancelling" @click="handleCancel">
-          {{ cancelling ? t('common.processing') : t('payment.qr.cancelOrder') }}
+          {{ cancelling ? paymentText('processing') : paymentText('cancelOrder') }}
         </button>
         <button v-if="success" class="btn btn-primary" @click="handleDone">
-          {{ t('common.confirm') }}
+          {{ paymentText('confirm') }}
         </button>
         <button v-if="expired" class="btn btn-primary" @click="handleClose">
-          {{ t('payment.result.backToRecharge') }}
+          {{ paymentText('backToRecharge') }}
         </button>
       </div>
     </template>
@@ -79,7 +79,16 @@ import { usePaymentStore } from '@/stores/payment'
 import { useAppStore } from '@/stores'
 import { paymentAPI } from '@/api/payment'
 import { extractI18nErrorMessage } from '@/utils/apiError'
+import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import { getPaymentPopupFeatures } from '@/components/payment/providerConfig'
+import {
+  DEFAULT_PAYMENT_STATUS_POLL_INTERVAL_MS,
+  DEFAULT_PAYMENT_VERIFY_RETRY_INTERVAL_MS,
+  DEFAULT_PAYMENT_VERIFY_RETRY_MAX_ATTEMPTS,
+  renderPaymentQRDialogText,
+  type PaymentQRDialogLabelKey,
+  type PaymentQRDialogLabels,
+} from '@/utils/paymentShell'
 import type { PaymentOrder } from '@/types/payment'
 import QRCode from 'qrcode'
 import alipayIcon from '@/assets/icons/alipay.svg'
@@ -93,6 +102,10 @@ const props = defineProps<{
   paymentType: string
   /** URL for reopening the payment popup window */
   payUrl?: string
+  labels?: PaymentQRDialogLabels
+  pollIntervalMs?: number
+  verifyRetryIntervalMs?: number
+  verifyRetryMaxAttempts?: number
 }>()
 
 const emit = defineEmits<{
@@ -100,7 +113,7 @@ const emit = defineEmits<{
   success: []
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const paymentStore = usePaymentStore()
 const appStore = useAppStore()
 
@@ -117,23 +130,24 @@ let countdownTimer: ReturnType<typeof setInterval> | null = null
 let verifyAttempts = 0
 let lastVerifyAt = 0
 
-const VERIFY_RETRY_INTERVAL_MS = 15000
-const VERIFY_RETRY_MAX_ATTEMPTS = 6
-
 const isAlipay = computed(() => props.paymentType.includes('alipay'))
 const isWxpay = computed(() => props.paymentType.includes('wxpay'))
 
+function paymentText(key: PaymentQRDialogLabelKey): string {
+  return renderPaymentQRDialogText(props.labels, key)
+}
+
 const dialogTitle = computed(() => {
-  if (success.value) return t('payment.result.success')
-  if (!qrUrl.value) return t('payment.qr.payInNewWindow')
-  if (isAlipay.value) return t('payment.qr.scanAlipay')
-  if (isWxpay.value) return t('payment.qr.scanWxpay')
-  return t('payment.qr.scanToPay')
+  if (success.value) return paymentText('success')
+  if (!qrUrl.value) return paymentText('payInNewWindow')
+  if (isAlipay.value) return paymentText('scanAlipay')
+  if (isWxpay.value) return paymentText('scanWxpay')
+  return paymentText('scanToPay')
 })
 
 const scanHint = computed(() => {
-  if (isAlipay.value) return t('payment.qr.scanAlipayHint')
-  if (isWxpay.value) return t('payment.qr.scanWxpayHint')
+  if (isAlipay.value) return paymentText('scanAlipayHint')
+  if (isWxpay.value) return paymentText('scanWxpayHint')
   return ''
 })
 
@@ -142,6 +156,10 @@ const countdownDisplay = computed(() => {
   const s = remainingSeconds.value % 60
   return m.toString().padStart(2, '0') + ':' + s.toString().padStart(2, '0')
 })
+
+function formatOrderPaymentAmount(value: number): string {
+  return formatPaymentAmount(value, normalizePaymentCurrency(paidOrder.value?.currency), locale.value)
+}
 
 function getLogoForType(): string | null {
   if (isAlipay.value) return alipayIcon
@@ -212,7 +230,9 @@ async function tryRecoverPendingOrder(order: PaymentOrder): Promise<PaymentOrder
   const normalizedStatus = String(order.status || '').trim().toUpperCase()
   if (normalizedStatus !== 'PENDING') return order
   const now = Date.now()
-  if (verifyAttempts >= VERIFY_RETRY_MAX_ATTEMPTS || now - lastVerifyAt < VERIFY_RETRY_INTERVAL_MS) {
+  const verifyRetryMaxAttempts = props.verifyRetryMaxAttempts ?? DEFAULT_PAYMENT_VERIFY_RETRY_MAX_ATTEMPTS
+  const verifyRetryIntervalMs = props.verifyRetryIntervalMs ?? DEFAULT_PAYMENT_VERIFY_RETRY_INTERVAL_MS
+  if (verifyAttempts >= verifyRetryMaxAttempts || now - lastVerifyAt < verifyRetryIntervalMs) {
     return order
   }
 
@@ -241,6 +261,13 @@ function startCountdown(seconds: number) {
   }, 1000)
 }
 
+function secondsUntil(expiresAtStr: string): number {
+  if (!expiresAtStr) return 0
+  const expiresAt = Date.parse(expiresAtStr)
+  if (!Number.isFinite(expiresAt)) return 0
+  return Math.floor((expiresAt - Date.now()) / 1000)
+}
+
 async function handleCancel() {
   if (!props.orderId || cancelling.value) return
   cancelling.value = true
@@ -249,7 +276,7 @@ async function handleCancel() {
     cleanup()
     emit('close')
   } catch (err: unknown) {
-    appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error')))
+    appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', paymentText('errorFallback')))
   } finally {
     cancelling.value = false
   }
@@ -280,24 +307,26 @@ function init() {
   verifyAttempts = 0
   lastVerifyAt = 0
 
-  let seconds = 30 * 60
-  if (props.expiresAt) {
-    const expiresAt = new Date(props.expiresAt)
-    seconds = Math.floor((expiresAt.getTime() - Date.now()) / 1000)
-  }
+  const seconds = secondsUntil(props.expiresAt)
   startCountdown(seconds)
-  pollTimer = setInterval(pollStatus, 3000)
+  if (!expired.value) {
+    pollTimer = setInterval(pollStatus, props.pollIntervalMs ?? DEFAULT_PAYMENT_STATUS_POLL_INTERVAL_MS)
+  }
   renderQR()
 }
 
 // Watch for dialog open/close
-watch(() => props.show, (isOpen) => {
-  if (isOpen) {
-    init()
-  } else {
-    cleanup()
-  }
-})
+watch(
+  () => props.show,
+  (isOpen) => {
+    if (isOpen) {
+      init()
+    } else {
+      cleanup()
+    }
+  },
+  { immediate: true },
+)
 
 watch(qrUrl, () => renderQR())
 

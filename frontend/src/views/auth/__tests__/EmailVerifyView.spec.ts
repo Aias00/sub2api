@@ -1,6 +1,10 @@
 import { flushPromises, mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EmailVerifyView from '@/views/auth/EmailVerifyView.vue'
+
+const emailVerifyViewSource = readFileSync(resolve(process.cwd(), 'src/views/auth/EmailVerifyView.vue'), 'utf8')
 
 const {
   pushMock,
@@ -32,7 +36,6 @@ const {
   authStoreState: {
     pendingAuthSession: null as null | {
       token: string
-      token_field: 'pending_auth_token' | 'pending_oauth_token'
       provider: string
       redirect?: string
       adoption_required?: boolean
@@ -125,10 +128,69 @@ describe('EmailVerifyView', () => {
     setTokenMock.mockResolvedValue({})
   })
 
+  it('renders email verification shell labels from public settings', async () => {
+    getPublicSettingsMock.mockResolvedValue({
+      turnstile_enabled: false,
+      turnstile_site_key: '',
+      site_name: 'Sub2API',
+      registration_email_suffix_whitelist: [],
+      auth_shell_config: JSON.stringify({
+        en: {
+          defaults: {
+            registerPath: '/configured-register',
+          },
+          labels: {
+            emailVerifyTitle: 'Configured verify email',
+            emailVerifyDescriptionPrefix: 'Configured code destination',
+            emailVerifyCodeLabel: 'Configured code label',
+            emailVerifyCodeHint: 'Configured code hint',
+            emailVerifyCodeSentSuccess: 'Configured code sent',
+            emailVerifySubmit: 'Configured verify submit',
+            emailVerifyResendCountdown: 'Configured resend in {countdown}',
+            emailVerifyBackToRegistration: 'Configured back to register',
+          },
+        },
+      }),
+    })
+    sessionStorage.setItem(
+      'register_data',
+      JSON.stringify({
+        email: 'normal@example.com',
+        password: 'secret-456',
+      })
+    )
+
+    const wrapper = mount(EmailVerifyView, {
+      global: {
+        stubs: {
+          AuthLayout: { template: '<div><slot /><slot name="footer" /></div>' },
+          Icon: true,
+          TurnstileWidget: true,
+          transition: false,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    const text = wrapper.text()
+    expect(text).toContain('Configured verify email')
+    expect(text).toContain('Configured code destination')
+    expect(text).toContain('normal@example.com')
+    expect(text).toContain('Configured code label')
+    expect(text).toContain('Configured code hint')
+    expect(text).toContain('Configured code sent')
+    expect(text).toContain('Configured verify submit')
+    expect(text).toContain('Configured resend in 60')
+    expect(text).toContain('Configured back to register')
+    const buttons = wrapper.findAll('button')
+    await buttons[buttons.length - 1].trigger('click')
+    expect(pushMock).toHaveBeenCalledWith('/configured-register')
+  })
+
   it('uses the pending oauth verify-code endpoint when register data carries a pending auth session', async () => {
     authStoreState.pendingAuthSession = {
       token: 'pending-token-1',
-      token_field: 'pending_auth_token',
       provider: 'wechat',
       redirect: '/profile',
     }
@@ -164,7 +226,6 @@ describe('EmailVerifyView', () => {
   it('skips the registration email suffix whitelist for pending oauth verification', async () => {
     authStoreState.pendingAuthSession = {
       token: 'pending-token-2',
-      token_field: 'pending_auth_token',
       provider: 'oidc',
       redirect: '/profile',
     }
@@ -205,7 +266,6 @@ describe('EmailVerifyView', () => {
   it('uses the pending oauth verify-code endpoint when auth store only carries the pending provider', async () => {
     authStoreState.pendingAuthSession = {
       token: '',
-      token_field: 'pending_oauth_token',
       provider: 'oidc',
       redirect: '/profile',
     }
@@ -238,7 +298,6 @@ describe('EmailVerifyView', () => {
 
     expect(sendPendingOAuthVerifyCodeMock).toHaveBeenCalledWith({
       email: 'fresh@example.com',
-      pending_oauth_token: undefined,
     })
     expect(sendVerifyCodeMock).not.toHaveBeenCalled()
     expect(showErrorMock).not.toHaveBeenCalled()
@@ -247,7 +306,6 @@ describe('EmailVerifyView', () => {
   it('returns to the oauth callback flow when pending send-code detects an existing account email', async () => {
     authStoreState.pendingAuthSession = {
       token: '',
-      token_field: 'pending_oauth_token',
       provider: 'oidc',
       redirect: '/profile/security',
     }
@@ -285,7 +343,6 @@ describe('EmailVerifyView', () => {
 
     expect(setPendingAuthSessionMock).toHaveBeenCalledWith({
       token: '',
-      token_field: 'pending_oauth_token',
       provider: 'oidc',
       redirect: '/profile/security',
     })
@@ -296,7 +353,6 @@ describe('EmailVerifyView', () => {
   it('submits pending auth account creation when session storage has no pending metadata but auth store does', async () => {
     authStoreState.pendingAuthSession = {
       token: 'pending-token-1',
-      token_field: 'pending_auth_token',
       provider: 'wechat',
       redirect: '/profile',
     }
@@ -352,7 +408,6 @@ describe('EmailVerifyView', () => {
   it('returns to the oauth callback flow when pending account creation becomes bind-login', async () => {
     authStoreState.pendingAuthSession = {
       token: '',
-      token_field: 'pending_oauth_token',
       provider: 'oidc',
       redirect: '/profile/security',
     }
@@ -402,7 +457,6 @@ describe('EmailVerifyView', () => {
     })
     expect(setPendingAuthSessionMock).toHaveBeenCalledWith({
       token: '',
-      token_field: 'pending_oauth_token',
       provider: 'oidc',
       redirect: '/profile/security',
     })
@@ -451,5 +505,12 @@ describe('EmailVerifyView', () => {
     })
     expect(apiClientPostMock).not.toHaveBeenCalled()
     expect(pushMock).toHaveBeenCalledWith('/dashboard')
+  })
+
+  it('keeps email verification back navigation on auth shell route defaults', () => {
+    expect(emailVerifyViewSource).toContain('useAuthShellText')
+    expect(emailVerifyViewSource).toContain('applyAuthShellConfig(settings.auth_shell_config)')
+    expect(emailVerifyViewSource).toContain('authRouteDefaults')
+    expect(emailVerifyViewSource).not.toContain("router.push('/register')")
   })
 })

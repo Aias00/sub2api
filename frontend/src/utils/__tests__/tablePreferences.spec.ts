@@ -2,7 +2,6 @@ import { afterEach, describe, expect, it } from 'vitest'
 
 import {
   DEFAULT_TABLE_PAGE_SIZE,
-  DEFAULT_TABLE_PAGE_SIZE_OPTIONS,
   getConfiguredTableDefaultPageSize,
   getConfiguredTablePageSizeOptions,
   normalizeTablePageSize
@@ -13,9 +12,9 @@ describe('tablePreferences', () => {
     delete window.__APP_CONFIG__
   })
 
-  it('returns built-in defaults when app config is missing', () => {
+  it('uses the default page size as the emergency option when app config is missing', () => {
     expect(getConfiguredTableDefaultPageSize()).toBe(DEFAULT_TABLE_PAGE_SIZE)
-    expect(getConfiguredTablePageSizeOptions()).toEqual(DEFAULT_TABLE_PAGE_SIZE_OPTIONS)
+    expect(getConfiguredTablePageSizeOptions()).toEqual([DEFAULT_TABLE_PAGE_SIZE])
   })
 
   it('uses configured defaults when app config is valid', () => {
@@ -64,11 +63,11 @@ describe('tablePreferences', () => {
     expect(normalizeTablePageSize(undefined)).toBe(20)
   })
 
-  it('keeps built-in selectable defaults at 10, 20, 50, 100', () => {
+  it('uses the configured default as the emergency option when selectable options are missing', () => {
     window.__APP_CONFIG__ = {
       table_default_page_size: 1000
     } as any
 
-    expect(getConfiguredTablePageSizeOptions()).toEqual([10, 20, 50, 100])
+    expect(getConfiguredTablePageSizeOptions()).toEqual([1000])
   })
 })

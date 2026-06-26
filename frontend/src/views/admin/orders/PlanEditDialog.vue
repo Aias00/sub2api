@@ -137,7 +137,7 @@ const selectedGroupInfo = computed(() => {
 watch(() => props.show, (visible) => {
   if (!visible) return
   if (props.plan) {
-    Object.assign(planForm, { name: props.plan.name, group_id: props.plan.group_id, description: props.plan.description, price: props.plan.price, original_price: props.plan.original_price || 0, creem_product_id: props.plan.creem_product_id || '', validity_days: props.plan.validity_days, validity_unit: props.plan.validity_unit || 'days', sort_order: props.plan.sort_order || 0, for_sale: props.plan.for_sale })
+    Object.assign(planForm, { name: props.plan.name, group_id: props.plan.group_id, description: props.plan.description, price: props.plan.price, original_price: props.plan.original_price || 0, creem_product_id: props.plan.creem_product_id || '', validity_days: props.plan.validity_days, validity_unit: props.plan.validity_unit || '', sort_order: props.plan.sort_order || 0, for_sale: props.plan.for_sale })
     planFeaturesText.value = (props.plan.features || []).join('\n')
   } else {
     Object.assign(planForm, { name: '', group_id: null, description: '', price: 0, original_price: 0, creem_product_id: '', validity_days: 30, validity_unit: 'days', sort_order: 0, for_sale: true })

@@ -23,10 +23,21 @@ type EmailOAuthIdentityInput struct {
 	DisplayName      string
 	AvatarURL        string
 	UpstreamMetadata map[string]any
+	SignupSource     string
+}
+
+type emailOAuthRegistrationOptions struct {
+	SkipInvitationGate bool
 }
 
 func (s *AuthService) LoginOrRegisterVerifiedEmailOAuth(ctx context.Context, input EmailOAuthIdentityInput) (*TokenPair, *User, error) {
-	return s.loginOrRegisterVerifiedEmailOAuth(ctx, input, "", "")
+	return s.loginOrRegisterVerifiedEmailOAuth(ctx, input, "", "", emailOAuthRegistrationOptions{})
+}
+
+func (s *AuthService) LoginOrRegisterVerifiedEmailOAuthBypassInvitation(ctx context.Context, input EmailOAuthIdentityInput) (*TokenPair, *User, error) {
+	return s.loginOrRegisterVerifiedEmailOAuth(ctx, input, "", "", emailOAuthRegistrationOptions{
+		SkipInvitationGate: true,
+	})
 }
 
 func (s *AuthService) LoginOrRegisterVerifiedEmailOAuthWithInvitation(
@@ -35,7 +46,7 @@ func (s *AuthService) LoginOrRegisterVerifiedEmailOAuthWithInvitation(
 	invitationCode string,
 	affiliateCode string,
 ) (*TokenPair, *User, error) {
-	return s.loginOrRegisterVerifiedEmailOAuth(ctx, input, invitationCode, affiliateCode)
+	return s.loginOrRegisterVerifiedEmailOAuth(ctx, input, invitationCode, affiliateCode, emailOAuthRegistrationOptions{})
 }
 
 func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
@@ -43,6 +54,7 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	input EmailOAuthIdentityInput,
 	invitationCode string,
 	affiliateCode string,
+	options emailOAuthRegistrationOptions,
 ) (*TokenPair, *User, error) {
 	if s == nil || s.userRepo == nil || s.entClient == nil {
 		return nil, nil, ErrServiceUnavailable
@@ -55,6 +67,10 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	providerKey := strings.TrimSpace(input.ProviderKey)
 	if providerKey == "" {
 		providerKey = providerType
+	}
+	userSignupSource := providerType
+	if normalizeEmailAuthSignupSource(input.SignupSource) == authSignupSourceTouch {
+		userSignupSource = authSignupSourceTouch
 	}
 	providerSubject := strings.TrimSpace(input.ProviderSubject)
 	if providerSubject == "" {
@@ -89,10 +105,14 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	user := identityUser
 	created := false
 	if user == nil {
-		user, err = s.userRepo.GetByEmail(ctx, email)
+		if userSignupSource == authSignupSourceTouch {
+			user, err = s.getUserByEmailForSignupSource(ctx, email, userSignupSource)
+		} else {
+			user, err = s.userRepo.GetByEmail(ctx, email)
+		}
 		if err != nil {
 			if errors.Is(err, ErrUserNotFound) {
-				user, err = s.createEmailOAuthUser(ctx, email, input.Username, providerType, invitationCode, affiliateCode)
+				user, err = s.createEmailOAuthUser(ctx, email, input.Username, userSignupSource, invitationCode, affiliateCode, options)
 				if err != nil {
 					return nil, nil, err
 				}
@@ -117,6 +137,7 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 		DisplayName:      input.DisplayName,
 		AvatarURL:        input.AvatarURL,
 		UpstreamMetadata: input.UpstreamMetadata,
+		SignupSource:     input.SignupSource,
 	}); err != nil {
 		return nil, nil, err
 	}
@@ -139,22 +160,27 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 		return nil, nil, fmt.Errorf("generate token pair: %w", err)
 	}
 	if created {
-		s.notifyUserRegistered(ctx, user, providerType)
-		s.sendWelcomeEmailForNewUser(ctx, user, providerType)
+		s.notifyUserRegistered(ctx, user, userSignupSource)
+		s.sendWelcomeEmailForNewUser(ctx, user, userSignupSource)
 	}
 	return tokenPair, user, nil
 }
 
-func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username, providerType, invitationCode, affiliateCode string) (*User, error) {
+func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username, providerType, invitationCode, affiliateCode string, options emailOAuthRegistrationOptions) (*User, error) {
 	if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
 		return nil, ErrRegDisabled
 	}
-	invitationRedeemCode, effectiveAffiliateCode, err := s.validateOAuthRegistrationInvitationWithAffiliate(ctx, invitationCode, affiliateCode)
-	if err != nil {
-		if errors.Is(err, ErrInvitationCodeRequired) {
-			return nil, ErrOAuthInvitationRequired
+	var invitationRedeemCode *RedeemCode
+	effectiveAffiliateCode := strings.TrimSpace(affiliateCode)
+	if !options.SkipInvitationGate {
+		var err error
+		invitationRedeemCode, effectiveAffiliateCode, err = s.validateOAuthRegistrationInvitationWithAffiliate(ctx, invitationCode, affiliateCode)
+		if err != nil {
+			if errors.Is(err, ErrInvitationCodeRequired) {
+				return nil, ErrOAuthInvitationRequired
+			}
+			return nil, err
 		}
-		return nil, err
 	}
 
 	randomPassword, err := randomHexString(32)
@@ -183,7 +209,13 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 	}
 	if err := s.userRepo.Create(ctx, user); err != nil {
 		if errors.Is(err, ErrEmailExists) {
-			existing, loadErr := s.userRepo.GetByEmail(ctx, email)
+			var existing *User
+			var loadErr error
+			if providerType == authSignupSourceTouch {
+				existing, loadErr = s.getUserByEmailForSignupSource(ctx, email, providerType)
+			} else {
+				existing, loadErr = s.userRepo.GetByEmail(ctx, email)
+			}
 			if loadErr != nil {
 				return nil, ErrServiceUnavailable
 			}
@@ -193,6 +225,7 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 	}
 	s.postAuthUserBootstrap(ctx, user, providerType, false)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
+	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
 	s.bindOAuthAffiliate(ctx, user.ID, effectiveAffiliateCode)
 	if invitationRedeemCode != nil {
 		if err := s.useOAuthRegistrationInvitation(ctx, invitationRedeemCode.ID, user.ID); err != nil {

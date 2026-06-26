@@ -111,6 +111,10 @@ func ProvideHandlers(
 	paymentHandler *PaymentHandler,
 	paymentWebhookHandler *PaymentWebhookHandler,
 	availableChannelHandler *AvailableChannelHandler,
+	promptCatalogHandler *PromptCatalogHandler,
+	twitterImportHandler *TwitterImportHandler,
+	weChatExportHandler *WeChatExportHandler,
+	webHandler *WebHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 ) *Handlers {
@@ -131,6 +135,10 @@ func ProvideHandlers(
 		Payment:          paymentHandler,
 		PaymentWebhook:   paymentWebhookHandler,
 		AvailableChannel: availableChannelHandler,
+		PromptCatalog:    promptCatalogHandler,
+		TwitterImport:    twitterImportHandler,
+		WeChatExport:     weChatExportHandler,
+		Web:              webHandler,
 	}
 }
 
@@ -152,6 +160,10 @@ var ProviderSet = wire.NewSet(
 	NewPaymentHandler,
 	NewPaymentWebhookHandler,
 	NewAvailableChannelHandler,
+	NewPromptCatalogHandler,
+	NewTwitterImportHandler,
+	NewWeChatExportHandler,
+	NewWebHandler,
 
 	// Admin handlers
 	admin.NewDashboardHandler,

@@ -66,7 +66,6 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-  subscriptionType: 'standard',
   selected: false,
   showCheckmark: true,
   userRateMultiplier: null

@@ -7,7 +7,7 @@
         <!-- Header -->
         <div class="mb-6 text-center">
           <h3 class="text-xl font-semibold text-gray-900 dark:text-white">
-            {{ t('profile.totp.setupTitle') }}
+            {{ totpSetupText('totpSetupTitle') }}
           </h3>
           <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
             {{ stepDescription }}
@@ -25,7 +25,7 @@
             <!-- Email verification -->
             <div v-if="verificationMethod === 'email'" class="space-y-4">
               <div>
-                <label class="input-label">{{ t('profile.totp.emailCode') }}</label>
+                <label class="input-label">{{ totpSetupText('totpEmailCode') }}</label>
                 <div class="flex gap-2">
                   <input
                     v-model="verifyForm.emailCode"
@@ -33,7 +33,7 @@
                     maxlength="6"
                     inputmode="numeric"
                     class="input flex-1"
-                    :placeholder="t('profile.totp.enterEmailCode')"
+                    :placeholder="totpSetupText('totpEnterEmailCode')"
                   />
                   <button
                     type="button"
@@ -41,7 +41,7 @@
                     :disabled="sendingCode || codeCooldown > 0"
                     @click="handleSendCode"
                   >
-                    {{ codeCooldown > 0 ? `${codeCooldown}s` : (sendingCode ? t('common.sending') : t('profile.totp.sendCode')) }}
+                    {{ codeCooldown > 0 ? `${codeCooldown}s` : (sendingCode ? totpSetupText('totpSending') : totpSetupText('totpSendCode')) }}
                   </button>
                 </div>
               </div>
@@ -50,20 +50,20 @@
             <!-- Password verification -->
             <div v-else class="space-y-4">
               <div>
-                <label class="input-label">{{ t('profile.currentPassword') }}</label>
+                <label class="input-label">{{ totpSetupText('currentPassword') }}</label>
                 <input
                   v-model="verifyForm.password"
                   type="password"
                   autocomplete="current-password"
                   class="input"
-                  :placeholder="t('profile.totp.enterPassword')"
+                  :placeholder="totpSetupText('totpEnterPassword')"
                 />
               </div>
             </div>
 
             <div class="flex justify-end gap-3 pt-4">
               <button type="button" class="btn btn-secondary" @click="$emit('close')">
-                {{ t('common.cancel') }}
+                {{ totpSetupText('totpCancel') }}
               </button>
               <button
                 type="button"
@@ -71,7 +71,7 @@
                 :disabled="!canProceedFromVerify || setupLoading"
                 @click="handleVerifyAndSetup"
               >
-                {{ setupLoading ? t('common.loading') : t('common.next') }}
+                {{ setupLoading ? totpSetupText('totpLoading') : totpSetupText('totpNext') }}
               </button>
             </div>
           </template>
@@ -89,7 +89,7 @@
 
             <div class="text-center">
               <p class="text-sm text-gray-500 dark:text-gray-400 mb-2">
-                {{ t('profile.totp.manualEntry') }}
+                {{ totpSetupText('totpManualEntry') }}
               </p>
               <div class="flex items-center justify-center gap-2">
                 <code class="rounded bg-gray-100 px-3 py-2 font-mono text-sm dark:bg-dark-700">
@@ -110,7 +110,7 @@
 
           <div class="flex justify-end gap-3 pt-4">
             <button type="button" class="btn btn-secondary" @click="$emit('close')">
-              {{ t('common.cancel') }}
+              {{ totpSetupText('totpCancel') }}
             </button>
             <button
               type="button"
@@ -118,7 +118,7 @@
               :disabled="!setupData"
               @click="step = 2"
             >
-              {{ t('common.next') }}
+              {{ totpSetupText('totpNext') }}
             </button>
           </div>
         </div>
@@ -128,7 +128,7 @@
           <form @submit.prevent="handleVerify">
             <div class="mb-6">
               <label class="input-label text-center block mb-3">
-                {{ t('profile.totp.enterCode') }}
+                {{ totpSetupText('totpEnterCode') }}
               </label>
               <div class="flex justify-center gap-2">
                 <input
@@ -149,14 +149,14 @@
 
             <div class="flex justify-end gap-3">
               <button type="button" class="btn btn-secondary" @click="step = 1">
-                {{ t('common.back') }}
+                {{ totpSetupText('totpBack') }}
               </button>
               <button
                 type="submit"
                 class="btn btn-primary"
                 :disabled="verifying || code.join('').length !== 6"
               >
-                {{ verifying ? t('common.verifying') : t('profile.totp.verify') }}
+                {{ verifying ? totpSetupText('totpVerifying') : totpSetupText('totpVerify') }}
               </button>
             </div>
           </form>
@@ -167,8 +167,8 @@
 </template>
 
 <script setup lang="ts">
+import type { ProfileLabelKey, ProfileLabels } from '@/utils/profileShell'
 import { ref, onMounted, onUnmounted, nextTick, watch, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { totpAPI } from '@/api'
 import type { TotpSetupResponse } from '@/types'
@@ -179,8 +179,12 @@ const emit = defineEmits<{
   success: []
 }>()
 
-const { t } = useI18n()
 const appStore = useAppStore()
+const props = withDefaults(defineProps<{
+  labels?: ProfileLabels
+}>(), {
+  labels: () => ({}),
+})
 
 // Step: 0 = verify identity, 1 = QR code, 2 = verify TOTP code
 const step = ref(0)
@@ -198,16 +202,21 @@ const code = ref<string[]>(['', '', '', '', '', ''])
 const inputRefs = ref<(HTMLInputElement | null)[]>([])
 const qrCodeDataUrl = ref('')
 
+
+function totpSetupText(key: ProfileLabelKey): string {
+  return props.labels?.[key] || ''
+}
+
 const stepDescription = computed(() => {
   switch (step.value) {
     case 0:
       return verificationMethod.value === 'email'
-        ? t('profile.totp.verifyEmailFirst')
-        : t('profile.totp.verifyPasswordFirst')
+        ? totpSetupText('totpVerifyEmailFirst')
+        : totpSetupText('totpVerifyPasswordFirst')
     case 1:
-      return t('profile.totp.setupStep1')
+      return totpSetupText('totpSetupStep1')
     case 2:
-      return t('profile.totp.setupStep2')
+      return totpSetupText('totpSetupStep2')
     default:
       return ''
   }
@@ -302,9 +311,9 @@ const copySecret = async () => {
   if (setupData.value) {
     try {
       await navigator.clipboard.writeText(setupData.value.secret)
-      appStore.showSuccess(t('common.copied'))
+      appStore.showSuccess(totpSetupText('totpCopied'))
     } catch {
-      appStore.showError(t('common.copyFailed'))
+      appStore.showError(totpSetupText('totpCopyFailed'))
     }
   }
 }
@@ -315,7 +324,7 @@ const loadVerificationMethod = async () => {
     const method = await totpAPI.getVerificationMethod()
     verificationMethod.value = method.method
   } catch (err: any) {
-    appStore.showError(err.response?.data?.message || t('common.error'))
+    appStore.showError(err.response?.data?.message || totpSetupText('totpError'))
     emit('close')
   } finally {
     methodLoading.value = false
@@ -326,7 +335,7 @@ const handleSendCode = async () => {
   sendingCode.value = true
   try {
     await totpAPI.sendVerifyCode()
-    appStore.showSuccess(t('profile.totp.codeSent'))
+    appStore.showSuccess(totpSetupText('totpCodeSent'))
     // Start cooldown
     codeCooldown.value = 60
     if (cooldownTimer.value) {
@@ -343,7 +352,7 @@ const handleSendCode = async () => {
       }
     }, 1000)
   } catch (err: any) {
-    appStore.showError(err.response?.data?.message || t('profile.totp.sendCodeFailed'))
+    appStore.showError(err.response?.data?.message || totpSetupText('totpSendCodeFailed'))
   } finally {
     sendingCode.value = false
   }
@@ -360,7 +369,7 @@ const handleVerifyAndSetup = async () => {
     setupData.value = await totpAPI.initiateSetup(request)
     step.value = 1
   } catch (err: any) {
-    appStore.showError(err.response?.data?.message || t('profile.totp.setupFailed'))
+    appStore.showError(err.response?.data?.message || totpSetupText('totpSetupFailed'))
   } finally {
     setupLoading.value = false
   }
@@ -377,10 +386,10 @@ const handleVerify = async () => {
       totp_code: totpCode,
       setup_token: setupData.value.setup_token
     })
-    appStore.showSuccess(t('profile.totp.enableSuccess'))
+    appStore.showSuccess(totpSetupText('totpEnableSuccess'))
     emit('success')
   } catch (err: any) {
-    appStore.showError(err.response?.data?.message || t('profile.totp.verifyFailed'))
+    appStore.showError(err.response?.data?.message || totpSetupText('totpVerifyFailed'))
     code.value = ['', '', '', '', '', '']
     nextTick(() => {
       inputRefs.value[0]?.focus()

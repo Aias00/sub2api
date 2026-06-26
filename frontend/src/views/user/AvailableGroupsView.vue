@@ -6,20 +6,20 @@
           <div class="max-w-3xl">
             <div class="inline-flex items-center gap-2 rounded-full bg-primary-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary-700 dark:bg-primary-900/20 dark:text-primary-300">
               <Icon name="grid" size="xs" />
-              {{ t('availableGroups.title') }}
+              {{ availableGroupsText('title') }}
             </div>
             <h1 class="mt-3 text-2xl font-bold text-gray-900 dark:text-white">
-              {{ t('availableGroups.title') }}
+              {{ availableGroupsText('title') }}
             </h1>
             <p class="mt-2 text-sm leading-6 text-gray-500 dark:text-dark-400">
-              {{ t('availableGroups.description') }}
+              {{ availableGroupsText('description') }}
             </p>
           </div>
 
           <div class="grid gap-3 sm:grid-cols-3">
             <div class="rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-3 dark:border-dark-700 dark:bg-dark-800/60">
               <div class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-dark-400">
-                {{ t('availableGroups.stats.total') }}
+                {{ availableGroupsText('total') }}
               </div>
               <div class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                 {{ groups.length }}
@@ -27,7 +27,7 @@
             </div>
             <div class="rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-3 dark:border-dark-700 dark:bg-dark-800/60">
               <div class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-dark-400">
-                {{ t('availableGroups.stats.public') }}
+                {{ availableGroupsText('public') }}
               </div>
               <div class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                 {{ publicGroups.length }}
@@ -35,7 +35,7 @@
             </div>
             <div class="rounded-2xl border border-gray-100 bg-gray-50/80 px-4 py-3 dark:border-dark-700 dark:bg-dark-800/60">
               <div class="text-xs font-semibold uppercase tracking-[0.16em] text-gray-500 dark:text-dark-400">
-                {{ t('availableGroups.stats.memberOnly') }}
+                {{ availableGroupsText('memberOnly') }}
               </div>
               <div class="mt-1 text-2xl font-bold text-gray-900 dark:text-white">
                 {{ memberGroups.length }}
@@ -54,7 +54,7 @@
             <input
               v-model="searchQuery"
               type="text"
-              :placeholder="t('availableGroups.searchPlaceholder')"
+              :placeholder="availableGroupsText('searchPlaceholder')"
               class="input pl-10"
             />
           </div>
@@ -67,8 +67,8 @@
 
       <EmptyState
         v-else-if="filteredGroups.length === 0"
-        :title="t('availableGroups.emptyTitle')"
-        :description="groups.length === 0 ? t('availableGroups.emptyDescription') : t('availableGroups.emptyFilteredDescription')"
+        :title="availableGroupsText('emptyTitle')"
+        :description="groups.length === 0 ? availableGroupsText('emptyDescription') : availableGroupsText('emptyFilteredDescription')"
       >
         <template #icon>
           <Icon name="grid" size="xl" class="text-gray-400" />
@@ -80,10 +80,10 @@
           <div class="flex items-end justify-between gap-4">
             <div>
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {{ t('availableGroups.sections.public.title') }}
+                {{ availableGroupsText('publicTitle') }}
               </h2>
               <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
-                {{ t('availableGroups.sections.public.description') }}
+                {{ availableGroupsText('publicDescription') }}
               </p>
             </div>
             <span class="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-500 dark:border-dark-600 dark:bg-dark-800 dark:text-dark-300">
@@ -113,7 +113,7 @@
                 </div>
 
                 <span class="rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300">
-                  {{ t('availableGroups.badges.public') }}
+                  {{ availableGroupsText('publicBadge') }}
                 </span>
               </div>
 
@@ -125,19 +125,19 @@
                   {{ subscriptionTypeLabel(group.subscription_type) }}
                 </span>
                 <span v-if="group.allow_image_generation" class="rounded-full border border-gray-200 px-2.5 py-1 text-gray-600 dark:border-dark-600 dark:text-dark-300">
-                  {{ t('availableGroups.badges.imageEnabled') }}
+                  {{ availableGroupsText('imageEnabledBadge') }}
                 </span>
               </div>
 
               <dl class="mt-5 grid gap-3 text-sm sm:grid-cols-2">
                 <div>
-                  <dt class="text-gray-500 dark:text-dark-400">{{ t('availableGroups.fields.rate') }}</dt>
+                  <dt class="text-gray-500 dark:text-dark-400">{{ availableGroupsText('rate') }}</dt>
                   <dd class="mt-1 font-medium text-gray-900 dark:text-white">
                     ×{{ userGroupRates[group.id] ?? group.rate_multiplier }}
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-gray-500 dark:text-dark-400">{{ t('availableGroups.fields.quota') }}</dt>
+                  <dt class="text-gray-500 dark:text-dark-400">{{ availableGroupsText('quota') }}</dt>
                   <dd class="mt-1 font-medium text-gray-900 dark:text-white">
                     {{ quotaSummary(group) }}
                   </dd>
@@ -151,10 +151,10 @@
           <div class="flex items-end justify-between gap-4">
             <div>
               <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {{ t('availableGroups.sections.member.title') }}
+                {{ availableGroupsText('memberTitle') }}
               </h2>
               <p class="mt-1 text-sm text-gray-500 dark:text-dark-400">
-                {{ t('availableGroups.sections.member.description') }}
+                {{ availableGroupsText('memberDescription') }}
               </p>
             </div>
             <span class="rounded-full border border-gray-200 bg-white px-3 py-1 text-xs font-medium text-gray-500 dark:border-dark-600 dark:bg-dark-800 dark:text-dark-300">
@@ -193,8 +193,8 @@
                 >
                   {{
                     group.subscription_type === 'subscription'
-                      ? t('availableGroups.badges.subscription')
-                      : t('availableGroups.badges.exclusive')
+                      ? availableGroupsText('subscriptionBadge')
+                      : availableGroupsText('exclusiveBadge')
                   }}
                 </span>
               </div>
@@ -210,19 +210,19 @@
                   v-if="group.is_exclusive"
                   class="rounded-full border border-gray-200 px-2.5 py-1 text-gray-600 dark:border-dark-600 dark:text-dark-300"
                 >
-                  {{ t('availableGroups.badges.exclusive') }}
+                  {{ availableGroupsText('exclusiveBadge') }}
                 </span>
               </div>
 
               <dl class="mt-5 grid gap-3 text-sm sm:grid-cols-2">
                 <div>
-                  <dt class="text-gray-500 dark:text-dark-400">{{ t('availableGroups.fields.rate') }}</dt>
+                  <dt class="text-gray-500 dark:text-dark-400">{{ availableGroupsText('rate') }}</dt>
                   <dd class="mt-1 font-medium text-gray-900 dark:text-white">
                     ×{{ userGroupRates[group.id] ?? group.rate_multiplier }}
                   </dd>
                 </div>
                 <div>
-                  <dt class="text-gray-500 dark:text-dark-400">{{ t('availableGroups.fields.quota') }}</dt>
+                  <dt class="text-gray-500 dark:text-dark-400">{{ availableGroupsText('quota') }}</dt>
                   <dd class="mt-1 font-medium text-gray-900 dark:text-white">
                     {{ quotaSummary(group) }}
                   </dd>
@@ -237,6 +237,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -246,55 +247,56 @@ import GroupBadge from '@/components/common/GroupBadge.vue'
 import userGroupsAPI from '@/api/groups'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
+import {
+  renderAvailableGroupsShellText,
+  resolveAvailableGroupsShellLabels,
+  type AvailableGroupsLabelKey,
+} from '@/utils/availableGroupsShell'
 import type { Group, SubscriptionType } from '@/types'
+import {
+  filterAvailableGroupsByQuery,
+  resolveAvailableGroupQuotaSummary,
+  resolveAvailableGroupSubscriptionLabel,
+  resolveMemberAvailableGroups,
+  resolvePublicAvailableGroups,
+} from './availableGroupsRuntime'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const appStore = useAppStore()
+
+
+const availableGroupsLabels = computed(() =>
+  resolveAvailableGroupsShellLabels(
+    appStore.cachedPublicSettings?.available_groups_shell_config,
+    resolveRuntimeLocale(locale),
+  ),
+)
+
+function availableGroupsText(key: AvailableGroupsLabelKey, values?: Record<string, string | number>): string {
+  return renderAvailableGroupsShellText(availableGroupsLabels.value, key, values)
+}
 
 const loading = ref(false)
 const searchQuery = ref('')
 const groups = ref<Group[]>([])
 const userGroupRates = ref<Record<number, number>>({})
 
-const filteredGroups = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return groups.value
-  return groups.value.filter((group) => {
-    const haystack = [group.name, group.description || '', group.platform, group.subscription_type]
-      .join(' ')
-      .toLowerCase()
-    return haystack.includes(q)
-  })
-})
+const filteredGroups = computed(() => filterAvailableGroupsByQuery(groups.value, searchQuery.value))
 
-const publicGroups = computed(() =>
-  groups.value.filter((group) => !group.is_exclusive && group.subscription_type === 'standard'),
-)
+const publicGroups = computed(() => resolvePublicAvailableGroups(groups.value))
 
-const memberGroups = computed(() =>
-  groups.value.filter((group) => group.is_exclusive || group.subscription_type === 'subscription'),
-)
+const memberGroups = computed(() => resolveMemberAvailableGroups(groups.value))
 
-const filteredPublicGroups = computed(() =>
-  filteredGroups.value.filter((group) => !group.is_exclusive && group.subscription_type === 'standard'),
-)
+const filteredPublicGroups = computed(() => resolvePublicAvailableGroups(filteredGroups.value))
 
-const filteredMemberGroups = computed(() =>
-  filteredGroups.value.filter((group) => group.is_exclusive || group.subscription_type === 'subscription'),
-)
+const filteredMemberGroups = computed(() => resolveMemberAvailableGroups(filteredGroups.value))
 
 function subscriptionTypeLabel(type: SubscriptionType): string {
-  return type === 'subscription'
-    ? t('availableGroups.badges.subscription')
-    : t('availableGroups.badges.standard')
+  return resolveAvailableGroupSubscriptionLabel(type, availableGroupsText)
 }
 
 function quotaSummary(group: Group): string {
-  const limits: string[] = []
-  if (group.daily_limit_usd != null) limits.push(t('availableGroups.limits.daily', { amount: group.daily_limit_usd.toFixed(2) }))
-  if (group.weekly_limit_usd != null) limits.push(t('availableGroups.limits.weekly', { amount: group.weekly_limit_usd.toFixed(2) }))
-  if (group.monthly_limit_usd != null) limits.push(t('availableGroups.limits.monthly', { amount: group.monthly_limit_usd.toFixed(2) }))
-  return limits.length > 0 ? limits.join(' / ') : t('availableGroups.unlimited')
+  return resolveAvailableGroupQuotaSummary(group, availableGroupsText)
 }
 
 async function loadGroups() {
@@ -307,7 +309,7 @@ async function loadGroups() {
     groups.value = list
     userGroupRates.value = rates
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('common.error')))
+    appStore.showError(extractApiErrorMessage(err, availableGroupsText('loadFailed')))
   } finally {
     loading.value = false
   }

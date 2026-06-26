@@ -78,10 +78,9 @@ type createPendingOAuthAccountRequest struct {
 }
 
 type sendPendingOAuthVerifyCodeRequest struct {
-	Email             string `json:"email" binding:"required,email"`
-	TurnstileToken    string `json:"turnstile_token,omitempty"`
-	PendingAuthToken  string `json:"pending_auth_token,omitempty"`
-	PendingOAuthToken string `json:"pending_oauth_token,omitempty"`
+	Email            string `json:"email" binding:"required,email"`
+	TurnstileToken   string `json:"turnstile_token,omitempty"`
+	PendingAuthToken string `json:"pending_auth_token,omitempty"`
 }
 
 type pendingOAuthCompletionRequest struct {
@@ -335,43 +334,7 @@ func ensurePendingOAuthCompleteRegistrationSession(session *dbent.PendingAuthSes
 	return nil
 }
 
-func buildLegacyCompleteRegistrationPendingResponse(
-	session *dbent.PendingAuthSession,
-	forceEmailOnSignup bool,
-	emailVerificationRequired bool,
-) map[string]any {
-	completionResponse := normalizePendingOAuthCompletionResponse(mergePendingCompletionResponse(session, map[string]any{
-		"step":                   oauthPendingChoiceStep,
-		"adoption_required":      true,
-		"create_account_allowed": true,
-		"force_email_on_signup":  forceEmailOnSignup,
-	}))
-
-	if email := strings.TrimSpace(session.ResolvedEmail); email != "" {
-		if _, exists := completionResponse["email"]; !exists {
-			completionResponse["email"] = email
-		}
-		if _, exists := completionResponse["resolved_email"]; !exists {
-			completionResponse["resolved_email"] = email
-		}
-	}
-	if _, exists := completionResponse["choice_reason"]; !exists {
-		switch {
-		case forceEmailOnSignup:
-			completionResponse["choice_reason"] = "force_email_on_signup"
-		case emailVerificationRequired:
-			completionResponse["choice_reason"] = "email_verification_required"
-		default:
-			completionResponse["choice_reason"] = "third_party_signup"
-		}
-	}
-	return completionResponse
-}
-
-func (h *AuthHandler) legacyCompleteRegistrationSessionStatus(
-	c *gin.Context,
-	session *dbent.PendingAuthSession,
-) (*dbent.PendingAuthSession, bool, error) {
+func currentCompleteRegistrationSessionStatus(session *dbent.PendingAuthSession) (*dbent.PendingAuthSession, bool, error) {
 	if session == nil {
 		return nil, false, infraerrors.BadRequest("PENDING_AUTH_SESSION_INVALID", "pending auth registration context is invalid")
 	}
@@ -381,30 +344,7 @@ func (h *AuthHandler) legacyCompleteRegistrationSessionStatus(
 		return session, true, nil
 	}
 
-	emailVerificationRequired := h != nil && h.authService != nil && h.authService.IsEmailVerifyEnabled(c.Request.Context())
-	forceEmailOnSignup := h.isForceEmailOnThirdPartySignup(c.Request.Context())
-	if !emailVerificationRequired && !forceEmailOnSignup {
-		return session, false, nil
-	}
-
-	client := h.entClient()
-	if client == nil {
-		return nil, false, infraerrors.ServiceUnavailable("PENDING_AUTH_NOT_READY", "pending auth service is not ready")
-	}
-
-	updatedSession, err := updatePendingOAuthSessionProgress(
-		c.Request.Context(),
-		client,
-		session,
-		strings.TrimSpace(session.Intent),
-		strings.TrimSpace(session.ResolvedEmail),
-		nil,
-		buildLegacyCompleteRegistrationPendingResponse(session, forceEmailOnSignup, emailVerificationRequired),
-	)
-	if err != nil {
-		return nil, false, infraerrors.InternalServer("PENDING_AUTH_SESSION_UPDATE_FAILED", "failed to update pending oauth session").WithCause(err)
-	}
-	return updatedSession, true, nil
+	return session, false, nil
 }
 
 func (r oauthAdoptionDecisionRequest) hasDecision() bool {
@@ -833,7 +773,6 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 	providerType := strings.TrimSpace(session.ProviderType)
 	providerKey := strings.TrimSpace(session.ProviderKey)
 	providerSubject := strings.TrimSpace(session.ProviderSubject)
-	providerKeys := wechatCompatibleProviderKeys(providerKey)
 	channel := strings.TrimSpace(pendingSessionStringValue(session.UpstreamIdentityClaims, "channel"))
 	channelAppID := strings.TrimSpace(pendingSessionStringValue(session.UpstreamIdentityClaims, "channel_app_id"))
 	channelSubject := strings.TrimSpace(pendingSessionStringValue(session.UpstreamIdentityClaims, "channel_subject"))
@@ -842,34 +781,16 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 	identityRecords, err := client.AuthIdentity.Query().
 		Where(
 			authidentity.ProviderTypeEQ(providerType),
-			authidentity.ProviderKeyIn(providerKeys...),
+			authidentity.ProviderKeyEQ(providerKey),
 			authidentity.ProviderSubjectEQ(providerSubject),
 		).
 		All(ctx)
 	if err != nil {
 		return nil, err
 	}
-	identity, hasCanonicalKey, err := chooseWeChatIdentityForUser(ctx, client, identityRecords, userID, providerKey)
+	identity, err := chooseWeChatIdentityForUser(ctx, client, identityRecords, userID)
 	if err != nil {
 		return nil, err
-	}
-
-	var legacyOpenIDIdentity *dbent.AuthIdentity
-	if channelSubject != "" && channelSubject != providerSubject {
-		legacyOpenIDRecords, err := client.AuthIdentity.Query().
-			Where(
-				authidentity.ProviderTypeEQ(providerType),
-				authidentity.ProviderKeyIn(providerKeys...),
-				authidentity.ProviderSubjectEQ(channelSubject),
-			).
-			All(ctx)
-		if err != nil {
-			return nil, err
-		}
-		legacyOpenIDIdentity, _, err = chooseWeChatIdentityForUser(ctx, client, legacyOpenIDRecords, userID, providerKey)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	switch {
@@ -879,21 +800,6 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 		if identity.UserID != userID {
 			update = update.SetUserID(userID)
 		}
-		if !strings.EqualFold(strings.TrimSpace(identity.ProviderKey), providerKey) && !hasCanonicalKey {
-			update = update.SetProviderKey(providerKey)
-		}
-		if issuer := oauthIdentityIssuer(session); issuer != nil {
-			update = update.SetIssuer(strings.TrimSpace(*issuer))
-		}
-		identity, err = update.Save(ctx)
-		if err != nil {
-			return nil, err
-		}
-	case legacyOpenIDIdentity != nil:
-		update := client.AuthIdentity.UpdateOneID(legacyOpenIDIdentity.ID).
-			SetProviderKey(providerKey).
-			SetProviderSubject(providerSubject).
-			SetMetadata(mergeOAuthMetadata(legacyOpenIDIdentity.Metadata, metadata))
 		if issuer := oauthIdentityIssuer(session); issuer != nil {
 			update = update.SetIssuer(strings.TrimSpace(*issuer))
 		}
@@ -924,7 +830,7 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 	channelRecords, err := client.AuthIdentityChannel.Query().
 		Where(
 			authidentitychannel.ProviderTypeEQ(providerType),
-			authidentitychannel.ProviderKeyIn(providerKeys...),
+			authidentitychannel.ProviderKeyEQ(providerKey),
 			authidentitychannel.ChannelEQ(channel),
 			authidentitychannel.ChannelAppIDEQ(channelAppID),
 			authidentitychannel.ChannelSubjectEQ(channelSubject),
@@ -934,7 +840,7 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 	if err != nil {
 		return nil, err
 	}
-	channelRecord, hasCanonicalChannelKey, err := chooseWeChatChannelForUser(ctx, client, channelRecords, userID, providerKey)
+	channelRecord, err := chooseWeChatChannelForUser(ctx, client, channelRecords, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -958,9 +864,6 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 	updateChannel := client.AuthIdentityChannel.UpdateOneID(channelRecord.ID).
 		SetIdentityID(identity.ID).
 		SetMetadata(channelMetadata)
-	if !strings.EqualFold(strings.TrimSpace(channelRecord.ProviderKey), providerKey) && !hasCanonicalChannelKey {
-		updateChannel = updateChannel.SetProviderKey(providerKey)
-	}
 	_, err = updateChannel.Save(ctx)
 	if err != nil {
 		return nil, err
@@ -968,10 +871,8 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 	return identity, nil
 }
 
-func chooseWeChatIdentityForUser(ctx context.Context, client *dbent.Client, records []*dbent.AuthIdentity, userID int64, preferredProviderKey string) (*dbent.AuthIdentity, bool, error) {
-	var preferred *dbent.AuthIdentity
-	var fallback *dbent.AuthIdentity
-	hasCanonicalKey := false
+func chooseWeChatIdentityForUser(ctx context.Context, client *dbent.Client, records []*dbent.AuthIdentity, userID int64) (*dbent.AuthIdentity, error) {
+	var resolved *dbent.AuthIdentity
 	for _, record := range records {
 		if record == nil {
 			continue
@@ -979,33 +880,21 @@ func chooseWeChatIdentityForUser(ctx context.Context, client *dbent.Client, reco
 		if record.UserID != userID {
 			activeOwner, err := findActiveUserByID(ctx, client, record.UserID)
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 			if activeOwner != nil {
-				return nil, false, infraerrors.Conflict("AUTH_IDENTITY_OWNERSHIP_CONFLICT", "auth identity already belongs to another user")
+				return nil, infraerrors.Conflict("AUTH_IDENTITY_OWNERSHIP_CONFLICT", "auth identity already belongs to another user")
 			}
 		}
-		if strings.EqualFold(strings.TrimSpace(record.ProviderKey), preferredProviderKey) {
-			hasCanonicalKey = true
-			if preferred == nil {
-				preferred = record
-			}
-			continue
-		}
-		if fallback == nil {
-			fallback = record
+		if resolved == nil {
+			resolved = record
 		}
 	}
-	if preferred != nil {
-		return preferred, hasCanonicalKey, nil
-	}
-	return fallback, hasCanonicalKey, nil
+	return resolved, nil
 }
 
-func chooseWeChatChannelForUser(ctx context.Context, client *dbent.Client, records []*dbent.AuthIdentityChannel, userID int64, preferredProviderKey string) (*dbent.AuthIdentityChannel, bool, error) {
-	var preferred *dbent.AuthIdentityChannel
-	var fallback *dbent.AuthIdentityChannel
-	hasCanonicalKey := false
+func chooseWeChatChannelForUser(ctx context.Context, client *dbent.Client, records []*dbent.AuthIdentityChannel, userID int64) (*dbent.AuthIdentityChannel, error) {
+	var resolved *dbent.AuthIdentityChannel
 	for _, record := range records {
 		if record == nil {
 			continue
@@ -1013,27 +902,17 @@ func chooseWeChatChannelForUser(ctx context.Context, client *dbent.Client, recor
 		if record.Edges.Identity != nil && record.Edges.Identity.UserID != userID {
 			activeOwner, err := findActiveUserByID(ctx, client, record.Edges.Identity.UserID)
 			if err != nil {
-				return nil, false, err
+				return nil, err
 			}
 			if activeOwner != nil {
-				return nil, false, infraerrors.Conflict("AUTH_IDENTITY_CHANNEL_OWNERSHIP_CONFLICT", "auth identity channel already belongs to another user")
+				return nil, infraerrors.Conflict("AUTH_IDENTITY_CHANNEL_OWNERSHIP_CONFLICT", "auth identity channel already belongs to another user")
 			}
 		}
-		if strings.EqualFold(strings.TrimSpace(record.ProviderKey), preferredProviderKey) {
-			hasCanonicalKey = true
-			if preferred == nil {
-				preferred = record
-			}
-			continue
-		}
-		if fallback == nil {
-			fallback = record
+		if resolved == nil {
+			resolved = record
 		}
 	}
-	if preferred != nil {
-		return preferred, hasCanonicalKey, nil
-	}
-	return fallback, hasCanonicalKey, nil
+	return resolved, nil
 }
 
 func findActiveUserByID(ctx context.Context, client *dbent.Client, userID int64) (*dbent.User, error) {
@@ -1364,7 +1243,7 @@ func pendingOAuthIdentityExistsForUser(
 			authidentity.UserIDEQ(userID),
 		)
 	if strings.EqualFold(providerType, "wechat") {
-		query = query.Where(authidentity.ProviderKeyIn(wechatCompatibleProviderKeys(providerKey)...))
+		query = query.Where(authidentity.ProviderKeyEQ(providerKey))
 	} else if providerKey != "" {
 		query = query.Where(authidentity.ProviderKeyEQ(providerKey))
 	}

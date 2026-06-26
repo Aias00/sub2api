@@ -6,13 +6,40 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import type { ApiResponse } from '@/types'
 import { getLocale } from '@/i18n'
+import { resolveAuthRouteDefaults } from '@/router/setupRedirect'
 
 // ==================== Axios Instance Configuration ====================
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api/v1'
+const DEFAULT_API_BASE_URL = '/api/v1'
+
+export function resolveApiBaseUrl(settings?: { api_base_url?: string | null } | null): string {
+  const configured = settings?.api_base_url?.trim()
+    || (typeof window !== 'undefined' ? window.__APP_CONFIG__?.api_base_url?.trim() : '')
+    || DEFAULT_API_BASE_URL
+
+  return configured.replace(/\/+$/, '') || DEFAULT_API_BASE_URL
+}
+
+export function buildApiUrl(path: string, settings?: { api_base_url?: string | null } | null): string {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${resolveApiBaseUrl(settings)}${normalizedPath}`
+}
+
+export function resolveClientAuthRouteDefaults(settings?: { auth_shell_config?: string | null } | null) {
+  const rawAuthShellConfig = settings?.auth_shell_config
+    || (typeof window !== 'undefined' ? window.__APP_CONFIG__?.auth_shell_config : undefined)
+    || undefined
+  return resolveAuthRouteDefaults(rawAuthShellConfig, getLocale())
+}
+
+function isCurrentPath(path: string): boolean {
+  if (typeof window === 'undefined') return false
+  const currentPath = window.location.pathname
+  return currentPath === path || (path !== '/' && currentPath.startsWith(`${path}/`))
+}
 
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: resolveApiBaseUrl(),
   withCredentials: true,
   timeout: 30000,
   headers: {
@@ -137,7 +164,7 @@ apiClient.interceptors.response.use(
         }
 
         if (window.location.pathname.startsWith('/admin/ops')) {
-          window.location.href = '/admin/settings'
+          window.location.href = resolveClientAuthRouteDefaults().adminSettingsPath
         }
 
         return Promise.reject({
@@ -186,7 +213,7 @@ apiClient.interceptors.response.use(
           try {
             // Call refresh endpoint directly to avoid circular dependency
             const refreshResponse = await axios.post(
-              `${API_BASE_URL}/auth/refresh`,
+              `${resolveApiBaseUrl()}/auth/refresh`,
               { refresh_token: refreshToken },
               { headers: { 'Content-Type': 'application/json' } }
             )
@@ -231,8 +258,9 @@ apiClient.interceptors.response.use(
             localStorage.removeItem('token_expires_at')
             sessionStorage.setItem('auth_expired', '1')
 
-            if (!window.location.pathname.includes('/login')) {
-              window.location.href = '/login'
+            const loginPath = resolveClientAuthRouteDefaults().loginPath
+            if (!isCurrentPath(loginPath)) {
+              window.location.href = loginPath
             }
 
             return Promise.reject({
@@ -262,8 +290,9 @@ apiClient.interceptors.response.use(
           sessionStorage.setItem('auth_expired', '1')
         }
         // Only redirect if not already on login page
-        if (!window.location.pathname.includes('/login')) {
-          window.location.href = '/login'
+        const loginPath = resolveClientAuthRouteDefaults().loginPath
+        if (!isCurrentPath(loginPath)) {
+          window.location.href = loginPath
         }
       }
 

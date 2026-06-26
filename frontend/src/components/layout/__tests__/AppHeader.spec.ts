@@ -16,8 +16,8 @@ const appLayoutSource = appLayoutChunk
   : ''
 
 describe('AppHeader GitHub dropdown visibility', () => {
-  it('keeps the source template explicitly admin-only', () => {
-    expect(componentSource).toContain("const showGithubLink = computed(() => user.value?.role === 'admin')")
+  it('keeps the source template GitHub shortcut disabled', () => {
+    expect(componentSource).toContain('const showGithubLink = computed(() => false)')
     expect(componentSource).toContain('v-if="showGithubLink"')
   })
 
@@ -29,9 +29,9 @@ describe('AppHeader GitHub dropdown visibility', () => {
 })
 
 describe('AppHeader regular user dropdown shortcuts', () => {
-  it('keeps duplicate profile and api key shortcuts out of the regular user dropdown', () => {
+  it('keeps duplicate profile and api key shortcuts disabled in the dropdown', () => {
     expect(componentSource).toContain(
-      "const showDropdownAccountLinks = computed(() => user.value?.role === 'admin')"
+      'const showDropdownAccountLinks = computed(() => false)'
     )
     expect(componentSource).toContain('<template v-if="showDropdownAccountLinks">')
   })
@@ -40,9 +40,8 @@ describe('AppHeader regular user dropdown shortcuts', () => {
     expect(componentSource).toContain(
       'const showDropdownPrimaryActions = computed('
     )
-    expect(componentSource).toContain(
-      "const compactUserDropdown = computed(() => {"
-    )
+    expect(componentSource).toContain("from './appHeaderRuntime'")
+    expect(componentSource).toContain('resolveCompactUserDropdown')
     expect(componentSource).toContain('<div v-if="showDropdownPrimaryActions" class="py-1">')
     expect(componentSource).toContain("compactUserDropdown\n                    ? 'px-4 py-3'")
     expect(componentSource).toContain("compactUserDropdown\n                    ? 'py-1'")
@@ -58,5 +57,25 @@ describe('AppHeader regular user dropdown shortcuts', () => {
   it('does not render a secondary page description line under the title', () => {
     expect(componentSource).not.toContain('pageDescription')
     expect(componentSource).not.toContain("class=\"text-xs text-gray-500 dark:text-slate-300/90\"")
+  })
+
+  it('delegates header display-name and title shaping to shared runtime helpers', () => {
+    expect(componentSource).toContain('resolveHeaderDisplayName')
+    expect(componentSource).toContain('resolveHeaderUserInitials')
+    expect(componentSource).toContain('resolveHeaderPageTitle')
+    expect(componentSource).not.toContain("return user.value.username || user.value.email?.split('@')[0] || ''")
+  })
+
+  it('uses auth route defaults for logout redirect instead of a local login path', () => {
+    expect(componentSource).toContain('useAuthRouteDefaults')
+    expect(componentSource).toContain('router.push(authRouteDefaults.value.loginPath)')
+    expect(componentSource).not.toContain("router.push('/login')")
+  })
+
+  it('uses auth route defaults for account dropdown shortcuts', () => {
+    expect(componentSource).toContain(':to="authRouteDefaults.profilePath"')
+    expect(componentSource).toContain(':to="authRouteDefaults.apiKeysPath"')
+    expect(componentSource).not.toContain('to="/profile"')
+    expect(componentSource).not.toContain('to="/keys"')
   })
 })

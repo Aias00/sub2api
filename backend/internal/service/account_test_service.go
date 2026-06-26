@@ -74,9 +74,9 @@ type claudeCodeTestPayload struct {
 	Model       string                       `json:"model"`
 	Stream      bool                         `json:"stream"`
 	MaxTokens   int                          `json:"max_tokens"`
-	Metadata    claudeCodeTestMetadata      `json:"metadata"`
+	Metadata    claudeCodeTestMetadata       `json:"metadata"`
 	System      []claudeCodeTestContentBlock `json:"system"`
-	Messages    []claudeCodeTestMessage     `json:"messages"`
+	Messages    []claudeCodeTestMessage      `json:"messages"`
 	Temperature int                          `json:"temperature"`
 }
 
@@ -322,11 +322,11 @@ func formatDebugHeaders(headers map[string]string) string {
 	var builder strings.Builder
 	for idx, key := range keys {
 		if idx > 0 {
-			builder.WriteByte('\n')
+			_ = builder.WriteByte('\n')
 		}
-		builder.WriteString(key)
-		builder.WriteString(": ")
-		builder.WriteString(headers[key])
+		_, _ = builder.WriteString(key)
+		_, _ = builder.WriteString(": ")
+		_, _ = builder.WriteString(headers[key])
 	}
 	return builder.String()
 }

@@ -16,7 +16,7 @@
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-2">
             <h3 class="truncate text-base font-bold text-gray-900 dark:text-white">{{ plan.name }}</h3>
-            <span :class="['shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium', badgeLightClass]">
+            <span v-if="pLabel" :class="['shrink-0 rounded-full px-2 py-0.5 text-[11px] font-medium', badgeLightClass]">
               {{ pLabel }}
             </span>
           </div>
@@ -26,12 +26,11 @@
         </div>
         <div class="shrink-0 text-right">
           <div class="flex items-baseline gap-1">
-            <span class="text-xs text-gray-400 dark:text-dark-500">$</span>
-            <span :class="['text-2xl font-extrabold tracking-tight', textClass]">{{ plan.price }}</span>
+            <span :class="['text-2xl font-extrabold tracking-tight', textClass]">{{ formattedPrice }}</span>
           </div>
-          <span class="text-[11px] text-gray-400 dark:text-dark-500">/ {{ validitySuffix }}</span>
+          <span v-if="validitySuffix" class="text-[11px] text-gray-400 dark:text-dark-500">/ {{ validitySuffix }}</span>
           <div v-if="plan.original_price" class="mt-0.5 flex items-center justify-end gap-1.5">
-            <span class="text-xs text-gray-400 line-through dark:text-dark-500">${{ plan.original_price }}</span>
+            <span class="text-xs text-gray-400 line-through dark:text-dark-500">{{ formattedOriginalPrice }}</span>
             <span :class="['rounded px-1 py-0.5 text-[10px] font-semibold', discountClass]">{{ discountText }}</span>
           </div>
         </div>
@@ -40,27 +39,27 @@
       <!-- Group quota info (compact) -->
       <div class="mb-3 grid grid-cols-2 gap-x-3 gap-y-1 rounded-lg bg-gray-50 px-3 py-2 text-xs dark:bg-dark-700/50">
         <div class="flex items-center justify-between">
-          <span class="text-gray-400 dark:text-dark-500">{{ t('payment.planCard.rate') }}</span>
+          <span class="text-gray-400 dark:text-dark-500">{{ labels?.rate || '' }}</span>
           <span class="font-medium text-gray-700 dark:text-gray-300">{{ rateDisplay }}</span>
         </div>
         <div v-if="plan.daily_limit_usd != null" class="flex items-center justify-between">
-          <span class="text-gray-400 dark:text-dark-500">{{ t('payment.planCard.dailyLimit') }}</span>
-          <span class="font-medium text-gray-700 dark:text-gray-300">${{ plan.daily_limit_usd }}</span>
+          <span class="text-gray-400 dark:text-dark-500">{{ labels?.dailyLimit || '' }}</span>
+          <span class="font-medium text-gray-700 dark:text-gray-300">{{ formatUsdLimit(plan.daily_limit_usd) }}</span>
         </div>
         <div v-if="plan.weekly_limit_usd != null" class="flex items-center justify-between">
-          <span class="text-gray-400 dark:text-dark-500">{{ t('payment.planCard.weeklyLimit') }}</span>
-          <span class="font-medium text-gray-700 dark:text-gray-300">${{ plan.weekly_limit_usd }}</span>
+          <span class="text-gray-400 dark:text-dark-500">{{ labels?.weeklyLimit || '' }}</span>
+          <span class="font-medium text-gray-700 dark:text-gray-300">{{ formatUsdLimit(plan.weekly_limit_usd) }}</span>
         </div>
         <div v-if="plan.monthly_limit_usd != null" class="flex items-center justify-between">
-          <span class="text-gray-400 dark:text-dark-500">{{ t('payment.planCard.monthlyLimit') }}</span>
-          <span class="font-medium text-gray-700 dark:text-gray-300">${{ plan.monthly_limit_usd }}</span>
+          <span class="text-gray-400 dark:text-dark-500">{{ labels?.monthlyLimit || '' }}</span>
+          <span class="font-medium text-gray-700 dark:text-gray-300">{{ formatUsdLimit(plan.monthly_limit_usd) }}</span>
         </div>
         <div v-if="plan.daily_limit_usd == null && plan.weekly_limit_usd == null && plan.monthly_limit_usd == null" class="flex items-center justify-between">
-          <span class="text-gray-400 dark:text-dark-500">{{ t('payment.planCard.quota') }}</span>
-          <span class="font-medium text-gray-700 dark:text-gray-300">{{ t('payment.planCard.unlimited') }}</span>
+          <span class="text-gray-400 dark:text-dark-500">{{ labels?.quota || '' }}</span>
+          <span class="font-medium text-gray-700 dark:text-gray-300">{{ labels?.unlimited || '' }}</span>
         </div>
         <div v-if="modelScopeLabels.length > 0" class="col-span-2 flex items-center justify-between">
-          <span class="text-gray-400 dark:text-dark-500">{{ t('payment.planCard.models') }}</span>
+          <span class="text-gray-400 dark:text-dark-500">{{ labels?.models || '' }}</span>
           <div class="flex flex-wrap justify-end gap-1">
             <span v-for="scope in modelScopeLabels" :key="scope"
               class="rounded bg-gray-200/80 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 dark:bg-dark-600 dark:text-gray-300">
@@ -88,7 +87,7 @@
         :class="['w-full rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.98]', btnClass]"
         @click="emit('select', plan)"
       >
-        {{ isRenewal ? t('payment.renewNow') : t('payment.subscribeNow') }}
+        {{ isRenewal ? labels?.renewNow || '' : labels?.subscribeNow || '' }}
       </button>
     </div>
   </div>
@@ -96,7 +95,6 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import type { SubscriptionPlan } from '@/types/payment'
 import type { UserSubscription } from '@/types'
 import {
@@ -109,12 +107,19 @@ import {
   platformDiscountClass,
   platformLabel,
 } from '@/utils/platformColors'
+import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
+import type { SubscriptionPlanCardLabels } from '@/utils/paymentShell'
 
-const props = defineProps<{ plan: SubscriptionPlan; activeSubscriptions?: UserSubscription[] }>()
+const props = defineProps<{
+  plan: SubscriptionPlan
+  activeSubscriptions?: UserSubscription[]
+  labels?: SubscriptionPlanCardLabels
+  currency?: string
+  locale?: string
+}>()
 const emit = defineEmits<{ select: [plan: SubscriptionPlan] }>()
-const { t } = useI18n()
 
-const platform = computed(() => props.plan.group_platform || '')
+const platform = computed(() => props.plan.group_platform)
 const isRenewal = computed(() =>
   props.activeSubscriptions?.some(s => s.group_id === props.plan.group_id && s.status === 'active') ?? false
 )
@@ -127,7 +132,14 @@ const textClass = computed(() => platformTextClass(platform.value))
 const iconClass = computed(() => platformIconClass(platform.value))
 const btnClass = computed(() => platformButtonClass(platform.value))
 const discountClass = computed(() => platformDiscountClass(platform.value))
-const pLabel = computed(() => platformLabel(platform.value))
+const pLabel = computed(() => props.plan.group_display_label || platformLabel(platform.value))
+const paymentCurrency = computed(() => normalizePaymentCurrency(props.currency))
+const formattedPrice = computed(() => formatPaymentAmount(props.plan.price, paymentCurrency.value, props.locale))
+const formattedOriginalPrice = computed(() => formatPaymentAmount(props.plan.original_price || 0, paymentCurrency.value, props.locale))
+
+function formatUsdLimit(value: number): string {
+  return formatPaymentAmount(value, 'USD', props.locale)
+}
 
 const discountText = computed(() => {
   if (!props.plan.original_price || props.plan.original_price <= 0) return ''
@@ -154,9 +166,10 @@ const modelScopeLabels = computed(() => {
 })
 
 const validitySuffix = computed(() => {
-  const u = props.plan.validity_unit || 'day'
-  if (u === 'month') return t('payment.perMonth')
-  if (u === 'year') return t('payment.perYear')
-  return `${props.plan.validity_days}${t('payment.days')}`
+  const u = props.plan.validity_unit
+  if (u === 'month') return props.labels?.perMonth || ''
+  if (u === 'year') return props.labels?.perYear || ''
+  if (u !== 'day' || props.plan.validity_days <= 0) return ''
+  return `${props.plan.validity_days}${props.labels?.days || ''}`
 })
 </script>

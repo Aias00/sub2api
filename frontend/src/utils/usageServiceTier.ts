@@ -18,8 +18,8 @@ export function getUsageServiceTierLabel(
   translate: (key: string) => string,
 ): string {
   const tier = formatUsageServiceTier(serviceTier)
-  if (tier === 'priority') return translate('usage.serviceTierPriority')
-  if (tier === 'flex') return translate('usage.serviceTierFlex')
-  if (tier === 'standard') return translate('usage.serviceTierStandard')
+  if (tier === 'priority') return translate('common.serviceTier.priority')
+  if (tier === 'flex') return translate('common.serviceTier.flex')
+  if (tier === 'standard') return translate('common.serviceTier.standard')
   return tier
 }

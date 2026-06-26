@@ -4,10 +4,10 @@
       <!-- Title -->
       <div class="text-center">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-          {{ t('auth.welcomeBack') }}
+          {{ authText('welcomeBack') }}
         </h2>
         <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-          {{ t('auth.signInToAccount') }}
+          {{ authText('signInToAccount') }}
         </p>
       </div>
       <!-- Login Form -->
@@ -15,7 +15,7 @@
         <!-- Email Input -->
         <div>
           <label for="email" class="input-label">
-            {{ t('auth.emailLabel') }}
+            {{ authText('emailLabel') }}
           </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -31,7 +31,7 @@
               :disabled="authFieldDisabled"
               class="input pl-11"
               :class="{ 'input-error': errors.email }"
-              :placeholder="t('auth.emailPlaceholder')"
+              :placeholder="authText('emailPlaceholder')"
             />
           </div>
         </div>
@@ -39,7 +39,7 @@
         <!-- Password Input -->
         <div>
           <label for="password" class="input-label">
-            {{ t('auth.passwordLabel') }}
+            {{ authText('passwordLabel') }}
           </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -54,7 +54,7 @@
               :disabled="authFieldDisabled"
               class="input pl-11 pr-11"
               :class="{ 'input-error': errors.password }"
-              :placeholder="t('auth.passwordPlaceholder')"
+              :placeholder="authText('passwordPlaceholder')"
             />
             <button
               type="button"
@@ -70,10 +70,10 @@
             <span></span>
             <router-link
               v-if="passwordResetEnabled && !backendModeEnabled"
-              to="/forgot-password"
+              :to="authRouteDefaults.forgotPasswordPath"
               class="text-sm font-medium text-sky-700 transition-colors hover:text-sky-600 dark:text-sky-300 dark:hover:text-sky-200"
             >
-              {{ t('auth.forgotPassword') }}
+              {{ authText('forgotPassword') }}
             </router-link>
           </div>
         </div>
@@ -116,7 +116,7 @@
             ></path>
           </svg>
           <Icon v-else name="login" size="md" class="mr-2" />
-          {{ isLoading ? t('auth.signingIn') : t('auth.signIn') }}
+          {{ isLoading ? authText('signingIn') : authText('signIn') }}
         </button>
 
         <LoginAgreementPrompt
@@ -124,6 +124,7 @@
           :accepted="agreementAccepted"
           :documents="loginAgreementDocuments"
           :mode="loginAgreementMode"
+          :shell-labels="authShellLabels"
           :updated-at="loginAgreementUpdatedAt"
           :visible="showAgreementModal"
           @accept="acceptLoginAgreement"
@@ -135,7 +136,7 @@
           <div class="flex items-center gap-3">
             <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
             <span class="text-xs text-gray-500 dark:text-dark-400">
-              {{ t('auth.oauthAlternativeMethods') }}
+              {{ authText('oauthAlternativeMethods') }}
             </span>
             <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
           </div>
@@ -147,6 +148,7 @@
           :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
           :turnstile-token="turnstileToken"
           :show-divider="false"
+          :shell-labels="authShellLabels"
         />
 
           <LinuxDoOAuthSection
@@ -155,11 +157,13 @@
             :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
             :turnstile-token="turnstileToken"
             :show-divider="false"
+            :shell-labels="authShellLabels"
           />
           <DingTalkOAuthSection
             v-if="dingtalkOAuthEnabled"
             :disabled="authActionDisabled"
             :show-divider="false"
+            :shell-labels="authShellLabels"
           />
           <WechatOAuthSection
             v-if="wechatOAuthEnabled"
@@ -167,6 +171,7 @@
             :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
             :turnstile-token="turnstileToken"
             :show-divider="false"
+            :shell-labels="authShellLabels"
           />
           <OidcOAuthSection
             v-if="oidcOAuthEnabled"
@@ -175,6 +180,7 @@
             :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
             :turnstile-token="turnstileToken"
             :show-divider="false"
+            :shell-labels="authShellLabels"
           />
         </div>
       </form>
@@ -183,12 +189,12 @@
     <!-- Footer -->
     <template v-if="!backendModeEnabled" #footer>
       <p class="text-gray-500 dark:text-dark-400">
-        {{ t('auth.dontHaveAccount') }}
+        {{ authText('dontHaveAccount') }}
         <router-link
-          to="/register"
+          :to="authRouteDefaults.registerPath"
           class="font-medium text-sky-700 transition-colors hover:text-sky-600 dark:text-sky-300 dark:hover:text-sky-200"
         >
-          {{ t('auth.signUp') }}
+          {{ authText('signUp') }}
         </router-link>
       </p>
     </template>
@@ -200,6 +206,7 @@
     ref="totpModalRef"
     :temp-token="totpTempToken"
     :user-email-masked="totpUserEmailMasked"
+    :shell-labels="authShellLabels"
     @verify="handle2FAVerify"
     @cancel="handle2FACancel"
   />
@@ -223,6 +230,7 @@ import { useAuthStore, useAppStore } from '@/stores'
 import { getPublicSettings, isTotp2FARequired, isWeChatWebOAuthEnabled } from '@/api/auth'
 import type { LoginAgreementDocument, TotpLoginResponse } from '@/types'
 import { extractI18nErrorMessage } from '@/utils/apiError'
+import { resolveRouteAuthRedirect } from '@/utils/authRedirect'
 import { clearAllAffiliateReferralCodes } from '@/utils/oauthAffiliate'
 import {
   buildLoginAgreementAcceptancePayload,
@@ -231,6 +239,7 @@ import {
   hasAcceptedLoginAgreement,
   persistLoginAgreementAcceptance
 } from '@/utils/loginAgreementConsent'
+import { useAuthShellText } from '@/composables/useAuthShellText'
 
 const { t } = useI18n()
 // ==================== Router & Stores ====================
@@ -238,6 +247,7 @@ const { t } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
+const { authText, authShellLabels, authRouteDefaults, defaultRedirectPath, applyAuthShellConfig } = useAuthShellText()
 
 // ==================== State ====================
 
@@ -252,7 +262,7 @@ const dingtalkOAuthEnabled = ref<boolean>(false)
 const wechatOAuthEnabled = ref<boolean>(false)
 const backendModeEnabled = ref<boolean>(false)
 const oidcOAuthEnabled = ref<boolean>(false)
-const oidcOAuthProviderName = ref<string>('OIDC')
+const oidcOAuthProviderName = ref<string>('')
 const githubOAuthEnabled = ref<boolean>(false)
 const googleOAuthEnabled = ref<boolean>(false)
 const passwordResetEnabled = ref<boolean>(false)
@@ -342,13 +352,14 @@ onMounted(async () => {
     wechatOAuthEnabled.value = isWeChatWebOAuthEnabled(settings)
     backendModeEnabled.value = settings.backend_mode_enabled
     oidcOAuthEnabled.value = settings.oidc_oauth_enabled
-    oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || 'OIDC'
+    oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || ''
     githubOAuthEnabled.value = settings.github_oauth_enabled
     googleOAuthEnabled.value = settings.google_oauth_enabled
     backendModeEnabled.value = settings.backend_mode_enabled
     passwordResetEnabled.value = settings.password_reset_enabled
     turnstileEnabled.value = settings.turnstile_enabled
     turnstileSiteKey.value = settings.turnstile_site_key || ''
+    applyAuthShellConfig(settings.auth_shell_config)
     applyLoginAgreementSettings(settings)
   } catch (error) {
     console.error('Failed to load public settings:', error)
@@ -504,7 +515,7 @@ async function handleLogin(): Promise<void> {
     appStore.showSuccess(t('auth.loginSuccess'))
 
     // Redirect to dashboard or intended route
-    const redirectTo = (router.currentRoute.value.query.redirect as string) || '/dashboard'
+    const redirectTo = resolveRouteAuthRedirect(router.currentRoute.value.query.redirect, defaultRedirectPath.value)
     await router.push(redirectTo)
   } catch (error: unknown) {
     if (turnstileRef.value) {
@@ -554,7 +565,7 @@ async function handle2FAVerify(code: string): Promise<void> {
     appStore.showSuccess(t('auth.loginSuccess'))
 
     // Redirect to dashboard or intended route
-    const redirectTo = (router.currentRoute.value.query.redirect as string) || '/dashboard'
+    const redirectTo = resolveRouteAuthRedirect(router.currentRoute.value.query.redirect, defaultRedirectPath.value)
     await router.push(redirectTo)
   } catch (error: unknown) {
     const err = error as { message?: string; response?: { data?: { message?: string } } }

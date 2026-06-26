@@ -12,10 +12,10 @@
             </svg>
           </div>
           <h3 class="mt-4 text-center text-xl font-semibold text-gray-900 dark:text-white">
-            {{ t('profile.totp.disableTitle') }}
+            {{ totpDisableText('totpDisableTitle') }}
           </h3>
           <p class="mt-2 text-center text-sm text-gray-500 dark:text-gray-400">
-            {{ t('profile.totp.disableWarning') }}
+            {{ totpDisableText('totpDisableWarning') }}
           </p>
         </div>
 
@@ -27,7 +27,7 @@
         <form v-else @submit.prevent="handleDisable" class="space-y-4">
           <!-- Email verification -->
           <div v-if="verificationMethod === 'email'">
-            <label class="input-label">{{ t('profile.totp.emailCode') }}</label>
+            <label class="input-label">{{ totpDisableText('totpEmailCode') }}</label>
             <div class="flex gap-2">
               <input
                 v-model="form.emailCode"
@@ -35,7 +35,7 @@
                 maxlength="6"
                 inputmode="numeric"
                 class="input flex-1"
-                :placeholder="t('profile.totp.enterEmailCode')"
+                :placeholder="totpDisableText('totpEnterEmailCode')"
               />
               <button
                 type="button"
@@ -43,7 +43,7 @@
                 :disabled="sendingCode || codeCooldown > 0"
                 @click="handleSendCode"
               >
-                {{ codeCooldown > 0 ? `${codeCooldown}s` : (sendingCode ? t('common.sending') : t('profile.totp.sendCode')) }}
+                {{ codeCooldown > 0 ? `${codeCooldown}s` : (sendingCode ? totpDisableText('totpSending') : totpDisableText('totpSendCode')) }}
               </button>
             </div>
           </div>
@@ -51,7 +51,7 @@
           <!-- Password verification -->
           <div v-else>
             <label for="password" class="input-label">
-              {{ t('profile.currentPassword') }}
+              {{ totpDisableText('currentPassword') }}
             </label>
             <input
               id="password"
@@ -59,21 +59,21 @@
               type="password"
               autocomplete="current-password"
               class="input"
-              :placeholder="t('profile.totp.enterPassword')"
+              :placeholder="totpDisableText('totpEnterPassword')"
             />
           </div>
 
           <!-- Actions -->
           <div class="flex justify-end gap-3 pt-4">
             <button type="button" class="btn btn-secondary" @click="$emit('close')">
-              {{ t('common.cancel') }}
+              {{ totpDisableText('totpCancel') }}
             </button>
             <button
               type="submit"
               class="btn btn-danger"
               :disabled="loading || !canSubmit"
             >
-              {{ loading ? t('common.processing') : t('profile.totp.confirmDisable') }}
+              {{ loading ? totpDisableText('totpProcessing') : totpDisableText('totpConfirmDisable') }}
             </button>
           </div>
         </form>
@@ -83,8 +83,8 @@
 </template>
 
 <script setup lang="ts">
+import type { ProfileLabelKey, ProfileLabels } from '@/utils/profileShell'
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { totpAPI } from '@/api'
 
@@ -93,8 +93,12 @@ const emit = defineEmits<{
   success: []
 }>()
 
-const { t } = useI18n()
 const appStore = useAppStore()
+const props = withDefaults(defineProps<{
+  labels?: ProfileLabels
+}>(), {
+  labels: () => ({}),
+})
 
 const methodLoading = ref(true)
 const verificationMethod = ref<'email' | 'password'>('password')
@@ -106,6 +110,11 @@ const form = ref({
   emailCode: '',
   password: ''
 })
+
+
+function totpDisableText(key: ProfileLabelKey): string {
+  return props.labels?.[key] || ''
+}
 
 const canSubmit = computed(() => {
   if (verificationMethod.value === 'email') {
@@ -120,7 +129,7 @@ const loadVerificationMethod = async () => {
     const method = await totpAPI.getVerificationMethod()
     verificationMethod.value = method.method
   } catch (err: any) {
-    appStore.showError(err.response?.data?.message || t('common.error'))
+    appStore.showError(err.response?.data?.message || totpDisableText('totpError'))
     emit('close')
   } finally {
     methodLoading.value = false
@@ -131,7 +140,7 @@ const handleSendCode = async () => {
   sendingCode.value = true
   try {
     await totpAPI.sendVerifyCode()
-    appStore.showSuccess(t('profile.totp.codeSent'))
+    appStore.showSuccess(totpDisableText('totpCodeSent'))
     // Start cooldown
     codeCooldown.value = 60
     if (cooldownTimer.value) {
@@ -148,7 +157,7 @@ const handleSendCode = async () => {
       }
     }, 1000)
   } catch (err: any) {
-    appStore.showError(err.response?.data?.message || t('profile.totp.sendCodeFailed'))
+    appStore.showError(err.response?.data?.message || totpDisableText('totpSendCodeFailed'))
   } finally {
     sendingCode.value = false
   }
@@ -165,10 +174,10 @@ const handleDisable = async () => {
       : { password: form.value.password }
 
     await totpAPI.disable(request)
-    appStore.showSuccess(t('profile.totp.disableSuccess'))
+    appStore.showSuccess(totpDisableText('totpDisableSuccess'))
     emit('success')
   } catch (err: any) {
-    appStore.showError(err.response?.data?.message || t('profile.totp.disableFailed'))
+    appStore.showError(err.response?.data?.message || totpDisableText('totpDisableFailed'))
   } finally {
     loading.value = false
   }

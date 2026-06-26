@@ -29,43 +29,43 @@
             {{ statusTitle }}
           </h2>
           <p v-if="isPending" class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            {{ t('payment.result.processingHint') }}
+            {{ resultText('processingHint') }}
           </p>
         </div>
         <!-- Order Info -->
         <div v-if="order" class="rounded-xl bg-white p-5 shadow-sm dark:bg-dark-800">
           <div class="space-y-3 text-sm">
             <div class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ resultText('orderId') }}</span>
               <span class="font-medium text-gray-900 dark:text-white">#{{ order.id }}</span>
             </div>
             <div v-if="order.out_trade_no" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderNo') }}</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ resultText('orderNo') }}</span>
               <span class="font-medium text-gray-900 dark:text-white">{{ order.out_trade_no }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.baseAmount') }}</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ resultText('baseAmount') }}</span>
               <span class="font-medium text-gray-900 dark:text-white">{{ formatGatewayAmount(baseAmount) }}</span>
             </div>
             <div v-if="order.fee_rate > 0" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.fee') }} ({{ order.fee_rate }}%)</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ resultText('fee') }} ({{ order.fee_rate }}%)</span>
               <span class="font-medium text-gray-900 dark:text-white">{{ formatGatewayAmount(feeAmount) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ resultText('payAmount') }}</span>
               <span class="font-bold text-primary-600 dark:text-primary-400">{{ formatGatewayAmount(order.pay_amount) }}</span>
             </div>
             <div v-if="order.amount !== order.pay_amount" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.creditedAmount') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ order.order_type === 'balance' ? '$' + order.amount.toFixed(2) : formatGatewayAmount(order.amount) }}</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ resultText('creditedAmount') }}</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ formatOrderCreditedAmount(order) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.paymentMethod') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ t(paymentMethodI18nKey(order.payment_type), normalizedOrderPaymentType(order.payment_type)) }}</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ resultText('paymentMethod') }}</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ paymentMethodLabel(order.payment_type) }}</span>
             </div>
             <div class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.status') }}</span>
-              <OrderStatusBadge :status="order.status" />
+              <span class="text-gray-500 dark:text-gray-400">{{ resultText('status') }}</span>
+              <OrderStatusBadge :status="order.status" :labels="statusBadgeLabels" />
             </div>
           </div>
         </div>
@@ -73,23 +73,23 @@
         <div v-else-if="returnInfo" class="rounded-xl bg-white p-5 shadow-sm dark:bg-dark-800">
           <div class="space-y-3 text-sm">
             <div v-if="returnInfo.outTradeNo" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.orderId') }}</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ resultText('orderId') }}</span>
               <span class="font-medium text-gray-900 dark:text-white">{{ returnInfo.outTradeNo }}</span>
             </div>
             <div v-if="returnInfo.money" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ resultText('payAmount') }}</span>
               <span class="font-medium text-gray-900 dark:text-white">{{ formatGatewayAmount(Number(returnInfo.money) || 0) }}</span>
             </div>
             <div v-if="returnInfo.type" class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.paymentMethod') }}</span>
-              <span class="font-medium text-gray-900 dark:text-white">{{ t(paymentMethodI18nKey(returnInfo.type), normalizedOrderPaymentType(returnInfo.type)) }}</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ resultText('paymentMethod') }}</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ paymentMethodLabel(returnInfo.type) }}</span>
             </div>
           </div>
         </div>
         <!-- Actions -->
         <div class="flex gap-3">
-          <button class="btn btn-secondary flex-1" @click="router.push('/purchase')">{{ t('payment.result.backToRecharge') }}</button>
-          <button class="btn btn-primary flex-1" @click="router.push('/orders')">{{ t('payment.result.viewOrders') }}</button>
+          <button class="btn btn-secondary flex-1" @click="router.push(authRouteDefaults.purchasePath)">{{ resultText('backToRecharge') }}</button>
+          <button class="btn btn-primary flex-1" @click="router.push(authRouteDefaults.ordersPath)">{{ resultText('viewOrders') }}</button>
         </div>
       </template>
     </div>
@@ -97,6 +97,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
 import { ref, computed, onBeforeUnmount, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
@@ -104,23 +105,42 @@ import OrderStatusBadge from '@/components/payment/OrderStatusBadge.vue'
 import {
   PAYMENT_RECOVERY_STORAGE_KEY,
   clearPaymentRecoverySnapshot,
-  readPaymentRecoverySnapshot,
 } from '@/components/payment/paymentFlow'
 import { usePaymentStore } from '@/stores/payment'
+import { useAppStore } from '@/stores'
 import { paymentAPI } from '@/api/payment'
 import type { PaymentOrder } from '@/types/payment'
 import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
-import { normalizePaymentMethodForDisplay, paymentMethodI18nKey } from './paymentUx'
+import { normalizePaymentMethodForDisplay } from './paymentUx'
+import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
+import {
+  renderPaymentResultText,
+  resolvePaymentResultDefaults,
+  resolvePaymentResultLabels,
+  type PaymentResultLabelKey,
+} from '@/utils/paymentShell'
+import { formatOrderCreditedAmount } from '@/utils/paymentCurrency'
+import {
+  applyResolvedPaymentOrder,
+  calculatePaymentBaseAmount,
+  calculatePaymentFeeAmount,
+  clearPaymentRecoverySnapshotForTerminalStatus,
+  isPaymentResultPending,
+  isPaymentResultSuccess,
+  readPaymentResultQueryString,
+  restorePaymentRecoverySnapshot,
+} from './paymentResultRuntime'
 
 const i18n = useI18n()
-const { t } = i18n
 const route = useRoute()
 const router = useRouter()
 const paymentStore = usePaymentStore()
+const appStore = useAppStore()
+const { authRouteDefaults } = useAuthRouteDefaults()
 
 const order = ref<PaymentOrder | null>(null)
 const loading = ref(true)
-const currency = ref('CNY')
+const currency = ref('')
 
 interface ReturnInfo {
   outTradeNo: string
@@ -130,29 +150,14 @@ interface ReturnInfo {
 }
 const returnInfo = ref<ReturnInfo | null>(null)
 
-const SUCCESS_STATUSES = new Set(['COMPLETED', 'PAID', 'RECHARGING'])
-const PENDING_STATUSES = new Set(['PENDING', 'CREATED', 'WAITING', 'PROCESSING'])
-const STATUS_REFRESH_INTERVAL_MS = 2000
-const STATUS_REFRESH_MAX_ATTEMPTS = 15
-
 let statusRefreshTimer: ReturnType<typeof setTimeout> | null = null
 const refreshAttempts = ref(0)
 
 /** 充值金额 = pay_amount / (1 + fee_rate/100)，fee_rate=0 时等于 pay_amount */
-const baseAmount = computed(() => {
-  if (!order.value) return 0
-  const feeRate = Number(order.value.fee_rate) || 0
-  if (feeRate <= 0) return order.value.pay_amount ?? 0
-  return Math.round((order.value.pay_amount / (1 + feeRate / 100)) * 100) / 100
-})
+const baseAmount = computed(() => calculatePaymentBaseAmount(order.value))
 
 /** 手续费 = pay_amount - baseAmount */
-const feeAmount = computed(() => {
-  if (!order.value) return 0
-  const feeRate = Number(order.value.fee_rate) || 0
-  if (feeRate <= 0) return 0
-  return Math.round((order.value.pay_amount - baseAmount.value) * 100) / 100
-})
+const feeAmount = computed(() => calculatePaymentFeeAmount(order.value))
 
 const localeCode = computed(() => {
   const raw = i18n.locale as unknown
@@ -164,25 +169,67 @@ const localeCode = computed(() => {
 })
 
 const isSuccess = computed(() => {
-  return isSuccessStatus(order.value?.status)
+  return isPaymentResultSuccess(order.value?.status)
 })
 
 const isPending = computed(() => {
-  return isPendingStatus(order.value?.status)
+  return isPaymentResultPending(order.value?.status)
 })
 
 const statusTitle = computed(() => {
   if (isSuccess.value) {
-    return t('payment.result.success')
+    return resultText('success')
   }
   if (isPending.value) {
-    return t('payment.result.processing')
+    return resultText('processing')
   }
-  return t('payment.result.failed')
+  return resultText('failed')
 })
+
+
+const paymentResultLabels = computed(() =>
+  resolvePaymentResultLabels(
+    appStore.cachedPublicSettings?.payment_shell_config,
+    resolveRuntimeLocale(i18n.locale),
+  ),
+)
+const paymentResultDefaults = computed(() =>
+  resolvePaymentResultDefaults(
+    appStore.cachedPublicSettings?.payment_shell_config,
+    resolveRuntimeLocale(i18n.locale),
+  ),
+)
+
+function resultText(key: PaymentResultLabelKey): string {
+  return renderPaymentResultText(paymentResultLabels.value, key)
+}
+
+const statusBadgeLabels = computed(() => ({
+  PENDING: resultText('statusPending'),
+  PAID: resultText('statusPaid'),
+  RECHARGING: resultText('statusRecharging'),
+  COMPLETED: resultText('statusCompleted'),
+  EXPIRED: resultText('statusExpired'),
+  CANCELLED: resultText('statusCancelled'),
+  FAILED: resultText('statusFailed'),
+  REFUND_REQUESTED: resultText('statusRefundRequested'),
+  REFUNDING: resultText('statusRefunding'),
+  REFUNDED: resultText('statusRefunded'),
+  PARTIALLY_REFUNDED: resultText('statusPartiallyRefunded'),
+  REFUND_FAILED: resultText('statusRefundFailed'),
+}))
 
 function normalizedOrderPaymentType(paymentType: string): string {
   return normalizePaymentMethodForDisplay(paymentType) || paymentType
+}
+
+function paymentMethodLabel(paymentType: string): string {
+  const normalized = normalizedOrderPaymentType(paymentType)
+  if (normalized === 'alipay') return resultText('methodAlipay')
+  if (normalized === 'wxpay') return resultText('methodWxpay')
+  if (normalized === 'stripe') return resultText('methodStripe')
+  if (normalized === 'airwallex') return resultText('methodAirwallex')
+  return normalized
 }
 
 function formatGatewayAmount(value: number): string {
@@ -190,30 +237,13 @@ function formatGatewayAmount(value: number): string {
 }
 
 function setResolvedOrder(nextOrder: PaymentOrder | null): void {
-  order.value = nextOrder
-  if (nextOrder?.currency) {
-    currency.value = normalizePaymentCurrency(nextOrder.currency)
-  }
-}
-
-function normalizeOrderStatus(status: string | null | undefined): string {
-  return String(status || '').trim().toUpperCase()
-}
-
-function isSuccessStatus(status: string | null | undefined): boolean {
-  return SUCCESS_STATUSES.has(normalizeOrderStatus(status))
-}
-
-function isPendingStatus(status: string | null | undefined): boolean {
-  return PENDING_STATUSES.has(normalizeOrderStatus(status))
+  const resolved = applyResolvedPaymentOrder(nextOrder, currency.value)
+  order.value = resolved.order
+  currency.value = resolved.currency
 }
 
 function readRouteQueryString(key: string): string {
-  const value = route.query[key]
-  if (Array.isArray(value)) {
-    return typeof value[0] === 'string' ? value[0] : ''
-  }
-  return typeof value === 'string' ? value : ''
+  return readPaymentResultQueryString(route.query, key)
 }
 
 function restoreRecoverySnapshot(context: {
@@ -221,39 +251,10 @@ function restoreRecoverySnapshot(context: {
   routeOrderId: number
   routeOutTradeNo: string
 }) {
-  if (typeof window === 'undefined') {
-    return null
-  }
-
-  const rawSnapshot = window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)
-  if (!rawSnapshot) {
-    return null
-  }
-
-  if (context.resumeToken) {
-    return readPaymentRecoverySnapshot(rawSnapshot, {
-      resumeToken: context.resumeToken,
-    })
-  }
-
-  if (!context.routeOrderId && !context.routeOutTradeNo) {
-    return null
-  }
-
-  const restored = readPaymentRecoverySnapshot(rawSnapshot)
-  if (!restored) {
-    return null
-  }
-
-  if (context.routeOrderId > 0 && restored.orderId !== context.routeOrderId) {
-    return null
-  }
-
-  if (context.routeOutTradeNo && restored.outTradeNo !== context.routeOutTradeNo) {
-    return null
-  }
-
-  return restored
+  return restorePaymentRecoverySnapshot(
+    typeof window === 'undefined' ? null : window.localStorage,
+    context,
+  )
 }
 
 async function resolveOrderFromResumeToken(resumeToken: string): Promise<PaymentOrder | null> {
@@ -292,15 +293,15 @@ function clearRecoverySnapshot(): void {
 }
 
 function clearRecoverySnapshotForTerminalStatus(status: string | null | undefined): void {
-  if (!status) return
-  if (!isPendingStatus(status)) {
-    clearRecoverySnapshot()
-  }
+  clearPaymentRecoverySnapshotForTerminalStatus(
+    typeof window === 'undefined' ? null : window.localStorage,
+    status,
+  )
 }
 
 function scheduleStatusRefresh(refreshOrder: (() => Promise<PaymentOrder | null>) | null): void {
   clearStatusRefreshTimer()
-  if (!refreshOrder || !isPending.value || refreshAttempts.value >= STATUS_REFRESH_MAX_ATTEMPTS) {
+  if (!refreshOrder || !isPending.value || refreshAttempts.value >= paymentResultDefaults.value.maxRefreshAttempts) {
     return
   }
 
@@ -312,10 +313,10 @@ function scheduleStatusRefresh(refreshOrder: (() => Promise<PaymentOrder | null>
       clearRecoverySnapshotForTerminalStatus(refreshedOrder.status)
     }
 
-    if (isPendingStatus(order.value?.status)) {
+    if (isPaymentResultPending(order.value?.status)) {
       scheduleStatusRefresh(refreshOrder)
     }
-  }, STATUS_REFRESH_INTERVAL_MS)
+  }, paymentResultDefaults.value.refreshIntervalMs)
 }
 
 onMounted(async () => {
@@ -410,7 +411,7 @@ onMounted(async () => {
     return null
   }
 
-  if (isPendingStatus(order.value?.status)) {
+  if (isPaymentResultPending(order.value?.status)) {
     scheduleStatusRefresh(refreshOrder)
   } else if (order.value) {
     clearRecoverySnapshotForTerminalStatus(order.value.status)

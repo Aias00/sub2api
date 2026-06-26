@@ -60,7 +60,9 @@ func TestCreemCreatePaymentAndQueryOrder(t *testing.T) {
 	require.Equal(t, "creem_api", createAuth)
 	require.Equal(t, "prod_abc", createBody["product_id"])
 	require.Equal(t, "sub2_123", createBody["request_id"])
-	require.Equal(t, "user@example.com", createBody["customer"].(map[string]any)["email"])
+	customer, ok := createBody["customer"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "user@example.com", customer["email"])
 	require.Equal(t, "chk_123", resp.TradeNo)
 	require.Equal(t, "https://checkout.creem.test/session", resp.PayURL)
 

@@ -1,9 +1,12 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it, vi } from 'vitest'
 import { mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
 import PaymentProviderDialog from '@/components/payment/PaymentProviderDialog.vue'
 import { STRIPE_SDK_API_VERSION } from '@/components/payment/providerConfig'
 import type { ProviderInstance } from '@/types/payment'
+
+const paymentProviderDialogSource = readFileSync('src/components/payment/PaymentProviderDialog.vue', 'utf8')
 
 const messages: Record<string, string> = {
   'admin.settings.payment.providerConfig': 'Credentials',
@@ -16,6 +19,18 @@ const messages: Record<string, string> = {
   'admin.settings.payment.airwallexWebhookHint': 'Select payment_intent.succeeded and use the latest stable API version.',
 }
 
+const appStoreState = vi.hoisted(() => ({
+  cachedPublicSettings: {
+    auth_shell_config: JSON.stringify({
+      en: {
+        defaults: {
+          paymentResultPath: '/configured-payment-result',
+        },
+      },
+    }),
+  },
+}))
+
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string, params?: Record<string, string>) => {
@@ -27,6 +42,10 @@ vi.mock('vue-i18n', () => ({
       )
     },
   }),
+}))
+
+vi.mock('@/stores', () => ({
+  useAppStore: () => appStoreState,
 }))
 
 function providerFactory(overrides: Partial<ProviderInstance> = {}): ProviderInstance {
@@ -87,6 +106,26 @@ function mountDialog(options: { editing?: ProviderInstance | null } = {}) {
 }
 
 describe('PaymentProviderDialog payment guide', () => {
+  it('does not default a new provider form to easypay locally', () => {
+    expect(paymentProviderDialogSource).not.toContain("provider_key: 'easypay'")
+    expect(paymentProviderDialogSource).toContain("provider_key: ''")
+  })
+
+  it('does not auto-apply provider config defaults into form state', async () => {
+    expect(paymentProviderDialogSource).not.toContain('function applyDefaults')
+    expect(paymentProviderDialogSource).not.toContain('config[f.key] = f.defaultValue')
+    expect(paymentProviderDialogSource).not.toContain('field.defaultValue')
+
+    const wrapper = mountDialog()
+
+    ;(wrapper.vm as unknown as { reset: (key: string) => void }).reset('airwallex')
+    await nextTick()
+
+    const inputs = wrapper.findAll('input[type="text"]')
+    expect(inputs.some(input => (input.element as HTMLInputElement).value === 'https://api.airwallex.com/api/v1')).toBe(false)
+    expect(inputs.some(input => (input.element as HTMLInputElement).placeholder === 'https://api.airwallex.com/api/v1')).toBe(false)
+  })
+
   it('shows no payment guide for providers without a flow guide', () => {
     const wrapper = mountDialog()
 
@@ -128,6 +167,16 @@ describe('PaymentProviderDialog payment guide', () => {
     expect(wrapper.text()).toContain(messages['admin.settings.payment.stripeWebhookHint'])
     expect(wrapper.text()).toContain(`Use Stripe API version ${STRIPE_SDK_API_VERSION}.`)
     expect(wrapper.text()).toContain('/api/v1/payment/webhook/stripe')
+  })
+
+  it('uses the auth shell payment result path for provider return URL display', async () => {
+    const wrapper = mountDialog()
+
+    ;(wrapper.vm as unknown as { reset: (key: string) => void }).reset('alipay')
+    await nextTick()
+
+    expect(wrapper.text()).toContain('/configured-payment-result')
+    expect(wrapper.text()).not.toContain('/payment/result')
   })
 
   it('emits an empty Airwallex accountId when the admin clears it', async () => {

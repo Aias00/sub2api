@@ -134,7 +134,7 @@
                 v-if="isAdminType(item.type)"
                 class="text-xs text-gray-400 dark:text-dark-500"
               >
-                {{ t('redeem.adminAdjustment') }}
+                {{ redeemText('adminAdjustment') }}
               </p>
               <p
                 v-else
@@ -172,6 +172,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
 import { ref, computed, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { adminAPI, type BalanceHistoryItem } from '@/api/admin'
@@ -180,10 +181,13 @@ import type { AdminUser } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
+import { useAppStore } from '@/stores/app'
+import { renderRedeemShellText, resolveRedeemShellLabels, type RedeemLabelKey } from '@/utils/redeemShell'
 
 const props = defineProps<{ show: boolean; user: AdminUser | null; hideActions?: boolean }>()
 const emit = defineEmits(['close', 'deposit', 'withdraw'])
-const { t } = useI18n()
+const { t, locale } = useI18n()
+const appStore = useAppStore()
 
 const history = ref<BalanceHistoryItem[]>([])
 const loading = ref(false)
@@ -194,6 +198,16 @@ const pageSize = 15
 const typeFilter = ref('')
 
 const totalPages = computed(() => Math.ceil(total.value / pageSize) || 1)
+const redeemLabels = computed(() =>
+  resolveRedeemShellLabels(
+    appStore.cachedPublicSettings?.redeem_shell_config,
+    resolveRuntimeLocale(locale),
+  ),
+)
+
+function redeemText(key: RedeemLabelKey, values?: Record<string, string | number>): string {
+  return renderRedeemShellText(redeemLabels.value, key, values)
+}
 
 // Type filter options
 const typeOptions = computed(() => [
@@ -294,19 +308,19 @@ const getValueColor = (item: BalanceHistoryItem) => {
 const getItemTitle = (item: BalanceHistoryItem) => {
   switch (item.type) {
     case 'balance':
-      return t('redeem.balanceAddedRedeem')
+      return redeemText('balanceAddedRedeem')
     case 'affiliate_balance':
-      return t('redeem.balanceAddedAffiliate')
+      return redeemText('balanceAddedAffiliate')
     case 'admin_balance':
-      return item.value >= 0 ? t('redeem.balanceAddedAdmin') : t('redeem.balanceDeductedAdmin')
+      return item.value >= 0 ? redeemText('balanceAddedAdmin') : redeemText('balanceDeductedAdmin')
     case 'concurrency':
-      return t('redeem.concurrencyAddedRedeem')
+      return redeemText('concurrencyAddedRedeem')
     case 'admin_concurrency':
-      return item.value >= 0 ? t('redeem.concurrencyAddedAdmin') : t('redeem.concurrencyReducedAdmin')
+      return item.value >= 0 ? redeemText('concurrencyAddedAdmin') : redeemText('concurrencyReducedAdmin')
     case 'subscription':
-      return t('redeem.subscriptionAssigned')
+      return redeemText('subscriptionAssigned')
     default:
-      return t('common.unknown')
+      return redeemText('unknown')
   }
 }
 

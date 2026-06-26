@@ -5,16 +5,16 @@ import zh from '../locales/zh'
 
 describe('usage service tier locale keys', () => {
   it('contains zh labels for service tier tooltip', () => {
-    expect(zh.usage.serviceTier).toBe('服务档位')
-    expect(zh.usage.serviceTierPriority).toBe('Fast')
-    expect(zh.usage.serviceTierFlex).toBe('Flex')
-    expect(zh.usage.serviceTierStandard).toBe('Standard')
+    expect(zh.common.serviceTier.label).toBe('服务档位')
+    expect(zh.common.serviceTier.priority).toBe('Fast')
+    expect(zh.common.serviceTier.flex).toBe('Flex')
+    expect(zh.common.serviceTier.standard).toBe('Standard')
   })
 
   it('contains en labels for service tier tooltip', () => {
-    expect(en.usage.serviceTier).toBe('Service tier')
-    expect(en.usage.serviceTierPriority).toBe('Fast')
-    expect(en.usage.serviceTierFlex).toBe('Flex')
-    expect(en.usage.serviceTierStandard).toBe('Standard')
+    expect(en.common.serviceTier.label).toBe('Service tier')
+    expect(en.common.serviceTier.priority).toBe('Fast')
+    expect(en.common.serviceTier.flex).toBe('Flex')
+    expect(en.common.serviceTier.standard).toBe('Standard')
   })
 })

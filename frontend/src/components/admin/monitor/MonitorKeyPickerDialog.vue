@@ -15,7 +15,7 @@
           v-model="search"
           type="text"
           class="input pl-9"
-          :placeholder="t('keys.searchPlaceholder')"
+          :placeholder="t('admin.channelMonitor.form.searchKeyPlaceholder')"
         />
         <svg class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
@@ -33,8 +33,8 @@
           <thead class="bg-gray-50 dark:bg-dark-800 sticky top-0 z-10">
             <tr class="text-left text-xs font-medium uppercase tracking-wider text-gray-500 dark:text-gray-400">
               <th class="px-3 py-2">{{ t('common.name') }}</th>
-              <th class="px-3 py-2">{{ t('keys.apiKey') }}</th>
-              <th class="px-3 py-2">{{ t('keys.group') }}</th>
+              <th class="px-3 py-2">{{ t('admin.channelMonitor.form.keyColumn') }}</th>
+              <th class="px-3 py-2">{{ t('admin.channelMonitor.form.groupColumn') }}</th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-200 dark:divide-dark-700">

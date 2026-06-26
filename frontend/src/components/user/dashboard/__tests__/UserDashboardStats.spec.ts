@@ -50,6 +50,14 @@ describe('UserDashboardStats', () => {
         balance: 0,
         isSimple: false,
         platformQuotas: [],
+        currencyPrefix: '€',
+        labels: {
+          balance: 'Configured balance',
+          platformBreakdown: 'Configured platform breakdown',
+          platformCount: 'Configured {count} platforms',
+          platformOther: 'Configured other',
+          actual: 'Configured actual',
+        },
         stats: {
           total_api_keys: 1,
           active_api_keys: 1,
@@ -75,7 +83,9 @@ describe('UserDashboardStats', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('Platform breakdown')
-    expect(wrapper.text()).toContain('$0.0000')
+    expect(wrapper.text()).toContain('Configured platform breakdown')
+    expect(wrapper.text()).toContain('Configured balance')
+    expect(wrapper.text()).toContain('€0.0000')
+    expect(wrapper.text()).not.toContain('$0.0000')
   })
 })

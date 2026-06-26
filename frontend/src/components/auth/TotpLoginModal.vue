@@ -12,10 +12,10 @@
             </svg>
           </div>
           <h3 class="mt-4 text-xl font-semibold text-gray-900 dark:text-white">
-            {{ t('profile.totp.loginTitle') }}
+            {{ authText('totpLoginTitle') }}
           </h3>
           <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-            {{ t('profile.totp.loginHint') }}
+            {{ authText('totpLoginHint') }}
           </p>
           <p v-if="userEmailMasked" class="mt-1 text-sm font-medium text-gray-700 dark:text-gray-300">
             {{ userEmailMasked }}
@@ -56,7 +56,7 @@
           <!-- Loading indicator -->
           <div v-if="verifying" class="mt-3 flex items-center justify-center gap-2 text-sm text-gray-500">
             <div class="animate-spin rounded-full h-4 w-4 border-b-2 border-primary-500"></div>
-            {{ t('common.verifying') }}
+            {{ authText('totpVerifying') }}
           </div>
         </div>
 
@@ -67,7 +67,7 @@
           :disabled="verifying"
           @click="$emit('cancel')"
         >
-          {{ t('common.cancel') }}
+          {{ authText('totpCancel') }}
         </button>
       </div>
     </div>
@@ -76,12 +76,13 @@
 
 <script setup lang="ts">
 import { ref, watch, nextTick, onMounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores'
+import { renderAuthShellText, type AuthShellLabelKey, type AuthShellLabels } from '@/utils/authShell'
 
-defineProps<{
+const props = defineProps<{
   tempToken: string
   userEmailMasked?: string
+  shellLabels?: AuthShellLabels
 }>()
 
 const emit = defineEmits<{
@@ -89,13 +90,16 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const { t } = useI18n()
 const appStore = useAppStore()
 
 const verifying = ref(false)
 const code = ref<string[]>(['', '', '', '', '', ''])
 const inputRefs = ref<(HTMLInputElement | null)[]>([])
 const hiddenOtpInputRef = ref<HTMLInputElement | null>(null)
+
+function authText(key: AuthShellLabelKey, params: Record<string, string | number> = {}): string {
+  return renderAuthShellText(props.shellLabels || {}, key, params)
+}
 
 // Watch for code changes and auto-submit when 6 digits are entered
 watch(

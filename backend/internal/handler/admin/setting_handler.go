@@ -54,6 +54,20 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
+func optionalTrimmedString(value *string, fallback string) string {
+	if value == nil {
+		return fallback
+	}
+	return strings.TrimSpace(*value)
+}
+
+func optionalBool(value *bool, fallback bool) bool {
+	if value == nil {
+		return fallback
+	}
+	return *value
+}
+
 func dtoRechargeProducts(products []service.RechargeProduct) []dto.RechargeProductConfig {
 	if len(products) == 0 {
 		return []dto.RechargeProductConfig{}
@@ -213,8 +227,6 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		DingTalkConnectSyncDisplayNameAttrName: settings.DingTalkConnectSyncDisplayNameAttrName,
 		DingTalkConnectSyncDeptAttrName:        settings.DingTalkConnectSyncDeptAttrName,
 		WeChatConnectEnabled:                   settings.WeChatConnectEnabled,
-		WeChatConnectAppID:                     settings.WeChatConnectAppID,
-		WeChatConnectAppSecretConfigured:       settings.WeChatConnectAppSecretConfigured,
 		WeChatConnectOpenAppID:                 settings.WeChatConnectOpenAppID,
 		WeChatConnectOpenAppSecretConfigured:   settings.WeChatConnectOpenAppSecretConfigured,
 		WeChatConnectMPAppID:                   settings.WeChatConnectMPAppID,
@@ -266,8 +278,27 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		APIBaseURL:                             settings.APIBaseURL,
 		ContactInfo:                            settings.ContactInfo,
 		DocURL:                                 settings.DocURL,
+		DocsContentBasePath:                    settings.DocsContentBasePath,
 		HomeContent:                            settings.HomeContent,
+		HomeShellConfig:                        settings.HomeShellConfig,
 		ModelPlazaItems:                        dto.ParseModelPlazaItems(settings.ModelPlazaItems),
+		ModelPlazaShellConfig:                  settings.ModelPlazaShellConfig,
+		DocsShellConfig:                        settings.DocsShellConfig,
+		LegalDocumentShellConfig:               settings.LegalDocumentShellConfig,
+		APIKeysShellConfig:                     settings.APIKeysShellConfig,
+		KeyUsageShellConfig:                    settings.KeyUsageShellConfig,
+		DashboardShellConfig:                   settings.DashboardShellConfig,
+		UsageShellConfig:                       settings.UsageShellConfig,
+		APIGuideShellConfig:                    settings.APIGuideShellConfig,
+		APITestShellConfig:                     settings.APITestShellConfig,
+		AvailableGroupsShellConfig:             settings.AvailableGroupsShellConfig,
+		RedeemShellConfig:                      settings.RedeemShellConfig,
+		AffiliateShellConfig:                   settings.AffiliateShellConfig,
+		AvailableChannelsShellConfig:           settings.AvailableChannelsShellConfig,
+		ChannelStatusShellConfig:               settings.ChannelStatusShellConfig,
+		CustomPageShellConfig:                  settings.CustomPageShellConfig,
+		ProfileShellConfig:                     settings.ProfileShellConfig,
+		AuthShellConfig:                        settings.AuthShellConfig,
 		HideCcsImportButton:                    settings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:            settings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:                settings.PurchaseSubscriptionURL,
@@ -275,6 +306,54 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		TablePageSizeOptions:                   settings.TablePageSizeOptions,
 		CustomMenuItems:                        dto.ParseCustomMenuItems(settings.CustomMenuItems),
 		CustomEndpoints:                        dto.ParseCustomEndpoints(settings.CustomEndpoints),
+		AppURL:                                 settings.WebAppURL,
+		AppName:                                settings.WebAppName,
+		AppDescription:                         settings.WebAppDescription,
+		AppLogo:                                settings.WebAppLogo,
+		AppFavicon:                             settings.WebAppFavicon,
+		AppPreviewImage:                        settings.WebAppPreviewImage,
+		Theme:                                  settings.WebTheme,
+		Appearance:                             settings.WebAppearance,
+		DefaultLocale:                          settings.WebDefaultLocale,
+		PromptCasesTitle:                       settings.WebPromptCasesTitle,
+		PromptCasesDescription:                 settings.WebPromptCasesDescription,
+		PromptTemplatesTitle:                   settings.WebPromptTemplatesTitle,
+		PromptTemplatesDescription:             settings.WebPromptTemplatesDescription,
+		WorkspaceShellConfig:                   settings.WebWorkspaceShellConfig,
+		PricingTitle:                           settings.WebPricingTitle,
+		PricingDescription:                     settings.WebPricingDescription,
+		PricingShellConfig:                     settings.WebPricingShellConfig,
+		PaymentShellConfig:                     settings.WebPaymentShellConfig,
+		PricingCurrencySymbol:                  settings.WebPricingCurrencySymbol,
+		CreditsTitle:                           settings.WebCreditsTitle,
+		CreditsDescription:                     settings.WebCreditsDescription,
+		CreditsPurchaseLabel:                   settings.WebCreditsPurchaseLabel,
+		CreditsBalanceLabel:                    settings.WebCreditsBalanceLabel,
+		CreditsPerBalance:                      settings.WebCreditsPerBalance,
+		LocaleDetectEnabled:                    settings.WebLocaleDetectEnabled,
+		EmailAuthVisible:                       settings.WebEmailAuthVisible,
+		GoogleAuthVisible:                      settings.WebGoogleAuthVisible,
+		GitHubAuthVisible:                      settings.WebGitHubAuthVisible,
+		PromptCatalogShellConfig:               settings.PromptCatalogShellConfig,
+		CreditsShellConfig:                     settings.CreditsShellConfig,
+		GoogleAnalyticsID:                      settings.WebGoogleAnalyticsID,
+		ClarityID:                              settings.WebClarityID,
+		PlausibleDomain:                        settings.WebPlausibleDomain,
+		PlausibleSrc:                           settings.WebPlausibleSrc,
+		OpenPanelClientID:                      settings.WebOpenPanelClientID,
+		PublicIntegrationsEnabled:              settings.WebPublicIntegrationsEnabled,
+		VercelAnalyticsEnabled:                 settings.WebVercelAnalyticsEnabled,
+		AdsenseCode:                            settings.WebAdsenseCode,
+		AffonsoEnabled:                         settings.WebAffonsoEnabled,
+		AffonsoID:                              settings.WebAffonsoID,
+		AffonsoCookieDuration:                  settings.WebAffonsoCookieDuration,
+		PromoteKitEnabled:                      settings.WebPromoteKitEnabled,
+		PromoteKitID:                           settings.WebPromoteKitID,
+		CrispEnabled:                           settings.WebCrispEnabled,
+		CrispWebsiteID:                         settings.WebCrispWebsiteID,
+		TawkEnabled:                            settings.WebTawkEnabled,
+		TawkPropertyID:                         settings.WebTawkPropertyID,
+		TawkWidgetID:                           settings.WebTawkWidgetID,
 		DefaultConcurrency:                     settings.DefaultConcurrency,
 		DefaultBalance:                         settings.DefaultBalance,
 		RiskControlEnabled:                     settings.RiskControlEnabled,
@@ -521,8 +600,6 @@ type UpdateSettingsRequest struct {
 
 	// WeChat Connect OAuth 登录
 	WeChatConnectEnabled             bool   `json:"wechat_connect_enabled"`
-	WeChatConnectAppID               string `json:"wechat_connect_app_id"`
-	WeChatConnectAppSecret           string `json:"wechat_connect_app_secret"`
 	WeChatConnectOpenAppID           string `json:"wechat_connect_open_app_id"`
 	WeChatConnectOpenAppSecret       string `json:"wechat_connect_open_app_secret"`
 	WeChatConnectMPAppID             string `json:"wechat_connect_mp_app_id"`
@@ -573,21 +650,91 @@ type UpdateSettingsRequest struct {
 	GoogleOAuthFrontendRedirectURL string `json:"google_oauth_frontend_redirect_url"`
 
 	// OEM设置
-	SiteName                    *string               `json:"site_name"`
-	SiteLogo                    *string               `json:"site_logo"`
-	SiteSubtitle                *string               `json:"site_subtitle"`
-	APIBaseURL                  *string               `json:"api_base_url"`
-	ContactInfo                 *string               `json:"contact_info"`
-	DocURL                      *string               `json:"doc_url"`
-	HomeContent                 *string               `json:"home_content"`
-	ModelPlazaItems             *[]dto.ModelPlazaItem `json:"model_plaza_items"`
-	HideCcsImportButton         *bool                 `json:"hide_ccs_import_button"`
-	PurchaseSubscriptionEnabled *bool                 `json:"purchase_subscription_enabled"`
-	PurchaseSubscriptionURL     *string               `json:"purchase_subscription_url"`
-	TableDefaultPageSize        int                   `json:"table_default_page_size"`
-	TablePageSizeOptions        []int                 `json:"table_page_size_options"`
-	CustomMenuItems             *[]dto.CustomMenuItem `json:"custom_menu_items"`
-	CustomEndpoints             *[]dto.CustomEndpoint `json:"custom_endpoints"`
+	SiteName                     *string               `json:"site_name"`
+	SiteLogo                     *string               `json:"site_logo"`
+	SiteSubtitle                 *string               `json:"site_subtitle"`
+	APIBaseURL                   *string               `json:"api_base_url"`
+	ContactInfo                  *string               `json:"contact_info"`
+	DocURL                       *string               `json:"doc_url"`
+	DocsContentBasePath          *string               `json:"docs_content_base_path"`
+	HomeContent                  *string               `json:"home_content"`
+	HomeShellConfig              *string               `json:"home_shell_config"`
+	HomeBusinessShellConfig      *string               `json:"home_business_shell_config"`
+	ModelPlazaItems              *[]dto.ModelPlazaItem `json:"model_plaza_items"`
+	ModelPlazaShellConfig        *string               `json:"model_plaza_shell_config"`
+	DocsShellConfig              *string               `json:"docs_shell_config"`
+	LegalDocumentShellConfig     *string               `json:"legal_document_shell_config"`
+	APIKeysShellConfig           *string               `json:"api_keys_shell_config"`
+	KeyUsageShellConfig          *string               `json:"key_usage_shell_config"`
+	DashboardShellConfig         *string               `json:"dashboard_shell_config"`
+	UsageShellConfig             *string               `json:"usage_shell_config"`
+	APIGuideShellConfig          *string               `json:"api_guide_shell_config"`
+	APITestShellConfig           *string               `json:"api_test_shell_config"`
+	AvailableGroupsShellConfig   *string               `json:"available_groups_shell_config"`
+	RedeemShellConfig            *string               `json:"redeem_shell_config"`
+	AffiliateShellConfig         *string               `json:"affiliate_shell_config"`
+	AvailableChannelsShellConfig *string               `json:"available_channels_shell_config"`
+	ChannelStatusShellConfig     *string               `json:"channel_status_shell_config"`
+	CustomPageShellConfig        *string               `json:"custom_page_shell_config"`
+	ProfileShellConfig           *string               `json:"profile_shell_config"`
+	AuthShellConfig              *string               `json:"auth_shell_config"`
+	HideCcsImportButton          *bool                 `json:"hide_ccs_import_button"`
+	PurchaseSubscriptionEnabled  *bool                 `json:"purchase_subscription_enabled"`
+	PurchaseSubscriptionURL      *string               `json:"purchase_subscription_url"`
+	TableDefaultPageSize         int                   `json:"table_default_page_size"`
+	TablePageSizeOptions         []int                 `json:"table_page_size_options"`
+	CustomMenuItems              *[]dto.CustomMenuItem `json:"custom_menu_items"`
+	CustomEndpoints              *[]dto.CustomEndpoint `json:"custom_endpoints"`
+
+	AppURL                     *string `json:"app_url"`
+	AppName                    *string `json:"app_name"`
+	AppDescription             *string `json:"app_description"`
+	AppLogo                    *string `json:"app_logo"`
+	AppFavicon                 *string `json:"app_favicon"`
+	AppPreviewImage            *string `json:"app_preview_image"`
+	Theme                      *string `json:"theme"`
+	Appearance                 *string `json:"appearance"`
+	DefaultLocale              *string `json:"default_locale"`
+	PromptCasesTitle           *string `json:"prompt_cases_title"`
+	PromptCasesDescription     *string `json:"prompt_cases_description"`
+	PromptTemplatesTitle       *string `json:"prompt_templates_title"`
+	PromptTemplatesDescription *string `json:"prompt_templates_description"`
+	WorkspaceShellConfig       *string `json:"workspace_shell_config"`
+	PricingTitle               *string `json:"pricing_title"`
+	PricingDescription         *string `json:"pricing_description"`
+	PricingShellConfig         *string `json:"pricing_shell_config"`
+	PaymentShellConfig         *string `json:"payment_shell_config"`
+	PricingCurrencySymbol      *string `json:"pricing_currency_symbol"`
+	CreditsTitle               *string `json:"credits_title"`
+	CreditsDescription         *string `json:"credits_description"`
+	CreditsPurchaseLabel       *string `json:"credits_purchase_label"`
+	CreditsBalanceLabel        *string `json:"credits_balance_label"`
+	CreditsPerBalance          *string `json:"credits_per_balance"`
+	LocaleDetectEnabled        *bool   `json:"locale_detect_enabled"`
+	EmailAuthVisible           *bool   `json:"email_auth_visible"`
+	GoogleAuthVisible          *bool   `json:"google_auth_visible"`
+	GitHubAuthVisible          *bool   `json:"github_auth_visible"`
+
+	PromptCatalogShellConfig  *string `json:"prompt_catalog_shell_config"`
+	CreditsShellConfig        *string `json:"credits_shell_config"`
+	GoogleAnalyticsID         *string `json:"google_analytics_id"`
+	ClarityID                 *string `json:"clarity_id"`
+	PlausibleDomain           *string `json:"plausible_domain"`
+	PlausibleSrc              *string `json:"plausible_src"`
+	OpenPanelClientID         *string `json:"openpanel_client_id"`
+	PublicIntegrationsEnabled *bool   `json:"public_integrations_enabled"`
+	VercelAnalyticsEnabled    *bool   `json:"vercel_analytics_enabled"`
+	AdsenseCode               *string `json:"adsense_code"`
+	AffonsoEnabled            *bool   `json:"affonso_enabled"`
+	AffonsoID                 *string `json:"affonso_id"`
+	AffonsoCookieDuration     *string `json:"affonso_cookie_duration"`
+	PromoteKitEnabled         *bool   `json:"promotekit_enabled"`
+	PromoteKitID              *string `json:"promotekit_id"`
+	CrispEnabled              *bool   `json:"crisp_enabled"`
+	CrispWebsiteID            *string `json:"crisp_website_id"`
+	TawkEnabled               *bool   `json:"tawk_enabled"`
+	TawkPropertyID            *string `json:"tawk_property_id"`
+	TawkWidgetID              *string `json:"tawk_widget_id"`
 
 	// 默认配置
 	DefaultConcurrency                        int                               `json:"default_concurrency"`
@@ -681,16 +828,16 @@ type UpdateSettingsRequest struct {
 	OpenAIAdvancedSchedulerEnabled *bool `json:"openai_advanced_scheduler_enabled"`
 
 	// Balance low notification
-	BalanceLowNotifyEnabled      *bool                   `json:"balance_low_notify_enabled"`
-	BalanceLowNotifyThreshold    *float64                `json:"balance_low_notify_threshold"`
-	BalanceLowNotifyRechargeURL  *string                 `json:"balance_low_notify_recharge_url"`
-	SubscriptionExpiryNotifyEnabled *bool                `json:"subscription_expiry_notify_enabled"`
-	AccountQuotaNotifyEnabled    *bool                   `json:"account_quota_notify_enabled"`
-	AccountQuotaNotifyEmails     *[]dto.NotifyEmailEntry `json:"account_quota_notify_emails"`
-	RegistrationNotifyEnabled    *bool                   `json:"registration_notify_enabled"`
-	RegistrationNotifyProvider   *string                 `json:"registration_notify_provider"`
-	RegistrationNotifyWebhookURL *string                 `json:"registration_notify_webhook_url"`
-	RegistrationNotifySecret     *string                 `json:"registration_notify_secret"`
+	BalanceLowNotifyEnabled         *bool                   `json:"balance_low_notify_enabled"`
+	BalanceLowNotifyThreshold       *float64                `json:"balance_low_notify_threshold"`
+	BalanceLowNotifyRechargeURL     *string                 `json:"balance_low_notify_recharge_url"`
+	SubscriptionExpiryNotifyEnabled *bool                   `json:"subscription_expiry_notify_enabled"`
+	AccountQuotaNotifyEnabled       *bool                   `json:"account_quota_notify_enabled"`
+	AccountQuotaNotifyEmails        *[]dto.NotifyEmailEntry `json:"account_quota_notify_emails"`
+	RegistrationNotifyEnabled       *bool                   `json:"registration_notify_enabled"`
+	RegistrationNotifyProvider      *string                 `json:"registration_notify_provider"`
+	RegistrationNotifyWebhookURL    *string                 `json:"registration_notify_webhook_url"`
+	RegistrationNotifySecret        *string                 `json:"registration_notify_secret"`
 
 	// Payment configuration (integrated into settings, full replace)
 	PaymentEnabled                   *bool                        `json:"payment_enabled"`
@@ -943,14 +1090,65 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	if req.DocURL != nil {
 		docURL = strings.TrimSpace(*req.DocURL)
 	}
+	docsContentBasePath := optionalTrimmedString(req.DocsContentBasePath, previousSettings.DocsContentBasePath)
 	homeContent := previousSettings.HomeContent
 	if req.HomeContent != nil {
 		homeContent = strings.TrimSpace(*req.HomeContent)
 	}
+	homeShellConfig := optionalTrimmedString(req.HomeShellConfig, previousSettings.HomeShellConfig)
+	homeBusinessShellConfig := optionalTrimmedString(req.HomeBusinessShellConfig, previousSettings.HomeBusinessShellConfig)
 	hideCcsImportButton := previousSettings.HideCcsImportButton
 	if req.HideCcsImportButton != nil {
 		hideCcsImportButton = *req.HideCcsImportButton
 	}
+	webAppURL := optionalTrimmedString(req.AppURL, previousSettings.WebAppURL)
+	webAppName := optionalTrimmedString(req.AppName, previousSettings.WebAppName)
+	webAppDescription := optionalTrimmedString(req.AppDescription, previousSettings.WebAppDescription)
+	webAppLogo := optionalTrimmedString(req.AppLogo, previousSettings.WebAppLogo)
+	webAppFavicon := optionalTrimmedString(req.AppFavicon, previousSettings.WebAppFavicon)
+	webAppPreviewImage := optionalTrimmedString(req.AppPreviewImage, previousSettings.WebAppPreviewImage)
+	webTheme := optionalTrimmedString(req.Theme, previousSettings.WebTheme)
+	webAppearance := optionalTrimmedString(req.Appearance, previousSettings.WebAppearance)
+	webDefaultLocale := optionalTrimmedString(req.DefaultLocale, previousSettings.WebDefaultLocale)
+	webPromptCasesTitle := optionalTrimmedString(req.PromptCasesTitle, previousSettings.WebPromptCasesTitle)
+	webPromptCasesDescription := optionalTrimmedString(req.PromptCasesDescription, previousSettings.WebPromptCasesDescription)
+	webPromptTemplatesTitle := optionalTrimmedString(req.PromptTemplatesTitle, previousSettings.WebPromptTemplatesTitle)
+	webPromptTemplatesDescription := optionalTrimmedString(req.PromptTemplatesDescription, previousSettings.WebPromptTemplatesDescription)
+	promptCatalogShellConfig := optionalTrimmedString(req.PromptCatalogShellConfig, previousSettings.PromptCatalogShellConfig)
+	webWorkspaceShellConfig := optionalTrimmedString(req.WorkspaceShellConfig, previousSettings.WebWorkspaceShellConfig)
+	webPricingTitle := optionalTrimmedString(req.PricingTitle, previousSettings.WebPricingTitle)
+	webPricingDescription := optionalTrimmedString(req.PricingDescription, previousSettings.WebPricingDescription)
+	webPricingShellConfig := optionalTrimmedString(req.PricingShellConfig, previousSettings.WebPricingShellConfig)
+	webPaymentShellConfig := optionalTrimmedString(req.PaymentShellConfig, previousSettings.WebPaymentShellConfig)
+	webPricingCurrencySymbol := optionalTrimmedString(req.PricingCurrencySymbol, previousSettings.WebPricingCurrencySymbol)
+	webCreditsTitle := optionalTrimmedString(req.CreditsTitle, previousSettings.WebCreditsTitle)
+	webCreditsDescription := optionalTrimmedString(req.CreditsDescription, previousSettings.WebCreditsDescription)
+	webCreditsPurchaseLabel := optionalTrimmedString(req.CreditsPurchaseLabel, previousSettings.WebCreditsPurchaseLabel)
+	webCreditsBalanceLabel := optionalTrimmedString(req.CreditsBalanceLabel, previousSettings.WebCreditsBalanceLabel)
+	webCreditsPerBalance := optionalTrimmedString(req.CreditsPerBalance, previousSettings.WebCreditsPerBalance)
+	creditsShellConfig := optionalTrimmedString(req.CreditsShellConfig, previousSettings.CreditsShellConfig)
+	webGoogleAnalyticsID := optionalTrimmedString(req.GoogleAnalyticsID, previousSettings.WebGoogleAnalyticsID)
+	webClarityID := optionalTrimmedString(req.ClarityID, previousSettings.WebClarityID)
+	webPlausibleDomain := optionalTrimmedString(req.PlausibleDomain, previousSettings.WebPlausibleDomain)
+	webPlausibleSrc := optionalTrimmedString(req.PlausibleSrc, previousSettings.WebPlausibleSrc)
+	webOpenPanelClientID := optionalTrimmedString(req.OpenPanelClientID, previousSettings.WebOpenPanelClientID)
+	webPublicIntegrationsEnabled := optionalBool(req.PublicIntegrationsEnabled, previousSettings.WebPublicIntegrationsEnabled)
+	webAdsenseCode := optionalTrimmedString(req.AdsenseCode, previousSettings.WebAdsenseCode)
+	webAffonsoID := optionalTrimmedString(req.AffonsoID, previousSettings.WebAffonsoID)
+	webAffonsoCookieDuration := optionalTrimmedString(req.AffonsoCookieDuration, previousSettings.WebAffonsoCookieDuration)
+	webPromoteKitID := optionalTrimmedString(req.PromoteKitID, previousSettings.WebPromoteKitID)
+	webCrispWebsiteID := optionalTrimmedString(req.CrispWebsiteID, previousSettings.WebCrispWebsiteID)
+	webTawkPropertyID := optionalTrimmedString(req.TawkPropertyID, previousSettings.WebTawkPropertyID)
+	webTawkWidgetID := optionalTrimmedString(req.TawkWidgetID, previousSettings.WebTawkWidgetID)
+	webLocaleDetectEnabled := optionalBool(req.LocaleDetectEnabled, previousSettings.WebLocaleDetectEnabled)
+	webEmailAuthVisible := optionalBool(req.EmailAuthVisible, previousSettings.WebEmailAuthVisible)
+	webGoogleAuthVisible := optionalBool(req.GoogleAuthVisible, previousSettings.WebGoogleAuthVisible)
+	webGitHubAuthVisible := optionalBool(req.GitHubAuthVisible, previousSettings.WebGitHubAuthVisible)
+	webVercelAnalyticsEnabled := optionalBool(req.VercelAnalyticsEnabled, previousSettings.WebVercelAnalyticsEnabled)
+	webAffonsoEnabled := optionalBool(req.AffonsoEnabled, previousSettings.WebAffonsoEnabled)
+	webPromoteKitEnabled := optionalBool(req.PromoteKitEnabled, previousSettings.WebPromoteKitEnabled)
+	webCrispEnabled := optionalBool(req.CrispEnabled, previousSettings.WebCrispEnabled)
+	webTawkEnabled := optionalBool(req.TawkEnabled, previousSettings.WebTawkEnabled)
 	for _, doc := range loginAgreementDocuments {
 		if strings.TrimSpace(doc.Title) == "" {
 			response.BadRequest(c, "Login agreement document title is required")
@@ -1098,8 +1296,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	}
 
 	if req.WeChatConnectEnabled {
-		req.WeChatConnectAppID = strings.TrimSpace(req.WeChatConnectAppID)
-		req.WeChatConnectAppSecret = strings.TrimSpace(req.WeChatConnectAppSecret)
 		req.WeChatConnectOpenAppID = strings.TrimSpace(req.WeChatConnectOpenAppID)
 		req.WeChatConnectOpenAppSecret = strings.TrimSpace(req.WeChatConnectOpenAppSecret)
 		req.WeChatConnectMPAppID = strings.TrimSpace(req.WeChatConnectMPAppID)
@@ -1110,7 +1306,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		req.WeChatConnectScopes = strings.TrimSpace(req.WeChatConnectScopes)
 		req.WeChatConnectRedirectURL = strings.TrimSpace(req.WeChatConnectRedirectURL)
 		req.WeChatConnectFrontendRedirectURL = strings.TrimSpace(req.WeChatConnectFrontendRedirectURL)
-		req.WeChatConnectAppID = strings.TrimSpace(firstNonEmpty(req.WeChatConnectAppID, previousSettings.WeChatConnectAppID))
 		req.WeChatConnectRedirectURL = strings.TrimSpace(firstNonEmpty(req.WeChatConnectRedirectURL, previousSettings.WeChatConnectRedirectURL))
 		req.WeChatConnectFrontendRedirectURL = strings.TrimSpace(firstNonEmpty(req.WeChatConnectFrontendRedirectURL, previousSettings.WeChatConnectFrontendRedirectURL))
 		if req.WeChatConnectMode == "" {
@@ -1152,21 +1347,35 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 			}
 		}
 
-		req.WeChatConnectOpenAppID = strings.TrimSpace(firstNonEmpty(req.WeChatConnectOpenAppID, req.WeChatConnectAppID, previousSettings.WeChatConnectOpenAppID, previousSettings.WeChatConnectAppID))
-		req.WeChatConnectMPAppID = strings.TrimSpace(firstNonEmpty(req.WeChatConnectMPAppID, req.WeChatConnectAppID, previousSettings.WeChatConnectMPAppID, previousSettings.WeChatConnectAppID))
-		req.WeChatConnectMobileAppID = strings.TrimSpace(firstNonEmpty(req.WeChatConnectMobileAppID, req.WeChatConnectAppID, previousSettings.WeChatConnectMobileAppID, previousSettings.WeChatConnectAppID))
+		legacyWeChatAppID := strings.TrimSpace(firstNonEmpty(
+			req.WeChatConnectOpenAppID,
+			req.WeChatConnectMPAppID,
+			req.WeChatConnectMobileAppID,
+			previousSettings.WeChatConnectOpenAppID,
+			previousSettings.WeChatConnectMPAppID,
+			previousSettings.WeChatConnectMobileAppID,
+		))
+		legacyWeChatAppSecret := strings.TrimSpace(firstNonEmpty(
+			req.WeChatConnectOpenAppSecret,
+			req.WeChatConnectMPAppSecret,
+			req.WeChatConnectMobileAppSecret,
+			previousSettings.WeChatConnectOpenAppSecret,
+			previousSettings.WeChatConnectMPAppSecret,
+			previousSettings.WeChatConnectMobileAppSecret,
+		))
+
+		req.WeChatConnectOpenAppID = strings.TrimSpace(firstNonEmpty(req.WeChatConnectOpenAppID, previousSettings.WeChatConnectOpenAppID, legacyWeChatAppID))
+		req.WeChatConnectMPAppID = strings.TrimSpace(firstNonEmpty(req.WeChatConnectMPAppID, previousSettings.WeChatConnectMPAppID, legacyWeChatAppID))
+		req.WeChatConnectMobileAppID = strings.TrimSpace(firstNonEmpty(req.WeChatConnectMobileAppID, previousSettings.WeChatConnectMobileAppID, legacyWeChatAppID))
 
 		if req.WeChatConnectOpenAppSecret == "" {
-			req.WeChatConnectOpenAppSecret = strings.TrimSpace(firstNonEmpty(previousSettings.WeChatConnectOpenAppSecret, previousSettings.WeChatConnectAppSecret, req.WeChatConnectAppSecret))
+			req.WeChatConnectOpenAppSecret = strings.TrimSpace(firstNonEmpty(previousSettings.WeChatConnectOpenAppSecret, legacyWeChatAppSecret))
 		}
 		if req.WeChatConnectMPAppSecret == "" {
-			req.WeChatConnectMPAppSecret = strings.TrimSpace(firstNonEmpty(previousSettings.WeChatConnectMPAppSecret, previousSettings.WeChatConnectAppSecret, req.WeChatConnectAppSecret))
+			req.WeChatConnectMPAppSecret = strings.TrimSpace(firstNonEmpty(previousSettings.WeChatConnectMPAppSecret, legacyWeChatAppSecret))
 		}
 		if req.WeChatConnectMobileAppSecret == "" {
-			req.WeChatConnectMobileAppSecret = strings.TrimSpace(firstNonEmpty(previousSettings.WeChatConnectMobileAppSecret, previousSettings.WeChatConnectAppSecret, req.WeChatConnectAppSecret))
-		}
-		if req.WeChatConnectAppSecret == "" {
-			req.WeChatConnectAppSecret = strings.TrimSpace(firstNonEmpty(req.WeChatConnectOpenAppSecret, req.WeChatConnectMPAppSecret, req.WeChatConnectMobileAppSecret, previousSettings.WeChatConnectAppSecret))
+			req.WeChatConnectMobileAppSecret = strings.TrimSpace(firstNonEmpty(previousSettings.WeChatConnectMobileAppSecret, legacyWeChatAppSecret))
 		}
 
 		if req.WeChatConnectOpenEnabled {
@@ -1553,6 +1762,23 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 		modelPlazaJSON = string(payload)
 	}
+	modelPlazaShellConfig := optionalTrimmedString(req.ModelPlazaShellConfig, previousSettings.ModelPlazaShellConfig)
+	docsShellConfig := optionalTrimmedString(req.DocsShellConfig, previousSettings.DocsShellConfig)
+	legalDocumentShellConfig := optionalTrimmedString(req.LegalDocumentShellConfig, previousSettings.LegalDocumentShellConfig)
+	apiKeysShellConfig := optionalTrimmedString(req.APIKeysShellConfig, previousSettings.APIKeysShellConfig)
+	keyUsageShellConfig := optionalTrimmedString(req.KeyUsageShellConfig, previousSettings.KeyUsageShellConfig)
+	dashboardShellConfig := optionalTrimmedString(req.DashboardShellConfig, previousSettings.DashboardShellConfig)
+	usageShellConfig := optionalTrimmedString(req.UsageShellConfig, previousSettings.UsageShellConfig)
+	apiGuideShellConfig := optionalTrimmedString(req.APIGuideShellConfig, previousSettings.APIGuideShellConfig)
+	apiTestShellConfig := optionalTrimmedString(req.APITestShellConfig, previousSettings.APITestShellConfig)
+	availableGroupsShellConfig := optionalTrimmedString(req.AvailableGroupsShellConfig, previousSettings.AvailableGroupsShellConfig)
+	redeemShellConfig := optionalTrimmedString(req.RedeemShellConfig, previousSettings.RedeemShellConfig)
+	affiliateShellConfig := optionalTrimmedString(req.AffiliateShellConfig, previousSettings.AffiliateShellConfig)
+	availableChannelsShellConfig := optionalTrimmedString(req.AvailableChannelsShellConfig, previousSettings.AvailableChannelsShellConfig)
+	channelStatusShellConfig := optionalTrimmedString(req.ChannelStatusShellConfig, previousSettings.ChannelStatusShellConfig)
+	customPageShellConfig := optionalTrimmedString(req.CustomPageShellConfig, previousSettings.CustomPageShellConfig)
+	profileShellConfig := optionalTrimmedString(req.ProfileShellConfig, previousSettings.ProfileShellConfig)
+	authShellConfig := optionalTrimmedString(req.AuthShellConfig, previousSettings.AuthShellConfig)
 
 	// Ops metrics collector interval validation (seconds).
 	if req.OpsMetricsIntervalSeconds != nil {
@@ -1618,39 +1844,39 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		// 系统全局 platform quota 默认值（整体替换语义）
 		DefaultPlatformQuotas: req.DefaultPlatformQuotas,
 
-		RegistrationEnabled:              req.RegistrationEnabled,
-		EmailVerifyEnabled:               req.EmailVerifyEnabled,
-		RegistrationEmailSuffixWhitelist: req.RegistrationEmailSuffixWhitelist,
-		PromoCodeEnabled:                 req.PromoCodeEnabled,
-		PasswordResetEnabled:             req.PasswordResetEnabled,
-		PasswordMinLength:                req.PasswordMinLength,
-		FrontendURL:                      frontendURL,
-		InvitationCodeEnabled:            req.InvitationCodeEnabled,
-		TotpEnabled:                      req.TotpEnabled,
-		LoginAgreementEnabled:            loginAgreementEnabled,
-		LoginAgreementMode:               loginAgreementMode,
-		LoginAgreementUpdatedAt:          loginAgreementUpdatedAt,
-		LoginAgreementDocuments:          loginAgreementDocuments,
-		SMTPHost:                         req.SMTPHost,
-		SMTPPort:                         req.SMTPPort,
-		SMTPUsername:                     req.SMTPUsername,
-		SMTPPassword:                     req.SMTPPassword,
-		SMTPFrom:                         req.SMTPFrom,
-		SMTPFromName:                     req.SMTPFromName,
-		SMTPUseTLS:                       req.SMTPUseTLS,
-		SMTPDailyLimit:                   smtpDailyLimit,
-		SMTPChannels:                     req.SMTPChannels,
-		TurnstileEnabled:                 req.TurnstileEnabled,
-		TurnstileSiteKey:                 req.TurnstileSiteKey,
-		TurnstileSecretKey:               req.TurnstileSecretKey,
-		LinuxDoConnectEnabled:            req.LinuxDoConnectEnabled,
-		LinuxDoConnectClientID:           req.LinuxDoConnectClientID,
-		LinuxDoConnectClientSecret:       req.LinuxDoConnectClientSecret,
-		LinuxDoConnectRedirectURL:        req.LinuxDoConnectRedirectURL,
-		DingTalkConnectEnabled:           req.DingTalkConnectEnabled,
-		DingTalkConnectClientID:          req.DingTalkConnectClientID,
-		DingTalkConnectClientSecret:      req.DingTalkConnectClientSecret,
-		DingTalkConnectRedirectURL:       req.DingTalkConnectRedirectURL,
+		RegistrationEnabled:                    req.RegistrationEnabled,
+		EmailVerifyEnabled:                     req.EmailVerifyEnabled,
+		RegistrationEmailSuffixWhitelist:       req.RegistrationEmailSuffixWhitelist,
+		PromoCodeEnabled:                       req.PromoCodeEnabled,
+		PasswordResetEnabled:                   req.PasswordResetEnabled,
+		PasswordMinLength:                      req.PasswordMinLength,
+		FrontendURL:                            frontendURL,
+		InvitationCodeEnabled:                  req.InvitationCodeEnabled,
+		TotpEnabled:                            req.TotpEnabled,
+		LoginAgreementEnabled:                  loginAgreementEnabled,
+		LoginAgreementMode:                     loginAgreementMode,
+		LoginAgreementUpdatedAt:                loginAgreementUpdatedAt,
+		LoginAgreementDocuments:                loginAgreementDocuments,
+		SMTPHost:                               req.SMTPHost,
+		SMTPPort:                               req.SMTPPort,
+		SMTPUsername:                           req.SMTPUsername,
+		SMTPPassword:                           req.SMTPPassword,
+		SMTPFrom:                               req.SMTPFrom,
+		SMTPFromName:                           req.SMTPFromName,
+		SMTPUseTLS:                             req.SMTPUseTLS,
+		SMTPDailyLimit:                         smtpDailyLimit,
+		SMTPChannels:                           req.SMTPChannels,
+		TurnstileEnabled:                       req.TurnstileEnabled,
+		TurnstileSiteKey:                       req.TurnstileSiteKey,
+		TurnstileSecretKey:                     req.TurnstileSecretKey,
+		LinuxDoConnectEnabled:                  req.LinuxDoConnectEnabled,
+		LinuxDoConnectClientID:                 req.LinuxDoConnectClientID,
+		LinuxDoConnectClientSecret:             req.LinuxDoConnectClientSecret,
+		LinuxDoConnectRedirectURL:              req.LinuxDoConnectRedirectURL,
+		DingTalkConnectEnabled:                 req.DingTalkConnectEnabled,
+		DingTalkConnectClientID:                req.DingTalkConnectClientID,
+		DingTalkConnectClientSecret:            req.DingTalkConnectClientSecret,
+		DingTalkConnectRedirectURL:             req.DingTalkConnectRedirectURL,
 		DingTalkConnectCorpRestrictionPolicy:   req.DingTalkConnectCorpRestrictionPolicy,
 		DingTalkConnectInternalCorpID:          req.DingTalkConnectInternalCorpID,
 		DingTalkConnectBypassRegistration:      req.DingTalkConnectBypassRegistration,
@@ -1663,88 +1889,154 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		DingTalkConnectSyncCorpEmailAttrName:   req.DingTalkConnectSyncCorpEmailAttrName,
 		DingTalkConnectSyncDisplayNameAttrName: req.DingTalkConnectSyncDisplayNameAttrName,
 		DingTalkConnectSyncDeptAttrName:        req.DingTalkConnectSyncDeptAttrName,
-		WeChatConnectEnabled:             req.WeChatConnectEnabled,
-		WeChatConnectAppID:               req.WeChatConnectAppID,
-		WeChatConnectAppSecret:           req.WeChatConnectAppSecret,
-		WeChatConnectOpenAppID:           req.WeChatConnectOpenAppID,
-		WeChatConnectOpenAppSecret:       req.WeChatConnectOpenAppSecret,
-		WeChatConnectMPAppID:             req.WeChatConnectMPAppID,
-		WeChatConnectMPAppSecret:         req.WeChatConnectMPAppSecret,
-		WeChatConnectMobileAppID:         req.WeChatConnectMobileAppID,
-		WeChatConnectMobileAppSecret:     req.WeChatConnectMobileAppSecret,
-		WeChatConnectOpenEnabled:         req.WeChatConnectOpenEnabled,
-		WeChatConnectMPEnabled:           req.WeChatConnectMPEnabled,
-		WeChatConnectMobileEnabled:       req.WeChatConnectMobileEnabled,
-		WeChatConnectMode:                req.WeChatConnectMode,
-		WeChatConnectScopes:              req.WeChatConnectScopes,
-		WeChatConnectRedirectURL:         req.WeChatConnectRedirectURL,
-		WeChatConnectFrontendRedirectURL: req.WeChatConnectFrontendRedirectURL,
-		OIDCConnectEnabled:               req.OIDCConnectEnabled,
-		OIDCConnectProviderName:          req.OIDCConnectProviderName,
-		OIDCConnectClientID:              req.OIDCConnectClientID,
-		OIDCConnectClientSecret:          req.OIDCConnectClientSecret,
-		OIDCConnectIssuerURL:             req.OIDCConnectIssuerURL,
-		OIDCConnectDiscoveryURL:          req.OIDCConnectDiscoveryURL,
-		OIDCConnectAuthorizeURL:          req.OIDCConnectAuthorizeURL,
-		OIDCConnectTokenURL:              req.OIDCConnectTokenURL,
-		OIDCConnectUserInfoURL:           req.OIDCConnectUserInfoURL,
-		OIDCConnectJWKSURL:               req.OIDCConnectJWKSURL,
-		OIDCConnectScopes:                req.OIDCConnectScopes,
-		OIDCConnectRedirectURL:           req.OIDCConnectRedirectURL,
-		OIDCConnectFrontendRedirectURL:   req.OIDCConnectFrontendRedirectURL,
-		OIDCConnectTokenAuthMethod:       req.OIDCConnectTokenAuthMethod,
-		OIDCConnectUsePKCE:               oidcUsePKCE,
-		OIDCConnectValidateIDToken:       oidcValidateIDToken,
-		OIDCConnectAllowedSigningAlgs:    req.OIDCConnectAllowedSigningAlgs,
-		OIDCConnectClockSkewSeconds:      req.OIDCConnectClockSkewSeconds,
-		OIDCConnectRequireEmailVerified:  req.OIDCConnectRequireEmailVerified,
-		OIDCConnectUserInfoEmailPath:     req.OIDCConnectUserInfoEmailPath,
-		OIDCConnectUserInfoIDPath:        req.OIDCConnectUserInfoIDPath,
-		OIDCConnectUserInfoUsernamePath:  req.OIDCConnectUserInfoUsernamePath,
-		GitHubOAuthEnabled:               req.GitHubOAuthEnabled,
-		GitHubOAuthClientID:              req.GitHubOAuthClientID,
-		GitHubOAuthClientSecret:          req.GitHubOAuthClientSecret,
-		GitHubOAuthRedirectURL:           req.GitHubOAuthRedirectURL,
-		GitHubOAuthFrontendRedirectURL:   req.GitHubOAuthFrontendRedirectURL,
-		GoogleOAuthEnabled:               req.GoogleOAuthEnabled,
-		GoogleOAuthClientID:              req.GoogleOAuthClientID,
-		GoogleOAuthClientSecret:          req.GoogleOAuthClientSecret,
-		GoogleOAuthRedirectURL:           req.GoogleOAuthRedirectURL,
-		GoogleOAuthFrontendRedirectURL:   req.GoogleOAuthFrontendRedirectURL,
-		SiteName:                         siteName,
-		SiteLogo:                         siteLogo,
-		SiteSubtitle:                     siteSubtitle,
-		APIBaseURL:                       apiBaseURL,
-		ContactInfo:                      contactInfo,
-		DocURL:                           docURL,
-		HomeContent:                      homeContent,
-		ModelPlazaItems:                  modelPlazaJSON,
-		HideCcsImportButton:              hideCcsImportButton,
-		PurchaseSubscriptionEnabled:      purchaseEnabled,
-		PurchaseSubscriptionURL:          purchaseURL,
-		TableDefaultPageSize:             req.TableDefaultPageSize,
-		TablePageSizeOptions:             req.TablePageSizeOptions,
-		CustomMenuItems:                  customMenuJSON,
-		CustomEndpoints:                  customEndpointsJSON,
-		DefaultConcurrency:               req.DefaultConcurrency,
-		DefaultBalance:                   req.DefaultBalance,
-		AffiliateRebateRate:              affiliateRebateRate,
-		AffiliateRebateFreezeHours:       affiliateRebateFreezeHours,
-		AffiliateRebateDurationDays:      affiliateRebateDurationDays,
-		AffiliateRebatePerInviteeCap:     affiliateRebatePerInviteeCap,
-		DefaultUserRPMLimit:              req.DefaultUserRPMLimit,
-		DefaultSubscriptions:             defaultSubscriptions,
-		EnableModelFallback:              req.EnableModelFallback,
-		FallbackModelAnthropic:           req.FallbackModelAnthropic,
-		FallbackModelOpenAI:              req.FallbackModelOpenAI,
-		FallbackModelGemini:              req.FallbackModelGemini,
-		FallbackModelAntigravity:         req.FallbackModelAntigravity,
-		EnableIdentityPatch:              req.EnableIdentityPatch,
-		IdentityPatchPrompt:              req.IdentityPatchPrompt,
-		MinClaudeCodeVersion:             req.MinClaudeCodeVersion,
-		MaxClaudeCodeVersion:             req.MaxClaudeCodeVersion,
-		AllowUngroupedKeyScheduling:      req.AllowUngroupedKeyScheduling,
-		BackendModeEnabled:               req.BackendModeEnabled,
+		WeChatConnectEnabled:                   req.WeChatConnectEnabled,
+		WeChatConnectOpenAppID:                 req.WeChatConnectOpenAppID,
+		WeChatConnectOpenAppSecret:             req.WeChatConnectOpenAppSecret,
+		WeChatConnectMPAppID:                   req.WeChatConnectMPAppID,
+		WeChatConnectMPAppSecret:               req.WeChatConnectMPAppSecret,
+		WeChatConnectMobileAppID:               req.WeChatConnectMobileAppID,
+		WeChatConnectMobileAppSecret:           req.WeChatConnectMobileAppSecret,
+		WeChatConnectOpenEnabled:               req.WeChatConnectOpenEnabled,
+		WeChatConnectMPEnabled:                 req.WeChatConnectMPEnabled,
+		WeChatConnectMobileEnabled:             req.WeChatConnectMobileEnabled,
+		WeChatConnectMode:                      req.WeChatConnectMode,
+		WeChatConnectScopes:                    req.WeChatConnectScopes,
+		WeChatConnectRedirectURL:               req.WeChatConnectRedirectURL,
+		WeChatConnectFrontendRedirectURL:       req.WeChatConnectFrontendRedirectURL,
+		OIDCConnectEnabled:                     req.OIDCConnectEnabled,
+		OIDCConnectProviderName:                req.OIDCConnectProviderName,
+		OIDCConnectClientID:                    req.OIDCConnectClientID,
+		OIDCConnectClientSecret:                req.OIDCConnectClientSecret,
+		OIDCConnectIssuerURL:                   req.OIDCConnectIssuerURL,
+		OIDCConnectDiscoveryURL:                req.OIDCConnectDiscoveryURL,
+		OIDCConnectAuthorizeURL:                req.OIDCConnectAuthorizeURL,
+		OIDCConnectTokenURL:                    req.OIDCConnectTokenURL,
+		OIDCConnectUserInfoURL:                 req.OIDCConnectUserInfoURL,
+		OIDCConnectJWKSURL:                     req.OIDCConnectJWKSURL,
+		OIDCConnectScopes:                      req.OIDCConnectScopes,
+		OIDCConnectRedirectURL:                 req.OIDCConnectRedirectURL,
+		OIDCConnectFrontendRedirectURL:         req.OIDCConnectFrontendRedirectURL,
+		OIDCConnectTokenAuthMethod:             req.OIDCConnectTokenAuthMethod,
+		OIDCConnectUsePKCE:                     oidcUsePKCE,
+		OIDCConnectValidateIDToken:             oidcValidateIDToken,
+		OIDCConnectAllowedSigningAlgs:          req.OIDCConnectAllowedSigningAlgs,
+		OIDCConnectClockSkewSeconds:            req.OIDCConnectClockSkewSeconds,
+		OIDCConnectRequireEmailVerified:        req.OIDCConnectRequireEmailVerified,
+		OIDCConnectUserInfoEmailPath:           req.OIDCConnectUserInfoEmailPath,
+		OIDCConnectUserInfoIDPath:              req.OIDCConnectUserInfoIDPath,
+		OIDCConnectUserInfoUsernamePath:        req.OIDCConnectUserInfoUsernamePath,
+		GitHubOAuthEnabled:                     req.GitHubOAuthEnabled,
+		GitHubOAuthClientID:                    req.GitHubOAuthClientID,
+		GitHubOAuthClientSecret:                req.GitHubOAuthClientSecret,
+		GitHubOAuthRedirectURL:                 req.GitHubOAuthRedirectURL,
+		GitHubOAuthFrontendRedirectURL:         req.GitHubOAuthFrontendRedirectURL,
+		GoogleOAuthEnabled:                     req.GoogleOAuthEnabled,
+		GoogleOAuthClientID:                    req.GoogleOAuthClientID,
+		GoogleOAuthClientSecret:                req.GoogleOAuthClientSecret,
+		GoogleOAuthRedirectURL:                 req.GoogleOAuthRedirectURL,
+		GoogleOAuthFrontendRedirectURL:         req.GoogleOAuthFrontendRedirectURL,
+		SiteName:                               siteName,
+		SiteLogo:                               siteLogo,
+		SiteSubtitle:                           siteSubtitle,
+		APIBaseURL:                             apiBaseURL,
+		ContactInfo:                            contactInfo,
+		DocURL:                                 docURL,
+		DocsContentBasePath:                    docsContentBasePath,
+		HomeContent:                            homeContent,
+		HomeShellConfig:                        homeShellConfig,
+		HomeBusinessShellConfig:                homeBusinessShellConfig,
+		ModelPlazaItems:                        modelPlazaJSON,
+		ModelPlazaShellConfig:                  modelPlazaShellConfig,
+		DocsShellConfig:                        docsShellConfig,
+		LegalDocumentShellConfig:               legalDocumentShellConfig,
+		APIKeysShellConfig:                     apiKeysShellConfig,
+		KeyUsageShellConfig:                    keyUsageShellConfig,
+		DashboardShellConfig:                   dashboardShellConfig,
+		UsageShellConfig:                       usageShellConfig,
+		APIGuideShellConfig:                    apiGuideShellConfig,
+		APITestShellConfig:                     apiTestShellConfig,
+		AvailableGroupsShellConfig:             availableGroupsShellConfig,
+		RedeemShellConfig:                      redeemShellConfig,
+		AffiliateShellConfig:                   affiliateShellConfig,
+		AvailableChannelsShellConfig:           availableChannelsShellConfig,
+		ChannelStatusShellConfig:               channelStatusShellConfig,
+		CustomPageShellConfig:                  customPageShellConfig,
+		ProfileShellConfig:                     profileShellConfig,
+		AuthShellConfig:                        authShellConfig,
+		HideCcsImportButton:                    hideCcsImportButton,
+		PurchaseSubscriptionEnabled:            purchaseEnabled,
+		PurchaseSubscriptionURL:                purchaseURL,
+		TableDefaultPageSize:                   req.TableDefaultPageSize,
+		TablePageSizeOptions:                   req.TablePageSizeOptions,
+		CustomMenuItems:                        customMenuJSON,
+		CustomEndpoints:                        customEndpointsJSON,
+		WebAppURL:                              webAppURL,
+		WebAppName:                             webAppName,
+		WebAppDescription:                      webAppDescription,
+		WebAppLogo:                             webAppLogo,
+		WebAppFavicon:                          webAppFavicon,
+		WebAppPreviewImage:                     webAppPreviewImage,
+		WebTheme:                               webTheme,
+		WebAppearance:                          webAppearance,
+		WebDefaultLocale:                       webDefaultLocale,
+		WebPromptCasesTitle:                    webPromptCasesTitle,
+		WebPromptCasesDescription:              webPromptCasesDescription,
+		WebPromptTemplatesTitle:                webPromptTemplatesTitle,
+		WebPromptTemplatesDescription:          webPromptTemplatesDescription,
+		PromptCatalogShellConfig:               promptCatalogShellConfig,
+		WebWorkspaceShellConfig:                webWorkspaceShellConfig,
+		WebPricingTitle:                        webPricingTitle,
+		WebPricingDescription:                  webPricingDescription,
+		WebPricingShellConfig:                  webPricingShellConfig,
+		WebPaymentShellConfig:                  webPaymentShellConfig,
+		WebPricingCurrencySymbol:               webPricingCurrencySymbol,
+		WebCreditsTitle:                        webCreditsTitle,
+		WebCreditsDescription:                  webCreditsDescription,
+		WebCreditsPurchaseLabel:                webCreditsPurchaseLabel,
+		WebCreditsBalanceLabel:                 webCreditsBalanceLabel,
+		WebCreditsPerBalance:                   webCreditsPerBalance,
+		CreditsShellConfig:                     creditsShellConfig,
+		WebLocaleDetectEnabled:                 webLocaleDetectEnabled,
+		WebEmailAuthVisible:                    webEmailAuthVisible,
+		WebGoogleAuthVisible:                   webGoogleAuthVisible,
+		WebGitHubAuthVisible:                   webGitHubAuthVisible,
+		WebGoogleAnalyticsID:                   webGoogleAnalyticsID,
+		WebClarityID:                           webClarityID,
+		WebPlausibleDomain:                     webPlausibleDomain,
+		WebPlausibleSrc:                        webPlausibleSrc,
+		WebOpenPanelClientID:                   webOpenPanelClientID,
+		WebPublicIntegrationsEnabled:           webPublicIntegrationsEnabled,
+		WebVercelAnalyticsEnabled:              webVercelAnalyticsEnabled,
+		WebAdsenseCode:                         webAdsenseCode,
+		WebAffonsoEnabled:                      webAffonsoEnabled,
+		WebAffonsoID:                           webAffonsoID,
+		WebAffonsoCookieDuration:               webAffonsoCookieDuration,
+		WebPromoteKitEnabled:                   webPromoteKitEnabled,
+		WebPromoteKitID:                        webPromoteKitID,
+		WebCrispEnabled:                        webCrispEnabled,
+		WebCrispWebsiteID:                      webCrispWebsiteID,
+		WebTawkEnabled:                         webTawkEnabled,
+		WebTawkPropertyID:                      webTawkPropertyID,
+		WebTawkWidgetID:                        webTawkWidgetID,
+		DefaultConcurrency:                     req.DefaultConcurrency,
+		DefaultBalance:                         req.DefaultBalance,
+		AffiliateRebateRate:                    affiliateRebateRate,
+		AffiliateRebateFreezeHours:             affiliateRebateFreezeHours,
+		AffiliateRebateDurationDays:            affiliateRebateDurationDays,
+		AffiliateRebatePerInviteeCap:           affiliateRebatePerInviteeCap,
+		DefaultUserRPMLimit:                    req.DefaultUserRPMLimit,
+		DefaultSubscriptions:                   defaultSubscriptions,
+		EnableModelFallback:                    req.EnableModelFallback,
+		FallbackModelAnthropic:                 req.FallbackModelAnthropic,
+		FallbackModelOpenAI:                    req.FallbackModelOpenAI,
+		FallbackModelGemini:                    req.FallbackModelGemini,
+		FallbackModelAntigravity:               req.FallbackModelAntigravity,
+		EnableIdentityPatch:                    req.EnableIdentityPatch,
+		IdentityPatchPrompt:                    req.IdentityPatchPrompt,
+		MinClaudeCodeVersion:                   req.MinClaudeCodeVersion,
+		MaxClaudeCodeVersion:                   req.MaxClaudeCodeVersion,
+		AllowUngroupedKeyScheduling:            req.AllowUngroupedKeyScheduling,
+		BackendModeEnabled:                     req.BackendModeEnabled,
 		OpsMonitoringEnabled: func() bool {
 			if req.OpsMonitoringEnabled != nil {
 				return *req.OpsMonitoringEnabled
@@ -2130,8 +2422,6 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		DingTalkConnectSyncDisplayNameAttrName: updatedSettings.DingTalkConnectSyncDisplayNameAttrName,
 		DingTalkConnectSyncDeptAttrName:        updatedSettings.DingTalkConnectSyncDeptAttrName,
 		WeChatConnectEnabled:                   updatedSettings.WeChatConnectEnabled,
-		WeChatConnectAppID:                     updatedSettings.WeChatConnectAppID,
-		WeChatConnectAppSecretConfigured:       updatedSettings.WeChatConnectAppSecretConfigured,
 		WeChatConnectOpenAppID:                 updatedSettings.WeChatConnectOpenAppID,
 		WeChatConnectOpenAppSecretConfigured:   updatedSettings.WeChatConnectOpenAppSecretConfigured,
 		WeChatConnectMPAppID:                   updatedSettings.WeChatConnectMPAppID,
@@ -2183,8 +2473,28 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		APIBaseURL:                             updatedSettings.APIBaseURL,
 		ContactInfo:                            updatedSettings.ContactInfo,
 		DocURL:                                 updatedSettings.DocURL,
+		DocsContentBasePath:                    updatedSettings.DocsContentBasePath,
 		HomeContent:                            updatedSettings.HomeContent,
+		HomeShellConfig:                        updatedSettings.HomeShellConfig,
+		HomeBusinessShellConfig:                updatedSettings.HomeBusinessShellConfig,
 		ModelPlazaItems:                        dto.ParseModelPlazaItems(updatedSettings.ModelPlazaItems),
+		ModelPlazaShellConfig:                  updatedSettings.ModelPlazaShellConfig,
+		DocsShellConfig:                        updatedSettings.DocsShellConfig,
+		LegalDocumentShellConfig:               updatedSettings.LegalDocumentShellConfig,
+		APIKeysShellConfig:                     updatedSettings.APIKeysShellConfig,
+		KeyUsageShellConfig:                    updatedSettings.KeyUsageShellConfig,
+		DashboardShellConfig:                   updatedSettings.DashboardShellConfig,
+		UsageShellConfig:                       updatedSettings.UsageShellConfig,
+		APIGuideShellConfig:                    updatedSettings.APIGuideShellConfig,
+		APITestShellConfig:                     updatedSettings.APITestShellConfig,
+		AvailableGroupsShellConfig:             updatedSettings.AvailableGroupsShellConfig,
+		RedeemShellConfig:                      updatedSettings.RedeemShellConfig,
+		AffiliateShellConfig:                   updatedSettings.AffiliateShellConfig,
+		AvailableChannelsShellConfig:           updatedSettings.AvailableChannelsShellConfig,
+		ChannelStatusShellConfig:               updatedSettings.ChannelStatusShellConfig,
+		CustomPageShellConfig:                  updatedSettings.CustomPageShellConfig,
+		ProfileShellConfig:                     updatedSettings.ProfileShellConfig,
+		AuthShellConfig:                        updatedSettings.AuthShellConfig,
 		HideCcsImportButton:                    updatedSettings.HideCcsImportButton,
 		PurchaseSubscriptionEnabled:            updatedSettings.PurchaseSubscriptionEnabled,
 		PurchaseSubscriptionURL:                updatedSettings.PurchaseSubscriptionURL,
@@ -2192,6 +2502,54 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		TablePageSizeOptions:                   updatedSettings.TablePageSizeOptions,
 		CustomMenuItems:                        dto.ParseCustomMenuItems(updatedSettings.CustomMenuItems),
 		CustomEndpoints:                        dto.ParseCustomEndpoints(updatedSettings.CustomEndpoints),
+		AppURL:                                 updatedSettings.WebAppURL,
+		AppName:                                updatedSettings.WebAppName,
+		AppDescription:                         updatedSettings.WebAppDescription,
+		AppLogo:                                updatedSettings.WebAppLogo,
+		AppFavicon:                             updatedSettings.WebAppFavicon,
+		AppPreviewImage:                        updatedSettings.WebAppPreviewImage,
+		Theme:                                  updatedSettings.WebTheme,
+		Appearance:                             updatedSettings.WebAppearance,
+		DefaultLocale:                          updatedSettings.WebDefaultLocale,
+		PromptCasesTitle:                       updatedSettings.WebPromptCasesTitle,
+		PromptCasesDescription:                 updatedSettings.WebPromptCasesDescription,
+		PromptTemplatesTitle:                   updatedSettings.WebPromptTemplatesTitle,
+		PromptTemplatesDescription:             updatedSettings.WebPromptTemplatesDescription,
+		WorkspaceShellConfig:                   updatedSettings.WebWorkspaceShellConfig,
+		PricingTitle:                           updatedSettings.WebPricingTitle,
+		PricingDescription:                     updatedSettings.WebPricingDescription,
+		PricingShellConfig:                     updatedSettings.WebPricingShellConfig,
+		PaymentShellConfig:                     updatedSettings.WebPaymentShellConfig,
+		PricingCurrencySymbol:                  updatedSettings.WebPricingCurrencySymbol,
+		CreditsTitle:                           updatedSettings.WebCreditsTitle,
+		CreditsDescription:                     updatedSettings.WebCreditsDescription,
+		CreditsPurchaseLabel:                   updatedSettings.WebCreditsPurchaseLabel,
+		CreditsBalanceLabel:                    updatedSettings.WebCreditsBalanceLabel,
+		CreditsPerBalance:                      updatedSettings.WebCreditsPerBalance,
+		LocaleDetectEnabled:                    updatedSettings.WebLocaleDetectEnabled,
+		EmailAuthVisible:                       updatedSettings.WebEmailAuthVisible,
+		GoogleAuthVisible:                      updatedSettings.WebGoogleAuthVisible,
+		GitHubAuthVisible:                      updatedSettings.WebGitHubAuthVisible,
+		PromptCatalogShellConfig:               updatedSettings.PromptCatalogShellConfig,
+		CreditsShellConfig:                     updatedSettings.CreditsShellConfig,
+		GoogleAnalyticsID:                      updatedSettings.WebGoogleAnalyticsID,
+		ClarityID:                              updatedSettings.WebClarityID,
+		PlausibleDomain:                        updatedSettings.WebPlausibleDomain,
+		PlausibleSrc:                           updatedSettings.WebPlausibleSrc,
+		OpenPanelClientID:                      updatedSettings.WebOpenPanelClientID,
+		PublicIntegrationsEnabled:              updatedSettings.WebPublicIntegrationsEnabled,
+		VercelAnalyticsEnabled:                 updatedSettings.WebVercelAnalyticsEnabled,
+		AdsenseCode:                            updatedSettings.WebAdsenseCode,
+		AffonsoEnabled:                         updatedSettings.WebAffonsoEnabled,
+		AffonsoID:                              updatedSettings.WebAffonsoID,
+		AffonsoCookieDuration:                  updatedSettings.WebAffonsoCookieDuration,
+		PromoteKitEnabled:                      updatedSettings.WebPromoteKitEnabled,
+		PromoteKitID:                           updatedSettings.WebPromoteKitID,
+		CrispEnabled:                           updatedSettings.WebCrispEnabled,
+		CrispWebsiteID:                         updatedSettings.WebCrispWebsiteID,
+		TawkEnabled:                            updatedSettings.WebTawkEnabled,
+		TawkPropertyID:                         updatedSettings.WebTawkPropertyID,
+		TawkWidgetID:                           updatedSettings.WebTawkWidgetID,
 		DefaultConcurrency:                     updatedSettings.DefaultConcurrency,
 		DefaultBalance:                         updatedSettings.DefaultBalance,
 		AffiliateRebateRate:                    updatedSettings.AffiliateRebateRate,
@@ -2467,12 +2825,6 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.WeChatConnectEnabled != after.WeChatConnectEnabled {
 		changed = append(changed, "wechat_connect_enabled")
 	}
-	if before.WeChatConnectAppID != after.WeChatConnectAppID {
-		changed = append(changed, "wechat_connect_app_id")
-	}
-	if req.WeChatConnectAppSecret != "" {
-		changed = append(changed, "wechat_connect_app_secret")
-	}
 	if before.WeChatConnectOpenAppID != after.WeChatConnectOpenAppID {
 		changed = append(changed, "wechat_connect_open_app_id")
 	}
@@ -2595,6 +2947,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	}
 	if before.DocURL != after.DocURL {
 		changed = append(changed, "doc_url")
+	}
+	if before.DocsContentBasePath != after.DocsContentBasePath {
+		changed = append(changed, "docs_content_base_path")
 	}
 	if before.HomeContent != after.HomeContent {
 		changed = append(changed, "home_content")

@@ -80,17 +80,17 @@
               >
                 <span
                   class="inline-flex items-center gap-0.5 text-[10px] font-medium uppercase text-purple-600 dark:text-purple-400"
-                  :title="t('availableChannels.exclusiveTooltip')"
+                  :title="exclusiveTooltipLabel"
                 >
                   <Icon name="shield" size="xs" class="h-3 w-3" />
-                  {{ t('availableChannels.exclusive') }}
+                  {{ exclusiveLabel }}
                 </span>
                 <GroupBadge
                   v-for="g in exclusiveGroups(section)"
                   :key="`ex-${g.id}`"
                   :name="g.name"
                   :platform="g.platform as GroupPlatform"
-                  :subscription-type="(g.subscription_type || 'standard') as SubscriptionType"
+                  :subscription-type="g.subscription_type"
                   :rate-multiplier="g.rate_multiplier"
                   :user-rate-multiplier="userGroupRates[g.id] ?? null"
                   always-show-rate
@@ -102,17 +102,17 @@
               >
                 <span
                   class="inline-flex items-center gap-0.5 text-[10px] font-medium uppercase text-gray-500 dark:text-gray-400"
-                  :title="t('availableChannels.publicTooltip')"
+                  :title="publicTooltipLabel"
                 >
                   <Icon name="globe" size="xs" class="h-3 w-3" />
-                  {{ t('availableChannels.public') }}
+                  {{ publicLabel }}
                 </span>
                 <GroupBadge
                   v-for="g in publicGroups(section)"
                   :key="`pub-${g.id}`"
                   :name="g.name"
                   :platform="g.platform as GroupPlatform"
-                  :subscription-type="(g.subscription_type || 'standard') as SubscriptionType"
+                  :subscription-type="g.subscription_type"
                   :rate-multiplier="g.rate_multiplier"
                   :user-rate-multiplier="userGroupRates[g.id] ?? null"
                   always-show-rate
@@ -130,6 +130,7 @@
                 :key="`${section.platform}-${m.name}`"
                 :model="m"
                 :pricing-key-prefix="pricingKeyPrefix"
+                :pricing-labels="pricingLabels"
                 :no-pricing-label="noPricingLabel"
                 :show-platform="false"
                 :platform-hint="section.platform"
@@ -146,14 +147,28 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import SupportedModelChip from './SupportedModelChip.vue'
 import type { UserAvailableChannel, UserAvailableGroup, UserChannelPlatformSection } from '@/api/channels'
-import type { GroupPlatform, SubscriptionType } from '@/types'
+import type { GroupPlatform } from '@/types'
 import { platformBadgeClass } from '@/utils/platformColors'
+
+type SupportedModelPricingLabelKey =
+  | 'billingMode'
+  | 'billingModeImage'
+  | 'billingModePerRequest'
+  | 'billingModeToken'
+  | 'cacheReadPrice'
+  | 'cacheWritePrice'
+  | 'imageOutputPrice'
+  | 'inputPrice'
+  | 'intervals'
+  | 'outputPrice'
+  | 'perRequestPrice'
+  | 'unitPerMillion'
+  | 'unitPerRequest'
 
 const props = defineProps<{
   columns: {
@@ -165,10 +180,15 @@ const props = defineProps<{
   }
   rows: UserAvailableChannel[]
   loading: boolean
-  pricingKeyPrefix: string
+  pricingKeyPrefix?: string
+  pricingLabels?: Partial<Record<SupportedModelPricingLabelKey, string>>
   noPricingLabel: string
   noModelsLabel: string
   emptyLabel: string
+  exclusiveLabel: string
+  exclusiveTooltipLabel: string
+  publicLabel: string
+  publicTooltipLabel: string
   /** 用户专属倍率（group_id → multiplier）；无专属时由 GroupBadge 仅显示默认倍率。 */
   userGroupRates: Record<number, number>
 }>()
@@ -176,8 +196,6 @@ const props = defineProps<{
 // Suppress unused warning — props is accessed via template automatically but
 // the explicit reference here keeps the linter from flagging userGroupRates.
 void props.userGroupRates
-
-const { t } = useI18n()
 
 function exclusiveGroups(section: UserChannelPlatformSection): UserAvailableGroup[] {
   return section.groups.filter((g) => g.is_exclusive)

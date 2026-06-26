@@ -1,6 +1,7 @@
 import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import EmailOAuthButtons from '@/components/auth/EmailOAuthButtons.vue'
+import type { AuthShellLabels } from '@/utils/authShell'
 
 const routeState = vi.hoisted(() => ({
   query: {} as Record<string, unknown>,
@@ -14,21 +15,31 @@ vi.mock('vue-router', () => ({
   useRoute: () => routeState,
 }))
 
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string, params?: Record<string, string>) => {
-      if (key === 'auth.emailOAuth.signIn') {
-        return `使用 ${params?.providerName ?? ''} 登录`
-      }
-      return key
-    },
-  }),
-}))
+vi.mock('vue-i18n', async () => {
+  const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
+  return {
+    ...actual,
+    useI18n: () => ({
+      t: (key: string, params?: Record<string, string>) => {
+        if (key === 'auth.emailOAuth.signIn') {
+          return `使用 ${params?.providerName ?? ''} 登录`
+        }
+        return key
+      },
+    }),
+  }
+})
+
+const shellLabels: AuthShellLabels = {
+  oauthAlternativeMethods: 'Configured OAuth divider',
+  signInWithProvider: 'Configured {providerName} sign in',
+}
 
 describe('EmailOAuthButtons', () => {
   beforeEach(() => {
     routeState.query = { redirect: '/billing?plan=pro', aff: 'AFF123' }
     locationState.current = { href: 'http://localhost/register?aff=AFF123' }
+    delete window.__APP_CONFIG__
     Object.defineProperty(window, 'location', {
       configurable: true,
       value: locationState.current,
@@ -42,6 +53,7 @@ describe('EmailOAuthButtons', () => {
       props: {
         githubEnabled: true,
         googleEnabled: false,
+        shellLabels,
       },
       global: {
         stubs: {
@@ -61,10 +73,13 @@ describe('EmailOAuthButtons', () => {
   })
 
   it('passes turnstile and agreement revision to the email oauth start URL', async () => {
+    window.__APP_CONFIG__ = { api_base_url: 'https://runtime.example.com/api/v1/' } as typeof window.__APP_CONFIG__
+
     const wrapper = mount(EmailOAuthButtons, {
       props: {
         githubEnabled: true,
         googleEnabled: false,
+        shellLabels,
         agreementRevision: 'rev-1',
         turnstileToken: 'ts-token-123',
       },
@@ -79,7 +94,7 @@ describe('EmailOAuthButtons', () => {
     await wrapper.get('button').trigger('click')
 
     expect(locationState.current.href).toBe(
-      '/api/v1/auth/oauth/github/start?redirect=%2Fbilling%3Fplan%3Dpro&aff_code=AFF123&agreement_revision=rev-1&turnstile_token=ts-token-123'
+      'https://runtime.example.com/api/v1/auth/oauth/github/start?redirect=%2Fbilling%3Fplan%3Dpro&aff_code=AFF123&agreement_revision=rev-1&turnstile_token=ts-token-123'
     )
   })
 
@@ -88,6 +103,7 @@ describe('EmailOAuthButtons', () => {
       props: {
         githubEnabled: true,
         googleEnabled: false,
+        shellLabels,
       },
       global: {
         stubs: {
@@ -98,7 +114,7 @@ describe('EmailOAuthButtons', () => {
     })
 
     expect(wrapper.find('.grid').classes()).not.toContain('sm:grid-cols-2')
-    expect(wrapper.get('button').text()).toContain('使用 GitHub 登录')
+    expect(wrapper.get('button').text()).toContain('Configured GitHub sign in')
   })
 
   it('uses compact labels and two columns when GitHub and Google are both enabled', () => {
@@ -106,6 +122,7 @@ describe('EmailOAuthButtons', () => {
       props: {
         githubEnabled: true,
         googleEnabled: true,
+        shellLabels,
       },
       global: {
         stubs: {
@@ -119,8 +136,8 @@ describe('EmailOAuthButtons', () => {
     const buttons = wrapper.findAll('button')
     expect(buttons).toHaveLength(2)
     expect(buttons[0].text()).toContain('GitHub')
-    expect(buttons[0].text()).not.toContain('使用 GitHub 登录')
+    expect(buttons[0].text()).not.toContain('Configured GitHub sign in')
     expect(buttons[1].text()).toContain('Google')
-    expect(buttons[1].text()).not.toContain('使用 Google 登录')
+    expect(buttons[1].text()).not.toContain('Configured Google sign in')
   })
 })

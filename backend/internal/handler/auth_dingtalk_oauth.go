@@ -242,7 +242,6 @@ func (h *AuthHandler) createDingTalkOAuthChoicePendingSession(
 		"existing_account_bindable": false,
 		"create_account_allowed":    !signupBlocked,
 		"force_email_on_signup":     forceEmailOnSignup,
-		"choice_reason":             "third_party_signup",
 	}
 	if strings.TrimSpace(compatEmail) != "" {
 		completionResponse["compat_email"] = strings.TrimSpace(compatEmail)
@@ -252,11 +251,7 @@ func (h *AuthHandler) createDingTalkOAuthChoicePendingSession(
 		completionResponse["email"] = strings.TrimSpace(compatEmailUser.Email)
 		completionResponse["existing_account_email"] = strings.TrimSpace(compatEmailUser.Email)
 		completionResponse["existing_account_bindable"] = true
-		completionResponse["choice_reason"] = "compat_email_match"
 		resolvedChoiceEmail = strings.TrimSpace(compatEmailUser.Email)
-	}
-	if forceEmailOnSignup && compatEmailUser == nil {
-		completionResponse["choice_reason"] = "force_email_on_signup"
 	}
 	// 注册被拦：无论是否匹配到 compat email user，都跳过 choice，直接进 bind_login。
 	// "开放注册" 关闭 且 "钉钉企业模式豁免" 也关闭时，唯一合法出口是绑定已有账户，
@@ -264,7 +259,6 @@ func (h *AuthHandler) createDingTalkOAuthChoicePendingSession(
 	if signupBlocked {
 		completionResponse["step"] = "bind_login_required"
 		completionResponse["existing_account_bindable"] = true
-		completionResponse["choice_reason"] = "signup_blocked_redirect_to_bind"
 	}
 
 	var targetUserID *int64
@@ -733,14 +727,14 @@ func (h *AuthHandler) CompleteDingTalkOAuthRegistration(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	if updatedSession, handled, err := h.legacyCompleteRegistrationSessionStatus(c, session); err != nil {
+	if currentSession, handled, err := currentCompleteRegistrationSessionStatus(session); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	} else if handled {
-		c.JSON(http.StatusOK, buildPendingOAuthSessionStatusPayload(updatedSession))
+		c.JSON(http.StatusOK, buildPendingOAuthSessionStatusPayload(currentSession))
 		return
 	} else {
-		session = updatedSession
+		session = currentSession
 	}
 	if err := h.ensureBackendModeAllowsNewUserLogin(c.Request.Context()); err != nil {
 		response.ErrorFrom(c, err)

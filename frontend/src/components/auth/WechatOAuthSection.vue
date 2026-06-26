@@ -6,7 +6,7 @@
       >
         W
       </span>
-      {{ t('auth.oidc.signIn', { providerName }) }}
+      {{ authText('signInWithProvider', { providerName }) }}
     </button>
 
     <p
@@ -20,7 +20,7 @@
     <div v-if="showDivider" class="flex items-center gap-3">
       <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
       <span class="text-xs text-gray-500 dark:text-dark-400">
-        {{ t('auth.oauthOrContinue') }}
+        {{ authText('oauthAlternativeMethods') }}
       </span>
       <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
     </div>
@@ -30,9 +30,11 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import { resolveWeChatOAuthStart } from '@/api/auth'
+import { buildApiUrl } from '@/api/client'
 import { useAppStore } from '@/stores'
+import { renderAuthShellText, type AuthShellLabelKey, type AuthShellLabels } from '@/utils/authShell'
+import { resolveRouteAuthRedirect } from '@/utils/authRedirect'
 import { resolveAffiliateReferralCode, storeOAuthAffiliateCode } from '@/utils/oauthAffiliate'
 
 const props = withDefaults(defineProps<{
@@ -41,15 +43,19 @@ const props = withDefaults(defineProps<{
   agreementRevision?: string
   turnstileToken?: string
   showDivider?: boolean
+  shellLabels?: AuthShellLabels
 }>(), {
   showDivider: true,
 })
 
 const appStore = useAppStore()
 const route = useRoute()
-const { t } = useI18n()
-const providerName = computed(() => t('auth.wechatProviderName'))
 
+function authText(key: AuthShellLabelKey, params: Record<string, string | number> = {}): string {
+  return renderAuthShellText(props.shellLabels || {}, key, params)
+}
+
+const providerName = computed(() => authText('wechatProviderName'))
 const resolvedStart = computed(() => resolveWeChatOAuthStart(appStore.cachedPublicSettings))
 const buttonDisabled = computed(() => props.disabled || resolvedStart.value.mode === null)
 const disabledHint = computed(() => {
@@ -58,13 +64,13 @@ const disabledHint = computed(() => {
   }
   switch (resolvedStart.value.unavailableReason) {
     case 'external_browser_required':
-      return t('auth.oauthFlow.wechatSystemBrowserOnly')
+      return authText('wechatSystemBrowserOnly')
     case 'wechat_browser_required':
-      return t('auth.oauthFlow.wechatBrowserOnly')
+      return authText('wechatBrowserOnly')
     case 'native_app_required':
-      return t('auth.oauthFlow.wechatNativeAppOnly')
+      return authText('wechatNativeAppOnly')
     case 'not_configured':
-      return t('auth.oauthFlow.wechatNotConfigured')
+      return authText('wechatNotConfigured')
     default:
       return ''
   }
@@ -80,10 +86,8 @@ function startLogin(): void {
   if (buttonDisabled.value || !resolvedStart.value.mode) {
     return
   }
-  const redirectTo = (route.query.redirect as string) || '/dashboard'
+  const redirectTo = resolveRouteAuthRedirect(route.query.redirect)
   storeOAuthAffiliateCode(resolveAffiliateReferralCode(props.affCode, route.query.aff, route.query.aff_code))
-  const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) || '/api/v1'
-  const normalized = apiBase.replace(/\/$/, '')
   const mode = resolvedStart.value.mode
   const params = new URLSearchParams({
     mode,
@@ -97,7 +101,7 @@ function startLogin(): void {
   if (turnstileToken) {
     params.set('turnstile_token', turnstileToken)
   }
-  const startURL = `${normalized}/auth/oauth/wechat/start?${params.toString()}`
+  const startURL = buildApiUrl(`/auth/oauth/wechat/start?${params.toString()}`, appStore.cachedPublicSettings)
   window.location.href = startURL
 }
 </script>

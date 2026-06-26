@@ -20,9 +20,10 @@
         <!-- Custom Logo or Default Logo -->
         <template v-if="settingsLoaded">
           <div
+            v-if="siteLogo"
             class="mb-4 inline-flex h-16 w-16 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg shadow-slate-900/10 dark:border-dark-700 dark:bg-dark-900"
           >
-            <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+            <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
           </div>
           <h1 class="mb-2 text-3xl font-black tracking-tight text-slate-950 dark:text-white">
             {{ siteName }}
@@ -42,7 +43,7 @@
 
       <!-- Copyright -->
       <div class="mt-8 text-center text-xs text-gray-400 dark:text-dark-500">
-        &copy; {{ currentYear }} {{ siteName }}. All rights reserved.
+        &copy; {{ currentYear }} {{ siteName }}. {{ authText('allRightsReserved') }}
       </div>
     </div>
   </div>
@@ -50,18 +51,23 @@
 
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useAuthShellText } from '@/composables/useAuthShellText'
 import { useAppStore } from '@/stores'
 import { sanitizeUrl } from '@/utils/url'
 
 const appStore = useAppStore()
+const { authText, loadAuthShellConfig } = useAuthShellText()
 
-const siteName = computed(() => appStore.siteName || 'Sub2API')
+const siteName = computed(() => appStore.siteName)
 const siteLogo = computed(() => sanitizeUrl(appStore.siteLogo || '', { allowRelative: true, allowDataUrl: true }))
 const settingsLoaded = computed(() => appStore.publicSettingsLoaded)
 
 const currentYear = computed(() => new Date().getFullYear())
 
 onMounted(() => {
-  appStore.fetchPublicSettings()
+  if (!appStore.publicSettingsLoaded) {
+    appStore.fetchPublicSettings()
+  }
+  void loadAuthShellConfig()
 })
 </script>

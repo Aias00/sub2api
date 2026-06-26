@@ -131,6 +131,7 @@ docs/*
 !docs/PAYMENT.md
 !docs/PAYMENT_CN.md
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
+!docs/TOUCH_PLATFORM_INTEGRATION.md
 .serena/
 .codex/
 frontend/coverage/
@@ -142,3 +143,29 @@ deploy/__pycache__/
 deploy/gemini_gateway_session/
 tools/gemini-command-gateway/__pycache__/
 tools/gemini-command-gateway/session/
+
+# Touch Next 子应用源码纳入统一仓库；继续排除本地密钥、依赖和构建产物。
+!apps/
+!apps/touch/
+!apps/touch/**
+apps/touch/node_modules/
+apps/touch/.next/
+apps/touch/.open-next/
+apps/touch/.vercel/
+apps/touch/.wrangler/
+apps/touch/.omx/
+apps/touch/.logs/
+apps/touch/.playwright-mcp/
+apps/touch/.tmp/
+apps/touch/data/
+apps/touch/.env
+apps/touch/.env.local
+apps/touch/.env.development
+apps/touch/.env.test
+apps/touch/.env.production
+apps/touch/.env.*.local
+apps/touch/.dev.vars
+apps/touch/wrangler.toml
+apps/touch/test-export.docx
+apps/touch/tmp_*.md
+tools/x-atuo/.venv/

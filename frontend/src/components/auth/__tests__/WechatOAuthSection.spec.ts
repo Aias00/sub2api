@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import WechatOAuthSection from '@/components/auth/WechatOAuthSection.vue'
 import { useAppStore } from '@/stores'
 import type { PublicSettings } from '@/types'
+import type { AuthShellLabels } from '@/utils/authShell'
 
 const routeState = vi.hoisted(() => ({
   query: {} as Record<string, unknown>,
@@ -49,6 +50,27 @@ vi.mock('vue-i18n', async () => {
     }),
   }
 })
+
+const shellLabels: AuthShellLabels = {
+  oauthAlternativeMethods: 'Configured OAuth divider',
+  signInWithProvider: 'Configured {providerName} sign in',
+  wechatBrowserOnly: 'CONFIGURED-WECHAT-BROWSER-ONLY',
+  wechatNativeAppOnly: 'CONFIGURED-WECHAT-NATIVE-APP-ONLY',
+  wechatNotConfigured: 'CONFIGURED-NOT-CONFIGURED',
+  wechatProviderName: 'Configured WeChat',
+  wechatSystemBrowserOnly: 'CONFIGURED-SYSTEM-BROWSER-ONLY',
+}
+
+function mountWechatOAuthSection() {
+  return mount(WechatOAuthSection, {
+    props: {
+      shellLabels,
+    },
+    global: {
+      plugins: [pinia],
+    },
+  })
+}
 
 type WeChatPublicSettings = PublicSettings & {
   wechat_oauth_open_enabled?: boolean
@@ -125,13 +147,9 @@ describe('WechatOAuthSection', () => {
       wechat_oauth_open_enabled: true,
       wechat_oauth_mp_enabled: false,
     })
-    const wrapper = mount(WechatOAuthSection, {
-      global: {
-        plugins: [pinia],
-      },
-    })
+    const wrapper = mountWechatOAuthSection()
 
-    expect(wrapper.text()).toContain('Mock WeChat')
+    expect(wrapper.text()).toContain('Configured WeChat sign in')
 
     await wrapper.get('button').trigger('click')
 
@@ -149,11 +167,7 @@ describe('WechatOAuthSection', () => {
       wechat_oauth_open_enabled: false,
       wechat_oauth_mp_enabled: true,
     })
-    const wrapper = mount(WechatOAuthSection, {
-      global: {
-        plugins: [pinia],
-      },
-    })
+    const wrapper = mountWechatOAuthSection()
 
     await wrapper.get('button').trigger('click')
 
@@ -167,14 +181,10 @@ describe('WechatOAuthSection', () => {
       wechat_oauth_open_enabled: false,
       wechat_oauth_mp_enabled: true,
     })
-    const wrapper = mount(WechatOAuthSection, {
-      global: {
-        plugins: [pinia],
-      },
-    })
+    const wrapper = mountWechatOAuthSection()
 
     expect(wrapper.get('button').attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('MOCK-WECHAT-BROWSER-ONLY')
+    expect(wrapper.text()).toContain('CONFIGURED-WECHAT-BROWSER-ONLY')
 
     await wrapper.get('button').trigger('click')
 
@@ -190,14 +200,10 @@ describe('WechatOAuthSection', () => {
       wechat_oauth_open_enabled: true,
       wechat_oauth_mp_enabled: false,
     })
-    const wrapper = mount(WechatOAuthSection, {
-      global: {
-        plugins: [pinia],
-      },
-    })
+    const wrapper = mountWechatOAuthSection()
 
     expect(wrapper.get('button').attributes('disabled')).toBeDefined()
-    expect(wrapper.text()).toContain('MOCK-SYSTEM-BROWSER-ONLY')
+    expect(wrapper.text()).toContain('CONFIGURED-SYSTEM-BROWSER-ONLY')
 
     await wrapper.get('button').trigger('click')
 
@@ -208,11 +214,7 @@ describe('WechatOAuthSection', () => {
     seedPublicSettings({
       wechat_oauth_enabled: true,
     })
-    const wrapper = mount(WechatOAuthSection, {
-      global: {
-        plugins: [pinia],
-      },
-    })
+    const wrapper = mountWechatOAuthSection()
 
     await wrapper.get('button').trigger('click')
 
@@ -228,12 +230,8 @@ describe('WechatOAuthSection', () => {
       wechat_oauth_mp_enabled: false,
     })
 
-    const wrapper = mount(WechatOAuthSection, {
-      global: {
-        plugins: [pinia],
-      },
-    })
+    const wrapper = mountWechatOAuthSection()
 
-    expect(wrapper.text()).toContain('MOCK-NOT-CONFIGURED')
+    expect(wrapper.text()).toContain('CONFIGURED-NOT-CONFIGURED')
   })
 })

@@ -390,7 +390,6 @@ func (h *AuthHandler) OIDCOAuthCallback(c *gin.Context) {
 		"subject":           subject,
 		"issuer":            issuer,
 		"email_verified":    emailVerified != nil && *emailVerified,
-		"provider_fallback": strings.TrimSpace(cfg.ProviderName),
 		"suggested_display_name": firstNonEmpty(userInfoClaims.DisplayName, func() string {
 			if idClaims != nil {
 				return idClaims.Name
@@ -571,10 +570,8 @@ func (h *AuthHandler) createOIDCOAuthChoicePendingSession(
 		"email":                     suggestionEmail,
 		"resolved_email":            canonicalEmail,
 		"existing_account_email":    "",
-		"existing_account_bindable": false,
 		"create_account_allowed":    true,
 		"force_email_on_signup":     forceEmailOnSignup,
-		"choice_reason":             "third_party_signup",
 	}
 	if strings.TrimSpace(compatEmail) != "" {
 		completionResponse["compat_email"] = strings.TrimSpace(compatEmail)
@@ -582,11 +579,6 @@ func (h *AuthHandler) createOIDCOAuthChoicePendingSession(
 	if compatEmailUser != nil {
 		completionResponse["email"] = strings.TrimSpace(compatEmailUser.Email)
 		completionResponse["existing_account_email"] = strings.TrimSpace(compatEmailUser.Email)
-		completionResponse["existing_account_bindable"] = true
-		completionResponse["choice_reason"] = "compat_email_match"
-	}
-	if forceEmailOnSignup && compatEmailUser == nil {
-		completionResponse["choice_reason"] = "force_email_on_signup"
 	}
 
 	resolvedChoiceEmail := suggestionEmail
@@ -660,14 +652,14 @@ func (h *AuthHandler) CompleteOIDCOAuthRegistration(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	if updatedSession, handled, err := h.legacyCompleteRegistrationSessionStatus(c, session); err != nil {
+	if currentSession, handled, err := currentCompleteRegistrationSessionStatus(session); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	} else if handled {
-		c.JSON(http.StatusOK, buildPendingOAuthSessionStatusPayload(updatedSession))
+		c.JSON(http.StatusOK, buildPendingOAuthSessionStatusPayload(currentSession))
 		return
 	} else {
-		session = updatedSession
+		session = currentSession
 	}
 	if err := h.ensureBackendModeAllowsNewUserLogin(c.Request.Context()); err != nil {
 		response.ErrorFrom(c, err)

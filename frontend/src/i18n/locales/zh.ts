@@ -1468,9 +1468,11 @@ export default {
         endpointPlaceholder: 'https://api.example.com',
         extraModels: '附加模型',
         extraModelsPlaceholder: '回车添加附加模型',
+        groupColumn: '分组',
         groupName: '分组名称',
         groupNamePlaceholder: '可选，用于在用户视图中聚合显示',
         intervalSeconds: '检测间隔 (秒)',
+        keyColumn: 'API 密钥',
         intervalSecondsHint: '范围：15 - 3600 秒',
         kindRequired: '请选择供应商',
         name: '名称',
@@ -1479,6 +1481,7 @@ export default {
         primaryModel: '主模型',
         primaryModelPlaceholder: 'gpt-4o-mini',
         provider: '平台',
+        searchKeyPlaceholder: '搜索名称或 Key...',
         selectKeyHint: '仅显示当前账号下处于「启用」状态且未过期的 Key。',
         selectKeyTitle: '选择我的 API Key',
         useCurrentDomain: '使用当前服务',
@@ -4754,6 +4757,206 @@ export default {
         title: '站点设置',
         uploadImage: '上传图片'
       },
+      runtime: {
+        adsenseCode: 'AdSense 代码',
+        adsenseCodePlaceholder: '<script ...></script>',
+        affonsoCookieDuration: 'Affonso Cookie 天数',
+        affonsoEnabled: '启用 Affonso',
+        affonsoId: 'Affonso ID',
+        analyticsSection: '统计与营销',
+        appDescription: '应用描述',
+        appDescriptionPlaceholder: '可复用提示词案例库',
+        appFavicon: 'Favicon URL',
+        appLogo: 'Logo URL',
+        appName: '应用名称',
+        appNamePlaceholder: 'Sub2API',
+        appPreviewImage: '分享预览图 URL',
+        appUrl: '公开站点地址',
+        appUrlHint: '用于 canonical、分享链接和邮件跳转；留空则使用当前请求来源。',
+        appUrlPlaceholder: 'https://example.com',
+        appearance: '默认外观',
+        appearancePlaceholder: 'system / light / dark',
+        authSection: '登录入口',
+        authShellConfig: '登录注册页展示配置 JSON',
+        authShellConfigPlaceholder:
+          '{"zh":{"labels":{"welcomeBack":"欢迎回来","signIn":"登录","createAccount":"创建账户"},"defaults":{"homePath":"/home","loginPath":"/login","registerPath":"/register","forgotPasswordPath":"/forgot-password","emailVerifyPath":"/email-verify","defaultRedirectPath":"/dashboard","apiKeysPath":"/keys","usagePath":"/usage","purchasePath":"/purchase","paymentResultPath":"/payment/result","ordersPath":"/orders","profilePath":"/profile","adminRedirectPath":"/admin/dashboard","adminRuntimeSettingsPath":"/admin/runtime-settings","adminOpsPath":"/admin/ops","adminUsersPath":"/admin/users","adminGroupsPath":"/admin/groups","adminAccountsPath":"/admin/accounts","adminOrdersRootPath":"/admin/orders","adminPaymentPlansPath":"/admin/orders/plans","adminUsagePath":"/admin/usage","userSidebarSections":[{"id":"main","items":["dashboard","apiKeys","usage","purchase","orders","profile"]}],"adminPersonalSidebarSections":[{"id":"personal","items":["apiKeys","usage","purchase","orders","profile"]}],"adminSidebarSections":[{"id":"main","items":["dashboard","ops","users","groups","channels","orders","usage"]},{"id":"settings","items":["runtimeSettings","settings"]}],"dingtalkCallbackPath":"/auth/dingtalk/callback","dingtalkEmailCompletionPath":"/auth/dingtalk/email-completion"}}}',
+        authShellConfigHint:
+          '可选 JSON，用于配置公开登录/注册页面文案和共享路由默认值。支持 en/zh 等语言键、labels 对象以及 defaults.homePath/loginPath/registerPath/forgotPasswordPath/emailVerifyPath/defaultRedirectPath/apiKeysPath/usagePath/purchasePath/paymentResultPath/ordersPath/profilePath/adminRedirectPath/adminRuntimeSettingsPath、管理员侧边栏入口路径如 adminOpsPath/adminUsersPath/adminGroupsPath/adminAccountsPath/adminOrdersRootPath/adminPaymentPlansPath/adminUsagePath，以及侧边栏分组/顺序 schema：defaults.userSidebarSections、defaults.adminPersonalSidebarSections、defaults.adminSidebarSections=[{id,items[]}...]；用户/个人区 items 支持 dashboard/apiKeys/usage/availableChannels/availableGroups/subscriptions/purchase/orders/redeem/affiliate/profile，管理员区 items 支持 dashboard/ops/users/groups/channels/subscriptions/accounts/announcements/proxies/riskControl/redeem/promoCodes/affiliates/orders/usage/apiKeys/runtimeSettings/settings、dingtalkCallbackPath、dingtalkEmailCompletionPath。',
+        badge: 'Public Runtime',
+        brandSection: '品牌与外观',
+        clarityId: 'Microsoft Clarity ID',
+        creditsSection: '积分页',
+        crispEnabled: '启用 Crisp',
+        crispWebsiteId: 'Crisp Website ID',
+        customerSection: '客服',
+        defaultLocale: '默认语言',
+        defaultLocalePlaceholder: 'zh',
+        description: '配置公开前端从 Sub2API public settings 读取的运行参数。',
+        emailAuthVisible: '邮箱登录可见',
+        githubAuthVisible: 'GitHub 登录可见',
+        googleAnalyticsId: 'Google Analytics ID',
+        googleAuthVisible: 'Google 登录可见',
+        imageUrlPlaceholder: 'https://cdn.example.com/image.png',
+        loadFailed: '加载运行配置失败',
+        localeDetectEnabled: '启用语言自动检测',
+        localeDetectEnabledHint: '开启后公开前端会根据访问者语言偏好选择默认语言。',
+        marketingSection: '广告与返利',
+        modelPlazaSection: '模型广场页面',
+        modelPlazaShellConfig: '模型广场展示配置 JSON',
+        modelPlazaShellConfigPlaceholder:
+          '{"zh":{"labels":{"badge":"模型广场","title":"公开模型目录","description":"浏览后台配置的模型卡片","quickFind":"快速查找","searchPlaceholder":"搜索模型、能力或标签","results":"结果","inputPrice":"输入","outputPrice":"输出"}}}',
+        modelPlazaShellConfigHint:
+          '可选 JSON，用于配置公开 /models 页面文案。支持 en/zh 等语言键，以及 labels 对象中的首屏、搜索、空态、分组、复制和价格标签。',
+        homeSection: '首页',
+        homeShellConfig: '首页展示配置 JSON',
+        homeShellConfigPlaceholder:
+          '{"zh":{"labels":{"navHome":"首页","navDocs":"文档","navModels":"模型","navExperience":"体验","viewDocs":"文档","dashboard":"控制台","login":"登录","heroBadge":"统一 AI 网关","heroTitle":"一个网关管理 AI 能力","primaryCta":"立即开始","secondaryCta":"查看模型"},"defaults":{"links":{"homeAnchor":"#top","modelsPath":"/models","experienceAnchor":"#experience","docsPath":"/docs","termsPath":"/legal/terms","privacyPath":"/legal/privacy-policy"}},"experienceCards":[{"key":"unified","title":"统一访问","description":"用一个 API 面接入配置好的供应商"}],"whyChooseCards":[{"key":"lowFriction","title":"低摩擦接入","description":"从已有密钥和配置开始"}]}}',
+        homeShellConfigHint:
+          '可选 JSON，用于配置默认首页展示文案和链接。支持 en/zh 等语言键，以及 labels、defaults.links、experienceCards、whyChooseCards。',
+        homeBusinessShellConfig: '业务首页展示配置 JSON',
+        homeBusinessShellConfigPlaceholder:
+          '{"zh":{"labels":{"heroBadge":"业务能力首页","heroTitle":"面向业务场景的 AI 能力工作台","primaryCta":"进入能力中台","secondaryCta":"查看图片提示词"},"businessCards":[{"key":"prompt-catalog","title":"图片提示词","description":"把提示词案例沉淀为可检索目录","capabilityTags":["案例目录"],"path":"/prompts","pathLabel":"进入提示词库"}]}}',
+        homeBusinessShellConfigHint:
+          '可选 JSON，用于配置 /home 业务能力首页。支持 en/zh 等语言键，以及 labels、defaults.links、businessCards、experienceCards、whyChooseCards。',
+        docsSection: '文档页面',
+        docsContentBasePath: '文档内容根路径配置',
+        docsContentBasePathPlaceholder:
+          '{"zh":"/docs-content/","en":"/docs-content/en/"}',
+        docsContentBasePathHint:
+          '可选 JSON 或单一路径/URL。公开文档页会优先从这里读取 Docsify 内容根路径，未配置时回退到前端静态 docs-content。',
+        docsShellConfig: '文档页展示配置 JSON',
+        docsShellConfigPlaceholder:
+          '{"zh":{"labels":{"title":"文档","dashboard":"控制台","login":"登录","searchPlaceholder":"搜索文档","noData":"没有结果"}}}',
+        docsShellConfigHint:
+          '可选 JSON，用于配置公开文档页外壳和 Docsify 搜索文案。支持 en/zh 等语言键以及 labels 对象。',
+        legalDocumentShellConfig: '法务文档页展示配置 JSON',
+        legalDocumentShellConfigPlaceholder:
+          '{"zh":{"labels":{"login":"登录","agreementLabel":"登录条款","loadFailedTitle":"文档加载失败","missingTitle":"文档不存在","updatedAt":"更新日期：{date}","emptyContent":"暂无正文内容"}}}',
+        legalDocumentShellConfigHint:
+          '可选 JSON，用于配置公开法务文档页外壳文案。支持 en/zh 等语言键以及 labels 对象。',
+        apiKeysShellConfig: 'API Keys 管理页展示配置 JSON',
+        apiKeysShellConfigPlaceholder:
+          '{"zh":{"labels":{"searchPlaceholder":"搜索 API Key","createKey":"创建 Key","allGroups":"所有分组","failedToLoad":"加载 API Keys 失败"}}}',
+        apiKeysShellConfigHint:
+          '可选 JSON，用于配置登录用户 API Keys 管理页搜索、筛选、表头、按钮和常见反馈文案。支持 en/zh 等语言键以及 labels 对象。',
+        keyUsageShellConfig: 'API Key 用量页展示配置 JSON',
+        keyUsageShellConfigPlaceholder:
+          '{"zh":{"labels":{"title":"API Key 用量查询","query":"查询","dailyDetail":"每日明细"},"defaults":{"defaultDateRange":"today","dailyUsageDays":30}}}',
+        keyUsageShellConfigHint:
+          '可选 JSON，用于配置公开 API Key 用量页标签、表头、状态消息、时间范围文案、默认查询范围和每日明细天数。支持 en/zh 等语言键、labels 对象、defaults.defaultDateRange 和 defaults.dailyUsageDays。',
+        dashboardShellConfig: '用户仪表盘展示配置 JSON',
+        dashboardShellConfigPlaceholder:
+          '{"zh":{"labels":{"balance":"余额","recentUsage":"最近使用","quickActions":"快捷操作"},"defaults":{"dateRangeDays":7,"defaultGranularity":"day","recentUsageLimit":5,"quickActions":{"createApiKeyPath":"/keys","usagePath":"/usage","redeemPath":"/redeem"}}}}',
+        dashboardShellConfigHint:
+          '可选 JSON，用于配置登录用户仪表盘统计卡、图表、最近使用、默认时间窗、默认粒度、最近使用条数和快捷操作。支持 en/zh 等语言键、labels 对象、defaults.dateRangeDays、defaults.defaultGranularity、defaults.recentUsageLimit 和 defaults.quickActions。',
+        usageShellConfig: '用户用量历史页展示配置 JSON',
+        usageShellConfigPlaceholder:
+          '{"zh":{"labels":{"totalRequests":"总请求数","totalTokens":"总 Tokens","exportCsv":"导出 CSV"},"defaults":{"dateRangeDays":7,"apiKeyPageSize":100,"exportPageSize":100}}}',
+        usageShellConfigHint:
+          '可选 JSON，用于配置登录用户用量历史页统计卡、筛选器、按钮、表头文案、默认日期范围、API Key 拉取页大小和 CSV 导出批量大小。支持 en/zh 等语言键、labels 对象、defaults.dateRangeDays、defaults.apiKeyPageSize 和 defaults.exportPageSize。',
+        apiGuideShellConfig: 'API 调用说明页展示配置 JSON',
+        apiGuideShellConfigPlaceholder:
+          '{"zh":{"labels":{"title":"网关调用说明","openTester":"打开在线测试","copyCurl":"复制 curl"},"defaults":{"testPath":"/gateway-test","defaultPrompt":"请介绍当前模型能力","maxTokens":256,"apiKeyPageSize":100}}}',
+        apiGuideShellConfigHint:
+          '可选 JSON，用于配置 API 调用说明页标题、按钮、密钥选择、端点卡片、curl 示例文案、测试页路由、默认示例提示词、最大输出 token 和 API Key 拉取页大小。支持 en/zh 等语言键、labels 对象、defaults.testPath、defaults.defaultPrompt、defaults.maxTokens 和 defaults.apiKeyPageSize。',
+        apiTestShellConfig: 'API 调用测试页展示配置 JSON',
+        apiTestShellConfigPlaceholder:
+          '{"zh":{"labels":{"title":"调用测试","send":"发送测试请求","responsePreview":"响应结果"},"defaults":{"guidePath":"/gateway-guide","defaultPrompt":"请介绍当前模型能力","maxTokens":256,"apiKeyPageSize":100,"usageSyncPageSize":10}}}',
+        apiTestShellConfigHint:
+          '可选 JSON，用于配置 API 调用测试页标题、表单、按钮、请求/响应面板、用量同步提示、复制状态文案、说明页路由、默认测试提示词、最大输出 token、API Key 拉取页大小和用量同步页大小。支持 en/zh 等语言键、labels 对象、defaults.guidePath、defaults.defaultPrompt、defaults.maxTokens、defaults.apiKeyPageSize 和 defaults.usageSyncPageSize。',
+        availableGroupsShellConfig: '可用分组页展示配置 JSON',
+        availableGroupsShellConfigPlaceholder:
+          '{"zh":{"labels":{"title":"可用分组","publicTitle":"公开分组","memberTitle":"会员或专属分组"}}}',
+        availableGroupsShellConfigHint:
+          '可选 JSON，用于配置可用分组页标题、统计卡、搜索、空状态、分区、徽标、字段和额度文案。支持 en/zh 等语言键以及 labels 对象。',
+        redeemShellConfig: '兑换码页展示配置 JSON',
+        redeemShellConfigPlaceholder:
+          '{"zh":{"labels":{"currentBalance":"当前余额","redeemButton":"兑换","recentActivity":"最近活动"}}}',
+        redeemShellConfigHint:
+          '可选 JSON，用于配置兑换码页余额卡、兑换表单、结果提示、说明卡和历史记录文案。支持 en/zh 等语言键以及 labels 对象。',
+        affiliateShellConfig: '邀请中心页展示配置 JSON',
+        affiliateShellConfigPlaceholder:
+          '{"zh":{"labels":{"title":"邀请中心","copyCode":"复制邀请码","transferButton":"转入余额"}}}',
+        affiliateShellConfigHint:
+          '可选 JSON，用于配置邀请中心统计卡、邀请码、邀请链接、说明、返利转余额和记录表文案。支持 en/zh 等语言键以及 labels 对象。',
+        availableChannelsShellConfig: '可用渠道页展示配置 JSON',
+        availableChannelsShellConfigPlaceholder:
+          '{"zh":{"labels":{"searchPlaceholder":"搜索渠道或模型...","empty":"暂无可用渠道","columns":{"name":"渠道名","supportedModels":"支持模型"}}}}',
+        availableChannelsShellConfigHint:
+          '可选 JSON，用于配置可用渠道页搜索、刷新、空状态、表头和公开/专属分组标签文案。支持 en/zh 等语言键以及 labels 对象。',
+        channelStatusShellConfig: '渠道状态页展示配置 JSON',
+        channelStatusShellConfigPlaceholder:
+          '{"zh":{"defaults":{"refreshIntervalSeconds":60},"labels":{"refreshTitle":"刷新","emptyTitle":"暂无可显示的渠道","windowTab":{"7d":"7 天"},"detailColumns":{"model":"模型"}}}}',
+        channelStatusShellConfigHint:
+          '可选 JSON，用于配置渠道状态页刷新间隔、窗口标签、整体状态、刷新、空状态、卡片指标、详情表头和错误文案。支持 en/zh 等语言键、defaults.refreshIntervalSeconds 和 labels 对象。',
+        customPageShellConfig: '自定义页面展示配置 JSON',
+        customPageShellConfigPlaceholder:
+          '{"zh":{"labels":{"tocTitle":"目录","openInNewTab":"新窗口打开","copyCode":"复制","copyCodeSuccess":"已复制 ✓"}}}',
+        customPageShellConfigHint:
+          '可选 JSON，用于配置自定义页面的缺失态、未配置态、Markdown 目录、打开新窗口、加载失败和代码复制按钮文案。支持 en/zh 等语言键以及 labels 对象。',
+        profileShellConfig: '用户资料页展示配置 JSON',
+        profileShellConfigPlaceholder:
+          '{"zh":{"labels":{"accountBalance":"账户余额","basicsTitle":"基础资料","contactSupport":"联系客服","sourceAvatar":"头像当前来自 {providerName}"}}}',
+        profileShellConfigHint:
+          '可选 JSON，用于配置用户资料页概览、角色、指标、基础资料、资料来源和客服卡片文案。支持 en/zh 等语言键以及 labels 对象。',
+        openpanelClientId: 'OpenPanel Client ID',
+        plausibleDomain: 'Plausible Domain',
+        plausibleSrc: 'Plausible Script URL',
+        publicIntegrationsEnabled: '启用公开集成注入',
+        publicIntegrationsEnabledHint: '控制公开前端是否根据 public settings 注入统计、广告、返利和客服脚本。',
+        promotekitEnabled: '启用 PromoteKit',
+        promotekitId: 'PromoteKit ID',
+        promptCasesDescription: '案例页描述',
+        promptCasesDescriptionPlaceholder: '浏览来自多个来源的提示词案例...',
+        promptCasesTitle: '案例页标题',
+        promptCasesTitlePlaceholder: '提示词案例库',
+        promptSection: '提示词与生图页',
+        promptTemplatesDescription: '模板页描述',
+        promptTemplatesDescriptionPlaceholder: '集中查看结构化提示词模板...',
+        promptTemplatesTitle: '模板页标题',
+        promptTemplatesTitlePlaceholder: '工业模板库',
+        promptCatalogShellConfig: '案例库展示配置 JSON',
+        promptCatalogShellConfigPlaceholder:
+          '{"zh":{"defaults":{"sourceType":"case","pageSize":12,"sortBy":"imported_at","sortOrder":"desc","importXAuto":true},"labels":{"total":"总数","sources":"来源","searchPlaceholder":"搜索标题、提示词、标签或来源","hasImage":"只看有图","copyPrompt":"复制提示词","charUnit":"字符","generate":"去生图"}}}',
+        promptCatalogShellConfigHint:
+          '可按 locale 覆盖案例库统计、筛选、空态、详情、导入区域文案和默认查询/导入策略。支持 labels 以及 defaults.sourceType、pageSize、sortBy、sortOrder、generatorPath、generatorDraftSource、importXAuto；留空或 JSON 无效时使用默认文案。',
+        workspaceShellConfig: '工作台展示配置 JSON',
+        workspaceShellConfigPlaceholder:
+          '{"zh":{"defaults":{"catalogPath":"/prompts","maxPromptLength":2000},"catalogLabel":"提示词案例","eyebrow":"提示词工作台","title":"提示词暂存区","heroDescription":"从案例库带入提示词并继续整理","promptLabel":"提示词","promptPlaceholder":"粘贴或从画廊带入提示词","clearLabel":"清空","copyPromptLabel":"复制提示词","workspaceTitle":"生图工作台","workspaceStatus":"生图能力由 Sub2API 统一托管","backToCatalogLabel":"返回案例库"}}',
+        workspaceShellConfigHint:
+          '可按 locale 覆盖 AI 生图工作台表单、按钮、导入提示、状态文案、defaults.catalogPath 和 defaults.maxPromptLength；留空或 JSON 无效时使用默认文案。',
+        pricingSection: '价格页',
+        pricingCurrencySymbol: '价格页币种符号',
+        pricingCurrencySymbolPlaceholder: '¥',
+        pricingCurrencySymbolHint: '公开价格卡片使用的展示符号；实际金额和支付币种仍由支付配置决定。',
+        pricingShellConfig: '价格页展示配置 JSON',
+        pricingShellConfigPlaceholder:
+          '{"zh":{"groups":[{"name":"one-time","title":"按次使用"}],"button":{"title":"选择方案","icon":"Zap"},"labels":{"prompts":"提示词案例","eyebrow":"价格","title":"价格","description":"套餐和积分由 Sub2API 配置","recharge":"充值包","subscription":"订阅包","buy":"购买","catalogStatus":"目录状态","emptyRecharge":"暂未配置充值包","recommended":"推荐"}}}',
+        pricingShellConfigHint:
+          '可按 locale 覆盖 groups、button、导航、首屏、标签页、卡片、空态和标签；留空时使用内置展示壳。',
+        paymentShellConfig: '支付页展示配置 JSON',
+        paymentShellConfigPlaceholder:
+          '{"zh":{"labels":{"tabTopUp":"充值","tabSubscribe":"订阅","rechargeAccount":"充值账户","currentBalance":"当前余额","createOrder":"创建订单","selectAmountFirst":"请选择充值商品"},"defaults":{"paymentStatusPollIntervalMs":3000,"paymentVerifyRetryIntervalMs":15000,"paymentVerifyRetryMaxAttempts":6,"paymentResultRefreshIntervalMs":2000,"paymentResultMaxRefreshAttempts":15,"stripePollIntervalMs":3000,"stripeCloseDelayMs":2000,"stripePopupInitTimeoutMs":15000}}}',
+        paymentShellConfigHint:
+          '覆盖登录后支付页的标签、按钮、空态、订单确认文案和支付轮询默认值；支付方式、金额和订单逻辑仍由支付配置决定。支持 defaults.paymentStatusPollIntervalMs、defaults.paymentVerifyRetryIntervalMs、defaults.paymentVerifyRetryMaxAttempts、defaults.paymentResultRefreshIntervalMs、defaults.paymentResultMaxRefreshAttempts、defaults.stripePollIntervalMs、defaults.stripeCloseDelayMs 和 defaults.stripePopupInitTimeoutMs。',
+        saveFailed: '保存运行配置失败',
+        saveSuccess: '运行配置已保存',
+        creditsPerBalance: '每 1 Sub2API 余额对应积分',
+        creditsPerBalancePlaceholder: '10',
+        creditsPerBalanceHint: '公开积分页使用的正数换算比例。例如 10 表示 10 credits = 1 Sub2API balance。',
+        creditsShellConfig: '积分页展示配置 JSON',
+        creditsShellConfigPlaceholder:
+          '{"zh":{"labels":{"credits":"积分","sub2apiBalance":"Sub2API 余额","conversion":"换算规则：{creditsPerBalance} credits = 1 Sub2API balance.","actionsTitle":"余额操作","recharge":"去充值","viewOrders":"查看订单"},"actions":{"title":"余额操作","description":"充值和订单进入统一支付体系"},"buttons":{"recharge":"去充值","orders":"查看订单"}}}',
+        creditsShellConfigHint:
+          '可按 locale 覆盖积分页标签、actions、buttons 和 conversion；conversion 支持 {creditsPerBalance}；留空时使用内置展示壳。',
+        tawkEnabled: '启用 Tawk',
+        tawkPropertyId: 'Tawk Property ID',
+        tawkWidgetId: 'Tawk Widget ID',
+        theme: '主题名称',
+        themePlaceholder: 'default',
+        title: '运行配置',
+        vercelAnalyticsEnabled: '启用 Vercel Analytics'
+      },
       subscriptionExpiryNotify: {
         title: '订阅到期提醒',
         description: '控制是否向用户发送订阅即将到期的邮件提醒。',
@@ -5197,6 +5400,8 @@ export default {
       allGroups: '全部分组',
       allModels: '全部模型',
       allTypes: '全部类型',
+      apiKeyFilter: 'API 密钥',
+      avgDuration: '平均耗时',
       billingMode: '计费模式',
       billingModeImage: '按次(图片)',
       billingModePerRequest: '按次',
@@ -5243,23 +5448,45 @@ export default {
         warning: '清理不可恢复，且会影响历史统计回看。'
       },
       clickToViewBalance: '点击查看充值记录',
+      cost: '费用',
       description: '查看和管理所有用户的使用记录',
+      duration: '耗时',
+      endpoint: '端点',
+      exportExcel: '导出 Excel',
+      exportSuccess: '使用数据导出成功',
       failedToLoad: '加载使用记录失败',
       failedToLoadUser: '加载用户信息失败',
+      firstToken: '首 Token',
       group: '分组',
+      in: '输入',
+      inSelectedRange: '所选范围内',
       inputCost: '输入成本',
       inputTokens: '输入 Token',
       ipAddress: 'IP',
+      model: '模型',
+      noRecords: '未找到使用记录，请尝试调整筛选条件。',
+      original: '原始',
+      out: '输出',
       outputCost: '输出成本',
       outputTokens: '输出 Token',
+      rate: '倍率',
+      reasoningEffort: '推理强度',
       requestId: '请求ID',
       requestIdCopied: '请求ID已复制',
       searchAccountPlaceholder: '按名称搜索账号...',
       searchApiKeyPlaceholder: '按名称搜索 API 密钥...',
       searchUserPlaceholder: '按邮箱搜索用户...',
       selectedUser: '已选择',
+      standardCost: '标准',
+      time: '时间',
       title: '使用记录',
+      tokens: 'Token',
+      totalCost: '总消费',
+      totalRequests: '总请求数',
+      totalTokens: '总 Token',
+      type: '类型',
       user: '用户',
+      userAgent: 'User-Agent',
       userDeletedBadge: '已删除用户',
       userFilter: '用户'
     },
@@ -5565,77 +5792,6 @@ export default {
       withdrawing: '退款中...'
     }
   },
-  affiliate: {
-    codeCopied: '邀请码已复制',
-    copyCode: '复制邀请码',
-    copyLink: '复制链接',
-    description: '统一管理邀请码、邀请记录、返利流水与返利转余额。',
-    inviteLink: '邀请链接',
-    invitees: {
-      columns: {
-        email: '邮箱',
-        joinedAt: '注册时间',
-        rebate: '返利明细',
-        username: '用户名'
-      },
-      empty: '暂无邀请记录',
-      title: '已邀请用户'
-    },
-    linkCopied: '邀请链接已复制',
-    loadFailed: '加载邀请返利数据失败',
-    rebates: {
-      columns: {
-        createdAt: '返利时间',
-        invitee: '被邀请用户',
-        orderAmount: '充值金额',
-        orderStatus: '订单状态',
-        payAmount: '支付金额',
-        paymentType: '支付方式',
-        rebateAmount: '返利金额'
-      },
-      empty: '暂无返利记录',
-      title: '返利记录'
-    },
-    stats: {
-      availableQuota: '可转返利额度',
-      frozenQuota: '冻结中',
-      frozenQuotaHint: '新产生的返利正在冻结期中',
-      invitedUsers: '邀请人数',
-      rebateRate: '我的返利比例',
-      rebateRateHint: '被邀请用户每次充值后你可获得的返利比例',
-      totalQuota: '历史返利额度'
-    },
-    tips: {
-      line1: '将邀请码或邀请链接分享给新用户。',
-      line2: '被邀请用户充值后，你可获得 {rate} 的返利额度。',
-      line3: '返利额度可随时转入账户余额。',
-      line4: '新产生的返利需要经过冻结期后才能提现。',
-      title: '使用说明'
-    },
-    title: '邀请中心',
-    transfer: {
-      button: '转入余额',
-      description: '将当前可用返利额度一键转入账户余额',
-      empty: '当前没有可转入额度',
-      success: '已转入余额：{amount}',
-      title: '返利额度转余额',
-      transferring: '转入中...'
-    },
-    transferFailed: '转入余额失败',
-    transfersHistory: {
-      columns: {
-        amount: '转入金额',
-        availableQuotaAfter: '转入后可提返利',
-        balanceAfter: '转入后余额',
-        createdAt: '转入时间',
-        frozenQuotaAfter: '转入后冻结返利',
-        historyQuotaAfter: '转入后历史返利'
-      },
-      empty: '暂无转余额记录',
-      title: '转余额记录'
-    },
-    yourCode: '我的邀请码'
-  },
   announcements: {
     allMarkedAsRead: '所有公告已标记为已读',
     description: '查看系统公告',
@@ -5657,99 +5813,6 @@ export default {
     unread: '未读',
     unreadOnly: '仅显示未读',
     viewAll: '查看全部公告'
-  },
-  apiGuide: {
-    authHeaderDescription: 'Anthropic / OpenAI 兼容端点推荐使用 Bearer 鉴权；Gemini 原生端点使用 `x-goog-api-key` 更直观。',
-    authHeaderTitle: '鉴权头',
-    badge: 'Proxy API',
-    baseUrl: '网关地址',
-    copyCurl: '复制 curl',
-    copyCurlSuccess: 'curl 示例已复制',
-    copyStreamCurl: '复制流式 curl',
-    copyStreamCurlSuccess: '流式 curl 示例已复制',
-    curlExample: 'curl 示例',
-    currentKey: '当前 API Key',
-    defaultModel: '默认模型',
-    defaultPrompt: '请用一句话介绍一下你当前命中的模型。',
-    description: '选择一个 API Key，页面会按该 Key 当前绑定的分组平台生成可直接复制的调用地址、鉴权头和 curl 示例。',
-    endpoint: '端点',
-    groupName: '所属分组',
-    headerMode: '鉴权方式',
-    keySelector: '选择 API Key',
-    keySelectorHint: '调用能力由 API Key 绑定的分组决定；换一个 Key，下面的调用示例也会随之切换。',
-    keySummary: '当前密钥信息',
-    manageKeys: '管理 API 密钥',
-    noEndpointVariants: '当前 API Key 还没有可用的调用协议。通常是因为它没有分组，或者分组平台暂不支持在这里生成示例。',
-    noGroupAssigned: '未分配分组',
-    noKeysDescription: '先创建一个 API Key 并分配分组，这里才会生成对应的调用说明和示例。',
-    noKeysTitle: '还没有可用的 API Key',
-    noSelection: '未选择',
-    openTester: '打开调用测试',
-    platform: '平台',
-    protocol: '协议',
-    selectKeyHint: '选择一个已经分配分组的 API Key 后，这里会自动生成对应协议示例。',
-    streamCurlExample: '流式 curl 示例',
-    streamEndpoint: '流式端点',
-    supportedEndpoints: '可用端点数',
-    testThisVariant: '测试这个协议',
-    title: '调用说明',
-    unassignedDescription: '未分组的 API Key 不能通过网关转发请求。请先回到“API 密钥”页为它分配分组。',
-    unassignedTitle: '这个 API Key 还没有分组'
-  },
-  apiTest: {
-    badge: 'Live Request',
-    copyCurl: '复制 curl',
-    copyCurlSuccess: 'curl 命令已复制',
-    copyRequest: '复制请求体',
-    copyRequestSuccess: '请求体已复制',
-    copyResponse: '复制响应',
-    copyResponseSuccess: '响应内容已复制',
-    customModel: '自定义模型名',
-    customModelHint: '这里会直接使用你输入的精确模型名发起请求。',
-    customModelOption: '手动输入模型名',
-    customModelOptionHint: '如果下拉里没有你要的模型，可以切换到手动输入。',
-    description: '直接在当前页面用你的 API Key 向网关发请求，方便确认路由、模型名、权限和上游响应是否正常。',
-    duration: '耗时',
-    headerMode: '鉴权头',
-    keySelector: '选择 API Key',
-    liveBillingDescription: '调用测试不会走 mock，也不会免计费。请求成功后会按正常网关链路记录用量并参与余额、订阅或限额统计。',
-    liveBillingTitle: '这里发出的是真实请求',
-    manageKeys: '管理 API 密钥',
-    model: '模型名',
-    modelHint: '默认会填入一个常用模型，你也可以手动改成自己的目标模型。',
-    modelPlaceholder: '输入模型名',
-    modelSearchPlaceholder: '搜索模型',
-    noGroupAssigned: '未分配分组',
-    noKeysDescription: '先创建一个 API Key 并分配分组，才能在这里直接发起测试调用。',
-    noKeysTitle: '还没有可用的 API Key',
-    noSelection: '请选择一个 API Key',
-    notReady: '未就绪',
-    openGuide: '查看调用说明',
-    openUsage: '查看用量记录',
-    platform: '分组平台',
-    prompt: '测试提示词',
-    promptHint: '这里会直接作为请求体发送到网关，用来快速验证链路是否通畅。',
-    promptPlaceholder: '输入你想发给模型的内容',
-    protocol: '调用协议',
-    rawResponse: '原始响应',
-    requestMeta: '请求信息',
-    requestPreview: '请求体预览',
-    responsePending: '点击“发送测试请求”后，这里会显示网关返回的原始响应和摘要。',
-    responsePreview: '响应结果',
-    responseSummary: '响应摘要',
-    send: '发送测试请求',
-    sending: '请求发送中...',
-    statusCode: 'HTTP 状态',
-    stream: '开启流式输出',
-    streamHint: '开启后，请求会按 SSE 文本返回，原始响应区域会显示完整事件流。',
-    title: '调用测试',
-    unassignedDescription: '因为它还没有分组。未分组 Key 会被网关拒绝，请先回到“API 密钥”页完成分配。',
-    unassignedTitle: '这个 API Key 不能直接测试',
-    usageRecordFound: '已写入用量统计：{time} · ${cost} · {tokens} Tokens',
-    usageRecordIdle: '测试请求成功后，这里会提示它是否已经进入“用量统计”。',
-    usageRecordPending: '请求已经成功返回，但用量记录采用异步写入。如果你已经打开“用量统计”或仪表盘，请刷新页面后查看。',
-    usageRecordSyncing: '请求已成功返回，正在同步对应的用量记录...',
-    usageRecordTitle: '用量记录同步'
   },
   auth: {
     accountCreatedSuccess: '账户创建成功！欢迎使用 {siteName}。',
@@ -5972,148 +6035,6 @@ export default {
     wechatProviderName: '微信',
     welcomeBack: '欢迎回来'
   },
-  availableChannels: {
-    columns: {
-      description: '描述',
-      groups: '我可访问的分组',
-      name: '渠道名',
-      platform: '平台',
-      supportedModels: '支持模型'
-    },
-    description: '查看您可访问的渠道与其支持的模型、定价',
-    empty: '暂无可用渠道',
-    exclusive: '专属',
-    exclusiveTooltip: '管理员授权给你的专属分组',
-    noModels: '未配置模型',
-    noPricing: '未配置定价',
-    pricing: {
-      billingMode: '计费模式',
-      billingModeImage: '按图片',
-      billingModePerRequest: '按次',
-      billingModeToken: '按 Token',
-      cacheReadPrice: '缓存读取',
-      cacheWritePrice: '缓存写入',
-      imageOutputPrice: '图片输出',
-      inputPrice: '输入',
-      intervals: '阶梯定价',
-      outputPrice: '输出',
-      perRequestPrice: '每次请求',
-      unitPerMillion: '/ 1M token',
-      unitPerRequest: '/ 次'
-    },
-    public: '公开',
-    publicTooltip: '对所有用户公开的分组',
-    searchPlaceholder: '搜索渠道或模型...',
-    title: '可用渠道'
-  },
-  availableGroups: {
-    title: '可用分组',
-    description: '查看当前账号可使用的公开分组、专属分组和订阅分组。',
-    searchPlaceholder: '搜索分组名称、描述或平台...',
-    emptyTitle: '暂无可用分组',
-    emptyDescription: '当前账号还没有任何可用分组。',
-    emptyFilteredDescription: '没有符合搜索条件的分组。',
-    unlimited: '不限额',
-    stats: {
-      total: '总分组数',
-      public: '公开分组',
-      memberOnly: '专属/订阅'
-    },
-    sections: {
-      public: {
-        title: '公开分组',
-        description: '所有用户都可使用的标准分组。'
-      },
-      member: {
-        title: '专属 / 订阅分组',
-        description: '由管理员授权，或通过订阅获得访问权限的分组。'
-      }
-    },
-    badges: {
-      public: '公开',
-      exclusive: '专属',
-      subscription: '订阅',
-      standard: '标准',
-      imageEnabled: '支持图像'
-    },
-    fields: {
-      rate: '倍率',
-      quota: '额度'
-    },
-    limits: {
-      daily: '日 {amount}',
-      weekly: '周 {amount}',
-      monthly: '月 {amount}'
-    }
-  },
-  modelsPlaza: {
-    badge: '模型广场',
-    title: '公开模型目录',
-    description: '从后台直接配置并公开展示可售模型卡片。适合做模型能力说明、价格展示和统一入口。',
-    emptyTitle: '模型广场暂未配置',
-    emptyDescription: '管理员完成模型广场配置后，这里会展示公开模型卡片。',
-    quickFind: '快速查找',
-    searchLabel: '搜索模型广场',
-    searchPlaceholder: '搜索模型、能力或标签',
-    groupsTitle: '平台分组',
-    currentSearch: '当前搜索：{query}',
-    browseHint: '按平台分组浏览公开模型卡片。',
-    results: '结果',
-    emptyFilteredTitle: '没有匹配的模型卡片',
-    emptyFilteredDescription: '试试切换分组，或者换一个更宽松的关键词搜索。',
-    copyModelIds: '复制模型 ID',
-    modelIdsCopied: '模型 ID 已复制',
-    inputPrice: '输入价格',
-    outputPrice: '输出价格',
-    cacheReadPrice: '缓存读取价格',
-    cacheWritePrice: '缓存创建价格',
-    modelIdsConfigured: '已配置模型 ID',
-    groups: {
-      all: '全部模型',
-      other: '其他'
-    }
-  },
-  channelStatus: {
-    allProviders: '全部供应商',
-    closeDetail: '关闭',
-    columns: {
-      availability7d: '7 天可用率',
-      groupName: '分组',
-      latency: '延迟 (ms)',
-      name: '名称',
-      primaryModel: '主模型',
-      provider: '供应商'
-    },
-    description: '查看渠道可用性、延迟和近期状态',
-    detailColumns: {
-      availability15d: '15 天可用率',
-      availability30d: '30 天可用率',
-      availability7d: '7 天可用率',
-      avgLatency7d: '7 天平均延迟 (ms)',
-      latestLatency: '最新延迟 (ms)',
-      latestStatus: '最新状态',
-      model: '模型'
-    },
-    detailLoadError: '加载渠道详情失败',
-    detailTitle: '渠道详情',
-    empty: {
-      description: '管理员尚未配置可监控的渠道。',
-      title: '暂无可显示的渠道'
-    },
-    loadError: '加载渠道状态失败',
-    overall: {
-      degraded: 'DEGRADED',
-      operational: 'OPERATIONAL',
-      unavailable: 'UNAVAILABLE'
-    },
-    searchPlaceholder: '搜索渠道...',
-    title: '渠道状态',
-    windowTab: {
-      '15d': '15 天',
-      '30d': '30 天',
-      '7d': '7 天'
-    }
-  },
   common: {
     actions: '操作',
     active: '启用',
@@ -6192,6 +6113,85 @@ export default {
     apply: '应用',
     change: '更换',
     clear: '清空',
+    exportProgress: {
+      cancelExport: '取消导出',
+      estimatedTime: '预计剩余时间：{time}',
+      exportedCount: '已导出 {current}/{total} 条',
+      exporting: '导出中...',
+      exportingProgress: '正在导出数据...'
+    },
+    billingMetrics: {
+      accountBilled: '账号计费',
+      accountCost: '成本',
+      accountMultiplier: '账号倍率',
+      userBilled: '用户扣费'
+    },
+    usageRouting: {
+      endpoint: '端点',
+      endpointDistribution: '端点分布',
+      inbound: '入站',
+      inboundEndpoint: '入站端点',
+      mapping: '映射后模型',
+      path: '路径',
+      requestedModel: '请求模型',
+      upstream: '上游',
+      upstreamEndpoint: '上游端点',
+      upstreamModel: '上游模型'
+    },
+    requestType: {
+      stream: '流式',
+      sync: '同步',
+      unknown: '未知',
+      ws: 'WS'
+    },
+    imageUsage: {
+      billingSize: '计费尺寸',
+      count: '图片张数',
+      inputSize: '输入尺寸',
+      outputSize: '输出尺寸',
+      sizeBreakdown: '尺寸拆分',
+      sizeLegacyUnstandardized: '旧版非标准尺寸',
+      sizeNotRecorded: '未记录尺寸',
+      sizeSource: '尺寸来源',
+      sizeSourceDefault: '默认计费档位',
+      sizeSourceInput: '请求输入',
+      sizeSourceLegacy: '旧版记录',
+      sizeSourceMissing: '未记录',
+      sizeSourceOutput: '上游输出',
+      sizeUnknown: '未知',
+      totalPrice: '图片总价',
+      unit: '张',
+      unitPrice: '单张价格'
+    },
+    serviceTier: {
+      flex: 'Flex',
+      label: '服务档位',
+      priority: 'Fast',
+      standard: 'Standard'
+    },
+    usageMetrics: {
+      cacheCreation1hTokens: '缓存创建',
+      cacheCreation5mTokens: '缓存创建',
+      cacheCreationCost: '缓存创建成本',
+      cacheCreationTokens: '缓存创建 Token',
+      cacheReadCost: '缓存读取成本',
+      cacheReadTokens: '缓存读取 Token',
+      cacheTtlOverridden1h: '按 1h 计费',
+      cacheTtlOverridden5m: '按 5m 计费',
+      cacheTtlOverriddenHint: '缓存 TTL Override 已启用',
+      cacheTtlOverriddenLabel: 'TTL 替换',
+      costDetails: '成本明细',
+      inputCost: '输入成本',
+      inputTokenPrice: '输入单价',
+      inputTokens: '输入 Token',
+      outputCost: '输出成本',
+      outputTokenPrice: '输出单价',
+      outputTokens: '输出 Token',
+      perMillionTokens: '/ 1M Token',
+      tokenDetails: 'Token 明细',
+      totalTokens: '总 Token',
+      unitPrice: '单次价格'
+    },
     required: '必填',
     tryAgain: '请重试',
     time: {
@@ -6226,63 +6226,6 @@ export default {
     openInNewTab: '新窗口打开',
     title: '自定义页面'
   },
-  dashboard: {
-    actual: '实际',
-    addBalanceWithCode: '使用兑换码充值',
-    apiKeys: 'API 密钥',
-    averageTime: '平均时间',
-    avgResponse: '平均响应',
-    balance: '余额',
-    cache: '缓存',
-    cacheRead: '缓存读取',
-    cacheToday: '今日缓存',
-    cacheWrite: '缓存写入',
-    checkDetailedLogs: '查看详细的使用日志',
-    createApiKey: '创建 API 密钥',
-    day: '按天',
-    generateNewKey: '生成新的 API 密钥',
-    granularity: '粒度',
-    group: '分组',
-    groupDistribution: '分组使用分布',
-    hour: '按小时',
-    input: '输入',
-    last7Days: '近 7 天',
-    model: '模型',
-    modelDistribution: '模型分布',
-    noDataAvailable: '暂无数据',
-    noGroup: '无分组',
-    noUsageRecords: '暂无使用记录',
-    output: '输出',
-    performance: '性能指标',
-    platformBreakdown: '平台拆分',
-    platformCount: '{count} 个平台',
-    platformOther: '其他',
-    platformQuota: {
-      daily: '日',
-      disabled: '已禁用',
-      monthly: '月',
-      resetsAt: '重置时间：{time}',
-      title: '平台额度',
-      weekly: '周'
-    },
-    quickActions: '快捷操作',
-    recentUsage: '最近使用',
-    redeemCode: '兑换码',
-    requests: '请求',
-    standard: '标准',
-    startUsingApi: '开始使用 API 后，您的使用历史将显示在这里。',
-    timeRange: '时间范围',
-    title: '仪表盘',
-    todayCost: '今日消费',
-    todayRequests: '今日请求',
-    todayTokens: '今日 Token',
-    tokenUsageTrend: 'Token 使用趋势',
-    tokens: 'Token',
-    totalTokens: '累计 Token',
-    viewAllUsage: '查看全部',
-    viewUsage: '查看使用记录',
-    welcomeMessage: '欢迎回来！这是您账户的概览。'
-  },
   dates: {
     apply: '应用',
     custom: '自定义',
@@ -6298,14 +6241,6 @@ export default {
     thisWeek: '本周',
     today: '今天',
     yesterday: '昨天'
-  },
-  docs: {
-    frameworkHint: '文档现在由 Docsify 驱动，支持更轻量的 Markdown 维护方式。',
-    navigation: '导航',
-    nextPage: '下一页',
-    onThisPage: '本页目录',
-    previousPage: '上一页',
-    searchPlaceholder: '搜索文档'
   },
   legalDocument: {
     agreementLabel: '登录条款',
@@ -6376,227 +6311,6 @@ export default {
   groups: {
     subscription: '订阅'
   },
-  home: {
-    cards: {
-      billing: {
-        description: '充值、订阅和后续用量都公开可见，个人和小团队更容易控成本。',
-        title: '计费更透明'
-      },
-      setup: {
-        description: '更贴近 CLI、IDE 与日常开发习惯，不把大量时间花在环境变量和接线细节上。',
-        title: '配置更轻'
-      },
-      stability: {
-        description: '通过账号池与路由能力降低单点限制带来的中断，让高频编码更连续。',
-        title: '链路更稳'
-      },
-      unified: {
-        description: '统一域名和密钥格式，减少在不同模型和工具之间来回切换。',
-        title: '一个密钥统一接入'
-      }
-    },
-    comparison: {
-      headers: {
-        feature: '对比项',
-        official: '官方订阅',
-        us: '本平台'
-      },
-      items: {
-        control: {
-          feature: '用量控制',
-          official: '无法限制',
-          us: '可设配额、查明细'
-        },
-        management: {
-          feature: '账号管理',
-          official: '每个服务单独管理',
-          us: '统一密钥，一站管理'
-        },
-        models: {
-          feature: '模型选择',
-          official: '单一服务商',
-          us: '多模型随意切换'
-        },
-        pricing: {
-          feature: '付费方式',
-          official: '固定月费，用不完也付',
-          us: '按量付费，用多少付多少'
-        },
-        stability: {
-          feature: '服务稳定性',
-          official: '单账号易触发限制',
-          us: '多账号池，自动切换'
-        }
-      },
-      title: '为什么选择我们？'
-    },
-    cta: {
-      button: '免费注册',
-      description: '注册即可获得免费试用额度，体验一站式 AI 服务',
-      title: '准备好开始了吗？'
-    },
-    dashboard: '控制台',
-    docs: '文档',
-    experienceDescription: '减少接线、切号和查后台的时间，把精力留给真正的开发与交付。',
-    experienceKicker: '核心体验',
-    experienceTitle: '专为日常编码而设计的一站式体验 ✦',
-    familyBadges: {
-      claude: '系统设计',
-      gemini: '视觉任务',
-      gpt: '功能开发'
-    },
-    familyCapabilities: {
-      claude: {
-        architecture: '系统设计',
-        reasoning: '复杂推理',
-        review: '代码审查'
-      },
-      gpt: {
-        agents: 'Agent 调用',
-        coding: '代码生成',
-        iteration: '功能迭代'
-      }
-    },
-    familyContent: {
-      claude: {
-        description: '适合方案设计、代码审查和复杂推理。',
-        tagline: '复杂推理与系统设计'
-      },
-      gemini: {
-        description: '适合截图分析、视觉理解与多模态辅助。',
-        tagline: '图像理解与多模态辅助'
-      },
-      gpt: {
-        description: '适合日常编码、功能迭代与高频实现。',
-        tagline: '代码生成与功能开发'
-      }
-    },
-    features: {
-      balanceQuota: '用多少付多少',
-      balanceQuotaDesc: '按实际使用量计费，支持设置配额上限，团队用量一目了然。',
-      multiAccount: '稳定可靠',
-      multiAccountDesc: '智能调度多个上游账号，自动切换和负载均衡，告别频繁报错。',
-      unifiedGateway: '一键接入',
-      unifiedGatewayDesc: '获取一个 API 密钥，即可调用所有已接入的 AI 模型，无需分别申请。'
-    },
-    footer: {
-      allRightsReserved: '保留所有权利。'
-    },
-    footerDescription: '把模型接入、价格展示和日常编码工作流收拢到一个更简单的入口里。',
-    footerSections: {
-      catalog: '目录',
-      models: '模型',
-      product: '产品',
-      resources: '资源',
-      support: '支持'
-    },
-    geminiGateway: {
-      button: '进入 Gemini Web 登录',
-      description: '把 gemini-command-gateway 的启动、会话导入和状态检查直接挂到主入口。管理员登录后可一键进入登录中心，导入浏览器 cookies 激活 Gemini Web。',
-      manageAccounts: '管理 Gemini Web 账号',
-      title: 'Gemini Web 登录入口'
-    },
-    getStarted: '立即开始',
-    goToDashboard: '进入控制台',
-    heroBadge: '开发者首选',
-    heroDescription: '无需管理多个订阅账号，一站式接入 Claude、GPT 等主流 AI 服务',
-    heroSubtitle: '一个密钥，畅用多个 AI 模型',
-    heroTitle: 'AI 编码工作台',
-    login: '登录',
-    modelMatrixDescription: '根据当前可售目录，公开展示适合编码、推理与视觉任务的主流模型家族。',
-    modelMatrixEmpty: '当前后台尚未配置公开模型目录，请先上架可售套餐后再展示。',
-    modelMatrixEmptyCard: '覆盖复杂推理、代码生成和 Agent 工作流的主力能力入口。',
-    modelMatrixEmptyPill: '能力入口',
-    modelMatrixKicker: '模型矩阵',
-    modelMatrixTitle: '主力模型，公开对比 ✦',
-    nav: {
-      experience: '核心体验',
-      home: '首页',
-      models: '模型矩阵'
-    },
-    painPoints: {
-      items: {
-        complex: {
-          desc: '不同平台的账号、密钥分散各处，管理起来很麻烦',
-          title: '多账号难管理'
-        },
-        expensive: {
-          desc: '每个 AI 服务都要单独订阅，每月支出越来越多',
-          title: '订阅费用高'
-        },
-        noControl: {
-          desc: '不知道钱花在哪了，也无法限制团队成员的使用',
-          title: '用量无法控制'
-        },
-        unstable: {
-          desc: '单一账号容易触发限制，影响正常使用',
-          title: '服务不稳定'
-        }
-      },
-      title: '你是否也遇到这些问题？'
-    },
-    planValidityDays: '{count} 天有效',
-    planValidityMonths: '{count} 月有效',
-    planValidityYears: '{count} 年有效',
-    pricingDescription: '直接读取当前后台支付配置，把公开套餐和充值价格放在首页，减少决策成本。',
-    pricingEmptyPlans: '订阅套餐发布后会同步到这里，首页会自动接入新的公开售卖信息。',
-    pricingEmptyRecharge: '充值档位上线后会自动出现在这里，适合先展示公开价格，再逐步补齐目录。',
-    pricingKicker: '价格与套餐',
-    pricingTitle: '公开展示，直接对比 ✦',
-    pricingUnavailable: '当前暂无公开价格信息',
-    primaryCta: '立即体验',
-    privacyLink: '隐私条款',
-    providers: {
-      antigravity: 'Antigravity',
-      claude: 'Claude',
-      description: '统一接入 Claude、GPT 等主流模型',
-      gemini: 'Gemini',
-      more: '更多',
-      soon: '即将推出',
-      supported: '已支持',
-      title: '已支持的 AI 模型'
-    },
-    rechargeProductsTitle: '充值商品',
-    secondaryCta: '查看模型',
-    solutions: {
-      subtitle: '简单三步，开始省心使用 AI',
-      title: '我们帮你解决'
-    },
-    subscriptionPlansTitle: '订阅套餐',
-    switchToDark: '切换到深色模式',
-    switchToLight: '切换到浅色模式',
-    tags: {
-      realtimeBilling: '用量透明计费',
-      stickySession: '稳定路由转发',
-      subscriptionToApi: '统一模型接入'
-    },
-    termsLink: '服务条款',
-    topUpCreditLine: '到账额度 ¥{amount}',
-    topUpPriceLabel: '充值价格',
-    viewDocs: '查看文档',
-    viewOnGithub: '在 GitHub 上查看',
-    whyCards: {
-      lowFriction: {
-        description: '把分散在多个模型入口和订阅账号里的接入复杂度压缩成统一体验。',
-        title: '少折腾配置'
-      },
-      routing: {
-        description: '强调链路稳定性与编码工作流，而不是堆叠泛化功能。',
-        title: '更适合高频编码'
-      },
-      team: {
-        description: '既适合独立开发者快速上手，也方便小团队统一入口和管理预算。',
-        title: '适配个人与小团队'
-      },
-      transparent: {
-        description: '首页直接展示主力模型家族，开发者在登录前就能判断是否适合自己的工作流。',
-        title: '模型一眼看清'
-      }
-    },
-    whyChooseDescription: '更克制的产品形态，更清晰的价格表达，以及更贴近日常编码的接入方式。',
-    whyChooseKicker: '为什么选择我们',
-    whyChooseTitle: '为个人开发者与小团队准备的编码工作流 ✦'
-  },
   keyUsage: {
     apply: '应用',
     avgDuration: '平均耗时',
@@ -6663,166 +6377,6 @@ export default {
     used: '已使用',
     usedQuota: '已用额度',
     walletBalance: '钱包余额'
-  },
-  keys: {
-    allGroups: '全部分组',
-    allStatus: '全部状态',
-    apiKey: 'API 密钥',
-    ccSwitchNotInstalled: 'CC-Switch 未安装或协议处理程序未注册。请先安装 CC-Switch 或手动复制 API 密钥。',
-    ccsClientSelect: {
-      claudeCode: 'Claude Code',
-      claudeCodeDesc: '导入为 Claude Code 配置',
-      description: '请选择您要导入到 CC-Switch 的客户端类型：',
-      geminiCli: 'Gemini CLI',
-      geminiCliDesc: '导入为 Gemini CLI 配置',
-      title: '选择客户端'
-    },
-    clickToChangeGroup: '点击更换分组',
-    copied: '已复制！',
-    copyToClipboard: '复制到剪贴板',
-    createFirstKey: '创建您的第一个 API 密钥以开始使用 API。',
-    createKey: '创建密钥',
-    created: '创建时间',
-    currentExpiration: '当前过期时间',
-    customDate: '自定义',
-    customKeyHint: '仅允许字母、数字、下划线和连字符，最少16个字符。',
-    customKeyInvalidChars: '自定义密钥只能包含字母、数字、下划线和连字符',
-    customKeyLabel: '自定义密钥',
-    customKeyPlaceholder: '输入自定义密钥（至少16个字符）',
-    customKeyRequired: '请输入自定义密钥',
-    customKeyTooShort: '自定义密钥至少需要16个字符',
-    deleteConfirmMessage: '确定要删除 \'{name}\' 吗？此操作无法撤销。',
-    deleteKey: '删除密钥',
-    description: '管理您的 API 密钥和访问令牌',
-    disable: '禁用',
-    editKey: '编辑密钥',
-    enable: '启用',
-    endpoints: {
-      clickToCopy: '点击可复制此端点',
-      copied: '已复制',
-      copiedHint: '已复制到剪贴板',
-      default: '默认',
-      speedTest: '测速',
-      title: 'API 端点'
-    },
-    expiration: '密钥有效期',
-    expirationDate: '过期时间',
-    expirationDateHint: '选择此 API 密钥的过期时间。',
-    expiresAt: '过期时间',
-    expiresInDays: '{days} 天',
-    extendDays: '+{days} 天',
-    failedToChangeGroup: '更换分组失败',
-    failedToDelete: '删除 API 密钥失败',
-    failedToLoad: '加载 API 密钥失败',
-    failedToResetQuota: '重置额度失败',
-    failedToResetRateLimit: '重置速率限制失败',
-    failedToSave: '保存 API 密钥失败',
-    failedToUpdateStatus: '更新 API 密钥状态失败',
-    group: '分组',
-    groupChangedSuccess: '分组更换成功',
-    groupLabel: '分组',
-    groupRequired: '请选择分组',
-    importToCcSwitch: '导入到 CCS',
-    ipBlacklist: 'IP 黑名单',
-    ipBlacklistHint: '每行一个 IP 或 CIDR，这些 IP 将被禁止使用此密钥',
-    ipBlacklistPlaceholder: '1.2.3.4\n5.6.0.0/16',
-    ipRestriction: 'IP 限制',
-    ipRestrictionEnabled: '已配置 IP 限制',
-    ipWhitelist: 'IP 白名单',
-    ipWhitelistHint: '每行一个 IP 或 CIDR，设置后仅允许这些 IP 使用此密钥',
-    ipWhitelistPlaceholder: '192.168.1.100\n10.0.0.0/8',
-    keyCreatedSuccess: 'API 密钥创建成功',
-    keyDeletedSuccess: 'API 密钥删除成功',
-    keyDisabledSuccess: 'API 密钥已禁用',
-    keyEnabledSuccess: 'API 密钥已启用',
-    keyUpdatedSuccess: 'API 密钥更新成功',
-    lastUsedAt: '上次使用时间',
-    nameLabel: '名称',
-    namePlaceholder: '我的 API 密钥',
-    noExpiration: '永久有效',
-    noGroup: '无分组',
-    noGroupFound: '未找到匹配的分组',
-    noKeysYet: '暂无 API 密钥',
-    quota: '额度',
-    quotaAmount: '额度金额 (USD)',
-    quotaAmountHint: '设置此密钥可消费的最大金额。0 = 无限制。',
-    quotaAmountPlaceholder: '输入 USD 额度限制',
-    quotaLimit: '额度限制',
-    quotaResetSuccess: '额度重置成功',
-    quotaUsed: '已用额度',
-    rateLimit1d: '日限额 (USD)',
-    rateLimit5h: '5小时限额 (USD)',
-    rateLimit7d: '7天限额 (USD)',
-    rateLimitColumn: '速率限制',
-    rateLimitHint: '设置此密钥在指定时间窗口内的最大消费额。0 = 无限制。',
-    rateLimitResetSuccess: '速率限制已重置',
-    rateLimitSection: '速率限制',
-    rateLimitUsage: '速率限制用量',
-    reset: '重置',
-    resetNow: '即将重置',
-    resetQuotaConfirmMessage: '确定要将密钥 "{name}" 的已用额度（${used}）重置为 0 吗？此操作不可撤销。',
-    resetQuotaTitle: '确认重置额度',
-    resetQuotaUsed: '将已用额度重置为 0',
-    resetRateLimitConfirmMessage: '确定要重置密钥 "{name}" 的速率限制用量吗？所有时间窗口的已用额度将归零。此操作不可撤销。',
-    resetRateLimitTitle: '确认重置速率限制',
-    resetRateLimitUsage: '重置速率限制用量',
-    resetUsage: '重置',
-    saving: '保存中...',
-    searchGroup: '搜索分组...',
-    searchPlaceholder: '搜索名称或Key...',
-    selectGroup: '选择分组',
-    selectStatus: '选择状态',
-    status: {
-      active: '活跃',
-      expired: '已过期',
-      inactive: '已停用',
-      quota_exhausted: '额度耗尽'
-    },
-    statusLabel: '状态',
-    title: 'API 密钥',
-    today: '今日',
-    total: '累计',
-    usage: '用量',
-    useKey: '使用密钥',
-    useKeyModal: {
-      antigravity: {
-        claudeCode: 'Claude Code',
-        claudeNote: '这些环境变量将在当前终端会话中生效。如需永久配置，请将其添加到 ~/.bashrc、~/.zshrc 或相应的配置文件中。',
-        description: '为 Antigravity 分组配置 API 访问。请根据您使用的客户端选择对应的配置方式。',
-        geminiCli: 'Gemini CLI',
-        geminiNote: '这些环境变量将在当前终端会话中生效。如需永久配置，请将其添加到 ~/.bashrc、~/.zshrc 或相应的配置文件中。'
-      },
-      cliTabs: {
-        claudeCode: 'Claude Code',
-        codexCli: 'Codex CLI',
-        codexCliWs: 'Codex CLI (WebSocket)',
-        geminiCli: 'Gemini CLI',
-        opencode: 'OpenCode'
-      },
-      copied: '已复制',
-      copy: '复制',
-      description: '将以下环境变量添加到您的终端配置文件或直接在终端中运行。',
-      gemini: {
-        description: '将以下环境变量添加到您的终端配置文件或直接在终端中运行，以配置 Gemini CLI 访问。',
-        modelComment: '如果你有 Gemini 3 权限可以填：gemini-3-pro-preview',
-        note: '这些环境变量将在当前终端会话中生效。如需永久配置，请将其添加到 ~/.bashrc、~/.zshrc 或相应的配置文件中。'
-      },
-      noGroupDescription: '此 API 密钥尚未分配分组，请先在密钥列表中点击分组列进行分配，然后才能查看使用配置。',
-      noGroupTitle: '请先分配分组',
-      note: '这些环境变量将在当前终端会话中生效。如需永久配置，请将其添加到 ~/.bashrc、~/.zshrc 或相应的配置文件中。',
-      openai: {
-        configTomlHint: '请确保以下内容位于 config.toml 文件的开头部分',
-        description: '将以下配置文件添加到 Codex CLI 配置目录中。',
-        note: '请确保配置目录存在。macOS/Linux 用户可运行 mkdir -p ~/.codex 创建目录。',
-        noteWindows: '按 Win+R，输入 %userprofile%\\.codex 打开配置目录。如目录不存在，请先手动创建。'
-      },
-      opencode: {
-        hint: '配置文件路径：~/.config/opencode/opencode.json（或 opencode.jsonc），不存在需手动创建。可使用默认 provider（openai/anthropic/google）或自定义 provider_id。API Key 支持直接配置或通过客户端 /connect 命令配置。示例仅供参考，模型与选项可按需调整。',
-        subtitle: 'opencode.json',
-        title: 'OpenCode 配置示例'
-      },
-      title: '使用 API 密钥'
-    }
   },
   monitorCommon: {
     availabilityPrefix: '可用性',
@@ -6903,6 +6457,7 @@ export default {
     riskControl: '风控中心',
     settings: '系统设置',
     subscriptions: '订阅管理',
+    runtimeSettings: '运行配置',
     usage: '使用记录',
     users: '用户管理'
   },
@@ -7619,47 +7174,6 @@ export default {
     openInNewTab: '新窗口打开',
     title: '充值/订阅'
   },
-  redeem: {
-    aboutCodes: '关于兑换码',
-    added: '已添加',
-    adminAdjustment: '管理员调整',
-    balanceAddedAdmin: '余额充值（管理员）',
-    balanceAddedAffiliate: '余额充值（返利转入）',
-    balanceAddedRedeem: '余额充值（兑换）',
-    balanceDeductedAdmin: '余额扣除（管理员）',
-    codeRedeemSuccess: '兑换成功！',
-    codeRule1: '每个兑换码只能使用一次',
-    codeRule2: '兑换码可以增加余额、并发数或试用权限',
-    codeRule3: '如有兑换问题，请联系客服',
-    codeRule4: '余额和并发数即时更新',
-    concurrency: '并发数',
-    concurrencyAddedAdmin: '并发增加（管理员）',
-    concurrencyAddedRedeem: '并发增加（兑换）',
-    concurrencyReducedAdmin: '并发减少（管理员）',
-    concurrentRequests: '并发请求',
-    currentBalance: '当前余额',
-    days: '天',
-    description: '输入兑换码以充值余额或增加并发数',
-    failedToRedeem: '兑换失败，请检查兑换码后重试。',
-    historyWillAppear: '您的兑换历史将显示在这里',
-    newBalance: '新余额',
-    newConcurrency: '新并发数',
-    pleaseEnterCode: '请输入兑换码',
-    recentActivity: '最近活动',
-    redeemButton: '兑换',
-    redeemCodeHint: '兑换码支持大写字母和数字，可直接粘贴输入',
-    redeemCodeLabel: '兑换码',
-    redeemCodePlaceholder: '请输入兑换码',
-    redeemFailed: '兑换失败',
-    redeemSuccess: '兑换成功！',
-    redeeming: '兑换中...',
-    requests: '请求',
-    subscriptionAssigned: '订阅已分配',
-    subscriptionAssignedDesc: '您已获得 {groupName} 的访问权限',
-    subscriptionDays: '{days} 天',
-    subscriptionRefreshFailed: '兑换成功，但订阅状态刷新失败。',
-    title: '兑换码'
-  },
   setup: {
     admin: {
       confirmPassword: '确认密码',
@@ -7738,102 +7252,6 @@ export default {
   table: {
     collapseActions: '收起操作',
     expandActions: '展开更多操作'
-  },
-  usage: {
-    accountBilled: '账号计费',
-    accountCost: '成本',
-    accountMultiplier: '账号倍率',
-    actualCost: '实际',
-    allApiKeys: '全部密钥',
-    apiKeyFilter: 'API 密钥',
-    avgDuration: '平均耗时',
-    billed: '计费',
-    cacheRead: '读取',
-    cacheTtlOverridden1h: '按 1h 计费',
-    cacheTtlOverridden5m: '按 5m 计费',
-    cacheTtlOverriddenHint: '缓存 TTL Override 已启用',
-    cacheTtlOverriddenLabel: 'TTL 替换',
-    cacheWrite: '写入',
-    cancelExport: '取消导出',
-    cost: '费用',
-    costDetails: '成本明细',
-    description: '查看和分析您的 API 使用历史',
-    duration: '耗时',
-    endpoint: '端点',
-    endpointDistribution: '端点分布',
-    estimatedTime: '预计剩余时间：{time}',
-    exportCancelled: '导出已取消',
-    exportCsv: '导出 CSV',
-    exportExcel: '导出 Excel',
-    exportExcelFailed: '使用数据导出失败',
-    exportExcelSuccess: '使用数据导出成功（Excel格式）',
-    exportFailed: '使用数据导出失败',
-    exportSuccess: '使用数据导出成功',
-    exportedCount: '已导出 {current}/{total} 条',
-    exporting: '导出中...',
-    exportingProgress: '正在导出数据...',
-    failedToLoad: '加载使用记录失败',
-    firstToken: '首 Token',
-    imageBillingSize: '计费尺寸',
-    imageCount: '图片张数',
-    imageInputSize: '输入尺寸',
-    imageOutputSize: '输出尺寸',
-    imageSizeBreakdown: '尺寸拆分',
-    imageSizeLegacyUnstandardized: '旧版非标准尺寸',
-    imageSizeNotRecorded: '未记录尺寸',
-    imageSizeSource: '尺寸来源',
-    imageSizeSourceDefault: '默认计费档位',
-    imageSizeSourceInput: '请求输入',
-    imageSizeSourceLegacy: '旧版记录',
-    imageSizeSourceMissing: '未记录',
-    imageSizeSourceOutput: '上游输出',
-    imageSizeUnknown: '未知',
-    imageTotalPrice: '图片总价',
-    imageUnit: '张',
-    imageUnitPrice: '单张价格',
-    in: '输入',
-    inSelectedRange: '所选范围内',
-    inbound: '入站',
-    inboundEndpoint: '入站端点',
-    inputTokenPrice: '输入单价',
-    model: '模型',
-    mapping: '映射后模型',
-    requestedModel: '请求模型',
-    noDataToExport: '没有可导出的数据',
-    noRecords: '未找到使用记录，请尝试调整筛选条件。',
-    original: '原始',
-    out: '输出',
-    outputTokenPrice: '输出单价',
-    path: '路径',
-    perMillionTokens: '/ 1M Token',
-    perRequest: '每次请求',
-    preparingExport: '正在准备导出...',
-    rate: '倍率',
-    reasoningEffort: '推理强度',
-    serviceTier: '服务档位',
-    serviceTierFlex: 'Flex',
-    serviceTierPriority: 'Fast',
-    serviceTierStandard: 'Standard',
-    standardCost: '标准',
-    stream: '流式',
-    sync: '同步',
-    time: '时间',
-    timeRange: '时间范围',
-    title: '使用记录',
-    tokenDetails: 'Token 明细',
-    tokens: 'Token',
-    totalCost: '总消费',
-    totalRequests: '总请求数',
-    totalTokens: '总 Token',
-    type: '类型',
-    unitPrice: '单次价格',
-    unknown: '未知',
-    upstream: '上游',
-    upstreamEndpoint: '上游端点',
-    upstreamModel: '上游模型',
-    userAgent: 'User-Agent',
-    userBilled: '用户扣费',
-    ws: 'WS'
   },
   userSubscriptions: {
     daily: '每日',

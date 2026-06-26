@@ -52,6 +52,16 @@ const maxTokenLength = 8192
 // refreshTokenPrefix is the prefix for refresh tokens to distinguish them from access tokens.
 const refreshTokenPrefix = "rt_"
 
+const (
+	authSignupSourceEmail = "email"
+	authSignupSourceTouch = "touch"
+)
+
+type sourceAwareEmailUserRepository interface {
+	GetByEmailAndSignupSource(ctx context.Context, email string, signupSource string) (*User, error)
+	ExistsByEmailAndSignupSource(ctx context.Context, email string, signupSource string) (bool, error)
+}
+
 // JWTClaims JWT载荷数据
 type JWTClaims struct {
 	UserID       int64  `json:"user_id"`
@@ -162,6 +172,42 @@ func (s *AuthService) Register(ctx context.Context, email, password string) (str
 
 // RegisterWithVerification 用户注册（支持邮件验证、优惠码、邀请码和邀请返利码），返回token和用户。
 func (s *AuthService) RegisterWithVerification(ctx context.Context, email, password, verifyCode, promoCode, invitationCode, affiliateCode string) (string, *User, error) {
+	return s.RegisterWithVerificationSource(ctx, email, password, verifyCode, promoCode, invitationCode, affiliateCode, authSignupSourceEmail)
+}
+
+func normalizeEmailAuthSignupSource(source string) string {
+	switch strings.ToLower(strings.TrimSpace(source)) {
+	case authSignupSourceTouch:
+		return authSignupSourceTouch
+	default:
+		return authSignupSourceEmail
+	}
+}
+
+func (s *AuthService) emailExistsForSignupSource(ctx context.Context, email string, signupSource string) (bool, error) {
+	signupSource = normalizeEmailAuthSignupSource(signupSource)
+	if repo, ok := s.userRepo.(sourceAwareEmailUserRepository); ok {
+		return repo.ExistsByEmailAndSignupSource(ctx, email, signupSource)
+	}
+	if signupSource == authSignupSourceTouch {
+		return false, nil
+	}
+	return s.userRepo.ExistsByEmail(ctx, email)
+}
+
+func (s *AuthService) getUserByEmailForSignupSource(ctx context.Context, email string, signupSource string) (*User, error) {
+	signupSource = normalizeEmailAuthSignupSource(signupSource)
+	if repo, ok := s.userRepo.(sourceAwareEmailUserRepository); ok {
+		return repo.GetByEmailAndSignupSource(ctx, email, signupSource)
+	}
+	if signupSource == authSignupSourceTouch {
+		return nil, ErrUserNotFound
+	}
+	return s.userRepo.GetByEmail(ctx, email)
+}
+
+func (s *AuthService) RegisterWithVerificationSource(ctx context.Context, email, password, verifyCode, promoCode, invitationCode, affiliateCode, signupSource string) (string, *User, error) {
+	signupSource = normalizeEmailAuthSignupSource(signupSource)
 	// 检查是否开放注册（默认关闭：settingService 未配置时不允许注册）
 	if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
 		return "", nil, ErrRegDisabled
@@ -207,7 +253,7 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	}
 
 	// 检查邮箱是否已存在
-	existsEmail, err := s.userRepo.ExistsByEmail(ctx, email)
+	existsEmail, err := s.emailExistsForSignupSource(ctx, email, signupSource)
 	if err != nil {
 		logger.LegacyPrintf("service.auth", "[Auth] Database error checking email exists: %v", err)
 		return "", nil, ErrServiceUnavailable
@@ -225,7 +271,7 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 		return "", nil, fmt.Errorf("hash password: %w", err)
 	}
 
-	grantPlan := s.resolveSignupGrantPlan(ctx, "email")
+	grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
 
 	// 新用户默认 RPM（0 = 不限制）。注册时写入，后续作为用户级兜底。
 	var defaultRPMLimit int
@@ -242,6 +288,7 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 		Concurrency:  grantPlan.Concurrency,
 		RPMLimit:     defaultRPMLimit,
 		Status:       StatusActive,
+		SignupSource: signupSource,
 	}
 
 	if err := s.userRepo.Create(ctx, user); err != nil {
@@ -252,7 +299,7 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 		logger.LegacyPrintf("service.auth", "[Auth] Database error creating user: %v", err)
 		return "", nil, ErrServiceUnavailable
 	}
-	s.postAuthUserBootstrap(ctx, user, "email", true)
+	s.postAuthUserBootstrap(ctx, user, signupSource, signupSource == authSignupSourceEmail)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	// snapshot user × platform quota（fail-open）
 	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
@@ -294,8 +341,8 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 		return "", nil, fmt.Errorf("generate token: %w", err)
 	}
 
-	s.notifyUserRegistered(ctx, user, "email")
-	s.sendWelcomeEmailForNewUser(ctx, user, "email")
+	s.notifyUserRegistered(ctx, user, signupSource)
+	s.sendWelcomeEmailForNewUser(ctx, user, signupSource)
 
 	return token, user, nil
 }
@@ -476,8 +523,12 @@ func (s *AuthService) IsEmailVerifyEnabled(ctx context.Context) bool {
 
 // Login 用户登录，返回JWT token
 func (s *AuthService) Login(ctx context.Context, email, password string) (string, *User, error) {
+	return s.LoginWithSource(ctx, email, password, authSignupSourceEmail)
+}
+
+func (s *AuthService) LoginWithSource(ctx context.Context, email, password, signupSource string) (string, *User, error) {
 	// 查找用户
-	user, err := s.userRepo.GetByEmail(ctx, email)
+	user, err := s.getUserByEmailForSignupSource(ctx, email, signupSource)
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			return "", nil, ErrInvalidCredentials

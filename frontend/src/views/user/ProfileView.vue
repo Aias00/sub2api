@@ -13,6 +13,7 @@
         :wechat-enabled="wechatOAuthEnabled"
         :wechat-open-enabled="wechatOAuthOpenEnabled"
         :wechat-mp-enabled="wechatOAuthMPEnabled"
+        :labels="profileShellLabels"
       />
 
       <div
@@ -25,14 +26,17 @@
           </div>
           <div>
             <h3 class="font-semibold text-primary-800 dark:text-primary-200">
-              {{ t('common.contactSupport') }}
+              {{ profileText('contactSupport') }}
             </h3>
             <p class="text-sm font-medium">{{ contactInfo }}</p>
           </div>
         </div>
       </div>
 
-      <ProfilePasswordForm :email-bound="user?.email_bound === true" />
+      <ProfilePasswordForm
+        :email-bound="user?.email_bound === true"
+        :labels="profileShellLabels"
+      />
 
       <ProfileBalanceNotifyCard
         v-if="user && balanceLowNotifyEnabled"
@@ -41,14 +45,19 @@
         :extra-emails="user.balance_notify_extra_emails ?? []"
         :system-default-threshold="systemDefaultThreshold"
         :user-email="user.email"
+        :labels="profileShellLabels"
       />
 
-      <ProfileTotpCard v-if="totpEnabled" />
+      <ProfileTotpCard
+        v-if="totpEnabled"
+        :labels="profileShellLabels"
+      />
     </div>
   </AppLayout>
 </template>
 
 <script setup lang="ts">
+import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { Icon } from '@/components/icons'
@@ -60,8 +69,14 @@ import ProfileTotpCard from '@/components/user/profile/ProfileTotpCard.vue'
 import { isWeChatWebOAuthEnabled } from '@/api/auth'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
+import {
+  profileLabelKeys,
+  profileProviderKeys,
+  resolveProfileShellLabels,
+  type ProfileLabelKey,
+} from '@/utils/profileShell'
 
-const { t } = useI18n()
+const { locale } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const user = computed(() => authStore.user)
@@ -76,7 +91,21 @@ const wechatOAuthEnabled = ref(false)
 const wechatOAuthOpenEnabled = ref<boolean | undefined>(undefined)
 const wechatOAuthMPEnabled = ref<boolean | undefined>(undefined)
 const oidcOAuthEnabled = ref(false)
-const oidcOAuthProviderName = ref('OIDC')
+const oidcOAuthProviderName = ref('')
+
+
+const profileShellLabels = computed(() =>
+  resolveProfileShellLabels(
+    appStore.cachedPublicSettings?.profile_shell_config,
+    resolveRuntimeLocale(locale),
+    profileLabelKeys,
+    profileProviderKeys,
+  ),
+)
+
+function profileText(key: ProfileLabelKey): string {
+  return profileShellLabels.value[key] || ''
+}
 
 onMounted(async () => {
   const profileRefresh = authStore.refreshUser().catch((error) => {
@@ -102,7 +131,7 @@ onMounted(async () => {
         ? settings.wechat_oauth_mp_enabled
         : undefined
       oidcOAuthEnabled.value = settings.oidc_oauth_enabled ?? false
-      oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || 'OIDC'
+      oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || ''
     })
     .catch((error) => {
       console.error('Failed to load settings:', error)

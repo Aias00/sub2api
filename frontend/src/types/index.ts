@@ -279,8 +279,28 @@ export interface PublicSettings {
   api_base_url: string
   contact_info: string
   doc_url: string
+  docs_content_base_path?: string
   home_content: string
+  home_shell_config?: string
+  home_business_shell_config?: string
   model_plaza_items: ModelPlazaItem[]
+  model_plaza_shell_config?: string
+  docs_shell_config?: string
+  legal_document_shell_config?: string
+  api_keys_shell_config?: string
+  key_usage_shell_config?: string
+  dashboard_shell_config?: string
+  usage_shell_config?: string
+  api_guide_shell_config?: string
+  api_test_shell_config?: string
+  available_groups_shell_config?: string
+  redeem_shell_config?: string
+  affiliate_shell_config?: string
+  available_channels_shell_config?: string
+  channel_status_shell_config?: string
+  custom_page_shell_config?: string
+  profile_shell_config?: string
+  auth_shell_config?: string
   hide_ccs_import_button: boolean
   payment_enabled: boolean
   risk_control_enabled: boolean
@@ -288,6 +308,31 @@ export interface PublicSettings {
   table_page_size_options: number[]
   custom_menu_items: CustomMenuItem[]
   custom_endpoints: CustomEndpoint[]
+  prompt_catalog_shell_config?: string
+  workspace_shell_config?: string
+  pricing_shell_config?: string
+  payment_shell_config?: string
+  pricing_currency_symbol?: string
+  credits_per_balance?: string
+  credits_shell_config?: string
+  google_analytics_id?: string
+  clarity_id?: string
+  plausible_domain?: string
+  plausible_src?: string
+  openpanel_client_id?: string
+  public_integrations_enabled?: boolean
+  vercel_analytics_enabled?: boolean
+  adsense_code?: string
+  affonso_enabled?: boolean
+  affonso_id?: string
+  affonso_cookie_duration?: string
+  promotekit_enabled?: boolean
+  promotekit_id?: string
+  crisp_enabled?: boolean
+  crisp_website_id?: string
+  tawk_enabled?: boolean
+  tawk_property_id?: string
+  tawk_widget_id?: string
   linuxdo_oauth_enabled: boolean
   dingtalk_oauth_enabled?: boolean
   wechat_oauth_enabled: boolean
@@ -300,6 +345,7 @@ export interface PublicSettings {
   google_oauth_enabled: boolean
   backend_mode_enabled: boolean
   version: string
+  default_locale?: string
   balance_low_notify_enabled: boolean
   account_quota_notify_enabled: boolean
   balance_low_notify_threshold: number

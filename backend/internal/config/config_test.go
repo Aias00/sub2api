@@ -272,7 +272,7 @@ func TestLoadSchedulingConfigFromEnv(t *testing.T) {
 	}
 }
 
-func TestLoadWeChatConnectConfigFromLegacyEnv(t *testing.T) {
+func TestLoadWeChatConnectConfigDoesNotApplyLegacyEnvFallbacks(t *testing.T) {
 	resetViperWithJWTSecret(t)
 	t.Setenv("WECHAT_OAUTH_OPEN_APP_ID", "wx-open-app")
 	t.Setenv("WECHAT_OAUTH_OPEN_APP_SECRET", "wx-open-secret")
@@ -282,16 +282,16 @@ func TestLoadWeChatConnectConfigFromLegacyEnv(t *testing.T) {
 
 	cfg, err := Load()
 	require.NoError(t, err)
-	require.True(t, cfg.WeChat.Enabled)
-	require.True(t, cfg.WeChat.OpenEnabled)
-	require.True(t, cfg.WeChat.MPEnabled)
+	require.False(t, cfg.WeChat.Enabled)
+	require.False(t, cfg.WeChat.OpenEnabled)
+	require.False(t, cfg.WeChat.MPEnabled)
 	require.False(t, cfg.WeChat.MobileEnabled)
 	require.Equal(t, "open", cfg.WeChat.Mode)
-	require.Equal(t, "wx-open-app", cfg.WeChat.OpenAppID)
-	require.Equal(t, "wx-open-secret", cfg.WeChat.OpenAppSecret)
-	require.Equal(t, "wx-mp-app", cfg.WeChat.MPAppID)
-	require.Equal(t, "wx-mp-secret", cfg.WeChat.MPAppSecret)
-	require.Equal(t, "/auth/wechat/legacy-callback", cfg.WeChat.FrontendRedirectURL)
+	require.Equal(t, "", cfg.WeChat.OpenAppID)
+	require.Equal(t, "", cfg.WeChat.OpenAppSecret)
+	require.Equal(t, "", cfg.WeChat.MPAppID)
+	require.Equal(t, "", cfg.WeChat.MPAppSecret)
+	require.Equal(t, "/auth/wechat/callback", cfg.WeChat.FrontendRedirectURL)
 }
 
 func TestLoadDefaultOIDCSecurityDefaults(t *testing.T) {

@@ -36,7 +36,7 @@ func RegisterCommonRoutes(r *gin.Engine, cfg *config.Config) {
 	// Claude Code MCP 注册表（返回空列表）
 	r.GET("/mcp-registry/v0/servers", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
-			"servers": []interface{}{},
+			"servers": []any{},
 		})
 	})
 

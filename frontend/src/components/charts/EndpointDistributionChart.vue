@@ -2,7 +2,7 @@
   <div class="card p-4">
     <div class="mb-4 flex items-center justify-between gap-3">
       <h3 class="text-sm font-semibold text-gray-900 dark:text-white">
-        {{ title || t('usage.endpointDistribution') }}
+        {{ title || t('common.usageRouting.endpointDistribution') }}
       </h3>
       <div class="flex flex-wrap items-center justify-end gap-2">
         <div
@@ -17,7 +17,7 @@
               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
             @click="emit('update:source', 'inbound')"
           >
-            {{ t('usage.inbound') }}
+            {{ t('common.usageRouting.inbound') }}
           </button>
           <button
             type="button"
@@ -27,7 +27,7 @@
               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
             @click="emit('update:source', 'upstream')"
           >
-            {{ t('usage.upstream') }}
+            {{ t('common.usageRouting.upstream') }}
           </button>
           <button
             type="button"
@@ -37,7 +37,7 @@
               : 'text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200'"
             @click="emit('update:source', 'path')"
           >
-            {{ t('usage.path') }}
+            {{ t('common.usageRouting.path') }}
           </button>
         </div>
 
@@ -79,7 +79,7 @@
         <table class="w-full text-xs">
           <thead>
             <tr class="text-gray-500 dark:text-gray-400">
-              <th class="pb-2 text-left">{{ t('usage.endpoint') }}</th>
+              <th class="pb-2 text-left">{{ t('common.usageRouting.endpoint') }}</th>
               <th class="pb-2 text-right">{{ t('admin.dashboard.requests') }}</th>
               <th class="pb-2 text-right">{{ t('admin.dashboard.tokens') }}</th>
               <th class="pb-2 text-right">{{ t('admin.dashboard.actual') }}</th>

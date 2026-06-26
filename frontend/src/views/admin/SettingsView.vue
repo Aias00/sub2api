@@ -5360,7 +5360,7 @@
                       v-model="form.payment_product_name_prefix"
                       type="text"
                       class="input"
-                      placeholder="Sub2API"
+                      :placeholder="form.site_name"
                     />
                   </div>
                   <div>
@@ -5371,7 +5371,6 @@
                       v-model="form.payment_product_name_suffix"
                       type="text"
                       class="input"
-                      placeholder="CNY"
                     />
                   </div>
                   <div>
@@ -5381,11 +5380,7 @@
                     <div
                       class="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300"
                     >
-                      {{
-                        (form.payment_product_name_prefix || "Sub2API") +
-                        " 100 " +
-                        (form.payment_product_name_suffix || "CNY")
-                      }}
+                      {{ paymentProductNamePreview }}
                     </div>
                   </div>
                 </div>
@@ -6830,21 +6825,21 @@ import {
 import {
   buildCommercialLoginAgreementDocuments,
   mergePrivacyPolicyIntoLoginAgreementDocuments,
-  isLegacyBlankLoginAgreementDocuments,
 } from "@/utils/loginAgreementTemplates";
+import { resolveRuntimeLanguage } from "@/utils/runtimeLocale";
 
 const { t, locale } = useI18n();
 const appStore = useAppStore();
 const adminSettingsStore = useAdminSettingsStore();
 
 const paymentGuideHref = computed(() =>
-  locale.value.startsWith("zh")
+  resolveRuntimeLanguage(locale) === "zh"
     ? "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md"
     : "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md",
 );
 
 const paymentMethodsHref = computed(() =>
-  locale.value.startsWith("zh")
+  resolveRuntimeLanguage(locale) === "zh"
     ? "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md#支持的支付方式"
     : "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md#supported-payment-methods",
 );
@@ -6936,7 +6931,7 @@ const smtpPasswordManuallyEdited = ref(false);
 const testEmailAddress = ref("");
 const registrationEmailSuffixWhitelistTags = ref<string[]>([]);
 const registrationEmailSuffixWhitelistDraft = ref("");
-const tablePageSizeOptionsInput = ref("10, 20, 50, 100");
+const tablePageSizeOptionsInput = ref("");
 
 function createEmailChannel(): EmailChannelConfig {
   const order = form.smtp_channels.length + 1;
@@ -7056,12 +7051,10 @@ const openaiFastPolicyLoaded = ref(false);
 
 const tablePageSizeMin = 5;
 const tablePageSizeMax = 1000;
-const tablePageSizeDefault = 20;
-
 function defaultLoginAgreementDocuments(): LoginAgreementDocument[] {
   return buildCommercialLoginAgreementDocuments({
     siteName: "Sub2API",
-    effectiveDate: "2026-03-31",
+    effectiveDate: "",
   });
 }
 
@@ -7095,6 +7088,8 @@ interface DefaultSubscriptionGroupOption {
 
 type SettingsForm = Omit<
   SystemSettings,
+  | "wechat_connect_app_id"
+  | "wechat_connect_app_secret_configured"
   | "wechat_connect_open_enabled"
   | "wechat_connect_mp_enabled"
   | "wechat_connect_mobile_enabled"
@@ -7103,7 +7098,6 @@ type SettingsForm = Omit<
   turnstile_secret_key: string;
   linuxdo_connect_client_secret: string;
   dingtalk_connect_client_secret: string;
-  wechat_connect_app_secret: string;
   wechat_connect_open_app_secret: string;
   wechat_connect_mp_app_secret: string;
   wechat_connect_mobile_app_secret: string;
@@ -7130,21 +7124,21 @@ const form = reactive<SettingsForm>({
   totp_encryption_key_configured: false,
   login_agreement_enabled: false,
   login_agreement_mode: "modal",
-  login_agreement_updated_at: "2026-03-31",
+  login_agreement_updated_at: "",
   login_agreement_documents: defaultLoginAgreementDocuments(),
   default_balance: 0,
   default_platform_quotas: normalizePlatformQuotasMap() as DefaultPlatformQuotasMap,
-  affiliate_rebate_rate: 20,
+  affiliate_rebate_rate: 0,
   affiliate_rebate_freeze_hours: 0,
   affiliate_rebate_duration_days: 0,
   affiliate_rebate_per_invitee_cap: 0,
-  default_concurrency: 1,
+  default_concurrency: 0,
   default_subscriptions: [],
   force_email_on_third_party_signup: false,
   default_user_rpm_limit: 0,
-  site_name: "Sub2API",
+  site_name: "",
   site_logo: "",
-  site_subtitle: "Subscription to API Conversion Platform",
+  site_subtitle: "",
   api_base_url: "",
   contact_info: "",
   doc_url: "",
@@ -7154,13 +7148,13 @@ const form = reactive<SettingsForm>({
   hide_ccs_import_button: false,
   payment_enabled: false,
   risk_control_enabled: false,
-  payment_min_amount: 1,
-  payment_max_amount: 10000,
-  payment_daily_limit: 50000,
-  payment_max_pending_orders: 3,
-  payment_order_timeout_minutes: 30,
+  payment_min_amount: 0,
+  payment_max_amount: 0,
+  payment_daily_limit: 0,
+  payment_max_pending_orders: 0,
+  payment_order_timeout_minutes: 0,
   payment_balance_disabled: false,
-  payment_balance_recharge_multiplier: 1,
+  payment_balance_recharge_multiplier: 0,
   payment_recharge_fee_rate: 0,
   payment_recharge_products: [] as RechargeProduct[],
   payment_enabled_types: [],
@@ -7168,15 +7162,15 @@ const form = reactive<SettingsForm>({
   payment_help_text: "",
   payment_product_name_prefix: "",
   payment_product_name_suffix: "",
-  payment_load_balance_strategy: "round-robin",
+  payment_load_balance_strategy: "",
   payment_cancel_rate_limit_enabled: false,
-  payment_cancel_rate_limit_max: 10,
-  payment_cancel_rate_limit_window: 1,
-  payment_cancel_rate_limit_unit: "day",
-  payment_cancel_rate_limit_window_mode: "rolling",
+  payment_cancel_rate_limit_max: 0,
+  payment_cancel_rate_limit_window: 0,
+  payment_cancel_rate_limit_unit: "",
+  payment_cancel_rate_limit_window_mode: "",
   payment_alipay_force_qrcode: false,
-  table_default_page_size: tablePageSizeDefault,
-  table_page_size_options: [10, 20, 50, 100],
+  table_default_page_size: 0,
+  table_page_size_options: [],
   custom_menu_items: [] as Array<{
     id: string;
     label: string;
@@ -7192,13 +7186,13 @@ const form = reactive<SettingsForm>({
   }>,
   frontend_url: "",
   smtp_host: "",
-  smtp_port: 587,
+  smtp_port: 0,
   smtp_username: "",
   smtp_password: "",
   smtp_password_configured: false,
   smtp_from_email: "",
   smtp_from_name: "",
-  smtp_use_tls: true,
+  smtp_use_tls: false,
   smtp_daily_limit: 0,
   smtp_channels: [],
   registration_notify_enabled: false,
@@ -7237,9 +7231,6 @@ const form = reactive<SettingsForm>({
   dingtalk_connect_sync_display_name_attr_name: "钉钉姓名",
   dingtalk_connect_sync_dept_attr_name: "钉钉部门",
   wechat_connect_enabled: false,
-  wechat_connect_app_id: "",
-  wechat_connect_app_secret: "",
-  wechat_connect_app_secret_configured: false,
   wechat_connect_open_app_id: "",
   wechat_connect_open_app_secret: "",
   wechat_connect_open_app_secret_configured: false,
@@ -7252,13 +7243,13 @@ const form = reactive<SettingsForm>({
   wechat_connect_open_enabled: false,
   wechat_connect_mp_enabled: false,
   wechat_connect_mobile_enabled: false,
-  wechat_connect_mode: "open",
-  wechat_connect_scopes: "snsapi_login",
+  wechat_connect_mode: "",
+  wechat_connect_scopes: "",
   wechat_connect_redirect_url: "",
-  wechat_connect_frontend_redirect_url: "/auth/wechat/callback",
+  wechat_connect_frontend_redirect_url: "",
   // Generic OIDC OAuth 登录
   oidc_connect_enabled: false,
-  oidc_connect_provider_name: "OIDC",
+  oidc_connect_provider_name: "",
   oidc_connect_client_id: "",
   oidc_connect_client_secret: "",
   oidc_connect_client_secret_configured: false,
@@ -7268,14 +7259,14 @@ const form = reactive<SettingsForm>({
   oidc_connect_token_url: "",
   oidc_connect_userinfo_url: "",
   oidc_connect_jwks_url: "",
-  oidc_connect_scopes: "openid email profile",
+  oidc_connect_scopes: "",
   oidc_connect_redirect_url: "",
-  oidc_connect_frontend_redirect_url: "/auth/oidc/callback",
-  oidc_connect_token_auth_method: "client_secret_post",
+  oidc_connect_frontend_redirect_url: "",
+  oidc_connect_token_auth_method: "",
   oidc_connect_use_pkce: false,
   oidc_connect_validate_id_token: false,
-  oidc_connect_allowed_signing_algs: "RS256,ES256,PS256",
-  oidc_connect_clock_skew_seconds: 120,
+  oidc_connect_allowed_signing_algs: "",
+  oidc_connect_clock_skew_seconds: 0,
   oidc_connect_require_email_verified: false,
   oidc_connect_userinfo_email_path: "",
   oidc_connect_userinfo_id_path: "",
@@ -7286,27 +7277,27 @@ const form = reactive<SettingsForm>({
   github_oauth_client_secret: "",
   github_oauth_client_secret_configured: false,
   github_oauth_redirect_url: "",
-  github_oauth_frontend_redirect_url: "/auth/oauth/callback",
+  github_oauth_frontend_redirect_url: "",
   google_oauth_enabled: false,
   google_oauth_client_id: "",
   google_oauth_client_secret: "",
   google_oauth_client_secret_configured: false,
   google_oauth_redirect_url: "",
-  google_oauth_frontend_redirect_url: "/auth/oauth/callback",
+  google_oauth_frontend_redirect_url: "",
   // Model fallback
   enable_model_fallback: false,
-  fallback_model_anthropic: "claude-3-5-sonnet-20241022",
-  fallback_model_openai: "gpt-4o",
-  fallback_model_gemini: "gemini-2.5-pro",
-  fallback_model_antigravity: "gemini-2.5-pro",
+  fallback_model_anthropic: "",
+  fallback_model_openai: "",
+  fallback_model_gemini: "",
+  fallback_model_antigravity: "",
   // Identity patch (Claude -> Gemini)
-  enable_identity_patch: true,
+  enable_identity_patch: false,
   identity_patch_prompt: "",
   // Ops monitoring (vNext)
-  ops_monitoring_enabled: true,
-  ops_realtime_monitoring_enabled: true,
-  ops_query_mode_default: "auto",
-  ops_metrics_interval_seconds: 60,
+  ops_monitoring_enabled: false,
+  ops_realtime_monitoring_enabled: false,
+  ops_query_mode_default: "",
+  ops_metrics_interval_seconds: 0,
   // Claude Code version check
   min_claude_code_version: "",
   max_claude_code_version: "",
@@ -7314,7 +7305,7 @@ const form = reactive<SettingsForm>({
   allow_ungrouped_key_scheduling: false,
   openai_advanced_scheduler_enabled: false,
   // Gateway forwarding behavior
-  enable_fingerprint_unification: true,
+  enable_fingerprint_unification: false,
   enable_metadata_passthrough: false,
   enable_cch_signing: false,
   enable_anthropic_cache_ttl_1h_injection: false,
@@ -7326,12 +7317,12 @@ const form = reactive<SettingsForm>({
   balance_low_notify_enabled: false,
   balance_low_notify_threshold: 0,
   balance_low_notify_recharge_url: "",
-  subscription_expiry_notify_enabled: true,
+  subscription_expiry_notify_enabled: false,
   account_quota_notify_enabled: false,
   account_quota_notify_emails: [] as NotifyEmailEntry[],
   // Channel Monitor feature switch
-  channel_monitor_enabled: true,
-  channel_monitor_default_interval_seconds: 60,
+  channel_monitor_enabled: false,
+  channel_monitor_default_interval_seconds: 0,
   // Available Channels feature switch
   available_channels_enabled: false,
   // Affiliate (邀请返利) feature switch
@@ -7974,16 +7965,12 @@ function hasCustomLoginAgreementContent(): boolean {
 function applyCommercialLoginAgreementTemplate() {
   if (
     hasCustomLoginAgreementContent() &&
-    !isLegacyBlankLoginAgreementDocuments(form.login_agreement_documents) &&
     !confirm(t("admin.settings.loginAgreement.applyCommercialTemplateConfirm"))
   ) {
     return;
   }
 
   form.login_agreement_documents = resolveCommercialLoginAgreementDocuments();
-  if (!form.login_agreement_updated_at.trim()) {
-    form.login_agreement_updated_at = "2026-03-31";
-  }
   appStore.showSuccess(
     t("admin.settings.loginAgreement.applyCommercialTemplateSuccess"),
   );
@@ -8116,13 +8103,19 @@ function updateRechargeProductFeatures(index: number, raw: string) {
     .filter(Boolean);
 }
 
+const paymentProductNamePreview = computed(() =>
+  [
+    form.payment_product_name_prefix || form.site_name,
+    "100",
+    form.payment_product_name_suffix,
+  ].filter((part) => String(part || "").trim()).join(" "),
+);
+
 async function loadSettings() {
   loading.value = true;
   loadFailed.value = false;
   try {
     const settings = await adminAPI.settings.getSettings();
-    settings.payment_load_balance_strategy =
-      settings.payment_load_balance_strategy || "round-robin";
     // Only assign non-null values from backend (null means unconfigured, keep defaults)
     for (const [key, value] of Object.entries(settings)) {
       if (value !== null && value !== undefined) {
@@ -8138,7 +8131,7 @@ async function loadSettings() {
     form.login_agreement_mode =
       settings.login_agreement_mode === "checkbox" ? "checkbox" : "modal";
     form.login_agreement_updated_at =
-      settings.login_agreement_updated_at || "2026-03-31";
+      settings.login_agreement_updated_at || "";
     const loadedLoginAgreementDocuments =
       Array.isArray(settings.login_agreement_documents) &&
       settings.login_agreement_documents.length > 0
@@ -8149,7 +8142,7 @@ async function loadSettings() {
           }))
         : [];
     form.login_agreement_documents =
-      isLegacyBlankLoginAgreementDocuments(loadedLoginAgreementDocuments)
+      loadedLoginAgreementDocuments.length === 0
         ? buildCommercialLoginAgreementDocuments({
             siteName: settings.site_name,
             frontendUrl: settings.frontend_url || currentOrigin,
@@ -8170,7 +8163,7 @@ async function loadSettings() {
     tablePageSizeOptionsInput.value = formatTablePageSizeOptions(
       Array.isArray(settings.table_page_size_options)
         ? settings.table_page_size_options
-        : [10, 20, 50, 100],
+        : [],
     );
     registrationEmailSuffixWhitelistDraft.value = "";
     form.smtp_password = "";
@@ -8198,7 +8191,6 @@ async function loadSettings() {
     form.dingtalk_connect_client_secret = "";
     form.github_oauth_client_secret = "";
     form.google_oauth_client_secret = "";
-    form.wechat_connect_app_secret = "";
     form.wechat_connect_open_app_secret = "";
     form.wechat_connect_mp_app_secret = "";
     form.wechat_connect_mobile_app_secret = "";
@@ -8217,39 +8209,6 @@ async function loadSettings() {
       wechatCapabilities.mobileEnabled,
       settings.wechat_connect_mode,
     );
-    const legacyWeChatAppID = String(settings.wechat_connect_app_id || "").trim();
-    const legacyWeChatSecretConfigured = Boolean(
-      settings.wechat_connect_app_secret_configured,
-    );
-    if (!form.wechat_connect_open_app_id && wechatCapabilities.openEnabled) {
-      form.wechat_connect_open_app_id = legacyWeChatAppID;
-    }
-    if (!form.wechat_connect_mp_app_id && wechatCapabilities.mpEnabled) {
-      form.wechat_connect_mp_app_id = legacyWeChatAppID;
-    }
-    if (!form.wechat_connect_mobile_app_id && wechatCapabilities.mobileEnabled) {
-      form.wechat_connect_mobile_app_id = legacyWeChatAppID;
-    }
-    if (
-      !form.wechat_connect_open_app_secret_configured &&
-      wechatCapabilities.openEnabled
-    ) {
-      form.wechat_connect_open_app_secret_configured =
-        legacyWeChatSecretConfigured;
-    }
-    if (
-      !form.wechat_connect_mp_app_secret_configured &&
-      wechatCapabilities.mpEnabled
-    ) {
-      form.wechat_connect_mp_app_secret_configured = legacyWeChatSecretConfigured;
-    }
-    if (
-      !form.wechat_connect_mobile_app_secret_configured &&
-      wechatCapabilities.mobileEnabled
-    ) {
-      form.wechat_connect_mobile_app_secret_configured =
-        legacyWeChatSecretConfigured;
-    }
     form.wechat_connect_scopes = defaultWeChatConnectScopesForMode(
       form.wechat_connect_mode,
     );
@@ -8568,12 +8527,6 @@ async function saveSettings() {
       dingtalk_connect_sync_display_name_attr_name: form.dingtalk_connect_sync_display_name_attr_name,
       dingtalk_connect_sync_dept_attr_name: form.dingtalk_connect_sync_dept_attr_name,
       wechat_connect_enabled: form.wechat_connect_enabled,
-      wechat_connect_app_id:
-        form.wechat_connect_open_app_id ||
-        form.wechat_connect_mp_app_id ||
-        form.wechat_connect_mobile_app_id ||
-        form.wechat_connect_app_id,
-      wechat_connect_app_secret: form.wechat_connect_app_secret || undefined,
       wechat_connect_open_app_id: form.wechat_connect_open_app_id,
       wechat_connect_open_app_secret:
         form.wechat_connect_open_app_secret || undefined,
@@ -8663,7 +8616,7 @@ async function saveSettings() {
         Number(form.payment_order_timeout_minutes) || 0,
       payment_balance_disabled: form.payment_balance_disabled,
       payment_balance_recharge_multiplier:
-        Number(form.payment_balance_recharge_multiplier) || 1,
+        Number(form.payment_balance_recharge_multiplier) || 0,
       payment_recharge_fee_rate: Number(form.payment_recharge_fee_rate) || 0,
       payment_recharge_products: form.payment_recharge_products,
       payment_enabled_types: form.payment_enabled_types,
@@ -8674,9 +8627,9 @@ async function saveSettings() {
       payment_help_text: form.payment_help_text,
       payment_cancel_rate_limit_enabled: form.payment_cancel_rate_limit_enabled,
       payment_cancel_rate_limit_max:
-        Number(form.payment_cancel_rate_limit_max) || 10,
+        Number(form.payment_cancel_rate_limit_max) || 0,
       payment_cancel_rate_limit_window:
-        Number(form.payment_cancel_rate_limit_window) || 1,
+        Number(form.payment_cancel_rate_limit_window) || 0,
       payment_cancel_rate_limit_unit: form.payment_cancel_rate_limit_unit,
       payment_cancel_rate_limit_window_mode:
         form.payment_cancel_rate_limit_window_mode,
@@ -8701,7 +8654,7 @@ async function saveSettings() {
       // Channel Monitor feature switch
       channel_monitor_enabled: form.channel_monitor_enabled,
       channel_monitor_default_interval_seconds:
-        Number(form.channel_monitor_default_interval_seconds) || 60,
+        Number(form.channel_monitor_default_interval_seconds) || 0,
       // Available Channels feature switch
       available_channels_enabled: form.available_channels_enabled,
       // Affiliate (邀请返利) feature switch
@@ -8761,7 +8714,7 @@ async function saveSettings() {
     tablePageSizeOptionsInput.value = formatTablePageSizeOptions(
       Array.isArray(updated.table_page_size_options)
         ? updated.table_page_size_options
-        : [10, 20, 50, 100],
+        : [],
     );
     registrationEmailSuffixWhitelistDraft.value = "";
     form.smtp_password = "";
@@ -8771,7 +8724,6 @@ async function saveSettings() {
     form.dingtalk_connect_client_secret = "";
     form.github_oauth_client_secret = "";
     form.google_oauth_client_secret = "";
-    form.wechat_connect_app_secret = "";
     form.wechat_connect_open_app_secret = "";
     form.wechat_connect_mp_app_secret = "";
     form.wechat_connect_mobile_app_secret = "";
@@ -9503,9 +9455,7 @@ async function loadProviders() {
 
 function openCreateProvider() {
   editingProvider.value = null;
-  providerDialogRef.value?.reset(
-    enabledProviderKeyOptions.value[0]?.value || "easypay",
-  );
+  providerDialogRef.value?.reset(enabledProviderKeyOptions.value[0]?.value || "");
   showProviderDialog.value = true;
 }
 

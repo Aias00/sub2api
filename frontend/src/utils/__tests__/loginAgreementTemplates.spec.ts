@@ -1,12 +1,18 @@
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import {
   buildCommercialLoginAgreementDocuments,
   buildPrivacyPolicyLoginAgreementDocument,
-  isLegacyBlankLoginAgreementDocuments,
   mergePrivacyPolicyIntoLoginAgreementDocuments,
   renderLoginAgreementDocumentContent,
 } from "../loginAgreementTemplates";
+
+const templateSource = readFileSync(
+  resolve(process.cwd(), "src/utils/loginAgreementTemplates.ts"),
+  "utf8",
+);
 
 describe("loginAgreementTemplates", () => {
   it("builds a commercial legal document bundle with site context", () => {
@@ -39,6 +45,13 @@ describe("loginAgreementTemplates", () => {
     expect(docs[3].content_md).toContain("{{contact_info}}");
   });
 
+  it("does not inject a local default site name into commercial templates", () => {
+    const privacy = buildPrivacyPolicyLoginAgreementDocument();
+
+    expect(privacy.content_md).not.toContain("Sub2API");
+    expect(privacy.content_md).toContain("本隐私条款说明  在您访问网站");
+  });
+
   it("renders placeholders and normalizes legacy dynamic lines", () => {
     const rendered = renderLoginAgreementDocumentContent(
       [
@@ -59,7 +72,8 @@ describe("loginAgreementTemplates", () => {
 
     expect(rendered).toContain("**生效日期：** 2026-05-18");
     expect(rendered).toContain("**最后更新：** 2026-05-18");
-    expect(rendered).toContain("当前站点地址：以您当前访问本服务时所使用的域名为准");
+    expect(rendered).toContain("当前站点地址：");
+    expect(rendered).not.toContain("以您当前访问本服务时所使用的域名为准");
     expect(rendered).toContain("- 联系方式：support@cloudbase.eu.org");
 
     const serviceTerms = renderLoginAgreementDocumentContent(
@@ -84,30 +98,27 @@ describe("loginAgreementTemplates", () => {
     expect(privacyPolicy).toContain("support@cloudbase.eu.org");
   });
 
-  it("treats legacy blank documents as replaceable", () => {
-    expect(
-      isLegacyBlankLoginAgreementDocuments([
-        { id: "terms", title: "服务条款", content_md: "" },
-        { id: "privacy-policy", title: "隐私条款", content_md: "" },
-        { id: "usage-policy", title: "使用政策", content_md: "" },
-        {
-          id: "supported-regions",
-          title: "支持的国家和地区",
-          content_md: "",
-        },
-        {
-          id: "service-specific-terms",
-          title: "服务特定条款",
-          content_md: "",
-        },
-      ]),
-    ).toBe(true);
+  it("does not synthesize local defaults for missing dynamic document settings", () => {
+    const rendered = renderLoginAgreementDocumentContent(
+      [
+        "**生效日期：** {{effective_date}}",
+        "**最后更新：** {{updated_date}}",
+        "当前站点地址：{{site_url}}",
+        "- 联系方式：{{contact_info}}",
+      ].join("\n"),
+      { documentId: "terms" },
+    );
 
-    expect(
-      isLegacyBlankLoginAgreementDocuments([
-        { id: "terms", title: "商业服务条款", content_md: "已有内容" },
-      ]),
-    ).toBe(false);
+    expect(rendered).toContain("**生效日期：** ");
+    expect(rendered).toContain("**最后更新：** ");
+    expect(rendered).toContain("当前站点地址：");
+    expect(rendered).toContain("- 联系方式：");
+    expect(rendered).not.toContain("2026-03-31");
+    expect(rendered).not.toContain("请通过站点设置中的客服联系方式与运营方联系。");
+    expect(rendered).not.toContain("以您当前访问本服务时所使用的域名为准");
+    expect(templateSource).not.toContain('"2026-03-31"');
+    expect(templateSource).not.toContain("请通过站点设置中的客服联系方式与运营方联系。");
+    expect(templateSource).not.toContain("以您当前访问本服务时所使用的域名为准");
   });
 
   it("appends privacy policy without changing existing configured documents", () => {

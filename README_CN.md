@@ -434,13 +434,12 @@ cd sub2api
 npm install -g pnpm
 
 # 3. 编译前端
-cd frontend
 pnpm install
-pnpm run build
-# 构建产物输出到 ../backend/internal/web/dist/
+pnpm run frontend:build
+# 构建产物输出到 backend/internal/web/dist/
 
 # 4. 编译后端（嵌入前端）
-cd ../backend
+cd backend
 go build -tags embed -o sub2api ./cmd/server
 
 # 5. 创建配置文件
@@ -607,8 +606,7 @@ cd backend
 go run ./cmd/server
 
 # 前端（支持热重载）
-cd frontend
-pnpm run dev
+pnpm run frontend:dev
 ```
 
 #### 代码生成

@@ -11,7 +11,7 @@ describe('parseWechatResumeRoute', () => {
       amount: '12.5',
       order_type: 'subscription',
       plan_id: '7',
-    }, [], 88)).toEqual({
+    })).toEqual({
       wechatResumeToken: 'resume-token-123',
       paymentType: 'wxpay',
       orderType: 'subscription',
@@ -20,25 +20,32 @@ describe('parseWechatResumeRoute', () => {
     })
   })
 
-  it('falls back to legacy openid-based resume when opaque token is absent', () => {
+  it('returns null when opaque resume token is absent', () => {
     expect(parseWechatResumeRoute({
       wechat_resume: '1',
       openid: 'openid-123',
       payment_type: 'wxpay',
       amount: '12.5',
       order_type: 'balance',
-    }, [], 88)).toEqual({
-      openid: 'openid-123',
-      paymentType: 'wxpay',
+    })).toBeNull()
+  })
+
+  it('does not synthesize a payment method when query payment_type is missing', () => {
+    expect(parseWechatResumeRoute({
+      wechat_resume: '1',
+      wechat_resume_token: 'resume-token-123',
+    })).toEqual({
+      wechatResumeToken: 'resume-token-123',
+      paymentType: '',
       orderType: 'balance',
-      orderAmount: 12.5,
+      orderAmount: 0,
       planId: undefined,
     })
   })
 })
 
 describe('stripWechatResumeQuery', () => {
-  it('removes both opaque-token and legacy resume params from the route query', () => {
+  it('removes opaque token and legacy resume params from the route query', () => {
     expect(stripWechatResumeQuery({
       foo: 'bar',
       wechat_resume: '1',

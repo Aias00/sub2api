@@ -1,6 +1,13 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
+
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { setActivePinia, createPinia } from 'pinia'
-import { resolveCompletedSetupRedirectPath } from '@/router/setupRedirect'
+import {
+  resolveAuthRouteDefaults,
+  resolveCompletedSetupRedirectPath,
+  resolveRoleHomeRedirect,
+} from '@/router/setupRedirect'
 
 // Mock 导航加载状态
 vi.mock('@/composables/useNavigationLoading', () => {
@@ -55,6 +62,7 @@ interface MockAuthState {
   backendModeEnabled: boolean
   hasPendingAuthSession: boolean
   setupNeedsSetup?: boolean
+  authShellConfig?: string
 }
 
 /**
@@ -67,9 +75,10 @@ function simulateGuard(
 ): string | null {
   const requiresAuth = toMeta.requiresAuth !== false
   const requiresAdmin = toMeta.requiresAdmin === true
+  const authRouteDefaults = resolveAuthRouteDefaults(authState.authShellConfig, 'en')
 
   if (toPath === '/setup' && authState.setupNeedsSetup === false) {
-    return resolveCompletedSetupRedirectPath(authState.isAuthenticated, authState.isAdmin)
+    return resolveCompletedSetupRedirectPath(authState.isAuthenticated, authState.isAdmin, authRouteDefaults)
   }
 
   // 不需要认证的路由
@@ -81,7 +90,7 @@ function simulateGuard(
       if (authState.backendModeEnabled && !authState.isAdmin) {
         return null
       }
-      return authState.isAdmin ? '/admin/dashboard' : '/dashboard'
+      return resolveRoleHomeRedirect(authState.isAdmin, authRouteDefaults)
     }
     if (authState.backendModeEnabled && !authState.isAuthenticated) {
       const allowed = ['/login', '/key-usage', '/setup', '/payment/result']
@@ -98,7 +107,7 @@ function simulateGuard(
         callbackPaths.includes(toPath) ||
         (authState.hasPendingAuthSession && pendingAuthPaths.includes(toPath))
       if (!isAllowed) {
-        return '/login'
+        return authRouteDefaults.loginPath
       }
     }
     return null // 允许通过
@@ -106,12 +115,12 @@ function simulateGuard(
 
   // 需要认证但未登录
   if (!authState.isAuthenticated) {
-    return '/login'
+    return authRouteDefaults.loginPath
   }
 
   // 需要管理员但不是管理员
   if (requiresAdmin && !authState.isAdmin) {
-    return '/dashboard'
+    return authRouteDefaults.userRedirectPath
   }
 
   // 简易模式限制
@@ -124,7 +133,7 @@ function simulateGuard(
       '/redeem',
     ]
     if (restrictedPaths.some((path) => toPath.startsWith(path))) {
-      return authState.isAdmin ? '/admin/dashboard' : '/dashboard'
+      return resolveRoleHomeRedirect(authState.isAdmin, authRouteDefaults)
     }
   }
 
@@ -147,7 +156,7 @@ function simulateGuard(
       callbackPaths.includes(toPath) ||
       (authState.hasPendingAuthSession && pendingAuthPaths.includes(toPath))
     if (!isAllowed) {
-      return '/login'
+      return authRouteDefaults.loginPath
     }
   }
 
@@ -157,6 +166,136 @@ function simulateGuard(
 describe('路由守卫逻辑', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
+  })
+
+  describe('auth shell route defaults', () => {
+    const authShellConfig = JSON.stringify({
+      en: {
+        defaults: {
+          homePath: '/configured-home',
+          loginPath: '/configured-login',
+          registerPath: '/configured-register',
+          forgotPasswordPath: '/configured-forgot-password',
+          emailVerifyPath: '/configured-email-verify',
+          apiKeysPath: '/configured-keys',
+          usagePath: '/configured-usage',
+          availableChannelsPath: '/configured-available-channels',
+          availableGroupsPath: '/configured-available-groups',
+          subscriptionsPath: '/configured-subscriptions',
+          purchasePath: '/configured-purchase',
+          paymentResultPath: '/configured-payment-result',
+          ordersPath: '/configured-orders',
+          redeemPath: '/configured-redeem',
+          affiliatePath: '/configured-affiliate',
+          profilePath: '/configured-profile-page',
+          defaultRedirectPath: '/configured-dashboard',
+          adminRedirectPath: '/configured-admin',
+          adminRuntimeSettingsPath: '/configured-admin-runtime-settings',
+          adminSettingsPath: '/configured-admin-settings',
+          dingtalkCallbackPath: '/configured-dingtalk-callback',
+          dingtalkEmailCompletionPath: '/configured-dingtalk-email-completion',
+        },
+      },
+    })
+
+    it('resolves route defaults from auth shell public settings', () => {
+      const defaults = resolveAuthRouteDefaults(authShellConfig, 'en')
+
+      expect(defaults).toEqual({
+        homePath: '/configured-home',
+        loginPath: '/configured-login',
+        registerPath: '/configured-register',
+        forgotPasswordPath: '/configured-forgot-password',
+        emailVerifyPath: '/configured-email-verify',
+        apiKeysPath: '/configured-keys',
+        usagePath: '/configured-usage',
+        availableChannelsPath: '/configured-available-channels',
+        availableGroupsPath: '/configured-available-groups',
+        subscriptionsPath: '/configured-subscriptions',
+        purchasePath: '/configured-purchase',
+        paymentResultPath: '/configured-payment-result',
+        ordersPath: '/configured-orders',
+        redeemPath: '/configured-redeem',
+        affiliatePath: '/configured-affiliate',
+        profilePath: '/configured-profile-page',
+        userRedirectPath: '/configured-dashboard',
+        adminRedirectPath: '/configured-admin',
+        adminRuntimeSettingsPath: '/configured-admin-runtime-settings',
+        adminSettingsPath: '/configured-admin-settings',
+        dingtalkCallbackPath: '/configured-dingtalk-callback',
+        dingtalkEmailCompletionPath: '/configured-dingtalk-email-completion',
+      })
+    })
+
+    it('uses configured login path for unauthenticated protected routes', () => {
+      const redirect = simulateGuard('/dashboard', {}, {
+        isAuthenticated: false,
+        isAdmin: false,
+        isSimpleMode: false,
+        backendModeEnabled: false,
+        hasPendingAuthSession: false,
+        authShellConfig,
+      })
+
+      expect(redirect).toBe('/configured-login')
+    })
+
+    it('uses configured user/admin home redirects for authenticated auth pages', () => {
+      const userRedirect = simulateGuard('/login', { requiresAuth: false }, {
+        isAuthenticated: true,
+        isAdmin: false,
+        isSimpleMode: false,
+        backendModeEnabled: false,
+        hasPendingAuthSession: false,
+        authShellConfig,
+      })
+      const adminRedirect = simulateGuard('/login', { requiresAuth: false }, {
+        isAuthenticated: true,
+        isAdmin: true,
+        isSimpleMode: false,
+        backendModeEnabled: false,
+        hasPendingAuthSession: false,
+        authShellConfig,
+      })
+
+      expect(userRedirect).toBe('/configured-dashboard')
+      expect(adminRedirect).toBe('/configured-admin')
+    })
+
+    it('uses configured defaults for initialized setup redirects', () => {
+      const guestRedirect = simulateGuard('/setup', { requiresAuth: false }, {
+        isAuthenticated: false,
+        isAdmin: false,
+        isSimpleMode: false,
+        backendModeEnabled: false,
+        hasPendingAuthSession: false,
+        setupNeedsSetup: false,
+        authShellConfig,
+      })
+      const adminRedirect = simulateGuard('/setup', { requiresAuth: false }, {
+        isAuthenticated: true,
+        isAdmin: true,
+        isSimpleMode: false,
+        backendModeEnabled: false,
+        hasPendingAuthSession: false,
+        setupNeedsSetup: false,
+        authShellConfig,
+      })
+
+      expect(guestRedirect).toBe('/configured-login')
+      expect(adminRedirect).toBe('/configured-admin')
+    })
+
+    it('keeps the real router guard wired to auth route defaults instead of local redirect constants', () => {
+      const routerSource = readFileSync(resolve(process.cwd(), 'src/router/index.ts'), 'utf8')
+
+      expect(routerSource).toContain('resolveAuthRouteDefaults')
+      expect(routerSource).toContain('resolveRoleHomeRedirect')
+      expect(routerSource).not.toContain("next('/login')")
+      expect(routerSource).not.toContain("next('/dashboard')")
+      expect(routerSource).not.toContain("next(authStore.isAdmin ? '/admin/dashboard' : '/dashboard')")
+      expect(routerSource).not.toContain("path: '/login',\n      query: { redirect: to.fullPath }")
+    })
   })
 
   // --- 未认证用户 ---
@@ -187,6 +326,11 @@ describe('路由守卫逻辑', () => {
 
     it('访问 /home 公开页面允许通过', () => {
       const redirect = simulateGuard('/home', { requiresAuth: false }, authState)
+      expect(redirect).toBeNull()
+    })
+
+    it('访问 /sub 公开页面允许通过', () => {
+      const redirect = simulateGuard('/sub', { requiresAuth: false }, authState)
       expect(redirect).toBeNull()
     })
   })

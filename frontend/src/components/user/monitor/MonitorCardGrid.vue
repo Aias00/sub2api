@@ -29,8 +29,8 @@
       <EmptyState
         variant="panel"
         size="lg"
-        :title="t('channelStatus.empty.title')"
-        :description="t('channelStatus.empty.description')"
+        :title="labels.emptyTitle"
+        :description="labels.emptyDescription"
       />
     </div>
 
@@ -45,6 +45,7 @@
         :window="window"
         :availability-value="resolveAvailability(item)"
         :countdown-seconds="countdownSeconds"
+        :labels="labels"
         @click="emit('cardClick', item)"
       />
     </div>
@@ -52,8 +53,8 @@
 </template>
 
 <script setup lang="ts">
-import { useI18n } from 'vue-i18n'
 import type { UserMonitorView, UserMonitorDetail } from '@/api/channelMonitor'
+import type { ChannelStatusShellLabels } from '@/utils/channelStatusShell'
 import EmptyState from '@/components/common/EmptyState.vue'
 import MonitorCard from './MonitorCard.vue'
 
@@ -63,13 +64,12 @@ const props = defineProps<{
   countdownSeconds: number
   loading: boolean
   detailCache: Record<number, UserMonitorDetail>
+  labels: Pick<ChannelStatusShellLabels, 'emptyTitle' | 'emptyDescription' | 'latency' | 'ping' | 'availabilityPrefix' | 'extraModelsCount' | 'windowTab'>
 }>()
 
 const emit = defineEmits<{
   (e: 'cardClick', item: UserMonitorView): void
 }>()
-
-const { t } = useI18n()
 
 function resolveAvailability(item: UserMonitorView): number | null {
   if (props.window === '7d') {

@@ -15,33 +15,33 @@ const trimmed = (value: string | null | undefined): string => value?.trim() ?? '
 export const formatImageBillingSize = (row: ImageUsageRow | null | undefined, t: Translate): string => {
   const size = trimmed(row?.image_size)
   if (!size) {
-    return t('usage.imageSizeNotRecorded')
+    return t('common.imageUsage.sizeNotRecorded')
   }
   if (knownImageBillingSizes.has(size)) {
     return size
   }
-  return `${t('usage.imageSizeLegacyUnstandardized')}: ${size}`
+  return `${t('common.imageUsage.sizeLegacyUnstandardized')}: ${size}`
 }
 
 export const formatImageInputSize = (row: ImageUsageRow | null | undefined, t: Translate): string => {
   const size = trimmed(row?.image_input_size)
-  return size || t('usage.imageSizeUnknown')
+  return size || t('common.imageUsage.sizeUnknown')
 }
 
 export const formatImageOutputSize = (row: ImageUsageRow | null | undefined, t: Translate): string => {
   const size = trimmed(row?.image_output_size)
-  return size || t('usage.imageSizeUnknown')
+  return size || t('common.imageUsage.sizeUnknown')
 }
 
 export const formatImageSizeSource = (row: ImageUsageRow | null | undefined, t: Translate): string => {
   const source = trimmed(row?.image_size_source).toLowerCase()
   if (knownImageSizeSources.has(source)) {
-    return t(`usage.imageSizeSource${source.charAt(0).toUpperCase()}${source.slice(1)}`)
+    return t(`common.imageUsage.sizeSource${source.charAt(0).toUpperCase()}${source.slice(1)}`)
   }
   if (trimmed(row?.image_size)) {
-    return t('usage.imageSizeSourceLegacy')
+    return t('common.imageUsage.sizeSourceLegacy')
   }
-  return t('usage.imageSizeSourceMissing')
+  return t('common.imageUsage.sizeSourceMissing')
 }
 
 export const formatImageSizeBreakdown = (row: ImageUsageRow | null | undefined): string => {

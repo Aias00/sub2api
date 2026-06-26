@@ -9,12 +9,12 @@
           >
             <Icon name="creditCard" size="xl" class="text-white" />
           </div>
-          <p class="text-sm font-medium text-primary-100">{{ t('redeem.currentBalance') }}</p>
+          <p class="text-sm font-medium text-primary-100">{{ redeemText('currentBalance') }}</p>
           <p class="mt-2 text-4xl font-bold text-white">
-            ${{ user?.balance?.toFixed(2) || '0.00' }}
+            {{ formatMoney(user?.balance) }}
           </p>
           <p class="mt-2 text-sm text-primary-100">
-            {{ t('redeem.concurrency') }}: {{ user?.concurrency || 0 }} {{ t('redeem.requests') }}
+            {{ redeemText('concurrency') }}: {{ user?.concurrency || 0 }} {{ redeemText('requests') }}
           </p>
         </div>
       </div>
@@ -25,7 +25,7 @@
           <form @submit.prevent="handleRedeem" class="space-y-5">
             <div>
               <label for="code" class="input-label">
-                {{ t('redeem.redeemCodeLabel') }}
+                {{ redeemText('redeemCodeLabel') }}
               </label>
               <div class="relative mt-1">
                 <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-4">
@@ -36,13 +36,13 @@
                   v-model="redeemCode"
                   type="text"
                   required
-                  :placeholder="t('redeem.redeemCodePlaceholder')"
+                  :placeholder="redeemText('redeemCodePlaceholder')"
                   :disabled="submitting"
                   class="input py-3 pl-12 text-lg"
                 />
               </div>
               <p class="input-hint">
-                {{ t('redeem.redeemCodeHint') }}
+                {{ redeemText('redeemCodeHint') }}
               </p>
             </div>
 
@@ -72,7 +72,7 @@
                 ></path>
               </svg>
               <Icon v-else name="checkCircle" size="md" class="mr-2" />
-              {{ submitting ? t('redeem.redeeming') : t('redeem.redeemButton') }}
+              {{ submitting ? redeemText('redeeming') : redeemText('redeemButton') }}
             </button>
           </form>
         </div>
@@ -93,35 +93,35 @@
               </div>
               <div class="flex-1">
                 <h3 class="text-sm font-semibold text-emerald-800 dark:text-emerald-300">
-                  {{ t('redeem.redeemSuccess') }}
+                  {{ redeemText('redeemSuccess') }}
                 </h3>
                 <div class="mt-2 text-sm text-emerald-700 dark:text-emerald-400">
                   <p>{{ redeemResult.message }}</p>
                   <div class="mt-3 space-y-1">
                     <p v-if="redeemResult.type === 'balance'" class="font-medium">
-                      {{ t('redeem.added') }}: ${{ redeemResult.value.toFixed(2) }}
+                      {{ redeemText('added') }}: {{ formatMoney(redeemResult.value) }}
                     </p>
                     <p v-else-if="redeemResult.type === 'concurrency'" class="font-medium">
-                      {{ t('redeem.added') }}: {{ redeemResult.value }}
-                      {{ t('redeem.concurrentRequests') }}
+                      {{ redeemText('added') }}: {{ redeemResult.value }}
+                      {{ redeemText('concurrentRequests') }}
                     </p>
                     <p v-else-if="redeemResult.type === 'subscription'" class="font-medium">
-                      {{ t('redeem.subscriptionAssigned') }}
+                      {{ redeemText('subscriptionAssigned') }}
                       <span v-if="redeemResult.group_name"> - {{ redeemResult.group_name }}</span>
                       <span v-if="redeemResult.validity_days">
                         ({{
-                          t('redeem.subscriptionDays', { days: redeemResult.validity_days })
+                          redeemText('subscriptionDays', { days: redeemResult.validity_days })
                         }})</span
                       >
                     </p>
                     <p v-if="redeemResult.new_balance !== undefined">
-                      {{ t('redeem.newBalance') }}:
-                      <span class="font-semibold">${{ redeemResult.new_balance.toFixed(2) }}</span>
+                      {{ redeemText('newBalance') }}:
+                      <span class="font-semibold">{{ formatMoney(redeemResult.new_balance) }}</span>
                     </p>
                     <p v-if="redeemResult.new_concurrency !== undefined">
-                      {{ t('redeem.newConcurrency') }}:
+                      {{ redeemText('newConcurrency') }}:
                       <span class="font-semibold"
-                        >{{ redeemResult.new_concurrency }} {{ t('redeem.requests') }}</span
+                        >{{ redeemResult.new_concurrency }} {{ redeemText('requests') }}</span
                       >
                     </p>
                   </div>
@@ -151,7 +151,7 @@
               </div>
               <div class="flex-1">
                 <h3 class="text-sm font-semibold text-red-800 dark:text-red-300">
-                  {{ t('redeem.redeemFailed') }}
+                  {{ redeemText('redeemFailed') }}
                 </h3>
                 <p class="mt-2 text-sm text-red-700 dark:text-red-400">
                   {{ errorMessage }}
@@ -175,15 +175,15 @@
             </div>
             <div class="flex-1">
               <h3 class="text-sm font-semibold text-primary-800 dark:text-primary-300">
-                {{ t('redeem.aboutCodes') }}
+                {{ redeemText('aboutCodes') }}
               </h3>
               <ul
                 class="mt-2 list-inside list-disc space-y-1 text-sm text-primary-700 dark:text-primary-400"
               >
-                <li>{{ t('redeem.codeRule1') }}</li>
-                <li>{{ t('redeem.codeRule2') }}</li>
+                <li>{{ redeemText('codeRule1') }}</li>
+                <li>{{ redeemText('codeRule2') }}</li>
                 <li>
-                  {{ t('redeem.codeRule3') }}
+                  {{ redeemText('codeRule3') }}
                   <span
                     v-if="contactInfo"
                     class="ml-1.5 inline-flex items-center rounded-md bg-primary-200/50 px-2 py-0.5 text-xs font-medium text-primary-800 dark:bg-primary-800/40 dark:text-primary-200"
@@ -191,7 +191,7 @@
                     {{ contactInfo }}
                   </span>
                 </li>
-                <li>{{ t('redeem.codeRule4') }}</li>
+                <li>{{ redeemText('codeRule4') }}</li>
               </ul>
             </div>
           </div>
@@ -202,7 +202,7 @@
       <div class="card">
         <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
           <h2 class="text-lg font-semibold text-gray-900 dark:text-white">
-            {{ t('redeem.recentActivity') }}
+            {{ redeemText('recentActivity') }}
           </h2>
         </div>
         <div class="p-6">
@@ -310,7 +310,7 @@
                   {{ item.code.slice(0, 8) }}...
                 </p>
                 <p v-else class="text-xs text-gray-400 dark:text-dark-500">
-                  {{ t('redeem.adminAdjustment') }}
+                  {{ redeemText('adminAdjustment') }}
                 </p>
                 <!-- Display notes for admin adjustments -->
                 <p
@@ -332,7 +332,7 @@
               <Icon name="clock" size="xl" class="text-gray-400 dark:text-dark-500" />
             </div>
             <p class="text-sm text-gray-500 dark:text-dark-400">
-              {{ t('redeem.historyWillAppear') }}
+              {{ redeemText('historyWillAppear') }}
             </p>
           </div>
         </div>
@@ -342,6 +342,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
 import { ref, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
@@ -351,11 +352,22 @@ import { redeemAPI, authAPI, type RedeemHistoryItem } from '@/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { formatDateTime } from '@/utils/format'
+import { formatPublicMoneyAmount } from '@/utils/paymentCurrency'
+import { renderRedeemShellText, resolveRedeemShellLabels, type RedeemLabelKey } from '@/utils/redeemShell'
+import {
+  formatRedeemHistoryValue,
+  isRedeemAdminAdjustment,
+  isRedeemBalanceType,
+  isRedeemSubscriptionType,
+  resolveRedeemHistoryItemTitle,
+} from './redeemRuntime'
 
-const { t } = useI18n()
+const { locale } = useI18n()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 const subscriptionStore = useSubscriptionStore()
+const currencyPrefix = computed(() => appStore.cachedPublicSettings?.pricing_currency_symbol || '')
+const formatMoney = (value: number | null | undefined) => formatPublicMoneyAmount(value, currencyPrefix.value)
 
 const user = computed(() => authStore.user)
 
@@ -377,47 +389,37 @@ const history = ref<RedeemHistoryItem[]>([])
 const loadingHistory = ref(false)
 const contactInfo = ref('')
 
+
+const redeemLabels = computed(() =>
+  resolveRedeemShellLabels(
+    appStore.cachedPublicSettings?.redeem_shell_config,
+    resolveRuntimeLocale(locale),
+  ),
+)
+
+function redeemText(key: RedeemLabelKey, values?: Record<string, string | number>): string {
+  return renderRedeemShellText(redeemLabels.value, key, values)
+}
+
 // Helper functions for history display
 const isBalanceType = (type: string) => {
-  return type === 'balance' || type === 'admin_balance'
+  return isRedeemBalanceType(type)
 }
 
 const isSubscriptionType = (type: string) => {
-  return type === 'subscription'
+  return isRedeemSubscriptionType(type)
 }
 
 const isAdminAdjustment = (type: string) => {
-  return type === 'admin_balance' || type === 'admin_concurrency'
+  return isRedeemAdminAdjustment(type)
 }
 
 const getHistoryItemTitle = (item: RedeemHistoryItem) => {
-  if (item.type === 'balance') {
-    return t('redeem.balanceAddedRedeem')
-  } else if (item.type === 'admin_balance') {
-    return item.value >= 0 ? t('redeem.balanceAddedAdmin') : t('redeem.balanceDeductedAdmin')
-  } else if (item.type === 'concurrency') {
-    return t('redeem.concurrencyAddedRedeem')
-  } else if (item.type === 'admin_concurrency') {
-    return item.value >= 0 ? t('redeem.concurrencyAddedAdmin') : t('redeem.concurrencyReducedAdmin')
-  } else if (item.type === 'subscription') {
-    return t('redeem.subscriptionAssigned')
-  }
-  return t('common.unknown')
+  return resolveRedeemHistoryItemTitle(item, redeemText)
 }
 
 const formatHistoryValue = (item: RedeemHistoryItem) => {
-  if (isBalanceType(item.type)) {
-    const sign = item.value >= 0 ? '+' : ''
-    return `${sign}$${item.value.toFixed(2)}`
-  } else if (isSubscriptionType(item.type)) {
-    // 订阅类型显示有效天数和分组名称
-    const days = item.validity_days || Math.round(item.value)
-    const groupName = item.group?.name || ''
-    return groupName ? `${days}${t('redeem.days')} - ${groupName}` : `${days}${t('redeem.days')}`
-  } else {
-    const sign = item.value >= 0 ? '+' : ''
-    return `${sign}${item.value} ${t('redeem.requests')}`
-  }
+  return formatRedeemHistoryValue(item, redeemText, formatMoney)
 }
 
 const fetchHistory = async () => {
@@ -433,7 +435,7 @@ const fetchHistory = async () => {
 
 const handleRedeem = async () => {
   if (!redeemCode.value.trim()) {
-    appStore.showError(t('redeem.pleaseEnterCode'))
+    appStore.showError(redeemText('pleaseEnterCode'))
     return
   }
 
@@ -455,7 +457,7 @@ const handleRedeem = async () => {
         await subscriptionStore.fetchActiveSubscriptions(true) // force refresh
       } catch (error) {
         console.error('Failed to refresh subscriptions after redeem:', error)
-        appStore.showWarning(t('redeem.subscriptionRefreshFailed'))
+        appStore.showWarning(redeemText('subscriptionRefreshFailed'))
       }
     }
 
@@ -466,11 +468,11 @@ const handleRedeem = async () => {
     await fetchHistory()
 
     // Show success toast
-    appStore.showSuccess(t('redeem.codeRedeemSuccess'))
+    appStore.showSuccess(redeemText('codeRedeemSuccess'))
   } catch (error: any) {
-    errorMessage.value = error.response?.data?.detail || t('redeem.failedToRedeem')
+    errorMessage.value = error.response?.data?.detail || redeemText('failedToRedeem')
 
-    appStore.showError(t('redeem.redeemFailed'))
+    appStore.showError(redeemText('redeemFailed'))
   } finally {
     submitting.value = false
   }

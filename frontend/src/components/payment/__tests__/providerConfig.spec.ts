@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { PAYMENT_CURRENCY_OPTIONS, PROVIDER_CONFIG_FIELDS } from '@/components/payment/providerConfig'
+import {
+  PAYMENT_CURRENCY_OPTIONS,
+  PROVIDER_CONFIG_FIELDS,
+  buildProviderCallbackPaths,
+} from '@/components/payment/providerConfig'
 
 function findField(providerKey: string, key: string) {
   const fields = PROVIDER_CONFIG_FIELDS[providerKey] || []
@@ -20,10 +24,10 @@ describe('PROVIDER_CONFIG_FIELDS.wxpay', () => {
 })
 
 describe('PROVIDER_CONFIG_FIELDS.airwallex', () => {
-  it('adds currency config with CNY as the default', () => {
+  it('adds currency config without a frontend default', () => {
     const currency = findField('airwallex', 'currency')
 
-    expect(currency?.defaultValue).toBe('CNY')
+    expect('defaultValue' in (currency || {})).toBe(false)
     expect(currency?.hintKey).toBe('admin.settings.payment.field_paymentCurrencyHint')
     expect(currency?.options).toBe(PAYMENT_CURRENCY_OPTIONS)
   })
@@ -42,11 +46,28 @@ describe('PROVIDER_CONFIG_FIELDS.airwallex', () => {
 })
 
 describe('PROVIDER_CONFIG_FIELDS.stripe', () => {
-  it('adds currency config with CNY as the default', () => {
+  it('adds currency config without a frontend default', () => {
     const currency = findField('stripe', 'currency')
 
-    expect(currency?.defaultValue).toBe('CNY')
+    expect('defaultValue' in (currency || {})).toBe(false)
     expect(currency?.hintKey).toBe('admin.settings.payment.field_paymentCurrencyHint')
     expect(currency?.options).toBe(PAYMENT_CURRENCY_OPTIONS)
+  })
+})
+
+describe('buildProviderCallbackPaths', () => {
+  it('uses the configured payment result path for provider return URLs', () => {
+    const paths = buildProviderCallbackPaths('/configured-payment-result')
+
+    expect(paths.easypay.returnUrl).toBe('/configured-payment-result')
+    expect(paths.alipay.returnUrl).toBe('/configured-payment-result')
+    expect(paths.creem.returnUrl).toBe('/configured-payment-result')
+    expect(paths.waffo.returnUrl).toBe('/configured-payment-result')
+    expect(paths.wxpay.returnUrl).toBeUndefined()
+  })
+
+  it('falls back to the built-in payment result path for unsafe return paths', () => {
+    expect(buildProviderCallbackPaths('https://evil.example/result').alipay.returnUrl).toBe('/payment/result')
+    expect(buildProviderCallbackPaths('//evil.example/result').alipay.returnUrl).toBe('/payment/result')
   })
 })

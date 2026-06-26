@@ -11,13 +11,13 @@
             </div>
             <div>
               <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {{ t('usage.totalRequests') }}
+                {{ usageText('totalRequests') }}
               </p>
               <p class="text-xl font-bold text-gray-900 dark:text-white">
                 {{ usageStats?.total_requests?.toLocaleString() || '0' }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ t('usage.inSelectedRange') }}
+                {{ usageText('inSelectedRange') }}
               </p>
             </div>
           </div>
@@ -31,14 +31,14 @@
             </div>
             <div>
               <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {{ t('usage.totalTokens') }}
+                {{ usageText('totalTokens') }}
               </p>
               <p class="text-xl font-bold text-gray-900 dark:text-white">
                 {{ formatTokens(usageStats?.total_tokens || 0) }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ t('usage.in') }}: {{ formatTokens(usageStats?.total_input_tokens || 0) }} /
-                {{ t('usage.out') }}: {{ formatTokens(usageStats?.total_output_tokens || 0) }}
+                {{ usageText('in') }}: {{ formatTokens(usageStats?.total_input_tokens || 0) }} /
+                {{ usageText('out') }}: {{ formatTokens(usageStats?.total_output_tokens || 0) }}
               </p>
             </div>
           </div>
@@ -52,15 +52,15 @@
             </div>
             <div class="min-w-0 flex-1">
               <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {{ t('usage.totalCost') }}
+                {{ usageText('totalCost') }}
               </p>
               <p class="text-xl font-bold text-green-600 dark:text-green-400">
-                ${{ (usageStats?.total_actual_cost || 0).toFixed(4) }}
+                {{ formatUsageCost(usageStats?.total_actual_cost, 4) }}
               </p>
               <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ t('usage.actualCost') }} /
-                <span class="line-through">${{ (usageStats?.total_cost || 0).toFixed(4) }}</span>
-                {{ t('usage.standardCost') }}
+                {{ usageText('actualCost') }} /
+                <span class="line-through">{{ formatUsageCost(usageStats?.total_cost, 4) }}</span>
+                {{ usageText('standardCost') }}
               </p>
             </div>
           </div>
@@ -74,12 +74,12 @@
             </div>
             <div>
               <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                {{ t('usage.avgDuration') }}
+                {{ usageText('avgDuration') }}
               </p>
               <p class="text-xl font-bold text-gray-900 dark:text-white">
                 {{ formatDuration(usageStats?.average_duration_ms || 0) }}
               </p>
-              <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('usage.perRequest') }}</p>
+              <p class="text-xs text-gray-500 dark:text-gray-400">{{ usageText('perRequest') }}</p>
             </div>
           </div>
         </div>
@@ -92,18 +92,18 @@
           <div class="flex flex-wrap items-end gap-4">
             <!-- API Key Filter -->
             <div class="min-w-[180px]">
-              <label class="input-label">{{ t('usage.apiKeyFilter') }}</label>
+              <label class="input-label">{{ usageText('apiKeyFilter') }}</label>
               <Select
                 v-model="filters.api_key_id"
                 :options="apiKeyOptions"
-                :placeholder="t('usage.allApiKeys')"
+                :placeholder="usageText('allApiKeys')"
                 @change="applyFilters"
               />
             </div>
 
             <!-- Date Range Filter -->
             <div>
-              <label class="input-label">{{ t('usage.timeRange') }}</label>
+              <label class="input-label">{{ usageText('timeRange') }}</label>
               <DateRangePicker
                 v-model:start-date="startDate"
                 v-model:end-date="endDate"
@@ -114,10 +114,10 @@
             <!-- Actions -->
             <div class="ml-auto flex items-center gap-3">
               <button @click="applyFilters" :disabled="loading" class="btn btn-secondary">
-                {{ t('common.refresh') }}
+                {{ usageText('refresh') }}
               </button>
               <button @click="resetFilters" class="btn btn-secondary">
-                {{ t('common.reset') }}
+                {{ usageText('reset') }}
               </button>
               <button @click="exportToCSV" :disabled="exporting" class="btn btn-primary">
                 <svg
@@ -140,7 +140,7 @@
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                {{ exporting ? t('usage.exporting') : t('usage.exportCsv') }}
+                {{ exporting ? usageText('exporting') : usageText('exportCsv') }}
               </button>
             </div>
           </div>
@@ -212,7 +212,7 @@
                   d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
                 />
               </svg>
-              <span class="font-medium text-gray-900 dark:text-white">{{ row.image_count }}{{ t('usage.imageUnit') }}</span>
+              <span class="font-medium text-gray-900 dark:text-white">{{ row.image_count }}{{ imageUsageText('unit') }}</span>
               <span class="text-gray-400">({{ formatImageBillingSize(row, t) }})</span>
             </div>
             <!-- Token 请求 -->
@@ -254,7 +254,7 @@
                       formatCacheTokens(row.cache_creation_tokens)
                     }}</span>
                     <span v-if="row.cache_creation_1h_tokens > 0" class="inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-orange-100 text-orange-600 ring-1 ring-inset ring-orange-200 dark:bg-orange-500/20 dark:text-orange-400 dark:ring-orange-500/30">1h</span>
-                    <span v-if="row.cache_ttl_overridden" :title="t('usage.cacheTtlOverriddenHint')" class="inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-rose-100 text-rose-600 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:ring-rose-500/30 cursor-help">R</span>
+                    <span v-if="row.cache_ttl_overridden" :title="usageMetricText('cacheTtlOverriddenHint')" class="inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-rose-100 text-rose-600 ring-1 ring-inset ring-rose-200 dark:bg-rose-500/20 dark:text-rose-400 dark:ring-rose-500/30 cursor-help">R</span>
                   </div>
                 </div>
               </div>
@@ -280,7 +280,7 @@
           <template #cell-cost="{ row }">
             <div class="flex items-center gap-1.5 text-sm">
               <span class="font-medium text-green-600 dark:text-green-400">
-                ${{ row.actual_cost.toFixed(6) }}
+                {{ formatUsageCost(row.actual_cost, 6) }}
               </span>
               <!-- Cost Detail Tooltip -->
               <div
@@ -329,7 +329,7 @@
           </template>
 
           <template #empty>
-            <EmptyState :message="t('usage.noRecords')" />
+            <EmptyState :message="usageText('noRecords')" />
           </template>
         </DataTable>
       </template>
@@ -363,13 +363,13 @@
         <div class="space-y-1.5">
           <!-- Token Breakdown -->
           <div>
-            <div class="text-xs font-semibold text-gray-300 mb-1">{{ t('usage.tokenDetails') }}</div>
+            <div class="text-xs font-semibold text-gray-300 mb-1">{{ usageMetricText('tokenDetails') }}</div>
             <div v-if="tokenTooltipData && tokenTooltipData.input_tokens > 0" class="flex items-center justify-between gap-4">
-              <span class="text-gray-400">{{ t('admin.usage.inputTokens') }}</span>
+              <span class="text-gray-400">{{ usageMetricText('inputTokens') }}</span>
               <span class="font-medium text-white">{{ tokenTooltipData.input_tokens.toLocaleString() }}</span>
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.output_tokens > 0" class="flex items-center justify-between gap-4">
-              <span class="text-gray-400">{{ t('admin.usage.outputTokens') }}</span>
+              <span class="text-gray-400">{{ usageMetricText('outputTokens') }}</span>
               <span class="font-medium text-white">{{ tokenTooltipData.output_tokens.toLocaleString() }}</span>
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.cache_creation_tokens > 0">
@@ -377,14 +377,14 @@
               <template v-if="tokenTooltipData.cache_creation_5m_tokens > 0 || tokenTooltipData.cache_creation_1h_tokens > 0">
                 <div v-if="tokenTooltipData.cache_creation_5m_tokens > 0" class="flex items-center justify-between gap-4">
                   <span class="text-gray-400 flex items-center gap-1.5">
-                    {{ t('admin.usage.cacheCreation5mTokens') }}
+                    {{ usageMetricText('cacheCreation5mTokens') }}
                     <span class="inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-amber-500/20 text-amber-400 ring-1 ring-inset ring-amber-500/30">5m</span>
                   </span>
                   <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_5m_tokens.toLocaleString() }}</span>
                 </div>
                 <div v-if="tokenTooltipData.cache_creation_1h_tokens > 0" class="flex items-center justify-between gap-4">
                   <span class="text-gray-400 flex items-center gap-1.5">
-                    {{ t('admin.usage.cacheCreation1hTokens') }}
+                    {{ usageMetricText('cacheCreation1hTokens') }}
                     <span class="inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-orange-500/20 text-orange-400 ring-1 ring-inset ring-orange-500/30">1h</span>
                   </span>
                   <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_1h_tokens.toLocaleString() }}</span>
@@ -392,25 +392,25 @@
               </template>
               <!-- 无明细时，只显示聚合值 -->
               <div v-else class="flex items-center justify-between gap-4">
-                <span class="text-gray-400">{{ t('admin.usage.cacheCreationTokens') }}</span>
+                <span class="text-gray-400">{{ usageMetricText('cacheCreationTokens') }}</span>
                 <span class="font-medium text-white">{{ tokenTooltipData.cache_creation_tokens.toLocaleString() }}</span>
               </div>
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.cache_ttl_overridden" class="flex items-center justify-between gap-4">
               <span class="text-gray-400 flex items-center gap-1.5">
-                {{ t('usage.cacheTtlOverriddenLabel') }}
+                {{ usageMetricText('cacheTtlOverriddenLabel') }}
                 <span class="inline-flex items-center rounded px-1 py-px text-[10px] font-medium leading-tight bg-rose-500/20 text-rose-400 ring-1 ring-inset ring-rose-500/30">R-{{ tokenTooltipData.cache_creation_1h_tokens > 0 ? '5m' : '1H' }}</span>
               </span>
-              <span class="font-medium text-rose-400">{{ tokenTooltipData.cache_creation_1h_tokens > 0 ? t('usage.cacheTtlOverridden1h') : t('usage.cacheTtlOverridden5m') }}</span>
+              <span class="font-medium text-rose-400">{{ tokenTooltipData.cache_creation_1h_tokens > 0 ? usageMetricText('cacheTtlOverridden1h') : usageMetricText('cacheTtlOverridden5m') }}</span>
             </div>
             <div v-if="tokenTooltipData && tokenTooltipData.cache_read_tokens > 0" class="flex items-center justify-between gap-4">
-              <span class="text-gray-400">{{ t('admin.usage.cacheReadTokens') }}</span>
+              <span class="text-gray-400">{{ usageMetricText('cacheReadTokens') }}</span>
               <span class="font-medium text-white">{{ tokenTooltipData.cache_read_tokens.toLocaleString() }}</span>
             </div>
           </div>
           <!-- Total -->
           <div class="flex items-center justify-between gap-6 border-t border-gray-700 pt-1.5">
-            <span class="text-gray-400">{{ t('usage.totalTokens') }}</span>
+            <span class="text-gray-400">{{ usageMetricText('totalTokens') }}</span>
             <span class="font-semibold text-blue-400">{{ ((tokenTooltipData?.input_tokens || 0) + (tokenTooltipData?.output_tokens || 0) + (tokenTooltipData?.cache_creation_tokens || 0) + (tokenTooltipData?.cache_read_tokens || 0)).toLocaleString() }}</span>
           </div>
         </div>
@@ -438,93 +438,93 @@
         <div class="space-y-1.5">
           <!-- Cost Breakdown -->
           <div class="mb-2 border-b border-gray-700 pb-1.5">
-            <div class="text-xs font-semibold text-gray-300 mb-1">{{ t('usage.costDetails') }}</div>
+            <div class="text-xs font-semibold text-gray-300 mb-1">{{ usageMetricText('costDetails') }}</div>
             <div v-if="tooltipData && tooltipData.input_cost > 0" class="flex items-center justify-between gap-4">
-              <span class="text-gray-400">{{ t('admin.usage.inputCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.input_cost.toFixed(6) }}</span>
+              <span class="text-gray-400">{{ usageMetricText('inputCost') }}</span>
+              <span class="font-medium text-white">{{ formatUsageCost(tooltipData.input_cost, 6) }}</span>
             </div>
             <div v-if="tooltipData && tooltipData.output_cost > 0" class="flex items-center justify-between gap-4">
-              <span class="text-gray-400">{{ t('admin.usage.outputCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.output_cost.toFixed(6) }}</span>
+              <span class="text-gray-400">{{ usageMetricText('outputCost') }}</span>
+              <span class="font-medium text-white">{{ formatUsageCost(tooltipData.output_cost, 6) }}</span>
             </div>
             <!-- Per-image billing: show image metadata and unit price -->
             <template v-if="tooltipData && isImageUsage(tooltipData)">
               <div class="flex items-center justify-between gap-4">
-                <span class="text-gray-400">{{ t('usage.imageCount') }}</span>
-                <span class="font-medium text-white">{{ tooltipData.image_count }}{{ t('usage.imageUnit') }}</span>
+                <span class="text-gray-400">{{ imageUsageText('count') }}</span>
+                <span class="font-medium text-white">{{ tooltipData.image_count }}{{ imageUsageText('unit') }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
-                <span class="text-gray-400">{{ t('usage.imageBillingSize') }}</span>
+                <span class="text-gray-400">{{ imageUsageText('billingSize') }}</span>
                 <span class="font-medium text-white">{{ formatImageBillingSize(tooltipData, t) }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
-                <span class="text-gray-400">{{ t('usage.imageSizeSource') }}</span>
+                <span class="text-gray-400">{{ imageUsageText('sizeSource') }}</span>
                 <span class="font-medium text-white">{{ formatImageSizeSource(tooltipData, t) }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
-                <span class="text-gray-400">{{ t('usage.imageInputSize') }}</span>
+                <span class="text-gray-400">{{ imageUsageText('inputSize') }}</span>
                 <span class="font-medium text-white">{{ formatImageInputSize(tooltipData, t) }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
-                <span class="text-gray-400">{{ t('usage.imageOutputSize') }}</span>
+                <span class="text-gray-400">{{ imageUsageText('outputSize') }}</span>
                 <span class="font-medium text-white">{{ formatImageOutputSize(tooltipData, t) }}</span>
               </div>
               <div v-if="formatImageSizeBreakdown(tooltipData)" class="flex items-center justify-between gap-4">
-                <span class="text-gray-400">{{ t('usage.imageSizeBreakdown') }}</span>
+                <span class="text-gray-400">{{ imageUsageText('sizeBreakdown') }}</span>
                 <span class="font-medium text-white">{{ formatImageSizeBreakdown(tooltipData) }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
-                <span class="text-gray-400">{{ t('usage.imageUnitPrice') }}</span>
-                <span class="font-medium text-sky-300">${{ imageUnitPrice(tooltipData).toFixed(6) }}</span>
+                <span class="text-gray-400">{{ imageUsageText('unitPrice') }}</span>
+                <span class="font-medium text-sky-300">{{ formatUsageCost(imageUnitPrice(tooltipData), 6) }}</span>
               </div>
               <div class="flex items-center justify-between gap-4">
-                <span class="text-gray-400">{{ t('usage.imageTotalPrice') }}</span>
-                <span class="font-medium text-white">${{ tooltipData.total_cost?.toFixed(6) || '0.000000' }}</span>
+                <span class="text-gray-400">{{ imageUsageText('totalPrice') }}</span>
+                <span class="font-medium text-white">{{ formatUsageCost(tooltipData.total_cost, 6) }}</span>
               </div>
             </template>
             <!-- Token billing: show unit prices per 1M tokens -->
             <template v-else-if="!getDisplayBillingMode(tooltipData) || getDisplayBillingMode(tooltipData) === BILLING_MODE_TOKEN">
               <div v-if="tooltipData && tooltipData.input_tokens > 0" class="flex items-center justify-between gap-4">
-                <span class="text-gray-400">{{ t('usage.inputTokenPrice') }}</span>
-                <span class="font-medium text-sky-300">{{ formatTokenPricePerMillion(tooltipData.input_cost, tooltipData.input_tokens) }} {{ t('usage.perMillionTokens') }}</span>
+                <span class="text-gray-400">{{ usageMetricText('inputTokenPrice') }}</span>
+                <span class="font-medium text-sky-300">{{ formatUsageTokenPricePerMillion(tooltipData.input_cost, tooltipData.input_tokens) }} {{ usageMetricText('perMillionTokens') }}</span>
               </div>
               <div v-if="tooltipData && tooltipData.output_tokens > 0" class="flex items-center justify-between gap-4">
-                <span class="text-gray-400">{{ t('usage.outputTokenPrice') }}</span>
-                <span class="font-medium text-violet-300">{{ formatTokenPricePerMillion(tooltipData.output_cost, tooltipData.output_tokens) }} {{ t('usage.perMillionTokens') }}</span>
+                <span class="text-gray-400">{{ usageMetricText('outputTokenPrice') }}</span>
+                <span class="font-medium text-violet-300">{{ formatUsageTokenPricePerMillion(tooltipData.output_cost, tooltipData.output_tokens) }} {{ usageMetricText('perMillionTokens') }}</span>
               </div>
             </template>
             <div v-else class="flex items-center justify-between gap-4">
-              <span class="text-gray-400">{{ t('usage.unitPrice') }}</span>
-              <span class="font-medium text-sky-300">${{ tooltipData?.total_cost?.toFixed(6) || '0.000000' }}</span>
+              <span class="text-gray-400">{{ usageMetricText('unitPrice') }}</span>
+              <span class="font-medium text-sky-300">{{ formatUsageCost(tooltipData?.total_cost, 6) }}</span>
             </div>
             <div v-if="tooltipData && tooltipData.cache_creation_cost > 0" class="flex items-center justify-between gap-4">
-              <span class="text-gray-400">{{ t('admin.usage.cacheCreationCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.cache_creation_cost.toFixed(6) }}</span>
+              <span class="text-gray-400">{{ usageMetricText('cacheCreationCost') }}</span>
+              <span class="font-medium text-white">{{ formatUsageCost(tooltipData.cache_creation_cost, 6) }}</span>
             </div>
             <div v-if="tooltipData && tooltipData.cache_read_cost > 0" class="flex items-center justify-between gap-4">
-              <span class="text-gray-400">{{ t('admin.usage.cacheReadCost') }}</span>
-              <span class="font-medium text-white">${{ tooltipData.cache_read_cost.toFixed(6) }}</span>
+              <span class="text-gray-400">{{ usageMetricText('cacheReadCost') }}</span>
+              <span class="font-medium text-white">{{ formatUsageCost(tooltipData.cache_read_cost, 6) }}</span>
             </div>
           </div>
           <!-- Rate and Summary -->
           <div class="flex items-center justify-between gap-6">
-            <span class="text-gray-400">{{ t('usage.serviceTier') }}</span>
+            <span class="text-gray-400">{{ t('common.serviceTier.label') }}</span>
             <span class="font-semibold text-cyan-300">{{ getUsageServiceTierLabel(tooltipData?.service_tier, t) }}</span>
           </div>
           <div class="flex items-center justify-between gap-6">
-            <span class="text-gray-400">{{ t('usage.rate') }}</span>
+            <span class="text-gray-400">{{ usageText('rate') }}</span>
             <span class="font-semibold text-blue-400"
               >{{ formatMultiplier(tooltipData?.rate_multiplier || 1) }}x</span
             >
           </div>
           <div class="flex items-center justify-between gap-6">
-            <span class="text-gray-400">{{ t('usage.original') }}</span>
-            <span class="font-medium text-white">${{ tooltipData?.total_cost.toFixed(6) }}</span>
+            <span class="text-gray-400">{{ usageText('original') }}</span>
+            <span class="font-medium text-white">{{ formatUsageCost(tooltipData?.total_cost, 6) }}</span>
           </div>
           <div class="flex items-center justify-between gap-6 border-t border-gray-700 pt-1.5">
-            <span class="text-gray-400">{{ t('usage.billed') }}</span>
+            <span class="text-gray-400">{{ usageText('billed') }}</span>
             <span class="font-semibold text-green-400"
-              >${{ tooltipData?.actual_cost.toFixed(6) }}</span
+              >{{ formatUsageCost(tooltipData?.actual_cost, 6) }}</span
             >
           </div>
         </div>
@@ -538,6 +538,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
 import { ref, computed, reactive, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -572,8 +573,13 @@ import {
   formatImageSizeBreakdown,
   formatImageSizeSource,
 } from '@/utils/imageUsage'
+import { renderUsageShellText, resolveUsageShellConfig, type UsageShellLabelKey } from '@/utils/usageShell'
+import {
+  buildUsageTableQueryParams,
+  resolveUsageDefaultDateRange,
+} from './usageRuntime'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const appStore = useAppStore()
 
@@ -592,19 +598,55 @@ const tokenTooltipData = ref<UsageLog | null>(null)
 // Usage stats from API
 const usageStats = ref<UsageStatsResponse | null>(null)
 
+const usageShell = computed(() =>
+  resolveUsageShellConfig(
+    appStore.cachedPublicSettings?.usage_shell_config,
+    resolveRuntimeLocale(locale),
+  ),
+)
+const usageShellLabels = computed(() => usageShell.value.labels)
+const usageCurrencyPrefix = computed(() =>
+  appStore.cachedPublicSettings?.pricing_currency_symbol?.trim() || '',
+)
+
+function usageText(key: UsageShellLabelKey): string {
+  return renderUsageShellText(usageShellLabels.value, key)
+}
+
+function imageUsageText(key: string): string {
+  return t(`common.imageUsage.${key}`)
+}
+
+function usageMetricText(key: string): string {
+  return t(`common.usageMetrics.${key}`)
+}
+
+function formatUsageCost(value: number | null | undefined, fractionDigits = 6): string {
+  const amount = Number.isFinite(value) ? Number(value) : 0
+  return `${usageCurrencyPrefix.value}${amount.toFixed(fractionDigits)}`
+}
+
+function formatUsageTokenPricePerMillion(
+  cost: number | null | undefined,
+  tokens: number | null | undefined,
+): string {
+  const formatted = formatTokenPricePerMillion(cost, tokens, { withCurrencySymbol: false })
+  return formatted === '-' ? formatted : `${usageCurrencyPrefix.value}${formatted}`
+}
+
 const columns = computed<Column[]>(() => [
-  { key: 'api_key', label: t('usage.apiKeyFilter'), sortable: false },
-  { key: 'model', label: t('usage.model'), sortable: true },
-  { key: 'reasoning_effort', label: t('usage.reasoningEffort'), sortable: false },
-  { key: 'endpoint', label: t('usage.endpoint'), sortable: false },
-  { key: 'stream', label: t('usage.type'), sortable: false },
-  { key: 'billing_mode', label: t('admin.usage.billingMode'), sortable: false },
-  { key: 'tokens', label: t('usage.tokens'), sortable: false },
-  { key: 'cost', label: t('usage.cost'), sortable: false },
-  { key: 'first_token', label: t('usage.firstToken'), sortable: false },
-  { key: 'duration', label: t('usage.duration'), sortable: false },
-  { key: 'created_at', label: t('usage.time'), sortable: true },
-  { key: 'user_agent', label: t('usage.userAgent'), sortable: false }
+  { key: 'api_key', label: usageText('apiKeyFilter'), sortable: false },
+  { key: 'model', label: usageText('model'), sortable: true },
+  { key: 'reasoning_effort', label: usageText('reasoningEffort'), sortable: false },
+  { key: 'endpoint', label: usageText('endpoint'), sortable: false },
+  { key: 'stream', label: usageText('type'), sortable: false },
+  { key: 'billing_mode', label: usageText('billingMode'), sortable: false },
+  { key: 'tokens', label: usageText('tokens'), sortable: false },
+  { key: 'cost', label: usageText('cost'), sortable: false },
+  { key: 'first_token', label: usageText('firstToken'), sortable: false },
+  { key: 'duration', label: usageText('duration'), sortable: false },
+  { key: 'created_at', label: usageText('time'), sortable: true },
+  { key: 'user_agent', label: usageText('userAgent'), sortable: false }
 ])
 
 const usageLogs = ref<UsageLog[]>([])
@@ -614,7 +656,7 @@ const exporting = ref(false)
 
 const apiKeyOptions = computed(() => {
   return [
-    { value: null, label: t('usage.allApiKeys') },
+    { value: null, label: usageText('allApiKeys') },
     ...apiKeys.value.map((key) => ({
       value: key.id,
       label: key.name
@@ -622,15 +664,8 @@ const apiKeyOptions = computed(() => {
   ]
 })
 
-// Helper function to format date in local timezone
-const formatLocalDate = (date: Date): string => {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
-}
-
 // Initialize date range immediately
-const now = new Date()
-const weekAgo = new Date(now)
-weekAgo.setDate(weekAgo.getDate() - 6)
+const defaultDateRange = resolveUsageDefaultDateRange(usageShell.value.defaults.dateRangeDays)
 const routeStartDate = typeof route.query.start_date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(route.query.start_date)
   ? route.query.start_date
   : null
@@ -642,8 +677,8 @@ const routeAPIKeyID = typeof route.query.api_key_id === 'string'
   : null
 
 // Date range state
-const startDate = ref(routeStartDate || formatLocalDate(weekAgo))
-const endDate = ref(routeEndDate || formatLocalDate(now))
+const startDate = ref(routeStartDate || defaultDateRange.startDate)
+const endDate = ref(routeEndDate || defaultDateRange.endDate)
 
 const filters = ref<UsageQueryParams>({
   api_key_id: Number.isFinite(routeAPIKeyID) && routeAPIKeyID && routeAPIKeyID > 0 ? routeAPIKeyID : undefined,
@@ -706,10 +741,10 @@ const formatUserAgent = (ua: string): string => {
 
 const getRequestTypeLabel = (log: UsageLog): string => {
   const requestType = resolveUsageRequestType(log)
-  if (requestType === 'ws_v2') return t('usage.ws')
-  if (requestType === 'stream') return t('usage.stream')
-  if (requestType === 'sync') return t('usage.sync')
-  return t('usage.unknown')
+  if (requestType === 'ws_v2') return t('common.requestType.ws')
+  if (requestType === 'stream') return t('common.requestType.stream')
+  if (requestType === 'sync') return t('common.requestType.sync')
+  return t('common.requestType.unknown')
 }
 
 const getRequestTypeBadgeClass = (log: UsageLog): string => {
@@ -745,18 +780,14 @@ const formatTokens = (value: number): string => {
   return value.toLocaleString()
 }
 
-type UsageTableQueryParams = UsageQueryParams & {
-  sort_by?: string
-  sort_order?: 'asc' | 'desc'
-}
-
-const buildUsageQueryParams = (page: number, pageSize: number): UsageTableQueryParams => ({
-  page,
-  page_size: pageSize,
-  ...filters.value,
-  sort_by: sortState.sort_by,
-  sort_order: sortState.sort_order
-})
+const buildUsageQueryParams = (page: number, pageSize: number) =>
+  buildUsageTableQueryParams(
+    page,
+    pageSize,
+    filters.value,
+    sortState.sort_by,
+    sortState.sort_order,
+  )
 
 const loadUsageLogs = async () => {
   if (abortController) {
@@ -785,7 +816,7 @@ const loadUsageLogs = async () => {
     if (abortError?.name === 'AbortError' || abortError?.code === 'ERR_CANCELED') {
       return
     }
-    appStore.showError(t('usage.failedToLoad'))
+    appStore.showError(usageText('failedToLoad'))
   } finally {
     if (abortController === currentAbortController) {
       loading.value = false
@@ -795,7 +826,7 @@ const loadUsageLogs = async () => {
 
 const loadApiKeys = async () => {
   try {
-    const response = await keysAPI.list(1, 100)
+    const response = await keysAPI.list(1, usageShell.value.defaults.apiKeyPageSize)
     apiKeys.value = response.items
   } catch (error) {
     console.error('Failed to load API keys:', error)
@@ -828,12 +859,9 @@ const resetFilters = () => {
     start_date: undefined,
     end_date: undefined
   }
-  // Reset date range to default (last 7 days)
-  const now = new Date()
-  const weekAgo = new Date(now)
-  weekAgo.setDate(weekAgo.getDate() - 6)
-  startDate.value = formatLocalDate(weekAgo)
-  endDate.value = formatLocalDate(now)
+  const defaultDateRange = resolveUsageDefaultDateRange(usageShell.value.defaults.dateRangeDays)
+  startDate.value = defaultDateRange.startDate
+  endDate.value = defaultDateRange.endDate
   filters.value.start_date = startDate.value
   filters.value.end_date = endDate.value
   pagination.page = 1
@@ -883,16 +911,16 @@ const escapeCSVValue = (value: unknown): string => {
 
 const exportToCSV = async () => {
   if (pagination.total === 0) {
-    appStore.showWarning(t('usage.noDataToExport'))
+    appStore.showWarning(usageText('noDataToExport'))
     return
   }
 
   exporting.value = true
-  appStore.showInfo(t('usage.preparingExport'))
+  appStore.showInfo(usageText('preparingExport'))
 
   try {
     const allLogs: UsageLog[] = []
-    const pageSize = 100 // Use a larger page size for export to reduce requests
+    const pageSize = usageShell.value.defaults.exportPageSize
     const totalRequests = Math.ceil(pagination.total / pageSize)
 
     for (let page = 1; page <= totalRequests; page++) {
@@ -901,7 +929,7 @@ const exportToCSV = async () => {
     }
 
     if (allLogs.length === 0) {
-      appStore.showWarning(t('usage.noDataToExport'))
+      appStore.showWarning(usageText('noDataToExport'))
       return
     }
 
@@ -957,9 +985,9 @@ const exportToCSV = async () => {
     link.click()
     window.URL.revokeObjectURL(url)
 
-    appStore.showSuccess(t('usage.exportSuccess'))
+    appStore.showSuccess(usageText('exportSuccess'))
   } catch (error) {
-    appStore.showError(t('usage.exportFailed'))
+    appStore.showError(usageText('exportFailed'))
     console.error('CSV Export failed:', error)
   } finally {
     exporting.value = false

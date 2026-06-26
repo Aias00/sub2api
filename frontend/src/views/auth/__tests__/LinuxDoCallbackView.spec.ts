@@ -89,16 +89,48 @@ describe('LinuxDoCallbackView', () => {
     sendPendingOAuthVerifyCode.mockReset()
     getPublicSettings.mockResolvedValue({
       turnstile_enabled: false,
-      turnstile_site_key: ''
+      turnstile_site_key: '',
+      auth_shell_config: JSON.stringify({
+        en: {
+          defaults: {
+            defaultRedirectPath: '/configured-dashboard',
+            bindRedirectPath: '/configured-profile',
+          },
+          labels: {
+            oauthFlowBindExistingAccount: 'Configured bind existing',
+            oauthFlowCreateNewAccount: 'Configured create new',
+            oauthFlowTotpHint: 'Configured TOTP for {account} with {providerName}',
+            oauthFlowVerifyAndContinue: 'Configured verify and continue',
+            oauthFlowYourAccount: 'Configured account',
+            processing: 'Configured processing',
+            continue: 'Configured continue',
+            emailPlaceholder: 'configured-bind@example.com',
+            passwordPlaceholder: 'configured-bind-password',
+            invitationCodePlaceholder: 'Configured invitation code',
+            providerCallbackTitle: 'Configured callback title for {providerName}',
+            providerCallbackProcessing: 'Configured callback processing for {providerName}',
+            providerCallbackHint: 'Configured callback hint',
+            providerInvitationRequired: 'Configured invitation required for {providerName}',
+            providerCompletingRegistration: 'Configured completing registration',
+            providerCompleteRegistration: 'Configured complete registration',
+          },
+        },
+      }),
     })
     window.location.hash = ''
     localStorage.clear()
     sessionStorage.clear()
   })
 
-  it('accepts the legacy fragment token success callback without pending-session exchange', async () => {
+  it('ignores legacy fragment token payloads and uses the current pending-session exchange', async () => {
     window.location.hash =
       '#access_token=legacy-access-token&refresh_token=legacy-refresh-token&expires_in=3600&token_type=Bearer&redirect=%2Flegacy-dashboard'
+    exchangePendingOAuthCompletion.mockResolvedValue({
+      access_token: 'current-access-token',
+      refresh_token: 'current-refresh-token',
+      expires_in: 3600,
+      redirect: '/current-dashboard',
+    })
     setToken.mockResolvedValue({})
 
     mount(LinuxDoCallbackView, {
@@ -114,23 +146,51 @@ describe('LinuxDoCallbackView', () => {
 
     await flushPromises()
 
-    expect(exchangePendingOAuthCompletion).not.toHaveBeenCalled()
-    expect(setToken).toHaveBeenCalledWith('legacy-access-token')
-    expect(localStorage.getItem('refresh_token')).toBe('legacy-refresh-token')
+    expect(exchangePendingOAuthCompletion).toHaveBeenCalledTimes(1)
+    expect(setToken).toHaveBeenCalledWith('current-access-token')
+    expect(localStorage.getItem('refresh_token')).toBe('current-refresh-token')
     expect(localStorage.getItem('token_expires_at')).not.toBeNull()
     expect(showSuccess).toHaveBeenCalledWith('auth.loginSuccess')
-    expect(replace).toHaveBeenCalledWith('/legacy-dashboard')
+    expect(replace).toHaveBeenCalledWith('/current-dashboard')
   })
 
-  it('accepts the legacy pending oauth invitation fragment without pending-session exchange', async () => {
-    window.location.hash = '#error=invitation_required&pending_oauth_token=legacy-pending-token&redirect=%2Flegacy-invite'
-    apiClientPost.mockResolvedValue({
-      data: {
-        access_token: 'legacy-access-token',
-        refresh_token: 'legacy-refresh-token',
-        expires_in: 3600,
-        token_type: 'Bearer'
+  it('uses auth shell redirect defaults for current pending-session callbacks without redirect params', async () => {
+    window.location.hash = '#access_token=legacy-access-token&token_type=Bearer'
+    exchangePendingOAuthCompletion.mockResolvedValue({
+      access_token: 'current-access-token',
+      token_type: 'Bearer',
+    })
+    setToken.mockResolvedValue({})
+
+    mount(LinuxDoCallbackView, {
+      global: {
+        stubs: {
+          AuthLayout: { template: '<div><slot /></div>' },
+          Icon: true,
+          RouterLink: { template: '<a><slot /></a>' },
+          transition: false
+        }
       }
+    })
+
+    await flushPromises()
+
+    expect(exchangePendingOAuthCompletion).toHaveBeenCalledTimes(1)
+    expect(setToken).toHaveBeenCalledWith('current-access-token')
+    expect(replace).toHaveBeenCalledWith('/configured-dashboard')
+  })
+
+  it('uses the current pending-session invitation flow without legacy pending token fragments', async () => {
+    window.location.hash = ''
+    exchangePendingOAuthCompletion.mockResolvedValue({
+      error: 'invitation_required',
+      redirect: '/legacy-invite',
+    })
+    completeLinuxDoOAuthRegistration.mockResolvedValue({
+      access_token: 'current-access-token',
+      refresh_token: 'current-refresh-token',
+      expires_in: 3600,
+      token_type: 'Bearer',
     })
     setToken.mockResolvedValue({})
 
@@ -147,18 +207,16 @@ describe('LinuxDoCallbackView', () => {
 
     await flushPromises()
 
-    expect(exchangePendingOAuthCompletion).not.toHaveBeenCalled()
+    expect(exchangePendingOAuthCompletion).toHaveBeenCalledTimes(1)
     await wrapper.find('input[type="text"]').setValue('invite-code')
     await wrapper.find('button').trigger('click')
     await flushPromises()
 
-    expect(apiClientPost).toHaveBeenCalledWith('/auth/oauth/linuxdo/complete-registration', {
-      adopt_display_name: true,
-      adopt_avatar: true,
-      pending_oauth_token: 'legacy-pending-token',
-      invitation_code: 'invite-code'
+    expect(completeLinuxDoOAuthRegistration).toHaveBeenCalledWith('invite-code', {
+      adoptDisplayName: false,
+      adoptAvatar: false,
     })
-    expect(setToken).toHaveBeenCalledWith('legacy-access-token')
+    expect(setToken).toHaveBeenCalledWith('current-access-token')
     expect(replace).toHaveBeenCalledWith('/legacy-invite')
   })
 
@@ -258,7 +316,7 @@ describe('LinuxDoCallbackView', () => {
 
     expect(setToken).not.toHaveBeenCalled()
     expect(showSuccess).toHaveBeenCalledWith('profile.authBindings.bindSuccess')
-    expect(replace).toHaveBeenCalledWith('/profile')
+    expect(replace).toHaveBeenCalledWith('/configured-profile')
   })
 
   it('supports bind completion after adoption confirmation', async () => {
@@ -385,7 +443,6 @@ describe('LinuxDoCallbackView', () => {
 
     expect(setPendingAuthSession).toHaveBeenCalledWith({
       token: '',
-      token_field: 'pending_oauth_token',
       provider: 'linuxdo',
       redirect: '/welcome'
     })
@@ -477,8 +534,8 @@ describe('LinuxDoCallbackView', () => {
     })
     expect(setToken).not.toHaveBeenCalled()
     expect(replace).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('auth.oauthFlow.bindExistingAccount')
-    expect(wrapper.text()).toContain('auth.oauthFlow.createNewAccount')
+    expect(wrapper.text()).toContain('Configured bind existing')
+    expect(wrapper.text()).toContain('Configured create new')
   })
 
   it('collects email, password, and verify code for pending oauth account creation and submits adoption decisions', async () => {
@@ -724,6 +781,8 @@ describe('LinuxDoCallbackView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('o***g@example.com')
+    expect(wrapper.text()).toContain('Configured TOTP for o***g@example.com with LinuxDo')
+    expect(wrapper.text()).toContain('Configured verify and continue')
     expect(login2FA).not.toHaveBeenCalled()
 
     await wrapper.get('[data-testid="linuxdo-bind-login-totp"]').setValue('123456')

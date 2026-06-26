@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest'
 
-import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
+import { getPersistedPageSize, setPersistedPageSize } from '@/composables/usePersistedPageSize'
 
 describe('usePersistedPageSize', () => {
   afterEach(() => {
@@ -17,5 +17,11 @@ describe('usePersistedPageSize', () => {
     localStorage.setItem('table-page-size-source', 'user')
 
     expect(getPersistedPageSize()).toBe(1000)
+  })
+
+  it('does not persist user-selected page size locally', () => {
+    setPersistedPageSize(50)
+
+    expect(localStorage.getItem('table-page-size')).toBeNull()
   })
 })

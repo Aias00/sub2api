@@ -1,14 +1,20 @@
 import { describe, expect, it, beforeEach, afterEach, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import { nextTick } from 'vue'
+import { readFileSync } from 'node:fs'
 
 import KeyUsageView from '../KeyUsageView.vue'
+
+const keyUsageViewSource = readFileSync('src/views/KeyUsageView.vue', 'utf8')
 
 const { showInfo, showSuccess, showError, fetchPublicSettings } = vi.hoisted(() => ({
   showInfo: vi.fn(),
   showSuccess: vi.fn(),
   showError: vi.fn(),
   fetchPublicSettings: vi.fn(),
+}))
+const publicSettings = vi.hoisted(() => ({
+  value: null as null | Record<string, unknown>,
 }))
 
 const messages: Record<string, string> = {
@@ -66,10 +72,29 @@ const messages: Record<string, string> = {
   'keyUsage.querySuccess': 'Query successful',
   'keyUsage.queryFailed': 'Query failed',
   'keyUsage.queryFailedRetry': 'Query failed, please try again later',
-  'home.viewDocs': 'Docs',
-  'home.switchToLight': 'Light',
-  'home.switchToDark': 'Dark',
-  'home.footer.allRightsReserved': 'All rights reserved.',
+}
+
+function buildKeyUsageShellConfig(
+  overrides: Record<string, string> = {},
+  defaults: Record<string, unknown> = {},
+): string {
+  const labels = Object.fromEntries(
+    Object.entries(messages)
+      .filter(([key]) => key.startsWith('keyUsage.'))
+      .map(([key, value]) => [key.replace('keyUsage.', ''), value])
+  )
+
+  return JSON.stringify({
+    en: {
+      labels: {
+        ...labels,
+        allRightsReserved: 'All rights reserved.',
+        docs: 'Docs',
+        ...overrides,
+      },
+      defaults,
+    },
+  })
 }
 
 vi.mock('vue-i18n', async () => {
@@ -85,7 +110,7 @@ vi.mock('vue-i18n', async () => {
 
 vi.mock('@/stores', () => ({
   useAppStore: () => ({
-    cachedPublicSettings: null,
+    cachedPublicSettings: publicSettings.value,
     siteName: 'Sub2API',
     siteLogo: '',
     docUrl: '',
@@ -103,6 +128,9 @@ describe('KeyUsageView daily detail', () => {
     showSuccess.mockReset()
     showError.mockReset()
     fetchPublicSettings.mockReset()
+    publicSettings.value = {
+      key_usage_shell_config: buildKeyUsageShellConfig(),
+    }
     localStorage.clear()
 
     Object.defineProperty(window, 'matchMedia', {
@@ -163,6 +191,7 @@ describe('KeyUsageView daily detail', () => {
 
   afterEach(() => {
     vi.unstubAllGlobals()
+    vi.useRealTimers()
   })
 
   it('renders daily usage detail rows after a successful query', async () => {
@@ -204,5 +233,124 @@ describe('KeyUsageView daily detail', () => {
     expect(text).toContain('$0.12')
 
     wrapper.unmount()
+  })
+
+  it('uses key usage shell defaults for initial date range and daily detail days', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date(Date.UTC(2026, 5, 20, 12, 0, 0)))
+    publicSettings.value = {
+      key_usage_shell_config: buildKeyUsageShellConfig({}, {
+        defaultDateRange: '7d',
+        dailyUsageDays: 90,
+      }),
+    }
+
+    const wrapper = mount(KeyUsageView, {
+      global: {
+        stubs: {
+          RouterLink: { template: '<a><slot /></a>' },
+          LocaleSwitcher: true,
+          Icon: true,
+        },
+      },
+    })
+
+    await wrapper.find('input').setValue('sk-test-key')
+    await wrapper.find('input').trigger('keydown.enter')
+    await flushPromises()
+
+    const fetchMock = vi.mocked(fetch)
+    const requestUrl = String(fetchMock.mock.calls[0][0])
+    expect(requestUrl).toContain('start_date=2026-06-14')
+    expect(requestUrl).toContain('end_date=2026-06-20')
+    expect(requestUrl).toContain('days=90')
+
+    wrapper.unmount()
+  })
+
+  it('renders key usage shell labels from public settings', () => {
+    publicSettings.value = {
+      key_usage_shell_config: JSON.stringify({
+        en: {
+          labels: {
+            title: 'Configured Usage Title',
+            subtitle: 'Configured usage subtitle',
+            placeholder: 'configured-placeholder',
+            query: 'Configured Query',
+            privacyNote: 'Configured privacy note',
+            docs: 'Configured Docs',
+            allRightsReserved: 'Configured rights',
+          },
+        },
+      }),
+      docs_shell_config: JSON.stringify({
+        en: { labels: { title: 'Wrong Docs Source' } },
+      }),
+      home_shell_config: JSON.stringify({
+        en: { labels: { allRightsReserved: 'Wrong Home Source' } },
+      }),
+      doc_url: '/docs',
+    }
+
+    const wrapper = mount(KeyUsageView, {
+      global: {
+        stubs: {
+          RouterLink: { template: '<a><slot /></a>' },
+          LocaleSwitcher: true,
+          Icon: true,
+        },
+      },
+    })
+
+    const text = wrapper.text()
+    expect(text).toContain('Configured Usage Title')
+    expect(text).toContain('Configured usage subtitle')
+    expect(text).toContain('Configured Query')
+    expect(text).toContain('Configured privacy note')
+    expect(text).toContain('Configured Docs')
+    expect(text).toContain('Configured rights')
+    expect(text).not.toContain('Wrong Docs Source')
+    expect(text).not.toContain('Wrong Home Source')
+    expect(wrapper.find('input').attributes('placeholder')).toBe('configured-placeholder')
+
+    wrapper.unmount()
+  })
+
+  it('keeps shell label parsing in the shared key usage shell helper', () => {
+    expect(keyUsageViewSource).toContain("} from '@/utils/keyUsageShell'")
+    expect(keyUsageViewSource).toContain('resolveKeyUsageShellConfig(')
+    expect(keyUsageViewSource).toContain('renderKeyUsageShellText(')
+    expect(keyUsageViewSource).not.toContain('resolveKeyUsageShellLabels(')
+    expect(keyUsageViewSource).not.toContain("import { resolveLocalizedShellLabels } from '@/utils/localizedShell'")
+    expect(keyUsageViewSource).not.toContain('resolveLocalizedShellLabels(')
+    expect(keyUsageViewSource).not.toContain('const keyUsageShellLabelKeys')
+    expect(keyUsageViewSource).not.toContain('function readLocalizedShellLabels')
+    expect(keyUsageViewSource).not.toContain('function isRecord')
+  })
+
+  it('does not keep locale-specific key usage fallback copy in the view bootstrap layer', () => {
+    expect(keyUsageViewSource).toContain('useAuthRouteDefaults')
+    expect(keyUsageViewSource).toContain(':to="authRouteDefaults.homePath"')
+    expect(keyUsageViewSource).not.toContain('to="/home"')
+    expect(keyUsageViewSource).toContain("from './keyUsageRuntime'")
+    expect(keyUsageViewSource).toContain('buildKeyUsageDateParams')
+    expect(keyUsageViewSource).toContain('resolveKeyUsageStatusInfo')
+    expect(keyUsageViewSource).not.toContain('FALLBACK_KEY_USAGE_LABELS')
+    expect(keyUsageViewSource).not.toContain('EMPTY_KEY_USAGE_LABELS')
+    expect(keyUsageViewSource).not.toContain('keyUsageShellLabels.value[key as KeyUsageShellLabelKey] || key')
+    expect(keyUsageViewSource).not.toContain('API Key Usage')
+    expect(keyUsageViewSource).not.toContain('API Key 用量查询')
+    expect(keyUsageViewSource).not.toContain("currentRange = ref<DateRangeKey>('today')")
+    expect(keyUsageViewSource).not.toContain('dailyUsageDays = ref<7 | 30 | 90>(30)')
+    expect(keyUsageViewSource).not.toContain('7 * 86400000')
+    expect(keyUsageViewSource).not.toContain('30 * 86400000')
+  })
+
+  it('uses the shared runtime locale helper instead of direct locale value checks', () => {
+    expect(keyUsageViewSource).toContain("from '@/utils/runtimeLocale'")
+    expect(keyUsageViewSource).toContain('resolveRuntimeLanguage(locale)')
+    expect(keyUsageViewSource).toContain('resolveRuntimeLocale(locale)')
+    expect(keyUsageViewSource).not.toContain("locale.value === 'zh'")
+    expect(keyUsageViewSource).not.toContain('locale.value === "zh"')
   })
 })

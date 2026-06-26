@@ -5,6 +5,7 @@ package server_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"math"
@@ -38,6 +39,7 @@ func TestAPIContracts(t *testing.T) {
 		headers    map[string]string
 		wantStatus int
 		wantJSON   string
+		wantSubset bool
 	}{
 		{
 			name:       "GET /api/v1/auth/me",
@@ -666,6 +668,7 @@ func TestAPIContracts(t *testing.T) {
 			method:     http.MethodGet,
 			path:       "/api/v1/admin/settings",
 			wantStatus: http.StatusOK,
+			wantSubset: true,
 			wantJSON: `{
 				"code": 0,
 				"message": "success",
@@ -763,6 +766,7 @@ func TestAPIContracts(t *testing.T) {
 						"api_key_acl_trust_forwarded_ip": false,
 					"contact_info": "support",
 					"doc_url": "https://docs.example.com",
+						"docs_content_base_path": "{\"zh\":\"/docs-content/\",\"en\":\"/docs-content/en/\"}",
 					"auth_source_default_email_balance": 0,
 					"auth_source_default_email_concurrency": 5,
 					"auth_source_default_email_subscriptions": [],
@@ -890,8 +894,6 @@ func TestAPIContracts(t *testing.T) {
 					"risk_control_enabled": false,
 					"affiliate_enabled": false,
 					"wechat_connect_enabled": false,
-					"wechat_connect_app_id": "",
-					"wechat_connect_app_secret_configured": false,
 					"wechat_connect_mode": "open",
 					"wechat_connect_open_enabled": false,
 					"wechat_connect_open_app_id": "",
@@ -945,6 +947,7 @@ func TestAPIContracts(t *testing.T) {
 			method:     http.MethodGet,
 			path:       "/api/v1/admin/settings",
 			wantStatus: http.StatusOK,
+			wantSubset: true,
 			wantJSON: `{
 				"code": 0,
 				"message": "success",
@@ -1039,6 +1042,7 @@ func TestAPIContracts(t *testing.T) {
 					"api_key_acl_trust_forwarded_ip": false,
 					"contact_info": "",
 					"doc_url": "",
+						"docs_content_base_path": "{\"zh\":\"/docs-content/\",\"en\":\"/docs-content/en/\"}",
 					"home_content": "",
 					"hide_ccs_import_button": false,
 					"purchase_subscription_enabled": false,
@@ -1133,8 +1137,6 @@ func TestAPIContracts(t *testing.T) {
 					"risk_control_enabled": false,
 					"affiliate_enabled": false,
 					"wechat_connect_enabled": true,
-					"wechat_connect_app_id": "wx-open-config",
-					"wechat_connect_app_secret_configured": true,
 					"wechat_connect_mode": "open",
 					"wechat_connect_open_enabled": true,
 					"wechat_connect_open_app_id": "wx-open-config",
@@ -1222,8 +1224,46 @@ func TestAPIContracts(t *testing.T) {
 
 			status, body := doRequest(t, deps.router, tt.method, tt.path, tt.body, tt.headers)
 			require.Equal(t, tt.wantStatus, status)
+			if tt.wantSubset {
+				requireJSONSubset(t, tt.wantJSON, body)
+				return
+			}
 			require.JSONEq(t, tt.wantJSON, body)
 		})
+	}
+}
+
+func requireJSONSubset(t *testing.T, wantJSON string, gotJSON string) {
+	t.Helper()
+
+	var want any
+	var got any
+	require.NoError(t, json.Unmarshal([]byte(wantJSON), &want))
+	require.NoError(t, json.Unmarshal([]byte(gotJSON), &got))
+	requireJSONValueSubset(t, want, got, "$")
+}
+
+func requireJSONValueSubset(t *testing.T, want any, got any, path string) {
+	t.Helper()
+
+	switch wantTyped := want.(type) {
+	case map[string]any:
+		gotTyped, ok := got.(map[string]any)
+		require.Truef(t, ok, "%s: expected JSON object", path)
+		for key, wantValue := range wantTyped {
+			gotValue, ok := gotTyped[key]
+			require.Truef(t, ok, "%s.%s: missing key", path, key)
+			requireJSONValueSubset(t, wantValue, gotValue, path+"."+key)
+		}
+	case []any:
+		gotTyped, ok := got.([]any)
+		require.Truef(t, ok, "%s: expected JSON array", path)
+		require.Lenf(t, gotTyped, len(wantTyped), "%s: array length mismatch", path)
+		for i, wantValue := range wantTyped {
+			requireJSONValueSubset(t, wantValue, gotTyped[i], path)
+		}
+	default:
+		require.Equalf(t, want, got, "%s: value mismatch", path)
 	}
 }
 

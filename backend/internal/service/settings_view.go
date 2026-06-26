@@ -71,9 +71,6 @@ type SystemSettings struct {
 
 	// WeChat Connect OAuth 登录
 	WeChatConnectEnabled                   bool
-	WeChatConnectAppID                     string
-	WeChatConnectAppSecret                 string
-	WeChatConnectAppSecretConfigured       bool
 	WeChatConnectOpenAppID                 string
 	WeChatConnectOpenAppSecret             string
 	WeChatConnectOpenAppSecretConfigured   bool
@@ -130,21 +127,90 @@ type SystemSettings struct {
 	GoogleOAuthRedirectURL            string
 	GoogleOAuthFrontendRedirectURL    string
 
-	SiteName                    string
-	SiteLogo                    string
-	SiteSubtitle                string
-	APIBaseURL                  string
-	ContactInfo                 string
-	DocURL                      string
-	HomeContent                 string
-	ModelPlazaItems             string // JSON array of model plaza items
-	HideCcsImportButton         bool
-	PurchaseSubscriptionEnabled bool
-	PurchaseSubscriptionURL     string
-	TableDefaultPageSize        int
-	TablePageSizeOptions        []int
-	CustomMenuItems             string // JSON array of custom menu items
-	CustomEndpoints             string // JSON array of custom endpoints
+	SiteName                     string
+	SiteLogo                     string
+	SiteSubtitle                 string
+	APIBaseURL                   string
+	ContactInfo                  string
+	DocURL                       string
+	DocsContentBasePath          string
+	HomeContent                  string
+	HomeShellConfig              string
+	HomeBusinessShellConfig      string
+	ModelPlazaItems              string // JSON array of model plaza items
+	ModelPlazaShellConfig        string
+	DocsShellConfig              string
+	LegalDocumentShellConfig     string
+	APIKeysShellConfig           string
+	KeyUsageShellConfig          string
+	DashboardShellConfig         string
+	UsageShellConfig             string
+	APIGuideShellConfig          string
+	APITestShellConfig           string
+	AvailableGroupsShellConfig   string
+	RedeemShellConfig            string
+	AffiliateShellConfig         string
+	AvailableChannelsShellConfig string
+	ChannelStatusShellConfig     string
+	CustomPageShellConfig        string
+	ProfileShellConfig           string
+	AuthShellConfig              string
+	HideCcsImportButton          bool
+	PurchaseSubscriptionEnabled  bool
+	PurchaseSubscriptionURL      string
+	TableDefaultPageSize         int
+	TablePageSizeOptions         []int
+	CustomMenuItems              string // JSON array of custom menu items
+	CustomEndpoints              string // JSON array of custom endpoints
+
+	WebAppURL                     string
+	WebAppName                    string
+	WebAppDescription             string
+	WebAppLogo                    string
+	WebAppFavicon                 string
+	WebAppPreviewImage            string
+	WebTheme                      string
+	WebAppearance                 string
+	WebDefaultLocale              string
+	WebPromptCasesTitle           string
+	WebPromptCasesDescription     string
+	WebPromptTemplatesTitle       string
+	WebPromptTemplatesDescription string
+	PromptCatalogShellConfig      string
+	WebWorkspaceShellConfig       string
+	WebPricingTitle               string
+	WebPricingDescription         string
+	WebPricingShellConfig         string
+	WebPaymentShellConfig         string
+	WebPricingCurrencySymbol      string
+	WebCreditsTitle               string
+	WebCreditsDescription         string
+	WebCreditsPurchaseLabel       string
+	WebCreditsBalanceLabel        string
+	WebCreditsPerBalance          string
+	CreditsShellConfig            string
+	WebLocaleDetectEnabled        bool
+	WebEmailAuthVisible           bool
+	WebGoogleAuthVisible          bool
+	WebGitHubAuthVisible          bool
+	WebGoogleAnalyticsID          string
+	WebClarityID                  string
+	WebPlausibleDomain            string
+	WebPlausibleSrc               string
+	WebOpenPanelClientID          string
+	WebPublicIntegrationsEnabled  bool
+	WebVercelAnalyticsEnabled     bool
+	WebAdsenseCode                string
+	WebAffonsoEnabled             bool
+	WebAffonsoID                  string
+	WebAffonsoCookieDuration      string
+	WebPromoteKitEnabled          bool
+	WebPromoteKitID               string
+	WebCrispEnabled               bool
+	WebCrispWebsiteID             string
+	WebTawkEnabled                bool
+	WebTawkPropertyID             string
+	WebTawkWidgetID               string
 
 	DefaultConcurrency           int
 	DefaultBalance               float64
@@ -264,8 +330,28 @@ type PublicSettings struct {
 	APIBaseURL                       string
 	ContactInfo                      string
 	DocURL                           string
+	DocsContentBasePath              string
 	HomeContent                      string
+	HomeShellConfig                  string
+	HomeBusinessShellConfig          string
 	ModelPlazaItems                  string // JSON array of model plaza items
+	ModelPlazaShellConfig            string
+	DocsShellConfig                  string
+	LegalDocumentShellConfig         string
+	APIKeysShellConfig               string
+	KeyUsageShellConfig              string
+	DashboardShellConfig             string
+	UsageShellConfig                 string
+	APIGuideShellConfig              string
+	APITestShellConfig               string
+	AvailableGroupsShellConfig       string
+	RedeemShellConfig                string
+	AffiliateShellConfig             string
+	AvailableChannelsShellConfig     string
+	ChannelStatusShellConfig         string
+	CustomPageShellConfig            string
+	ProfileShellConfig               string
+	AuthShellConfig                  string
 	HideCcsImportButton              bool
 
 	PurchaseSubscriptionEnabled bool
@@ -306,6 +392,89 @@ type PublicSettings struct {
 
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
+
+	// Web public runtime settings
+	WebAppURL                     string
+	WebAppName                    string
+	WebAppDescription             string
+	WebAppLogo                    string
+	WebAppFavicon                 string
+	WebAppPreviewImage            string
+	WebTheme                      string
+	WebAppearance                 string
+	WebDefaultLocale              string
+	WebPromptCasesTitle           string
+	WebPromptCasesDescription     string
+	WebPromptTemplatesTitle       string
+	WebPromptTemplatesDescription string
+	PromptCasesTitle              string
+	PromptCasesDescription        string
+	PromptTemplatesTitle          string
+	PromptTemplatesDescription    string
+	PromptCatalogShellConfig      string
+	WorkspaceShellConfig          string
+	PricingTitle                  string
+	PricingDescription            string
+	PricingShellConfig            string
+	PaymentShellConfig            string
+	PricingCurrencySymbol         string
+	CreditsTitle                  string
+	CreditsDescription            string
+	CreditsPurchaseLabel          string
+	CreditsBalanceLabel           string
+	CreditsPerBalance             string
+	CreditsShellConfig            string
+	WebWorkspaceShellConfig       string
+	WebPricingTitle               string
+	WebPricingDescription         string
+	WebPricingShellConfig         string
+	WebPaymentShellConfig         string
+	WebPricingCurrencySymbol      string
+	WebCreditsTitle               string
+	WebCreditsDescription         string
+	WebCreditsPurchaseLabel       string
+	WebCreditsBalanceLabel        string
+	WebCreditsPerBalance          string
+	WebLocaleDetectEnabled        bool
+	WebEmailAuthVisible           bool
+	WebGoogleAuthVisible          bool
+	WebGitHubAuthVisible          bool
+	WebGoogleAnalyticsID          string
+	WebClarityID                  string
+	WebPlausibleDomain            string
+	WebPlausibleSrc               string
+	WebOpenPanelClientID          string
+	WebPublicIntegrationsEnabled  bool
+	WebVercelAnalyticsEnabled     bool
+	WebAdsenseCode                string
+	WebAffonsoEnabled             bool
+	WebAffonsoID                  string
+	WebAffonsoCookieDuration      string
+	WebPromoteKitEnabled          bool
+	WebPromoteKitID               string
+	WebCrispEnabled               bool
+	WebCrispWebsiteID             string
+	WebTawkEnabled                bool
+	WebTawkPropertyID             string
+	WebTawkWidgetID               string
+	GoogleAnalyticsID             string
+	ClarityID                     string
+	PlausibleDomain               string
+	PlausibleSrc                  string
+	OpenPanelClientID             string
+	PublicIntegrationsEnabled     bool
+	VercelAnalyticsEnabled        bool
+	AdsenseCode                   string
+	AffonsoEnabled                bool
+	AffonsoID                     string
+	AffonsoCookieDuration         string
+	PromoteKitEnabled             bool
+	PromoteKitID                  string
+	CrispEnabled                  bool
+	CrispWebsiteID                string
+	TawkEnabled                   bool
+	TawkPropertyID                string
+	TawkWidgetID                  string
 }
 
 type ModelPlazaItem struct {
@@ -333,8 +502,6 @@ type LoginAgreementDocument struct {
 
 type WeChatConnectOAuthConfig struct {
 	Enabled             bool
-	LegacyAppID         string
-	LegacyAppSecret     string
 	OpenAppID           string
 	OpenAppSecret       string
 	MPAppID             string
@@ -374,21 +541,21 @@ func (cfg WeChatConnectOAuthConfig) ScopeForMode(mode string) string {
 func (cfg WeChatConnectOAuthConfig) AppIDForMode(mode string) string {
 	switch normalizeWeChatConnectModeSetting(mode) {
 	case "mp":
-		return strings.TrimSpace(firstNonEmpty(cfg.MPAppID, cfg.LegacyAppID))
+		return strings.TrimSpace(cfg.MPAppID)
 	case "mobile":
-		return strings.TrimSpace(firstNonEmpty(cfg.MobileAppID, cfg.LegacyAppID))
+		return strings.TrimSpace(cfg.MobileAppID)
 	}
-	return strings.TrimSpace(firstNonEmpty(cfg.OpenAppID, cfg.LegacyAppID))
+	return strings.TrimSpace(cfg.OpenAppID)
 }
 
 func (cfg WeChatConnectOAuthConfig) AppSecretForMode(mode string) string {
 	switch normalizeWeChatConnectModeSetting(mode) {
 	case "mp":
-		return strings.TrimSpace(firstNonEmpty(cfg.MPAppSecret, cfg.LegacyAppSecret))
+		return strings.TrimSpace(cfg.MPAppSecret)
 	case "mobile":
-		return strings.TrimSpace(firstNonEmpty(cfg.MobileAppSecret, cfg.LegacyAppSecret))
+		return strings.TrimSpace(cfg.MobileAppSecret)
 	}
-	return strings.TrimSpace(firstNonEmpty(cfg.OpenAppSecret, cfg.LegacyAppSecret))
+	return strings.TrimSpace(cfg.OpenAppSecret)
 }
 
 // StreamTimeoutSettings 流超时处理配置（仅控制超时后的处理方式，超时判定由网关配置控制）

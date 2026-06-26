@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { setActivePinia, createPinia } from 'pinia'
 import { useAppStore } from '@/stores/app'
 import { getPublicSettings } from '@/api/auth'
+
+const appStoreSource = readFileSync('src/stores/app.ts', 'utf8')
 
 // Mock API 模块
 vi.mock('@/api/admin/system', () => ({
@@ -252,6 +255,14 @@ describe('useAppStore', () => {
   // --- 公开设置 ---
 
   describe('公开设置加载', () => {
+    it('does not synthesize a local public settings fallback object', () => {
+      expect(appStoreSource).toContain('if (cachedPublicSettings.value)')
+      expect(appStoreSource).toContain('return null')
+      expect(appStoreSource).not.toContain('table_page_size_options: [10, 20, 50, 100]')
+      expect(appStoreSource).not.toContain('channel_monitor_default_interval_seconds: 60')
+      expect(appStoreSource).not.toContain('site_name: siteName.value')
+    })
+
     it('从 window.__APP_CONFIG__ 初始化', () => {
       const windowAny = window as any
       windowAny.__APP_CONFIG__ = {

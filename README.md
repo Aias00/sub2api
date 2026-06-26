@@ -421,13 +421,12 @@ cd sub2api
 npm install -g pnpm
 
 # 3. Build frontend
-cd frontend
 pnpm install
-pnpm run build
-# Output will be in ../backend/internal/web/dist/
+pnpm run frontend:build
+# Output will be in backend/internal/web/dist/
 
 # 4. Build backend with embedded frontend
-cd ../backend
+cd backend
 go build -tags embed -o sub2api ./cmd/server
 
 # 5. Create configuration file
@@ -542,8 +541,7 @@ cd backend
 go run ./cmd/server
 
 # Frontend (with hot reload)
-cd frontend
-pnpm run dev
+pnpm run frontend:dev
 ```
 
 #### Code Generation

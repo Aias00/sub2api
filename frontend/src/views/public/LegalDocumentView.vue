@@ -2,19 +2,19 @@
   <div class="min-h-screen bg-gray-50 text-gray-900 dark:bg-dark-950 dark:text-white">
     <header class="border-b border-gray-200 bg-white/95 dark:border-dark-800 dark:bg-dark-900/95">
       <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
-        <RouterLink to="/home" class="flex min-w-0 items-center gap-3">
-          <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-dark-800 dark:ring-dark-700">
-            <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+        <RouterLink :to="authRouteDefaults.homePath" class="flex min-w-0 items-center gap-3">
+          <span v-if="siteLogo" class="flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200 dark:bg-dark-800 dark:ring-dark-700">
+            <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
           </span>
           <span class="truncate text-base font-semibold text-gray-950 dark:text-white">
             {{ siteName }}
           </span>
         </RouterLink>
         <RouterLink
-          to="/login"
+          :to="loginPath"
           class="inline-flex flex-shrink-0 items-center justify-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-semibold text-white shadow-sm shadow-primary-600/20 transition hover:bg-primary-700"
         >
-          {{ t('auth.signIn') }}
+          {{ copy.login }}
         </RouterLink>
       </div>
     </header>
@@ -28,8 +28,8 @@
         v-else-if="loadError"
         class="rounded-lg border border-red-200 bg-red-50 p-6 text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-200"
       >
-        <h1 class="text-lg font-semibold">{{ t('legalDocument.loadFailedTitle') }}</h1>
-        <p class="mt-2 text-sm">{{ t('legalDocument.loadFailedDescription') }}</p>
+        <h1 class="text-lg font-semibold">{{ copy.loadFailedTitle }}</h1>
+        <p class="mt-2 text-sm">{{ copy.loadFailedDescription }}</p>
       </section>
 
       <section
@@ -41,9 +41,9 @@
             <Icon name="document" size="sm" />
           </span>
           <div>
-            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">{{ t('legalDocument.missingTitle') }}</h1>
+            <h1 class="text-lg font-semibold text-gray-900 dark:text-white">{{ copy.missingTitle }}</h1>
             <p class="mt-2 text-sm leading-6 text-gray-600 dark:text-dark-300">
-              {{ t('legalDocument.missingDescription') }}
+              {{ copy.missingDescription }}
             </p>
           </div>
         </div>
@@ -56,12 +56,12 @@
               <Icon :name="documentIcon" size="md" />
             </span>
             <div class="min-w-0">
-              <p class="text-sm font-medium text-primary-700 dark:text-primary-300">{{ t('legalDocument.agreementLabel') }}</p>
+              <p class="text-sm font-medium text-primary-700 dark:text-primary-300">{{ copy.agreementLabel }}</p>
               <h1 class="mt-2 break-words text-2xl font-bold tracking-normal text-gray-950 dark:text-white sm:text-3xl">
                 {{ currentDocument.title }}
               </h1>
               <p v-if="updatedAt" class="mt-3 text-sm text-gray-500 dark:text-dark-400">
-                {{ t('legalDocument.updatedAt', { date: updatedAt }) }}
+                {{ formatLegalDocumentTemplate(copy.updatedAt, { date: updatedAt }) }}
               </p>
             </div>
           </div>
@@ -76,7 +76,7 @@
           v-else
           class="rounded-lg border border-dashed border-gray-300 bg-white px-6 py-14 text-center text-sm text-gray-500 dark:border-dark-700 dark:bg-dark-900 dark:text-dark-400"
         >
-          {{ t('legalDocument.emptyContent') }}
+          {{ copy.emptyContent }}
         </div>
       </article>
     </main>
@@ -87,83 +87,63 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { marked } from 'marked'
-import DOMPurify from 'dompurify'
 import Icon from '@/components/icons/Icon.vue'
-import { getPublicSettings } from '@/api/auth'
-import { renderLoginAgreementDocumentContent } from '@/utils/loginAgreementTemplates'
+import { useAppStore } from '@/stores'
+import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import { sanitizeUrl } from '@/utils/url'
+import {
+  formatLegalDocumentTemplate,
+  resolveLegalDocumentCopy,
+  type LegalDocumentCopy,
+} from '@/utils/legalDocumentShell'
+import { resolveRuntimeLanguage } from '@/utils/runtimeLocale'
 import type { LoginAgreementDocument, PublicSettings } from '@/types'
-
-type LegalDocumentIcon = 'document' | 'shield' | 'globe' | 'cog'
+import {
+  renderLegalDocumentHtml,
+  resolveCurrentLegalDocument,
+  resolveLegalDocumentIcon,
+  type LegalDocumentIcon,
+} from './legalDocumentRuntime'
 
 const route = useRoute()
-const { t } = useI18n()
-const settings = ref<PublicSettings | null>(null)
+const { locale } = useI18n()
+const appStore = useAppStore()
+const { authRouteDefaults } = useAuthRouteDefaults()
 const loading = ref(true)
 const loadError = ref(false)
 
-marked.setOptions({
-  breaks: true,
-  gfm: true,
-})
-
+const settings = computed<PublicSettings | null>(() => appStore.cachedPublicSettings)
 const documentId = computed(() => String(route.params.documentId || ''))
 const documents = computed(() => settings.value?.login_agreement_documents ?? [])
-const siteName = computed(() => settings.value?.site_name || 'Sub2API')
+const siteName = computed(() => settings.value?.site_name || '')
 const siteLogo = computed(() => sanitizeUrl(settings.value?.site_logo || '', {
   allowRelative: true,
   allowDataUrl: true,
 }))
+const loginPath = computed(() => authRouteDefaults.value.loginPath)
 const updatedAt = computed(() => settings.value?.login_agreement_updated_at || '')
+const legalDocumentLocale = computed<'zh' | 'en'>(() => resolveRuntimeLanguage(locale))
+const copy = computed<LegalDocumentCopy>(() =>
+  resolveLegalDocumentCopy(settings.value?.legal_document_shell_config, legalDocumentLocale.value),
+)
 
-const currentDocument = computed<LoginAgreementDocument | null>(() => {
-  const id = documentId.value
-  if (!id) {
-    return null
-  }
-  return documents.value.find((doc) => doc.id === id) ?? null
-})
+const currentDocument = computed<LoginAgreementDocument | null>(() =>
+  resolveCurrentLegalDocument(documents.value, documentId.value),
+)
 
 const hasContent = computed(() => Boolean(currentDocument.value?.content_md?.trim()))
 
-const renderedHtml = computed(() => {
-  const content = renderLoginAgreementDocumentContent(
-    currentDocument.value?.content_md?.trim() || '',
-    {
-      documentId: currentDocument.value?.id,
-      updatedAt: updatedAt.value,
-      frontendUrl: '',
-      contactInfo: settings.value?.contact_info || '',
-    },
-  )
-  if (!content) {
-    return ''
-  }
-  const html = marked.parse(content) as string
-  return DOMPurify.sanitize(html)
-})
+const renderedHtml = computed(() => renderLegalDocumentHtml(currentDocument.value, settings.value))
 
-const documentIcon = computed<LegalDocumentIcon>(() => {
-  const title = currentDocument.value?.title || ''
-  const lowerTitle = title.toLowerCase()
-  if (title.includes('政策') || title.includes('隐私') || lowerTitle.includes('policy') || lowerTitle.includes('privacy')) {
-    return 'shield'
-  }
-  if (title.includes('国家') || title.includes('地区') || lowerTitle.includes('country') || lowerTitle.includes('region')) {
-    return 'globe'
-  }
-  if (title.includes('特定') || lowerTitle.includes('specific')) {
-    return 'cog'
-  }
-  return 'document'
-})
+const documentIcon = computed<LegalDocumentIcon>(() => resolveLegalDocumentIcon(currentDocument.value?.title || ''))
 
 onMounted(async () => {
   loading.value = true
   loadError.value = false
   try {
-    settings.value = await getPublicSettings()
+    if (!appStore.publicSettingsLoaded) {
+      await appStore.fetchPublicSettings()
+    }
   } catch {
     loadError.value = true
   } finally {

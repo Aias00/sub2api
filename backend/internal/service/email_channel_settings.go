@@ -111,12 +111,12 @@ func normalizeSMTPChannelID(raw string, index int) string {
 	lastDash := false
 	for _, r := range raw {
 		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			b.WriteRune(r)
+			_, _ = b.WriteRune(r)
 			lastDash = false
 			continue
 		}
 		if !lastDash {
-			b.WriteByte('-')
+			_ = b.WriteByte('-')
 			lastDash = true
 		}
 	}

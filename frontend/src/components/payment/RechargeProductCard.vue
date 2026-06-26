@@ -18,7 +18,7 @@
           : 'bg-amber-100 text-amber-700 dark:bg-amber-500/15 dark:text-amber-200'
       ]"
     >
-      {{ product.badge || t('payment.rechargeProducts.recommended') }}
+      {{ product.badge || labels?.recommended || '' }}
     </div>
 
     <div class="flex flex-1 flex-col p-5">
@@ -33,11 +33,10 @@
 
       <div class="mt-5">
         <div class="flex items-end gap-1 text-gray-900 dark:text-white">
-          <span class="text-lg text-gray-400 dark:text-gray-500">¥</span>
-          <span class="text-4xl font-black tracking-tight">{{ product.amount }}</span>
+          <span class="text-4xl font-black tracking-tight">{{ formattedAmount }}</span>
         </div>
         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-          {{ t('payment.rechargeProducts.creditLine', { amount: product.credited_amount.toFixed(2) }) }}
+          {{ creditLineText }}
         </p>
       </div>
 
@@ -64,24 +63,41 @@
             : 'bg-slate-900 text-white dark:bg-slate-800'
         ]"
       >
-        {{ t('payment.rechargeProducts.cta') }}
+        {{ labels?.cta || '' }}
       </div>
     </div>
   </button>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type { RechargeProduct } from '@/types/payment'
+import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 
-defineProps<{
+const props = defineProps<{
   product: RechargeProduct
   selected?: boolean
+  currency?: string
+  labels?: {
+    recommended?: string
+    creditLine?: string
+    cta?: string
+  }
 }>()
 
 const emit = defineEmits<{
   select: [product: RechargeProduct]
 }>()
 
-const { t } = useI18n()
+const { locale } = useI18n()
+const formattedAmount = computed(() =>
+  formatPaymentAmount(props.product.amount, normalizePaymentCurrency(props.currency), locale.value),
+)
+const creditLineText = computed(() => {
+  const amount = props.product.credited_amount.toFixed(2)
+  const label = props.labels?.creditLine
+  if (label) return label.replace(/\{amount\}/g, amount)
+  return ''
+})
 </script>

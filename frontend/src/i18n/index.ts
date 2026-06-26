@@ -16,10 +16,30 @@ function isLocaleCode(value: string): value is LocaleCode {
   return value === 'en' || value === 'zh'
 }
 
+function resolveLocaleCode(value: unknown): LocaleCode | null {
+  if (typeof value !== 'string') {
+    return null
+  }
+  const normalized = value.trim().toLowerCase().split('-')[0]
+  return isLocaleCode(normalized) ? normalized : null
+}
+
+function getConfiguredDefaultLocale(): LocaleCode {
+  if (typeof window === 'undefined') {
+    return DEFAULT_LOCALE
+  }
+  return resolveLocaleCode(window.__APP_CONFIG__?.default_locale) ?? DEFAULT_LOCALE
+}
+
 function getDefaultLocale(): LocaleCode {
   const saved = localStorage.getItem(LOCALE_KEY)
   if (saved && isLocaleCode(saved)) {
     return saved
+  }
+
+  const configured = getConfiguredDefaultLocale()
+  if (configured !== DEFAULT_LOCALE) {
+    return configured
   }
 
   const browserLang = navigator.language.toLowerCase()
@@ -27,7 +47,7 @@ function getDefaultLocale(): LocaleCode {
     return 'zh'
   }
 
-  return DEFAULT_LOCALE
+  return configured
 }
 
 export const i18n = createI18n({
@@ -80,7 +100,7 @@ export async function setLocale(locale: string): Promise<void> {
 
 export function getLocale(): LocaleCode {
   const current = i18n.global.locale.value
-  return isLocaleCode(current) ? current : DEFAULT_LOCALE
+  return isLocaleCode(current) ? current : getConfiguredDefaultLocale()
 }
 
 export const availableLocales = [

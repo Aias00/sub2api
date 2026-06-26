@@ -3,9 +3,9 @@
     <!-- Header (same pattern as HomeView) -->
     <header class="relative z-20 px-6 py-4">
       <nav class="mx-auto flex max-w-6xl items-center justify-between">
-        <router-link to="/home" class="flex items-center gap-3">
-          <div class="h-10 w-10 overflow-hidden rounded-xl shadow-md">
-            <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+        <router-link :to="authRouteDefaults.homePath" class="flex items-center gap-3">
+          <div v-if="siteLogo" class="h-10 w-10 overflow-hidden rounded-xl shadow-md">
+            <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
           </div>
           <span class="text-lg font-semibold tracking-tight text-gray-900 dark:text-white">{{ siteName }}</span>
         </router-link>
@@ -15,7 +15,7 @@
             v-if="docUrl"
             :doc-url="docUrl"
             class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 dark:text-dark-400 dark:hover:bg-dark-800 dark:hover:text-white"
-            :title="t('home.viewDocs')"
+            :title="docsLinkLabel"
           >
             <Icon name="book" size="md" />
           </DocsLink>
@@ -28,10 +28,10 @@
       <!-- Hero -->
       <div class="text-center mb-12">
         <h1 class="text-3xl sm:text-4xl font-bold tracking-tight mb-3 text-gray-900 dark:text-white">
-          {{ t('keyUsage.title') }}
+          {{ keyUsageText('title') }}
         </h1>
         <p class="text-gray-500 dark:text-dark-400 text-base max-w-md mx-auto">
-          {{ t('keyUsage.subtitle') }}
+          {{ keyUsageText('subtitle') }}
         </p>
       </div>
 
@@ -47,7 +47,7 @@
             <input
               v-model="apiKey"
               :type="keyVisible ? 'text' : 'password'"
-              :placeholder="t('keyUsage.placeholder')"
+              :placeholder="keyUsageText('placeholder')"
               class="input-ring w-full h-12 pl-12 pr-12 rounded-xl border border-gray-200 bg-white text-sm text-gray-900 placeholder:text-gray-400 transition-all dark:border-dark-700 dark:bg-dark-900 dark:text-white dark:placeholder:text-dark-500"
               @keydown.enter="queryKey"
             />
@@ -76,17 +76,17 @@
             <svg v-else class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
             </svg>
-            {{ isQuerying ? t('keyUsage.querying') : t('keyUsage.query') }}
+            {{ isQuerying ? keyUsageText('querying') : keyUsageText('query') }}
           </button>
         </div>
         <p class="text-xs text-gray-400 dark:text-dark-500 mt-3 text-center">
-          {{ t('keyUsage.privacyNote') }}
+          {{ keyUsageText('privacyNote') }}
         </p>
 
         <!-- Date Range Picker -->
         <div v-if="showDatePicker" class="mt-4">
           <div class="flex flex-wrap items-center gap-2 justify-center">
-            <span class="text-xs text-gray-500 dark:text-dark-400">{{ t('keyUsage.dateRange') }}</span>
+            <span class="text-xs text-gray-500 dark:text-dark-400">{{ keyUsageText('dateRange') }}</span>
             <button
               v-for="range in dateRanges"
               :key="range.key"
@@ -111,7 +111,7 @@
               <button
                 @click="queryKey"
                 class="text-xs px-3 py-1.5 rounded-lg bg-primary-500 text-white hover:bg-primary-600"
-              >{{ t('keyUsage.apply') }}</button>
+              >{{ keyUsageText('apply') }}</button>
             </div>
           </div>
         </div>
@@ -211,7 +211,7 @@
                       <span class="text-3xl font-bold tabular-nums text-gray-900 dark:text-white">
                         {{ displayPcts[i] ?? 0 }}%
                       </span>
-                      <span class="text-xs text-gray-500 dark:text-dark-400 mt-0.5">{{ t('keyUsage.used') }}</span>
+                      <span class="text-xs text-gray-500 dark:text-dark-400 mt-0.5">{{ keyUsageText('used') }}</span>
                       <span
                         class="text-sm font-semibold mt-1 tabular-nums"
                         :style="{ color: RING_GRADIENTS[i % 4].from }"
@@ -232,7 +232,7 @@
             class="fade-up fade-up-delay-3 rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-sm overflow-hidden dark:border-dark-700 dark:bg-dark-900/90"
           >
             <div class="px-8 py-5 border-b border-gray-200 dark:border-dark-700">
-              <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.detailInfo') }}</h3>
+              <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('detailInfo') }}</h3>
             </div>
             <div class="divide-y divide-gray-100 dark:divide-dark-800">
               <div
@@ -265,7 +265,7 @@
             class="fade-up fade-up-delay-3 rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-sm overflow-hidden dark:border-dark-700 dark:bg-dark-900/90"
           >
             <div class="px-8 py-5 border-b border-gray-200 dark:border-dark-700">
-              <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.tokenStats') }}</h3>
+              <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('tokenStats') }}</h3>
             </div>
             <div class="grid grid-cols-2 md:grid-cols-4 gap-px bg-gray-100 dark:bg-dark-800">
               <div
@@ -285,7 +285,7 @@
             class="fade-up fade-up-delay-4 rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-sm overflow-hidden dark:border-dark-700 dark:bg-dark-900/90"
           >
             <div class="flex flex-col gap-3 px-8 py-5 border-b border-gray-200 dark:border-dark-700 sm:flex-row sm:items-center sm:justify-between">
-              <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.dailyDetail') }}</h3>
+              <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('dailyDetail') }}</h3>
               <div class="inline-flex rounded-lg border border-gray-200 bg-white p-0.5 dark:border-dark-700 dark:bg-dark-950">
                 <button
                   v-for="option in dailyUsageOptions"
@@ -304,13 +304,13 @@
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-gray-200 bg-gray-50 dark:border-dark-700 dark:bg-dark-950">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.date') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.requests') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.inputTokens') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.outputTokens') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.cacheReadTokens') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.cacheWriteTokens') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.cost') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('date') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('requests') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('inputTokens') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('outputTokens') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('cacheReadTokens') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('cacheWriteTokens') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('cost') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -331,7 +331,7 @@
               </table>
             </div>
             <div v-else class="px-8 py-8 text-center text-sm text-gray-500 dark:text-dark-400">
-              {{ t('keyUsage.noDailyUsage') }}
+              {{ keyUsageText('noDailyUsage') }}
             </div>
           </div>
 
@@ -341,20 +341,20 @@
             class="fade-up fade-up-delay-4 rounded-2xl border border-gray-200 bg-white/90 backdrop-blur-sm overflow-hidden dark:border-dark-700 dark:bg-dark-900/90"
           >
             <div class="px-8 py-5 border-b border-gray-200 dark:border-dark-700">
-              <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.modelStats') }}</h3>
+              <h3 class="text-sm font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('modelStats') }}</h3>
             </div>
             <div class="overflow-x-auto">
               <table class="w-full">
                 <thead>
                   <tr class="border-b border-gray-200 bg-gray-50 dark:border-dark-700 dark:bg-dark-950">
-                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.model') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.requests') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.inputTokens') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.outputTokens') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.cacheCreationTokens') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.cacheReadTokens') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.totalTokens') }}</th>
-                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ t('keyUsage.cost') }}</th>
+                    <th class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('model') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('requests') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('inputTokens') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('outputTokens') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('cacheCreationTokens') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('cacheReadTokens') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('totalTokens') }}</th>
+                    <th class="px-4 py-3 text-right text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-dark-400">{{ keyUsageText('cost') }}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -384,14 +384,14 @@
     <footer class="relative z-10 border-t border-gray-200/50 px-6 py-8 dark:border-dark-800/50">
       <div class="mx-auto flex max-w-6xl flex-col items-center justify-center gap-4 text-center sm:flex-row sm:text-left">
         <p class="text-sm text-gray-500 dark:text-dark-400">
-          &copy; {{ currentYear }} {{ siteName }}. {{ t('home.footer.allRightsReserved') }}
+          &copy; {{ currentYear }} {{ siteName }}. {{ allRightsReservedLabel }}
         </p>
         <div class="flex items-center gap-4">
           <DocsLink
             v-if="docUrl"
             :doc-url="docUrl"
             class="text-sm text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-white"
-          >{{ t('home.docs') }}</DocsLink>
+          >{{ docsLinkLabel }}</DocsLink>
           <a
             :href="githubUrl"
             target="_blank"
@@ -408,21 +408,51 @@
 import { ref, computed, onMounted, onUnmounted, nextTick } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores'
+import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import DocsLink from '@/components/common/DocsLink.vue'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
+import {
+  renderKeyUsageShellText,
+  resolveKeyUsageShellConfig,
+  type KeyUsageShellLabelKey,
+} from '@/utils/keyUsageShell'
+import { resolveRuntimeLanguage, resolveRuntimeLocale } from '@/utils/runtimeLocale'
+import {
+  buildKeyUsageDateParams,
+  formatKeyUsageResetTime,
+  resolveKeyUsageStatusInfo,
+  type KeyUsageDateRangeKey,
+} from './keyUsageRuntime'
 
-const { t, locale } = useI18n()
+const { locale } = useI18n()
 const appStore = useAppStore()
+const { authRouteDefaults } = useAuthRouteDefaults()
 
 // ==================== Site Settings (same as HomeView) ====================
 
-const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Sub2API')
+const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName)
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const githubUrl = 'https://github.com/Wei-Shaw/sub2api'
 
 const currentYear = computed(() => new Date().getFullYear())
+const runtimeLocale = computed<'zh' | 'en'>(() => resolveRuntimeLanguage(locale))
+const runtimeLocaleCode = computed(() => resolveRuntimeLocale(locale))
+const docsLinkLabel = computed(() => keyUsageText('docs'))
+const allRightsReservedLabel = computed(() => keyUsageText('allRightsReserved'))
+
+const keyUsageShellConfig = computed(() =>
+  resolveKeyUsageShellConfig(
+    appStore.cachedPublicSettings?.key_usage_shell_config,
+    runtimeLocale.value,
+  ),
+)
+const keyUsageShellLabels = computed(() => keyUsageShellConfig.value.labels)
+
+function keyUsageText(key: KeyUsageShellLabelKey, params: Record<string, string | number> = {}): string {
+  return renderKeyUsageShellText(keyUsageShellLabels.value, key, params)
+}
 
 // ==================== Key Query State ====================
 
@@ -439,26 +469,25 @@ let resetTimer: ReturnType<typeof setInterval> | null = null
 
 // ==================== Date Range State ====================
 
-type DateRangeKey = 'today' | '7d' | '30d' | 'custom'
-const currentRange = ref<DateRangeKey>('today')
+const currentRange = ref<KeyUsageDateRangeKey>(keyUsageShellConfig.value.defaults.defaultDateRange)
 const customStartDate = ref('')
 const customEndDate = ref('')
-const dailyUsageDays = ref<7 | 30 | 90>(30)
+const dailyUsageDays = ref<7 | 30 | 90>(keyUsageShellConfig.value.defaults.dailyUsageDays)
 
 const dateRanges = computed(() => [
-  { key: 'today' as const, label: t('keyUsage.dateRangeToday') },
-  { key: '7d' as const, label: t('keyUsage.dateRange7d') },
-  { key: '30d' as const, label: t('keyUsage.dateRange30d') },
-  { key: 'custom' as const, label: t('keyUsage.dateRangeCustom') },
+  { key: 'today' as const, label: keyUsageText('dateRangeToday') },
+  { key: '7d' as const, label: keyUsageText('dateRange7d') },
+  { key: '30d' as const, label: keyUsageText('dateRange30d') },
+  { key: 'custom' as const, label: keyUsageText('dateRangeCustom') },
 ])
 
 const dailyUsageOptions = computed(() => [
-  { value: 7 as const, label: t('keyUsage.dateRange7d') },
-  { value: 30 as const, label: t('keyUsage.dateRange30d') },
-  { value: 90 as const, label: t('keyUsage.dateRange90d') },
+  { value: 7 as const, label: keyUsageText('dateRange7d') },
+  { value: 30 as const, label: keyUsageText('dateRange30d') },
+  { value: 90 as const, label: keyUsageText('dateRange90d') },
 ])
 
-function setDateRange(key: DateRangeKey) {
+function setDateRange(key: KeyUsageDateRangeKey) {
   currentRange.value = key
   if (key !== 'custom') {
     queryKey()
@@ -466,30 +495,13 @@ function setDateRange(key: DateRangeKey) {
 }
 
 function getDateParams(): string {
-  const now = new Date()
-  const fmt = (d: Date) => d.toISOString().split('T')[0]
-  const params = new URLSearchParams()
-
-  if (currentRange.value === 'custom') {
-    if (customStartDate.value && customEndDate.value) {
-      params.set('start_date', customStartDate.value)
-      params.set('end_date', customEndDate.value)
-    }
-  } else {
-    const end = fmt(now)
-    let start: string
-    switch (currentRange.value) {
-      case 'today': start = end; break
-      case '7d': start = fmt(new Date(now.getTime() - 7 * 86400000)); break
-      case '30d': start = fmt(new Date(now.getTime() - 30 * 86400000)); break
-      default: start = fmt(new Date(now.getTime() - 30 * 86400000))
-    }
-    params.set('start_date', start)
-    params.set('end_date', end)
-  }
-  params.set('days', String(dailyUsageDays.value))
-  params.set('timezone', getBrowserTimezone())
-  return params.toString()
+  return buildKeyUsageDateParams({
+    range: currentRange.value,
+    dailyUsageDays: dailyUsageDays.value,
+    customStartDate: customStartDate.value,
+    customEndDate: customEndDate.value,
+    timezone: getBrowserTimezone(),
+  })
 }
 
 function setDailyUsageDays(days: 7 | 30 | 90) {
@@ -560,28 +572,11 @@ function triggerRingAnimation(items: RingItem[]) {
 // ==================== Computed Data ====================
 
 const statusInfo = computed(() => {
-  const data = resultData.value
-  if (!data) return null
-
-  if (data.mode === 'quota_limited') {
-    const isValid = data.isValid !== false
-    const statusMap: Record<string, string> = {
-      active: 'Active',
-      quota_exhausted: 'Quota Exhausted',
-      expired: 'Expired',
-    }
-    return {
-      label: t('keyUsage.quotaMode'),
-      statusText: statusMap[data.status] || data.status || 'Unknown',
-      isActive: isValid && data.status === 'active',
-    }
-  }
-
-  return {
-    label: data.planName || t('keyUsage.walletBalance'),
-    statusText: 'Active',
-    isActive: true,
-  }
+  return resolveKeyUsageStatusInfo(
+    resultData.value,
+    keyUsageText('walletBalance'),
+    keyUsageText('quotaMode'),
+  )
 })
 
 const ringItems = computed<RingItem[]>(() => {
@@ -593,10 +588,10 @@ const ringItems = computed<RingItem[]>(() => {
   if (data.mode === 'quota_limited') {
     if (data.quota) {
       const pct = data.quota.limit > 0 ? Math.min(Math.round((data.quota.used / data.quota.limit) * 100), 100) : 0
-      items.push({ title: t('keyUsage.totalQuota'), pct, amount: `${usd(data.quota.used)} / ${usd(data.quota.limit)}`, iconType: 'dollar' })
+      items.push({ title: keyUsageText('totalQuota'), pct, amount: `${usd(data.quota.used)} / ${usd(data.quota.limit)}`, iconType: 'dollar' })
     }
     if (data.rate_limits) {
-      const windowLabels: Record<string, string> = { '5h': t('keyUsage.limit5h'), '1d': t('keyUsage.limitDaily'), '7d': t('keyUsage.limit7d') }
+      const windowLabels: Record<string, string> = { '5h': keyUsageText('limit5h'), '1d': keyUsageText('limitDaily'), '7d': keyUsageText('limit7d') }
       const windowIcons: Record<string, 'clock' | 'calendar'> = { '5h': 'clock', '1d': 'calendar', '7d': 'calendar' }
       for (const rl of data.rate_limits) {
         const pct = rl.limit > 0 ? Math.min(Math.round((rl.used / rl.limit) * 100), 100) : 0
@@ -613,9 +608,9 @@ const ringItems = computed<RingItem[]>(() => {
     if (data.subscription) {
       const sub = data.subscription
       const limits = [
-        { label: t('keyUsage.limitDaily'), usage: sub.daily_usage_usd, limit: sub.daily_limit_usd },
-        { label: t('keyUsage.limitWeekly'), usage: sub.weekly_usage_usd, limit: sub.weekly_limit_usd },
-        { label: t('keyUsage.limitMonthly'), usage: sub.monthly_usage_usd, limit: sub.monthly_limit_usd },
+        { label: keyUsageText('limitDaily'), usage: sub.daily_usage_usd, limit: sub.daily_limit_usd },
+        { label: keyUsageText('limitWeekly'), usage: sub.weekly_usage_usd, limit: sub.weekly_limit_usd },
+        { label: keyUsageText('limitMonthly'), usage: sub.monthly_usage_usd, limit: sub.monthly_limit_usd },
       ]
       for (const l of limits) {
         if (l.limit != null && l.limit > 0) {
@@ -625,7 +620,7 @@ const ringItems = computed<RingItem[]>(() => {
       }
     }
     if (!data.subscription && data.balance != null) {
-      items.push({ title: t('keyUsage.walletBalance'), pct: 0, amount: usd(data.balance), isBalance: true, iconType: 'dollar' })
+      items.push({ title: keyUsageText('walletBalance'), pct: 0, amount: usd(data.balance), isBalance: true, iconType: 'dollar' })
     }
   }
 
@@ -671,22 +666,23 @@ const detailRows = computed<DetailRow[]>(() => {
         : 'text-emerald-500'
       rows.push({
         iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-500', iconSvg: ICON_SHIELD,
-        label: t('keyUsage.remainingQuota'), value: usd(data.quota.remaining), valueClass: remainColor,
+        label: keyUsageText('remainingQuota'), value: usd(data.quota.remaining), valueClass: remainColor,
       })
     }
     if (data.expires_at) {
       const daysLeft = data.days_until_expiry
       let expiryStr = formatDate(data.expires_at)
       if (daysLeft != null) {
-        expiryStr += daysLeft > 0 ? ` ${t('keyUsage.daysLeft', { days: daysLeft })}` : daysLeft === 0 ? ` ${t('keyUsage.todayExpires')}` : ''
+        expiryStr += daysLeft > 0 ? ` ${keyUsageText('daysLeft', { days: daysLeft })}` : daysLeft === 0 ? ` ${keyUsageText('todayExpires')}` : ''
       }
       rows.push({
         iconBg: 'bg-amber-500/10', iconColor: 'text-amber-500', iconSvg: ICON_CALENDAR,
-        label: t('keyUsage.expiresAt'), value: expiryStr, valueClass: '',
+        label: keyUsageText('expiresAt'), value: expiryStr, valueClass: '',
       })
     }
     if (data.rate_limits) {
-      const windowMap: Record<string, string> = { '5h': '5H', '1d': locale.value === 'zh' ? '日' : 'D', '7d': '7D' }
+      const isZh = runtimeLocale.value === 'zh'
+      const windowMap: Record<string, string> = { '5h': '5H', '1d': isZh ? '日' : 'D', '7d': '7D' }
       for (const rl of data.rate_limits) {
         const pct = rl.limit > 0 ? (rl.used / rl.limit) * 100 : 0
         let valueStr = `${usd(rl.used)} / ${usd(rl.limit)}`
@@ -696,7 +692,7 @@ const detailRows = computed<DetailRow[]>(() => {
         }
         rows.push({
           iconBg: 'bg-primary-500/10', iconColor: 'text-primary-500', iconSvg: ICON_DOLLAR,
-          label: `${t('keyUsage.usedQuota')} (${windowMap[rl.window] || rl.window})`,
+          label: `${keyUsageText('usedQuota')} (${windowMap[rl.window] || rl.window})`,
           value: valueStr,
           valueClass: getUsageColor(pct),
         })
@@ -705,7 +701,7 @@ const detailRows = computed<DetailRow[]>(() => {
   } else {
     rows.push({
       iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-500', iconSvg: ICON_CHECK,
-      label: t('keyUsage.subscriptionType'), value: data.planName || t('keyUsage.walletBalance'), valueClass: '',
+      label: keyUsageText('subscriptionType'), value: data.planName || keyUsageText('walletBalance'), valueClass: '',
     })
 
     if (data.subscription) {
@@ -714,27 +710,27 @@ const detailRows = computed<DetailRow[]>(() => {
         const pct = (sub.daily_usage_usd / sub.daily_limit_usd) * 100
         rows.push({
           iconBg: 'bg-primary-500/10', iconColor: 'text-primary-500', iconSvg: ICON_DOLLAR,
-          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '日' : 'D'})`, value: `${usd(sub.daily_usage_usd)} / ${usd(sub.daily_limit_usd)}`, valueClass: getUsageColor(pct),
+          label: `${keyUsageText('usedQuota')} (${runtimeLocale.value === 'zh' ? '日' : 'D'})`, value: `${usd(sub.daily_usage_usd)} / ${usd(sub.daily_limit_usd)}`, valueClass: getUsageColor(pct),
         })
       }
       if (sub.weekly_limit_usd > 0) {
         const pct = (sub.weekly_usage_usd / sub.weekly_limit_usd) * 100
         rows.push({
           iconBg: 'bg-indigo-500/10', iconColor: 'text-indigo-500', iconSvg: ICON_DOLLAR,
-          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '周' : 'W'})`, value: `${usd(sub.weekly_usage_usd)} / ${usd(sub.weekly_limit_usd)}`, valueClass: getUsageColor(pct),
+          label: `${keyUsageText('usedQuota')} (${runtimeLocale.value === 'zh' ? '周' : 'W'})`, value: `${usd(sub.weekly_usage_usd)} / ${usd(sub.weekly_limit_usd)}`, valueClass: getUsageColor(pct),
         })
       }
       if (sub.monthly_limit_usd > 0) {
         const pct = (sub.monthly_usage_usd / sub.monthly_limit_usd) * 100
         rows.push({
           iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-500', iconSvg: ICON_DOLLAR,
-          label: `${t('keyUsage.usedQuota')} (${locale.value === 'zh' ? '月' : 'M'})`, value: `${usd(sub.monthly_usage_usd)} / ${usd(sub.monthly_limit_usd)}`, valueClass: getUsageColor(pct),
+          label: `${keyUsageText('usedQuota')} (${runtimeLocale.value === 'zh' ? '月' : 'M'})`, value: `${usd(sub.monthly_usage_usd)} / ${usd(sub.monthly_limit_usd)}`, valueClass: getUsageColor(pct),
         })
       }
       if (sub.expires_at) {
         rows.push({
           iconBg: 'bg-amber-500/10', iconColor: 'text-amber-500', iconSvg: ICON_CALENDAR,
-          label: t('keyUsage.subscriptionExpires'), value: formatDate(sub.expires_at), valueClass: '',
+          label: keyUsageText('subscriptionExpires'), value: formatDate(sub.expires_at), valueClass: '',
         })
       }
     }
@@ -744,7 +740,7 @@ const detailRows = computed<DetailRow[]>(() => {
       : ''
     rows.push({
       iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-500', iconSvg: ICON_SHIELD,
-      label: t('keyUsage.remainingQuota'), value: data.remaining != null ? usd(data.remaining) : '-', valueClass: remainColor,
+      label: keyUsageText('remainingQuota'), value: data.remaining != null ? usd(data.remaining) : '-', valueClass: remainColor,
     })
   }
 
@@ -764,22 +760,22 @@ const usageStatCells = computed<StatCell[]>(() => {
   const total = usage.total || {}
 
   return [
-    { label: t('keyUsage.todayRequests'), value: fmtNum(today.requests) },
-    { label: t('keyUsage.todayInputTokens'), value: fmtNum(today.input_tokens) },
-    { label: t('keyUsage.todayOutputTokens'), value: fmtNum(today.output_tokens) },
-    { label: t('keyUsage.todayTokens'), value: fmtNum(today.total_tokens) },
-    { label: t('keyUsage.todayCacheCreation'), value: fmtNum(today.cache_creation_tokens) },
-    { label: t('keyUsage.todayCacheRead'), value: fmtNum(today.cache_read_tokens) },
-    { label: t('keyUsage.todayCost'), value: usd(today.actual_cost) },
-    { label: t('keyUsage.rpmTpm'), value: `${usage.rpm || 0} / ${usage.tpm || 0}` },
-    { label: t('keyUsage.totalRequests'), value: fmtNum(total.requests) },
-    { label: t('keyUsage.totalInputTokens'), value: fmtNum(total.input_tokens) },
-    { label: t('keyUsage.totalOutputTokens'), value: fmtNum(total.output_tokens) },
-    { label: t('keyUsage.totalTokensLabel'), value: fmtNum(total.total_tokens) },
-    { label: t('keyUsage.totalCacheCreation'), value: fmtNum(total.cache_creation_tokens) },
-    { label: t('keyUsage.totalCacheRead'), value: fmtNum(total.cache_read_tokens) },
-    { label: t('keyUsage.totalCost'), value: usd(total.actual_cost) },
-    { label: t('keyUsage.avgDuration'), value: usage.average_duration_ms ? `${Math.round(usage.average_duration_ms)} ms` : '-' },
+    { label: keyUsageText('todayRequests'), value: fmtNum(today.requests) },
+    { label: keyUsageText('todayInputTokens'), value: fmtNum(today.input_tokens) },
+    { label: keyUsageText('todayOutputTokens'), value: fmtNum(today.output_tokens) },
+    { label: keyUsageText('todayTokens'), value: fmtNum(today.total_tokens) },
+    { label: keyUsageText('todayCacheCreation'), value: fmtNum(today.cache_creation_tokens) },
+    { label: keyUsageText('todayCacheRead'), value: fmtNum(today.cache_read_tokens) },
+    { label: keyUsageText('todayCost'), value: usd(today.actual_cost) },
+    { label: keyUsageText('rpmTpm'), value: `${usage.rpm || 0} / ${usage.tpm || 0}` },
+    { label: keyUsageText('totalRequests'), value: fmtNum(total.requests) },
+    { label: keyUsageText('totalInputTokens'), value: fmtNum(total.input_tokens) },
+    { label: keyUsageText('totalOutputTokens'), value: fmtNum(total.output_tokens) },
+    { label: keyUsageText('totalTokensLabel'), value: fmtNum(total.total_tokens) },
+    { label: keyUsageText('totalCacheCreation'), value: fmtNum(total.cache_creation_tokens) },
+    { label: keyUsageText('totalCacheRead'), value: fmtNum(total.cache_read_tokens) },
+    { label: keyUsageText('totalCost'), value: usd(total.actual_cost) },
+    { label: keyUsageText('avgDuration'), value: usage.average_duration_ms ? `${Math.round(usage.average_duration_ms)} ms` : '-' },
   ]
 })
 
@@ -819,7 +815,7 @@ function fmtNum(val: number | null | undefined): string {
 function formatDate(iso: string | null | undefined): string {
   if (!iso) return '-'
   const d = new Date(iso)
-  const loc = locale.value === 'zh' ? 'zh-CN' : 'en-US'
+  const loc = runtimeLocale.value === 'zh' ? (runtimeLocaleCode.value || 'zh-CN') : (runtimeLocaleCode.value || 'en-US')
   return d.toLocaleDateString(loc, { year: 'numeric', month: 'long', day: 'numeric' })
 }
 
@@ -841,7 +837,7 @@ async function fetchUsage(key: string) {
   })
   if (!res.ok) {
     const body = await res.json().catch(() => null)
-    const msg = body?.error?.message || body?.message || `${t('keyUsage.queryFailed')} (${res.status})`
+    const msg = body?.error?.message || body?.message || `${keyUsageText('queryFailed')} (${res.status})`
     throw new Error(msg)
   }
   return await res.json()
@@ -851,7 +847,7 @@ async function queryKey() {
   if (isQuerying.value) return
   const key = apiKey.value.trim()
   if (!key) {
-    appStore.showInfo(t('keyUsage.enterApiKey'))
+    appStore.showInfo(keyUsageText('enterApiKey'))
     return
   }
 
@@ -871,11 +867,11 @@ async function queryKey() {
       triggerRingAnimation(ringItems.value)
     })
 
-    appStore.showSuccess(t('keyUsage.querySuccess'))
+    appStore.showSuccess(keyUsageText('querySuccess'))
   } catch (err) {
     showResults.value = false
     showLoading.value = false
-    appStore.showError((err as Error).message || t('keyUsage.queryFailedRetry'))
+    appStore.showError((err as Error).message || keyUsageText('queryFailedRetry'))
   } finally {
     isQuerying.value = false
   }
@@ -884,15 +880,7 @@ async function queryKey() {
 // ==================== Lifecycle ====================
 
 function formatResetTime(resetAt: string | null | undefined): string {
-  if (!resetAt) return ''
-  const diff = new Date(resetAt).getTime() - now.value.getTime()
-  if (diff <= 0) return t('keyUsage.resetNow')
-  const days = Math.floor(diff / 86400000)
-  const hours = Math.floor((diff % 86400000) / 3600000)
-  const mins = Math.floor((diff % 3600000) / 60000)
-  if (days > 0) return `${days}d ${hours}h`
-  if (hours > 0) return `${hours}h ${mins}m`
-  return `${mins}m`
+  return formatKeyUsageResetTime(resetAt, now.value, keyUsageText('resetNow'))
 }
 
 onMounted(() => {

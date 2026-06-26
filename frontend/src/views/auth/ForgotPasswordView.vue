@@ -4,10 +4,10 @@
       <!-- Title -->
       <div class="text-center">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-          {{ t('auth.forgotPasswordTitle') }}
+          {{ authText('forgotPasswordTitle') }}
         </h2>
         <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-          {{ t('auth.forgotPasswordHint') }}
+          {{ authText('forgotPasswordHint') }}
         </p>
       </div>
 
@@ -20,10 +20,10 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold text-green-800 dark:text-green-200">
-                {{ t('auth.resetEmailSent') }}
+                {{ authText('resetEmailSent') }}
               </h3>
               <p class="mt-2 text-sm text-green-700 dark:text-green-300">
-                {{ t('auth.resetEmailSentHint') }}
+                {{ authText('resetEmailSentHint') }}
               </p>
             </div>
           </div>
@@ -31,11 +31,11 @@
 
         <div class="text-center">
           <router-link
-            to="/login"
+            :to="authRouteDefaults.loginPath"
             class="inline-flex items-center gap-2 font-medium text-primary-600 transition-colors hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
           >
             <Icon name="arrowLeft" size="sm" />
-            {{ t('auth.backToLogin') }}
+            {{ authText('backToLogin') }}
           </router-link>
         </div>
       </div>
@@ -45,7 +45,7 @@
         <!-- Email Input -->
         <div>
           <label for="email" class="input-label">
-            {{ t('auth.emailLabel') }}
+            {{ authText('emailLabel') }}
           </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -61,7 +61,7 @@
               :disabled="isLoading"
               class="input pl-11"
               :class="{ 'input-error': errors.email }"
-              :placeholder="t('auth.emailPlaceholder')"
+              :placeholder="authText('emailPlaceholder')"
             />
           </div>
         </div>
@@ -104,7 +104,7 @@
             ></path>
           </svg>
           <Icon v-else name="mail" size="md" class="mr-2" />
-          {{ isLoading ? t('auth.sendingResetLink') : t('auth.sendResetLink') }}
+          {{ isLoading ? authText('sendingResetLink') : authText('sendResetLink') }}
         </button>
       </form>
     </div>
@@ -112,12 +112,12 @@
     <!-- Footer -->
     <template #footer>
       <p class="text-gray-500 dark:text-dark-400">
-        {{ t('auth.rememberedPassword') }}
+        {{ authText('rememberedPassword') }}
         <router-link
-          to="/login"
+          :to="authRouteDefaults.loginPath"
           class="font-medium text-primary-600 transition-colors hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
         >
-          {{ t('auth.signIn') }}
+          {{ authText('signIn') }}
         </router-link>
       </p>
     </template>
@@ -132,6 +132,7 @@ import Icon from '@/components/icons/Icon.vue'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { useAppStore } from '@/stores'
 import { getPublicSettings, forgotPassword } from '@/api/auth'
+import { useAuthShellText } from '@/composables/useAuthShellText'
 
 const { t } = useI18n()
 
@@ -144,6 +145,7 @@ const appStore = useAppStore()
 const isLoading = ref<boolean>(false)
 const isSubmitted = ref<boolean>(false)
 const errorMessage = ref<string>('')
+const { authText, authRouteDefaults, applyAuthShellConfig } = useAuthShellText()
 
 // Public settings
 const turnstileEnabled = ref<boolean>(false)
@@ -177,6 +179,7 @@ onMounted(async () => {
     const settings = await getPublicSettings()
     turnstileEnabled.value = settings.turnstile_enabled
     turnstileSiteKey.value = settings.turnstile_site_key || ''
+    applyAuthShellConfig(settings.auth_shell_config)
   } catch (error) {
     console.error('Failed to load public settings:', error)
   }
@@ -243,7 +246,7 @@ async function handleSubmit(): Promise<void> {
     })
 
     isSubmitted.value = true
-    appStore.showSuccess(t('auth.resetEmailSent'))
+    appStore.showSuccess(authText('resetEmailSent'))
   } catch (error: unknown) {
     // Reset Turnstile on error
     if (turnstileRef.value) {

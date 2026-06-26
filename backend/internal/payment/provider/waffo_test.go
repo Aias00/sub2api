@@ -76,7 +76,9 @@ func TestWaffoCreateQueryAndWebhook(t *testing.T) {
 	require.NotEmpty(t, createHeaders.Get(waffoHeaderSignature))
 	require.Equal(t, "sub2_123", createBody["merchantOrderId"])
 	require.Equal(t, "12.88", createBody["orderAmount"])
-	require.Equal(t, "user@example.com", createBody["userInfo"].(map[string]any)["userEmail"])
+	userInfo, ok := createBody["userInfo"].(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "user@example.com", userInfo["userEmail"])
 	require.Equal(t, "pay_req_1", resp.TradeNo)
 	require.Equal(t, "https://waffo.test/pay", resp.PayURL)
 

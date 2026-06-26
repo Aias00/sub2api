@@ -56,6 +56,10 @@ type Handlers struct {
 	Payment          *PaymentHandler
 	PaymentWebhook   *PaymentWebhookHandler
 	AvailableChannel *AvailableChannelHandler
+	PromptCatalog    *PromptCatalogHandler
+	TwitterImport    *TwitterImportHandler
+	WeChatExport     *WeChatExportHandler
+	Web              *WebHandler
 }
 
 // BuildInfo contains build-time information

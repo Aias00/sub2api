@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, shallowMount } from '@vue/test-utils'
 import AirwallexPaymentView from '../AirwallexPaymentView.vue'
@@ -12,6 +13,12 @@ const routeState = vi.hoisted(() => ({
 const routerPush = vi.hoisted(() => vi.fn())
 const airwallexInit = vi.hoisted(() => vi.fn())
 const redirectToCheckout = vi.hoisted(() => vi.fn())
+const appStoreState = vi.hoisted(() => ({
+  cachedPublicSettings: null as null | {
+    auth_shell_config?: string
+    payment_shell_config?: string
+  },
+}))
 
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
@@ -33,9 +40,42 @@ vi.mock('vue-i18n', async () => {
   }
 })
 
+vi.mock('@/stores', () => ({
+  useAppStore: () => appStoreState,
+}))
+
 vi.mock('@airwallex/components-sdk', () => ({
   init: airwallexInit,
 }))
+
+const airwallexPaymentViewSource = readFileSync(
+  'src/views/user/AirwallexPaymentView.vue',
+  'utf8',
+)
+
+function buildAirwallexPaymentShellConfig(overrides: Record<string, string> = {}) {
+  return JSON.stringify({
+    zh: {
+      labels: {
+        airwallexLoadFailed: 'Airwallex 加载失败',
+        airwallexMissingParams: 'Airwallex 参数缺失',
+        backToRecharge: '返回充值',
+        payInNewWindowHint: '正在打开支付页面',
+        ...overrides,
+      },
+    },
+  })
+}
+
+function buildAuthShellConfig(paymentResultPath: string) {
+  return JSON.stringify({
+    zh: {
+      defaults: {
+        paymentResultPath,
+      },
+    },
+  })
+}
 
 function airwallexSnapshot(overrides: Partial<PaymentRecoverySnapshot> = {}): PaymentRecoverySnapshot {
   return {
@@ -75,6 +115,9 @@ describe('AirwallexPaymentView', () => {
   beforeEach(() => {
     routeState.query = {}
     routerPush.mockReset()
+    appStoreState.cachedPublicSettings = {
+      payment_shell_config: buildAirwallexPaymentShellConfig(),
+    }
     airwallexInit.mockReset().mockResolvedValue({
       payments: {
         redirectToCheckout,
@@ -113,9 +156,61 @@ describe('AirwallexPaymentView', () => {
 
     const checkoutOptions = redirectToCheckout.mock.calls[0][0]
     const successUrl = new URL(checkoutOptions.successUrl)
+    expect(successUrl.pathname).toBe('/payment/result')
     expect(successUrl.searchParams.get('order_id')).toBe('101')
     expect(successUrl.searchParams.get('out_trade_no')).toBe('sub2_awx_101')
     expect(successUrl.searchParams.get('resume_token')).toBe('resume-awx')
+  })
+
+  it('uses the Sub2API auth shell payment result path for Airwallex success URLs', async () => {
+    appStoreState.cachedPublicSettings = {
+      auth_shell_config: buildAuthShellConfig('/configured-payment-result'),
+      payment_shell_config: buildAirwallexPaymentShellConfig(),
+    }
+    routeState.query = {
+      order_id: '101',
+      out_trade_no: 'sub2_awx_101',
+      resume_token: 'resume-awx',
+    }
+    window.localStorage.setItem(
+      PAYMENT_RECOVERY_STORAGE_KEY,
+      JSON.stringify(airwallexSnapshot()),
+    )
+
+    mountView()
+    await flushPromises()
+    await flushPromises()
+
+    const checkoutOptions = redirectToCheckout.mock.calls[0][0]
+    const successUrl = new URL(checkoutOptions.successUrl)
+    expect(successUrl.pathname).toBe('/configured-payment-result')
+    expect(successUrl.searchParams.get('order_id')).toBe('101')
+    expect(successUrl.searchParams.get('out_trade_no')).toBe('sub2_awx_101')
+    expect(successUrl.searchParams.get('resume_token')).toBe('resume-awx')
+  })
+
+  it('缺失币种和国家码时不在前端合成 CNY/CN', async () => {
+    routeState.query = {
+      order_id: '101',
+      out_trade_no: 'sub2_awx_101',
+      resume_token: 'resume-awx',
+    }
+    window.localStorage.setItem(
+      PAYMENT_RECOVERY_STORAGE_KEY,
+      JSON.stringify(airwallexSnapshot({
+        currency: '',
+        countryCode: '',
+      })),
+    )
+
+    mountView()
+    await flushPromises()
+    await flushPromises()
+
+    expect(redirectToCheckout).toHaveBeenCalledWith(expect.objectContaining({
+      currency: '',
+      country_code: '',
+    }))
   })
 
   it('拒绝只从 URL query 读取 Airwallex 支付密钥', async () => {
@@ -129,6 +224,45 @@ describe('AirwallexPaymentView', () => {
     await flushPromises()
 
     expect(airwallexInit).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('payment.airwallexMissingParams')
+    expect(wrapper.text()).toContain('Airwallex 参数缺失')
+  })
+
+  it('优先使用 public settings 中的 Airwallex 承载页文案', async () => {
+    appStoreState.cachedPublicSettings = {
+      payment_shell_config: buildAirwallexPaymentShellConfig({
+        airwallexLoadFailed: '配置 Airwallex 失败',
+        airwallexMissingParams: '配置缺参',
+        backToRecharge: '配置返回',
+      }),
+    }
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(airwallexInit).not.toHaveBeenCalled()
+    expect(wrapper.text()).toContain('配置 Airwallex 失败')
+    expect(wrapper.text()).toContain('配置缺参')
+    expect(wrapper.text()).toContain('配置返回')
+  })
+
+  it('does not carry local Airwallex payment i18n fallback maps in the view', () => {
+    expect(airwallexPaymentViewSource).not.toContain('const airwallexPaymentLabelKeys')
+    expect(airwallexPaymentViewSource).not.toContain('resolvePaymentShellLabels(')
+    expect(airwallexPaymentViewSource).toContain('resolveAirwallexPaymentLabels')
+    expect(airwallexPaymentViewSource).toContain('renderAirwallexPaymentText')
+    expect(airwallexPaymentViewSource).toContain("from './airwallexPaymentRuntime'")
+    expect(airwallexPaymentViewSource).toContain('buildAirwallexSuccessUrl')
+    expect(airwallexPaymentViewSource).toContain('restoreAirwallexPaymentSnapshot')
+    expect(airwallexPaymentViewSource).toContain('useAuthRouteDefaults')
+    expect(airwallexPaymentViewSource).toContain('authRouteDefaults.value.paymentResultPath')
+    expect(airwallexPaymentViewSource).toContain('router.push(authRouteDefaults.purchasePath)')
+    expect(airwallexPaymentViewSource).not.toContain("router.push('/purchase')")
+    expect(airwallexPaymentViewSource).not.toContain("new URL('/payment/result'")
+    expect(airwallexPaymentViewSource).not.toContain('airwallexPaymentFallbackKeys')
+    expect(airwallexPaymentViewSource).not.toContain('airwallexPaymentLabels.value[key] || key')
+    expect(airwallexPaymentViewSource).not.toContain('payment.airwallexMissingParams')
+    expect(airwallexPaymentViewSource).not.toContain('payment.result.backToRecharge')
+    expect(airwallexPaymentViewSource).not.toContain("snapshot.currency || 'CNY'")
+    expect(airwallexPaymentViewSource).not.toContain("snapshot.countryCode || 'CN'")
   })
 })

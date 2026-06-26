@@ -5,7 +5,7 @@
       :data-testid="`${testIdPrefix}-create-account-email`"
       type="email"
       class="input w-full"
-      :placeholder="t('auth.emailPlaceholder')"
+      :placeholder="authText('emailPlaceholder')"
       :disabled="isSubmitting || isSendingCode"
     />
     <input
@@ -13,7 +13,7 @@
       :data-testid="`${testIdPrefix}-create-account-password`"
       type="password"
       class="input w-full"
-      :placeholder="t('auth.passwordPlaceholder')"
+      :placeholder="authText('passwordPlaceholder')"
       :disabled="isSubmitting"
     />
     <div v-if="turnstileEnabled && turnstileSiteKey" class="space-y-2">
@@ -45,18 +45,18 @@
       >
         {{
           isSendingCode
-            ? t('auth.sendingCode')
+            ? authText('sendingCode')
             : countdown > 0
-              ? t('auth.resendCountdown', { countdown })
-              : t('auth.sendCode')
+              ? authText('resendCountdown', { countdown })
+              : authText('sendCode')
         }}
       </button>
     </div>
     <p v-if="sendCodeSuccess" class="text-sm text-green-600 dark:text-green-400">
-      {{ t('auth.codeSentSuccess') }}
+      {{ authText('codeSentSuccess') }}
     </p>
     <p v-else class="text-xs text-gray-500 dark:text-dark-400">
-      {{ t('auth.verificationCodeHint') }}
+      {{ authText('verificationCodeHint') }}
     </p>
     <input
       v-if="invitationCodeEnabled"
@@ -64,7 +64,7 @@
       :data-testid="`${testIdPrefix}-create-account-invitation-code`"
       type="text"
       class="input w-full"
-      :placeholder="t('auth.invitationCodePlaceholder')"
+      :placeholder="authText('invitationCodePlaceholder')"
       :disabled="isSubmitting"
     />
     <button
@@ -74,7 +74,7 @@
       :disabled="isSubmitting || !email.trim() || password.length < passwordMinLength || (invitationCodeEnabled && !invitationCode.trim())"
       @click="handleSubmit"
     >
-      {{ isSubmitting ? t('common.processing') : t('auth.createAccount') }}
+      {{ isSubmitting ? authText('processing') : authText('createAccount') }}
     </button>
     <button
       type="button"
@@ -82,7 +82,7 @@
       :disabled="isSubmitting"
       @click="emitSwitchToBind"
     >
-      {{ t('auth.alreadyHaveAccount') }}
+      {{ authText('alreadyHaveAccount') }}
     </button>
   </form>
 </template>
@@ -92,6 +92,7 @@ import { onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { getPublicSettings, sendPendingOAuthVerifyCode } from '@/api/auth'
+import { useAuthShellText } from '@/composables/useAuthShellText'
 import { useAppStore } from '@/stores'
 import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
 
@@ -115,6 +116,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { authText, loadAuthShellLabels } = useAuthShellText()
 const appStore = useAppStore()
 
 const email = ref('')
@@ -259,6 +261,7 @@ function emitSwitchToBind() {
 }
 
 onMounted(async () => {
+  void loadAuthShellLabels()
   try {
     const settings = await getPublicSettings()
     invitationCodeEnabled.value = settings.invitation_code_enabled === true

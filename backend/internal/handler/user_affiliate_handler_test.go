@@ -38,7 +38,9 @@ func (s *userAffiliateRepoStub) AccrueQuota(context.Context, int64, int64, float
 func (s *userAffiliateRepoStub) GetAccruedRebateFromInvitee(context.Context, int64, int64) (float64, error) {
 	return 0, nil
 }
-func (s *userAffiliateRepoStub) ThawFrozenQuota(context.Context, int64) (float64, error) { return 0, nil }
+func (s *userAffiliateRepoStub) ThawFrozenQuota(context.Context, int64) (float64, error) {
+	return 0, nil
+}
 func (s *userAffiliateRepoStub) TransferQuotaToBalance(context.Context, int64) (float64, float64, error) {
 	return 0, 0, nil
 }
@@ -55,7 +57,9 @@ func (s *userAffiliateRepoStub) GetAffiliateOverview(context.Context) (*service.
 	return nil, nil
 }
 func (s *userAffiliateRepoStub) UpdateUserAffCode(context.Context, int64, string) error { return nil }
-func (s *userAffiliateRepoStub) ResetUserAffCode(context.Context, int64) (string, error) { return "", nil }
+func (s *userAffiliateRepoStub) ResetUserAffCode(context.Context, int64) (string, error) {
+	return "", nil
+}
 func (s *userAffiliateRepoStub) SetUserRebateRate(context.Context, int64, *float64) error { return nil }
 func (s *userAffiliateRepoStub) BatchSetUserRebateRate(context.Context, []int64, *float64) error {
 	return nil
@@ -98,7 +102,7 @@ func TestUserHandlerAffiliateRebatesEndpoint(t *testing.T) {
 		},
 	}
 	affiliateService := service.NewAffiliateService(repo, nil, nil, nil)
-	handler := NewUserHandler(nil, nil, nil, nil, affiliateService)
+	handler := NewUserHandler(nil, nil, nil, nil, affiliateService, nil)
 
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)
@@ -149,7 +153,7 @@ func TestUserHandlerAffiliateTransfersEndpoint(t *testing.T) {
 		},
 	}
 	affiliateService := service.NewAffiliateService(repo, nil, nil, nil)
-	handler := NewUserHandler(nil, nil, nil, nil, affiliateService)
+	handler := NewUserHandler(nil, nil, nil, nil, affiliateService, nil)
 
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)

@@ -2,10 +2,11 @@
   <AppLayout>
     <MonitorHero
       :overall-status="overallStatus"
-      :interval-seconds="DEFAULT_INTERVAL_SECONDS"
+      :interval-seconds="refreshIntervalSeconds"
       :window="currentWindow"
       :loading="loading"
       :auto-refresh="autoRefresh"
+      :labels="channelStatusLabels"
       @update:window="handleWindowChange"
       @refresh="manualReload"
     />
@@ -16,6 +17,7 @@
       :countdown-seconds="countdown"
       :loading="loading"
       :detail-cache="detailCache"
+      :labels="channelStatusLabels"
       @card-click="openDetail"
     />
 
@@ -23,12 +25,14 @@
       :show="showDetail"
       :monitor-id="detailTarget?.id ?? null"
       :title="detailTitle"
+      :labels="channelStatusLabels"
       @close="closeDetail"
     />
   </AppLayout>
 </template>
 
 <script setup lang="ts">
+import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
 import { ref, reactive, computed, onMounted, onBeforeUnmount, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
@@ -46,11 +50,27 @@ import MonitorHero, {
 } from '@/components/user/monitor/MonitorHero.vue'
 import MonitorCardGrid from '@/components/user/monitor/MonitorCardGrid.vue'
 import MonitorDetailDialog from '@/components/user/MonitorDetailDialog.vue'
-import { DEFAULT_INTERVAL_SECONDS, STATUS_OPERATIONAL } from '@/constants/channelMonitor'
 import { useAutoRefresh } from '@/composables/useAutoRefresh'
+import { resolveChannelStatusShellConfig } from '@/utils/channelStatusShell'
+import {
+  buildChannelStatusDetailCache,
+  resolveChannelStatusDetailTitle,
+  resolveChannelStatusOverallStatus,
+  shouldEnsureChannelStatusDetails,
+} from './channelStatusRuntime'
 
-const { t } = useI18n()
+const { locale } = useI18n()
 const appStore = useAppStore()
+
+
+const channelStatusShell = computed(() =>
+  resolveChannelStatusShellConfig(
+    appStore.cachedPublicSettings?.channel_status_shell_config,
+    resolveRuntimeLocale(locale),
+  ),
+)
+const channelStatusLabels = computed(() => channelStatusShell.value.labels)
+const refreshIntervalSeconds = computed(() => channelStatusShell.value.defaults.refreshIntervalSeconds)
 
 // ── State ──
 const items = ref<UserMonitorView[]>([])
@@ -65,25 +85,18 @@ let abortController: AbortController | null = null
 const autoRefresh = useAutoRefresh({
   storageKey: 'channel-status-auto-refresh',
   intervals: [30, 60, 120] as const,
-  defaultInterval: DEFAULT_INTERVAL_SECONDS,
+  defaultInterval: refreshIntervalSeconds.value,
   onRefresh: () => reload(true),
   shouldPause: () => document.hidden || loading.value,
 })
 const countdown = autoRefresh.countdown
 
 // ── Computed ──
-const overallStatus = computed<OverallStatus>(() => {
-  if (items.value.length === 0) return 'operational'
-  for (const it of items.value) {
-    if (it.primary_status === 'failed' || it.primary_status === 'error') return 'degraded'
-    if (it.primary_status !== STATUS_OPERATIONAL) return 'degraded'
-  }
-  return 'operational'
-})
+const overallStatus = computed<OverallStatus>(() => resolveChannelStatusOverallStatus(items.value))
 
-const detailTitle = computed(() => {
-  return detailTarget.value?.name || t('channelStatus.detailTitle')
-})
+const detailTitle = computed(() =>
+  resolveChannelStatusDetailTitle(detailTarget.value, channelStatusLabels.value.detailTitle),
+)
 
 // ── Loaders ──
 async function reload(silent = false) {
@@ -98,11 +111,11 @@ async function reload(silent = false) {
   } catch (err: unknown) {
     const e = err as { name?: string; code?: string }
     if (e?.name === 'AbortError' || e?.code === 'ERR_CANCELED') return
-    appStore.showError(extractApiErrorMessage(err, t('channelStatus.loadError')))
+    appStore.showError(extractApiErrorMessage(err, channelStatusLabels.value.loadError))
   } finally {
     if (abortController === ctrl) {
       if (!silent) loading.value = false
-      countdown.value = DEFAULT_INTERVAL_SECONDS
+      countdown.value = refreshIntervalSeconds.value
       abortController = null
     }
   }
@@ -120,14 +133,19 @@ async function manualReload() {
 async function loadDetail(id: number, force = false) {
   if (!force && detailCache[id]) return
   try {
-    detailCache[id] = await fetchChannelMonitorDetail(id)
+    Object.assign(
+      detailCache,
+      buildChannelStatusDetailCache(detailCache, id, await fetchChannelMonitorDetail(id)),
+    )
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('channelStatus.detailLoadError')))
+    appStore.showError(
+      extractApiErrorMessage(err, channelStatusLabels.value.detailLoadError),
+    )
   }
 }
 
 async function ensureDetailsForWindow() {
-  if (currentWindow.value === '7d') return
+  if (!shouldEnsureChannelStatusDetails(currentWindow.value)) return
   await Promise.all(items.value.map(it => loadDetail(it.id)))
 }
 
@@ -150,6 +168,18 @@ function closeDetail() {
 watch(items, () => {
   void ensureDetailsForWindow()
 })
+
+watch(
+  refreshIntervalSeconds,
+  (seconds) => {
+    if (autoRefresh.intervalSeconds.value !== seconds) {
+      autoRefresh.setInterval(seconds)
+    }
+    if (!autoRefresh.enabled.value) {
+      countdown.value = seconds
+    }
+  },
+)
 
 watch(
   () => appStore.cachedPublicSettings?.channel_monitor_enabled,

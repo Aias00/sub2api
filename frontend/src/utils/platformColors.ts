@@ -106,60 +106,60 @@ const GRADIENT_SUBTEXT_DEFAULT = 'text-primary-200'
 
 // ── Public API ──────────────────────────────────────────────────────
 
-function isPlatform(p: string): p is Platform {
+function isPlatform(p: string | undefined | null): p is Platform {
   return p === 'anthropic' || p === 'openai' || p === 'antigravity' || p === 'gemini'
 }
 
-export function platformBadgeClass(p: string): string {
+export function platformBadgeClass(p: string | undefined | null): string {
   return isPlatform(p) ? BADGE[p] : BADGE_DEFAULT
 }
 
-export function platformBadgeLightClass(p: string): string {
+export function platformBadgeLightClass(p: string | undefined | null): string {
   return isPlatform(p) ? BADGE_LIGHT[p] : BADGE_DEFAULT
 }
 
-export function platformBorderClass(p: string): string {
+export function platformBorderClass(p: string | undefined | null): string {
   return isPlatform(p) ? BORDER[p] : BORDER_DEFAULT
 }
 
-export function platformAccentBarClass(p: string): string {
+export function platformAccentBarClass(p: string | undefined | null): string {
   return isPlatform(p) ? ACCENT_BAR[p] : ACCENT_BAR_DEFAULT
 }
 
-export function platformTextClass(p: string): string {
+export function platformTextClass(p: string | undefined | null): string {
   return isPlatform(p) ? TEXT[p] : TEXT_DEFAULT
 }
 
-export function platformIconClass(p: string): string {
+export function platformIconClass(p: string | undefined | null): string {
   return isPlatform(p) ? ICON[p] : ICON_DEFAULT
 }
 
-export function platformButtonClass(p: string): string {
+export function platformButtonClass(p: string | undefined | null): string {
   return isPlatform(p) ? BUTTON[p] : BUTTON_DEFAULT
 }
 
-export function platformDiscountClass(p: string): string {
+export function platformDiscountClass(p: string | undefined | null): string {
   return isPlatform(p) ? DISCOUNT[p] : DISCOUNT_DEFAULT
 }
 
-export function platformGradientClass(p: string): string {
+export function platformGradientClass(p: string | undefined | null): string {
   return isPlatform(p) ? GRADIENT[p] : GRADIENT_DEFAULT
 }
 
-export function platformGradientTextClass(p: string): string {
+export function platformGradientTextClass(p: string | undefined | null): string {
   return isPlatform(p) ? GRADIENT_TEXT[p] : GRADIENT_TEXT_DEFAULT
 }
 
-export function platformGradientSubtextClass(p: string): string {
+export function platformGradientSubtextClass(p: string | undefined | null): string {
   return isPlatform(p) ? GRADIENT_SUBTEXT[p] : GRADIENT_SUBTEXT_DEFAULT
 }
 
-export function platformLabel(p: string): string {
+export function platformLabel(p: string | undefined | null): string {
   switch (p) {
     case 'anthropic': return 'Anthropic'
     case 'openai': return 'OpenAI'
     case 'antigravity': return 'Antigravity'
     case 'gemini': return 'Gemini'
-    default: return p || 'API'
+    default: return p || ''
   }
 }

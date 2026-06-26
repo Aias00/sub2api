@@ -9,19 +9,19 @@
       {{ t('common.loading') }}
     </div>
     <div v-else-if="!detail" class="py-8 text-center text-sm text-gray-500">
-      {{ t('channelStatus.detailLoadError') }}
+      {{ labels.detailLoadError }}
     </div>
     <div v-else class="overflow-x-auto">
       <table class="w-full text-left text-sm">
         <thead class="border-b border-gray-200 dark:border-dark-700">
           <tr class="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400">
-            <th class="py-2 pr-3">{{ t('channelStatus.detailColumns.model') }}</th>
-            <th class="py-2 pr-3">{{ t('channelStatus.detailColumns.latestStatus') }}</th>
-            <th class="py-2 pr-3">{{ t('channelStatus.detailColumns.latestLatency') }}</th>
-            <th class="py-2 pr-3">{{ t('channelStatus.detailColumns.availability7d') }}</th>
-            <th class="py-2 pr-3">{{ t('channelStatus.detailColumns.availability15d') }}</th>
-            <th class="py-2 pr-3">{{ t('channelStatus.detailColumns.availability30d') }}</th>
-            <th class="py-2 pr-3">{{ t('channelStatus.detailColumns.avgLatency7d') }}</th>
+            <th class="py-2 pr-3">{{ detailColumnLabel('model') }}</th>
+            <th class="py-2 pr-3">{{ detailColumnLabel('latestStatus') }}</th>
+            <th class="py-2 pr-3">{{ detailColumnLabel('latestLatency') }}</th>
+            <th class="py-2 pr-3">{{ detailColumnLabel('availability7d') }}</th>
+            <th class="py-2 pr-3">{{ detailColumnLabel('availability15d') }}</th>
+            <th class="py-2 pr-3">{{ detailColumnLabel('availability30d') }}</th>
+            <th class="py-2 pr-3">{{ detailColumnLabel('avgLatency7d') }}</th>
           </tr>
         </thead>
         <tbody>
@@ -52,7 +52,7 @@
     <template #footer>
       <div class="flex justify-end">
         <button @click="$emit('close')" class="btn btn-secondary">
-          {{ t('channelStatus.closeDetail') }}
+          {{ labels.closeDetail }}
         </button>
       </div>
     </template>
@@ -70,11 +70,13 @@ import {
 } from '@/api/channelMonitor'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import { useChannelMonitorFormat } from '@/composables/useChannelMonitorFormat'
+import type { ChannelStatusShellLabels, DetailColumnKey } from '@/utils/channelStatusShell'
 
 const props = defineProps<{
   show: boolean
   monitorId: number | null
   title: string
+  labels: Pick<ChannelStatusShellLabels, 'detailLoadError' | 'closeDetail' | 'detailColumns'>
 }>()
 
 defineEmits<{
@@ -88,13 +90,19 @@ const { statusLabel, statusBadgeClass, formatLatency, formatPercent } = useChann
 const detail = ref<UserMonitorDetail | null>(null)
 const loading = ref(false)
 
+function detailColumnLabel(key: DetailColumnKey): string {
+  return props.labels.detailColumns[key]
+}
+
 async function load(id: number) {
   detail.value = null
   loading.value = true
   try {
     detail.value = await fetchChannelMonitorDetail(id)
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('channelStatus.detailLoadError')))
+    appStore.showError(
+      extractApiErrorMessage(err, props.labels.detailLoadError),
+    )
   } finally {
     loading.value = false
   }

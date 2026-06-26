@@ -16,4 +16,11 @@ describe("groups models list layout", () => {
     expect(groupsViewSource).toContain("max-h-64 space-y-2 overflow-y-auto p-2");
     expect(groupsViewSource).not.toContain("sticky top-0");
   });
+
+  it("does not synthesize missing subscription type as standard when editing groups", () => {
+    expect(groupsViewSource).not.toContain('group.subscription_type || "standard"');
+    expect(groupsViewSource).not.toContain("group.subscription_type || 'standard'");
+    expect(groupsViewSource).toContain('editForm.subscription_type = group.subscription_type || ""');
+    expect(groupsViewSource).toContain("subscription_type: editForm.subscription_type || undefined");
+  });
 });

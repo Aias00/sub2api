@@ -2,16 +2,16 @@
   <div class="card">
     <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
       <h2 class="text-lg font-medium text-gray-900 dark:text-white">
-        {{ t('profile.balanceNotify.title') }}
+        {{ balanceNotifyText('balanceNotifyTitle') }}
       </h2>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        {{ t('profile.balanceNotify.description') }}
+        {{ balanceNotifyText('balanceNotifyDescription') }}
       </p>
     </div>
     <div class="px-6 py-6 space-y-6">
       <!-- Enable toggle -->
       <div class="flex items-center justify-between">
-        <label class="input-label mb-0">{{ t('profile.balanceNotify.enabled') }}</label>
+        <label class="input-label mb-0">{{ balanceNotifyText('balanceNotifyEnabled') }}</label>
         <label class="relative inline-flex items-center cursor-pointer">
           <input type="checkbox" v-model="notifyEnabled" @change="handleToggle" class="sr-only peer" />
           <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 dark:peer-focus:ring-primary-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:after:border-gray-600 peer-checked:bg-primary-600"></div>
@@ -22,8 +22,8 @@
         <!-- Custom threshold with save button -->
         <div>
           <label class="input-label">
-            {{ t('profile.balanceNotify.threshold') }}
-            <span class="text-xs text-gray-400 ml-2">{{ t('profile.balanceNotify.thresholdHint') }}</span>
+            {{ balanceNotifyText('balanceNotifyThreshold') }}
+            <span class="text-xs text-gray-400 ml-2">{{ balanceNotifyText('balanceNotifyThresholdHint') }}</span>
           </label>
           <div class="flex items-center gap-2">
             <span class="text-gray-500">$</span>
@@ -33,22 +33,22 @@
               min="0"
               step="0.01"
               class="input flex-1"
-              :placeholder="systemDefaultThreshold > 0 ? `${t('profile.balanceNotify.systemDefault')} $${systemDefaultThreshold}` : t('profile.balanceNotify.thresholdPlaceholder')"
+              :placeholder="systemDefaultThreshold > 0 ? `${balanceNotifyText('balanceNotifySystemDefault')} $${systemDefaultThreshold}` : balanceNotifyText('balanceNotifyThresholdPlaceholder')"
             />
             <button
               @click="handleThresholdUpdate"
               :disabled="savingThreshold"
               class="btn btn-primary btn-sm whitespace-nowrap"
             >
-              {{ savingThreshold ? t('common.saving') : t('common.save') }}
+              {{ savingThreshold ? balanceNotifyText('balanceNotifySaving') : balanceNotifyText('balanceNotifySave') }}
             </button>
           </div>
         </div>
 
         <!-- Email list with toggles -->
         <div>
-          <label class="input-label">{{ t('profile.balanceNotify.extraEmails') }}</label>
-          <p class="mb-2 text-xs text-yellow-600 dark:text-yellow-400">{{ t('profile.balanceNotify.extraEmailsHint') }}</p>
+          <label class="input-label">{{ balanceNotifyText('balanceNotifyExtraEmails') }}</label>
+          <p class="mb-2 text-xs text-yellow-600 dark:text-yellow-400">{{ balanceNotifyText('balanceNotifyExtraEmailsHint') }}</p>
 
           <!-- Saved email entries -->
           <div v-if="emailEntries.length > 0" class="space-y-2 mb-3">
@@ -70,29 +70,29 @@
                       type="text"
                       maxlength="6"
                       class="w-20 rounded border border-gray-300 px-2 py-1 text-xs dark:border-dark-500 dark:bg-dark-700"
-                      :placeholder="t('profile.balanceNotify.codePlaceholder')"
+                      :placeholder="balanceNotifyText('balanceNotifyCodePlaceholder')"
                     />
                     <button @click="verifySavedEmail(entry.email)" :disabled="!verifyCode || verifyCode.length !== 6 || verifyingSaved" class="text-xs text-primary-600 hover:text-primary-700">
-                      {{ t('profile.balanceNotify.verify') }}
+                      {{ balanceNotifyText('balanceNotifyVerify') }}
                     </button>
                     <span v-if="verifyCountdown > 0" class="text-xs text-gray-400">{{ verifyCountdown }}s</span>
                     <button v-else @click="sendCodeForSaved(entry.email)" :disabled="sendingSavedCode" class="text-xs text-gray-500 hover:text-gray-700">
-                      {{ t('profile.balanceNotify.resend') }}
+                      {{ balanceNotifyText('balanceNotifyResend') }}
                     </button>
                     <button @click="verifyingEmail = ''" class="text-xs text-gray-400 hover:text-gray-600">
-                      {{ t('common.cancel') }}
+                      {{ balanceNotifyText('balanceNotifyCancel') }}
                     </button>
                   </template>
                   <template v-else>
                     <button @click="sendCodeForSaved(entry.email)" :disabled="sendingSavedCode" class="text-xs text-primary-600 hover:text-primary-700">
-                      {{ t('profile.balanceNotify.verify') }}
+                      {{ balanceNotifyText('balanceNotifyVerify') }}
                     </button>
-                    <span class="text-xs text-yellow-500">{{ t('profile.balanceNotify.unverified') }}</span>
+                    <span class="text-xs text-yellow-500">{{ balanceNotifyText('balanceNotifyUnverified') }}</span>
                   </template>
                 </template>
-                <span v-else class="text-xs text-green-500">{{ t('profile.balanceNotify.verified') }}</span>
+                <span v-else class="text-xs text-green-500">{{ balanceNotifyText('balanceNotifyVerified') }}</span>
                 <button @click="handleRemoveEmail(entry.email)" class="text-red-500 hover:text-red-700 text-xs">
-                  {{ t('profile.balanceNotify.removeEmail') }}
+                  {{ balanceNotifyText('balanceNotifyRemoveEmail') }}
                 </button>
               </div>
             </div>
@@ -105,10 +105,10 @@
               <span class="flex-1 text-sm text-gray-700 dark:text-gray-300">{{ pe.email }}</span>
               <div v-if="!pe.codeSent" class="flex items-center gap-1">
                 <button @click="sendCodeFor(idx)" :disabled="pe.sending" class="text-xs text-primary-600 hover:text-primary-700">
-                  {{ t('profile.balanceNotify.sendCode') }}
+                  {{ balanceNotifyText('balanceNotifySendCode') }}
                 </button>
                 <button @click="pendingEmails.splice(idx, 1)" class="text-xs text-red-500 hover:text-red-700 ml-1">
-                  {{ t('profile.balanceNotify.removeEmail') }}
+                  {{ balanceNotifyText('balanceNotifyRemoveEmail') }}
                 </button>
               </div>
               <div v-else class="flex items-center gap-1">
@@ -117,14 +117,14 @@
                   type="text"
                   maxlength="6"
                   class="w-20 rounded border border-gray-300 px-2 py-1 text-xs dark:border-dark-500 dark:bg-dark-700"
-                  :placeholder="t('profile.balanceNotify.codePlaceholder')"
+                  :placeholder="balanceNotifyText('balanceNotifyCodePlaceholder')"
                 />
                 <button @click="verifyPending(idx)" :disabled="!pe.code || pe.code.length !== 6 || pe.verifying" class="text-xs text-primary-600 hover:text-primary-700">
-                  {{ t('profile.balanceNotify.verify') }}
+                  {{ balanceNotifyText('balanceNotifyVerify') }}
                 </button>
                 <span v-if="pe.countdown > 0" class="text-xs text-gray-400">{{ pe.countdown }}s</span>
                 <button v-else @click="sendCodeFor(idx)" :disabled="pe.sending" class="text-xs text-gray-500 hover:text-gray-700">
-                  {{ t('profile.balanceNotify.resend') }}
+                  {{ balanceNotifyText('balanceNotifyResend') }}
                 </button>
               </div>
             </div>
@@ -136,7 +136,7 @@
               v-model="newEmail"
               type="email"
               class="input flex-1"
-              :placeholder="t('profile.balanceNotify.emailPlaceholder')"
+              :placeholder="balanceNotifyText('balanceNotifyEmailPlaceholder')"
               @keyup.enter="addPendingEmail"
             />
             <button
@@ -144,11 +144,11 @@
               :disabled="!newEmail"
               class="btn btn-secondary whitespace-nowrap"
             >
-              {{ t('common.add') }}
+              {{ balanceNotifyText('balanceNotifyAdd') }}
             </button>
           </div>
           <p v-else class="text-xs text-gray-400">
-            {{ t('profile.balanceNotify.maxEmailsReached') }}
+            {{ balanceNotifyText('balanceNotifyMaxEmailsReached') }}
           </p>
         </div>
       </template>
@@ -157,8 +157,8 @@
 </template>
 
 <script setup lang="ts">
+import type { ProfileLabelKey, ProfileLabels } from '@/utils/profileShell'
 import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useAppStore } from '@/stores/app'
 import { userAPI } from '@/api'
@@ -183,9 +183,9 @@ const props = defineProps<{
   extraEmails: NotifyEmailEntry[]
   systemDefaultThreshold: number
   userEmail: string
+  labels?: ProfileLabels
 }>()
 
-const { t } = useI18n()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 
@@ -203,6 +203,11 @@ const verifyingSaved = ref(false)
 const sendingSavedCode = ref(false)
 const verifyCountdown = ref(0)
 let verifyTimer: ReturnType<typeof setInterval> | null = null
+
+
+function balanceNotifyText(key: ProfileLabelKey): string {
+  return props.labels?.[key] || ''
+}
 
 const canAddMore = computed(() => {
   return emailEntries.value.length + pendingEmails.value.length < maxTotalEmails
@@ -231,7 +236,7 @@ const handleToggle = async () => {
     const updated = await userAPI.updateProfile({ balance_notify_enabled: notifyEnabled.value })
     authStore.user = updated
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('common.error')))
+    appStore.showError(extractApiErrorMessage(err, balanceNotifyText('balanceNotifyError')))
     notifyEnabled.value = !notifyEnabled.value
   }
 }
@@ -242,9 +247,9 @@ const handleThresholdUpdate = async () => {
     const threshold = customThreshold.value && customThreshold.value > 0 ? customThreshold.value : 0
     const updated = await userAPI.updateProfile({ balance_notify_threshold: threshold })
     authStore.user = updated
-    appStore.showSuccess(t('common.saved'))
+    appStore.showSuccess(balanceNotifyText('balanceNotifySaved'))
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('common.error')))
+    appStore.showError(extractApiErrorMessage(err, balanceNotifyText('balanceNotifyError')))
   } finally {
     savingThreshold.value = false
   }
@@ -257,7 +262,7 @@ async function handleEmailToggle(entry: NotifyEmailEntry) {
     authStore.user = updated
     emailEntries.value = [...updated.balance_notify_extra_emails]
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('common.error')))
+    appStore.showError(extractApiErrorMessage(err, balanceNotifyText('balanceNotifyError')))
   }
 }
 
@@ -268,7 +273,7 @@ function addPendingEmail() {
   const isDuplicate = emailEntries.value.some(e => e.email.toLowerCase() === email.toLowerCase())
     || pendingEmails.value.some(p => p.email.toLowerCase() === email.toLowerCase())
   if (isDuplicate) {
-    appStore.showError(t('profile.balanceNotify.emailDuplicate'))
+    appStore.showError(balanceNotifyText('balanceNotifyEmailDuplicate'))
     return
   }
   pendingEmails.value.push({ email, codeSent: false, code: '', sending: false, verifying: false, countdown: 0, timer: null })
@@ -290,9 +295,9 @@ async function sendCodeFor(idx: number) {
         pe.timer = null
       }
     }, 1000)
-    appStore.showSuccess(t('profile.balanceNotify.codeSent'))
+    appStore.showSuccess(balanceNotifyText('balanceNotifyCodeSent'))
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('common.error')))
+    appStore.showError(extractApiErrorMessage(err, balanceNotifyText('balanceNotifyError')))
   } finally {
     pe.sending = false
   }
@@ -306,12 +311,12 @@ async function verifyPending(idx: number) {
     await userAPI.verifyNotifyEmail(pe.email, pe.code)
     if (pe.timer) clearInterval(pe.timer)
     pendingEmails.value.splice(idx, 1)
-    appStore.showSuccess(t('profile.balanceNotify.verifySuccess'))
+    appStore.showSuccess(balanceNotifyText('balanceNotifyVerifySuccess'))
     const updated = await userAPI.getProfile()
     authStore.user = updated
     emailEntries.value = [...updated.balance_notify_extra_emails]
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('common.error')))
+    appStore.showError(extractApiErrorMessage(err, balanceNotifyText('balanceNotifyError')))
   } finally {
     pe.verifying = false
   }
@@ -320,12 +325,12 @@ async function verifyPending(idx: number) {
 const handleRemoveEmail = async (email: string) => {
   try {
     await userAPI.removeNotifyEmail(email)
-    appStore.showSuccess(t('profile.balanceNotify.removeSuccess'))
+    appStore.showSuccess(balanceNotifyText('balanceNotifyRemoveSuccess'))
     const updated = await userAPI.getProfile()
     authStore.user = updated
     emailEntries.value = [...updated.balance_notify_extra_emails]
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('common.error')))
+    appStore.showError(extractApiErrorMessage(err, balanceNotifyText('balanceNotifyError')))
   }
 }
 
@@ -345,9 +350,9 @@ async function sendCodeForSaved(email: string) {
         verifyTimer = null
       }
     }, 1000)
-    appStore.showSuccess(t('profile.balanceNotify.codeSent'))
+    appStore.showSuccess(balanceNotifyText('balanceNotifyCodeSent'))
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('common.error')))
+    appStore.showError(extractApiErrorMessage(err, balanceNotifyText('balanceNotifyError')))
   } finally {
     sendingSavedCode.value = false
   }
@@ -361,12 +366,12 @@ async function verifySavedEmail(email: string) {
     verifyingEmail.value = ''
     verifyCode.value = ''
     if (verifyTimer) { clearInterval(verifyTimer); verifyTimer = null }
-    appStore.showSuccess(t('profile.balanceNotify.verifySuccess'))
+    appStore.showSuccess(balanceNotifyText('balanceNotifyVerifySuccess'))
     const updated = await userAPI.getProfile()
     authStore.user = updated
     emailEntries.value = [...updated.balance_notify_extra_emails]
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('common.error')))
+    appStore.showError(extractApiErrorMessage(err, balanceNotifyText('balanceNotifyError')))
   } finally {
     verifyingSaved.value = false
   }

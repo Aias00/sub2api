@@ -19,10 +19,10 @@
               <Icon name="link" size="lg" class="text-gray-400" />
             </div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ t('customPage.notFoundTitle') }}
+              {{ customPageText('notFoundTitle') }}
             </h3>
             <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-              {{ t('customPage.notFoundDesc') }}
+              {{ customPageText('notFoundDesc') }}
             </p>
           </div>
         </div>
@@ -35,7 +35,7 @@
             class="toc-sidebar"
           >
             <div class="toc-header">
-              <span class="toc-title">目录</span>
+              <span class="toc-title">{{ customPageText('tocTitle') }}</span>
               <button class="toc-close-btn" @click="tocVisible = false">
                 <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
               </button>
@@ -64,7 +64,7 @@
             @click="tocVisible = true"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
-            <span class="ml-1 text-xs">目录</span>
+            <span class="ml-1 text-xs">{{ customPageText('tocToggle') }}</span>
           </button>
 
           <!-- Content -->
@@ -85,10 +85,10 @@
               <Icon name="link" size="lg" class="text-gray-400" />
             </div>
             <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-              {{ t('customPage.notConfiguredTitle') }}
+              {{ customPageText('notConfiguredTitle') }}
             </h3>
             <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-              {{ t('customPage.notConfiguredDesc') }}
+              {{ customPageText('notConfiguredDesc') }}
             </p>
           </div>
         </div>
@@ -102,7 +102,7 @@
             class="btn btn-secondary btn-sm custom-open-fab"
           >
             <Icon name="externalLink" size="sm" class="mr-1.5" :stroke-width="2" />
-            {{ t('customPage.openInNewTab') }}
+            {{ customPageText('openInNewTab') }}
           </a>
           <iframe
             :src="embeddedUrl"
@@ -116,6 +116,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -125,8 +126,19 @@ import { useAdminSettingsStore } from '@/stores/adminSettings'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { buildEmbeddedUrl, detectTheme } from '@/utils/embedded-url'
+import {
+  renderCustomPageShellText,
+  resolveCustomPageShellLabels,
+  type CustomPageLabelKey,
+} from '@/utils/customPageShell'
 import { marked } from 'marked'
 import DOMPurify from 'dompurify'
+import {
+  buildCustomPageImageUrl,
+  isRelativeCustomPageMarkdownAsset,
+  resolveCustomPageMarkdownSlug,
+  resolveCustomPageMenuItem,
+} from './customPageRuntime'
 
 interface TocItem {
   id: string
@@ -134,7 +146,7 @@ interface TocItem {
   level: number
 }
 
-const { t, locale } = useI18n()
+const { locale } = useI18n()
 const route = useRoute()
 const appStore = useAppStore()
 const authStore = useAuthStore()
@@ -149,26 +161,30 @@ const tocVisible = ref(typeof window !== 'undefined' ? window.innerWidth > 768 :
 const activeHeadingId = ref('')
 let themeObserver: MutationObserver | null = null
 
+
+const customPageShellLabels = computed(() =>
+  resolveCustomPageShellLabels(
+    appStore.cachedPublicSettings?.custom_page_shell_config,
+    resolveRuntimeLocale(locale),
+  ),
+)
+
+function customPageText(key: CustomPageLabelKey): string {
+  return renderCustomPageShellText(customPageShellLabels.value, key)
+}
+
 const menuItemId = computed(() => route.params.id as string)
 
 const menuItem = computed(() => {
-  const id = menuItemId.value
-  const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? []
-  const found = publicItems.find((item) => item.id === id) ?? null
-  if (found) return found
-  if (authStore.isAdmin) {
-    return adminSettingsStore.customMenuItems.find((item) => item.id === id) ?? null
-  }
-  return null
+  return resolveCustomPageMenuItem(
+    menuItemId.value,
+    appStore.cachedPublicSettings?.custom_menu_items ?? [],
+    adminSettingsStore.customMenuItems,
+    authStore.isAdmin,
+  )
 })
 
-const markdownSlug = computed(() => {
-  const item = menuItem.value
-  if (!item) return ''
-  if (item.page_slug) return item.page_slug
-  if (item.url?.startsWith('md:')) return item.url.slice(3)
-  return ''
-})
+const markdownSlug = computed(() => resolveCustomPageMarkdownSlug(menuItem.value))
 
 const isMarkdownMode = computed(() => !!markdownSlug.value)
 
@@ -197,29 +213,6 @@ function generateHeadingId(text: string, index: number): string {
   return base ? `${base}-${index}` : `heading-${index}`
 }
 
-function isRelativeMarkdownAsset(src: string): boolean {
-  const trimmed = src.trim()
-  if (!trimmed || /^[a-z][a-z0-9+.-]*:/i.test(trimmed) || trimmed.startsWith('//') || trimmed.startsWith('/')) {
-    return false
-  }
-  const [pathPart] = trimmed.split(/([?#].*)/, 2)
-  return pathPart
-    .split('/')
-    .filter((part) => part && part !== '.')
-    .every((part) => part !== '..' && !part.includes('\\'))
-}
-
-function buildPageImageUrl(slug: string, src: string): string {
-  const trimmed = src.trim()
-  const [pathPart, suffix = ''] = trimmed.split(/([?#].*)/, 2)
-  const encodedPath = pathPart
-    .split('/')
-    .filter((part) => part && part !== '.')
-    .map((part) => encodeURIComponent(part))
-    .join('/')
-  return `/api/v1/pages/${encodeURIComponent(slug)}/images/${encodedPath}${suffix}`
-}
-
 async function fetchAndRenderMarkdown(slug: string) {
   loading.value = true
   tocItems.value = []
@@ -229,14 +222,14 @@ async function fetchAndRenderMarkdown(slug: string) {
       headers: authStore.token ? { Authorization: `Bearer ${authStore.token}` } : {},
     })
     if (!resp.ok) {
-      renderedHtml.value = '<p class="text-red-500">Page not found</p>'
+      renderedHtml.value = `<p class="text-red-500">${escapeHtml(customPageText('markdownNotFound'))}</p>`
       return
     }
     let raw = await resp.text()
 
     raw = raw.replace(
       /!\[([^\]]*)\]\(([^)]+)\)/g,
-      (match, alt, src) => isRelativeMarkdownAsset(src) ? `![${alt}](${buildPageImageUrl(slug, src)})` : match
+      (match, alt, src) => isRelativeCustomPageMarkdownAsset(src) ? `![${alt}](${buildCustomPageImageUrl(slug, src)})` : match
     )
 
     const html = marked.parse(raw) as string
@@ -262,7 +255,7 @@ async function fetchAndRenderMarkdown(slug: string) {
     renderedHtml.value = withIds
     tocItems.value = toc
   } catch {
-    renderedHtml.value = '<p class="text-red-500">Failed to load page</p>'
+    renderedHtml.value = `<p class="text-red-500">${escapeHtml(customPageText('markdownLoadFailed'))}</p>`
   } finally {
     loading.value = false
     await nextTick()
@@ -316,21 +309,30 @@ function injectCopyButtons() {
     if (pre.querySelector('.copy-btn')) return
     const btn = document.createElement('button')
     btn.className = 'copy-btn'
-    btn.textContent = '复制'
+    btn.textContent = customPageText('copyCode')
     btn.addEventListener('click', async () => {
       const code = pre.querySelector('code')?.textContent ?? pre.textContent ?? ''
       try {
         await navigator.clipboard.writeText(code)
-        btn.textContent = '已复制 ✓'
-        setTimeout(() => { btn.textContent = '复制' }, 2000)
+        btn.textContent = customPageText('copyCodeSuccess')
+        setTimeout(() => { btn.textContent = customPageText('copyCode') }, 2000)
       } catch {
-        btn.textContent = '失败'
-        setTimeout(() => { btn.textContent = '复制' }, 2000)
+        btn.textContent = customPageText('copyCodeFailed')
+        setTimeout(() => { btn.textContent = customPageText('copyCode') }, 2000)
       }
     })
     pre.style.position = 'relative'
     pre.appendChild(btn)
   })
+}
+
+function escapeHtml(value: string): string {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
 }
 
 watch(markdownSlug, (slug) => {

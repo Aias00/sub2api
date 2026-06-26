@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { mount } from '@vue/test-utils'
 import { createPinia, setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -96,6 +97,51 @@ function createUser(overrides: Partial<User> = {}): User {
   }
 }
 
+const profileIdentityBindingsSource = readFileSync('src/components/user/profile/ProfileIdentityBindingsSection.vue', 'utf8')
+
+const bindingLabels = {
+  authBindingsTitle: 'Configured bindings title',
+  authBindingsDescription: 'Configured bindings description',
+  authBindingsStatusBound: 'Configured bound',
+  authBindingsStatusNotBound: 'Configured not bound',
+  authBindingsStatusPasswordNotSet: 'Configured password missing',
+  authBindingsBindAction: 'Configured bind {providerName}',
+  authBindingsManageEmailAction: 'Configured manage email',
+  authBindingsHideEmailFormAction: 'Configured hide email',
+  authBindingsEmailPlaceholder: 'Configured email placeholder',
+  authBindingsCodePlaceholder: 'Configured code placeholder',
+  authBindingsPasswordPlaceholder: 'Configured password placeholder',
+  authBindingsReplaceEmailPasswordPlaceholder: 'Configured current password',
+  authBindingsSendCodeAction: 'Configured send code',
+  authBindingsUnbindAction: 'Configured unbind',
+  authBindingsConfirmEmailBindAction: 'Configured bind email',
+  authBindingsConfirmEmailReplaceAction: 'Configured replace email',
+  authBindingsUnbindSuccess: 'Configured unbound {providerName}',
+  authBindingsCodeSentTo: 'Configured code sent to {email}',
+  authBindingsBindSuccess: 'Configured bind success',
+  authBindingsReplaceSuccess: 'Configured replace success',
+  authBindingsLoading: 'Configured loading',
+  authBindingsTryAgain: 'Configured try again',
+  authBindingsEmailRequired: 'Configured email required',
+  authBindingsInvalidEmail: 'Configured invalid email',
+  authBindingsCodeRequired: 'Configured code required',
+  authBindingsPasswordRequired: 'Configured password required',
+  authBindingsPasswordMinLength: 'Configured password min {count}',
+  authBindingsSendCodeFailed: 'Configured send failed',
+  authBindingsNoteEmailManagedFromProfile: 'Configured email managed note',
+  authBindingsNoteCanUnbind: 'Configured can unbind note',
+  authBindingsNoteBindAnotherBeforeUnbind: 'Configured bind another note',
+  providers: {
+    email: 'Configured Email',
+    linuxdo: 'Configured LinuxDo',
+    dingtalk: 'Configured DingTalk',
+    oidc: 'Configured {providerName}',
+    wechat: 'Configured WeChat',
+    github: 'Configured GitHub',
+    google: 'Configured Google',
+  },
+}
+
 describe('ProfileIdentityBindingsSection', () => {
   beforeEach(() => {
     pinia = createPinia()
@@ -142,16 +188,113 @@ describe('ProfileIdentityBindingsSection', () => {
         wechatEnabled: true,
         wechatOpenEnabled: true,
         wechatMpEnabled: false,
+        labels: bindingLabels,
       },
     })
 
-    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Bound')
-    expect(wrapper.get('[data-testid="profile-binding-linuxdo-status"]').text()).toBe('Bound')
-    expect(wrapper.get('[data-testid="profile-binding-oidc-status"]').text()).toBe('Not bound')
+    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Configured bound')
+    expect(wrapper.get('[data-testid="profile-binding-linuxdo-status"]').text()).toBe('Configured bound')
+    expect(wrapper.get('[data-testid="profile-binding-oidc-status"]').text()).toBe('Configured not bound')
     expect(wrapper.get('[data-testid="profile-binding-oidc-action"]').text()).toBe(
-      'Bind ExampleID'
+      'Configured bind Configured ExampleID'
     )
-    expect(wrapper.get('[data-testid="profile-binding-wechat-action"]').text()).toBe('Bind WeChat')
+    expect(wrapper.get('[data-testid="profile-binding-wechat-action"]').text()).toBe('Configured bind Configured WeChat')
+  })
+
+  it('renders configured auth binding labels and interpolates actions', async () => {
+    userApiMocks.sendEmailBindingCode.mockResolvedValue(undefined)
+    const appStore = useAppStore()
+    const showSuccessSpy = vi.spyOn(appStore, 'showSuccess')
+    const showErrorSpy = vi.spyOn(appStore, 'showError')
+
+    const wrapper = mount(ProfileIdentityBindingsSection, {
+      global: {
+        plugins: [pinia],
+      },
+      props: {
+        user: createUser({
+          email_bound: false,
+          auth_bindings: {
+            email: { bound: false },
+            oidc: { bound: false, can_bind: true },
+          },
+        }),
+        compact: true,
+        oidcEnabled: true,
+        oidcProviderName: 'ExampleID',
+        labels: {
+          authBindingsTitle: 'Configured bindings title',
+          authBindingsDescription: 'Configured bindings description',
+          authBindingsStatusPasswordNotSet: 'Configured password missing',
+          authBindingsStatusNotBound: 'Configured not bound',
+          authBindingsBindAction: 'Configured bind {providerName}',
+          authBindingsManageEmailAction: 'Configured manage email',
+          authBindingsHideEmailFormAction: 'Configured hide email',
+          authBindingsEmailPlaceholder: 'Configured email placeholder',
+          authBindingsCodePlaceholder: 'Configured code placeholder',
+          authBindingsPasswordPlaceholder: 'Configured password placeholder',
+          authBindingsSendCodeAction: 'Configured send code',
+          authBindingsConfirmEmailBindAction: 'Configured bind email',
+          authBindingsCodeSentTo: 'Configured code sent to {email}',
+          authBindingsLoading: 'Configured loading',
+          authBindingsEmailRequired: 'Configured email required',
+          authBindingsInvalidEmail: 'Configured invalid email',
+          authBindingsCodeRequired: 'Configured code required',
+          authBindingsPasswordRequired: 'Configured password required',
+          authBindingsPasswordMinLength: 'Configured password min {count}',
+          authBindingsSendCodeFailed: 'Configured send failed',
+          providers: {
+            email: 'Configured Email',
+            oidc: 'Configured {providerName}',
+          },
+        },
+      },
+    })
+
+    expect(wrapper.text()).toContain('Configured bindings title')
+    expect(wrapper.text()).toContain('Configured bindings description')
+    expect(wrapper.text()).toContain('Configured Email')
+    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Configured password missing')
+    expect(wrapper.get('[data-testid="profile-binding-oidc-status"]').text()).toBe('Configured not bound')
+    expect(wrapper.get('[data-testid="profile-binding-oidc-action"]').text()).toBe('Configured bind Configured ExampleID')
+    expect(wrapper.get('[data-testid="profile-binding-email-toggle"]').text()).toBe('Configured manage email')
+
+    await wrapper.get('[data-testid="profile-binding-email-toggle"]').trigger('click')
+
+    expect(wrapper.get('[data-testid="profile-binding-email-toggle"]').text()).toBe('Configured hide email')
+    expect((wrapper.get('[data-testid="profile-binding-email-input"]').element as HTMLInputElement).placeholder).toBe('Configured email placeholder')
+    expect((wrapper.get('[data-testid="profile-binding-email-code-input"]').element as HTMLInputElement).placeholder).toBe('Configured code placeholder')
+    expect((wrapper.get('[data-testid="profile-binding-email-password-input"]').element as HTMLInputElement).placeholder).toBe('Configured password placeholder')
+    expect(wrapper.get('[data-testid="profile-binding-email-send-code"]').text()).toBe('Configured send code')
+    expect(wrapper.get('[data-testid="profile-binding-email-submit"]').text()).toBe('Configured bind email')
+
+    await wrapper.get('[data-testid="profile-binding-email-input"]').setValue('')
+    await wrapper.get('[data-testid="profile-binding-email-send-code"]').trigger('click')
+    expect(showErrorSpy).toHaveBeenCalledWith('Configured email required')
+
+    await wrapper.get('[data-testid="profile-binding-email-input"]').setValue('not-an-email')
+    await wrapper.get('[data-testid="profile-binding-email-send-code"]').trigger('click')
+    expect(showErrorSpy).toHaveBeenCalledWith('Configured invalid email')
+
+    await wrapper.get('[data-testid="profile-binding-email-input"]').setValue('bound@example.com')
+    await wrapper.get('[data-testid="profile-binding-email-send-code"]').trigger('click')
+
+    expect(showSuccessSpy).toHaveBeenCalledWith('Configured code sent to bound@example.com')
+
+    await wrapper.get('[data-testid="profile-binding-email-submit"]').trigger('click')
+    expect(showErrorSpy).toHaveBeenCalledWith('Configured code required')
+
+    await wrapper.get('[data-testid="profile-binding-email-code-input"]').setValue('123456')
+    await wrapper.get('[data-testid="profile-binding-email-submit"]').trigger('click')
+    expect(showErrorSpy).toHaveBeenCalledWith('Configured password required')
+
+    await wrapper.get('[data-testid="profile-binding-email-password-input"]').setValue('short')
+    await wrapper.get('[data-testid="profile-binding-email-submit"]').trigger('click')
+    expect(showErrorSpy).toHaveBeenCalledWith('Configured password min 8')
+
+    userApiMocks.sendEmailBindingCode.mockRejectedValueOnce(new Error(''))
+    await wrapper.get('[data-testid="profile-binding-email-send-code"]').trigger('click')
+    expect(showErrorSpy).toHaveBeenCalledWith('Configured send failed')
   })
 
   it('starts the WeChat bind flow for the current profile page', async () => {
@@ -319,6 +462,7 @@ describe('ProfileIdentityBindingsSection', () => {
         linuxdoEnabled: false,
         oidcEnabled: false,
         wechatEnabled: false,
+        labels: bindingLabels,
       },
     })
 
@@ -326,7 +470,7 @@ describe('ProfileIdentityBindingsSection', () => {
     await wrapper.get('[data-testid="profile-binding-email-send-code"]').trigger('click')
 
     expect(userApiMocks.sendEmailBindingCode).toHaveBeenCalledWith('bound@example.com')
-    expect(showSuccessSpy).toHaveBeenCalledWith('Code sent to bound@example.com')
+    expect(showSuccessSpy).toHaveBeenCalledWith('Configured code sent to bound@example.com')
 
     await wrapper.get('[data-testid="profile-binding-email-code-input"]').setValue('123456')
     await wrapper.get('[data-testid="profile-binding-email-password-input"]').setValue('new-password')
@@ -337,7 +481,7 @@ describe('ProfileIdentityBindingsSection', () => {
       verify_code: '123456',
       password: 'new-password',
     })
-    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Bound')
+    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Configured bound')
     expect(authStore.user?.email).toBe('bound@example.com')
   })
 
@@ -357,10 +501,11 @@ describe('ProfileIdentityBindingsSection', () => {
         linuxdoEnabled: false,
         oidcEnabled: false,
         wechatEnabled: false,
+        labels: bindingLabels,
       },
     })
 
-    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Password not set')
+    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Configured password missing')
     expect(wrapper.get('[data-testid="profile-binding-email-input"]').exists()).toBe(true)
   })
 
@@ -380,11 +525,12 @@ describe('ProfileIdentityBindingsSection', () => {
         linuxdoEnabled: false,
         oidcEnabled: false,
         wechatEnabled: false,
+        labels: bindingLabels,
       },
     })
 
     expect(wrapper.text()).not.toContain('legacy-user@linuxdo-connect.invalid')
-    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Password not set')
+    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Configured password missing')
   })
 
   it('does not show a synthetic oauth-only email when only fallback auth bindings mark email as unbound', () => {
@@ -402,11 +548,12 @@ describe('ProfileIdentityBindingsSection', () => {
         linuxdoEnabled: false,
         oidcEnabled: false,
         wechatEnabled: false,
+        labels: bindingLabels,
       },
     })
 
     expect(wrapper.text()).not.toContain('legacy-user@wechat-connect.invalid')
-    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Password not set')
+    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Configured password missing')
   })
 
   it('shows the bound email only once and localizes the email management note', () => {
@@ -431,12 +578,13 @@ describe('ProfileIdentityBindingsSection', () => {
         linuxdoEnabled: false,
         oidcEnabled: false,
         wechatEnabled: false,
+        labels: bindingLabels,
       },
     })
 
     expect(wrapper.text().match(/alice@example\.com/g)).toHaveLength(1)
     expect(wrapper.text()).not.toContain('a***e@example.com')
-    expect(wrapper.text()).toContain('Primary email is managed in the profile form')
+    expect(wrapper.text()).toContain('Configured email managed note')
   })
 
   it('keeps the email form available for replacing a bound primary email', async () => {
@@ -471,18 +619,19 @@ describe('ProfileIdentityBindingsSection', () => {
         linuxdoEnabled: false,
         oidcEnabled: false,
         wechatEnabled: false,
+        labels: bindingLabels,
       },
     })
 
-    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Bound')
+    expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Configured bound')
     expect(wrapper.get('[data-testid="profile-binding-email-input"]').exists()).toBe(true)
     expect(wrapper.get('[data-testid="profile-binding-email-submit"]').text()).toBe(
-      'Replace primary email'
+      'Configured replace email'
     )
     expect(
       (wrapper.get('[data-testid="profile-binding-email-password-input"]').element as HTMLInputElement)
         .placeholder
-    ).toBe('Current password')
+    ).toBe('Configured current password')
 
     await wrapper.get('[data-testid="profile-binding-email-input"]').setValue('new@example.com')
     await wrapper.get('[data-testid="profile-binding-email-send-code"]').trigger('click')
@@ -500,7 +649,7 @@ describe('ProfileIdentityBindingsSection', () => {
       password: 'current-password',
     })
     expect(authStore.user?.email).toBe('new@example.com')
-    expect(showSuccessSpy).toHaveBeenCalledWith('Primary email updated')
+    expect(showSuccessSpy).toHaveBeenCalledWith('Configured replace success')
   })
 
   it('collapses the email binding form in compact mode until the user expands it', async () => {
@@ -520,11 +669,12 @@ describe('ProfileIdentityBindingsSection', () => {
         linuxdoEnabled: false,
         oidcEnabled: false,
         wechatEnabled: false,
+        labels: bindingLabels,
       },
     })
 
     expect(wrapper.find('[data-testid="profile-binding-email-input"]').exists()).toBe(false)
-    expect(wrapper.get('[data-testid="profile-binding-email-toggle"]').text()).toBe('Manage email')
+    expect(wrapper.get('[data-testid="profile-binding-email-toggle"]').text()).toBe('Configured manage email')
 
     await wrapper.get('[data-testid="profile-binding-email-toggle"]').trigger('click')
 
@@ -566,6 +716,7 @@ describe('ProfileIdentityBindingsSection', () => {
         linuxdoEnabled: true,
         oidcEnabled: false,
         wechatEnabled: false,
+        labels: bindingLabels,
       },
     })
 
@@ -576,7 +727,43 @@ describe('ProfileIdentityBindingsSection', () => {
     await wrapper.get('[data-testid="profile-binding-linuxdo-unbind"]').trigger('click')
 
     expect(userApiMocks.unbindAuthIdentity).toHaveBeenCalledWith('linuxdo')
-    expect(wrapper.get('[data-testid="profile-binding-linuxdo-status"]').text()).toBe('Not bound')
+    expect(wrapper.get('[data-testid="profile-binding-linuxdo-status"]').text()).toBe('Configured not bound')
+  })
+
+  it('uses configured fallback copy when unbinding a connected provider fails', async () => {
+    userApiMocks.unbindAuthIdentity.mockRejectedValue(new Error(''))
+    const appStore = useAppStore()
+    const showErrorSpy = vi.spyOn(appStore, 'showError')
+
+    const wrapper = mount(ProfileIdentityBindingsSection, {
+      global: {
+        plugins: [pinia],
+      },
+      props: {
+        user: createUser({
+          email_bound: true,
+          linuxdo_bound: true,
+          auth_bindings: {
+            email: { bound: true },
+            linuxdo: {
+              bound: true,
+              can_unbind: true,
+            },
+          },
+        }),
+        compact: true,
+        linuxdoEnabled: true,
+        oidcEnabled: false,
+        wechatEnabled: false,
+        labels: {
+          authBindingsTryAgain: 'Configured try again',
+        },
+      },
+    })
+
+    await wrapper.get('[data-testid="profile-binding-linuxdo-unbind"]').trigger('click')
+
+    expect(showErrorSpy).toHaveBeenCalledWith('Configured try again')
   })
 
   it('localizes third-party unbind guidance from note_key', () => {
@@ -602,10 +789,11 @@ describe('ProfileIdentityBindingsSection', () => {
         linuxdoEnabled: true,
         oidcEnabled: false,
         wechatEnabled: false,
+        labels: bindingLabels,
       },
     })
 
-    expect(wrapper.text()).toContain('You can unbind this sign-in method')
+    expect(wrapper.text()).toContain('Configured can unbind note')
     expect(wrapper.text()).not.toContain('You can unbind this sign-in method.')
   })
 
@@ -677,11 +865,24 @@ describe('ProfileIdentityBindingsSection', () => {
         linuxdoEnabled: false,
         oidcEnabled: false,
         wechatEnabled: false,
+        labels: bindingLabels,
       },
     })
 
-    expect(wrapper.get('[data-testid="profile-binding-linuxdo-status"]').text()).toBe('Bound')
-    expect(wrapper.text()).toContain('LinuxDo')
+    expect(wrapper.get('[data-testid="profile-binding-linuxdo-status"]').text()).toBe('Configured bound')
+    expect(wrapper.text()).toContain('Configured LinuxDo')
     expect(wrapper.find('[data-testid="profile-binding-linuxdo-unbind"]').exists()).toBe(true)
+  })
+
+  it('does not render local label keys or provider names as fallback copy', () => {
+    expect(profileIdentityBindingsSource).not.toContain('return interpolateLabel(configured || key, params)')
+    expect(profileIdentityBindingsSource).not.toContain('return provider')
+    expect(profileIdentityBindingsSource).not.toContain('configured || props.oidcProviderName')
+    expect(profileIdentityBindingsSource).not.toContain('const authBindingLabelKeys')
+    expect(profileIdentityBindingsSource).not.toContain('const legacyBindingNoteKeys')
+    expect(profileIdentityBindingsSource).not.toContain('const noteKeyMap')
+    expect(profileIdentityBindingsSource).not.toContain('function interpolateLabel')
+    expect(profileIdentityBindingsSource).toContain('resolveAuthBindingText')
+    expect(profileIdentityBindingsSource).toContain('resolveAuthBindingProviderLabel')
   })
 })

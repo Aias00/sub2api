@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 
@@ -10,6 +11,9 @@ const pollOrderStatus = vi.hoisted(() => vi.fn())
 const verifyOrder = vi.hoisted(() => vi.fn())
 const verifyOrderPublic = vi.hoisted(() => vi.fn())
 const resolveOrderPublicByResumeToken = vi.hoisted(() => vi.fn())
+const appStoreState = vi.hoisted(() => ({
+  cachedPublicSettings: null as null | { payment_shell_config?: string },
+}))
 
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
@@ -26,6 +30,7 @@ vi.mock('vue-i18n', async () => {
     ...actual,
     useI18n: () => ({
       t: (key: string) => key,
+      locale: { value: 'en-US' },
     }),
   }
 })
@@ -34,6 +39,10 @@ vi.mock('@/stores/payment', () => ({
   usePaymentStore: () => ({
     pollOrderStatus,
   }),
+}))
+
+vi.mock('@/stores', () => ({
+  useAppStore: () => appStoreState,
 }))
 
 vi.mock('@/api/payment', () => ({
@@ -47,6 +56,55 @@ vi.mock('@/api/payment', () => ({
 import PaymentResultView from '../PaymentResultView.vue'
 import { PAYMENT_RECOVERY_STORAGE_KEY } from '@/components/payment/paymentFlow'
 import { formatPaymentAmount } from '@/components/payment/currency'
+
+const paymentResultViewSource = readFileSync(
+  'src/views/user/PaymentResultView.vue',
+  'utf8',
+)
+
+function buildPaymentResultShellConfig(
+  overrides: Record<string, string> = {},
+  defaults: Record<string, unknown> = {},
+) {
+  return JSON.stringify({
+    en: {
+      labels: {
+        success: 'Payment successful',
+        processing: 'Payment processing',
+        failed: 'Payment failed',
+        processingHint: 'Payment is still being confirmed',
+        backToRecharge: 'Back to recharge',
+        viewOrders: 'View orders',
+        orderId: 'Order ID',
+        orderNo: 'Order number',
+        baseAmount: 'Base amount',
+        fee: 'Fee',
+        payAmount: 'Paid amount',
+        creditedAmount: 'Credited amount',
+        paymentMethod: 'Payment method',
+        status: 'Status',
+        methodAlipay: 'Alipay',
+        methodWxpay: 'WeChat Pay',
+        methodStripe: 'Stripe',
+        methodAirwallex: 'Airwallex',
+        statusPending: 'Pending',
+        statusPaid: 'Paid',
+        statusRecharging: 'Recharging',
+        statusCompleted: 'Completed',
+        statusExpired: 'Expired',
+        statusCancelled: 'Cancelled',
+        statusFailed: 'Failed',
+        statusRefundRequested: 'Refund requested',
+        statusRefunding: 'Refunding',
+        statusRefunded: 'Refunded',
+        statusPartiallyRefunded: 'Partially refunded',
+        statusRefundFailed: 'Refund failed',
+        ...overrides,
+      },
+      defaults,
+    },
+  })
+}
 
 const orderFactory = (status: string) => ({
   id: 42,
@@ -91,6 +149,9 @@ describe('PaymentResultView', () => {
     verifyOrder.mockReset()
     verifyOrderPublic.mockReset()
     resolveOrderPublicByResumeToken.mockReset()
+    appStoreState.cachedPublicSettings = {
+      payment_shell_config: buildPaymentResultShellConfig(),
+    }
     window.localStorage.clear()
   })
 
@@ -139,9 +200,9 @@ describe('PaymentResultView', () => {
 
     expect(resolveOrderPublicByResumeToken).toHaveBeenCalledWith('resume-42')
     expect(pollOrderStatus).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('payment.result.processing')
-    expect(wrapper.text()).not.toContain('payment.result.success')
-    expect(wrapper.text()).not.toContain('payment.result.failed')
+    expect(wrapper.text()).toContain('Payment processing')
+    expect(wrapper.text()).not.toContain('Payment successful')
+    expect(wrapper.text()).not.toContain('Payment failed')
   })
 
   it('prefers the public resume-token result over a stale restored DB snapshot', async () => {
@@ -190,7 +251,7 @@ describe('PaymentResultView', () => {
 
     expect(pollOrderStatus).not.toHaveBeenCalled()
     expect(resolveOrderPublicByResumeToken).toHaveBeenCalledWith('resume-authoritative')
-    expect(wrapper.text()).toContain('payment.result.success')
+    expect(wrapper.text()).toContain('Payment successful')
     expect(wrapper.text()).toContain('103.00')
     expect(wrapper.text()).toContain('100.00')
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toBeNull()
@@ -198,6 +259,12 @@ describe('PaymentResultView', () => {
 
   it('refreshes a pending resume-token result until the order becomes paid', async () => {
     vi.useFakeTimers()
+    appStoreState.cachedPublicSettings = {
+      payment_shell_config: buildPaymentResultShellConfig({}, {
+        paymentResultRefreshIntervalMs: 1234,
+        paymentResultMaxRefreshAttempts: 3,
+      }),
+    }
     routeState.query = {
       resume_token: 'resume-77',
     }
@@ -224,16 +291,55 @@ describe('PaymentResultView', () => {
     await flushPromises()
 
     expect(resolveOrderPublicByResumeToken).toHaveBeenCalledTimes(1)
-    expect(wrapper.text()).toContain('payment.result.processing')
+    expect(wrapper.text()).toContain('Payment processing')
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).not.toBeNull()
 
-    await vi.advanceTimersByTimeAsync(2000)
+    await vi.advanceTimersByTimeAsync(1234)
     await flushPromises()
 
     expect(resolveOrderPublicByResumeToken).toHaveBeenCalledTimes(2)
-    expect(wrapper.text()).toContain('payment.result.success')
-    expect(wrapper.text()).not.toContain('payment.result.failed')
+    expect(wrapper.text()).toContain('Payment successful')
+    expect(wrapper.text()).not.toContain('Payment failed')
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toBeNull()
+  })
+
+  it('stops refreshing pending orders after the configured max attempts', async () => {
+    vi.useFakeTimers()
+    appStoreState.cachedPublicSettings = {
+      payment_shell_config: buildPaymentResultShellConfig({}, {
+        paymentResultRefreshIntervalMs: 50,
+        paymentResultMaxRefreshAttempts: 1,
+      }),
+    }
+    routeState.query = {
+      resume_token: 'resume-limited',
+    }
+    window.localStorage.setItem(
+      PAYMENT_RECOVERY_STORAGE_KEY,
+      JSON.stringify(recoverySnapshotFactory('resume-limited')),
+    )
+    resolveOrderPublicByResumeToken.mockResolvedValue({
+      data: orderFactory('PENDING'),
+    })
+
+    mount(PaymentResultView, {
+      global: {
+        stubs: {
+          OrderStatusBadge: true,
+        },
+      },
+    })
+
+    await flushPromises()
+    expect(resolveOrderPublicByResumeToken).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(50)
+    await flushPromises()
+    expect(resolveOrderPublicByResumeToken).toHaveBeenCalledTimes(2)
+
+    await vi.advanceTimersByTimeAsync(500)
+    await flushPromises()
+    expect(resolveOrderPublicByResumeToken).toHaveBeenCalledTimes(2)
   })
 
   it('falls back to order_id polling when resume-token recovery fails', async () => {
@@ -267,7 +373,7 @@ describe('PaymentResultView', () => {
     expect(resolveOrderPublicByResumeToken).toHaveBeenCalledWith('resume-fail')
     expect(pollOrderStatus).toHaveBeenCalledWith(77)
     expect(verifyOrderPublic).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('payment.result.success')
+    expect(wrapper.text()).toContain('Payment successful')
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toBeNull()
   })
 
@@ -298,7 +404,7 @@ describe('PaymentResultView', () => {
     expect(resolveOrderPublicByResumeToken).toHaveBeenCalledWith('resume-fail')
     expect(verifyOrderPublic).toHaveBeenCalledWith('legacy-should-not-run')
     expect(pollOrderStatus).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('payment.result.success')
+    expect(wrapper.text()).toContain('Payment successful')
   })
 
   it('ignores a stale global recovery snapshot when legacy return markers do not identify the order', async () => {
@@ -323,7 +429,7 @@ describe('PaymentResultView', () => {
     expect(resolveOrderPublicByResumeToken).not.toHaveBeenCalled()
     expect(verifyOrderPublic).not.toHaveBeenCalled()
     expect(pollOrderStatus).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('payment.result.failed')
+    expect(wrapper.text()).toContain('Payment failed')
     expect(wrapper.text()).not.toContain('sub2_20260420abcd1234')
   })
 
@@ -350,7 +456,7 @@ describe('PaymentResultView', () => {
     expect(verifyOrder).toHaveBeenCalledWith('legacy-123')
     expect(verifyOrderPublic).toHaveBeenCalledWith('legacy-123')
     expect(pollOrderStatus).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('payment.result.success')
+    expect(wrapper.text()).toContain('Payment successful')
   })
 
   it('prefers authenticated order verification before falling back to public lookup', async () => {
@@ -374,7 +480,7 @@ describe('PaymentResultView', () => {
 
     expect(verifyOrder).toHaveBeenCalledWith('auth-verify-123')
     expect(verifyOrderPublic).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('payment.result.success')
+    expect(wrapper.text()).toContain('Payment successful')
   })
 
   it('does not use public out_trade_no verification for bare order numbers without legacy return markers', async () => {
@@ -414,7 +520,7 @@ describe('PaymentResultView', () => {
     await flushPromises()
 
     expect(resolveOrderPublicByResumeToken).toHaveBeenCalledWith('resume-77')
-    expect(wrapper.text()).toContain('payment.result.success')
+    expect(wrapper.text()).toContain('Payment successful')
   })
 
   it('uses the currency returned by the order API when rendering amounts', async () => {
@@ -465,7 +571,80 @@ describe('PaymentResultView', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain('payment.methods.alipay')
-    expect(wrapper.text()).not.toContain('payment.methods.alipay_direct')
+    expect(wrapper.text()).toContain('Alipay')
+    expect(wrapper.text()).not.toContain('alipay_direct')
+  })
+
+  it('renders payment result labels from public payment shell config when available', async () => {
+    appStoreState.cachedPublicSettings = {
+      payment_shell_config: buildPaymentResultShellConfig({
+        success: 'Configured success',
+        orderId: 'Configured order',
+        baseAmount: 'Configured base',
+        payAmount: 'Configured paid',
+        paymentMethod: 'Configured method',
+        status: 'Configured status',
+        backToRecharge: 'Configured recharge',
+        viewOrders: 'Configured orders',
+        methodAlipay: 'Configured Alipay',
+      }),
+    }
+    routeState.query = {
+      resume_token: 'resume-configured',
+    }
+    resolveOrderPublicByResumeToken.mockResolvedValueOnce({
+      data: orderFactory('PAID'),
+    })
+
+    const wrapper = mount(PaymentResultView, {
+      global: {
+        stubs: {
+          OrderStatusBadge: true,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Configured success')
+    expect(wrapper.text()).toContain('Configured order')
+    expect(wrapper.text()).toContain('Configured base')
+    expect(wrapper.text()).toContain('Configured paid')
+    expect(wrapper.text()).toContain('Configured method')
+    expect(wrapper.text()).toContain('Configured status')
+    expect(wrapper.text()).toContain('Configured recharge')
+    expect(wrapper.text()).toContain('Configured orders')
+    expect(wrapper.text()).toContain('Configured Alipay')
+  })
+
+  it('does not carry local payment-result i18n fallback maps in the view', () => {
+    expect(paymentResultViewSource).not.toContain('const paymentResultLabelKeys')
+    expect(paymentResultViewSource).not.toContain('resolvePaymentShellLabels(')
+    expect(paymentResultViewSource).toContain('resolvePaymentResultLabels')
+    expect(paymentResultViewSource).toContain('resolvePaymentResultDefaults')
+    expect(paymentResultViewSource).toContain('renderPaymentResultText')
+    expect(paymentResultViewSource).toContain("from './paymentResultRuntime'")
+    expect(paymentResultViewSource).toContain('calculatePaymentBaseAmount')
+    expect(paymentResultViewSource).toContain('restorePaymentRecoverySnapshot')
+    expect(paymentResultViewSource).toContain('paymentResultDefaults.value.refreshIntervalMs')
+    expect(paymentResultViewSource).toContain('paymentResultDefaults.value.maxRefreshAttempts')
+    expect(paymentResultViewSource).not.toContain('STATUS_REFRESH_INTERVAL_MS')
+    expect(paymentResultViewSource).not.toContain('STATUS_REFRESH_MAX_ATTEMPTS')
+    expect(paymentResultViewSource).not.toContain('paymentResultFallbackKeys')
+    expect(paymentResultViewSource).not.toContain('paymentResultLabels.value[key] || key')
+    expect(paymentResultViewSource).not.toContain('payment.result.success')
+    expect(paymentResultViewSource).not.toContain('payment.methods.alipay')
+    expect(paymentResultViewSource).not.toContain('paymentMethodI18nKey')
+    expect(paymentResultViewSource).not.toContain("'$' + order.amount.toFixed(2)")
+    expect(paymentResultViewSource).not.toContain("currency = ref('CNY')")
+    expect(paymentResultViewSource).not.toContain('currency = ref(normalizePaymentCurrency())')
+  })
+
+  it('uses auth route defaults for payment-result navigation actions', () => {
+    expect(paymentResultViewSource).toContain('useAuthRouteDefaults')
+    expect(paymentResultViewSource).toContain('router.push(authRouteDefaults.purchasePath)')
+    expect(paymentResultViewSource).toContain('router.push(authRouteDefaults.ordersPath)')
+    expect(paymentResultViewSource).not.toContain("router.push('/purchase')")
+    expect(paymentResultViewSource).not.toContain("router.push('/orders')")
   })
 })

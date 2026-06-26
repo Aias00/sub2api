@@ -19,17 +19,9 @@ const UPDATED_DATE_PLACEHOLDER = "{{updated_date}}";
 const SITE_URL_PLACEHOLDER = "{{site_url}}";
 const CONTACT_INFO_PLACEHOLDER = "{{contact_info}}";
 
-const legacyBlankDocuments: LoginAgreementDocument[] = [
-  { id: "terms", title: "服务条款", content_md: "" },
-  { id: "privacy-policy", title: "隐私条款", content_md: "" },
-  { id: "usage-policy", title: "使用政策", content_md: "" },
-  { id: "supported-regions", title: "支持的国家和地区", content_md: "" },
-  { id: "service-specific-terms", title: "服务特定条款", content_md: "" },
-];
-
 function normalizeSiteName(raw?: string): string {
   const value = raw?.trim();
-  return value || "Sub2API";
+  return value || "";
 }
 
 function normalizeUrl(raw?: string): string {
@@ -40,17 +32,17 @@ function normalizeUrl(raw?: string): string {
 
 function normalizeContact(raw?: string): string {
   const value = raw?.trim();
-  return value || "请通过站点设置中的客服联系方式与运营方联系。";
+  return value || "";
 }
 
 function normalizeAgreementDate(raw?: string): string {
   const value = raw?.trim();
-  return value || "2026-03-31";
+  return value || "";
 }
 
 function normalizeSiteUrlForDocument(raw?: string): string {
   const value = normalizeUrl(raw);
-  return value || "以您当前访问本服务时所使用的域名为准";
+  return value || "";
 }
 
 function joinBlocks(blocks: string[]): string {
@@ -330,44 +322,6 @@ export function renderLoginAgreementDocumentContent(
   }
 
   return content;
-}
-
-export function isLegacyBlankLoginAgreementDocuments(
-  docs?: LoginAgreementDocument[] | null,
-): boolean {
-  if (!Array.isArray(docs) || docs.length === 0) {
-    return true;
-  }
-  if (docs.length !== legacyBlankDocuments.length) {
-    const legacyWithoutPrivacy = legacyBlankDocuments.filter(
-      (doc) => doc.id !== "privacy-policy",
-    );
-    if (docs.length !== legacyWithoutPrivacy.length) {
-      return false;
-    }
-    return docs.every((doc, index) => {
-      const legacy = legacyWithoutPrivacy[index];
-      const id = doc.id?.trim() || "";
-      const title = doc.title?.trim() || "";
-      const content = doc.content_md?.trim() || "";
-      return (
-        content === "" &&
-        (id === "" || id === legacy.id) &&
-        (title === "" || title === legacy.title)
-      );
-    });
-  }
-  return docs.every((doc, index) => {
-    const legacy = legacyBlankDocuments[index];
-    const id = doc.id?.trim() || "";
-    const title = doc.title?.trim() || "";
-    const content = doc.content_md?.trim() || "";
-    return (
-      content === "" &&
-      (id === "" || id === legacy.id) &&
-      (title === "" || title === legacy.title)
-    );
-  });
 }
 
 function isPrivacyPolicyDocument(doc: LoginAgreementDocument): boolean {

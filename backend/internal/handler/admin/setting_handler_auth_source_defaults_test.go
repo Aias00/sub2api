@@ -206,6 +206,77 @@ func TestSettingHandler_UpdateSettings_PreservesOmittedAuthSourceDefaults(t *tes
 	require.Equal(t, true, data["force_email_on_third_party_signup"])
 }
 
+func TestSettingHandler_UpdateSettings_AcceptsGenericRuntimeAliases(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &settingHandlerRepoStub{
+		values: map[string]string{
+			service.SettingKeyWebAppName:                "Web Old",
+			service.SettingKeyPromptCasesTitle:          "Old Cases",
+			service.SettingKeyPricingTitle:              "Old Pricing",
+			service.SettingKeyWebEmailAuthVisible:       "false",
+			service.SettingKeyWebGoogleAnalyticsID:      "G-OLD",
+			service.SettingKeyWebCrispEnabled:           "false",
+			service.SettingKeyWebCrispWebsiteID:         "crisp-old",
+			service.SettingKeyWebVercelAnalyticsEnabled: "false",
+		},
+	}
+	svc := service.NewSettingService(repo, &config.Config{})
+	handler := NewSettingHandler(svc, nil, nil, nil, nil, nil, nil)
+
+	body := map[string]any{
+		"app_name":                 " Web New ",
+		"prompt_cases_title":       " New Cases ",
+		"pricing_title":            " New Pricing ",
+		"pricing_currency_symbol":  " $ ",
+		"credits_per_balance":      " 12 ",
+		"email_auth_visible":       true,
+		"google_analytics_id":      "  G-NEW  ",
+		"crisp_enabled":            true,
+		"crisp_website_id":         " crisp-new ",
+		"vercel_analytics_enabled": true,
+	}
+	rawBody, err := json.Marshal(body)
+	require.NoError(t, err)
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPut, "/api/v1/admin/settings", bytes.NewReader(rawBody))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.UpdateSettings(c)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "Web New", repo.values[service.SettingKeyWebAppName])
+	require.Equal(t, "New Cases", repo.values[service.SettingKeyPromptCasesTitle])
+	require.Equal(t, "New Pricing", repo.values[service.SettingKeyPricingTitle])
+	require.Equal(t, "$", repo.values[service.SettingKeyPricingCurrencySymbol])
+	require.Equal(t, "12", repo.values[service.SettingKeyCreditsPerBalance])
+	require.Equal(t, "true", repo.values[service.SettingKeyWebEmailAuthVisible])
+	require.Equal(t, "G-NEW", repo.values[service.SettingKeyWebGoogleAnalyticsID])
+	require.Equal(t, "true", repo.values[service.SettingKeyWebCrispEnabled])
+	require.Equal(t, "crisp-new", repo.values[service.SettingKeyWebCrispWebsiteID])
+	require.Equal(t, "true", repo.values[service.SettingKeyWebVercelAnalyticsEnabled])
+
+	var resp response.Response
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	data, ok := resp.Data.(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, "Web New", data["app_name"])
+	require.Equal(t, "New Cases", data["prompt_cases_title"])
+	require.Equal(t, "New Pricing", data["pricing_title"])
+	require.Equal(t, "$", data["pricing_currency_symbol"])
+	require.Equal(t, "12", data["credits_per_balance"])
+	require.Equal(t, true, data["email_auth_visible"])
+	require.Equal(t, "G-NEW", data["google_analytics_id"])
+	require.Equal(t, true, data["crisp_enabled"])
+	require.Equal(t, "crisp-new", data["crisp_website_id"])
+	require.Equal(t, true, data["vercel_analytics_enabled"])
+	require.NotContains(t, data, "touch_app_name")
+	require.NotContains(t, data, "touch_email_auth_visible")
+	require.NotContains(t, data, "touch_google_analytics_id")
+	require.NotContains(t, data, "touch_crisp_enabled")
+}
+
 func TestSettingHandler_UpdateSettings_PersistsPaymentVisibleMethodsAndAdvancedScheduler(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	repo := &settingHandlerRepoStub{

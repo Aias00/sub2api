@@ -1186,7 +1186,7 @@ function apiToForm(channel: Channel): PlatformSection[] {
     const groupIds = (channel.group_ids || []).filter(gid => groupPlatformMap.get(gid) === platform)
     const mapping = (channel.model_mapping || {})[platform] || {}
     const pricing = (channel.model_pricing || [])
-      .filter(p => (p.platform || 'anthropic') === platform)
+      .filter(p => p.platform === platform)
       .map(p => ({
         models: p.models || [],
         billing_mode: p.billing_mode,

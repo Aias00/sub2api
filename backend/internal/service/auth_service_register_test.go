@@ -292,7 +292,7 @@ func (s *emailCacheStub) GetActiveEmailDailyRate(ctx context.Context, scope stri
 	return s.activeDailyCount, nil
 }
 
-func newAuthService(repo *userRepoStub, settings map[string]string, emailCache EmailCache) *AuthService {
+func newAuthService(repo *userRepoStub, settings map[string]string, emailCache EmailCache, quotaRepo UserPlatformQuotaRepository) *AuthService {
 	cfg := &config.Config{
 		JWT: config.JWTConfig{
 			Secret:     "test-secret",
@@ -513,7 +513,7 @@ func TestAuthService_SendVerifyCode_ActiveEmailDailyLimit(t *testing.T) {
 	cache := &emailCacheStub{activeDailyCount: activeEmailDailyLimit}
 	service := newAuthService(repo, map[string]string{
 		SettingKeyRegistrationEnabled: "true",
-	}, cache)
+	}, cache, nil)
 
 	err := service.SendVerifyCode(context.Background(), "User@Example.com")
 	require.Error(t, err)
@@ -570,7 +570,7 @@ func TestAuthService_Register_AllowsAffiliateInviteWhenInvitationGateEnabled(t *
 		SettingKeyInvitationCodeEnabled:               "true",
 		SettingKeyAffiliateEnabled:                    "true",
 		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "false",
-	}, nil)
+	}, nil, nil)
 	affiliateRepo := &authRegisterAffiliateRepoStub{
 		codeOwners: map[string]int64{"AFF123": 7},
 	}

@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { mount } from '@vue/test-utils'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import ProfileAvatarCard from '@/components/user/profile/ProfileAvatarCard.vue'
@@ -35,7 +36,7 @@ vi.mock('@/stores/app', () => ({
 }))
 
 vi.mock('@/utils/apiError', () => ({
-  extractApiErrorMessage: (error: unknown) => (error as Error).message || 'request failed'
+  extractApiErrorMessage: (error: unknown, fallback = 'request failed') => (error as Error).message || fallback
 }))
 
 vi.mock('vue-i18n', async (importOriginal) => {
@@ -57,6 +58,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
         if (key === 'profile.avatar.readFailed') return 'Failed to read the selected image'
         if (key === 'common.save') return 'Save'
         if (key === 'common.delete') return 'Delete'
+        if (key === 'common.error') return 'Error'
         if (key === 'profile.avatar.compressedReady') return `Compressed from ${params?.from} to ${params?.to}`
         if (key === 'profile.avatar.sizeReady') return `Ready: ${params?.size}`
         return key
@@ -144,6 +146,8 @@ function installAvatarCompressionMocks(blobSize = 8 * 1024) {
   }) as typeof document.createElement)
 }
 
+const profileAvatarCardSource = readFileSync('src/components/user/profile/ProfileAvatarCard.vue', 'utf8')
+
 describe('ProfileAvatarCard', () => {
   beforeEach(() => {
     updateProfileMock.mockReset()
@@ -163,7 +167,11 @@ describe('ProfileAvatarCard', () => {
 
     const wrapper = mount(ProfileAvatarCard, {
       props: {
-        user: authStoreState.user
+        user: authStoreState.user,
+        labels: {
+          avatarDelete: 'Configured delete',
+          avatarDeleteSuccess: 'Configured avatar removed',
+        },
       },
       global: {
         stubs: {
@@ -175,6 +183,67 @@ describe('ProfileAvatarCard', () => {
     expect(wrapper.find('[data-testid="profile-avatar-input"]').exists()).toBe(false)
   })
 
+  it('renders configured avatar shell labels and feedback text', async () => {
+    const updatedUser = createUser({ avatar_url: null })
+    updateProfileMock.mockResolvedValue(updatedUser)
+    authStoreState.user = createUser({ avatar_url: 'https://cdn.example.com/old.png' })
+
+    const wrapper = mount(ProfileAvatarCard, {
+      props: {
+        user: authStoreState.user,
+        labels: {
+          avatarTitle: 'Configured avatar title',
+          avatarDescription: 'Configured avatar description',
+          avatarUploadHint: 'Configured upload hint',
+          avatarUploadAction: 'Configured upload action',
+          avatarSave: 'Configured save',
+          avatarDelete: 'Configured delete',
+          avatarDeleteSuccess: 'Configured avatar removed',
+        },
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    expect(wrapper.text()).toContain('Configured avatar title')
+    expect(wrapper.text()).toContain('Configured avatar description')
+    expect(wrapper.text()).toContain('Configured upload hint')
+    expect(wrapper.text()).toContain('Configured upload action')
+    expect(wrapper.get('[data-testid="profile-avatar-save"]').text()).toBe('Configured save')
+    expect(wrapper.get('[data-testid="profile-avatar-delete"]').text()).toBe('Configured delete')
+
+    await wrapper.get('[data-testid="profile-avatar-delete"]').trigger('click')
+
+    expect(showSuccessMock).toHaveBeenCalledWith('Configured avatar removed')
+  })
+
+  it('uses configured avatar error fallback for failed updates', async () => {
+    updateProfileMock.mockRejectedValue(new Error(''))
+    authStoreState.user = createUser({ avatar_url: 'https://cdn.example.com/old.png' })
+
+    const wrapper = mount(ProfileAvatarCard, {
+      props: {
+        user: authStoreState.user,
+        labels: {
+          avatarError: 'Configured avatar error',
+        },
+      },
+      global: {
+        stubs: {
+          Icon: true
+        }
+      }
+    })
+
+    await wrapper.get('[data-testid="profile-avatar-delete"]').trigger('click')
+    await flushAsyncWork()
+
+    expect(showErrorMock).toHaveBeenCalledWith('Configured avatar error')
+  })
+
   it('compresses an uploaded image that exceeds the 20KB target before saving', async () => {
     installAvatarCompressionMocks()
     const updatedUser = createUser({ avatar_url: 'data:image/webp;base64,Y29tcHJlc3NlZC1hdmF0YXI=' })
@@ -183,7 +252,10 @@ describe('ProfileAvatarCard', () => {
 
     const wrapper = mount(ProfileAvatarCard, {
       props: {
-        user: authStoreState.user
+        user: authStoreState.user,
+        labels: {
+          avatarDeleteSuccess: 'Configured avatar removed',
+        },
       },
       global: {
         stubs: {
@@ -244,7 +316,10 @@ describe('ProfileAvatarCard', () => {
 
     const wrapper = mount(ProfileAvatarCard, {
       props: {
-        user: authStoreState.user
+        user: authStoreState.user,
+        labels: {
+          avatarDeleteSuccess: 'Configured avatar removed',
+        },
       },
       global: {
         stubs: {
@@ -257,6 +332,10 @@ describe('ProfileAvatarCard', () => {
 
     expect(updateProfileMock).toHaveBeenCalledWith({ avatar_url: '' })
     expect(authStoreState.user?.avatar_url).toBeNull()
-    expect(showSuccessMock).toHaveBeenCalledWith('Avatar removed')
+    expect(showSuccessMock).toHaveBeenCalledWith('Configured avatar removed')
+  })
+
+  it('does not render local label keys as avatar fallback copy', () => {
+    expect(profileAvatarCardSource).not.toContain('return props.labels?.[key] || key')
   })
 })

@@ -1,0 +1,14 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="touchFaviconGradient" x1="52" y1="52" x2="204" y2="204" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#8B91FF"/>
+      <stop offset="0.52" stop-color="#6366F1"/>
+      <stop offset="1" stop-color="#1D4ED8"/>
+    </linearGradient>
+  </defs>
+  <path d="M73 149C73 118.072 98.072 93 129 93" stroke="url(#touchFaviconGradient)" stroke-width="16" stroke-linecap="round"/>
+  <path d="M49 149C49 104.817 84.8172 69 129 69" stroke="url(#touchFaviconGradient)" stroke-width="14" stroke-linecap="round" opacity="0.9"/>
+  <path d="M25 149C25 91.5624 71.5624 45 129 45" stroke="url(#touchFaviconGradient)" stroke-width="12" stroke-linecap="round" opacity="0.6"/>
+  <circle cx="129" cy="149" r="15" fill="url(#touchFaviconGradient)"/>
+  <path d="M186 58L190.704 70.2963L203 75L190.704 79.7037L186 92L181.296 79.7037L169 75L181.296 70.2963L186 58Z" fill="#F59E0B"/>
+</svg>

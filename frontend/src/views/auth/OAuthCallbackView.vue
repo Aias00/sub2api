@@ -4,16 +4,16 @@
       <div v-if="isProcessing" class="card p-6 text-center">
         <div class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-primary-500 border-t-transparent"></div>
         <h1 class="mt-4 text-lg font-semibold text-gray-900 dark:text-white">
-          {{ t('auth.oauth.callbackTitle') }}
+          {{ authText('oauthCallbackTitle') }}
         </h1>
         <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {{ t('auth.oauth.callbackHint') }}
+          {{ authText('oauthCallbackHint') }}
         </p>
       </div>
 
       <div v-else-if="needsRegistrationCompletion" class="card p-6">
         <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
-          {{ t('auth.oidc.callbackTitle', { providerName }) }}
+          {{ authText('oauthCallbackTitle') }}
         </h1>
         <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
           {{ registrationHint }}
@@ -21,7 +21,7 @@
 
         <div class="mt-6 space-y-4">
           <div>
-            <label class="input-label">{{ t('auth.emailLabel') }}</label>
+            <label class="input-label">{{ authText('emailLabel') }}</label>
             <input
               class="input w-full"
               type="email"
@@ -32,59 +32,59 @@
           </div>
           <div>
             <label class="input-label">
-              {{ t('auth.passwordLabel') }}
+              {{ authText('passwordLabel') }}
               <span
                 v-if="passwordOptional"
                 class="ml-1 text-xs font-normal text-gray-400 dark:text-gray-500"
               >
-                ({{ t('common.optional') }})
+                ({{ authText('optional') }})
               </span>
             </label>
             <input
               v-model="password"
               type="password"
               class="input w-full"
-              :placeholder="t('auth.createPasswordPlaceholder')"
+              :placeholder="authText('createPasswordPlaceholder')"
               :disabled="isSubmitting"
               autocomplete="new-password"
               @keyup.enter="handleSubmitRegistration"
             />
             <p v-if="passwordOptional" class="mt-2 text-xs text-gray-500 dark:text-gray-400">
-              {{ t('auth.emailOAuth.passwordOptionalHint', { providerName }) }}
+              {{ authText('oauthCallbackPasswordOptionalHint', { providerName }) }}
             </p>
           </div>
           <div>
             <label class="input-label">
-              {{ t('auth.confirmPassword') }}
+              {{ authText('confirmPassword') }}
               <span
                 v-if="passwordOptional"
                 class="ml-1 text-xs font-normal text-gray-400 dark:text-gray-500"
               >
-                ({{ t('common.optional') }})
+                ({{ authText('optional') }})
               </span>
             </label>
             <input
               v-model="confirmPassword"
               type="password"
               class="input w-full"
-              :placeholder="t('auth.confirmPasswordPlaceholder')"
+              :placeholder="authText('confirmPasswordPlaceholder')"
               :disabled="isSubmitting"
               autocomplete="new-password"
               @keyup.enter="handleSubmitRegistration"
             />
           </div>
           <div v-if="invitationRequired">
-            <label class="input-label">{{ t('auth.invitationCodeLabel') }}</label>
+            <label class="input-label">{{ authText('invitationCodeLabel') }}</label>
             <input
               v-model="invitationCode"
               type="text"
               class="input w-full"
-              :placeholder="t('auth.invitationCodePlaceholder')"
+              :placeholder="authText('invitationCodePlaceholder')"
               :disabled="isSubmitting"
               @keyup.enter="handleSubmitRegistration"
             />
             <p v-if="invitationGateSatisfiedByAffiliate" class="mt-2 text-xs text-primary-700 dark:text-primary-300">
-              {{ t('auth.affiliateInvitationDetected') }}
+              {{ authText('affiliateInvitationDetected') }}
             </p>
           </div>
           <p v-if="registrationError" class="text-sm text-red-600 dark:text-red-400">
@@ -96,34 +96,34 @@
             :disabled="isSubmitting || !canSubmitRegistration"
             @click="handleSubmitRegistration"
           >
-            {{ isSubmitting ? t('common.processing') : t('auth.oidc.completeRegistration') }}
+            {{ isSubmitting ? authText('processing') : authText('oauthCallbackSubmitRegistration') }}
           </button>
         </div>
       </div>
 
       <div v-else-if="invalidCallback" class="card p-6 text-center">
         <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
-          {{ t('auth.oauth.invalidCallbackTitle') }}
+          {{ authText('oauthCallbackInvalidTitle') }}
         </h1>
         <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {{ t('auth.oauth.invalidCallbackHint') }}
+          {{ authText('oauthCallbackInvalidHint') }}
         </p>
-        <button class="btn btn-primary mt-6" type="button" @click="router.replace('/login')">
-          {{ t('auth.backToLogin') }}
+        <button class="btn btn-primary mt-6" type="button" @click="router.replace(authRouteDefaults.loginPath)">
+          {{ authText('backToLogin') }}
         </button>
       </div>
 
       <div v-else class="card p-6">
         <h1 class="text-lg font-semibold text-gray-900 dark:text-white">
-          {{ t('auth.oauth.callbackTitle') }}
+          {{ authText('oauthCallbackTitle') }}
         </h1>
         <p class="mt-2 text-sm text-gray-600 dark:text-gray-400">
-          {{ t('auth.oauth.callbackHint') }}
+          {{ authText('oauthCallbackHint') }}
         </p>
 
         <div class="mt-6 space-y-4">
           <div>
-            <label class="input-label">{{ t('auth.oauth.code') }}</label>
+            <label class="input-label">{{ authText('oauthCallbackCode') }}</label>
             <div class="flex gap-2">
               <input class="input flex-1 font-mono text-sm" :value="code" readonly />
               <button class="btn btn-secondary" type="button" :disabled="!code" @click="copy(code)">
@@ -133,7 +133,7 @@
           </div>
 
           <div>
-            <label class="input-label">{{ t('auth.oauth.state') }}</label>
+            <label class="input-label">{{ authText('oauthCallbackState') }}</label>
             <div class="flex gap-2">
               <input class="input flex-1 font-mono text-sm" :value="state" readonly />
               <button
@@ -148,7 +148,7 @@
           </div>
 
           <div>
-            <label class="input-label">{{ t('auth.oauth.fullUrl') }}</label>
+            <label class="input-label">{{ authText('oauthCallbackFullUrl') }}</label>
             <div class="flex gap-2">
               <input class="input flex-1 font-mono text-xs" :value="fullUrl" readonly />
               <button
@@ -173,23 +173,32 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useClipboard } from '@/composables/useClipboard'
 import { useAppStore, useAuthStore } from '@/stores'
-import { apiClient } from '@/api/client'
+import { apiClient, buildApiUrl } from '@/api/client'
 import {
   exchangePendingOAuthCompletion,
-  persistOAuthTokenContext,
   type OAuthTokenResponse
 } from '@/api/auth'
+import { useAuthShellText } from '@/composables/useAuthShellText'
 import {
-  clearAllAffiliateReferralCodes,
   loadOAuthAffiliateCode,
   oauthAffiliatePayload
 } from '@/utils/oauthAffiliate'
+import {
+  deriveEmailOAuthRegistrationState,
+  isEmailOAuthTokenResponse,
+  resolveEmailOAuthProvider,
+  type EmailOAuthPendingCompletion,
+  type EmailOAuthProvider,
+} from './emailOAuthFlow'
+import { finalizeAuthLoginSuccess } from './finalizeAuthLogin'
 import { buildLoginAgreementAcceptancePayload } from '@/utils/loginAgreementConsent'
+import { DEFAULT_AUTH_REDIRECT_PATH, sanitizeAuthRedirectPath } from '@/utils/authRedirect'
 import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const { authText, authRouteDefaults, defaultRedirectPath, loadAuthShellConfig } = useAuthShellText()
 const { copyToClipboard } = useClipboard()
 const appStore = useAppStore()
 const authStore = useAuthStore()
@@ -202,19 +211,10 @@ const password = ref('')
 const confirmPassword = ref('')
 const invitationCode = ref('')
 const registrationError = ref('')
-const pendingProvider = ref<'github' | 'google'>('github')
-const redirectTo = ref('/dashboard')
+const pendingProvider = ref<EmailOAuthProvider>('github')
+const redirectTo = ref(DEFAULT_AUTH_REDIRECT_PATH)
 const invalidCallback = ref(false)
 const EMAIL_OAUTH_PENDING_PROVIDER_KEY = 'email_oauth_pending_provider'
-
-type EmailOAuthPendingCompletion = Partial<OAuthTokenResponse> & {
-  error?: string
-  provider?: string
-  redirect?: string
-  email?: string
-  resolved_email?: string
-  invitation_required?: boolean
-}
 
 const code = computed(() => (route.query.code as string) || '')
 const state = computed(() => (route.query.state as string) || '')
@@ -231,8 +231,8 @@ const providerName = computed(() =>
 )
 const registrationHint = computed(() =>
   invitationRequired.value
-    ? t('auth.oidc.invitationRequired', { providerName: providerName.value })
-    : t('auth.oidc.completeRegistration')
+    ? authText('oauthCallbackRegistrationInvitationRequired', { providerName: providerName.value })
+    : authText('oauthCallbackRegistrationHint')
 )
 const passwordMinLength = computed(() =>
   resolvePasswordMinLength(appStore.cachedPublicSettings)
@@ -276,26 +276,13 @@ function readTokenResponse(params: URLSearchParams): OAuthTokenResponse | null {
   return response
 }
 
-function sanitizeRedirectPath(path: string | null | undefined): string {
-  if (!path) return '/dashboard'
-  if (!path.startsWith('/')) return '/dashboard'
-  if (path.startsWith('//')) return '/dashboard'
-  if (path.includes('://')) return '/dashboard'
-  if (path.includes('\n') || path.includes('\r')) return '/dashboard'
-  return path
-}
-
-function readPendingEmailOAuthProvider(): 'github' | 'google' | null {
+function readPendingEmailOAuthProvider(): EmailOAuthProvider | null {
   if (typeof window === 'undefined') return null
-  const provider = window.sessionStorage.getItem(EMAIL_OAUTH_PENDING_PROVIDER_KEY)
-  if (provider === 'github' || provider === 'google') return provider
-  return null
+  return resolveEmailOAuthProvider(window.sessionStorage.getItem(EMAIL_OAUTH_PENDING_PROVIDER_KEY))
 }
 
-function redirectProviderCallbackToBackend(provider: 'github' | 'google'): void {
+function redirectProviderCallbackToBackend(provider: EmailOAuthProvider): void {
   if (typeof window === 'undefined') return
-  const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) || '/api/v1'
-  const normalized = apiBase.replace(/\/$/, '')
   const params = new URLSearchParams()
   for (const [key, value] of Object.entries(route.query)) {
     if (Array.isArray(value)) {
@@ -307,43 +294,43 @@ function redirectProviderCallbackToBackend(provider: 'github' | 'google'): void 
     }
   }
   const suffix = params.toString() ? `?${params.toString()}` : ''
-  window.location.href = `${normalized}/auth/oauth/${provider}/callback${suffix}`
+  window.location.href = buildApiUrl(`/auth/oauth/${provider}/callback${suffix}`, appStore.cachedPublicSettings)
 }
 
 async function finalizeTokenResponse(tokenResponse: OAuthTokenResponse, redirect: string) {
-  persistOAuthTokenContext(tokenResponse)
-  await authStore.setToken(tokenResponse.access_token)
-  if (typeof window !== 'undefined') {
-    window.sessionStorage.removeItem(EMAIL_OAUTH_PENDING_PROVIDER_KEY)
-  }
-  clearAllAffiliateReferralCodes()
-  appStore.showSuccess(t('auth.loginSuccess'))
-  await router.replace(sanitizeRedirectPath(redirect))
-}
-
-function hasOAuthTokenResponse(value: Partial<OAuthTokenResponse>): value is OAuthTokenResponse {
-  return typeof value.access_token === 'string' && value.access_token.trim() !== ''
+  await finalizeAuthLoginSuccess({
+    tokenResponse,
+    redirect: sanitizeAuthRedirectPath(redirect, defaultRedirectPath.value),
+    authStore,
+    appStore,
+    router,
+    successMessage: t('auth.loginSuccess'),
+    beforeRedirect: () => {
+      if (typeof window !== 'undefined') {
+        window.sessionStorage.removeItem(EMAIL_OAUTH_PENDING_PROVIDER_KEY)
+      }
+    },
+  })
 }
 
 async function resumePendingEmailOAuth() {
   isProcessing.value = true
   try {
     const completion = await exchangePendingOAuthCompletion() as EmailOAuthPendingCompletion
-    const completionRedirect = completion.redirect || '/dashboard'
-    if (hasOAuthTokenResponse(completion)) {
-      await finalizeTokenResponse(completion, completionRedirect)
+    if (isEmailOAuthTokenResponse(completion)) {
+      await finalizeTokenResponse(completion as OAuthTokenResponse, completion.redirect || defaultRedirectPath.value)
       return
     }
 
-    const provider = String(completion.provider || '').toLowerCase()
-    if (provider === 'github' || provider === 'google') {
-      pendingProvider.value = provider
+    const nextState = deriveEmailOAuthRegistrationState(completion, defaultRedirectPath.value)
+    if (nextState.provider) {
+      pendingProvider.value = nextState.provider
     }
-    redirectTo.value = sanitizeRedirectPath(completionRedirect)
+    redirectTo.value = sanitizeAuthRedirectPath(nextState.redirect, defaultRedirectPath.value)
 
-    if (completion.error === 'invitation_required' || completion.error === 'registration_completion_required') {
-      invitationRequired.value = completion.error === 'invitation_required' || completion.invitation_required === true
-      registrationEmail.value = String(completion.resolved_email || completion.email || '').trim()
+    if (nextState.requiresRegistrationCompletion) {
+      invitationRequired.value = nextState.invitationRequired
+      registrationEmail.value = nextState.registrationEmail
       needsRegistrationCompletion.value = true
       isProcessing.value = false
       return
@@ -412,6 +399,9 @@ async function handleSubmitRegistration() {
 }
 
 onMounted(async () => {
+  await loadAuthShellConfig()
+  redirectTo.value = defaultRedirectPath.value
+
   const params = parseFragmentParams()
   const tokenResponse = readTokenResponse(params)
   const fragmentError = params.get('error') || ''
@@ -436,7 +426,7 @@ onMounted(async () => {
 
   isProcessing.value = true
   try {
-    await finalizeTokenResponse(tokenResponse, params.get('redirect') || '/dashboard')
+    await finalizeTokenResponse(tokenResponse, params.get('redirect') || defaultRedirectPath.value)
   } catch (error: unknown) {
     const message = (error as { message?: string })?.message || t('auth.loginFailed')
     appStore.showError(message)

@@ -83,6 +83,7 @@ export interface BuildCreateOrderPayloadInput {
   orderType: OrderType
   planId?: number
   origin?: string
+  returnPath?: string
   isMobile: boolean
   isWechatBrowser: boolean
   /** When true, Alipay payments always use QR code (passes is_mobile: false to backend) */
@@ -148,10 +149,18 @@ export function buildCreateOrderPayload(input: BuildCreateOrderPayloadInput): Cr
     payload.product_id = input.productId
   }
   if (normalizedOrigin) {
-    payload.return_url = `${normalizedOrigin}/payment/result`
+    payload.return_url = `${normalizedOrigin}${sanitizePaymentReturnPath(input.returnPath)}`
   }
 
   return payload
+}
+
+function sanitizePaymentReturnPath(value: unknown): string {
+  if (typeof value !== 'string') return '/payment/result'
+  const trimmed = value.trim()
+  if (!trimmed || !trimmed.startsWith('/') || trimmed.startsWith('//')) return '/payment/result'
+  if (trimmed.includes('://') || trimmed.includes('\n') || trimmed.includes('\r')) return '/payment/result'
+  return trimmed
 }
 
 export function supportsPaymentMethodSelection(

@@ -61,40 +61,40 @@
 
           <div v-else class="space-y-2 text-gray-700 dark:text-gray-300">
             <div class="flex justify-between">
-              <span class="text-gray-500 dark:text-gray-400">{{ t(prefixKey('billingMode')) }}</span>
+              <span class="text-gray-500 dark:text-gray-400">{{ pricingText('billingMode') }}</span>
               <span>{{ billingModeLabel }}</span>
             </div>
 
             <template v-if="model.pricing.billing_mode === BILLING_MODE_TOKEN">
               <PricingRow
-                :label="t(prefixKey('inputPrice'))"
+                :label="pricingText('inputPrice')"
                 :value="model.pricing.input_price"
-                :unit="t(prefixKey('unitPerMillion'))"
+                :unit="pricingText('unitPerMillion')"
                 :scale="perMillionScale"
               />
               <PricingRow
-                :label="t(prefixKey('outputPrice'))"
+                :label="pricingText('outputPrice')"
                 :value="model.pricing.output_price"
-                :unit="t(prefixKey('unitPerMillion'))"
+                :unit="pricingText('unitPerMillion')"
                 :scale="perMillionScale"
               />
               <PricingRow
-                :label="t(prefixKey('cacheWritePrice'))"
+                :label="pricingText('cacheWritePrice')"
                 :value="model.pricing.cache_write_price"
-                :unit="t(prefixKey('unitPerMillion'))"
+                :unit="pricingText('unitPerMillion')"
                 :scale="perMillionScale"
               />
               <PricingRow
-                :label="t(prefixKey('cacheReadPrice'))"
+                :label="pricingText('cacheReadPrice')"
                 :value="model.pricing.cache_read_price"
-                :unit="t(prefixKey('unitPerMillion'))"
+                :unit="pricingText('unitPerMillion')"
                 :scale="perMillionScale"
               />
               <PricingRow
                 v-if="model.pricing.image_output_price != null && model.pricing.image_output_price > 0"
-                :label="t(prefixKey('imageOutputPrice'))"
+                :label="pricingText('imageOutputPrice')"
                 :value="model.pricing.image_output_price"
-                :unit="t(prefixKey('unitPerMillion'))"
+                :unit="pricingText('unitPerMillion')"
                 :scale="perMillionScale"
               />
             </template>
@@ -104,9 +104,9 @@
                 model.pricing.billing_mode === BILLING_MODE_PER_REQUEST &&
                 model.pricing.per_request_price != null
               "
-              :label="t(prefixKey('perRequestPrice'))"
+              :label="pricingText('perRequestPrice')"
               :value="model.pricing.per_request_price"
-              :unit="t(prefixKey('unitPerRequest'))"
+              :unit="pricingText('unitPerRequest')"
               :scale="1"
             />
 
@@ -115,9 +115,9 @@
                 model.pricing.billing_mode === BILLING_MODE_IMAGE &&
                 model.pricing.image_output_price != null
               "
-              :label="t(prefixKey('imageOutputPrice'))"
+              :label="pricingText('imageOutputPrice')"
               :value="model.pricing.image_output_price"
-              :unit="t(prefixKey('unitPerRequest'))"
+              :unit="pricingText('unitPerRequest')"
               :scale="1"
             />
 
@@ -127,7 +127,7 @@
               :class="[popoverBorderClass]"
             >
               <div class="mb-1 font-medium text-gray-600 dark:text-gray-400">
-                {{ t(prefixKey('intervals')) }}
+                {{ pricingText('intervals') }}
               </div>
               <div class="space-y-1">
                 <div
@@ -168,11 +168,27 @@ import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import type { GroupPlatform } from '@/types'
 import { platformBadgeClass, platformBorderClass, platformBadgeLightClass } from '@/utils/platformColors'
 
+export type SupportedModelPricingLabelKey =
+  | 'billingMode'
+  | 'billingModeImage'
+  | 'billingModePerRequest'
+  | 'billingModeToken'
+  | 'cacheReadPrice'
+  | 'cacheWritePrice'
+  | 'imageOutputPrice'
+  | 'inputPrice'
+  | 'intervals'
+  | 'outputPrice'
+  | 'perRequestPrice'
+  | 'unitPerMillion'
+  | 'unitPerRequest'
+
 const props = withDefaults(
   defineProps<{
     model: UserSupportedModel
     /** i18n 前缀：管理端传 `admin.availableChannels.pricing`，用户端传 `availableChannels.pricing`。 */
     pricingKeyPrefix?: string
+    pricingLabels?: Partial<Record<SupportedModelPricingLabelKey, string>>
     noPricingLabel?: string
     showPlatform?: boolean
     /**
@@ -213,15 +229,19 @@ function prefixKey(k: string): string {
   return `${props.pricingKeyPrefix}.${k}`
 }
 
+function pricingText(key: SupportedModelPricingLabelKey): string {
+  return props.pricingLabels?.[key] || t(prefixKey(key))
+}
+
 const billingModeLabel = computed(() => {
   const mode = props.model.pricing?.billing_mode
   switch (mode) {
     case BILLING_MODE_TOKEN:
-      return t(prefixKey('billingModeToken'))
+      return pricingText('billingModeToken')
     case BILLING_MODE_PER_REQUEST:
-      return t(prefixKey('billingModePerRequest'))
+      return pricingText('billingModePerRequest')
     case BILLING_MODE_IMAGE:
-      return t(prefixKey('billingModeImage'))
+      return pricingText('billingModeImage')
     default:
       return '-'
   }

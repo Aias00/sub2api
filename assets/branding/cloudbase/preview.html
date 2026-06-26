@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>cloudbase brand preview</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #eef2f8;
+      --fg: #0f172a;
+      --muted: #607089;
+      --card: rgba(255, 255, 255, 0.88);
+      --line: rgba(15, 23, 42, 0.08);
+      --dark: #0f1117;
+      --dark-card: #171a22;
+      --dark-line: rgba(255,255,255,0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 40px;
+      font-family: Inter, system-ui, sans-serif;
+      background:
+        radial-gradient(circle at top left, rgba(96,116,255,0.10), transparent 28%),
+        linear-gradient(180deg, #f8fbff 0%, var(--bg) 100%);
+      color: var(--fg);
+    }
+    h1 { font-size: 40px; margin: 0 0 10px; letter-spacing: -0.04em; }
+    p.lead { margin: 0 0 28px; color: var(--muted); max-width: 860px; line-height: 1.7; }
+    .grid { display: grid; gap: 24px; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); }
+    .card {
+      border: 1px solid var(--line);
+      border-radius: 28px;
+      background: var(--card);
+      padding: 24px;
+      box-shadow: 0 24px 60px rgba(15, 23, 42, 0.08);
+    }
+    .card h2 { margin: 0 0 8px; font-size: 24px; letter-spacing: -0.03em; }
+    .card p { margin: 0 0 20px; color: var(--muted); line-height: 1.65; }
+    .surface {
+      border-radius: 24px;
+      padding: 20px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, #ffffff, #f7faff);
+      margin-bottom: 14px;
+    }
+    .surface.dark {
+      border-color: var(--dark-line);
+      background: linear-gradient(180deg, #181c25, var(--dark));
+    }
+    .surface img { display: block; max-width: 100%; height: auto; }
+    .meta { display: flex; gap: 10px; flex-wrap: wrap; }
+    .chip {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--muted);
+      background: rgba(255,255,255,0.6);
+    }
+  </style>
+</head>
+<body>
+  <h1>cloudbase brand candidates</h1>
+  <p class="lead">
+    Three final-direction SVG pairs derived from the selected organic AI product brand route.
+    Each block shows the full logo on a light surface and the standalone icon on a dark surface.
+  </p>
+
+  <div class="grid">
+    <section class="card">
+      <h2>cloud gate</h2>
+      <p>Literal but still polished. Best for strongest cloud + gateway readability.</p>
+      <div class="surface">
+        <img src="./cloud-gate-logo.svg" alt="cloud gate logo" />
+      </div>
+      <div class="surface dark">
+        <img src="./cloud-gate-icon.svg" alt="cloud gate icon" width="92" height="92" />
+      </div>
+      <div class="meta">
+        <span class="chip">cloud</span>
+        <span class="chip">gateway</span>
+        <span class="chip">platform</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>neural portal</h2>
+      <p>Best balance of cloud + ai + gateway. Most aligned with an AI-native product brand.</p>
+      <div class="surface">
+        <img src="./neural-portal-logo.svg" alt="neural portal logo" />
+      </div>
+      <div class="surface dark">
+        <img src="./neural-portal-icon.svg" alt="neural portal icon" width="92" height="92" />
+      </div>
+      <div class="meta">
+        <span class="chip">cloud</span>
+        <span class="chip">ai</span>
+        <span class="chip">gateway</span>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>orbit gateway</h2>
+      <p>Most premium and abstract. Best if you want the symbol to behave like a long-term pure brand mark.</p>
+      <div class="surface">
+        <img src="./orbit-gateway-logo.svg" alt="orbit gateway logo" />
+      </div>
+      <div class="surface dark">
+        <img src="./orbit-gateway-icon.svg" alt="orbit gateway icon" width="92" height="92" />
+      </div>
+      <div class="meta">
+        <span class="chip">abstract</span>
+        <span class="chip">premium</span>
+        <span class="chip">brand-first</span>
+      </div>
+    </section>
+  </div>
+</body>
+</html>

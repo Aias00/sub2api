@@ -17,20 +17,13 @@ const PENDING_AUTH_SESSION_KEY = 'pending_auth_session'
 const AUTO_REFRESH_INTERVAL = 60 * 1000 // 60 seconds for user data refresh
 const TOKEN_REFRESH_BUFFER = 120 * 1000 // 120 seconds before expiry to refresh token
 
-type PendingAuthTokenField = 'pending_auth_token' | 'pending_oauth_token'
-
 interface PendingAuthSessionSummary {
   token: string
-  token_field: PendingAuthTokenField
   provider: string
   redirect?: string
   adoption_required?: boolean
   suggested_display_name?: string
   suggested_avatar_url?: string
-}
-
-function normalizePendingAuthTokenField(value: unknown): PendingAuthTokenField {
-  return value === 'pending_oauth_token' ? 'pending_oauth_token' : 'pending_auth_token'
 }
 
 function getPersistedPendingAuthSession(): PendingAuthSessionSummary | null {
@@ -48,7 +41,6 @@ function getPersistedPendingAuthSession(): PendingAuthSessionSummary | null {
     }
     return {
       token: typeof parsed?.token === 'string' ? parsed.token : '',
-      token_field: normalizePendingAuthTokenField(parsed?.token_field),
       provider,
       redirect: typeof parsed?.redirect === 'string' ? parsed.redirect : undefined,
       adoption_required: typeof parsed?.adoption_required === 'boolean' ? parsed.adoption_required : undefined,

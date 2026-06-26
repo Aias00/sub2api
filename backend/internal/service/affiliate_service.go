@@ -80,11 +80,11 @@ type AffiliateInvitee struct {
 }
 
 type AffiliateRulesSettings struct {
-	AffiliateEnabled            bool    `json:"affiliate_enabled"`
-	InvitationCodeEnabled       bool    `json:"invitation_code_enabled"`
-	AffiliateRebateRate         float64 `json:"affiliate_rebate_rate"`
-	AffiliateRebateFreezeHours  int     `json:"affiliate_rebate_freeze_hours"`
-	AffiliateRebateDurationDays int     `json:"affiliate_rebate_duration_days"`
+	AffiliateEnabled             bool    `json:"affiliate_enabled"`
+	InvitationCodeEnabled        bool    `json:"invitation_code_enabled"`
+	AffiliateRebateRate          float64 `json:"affiliate_rebate_rate"`
+	AffiliateRebateFreezeHours   int     `json:"affiliate_rebate_freeze_hours"`
+	AffiliateRebateDurationDays  int     `json:"affiliate_rebate_duration_days"`
 	AffiliateRebatePerInviteeCap float64 `json:"affiliate_rebate_per_invitee_cap"`
 }
 
@@ -104,18 +104,18 @@ type AffiliateDetail struct {
 }
 
 type AffiliateAdminOverview struct {
-	AffiliateEnabled            bool    `json:"affiliate_enabled"`
-	InvitationCodeEnabled       bool    `json:"invitation_code_enabled"`
-	AffiliateRebateRate         float64 `json:"affiliate_rebate_rate"`
-	AffiliateRebateFreezeHours  int     `json:"affiliate_rebate_freeze_hours"`
-	AffiliateRebateDurationDays int     `json:"affiliate_rebate_duration_days"`
+	AffiliateEnabled             bool    `json:"affiliate_enabled"`
+	InvitationCodeEnabled        bool    `json:"invitation_code_enabled"`
+	AffiliateRebateRate          float64 `json:"affiliate_rebate_rate"`
+	AffiliateRebateFreezeHours   int     `json:"affiliate_rebate_freeze_hours"`
+	AffiliateRebateDurationDays  int     `json:"affiliate_rebate_duration_days"`
 	AffiliateRebatePerInviteeCap float64 `json:"affiliate_rebate_per_invitee_cap"`
-	InvitedUserCount           int64   `json:"invited_user_count"`
-	RebatedInviteeCount        int64   `json:"rebated_invitee_count"`
-	AvailableQuotaTotal        float64 `json:"available_quota_total"`
-	FrozenQuotaTotal           float64 `json:"frozen_quota_total"`
-	HistoryQuotaTotal          float64 `json:"history_quota_total"`
-	RecentRebateRecordCount    int64   `json:"recent_rebate_record_count"`
+	InvitedUserCount             int64   `json:"invited_user_count"`
+	RebatedInviteeCount          int64   `json:"rebated_invitee_count"`
+	AvailableQuotaTotal          float64 `json:"available_quota_total"`
+	FrozenQuotaTotal             float64 `json:"frozen_quota_total"`
+	HistoryQuotaTotal            float64 `json:"history_quota_total"`
+	RecentRebateRecordCount      int64   `json:"recent_rebate_record_count"`
 }
 
 type AffiliateRepository interface {

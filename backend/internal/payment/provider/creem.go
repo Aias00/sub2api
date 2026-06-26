@@ -54,18 +54,19 @@ func (c *Creem) CreatePayment(ctx context.Context, req payment.CreatePaymentRequ
 		return nil, fmt.Errorf("creem create payment: missing provider product id")
 	}
 
+	customerEmail := strings.TrimSpace(req.CustomerEmail)
+	if customerEmail == "" {
+		return nil, fmt.Errorf("creem create payment: missing customer email")
+	}
 	requestBody := map[string]any{
 		"product_id": productID,
 		"request_id": req.OrderID,
 		"customer": map[string]any{
-			"email": strings.TrimSpace(req.CustomerEmail),
+			"email": customerEmail,
 		},
 		"metadata": map[string]string{
 			"order_id": req.OrderID,
 		},
-	}
-	if requestBody["customer"].(map[string]any)["email"] == "" {
-		return nil, fmt.Errorf("creem create payment: missing customer email")
 	}
 	payload, err := json.Marshal(requestBody)
 	if err != nil {

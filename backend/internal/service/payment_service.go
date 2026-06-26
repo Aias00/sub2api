@@ -1,7 +1,6 @@
 package service
 
 import (
-	"bytes"
 	"context"
 	"encoding/hex"
 	"fmt"
@@ -280,41 +279,11 @@ func (s *PaymentService) paymentResume() *PaymentResumeService {
 	return psNewPaymentResumeService(s.configService)
 }
 
-func NewLegacyAwarePaymentResumeService(legacyKey []byte) *PaymentResumeService {
-	return newLegacyAwarePaymentResumeService(legacyKey)
-}
-
 func psNewPaymentResumeService(configService *PaymentConfigService) *PaymentResumeService {
-	return newLegacyAwarePaymentResumeService(psResumeLegacyVerificationKey(configService))
+	return NewPaymentResumeService(ParsePaymentResumeSigningKey(os.Getenv(paymentResumeSigningKeyEnv)))
 }
 
-func newLegacyAwarePaymentResumeService(legacyKey []byte) *PaymentResumeService {
-	signingKey, verifyFallbacks := resolvePaymentResumeSigningKeys(legacyKey)
-	return NewPaymentResumeService(signingKey, verifyFallbacks...)
-}
-
-func psResumeLegacyVerificationKey(configService *PaymentConfigService) []byte {
-	if configService == nil {
-		return nil
-	}
-	return configService.encryptionKey
-}
-
-func resolvePaymentResumeSigningKeys(legacyKey []byte) ([]byte, [][]byte) {
-	signingKey := parsePaymentResumeSigningKey(os.Getenv(paymentResumeSigningKeyEnv))
-	if len(signingKey) == 0 {
-		if len(legacyKey) == 0 {
-			return nil, nil
-		}
-		return legacyKey, nil
-	}
-	if len(legacyKey) == 0 || bytes.Equal(legacyKey, signingKey) {
-		return signingKey, nil
-	}
-	return signingKey, [][]byte{legacyKey}
-}
-
-func parsePaymentResumeSigningKey(raw string) []byte {
+func ParsePaymentResumeSigningKey(raw string) []byte {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return nil

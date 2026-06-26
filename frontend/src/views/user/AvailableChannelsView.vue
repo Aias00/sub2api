@@ -13,7 +13,7 @@
               <input
                 v-model="searchQuery"
                 type="text"
-                :placeholder="t('availableChannels.searchPlaceholder')"
+                :placeholder="availableChannelsText('searchPlaceholder')"
                 class="input pl-10"
               />
             </div>
@@ -24,7 +24,7 @@
               @click="loadChannels"
               :disabled="loading"
               class="btn btn-secondary"
-              :title="t('common.refresh', 'Refresh')"
+              :title="availableChannelsText('refreshTitle')"
             >
               <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
             </button>
@@ -38,10 +38,14 @@
           :rows="filteredChannels"
           :loading="loading"
           :user-group-rates="userGroupRates"
-          pricing-key-prefix="availableChannels.pricing"
-          :no-pricing-label="t('availableChannels.noPricing')"
-          :no-models-label="t('availableChannels.noModels')"
-          :empty-label="t('availableChannels.empty')"
+          :pricing-labels="pricingLabels"
+          :no-pricing-label="availableChannelsText('noPricing')"
+          :no-models-label="availableChannelsText('noModels')"
+          :empty-label="availableChannelsText('empty')"
+          :exclusive-label="availableChannelsText('exclusive')"
+          :exclusive-tooltip-label="availableChannelsText('exclusiveTooltip')"
+          :public-label="availableChannelsText('public')"
+          :public-tooltip-label="availableChannelsText('publicTooltip')"
         />
       </template>
     </TablePageLayout>
@@ -49,6 +53,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -59,22 +64,39 @@ import userChannelsAPI, { type UserAvailableChannel } from '@/api/channels'
 import userGroupsAPI from '@/api/groups'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
+import {
+  resolveConfiguredAvailableChannelsShellLabels,
+  type AvailableChannelsLabelKey,
+} from '@/utils/availableChannelsShell'
+import {
+  buildAvailableChannelsColumnLabels,
+  buildAvailableChannelsPricingLabels,
+  filterAvailableChannelsByQuery,
+} from './availableChannelsRuntime'
 
-const { t } = useI18n()
+const { locale } = useI18n()
 const appStore = useAppStore()
+
+
+const availableChannelsShellLabels = computed(() =>
+  resolveConfiguredAvailableChannelsShellLabels(
+    appStore.cachedPublicSettings?.available_channels_shell_config,
+    resolveRuntimeLocale(locale),
+  ),
+)
+
+function availableChannelsText(key: AvailableChannelsLabelKey): string {
+  return availableChannelsShellLabels.value[key]
+}
 
 const channels = ref<UserAvailableChannel[]>([])
 const userGroupRates = ref<Record<number, number>>({})
 const loading = ref(false)
 const searchQuery = ref('')
 
-const columnLabels = computed(() => ({
-  name: t('availableChannels.columns.name'),
-  description: t('availableChannels.columns.description'),
-  platform: t('availableChannels.columns.platform'),
-  groups: t('availableChannels.columns.groups'),
-  supportedModels: t('availableChannels.columns.supportedModels'),
-}))
+const columnLabels = computed(() => buildAvailableChannelsColumnLabels(availableChannelsText))
+
+const pricingLabels = computed(() => buildAvailableChannelsPricingLabels(availableChannelsText))
 
 /**
  * 搜索过滤：
@@ -82,25 +104,7 @@ const columnLabels = computed(() => ({
  * - 否则按 platform/group/model 维度在 sections 里过滤，保留有匹配的 section
  * - 所有 sections 都不匹配时，渠道本身被过滤掉
  */
-const filteredChannels = computed(() => {
-  const q = searchQuery.value.trim().toLowerCase()
-  if (!q) return channels.value
-  return channels.value
-    .map((ch) => {
-      const nameHit = ch.name.toLowerCase().includes(q)
-      const descHit = (ch.description || '').toLowerCase().includes(q)
-      if (nameHit || descHit) return ch
-      const matchingSections = ch.platforms.filter(
-        (p) =>
-          p.platform.toLowerCase().includes(q) ||
-          p.groups.some((g) => g.name.toLowerCase().includes(q)) ||
-          p.supported_models.some((m) => m.name.toLowerCase().includes(q)),
-      )
-      if (matchingSections.length === 0) return null
-      return { ...ch, platforms: matchingSections }
-    })
-    .filter((ch): ch is UserAvailableChannel => ch !== null)
-})
+const filteredChannels = computed(() => filterAvailableChannelsByQuery(channels.value, searchQuery.value))
 
 async function loadChannels() {
   loading.value = true
@@ -117,7 +121,7 @@ async function loadChannels() {
     channels.value = list
     userGroupRates.value = rates
   } catch (err: unknown) {
-    appStore.showError(extractApiErrorMessage(err, t('common.error')))
+    appStore.showError(extractApiErrorMessage(err, availableChannelsText('loadError')))
   } finally {
     loading.value = false
   }

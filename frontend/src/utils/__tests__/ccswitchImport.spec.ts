@@ -64,4 +64,18 @@ describe('ccswitchImport utils', () => {
     expect(params.get('endpoint')).toBe(`${baseInput.baseUrl}/antigravity`)
     expect(params.has('model')).toBe(false)
   })
+
+  it('does not require callers to synthesize an Anthropic platform for Claude imports', () => {
+    const params = paramsFromDeeplink(
+      buildCcSwitchImportDeeplink({
+        ...baseInput,
+        platform: undefined,
+        clientType: 'claude'
+      })
+    )
+
+    expect(params.get('app')).toBe('claude')
+    expect(params.get('endpoint')).toBe(baseInput.baseUrl)
+    expect(params.has('model')).toBe(false)
+  })
 })

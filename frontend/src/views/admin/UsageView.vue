@@ -56,7 +56,7 @@
             :loading="endpointStatsLoading"
             :show-source-toggle="true"
             :show-metric-toggle="true"
-            :title="t('usage.endpointDistribution')"
+            :title="t('common.usageRouting.endpointDistribution')"
             :start-date="startDate"
             :end-date="endDate"
             :filters="breakdownFilters"
@@ -460,10 +460,10 @@ const cancelExport = () => exportAbortController?.abort()
 const openCleanupDialog = () => { cleanupDialogVisible.value = true }
 const getRequestTypeLabel = (log: AdminUsageLog): string => {
   const requestType = resolveUsageRequestType(log)
-  if (requestType === 'ws_v2') return t('usage.ws')
-  if (requestType === 'stream') return t('usage.stream')
-  if (requestType === 'sync') return t('usage.sync')
-  return t('usage.unknown')
+  if (requestType === 'ws_v2') return t('common.requestType.ws')
+  if (requestType === 'stream') return t('common.requestType.stream')
+  if (requestType === 'sync') return t('common.requestType.sync')
+  return t('common.requestType.unknown')
 }
 
 const exportToExcel = async () => {
@@ -473,17 +473,17 @@ const exportToExcel = async () => {
     let p = 1; let total = pagination.total; let exportedCount = 0
     const XLSX = await import('xlsx')
     const headers = [
-      t('usage.time'), t('admin.usage.user'), t('usage.apiKeyFilter'),
-      t('admin.usage.account'), t('usage.model'), t('usage.upstreamModel'), t('usage.reasoningEffort'), t('admin.usage.group'),
-      t('usage.inboundEndpoint'), t('usage.upstreamEndpoint'),
-      t('usage.type'),
+      t('admin.usage.time'), t('admin.usage.user'), t('admin.usage.apiKeyFilter'),
+      t('admin.usage.account'), t('admin.usage.model'), t('common.usageRouting.upstreamModel'), t('admin.usage.reasoningEffort'), t('admin.usage.group'),
+      t('common.usageRouting.inboundEndpoint'), t('common.usageRouting.upstreamEndpoint'),
+      t('admin.usage.type'),
       t('admin.usage.inputTokens'), t('admin.usage.outputTokens'),
       t('admin.usage.cacheReadTokens'), t('admin.usage.cacheCreationTokens'),
       t('admin.usage.inputCost'), t('admin.usage.outputCost'),
       t('admin.usage.cacheReadCost'), t('admin.usage.cacheCreationCost'),
-      t('usage.rate'), t('usage.accountMultiplier'), t('usage.original'), t('usage.userBilled'), t('usage.accountBilled'),
-      t('usage.firstToken'), t('usage.duration'),
-      t('admin.usage.requestId'), t('usage.userAgent'), t('admin.usage.ipAddress')
+      t('admin.usage.rate'), t('common.billingMetrics.accountMultiplier'), t('admin.usage.original'), t('common.billingMetrics.userBilled'), t('common.billingMetrics.accountBilled'),
+      t('admin.usage.firstToken'), t('admin.usage.duration'),
+      t('admin.usage.requestId'), t('admin.usage.userAgent'), t('admin.usage.ipAddress')
     ]
     const ws = XLSX.utils.aoa_to_sheet([headers])
     while (true) {
@@ -516,7 +516,7 @@ const exportToExcel = async () => {
       const wb = XLSX.utils.book_new()
       XLSX.utils.book_append_sheet(wb, ws, 'Usage')
       saveAs(new Blob([XLSX.write(wb, { bookType: 'xlsx', type: 'array' })], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' }), `usage_${filters.value.start_date}_to_${filters.value.end_date}.xlsx`)
-      appStore.showSuccess(t('usage.exportSuccess'))
+      appStore.showSuccess(t('admin.usage.exportSuccess'))
     }
   } catch (error) { console.error('Failed to export:', error); appStore.showError('Export Failed') }
   finally { if(exportAbortController === c) { exportAbortController = null; exporting.value = false; exportProgress.show = false } }
@@ -529,20 +529,20 @@ const HIDDEN_COLUMNS_KEY = 'usage-hidden-columns'
 
 const allColumns = computed(() => [
   { key: 'user', label: t('admin.usage.user'), sortable: false },
-  { key: 'api_key', label: t('usage.apiKeyFilter'), sortable: false },
+  { key: 'api_key', label: t('admin.usage.apiKeyFilter'), sortable: false },
   { key: 'account', label: t('admin.usage.account'), sortable: false },
-  { key: 'model', label: t('usage.model'), sortable: true },
-  { key: 'reasoning_effort', label: t('usage.reasoningEffort'), sortable: false },
-  { key: 'endpoint', label: t('usage.endpoint'), sortable: false },
+  { key: 'model', label: t('admin.usage.model'), sortable: true },
+  { key: 'reasoning_effort', label: t('admin.usage.reasoningEffort'), sortable: false },
+  { key: 'endpoint', label: t('admin.usage.endpoint'), sortable: false },
   { key: 'group', label: t('admin.usage.group'), sortable: false },
-  { key: 'stream', label: t('usage.type'), sortable: false },
+  { key: 'stream', label: t('admin.usage.type'), sortable: false },
   { key: 'billing_mode', label: t('admin.usage.billingMode'), sortable: false },
-  { key: 'tokens', label: t('usage.tokens'), sortable: false },
-  { key: 'cost', label: t('usage.cost'), sortable: false },
-  { key: 'first_token', label: t('usage.firstToken'), sortable: false },
-  { key: 'duration', label: t('usage.duration'), sortable: false },
-  { key: 'created_at', label: t('usage.time'), sortable: true },
-  { key: 'user_agent', label: t('usage.userAgent'), sortable: false },
+  { key: 'tokens', label: t('admin.usage.tokens'), sortable: false },
+  { key: 'cost', label: t('admin.usage.cost'), sortable: false },
+  { key: 'first_token', label: t('admin.usage.firstToken'), sortable: false },
+  { key: 'duration', label: t('admin.usage.duration'), sortable: false },
+  { key: 'created_at', label: t('admin.usage.time'), sortable: true },
+  { key: 'user_agent', label: t('admin.usage.userAgent'), sortable: false },
   { key: 'ip_address', label: t('admin.usage.ipAddress'), sortable: false }
 ])
 

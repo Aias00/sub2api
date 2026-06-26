@@ -5,10 +5,10 @@
       class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
     >
       <h2 class="text-lg font-medium text-gray-900 dark:text-white">
-        {{ t('profile.avatar.title') }}
+        {{ avatarText('avatarTitle') }}
       </h2>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        {{ t('profile.avatar.description') }}
+        {{ avatarText('avatarDescription') }}
       </p>
     </div>
 
@@ -31,13 +31,13 @@
       <div :class="props.embedded ? 'space-y-3' : 'min-w-0 flex-1 space-y-4'">
         <div class="space-y-1">
           <p v-if="props.embedded" class="text-sm font-semibold text-gray-900 dark:text-white">
-            {{ t('profile.avatar.title') }}
+            {{ avatarText('avatarTitle') }}
           </p>
           <p v-else class="text-sm font-medium text-gray-900 dark:text-white">
             {{ displayName }}
           </p>
           <p class="text-sm text-gray-500 dark:text-gray-400">
-            {{ t('profile.avatar.uploadHint') }}
+            {{ avatarText('avatarUploadHint') }}
           </p>
         </div>
 
@@ -50,7 +50,7 @@
               class="hidden"
               @change="handleAvatarFileChange"
             >
-            {{ t('profile.avatar.uploadAction') }}
+            {{ avatarText('avatarUploadAction') }}
           </label>
 
           <button
@@ -60,7 +60,7 @@
             :disabled="avatarSaving || !avatarDraft"
             @click="handleAvatarSave"
           >
-            {{ t('common.save') }}
+            {{ avatarText('avatarSave') }}
           </button>
 
           <button
@@ -70,7 +70,7 @@
             :disabled="avatarSaving"
             @click="handleAvatarDelete"
           >
-            {{ t('common.delete') }}
+            {{ avatarText('avatarDelete') }}
           </button>
         </div>
       </div>
@@ -79,8 +79,8 @@
 </template>
 
 <script setup lang="ts">
+import type { ProfileLabelKey, ProfileLabels } from '@/utils/profileShell'
 import { computed, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { userAPI } from '@/api'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
@@ -90,11 +90,12 @@ import { extractApiErrorMessage } from '@/utils/apiError'
 const props = withDefaults(defineProps<{
   user: User | null
   embedded?: boolean
+  labels?: ProfileLabels
 }>(), {
   embedded: false,
+  labels: () => ({}),
 })
 
-const { t } = useI18n()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 
@@ -104,9 +105,14 @@ const avatarQualitySteps = [0.92, 0.84, 0.76, 0.68, 0.6, 0.52, 0.44, 0.36]
 const avatarDraft = ref('')
 const avatarSaving = ref(false)
 
-const displayName = computed(() => props.user?.username?.trim() || props.user?.email?.trim() || t('profile.user'))
+const displayName = computed(() => props.user?.username?.trim() || props.user?.email?.trim() || avatarText('user'))
 const avatarInitial = computed(() => displayName.value.charAt(0).toUpperCase() || 'U')
 const avatarPreviewUrl = computed(() => avatarDraft.value.trim() || props.user?.avatar_url?.trim() || '')
+
+
+function avatarText(key: ProfileLabelKey): string {
+  return props.labels?.[key] || ''
+}
 
 watch(
   () => props.user?.avatar_url,
@@ -122,7 +128,7 @@ function normalizeUploadedAvatar(value: string): string | null {
   }
 
   if (!/^data:image\/[a-zA-Z0-9.+-]+;base64,/i.test(normalized)) {
-    appStore.showError(t('profile.avatar.uploadRequired'))
+    appStore.showError(avatarText('avatarUploadRequired'))
     return null
   }
 
@@ -142,7 +148,7 @@ function loadImage(dataURL: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const image = new Image()
     image.onload = () => resolve(image)
-    image.onerror = () => reject(new Error(t('profile.avatar.readFailed')))
+    image.onerror = () => reject(new Error(avatarText('avatarReadFailed')))
     image.src = dataURL
   })
 }
@@ -151,7 +157,7 @@ function canvasToBlob(canvas: HTMLCanvasElement, type: string, quality: number):
   return new Promise((resolve, reject) => {
     canvas.toBlob((blob) => {
       if (!blob) {
-        reject(new Error(t('profile.avatar.compressFailed')))
+        reject(new Error(avatarText('avatarCompressFailed')))
         return
       }
       resolve(blob)
@@ -165,7 +171,7 @@ async function compressAvatarFile(file: File): Promise<File> {
   const canvas = document.createElement('canvas')
   const ctx = canvas.getContext('2d')
   if (!ctx) {
-    throw new Error(t('profile.avatar.compressFailed'))
+    throw new Error(avatarText('avatarCompressFailed'))
   }
 
   for (const scale of avatarScaleSteps) {
@@ -185,16 +191,16 @@ async function compressAvatarFile(file: File): Promise<File> {
     }
   }
 
-  throw new Error(t('profile.avatar.compressTooLarge'))
+  throw new Error(avatarText('avatarCompressTooLarge'))
 }
 
 async function prepareAvatarUpload(file: File): Promise<File> {
   if (!file.type.startsWith('image/')) {
-    throw new Error(t('profile.avatar.invalidType'))
+    throw new Error(avatarText('avatarInvalidType'))
   }
   if (file.type === 'image/gif') {
     if (file.size > targetAvatarUploadBytes) {
-      throw new Error(t('profile.avatar.gifTooLarge'))
+      throw new Error(avatarText('avatarGifTooLarge'))
     }
     return file
   }
@@ -223,7 +229,7 @@ async function handleAvatarFileChange(event: Event) {
     }
     avatarDraft.value = normalized
   } catch (error: unknown) {
-    appStore.showError(extractApiErrorMessage(error, t('common.error')))
+    appStore.showError(extractApiErrorMessage(error, avatarText('avatarError')))
   }
 }
 
@@ -238,9 +244,9 @@ async function handleAvatarSave() {
     const updated = await userAPI.updateProfile({ avatar_url: normalized })
     authStore.user = updated
     avatarDraft.value = updated.avatar_url?.trim() || ''
-    appStore.showSuccess(t('profile.avatar.saveSuccess'))
+    appStore.showSuccess(avatarText('avatarSaveSuccess'))
   } catch (error: unknown) {
-    appStore.showError(extractApiErrorMessage(error, t('common.error')))
+    appStore.showError(extractApiErrorMessage(error, avatarText('avatarError')))
   } finally {
     avatarSaving.value = false
   }
@@ -251,7 +257,7 @@ async function handleAvatarDelete() {
     return
   }
   if (!avatarDraft.value.trim() && !props.user?.avatar_url?.trim()) {
-    appStore.showError(t('profile.avatar.emptyDeleteHint'))
+    appStore.showError(avatarText('avatarEmptyDeleteHint'))
     return
   }
 
@@ -260,9 +266,9 @@ async function handleAvatarDelete() {
     const updated = await userAPI.updateProfile({ avatar_url: '' })
     authStore.user = updated
     avatarDraft.value = ''
-    appStore.showSuccess(t('profile.avatar.deleteSuccess'))
+    appStore.showSuccess(avatarText('avatarDeleteSuccess'))
   } catch (error: unknown) {
-    appStore.showError(extractApiErrorMessage(error, t('common.error')))
+    appStore.showError(extractApiErrorMessage(error, avatarText('avatarError')))
   } finally {
     avatarSaving.value = false
   }

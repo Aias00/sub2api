@@ -1468,9 +1468,11 @@ export default {
         endpointPlaceholder: 'https://api.example.com',
         extraModels: 'Extra Models',
         extraModelsPlaceholder: 'Press Enter to add extra model',
+        groupColumn: 'Group',
         groupName: 'Group Name',
         groupNamePlaceholder: 'Optional, used to group rows in user view',
         intervalSeconds: 'Interval (seconds)',
+        keyColumn: 'API Key',
         intervalSecondsHint: 'Range: 15 - 3600 seconds',
         kindRequired: 'Please select a provider',
         name: 'Name',
@@ -1479,6 +1481,7 @@ export default {
         primaryModel: 'Primary Model',
         primaryModelPlaceholder: 'gpt-4o-mini',
         provider: 'Platform',
+        searchKeyPlaceholder: 'Search name or key...',
         selectKeyHint: 'Only your active, non-expired keys are listed.',
         selectKeyTitle: 'Select my API Key',
         useCurrentDomain: 'Use current service',
@@ -4760,6 +4763,206 @@ export default {
         title: 'Site Settings',
         uploadImage: 'Upload Image'
       },
+      runtime: {
+        adsenseCode: 'AdSense Code',
+        adsenseCodePlaceholder: '<script ...></script>',
+        affonsoCookieDuration: 'Affonso Cookie Days',
+        affonsoEnabled: 'Enable Affonso',
+        affonsoId: 'Affonso ID',
+        analyticsSection: 'Analytics and Marketing',
+        appDescription: 'App Description',
+        appDescriptionPlaceholder: 'Reusable prompt case library',
+        appFavicon: 'Favicon URL',
+        appLogo: 'Logo URL',
+        appName: 'App Name',
+        appNamePlaceholder: 'Sub2API',
+        appPreviewImage: 'Share Preview Image URL',
+        appUrl: 'Public Site URL',
+        appUrlHint: 'Used for canonical URLs, share links, and email redirects. Leave empty to use the current request origin.',
+        appUrlPlaceholder: 'https://example.com',
+        appearance: 'Default Appearance',
+        appearancePlaceholder: 'system / light / dark',
+        authSection: 'Login Entry Points',
+        authShellConfig: 'Auth Shell Config JSON',
+        authShellConfigPlaceholder:
+          '{"en":{"labels":{"welcomeBack":"Welcome Back","signIn":"Sign In","createAccount":"Create Account"},"defaults":{"homePath":"/home","loginPath":"/login","registerPath":"/register","forgotPasswordPath":"/forgot-password","emailVerifyPath":"/email-verify","defaultRedirectPath":"/dashboard","apiKeysPath":"/keys","usagePath":"/usage","purchasePath":"/purchase","paymentResultPath":"/payment/result","ordersPath":"/orders","profilePath":"/profile","adminRedirectPath":"/admin/dashboard","adminRuntimeSettingsPath":"/admin/runtime-settings","adminOpsPath":"/admin/ops","adminUsersPath":"/admin/users","adminGroupsPath":"/admin/groups","adminAccountsPath":"/admin/accounts","adminOrdersRootPath":"/admin/orders","adminPaymentPlansPath":"/admin/orders/plans","adminUsagePath":"/admin/usage","userSidebarSections":[{"id":"main","items":["dashboard","apiKeys","usage","purchase","orders","profile"]}],"adminPersonalSidebarSections":[{"id":"personal","items":["apiKeys","usage","purchase","orders","profile"]}],"adminSidebarSections":[{"id":"main","items":["dashboard","ops","users","groups","channels","orders","usage"]},{"id":"settings","items":["runtimeSettings","settings"]}],"dingtalkCallbackPath":"/auth/dingtalk/callback","dingtalkEmailCompletionPath":"/auth/dingtalk/email-completion"}}}',
+        authShellConfigHint:
+          'Optional JSON for public login/registration labels and shared route defaults. Supports locale keys such as en/zh, a labels object, defaults.homePath/loginPath/registerPath/forgotPasswordPath/emailVerifyPath/defaultRedirectPath/apiKeysPath/usagePath/purchasePath/paymentResultPath/ordersPath/profilePath/adminRedirectPath/adminRuntimeSettingsPath, admin sidebar entry paths such as adminOpsPath/adminUsersPath/adminGroupsPath/adminAccountsPath/adminOrdersRootPath/adminPaymentPlansPath/adminUsagePath, plus sidebar grouping/order schemas via defaults.userSidebarSections, defaults.adminPersonalSidebarSections, and defaults.adminSidebarSections=[{id,items[]}...]. User/personal items: dashboard/apiKeys/usage/availableChannels/availableGroups/subscriptions/purchase/orders/redeem/affiliate/profile. Admin items: dashboard/ops/users/groups/channels/subscriptions/accounts/announcements/proxies/riskControl/redeem/promoCodes/affiliates/orders/usage/apiKeys/runtimeSettings/settings, dingtalkCallbackPath, and dingtalkEmailCompletionPath.',
+        badge: 'Public Runtime',
+        brandSection: 'Brand and Appearance',
+        clarityId: 'Microsoft Clarity ID',
+        creditsSection: 'Credits Page',
+        crispEnabled: 'Enable Crisp',
+        crispWebsiteId: 'Crisp Website ID',
+        customerSection: 'Customer Support',
+        defaultLocale: 'Default Locale',
+        defaultLocalePlaceholder: 'en',
+        description: 'Configure runtime settings read by the public frontend from Sub2API public settings.',
+        emailAuthVisible: 'Show Email Login',
+        githubAuthVisible: 'Show GitHub Login',
+        googleAnalyticsId: 'Google Analytics ID',
+        googleAuthVisible: 'Show Google Login',
+        imageUrlPlaceholder: 'https://cdn.example.com/image.png',
+        loadFailed: 'Failed to load runtime settings',
+        localeDetectEnabled: 'Enable Locale Auto Detection',
+        localeDetectEnabledHint: 'When enabled, the public frontend selects the default locale from the visitor language preference.',
+        marketingSection: 'Ads and Affiliate',
+        modelPlazaSection: 'Models Plaza Page',
+        modelPlazaShellConfig: 'Models Plaza Shell Config JSON',
+        modelPlazaShellConfigPlaceholder:
+          '{"en":{"labels":{"badge":"Models plaza","title":"Public model catalog","description":"Browse configured model cards","quickFind":"Quick find","searchPlaceholder":"Search models, capabilities, or tags","results":"Results","inputPrice":"Input","outputPrice":"Output"}}}',
+        modelPlazaShellConfigHint:
+          'Optional JSON for public /models page labels. Supports locale keys such as en/zh and a labels object for hero, search, empty state, group, copy, and price labels.',
+        homeSection: 'Home Page',
+        homeShellConfig: 'Home Shell Config JSON',
+        homeShellConfigPlaceholder:
+          '{"en":{"labels":{"navHome":"Home","navDocs":"Docs","navModels":"Models","navExperience":"Experience","viewDocs":"Docs","dashboard":"Dashboard","login":"Log in","heroBadge":"Unified AI gateway","heroTitle":"One gateway for your AI stack","primaryCta":"Start now","secondaryCta":"Browse models"},"defaults":{"links":{"homeAnchor":"#top","modelsPath":"/models","experienceAnchor":"#experience","docsPath":"/docs","termsPath":"/legal/terms","privacyPath":"/legal/privacy-policy"}},"experienceCards":[{"key":"unified","title":"Unified access","description":"One API surface for configured providers"}],"whyChooseCards":[{"key":"lowFriction","title":"Low-friction setup","description":"Start from existing keys and settings"}]}}',
+        homeShellConfigHint:
+          'Optional JSON for the default home page shell copy and links. Supports locale keys such as en/zh, labels, defaults.links, experienceCards, and whyChooseCards.',
+        homeBusinessShellConfig: 'Business Home Shell Config JSON',
+        homeBusinessShellConfigPlaceholder:
+          '{"en":{"labels":{"heroBadge":"Business capability home","heroTitle":"An AI workspace organized around business capabilities","primaryCta":"Open the platform","secondaryCta":"Browse prompt cases"},"businessCards":[{"key":"prompt-catalog","title":"Image Prompt Cases","description":"Keep image prompt cases in a searchable catalog","capabilityTags":["Prompt library"],"path":"/prompts","pathLabel":"Open prompt catalog"}]}}',
+        homeBusinessShellConfigHint:
+          'Optional JSON for the /home business-capability homepage. Supports locale keys such as en/zh, labels, defaults.links, businessCards, experienceCards, and whyChooseCards.',
+        docsSection: 'Docs Page',
+        docsContentBasePath: 'Docs Content Base Path Config',
+        docsContentBasePathPlaceholder:
+          '{"zh":"/docs-content/","en":"/docs-content/en/"}',
+        docsContentBasePathHint:
+          'Optional JSON or a single path/URL. The public docs page uses it as the Docsify content base path before falling back to bundled docs-content.',
+        docsShellConfig: 'Docs Shell Config JSON',
+        docsShellConfigPlaceholder:
+          '{"en":{"labels":{"title":"Docs","dashboard":"Dashboard","login":"Log in","searchPlaceholder":"Search docs","noData":"No results"}}}',
+        docsShellConfigHint:
+          'Optional JSON for the public docs shell and Docsify search copy. Supports locale keys such as en/zh and a labels object.',
+        legalDocumentShellConfig: 'Legal Document Shell Config JSON',
+        legalDocumentShellConfigPlaceholder:
+          '{"en":{"labels":{"login":"Log in","agreementLabel":"Login agreement","loadFailedTitle":"Failed to load document","missingTitle":"Document not found","updatedAt":"Updated: {date}","emptyContent":"No document content yet"}}}',
+        legalDocumentShellConfigHint:
+          'Optional JSON for the public legal document page chrome. Supports locale keys such as en/zh and a labels object.',
+        apiKeysShellConfig: 'API Keys Shell Config JSON',
+        apiKeysShellConfigPlaceholder:
+          '{"en":{"labels":{"searchPlaceholder":"Search API keys","createKey":"Create Key","allGroups":"All groups","failedToLoad":"Failed to load API keys"}}}',
+        apiKeysShellConfigHint:
+          'Optional JSON for the signed-in API Keys page search, filters, table headers, buttons, and common feedback copy. Supports locale keys such as en/zh and a labels object.',
+        keyUsageShellConfig: 'Key Usage Shell Config JSON',
+        keyUsageShellConfigPlaceholder:
+          '{"en":{"labels":{"title":"API Key Usage","query":"Query","dailyDetail":"Daily Detail"},"defaults":{"defaultDateRange":"today","dailyUsageDays":30}}}',
+        keyUsageShellConfigHint:
+          'Optional JSON for the public API key usage page labels, table headers, status messages, date range copy, default query range, and daily detail days. Supports locale keys such as en/zh, a labels object, defaults.defaultDateRange, and defaults.dailyUsageDays.',
+        dashboardShellConfig: 'User Dashboard Shell Config JSON',
+        dashboardShellConfigPlaceholder:
+          '{"en":{"labels":{"balance":"Balance","recentUsage":"Recent usage","quickActions":"Quick actions"},"defaults":{"dateRangeDays":7,"defaultGranularity":"day","recentUsageLimit":5,"quickActions":{"createApiKeyPath":"/keys","usagePath":"/usage","redeemPath":"/redeem"}}}}',
+        dashboardShellConfigHint:
+          'Optional JSON for the signed-in user dashboard stat cards, charts, recent usage, default date range, default granularity, recent usage limit, and quick actions. Supports locale keys such as en/zh, a labels object, defaults.dateRangeDays, defaults.defaultGranularity, defaults.recentUsageLimit, and defaults.quickActions.',
+        usageShellConfig: 'User Usage Shell Config JSON',
+        usageShellConfigPlaceholder:
+          '{"en":{"labels":{"totalRequests":"Total Requests","totalTokens":"Total Tokens","exportCsv":"Export CSV"},"defaults":{"dateRangeDays":7,"apiKeyPageSize":100,"exportPageSize":100}}}',
+        usageShellConfigHint:
+          'Optional JSON for the signed-in user usage history stat cards, filters, buttons, table headers, default date range, API key fetch page size, and CSV export batch size. Supports locale keys such as en/zh, a labels object, defaults.dateRangeDays, defaults.apiKeyPageSize, and defaults.exportPageSize.',
+        apiGuideShellConfig: 'API Guide Shell Config JSON',
+        apiGuideShellConfigPlaceholder:
+          '{"en":{"labels":{"title":"Gateway API Guide","openTester":"Open Tester","copyCurl":"Copy curl"},"defaults":{"testPath":"/gateway-test","defaultPrompt":"Describe the current model capabilities","maxTokens":256,"apiKeyPageSize":100}}}',
+        apiGuideShellConfigHint:
+          'Optional JSON for the API guide title, buttons, key selector, endpoint cards, curl example copy, tester route, default example prompt, max output tokens, and API key fetch page size. Supports locale keys such as en/zh, a labels object, defaults.testPath, defaults.defaultPrompt, defaults.maxTokens, and defaults.apiKeyPageSize.',
+        apiTestShellConfig: 'API Test Shell Config JSON',
+        apiTestShellConfigPlaceholder:
+          '{"en":{"labels":{"title":"API Test","send":"Send Test Request","responsePreview":"Response"},"defaults":{"guidePath":"/gateway-guide","defaultPrompt":"Describe the current model capabilities","maxTokens":256,"apiKeyPageSize":100,"usageSyncPageSize":10}}}',
+        apiTestShellConfigHint:
+          'Optional JSON for the API test title, form, buttons, request/response panels, usage sync hints, copy status messages, guide route, default test prompt, max output tokens, API key fetch page size, and usage sync page size. Supports locale keys such as en/zh, a labels object, defaults.guidePath, defaults.defaultPrompt, defaults.maxTokens, defaults.apiKeyPageSize, and defaults.usageSyncPageSize.',
+        availableGroupsShellConfig: 'Available Groups Shell Config JSON',
+        availableGroupsShellConfigPlaceholder:
+          '{"en":{"labels":{"title":"Available Groups","publicTitle":"Public Groups","memberTitle":"Member or Exclusive Groups"}}}',
+        availableGroupsShellConfigHint:
+          'Optional JSON for the available groups page title, stats, search, empty states, sections, badges, fields, and quota copy. Supports locale keys such as en/zh and a labels object.',
+        redeemShellConfig: 'Redeem Page Shell Config JSON',
+        redeemShellConfigPlaceholder:
+          '{"en":{"labels":{"currentBalance":"Current Balance","redeemButton":"Redeem Code","recentActivity":"Recent Activity"}}}',
+        redeemShellConfigHint:
+          'Optional JSON for the redeem page balance card, redeem form, result messages, info card, and history copy. Supports locale keys such as en/zh and a labels object.',
+        affiliateShellConfig: 'Affiliate Page Shell Config JSON',
+        affiliateShellConfigPlaceholder:
+          '{"en":{"labels":{"title":"Invite Center","copyCode":"Copy Code","transferButton":"Transfer to Balance"}}}',
+        affiliateShellConfigHint:
+          'Optional JSON for the affiliate page stats, code, invite link, tips, rebate transfer, and record table copy. Supports locale keys such as en/zh and a labels object.',
+        availableChannelsShellConfig: 'Available Channels Shell Config JSON',
+        availableChannelsShellConfigPlaceholder:
+          '{"en":{"labels":{"searchPlaceholder":"Search channels or models...","empty":"No available channels","columns":{"name":"Channel","supportedModels":"Supported Models"}}}}',
+        availableChannelsShellConfigHint:
+          'Optional JSON for the available channels page search, refresh, empty state, table headers, and public/exclusive group labels. Supports locale keys such as en/zh and a labels object.',
+        channelStatusShellConfig: 'Channel Status Shell Config JSON',
+        channelStatusShellConfigPlaceholder:
+          '{"en":{"defaults":{"refreshIntervalSeconds":60},"labels":{"refreshTitle":"Refresh","emptyTitle":"No channels available","windowTab":{"7d":"7 days"},"detailColumns":{"model":"Model"}}}}',
+        channelStatusShellConfigHint:
+          'Optional JSON for the channel status page refresh interval, window tabs, overall status, refresh, empty state, card metrics, detail table headers, and error copy. Supports locale keys such as en/zh, defaults.refreshIntervalSeconds, and a labels object.',
+        customPageShellConfig: 'Custom Page Shell Config JSON',
+        customPageShellConfigPlaceholder:
+          '{"en":{"labels":{"tocTitle":"Table of Contents","openInNewTab":"Open in new tab","copyCode":"Copy","copyCodeSuccess":"Copied ✓"}}}',
+        customPageShellConfigHint:
+          'Optional JSON for custom page missing states, invalid URL state, Markdown table of contents, open-in-new-tab action, load failures, and code-copy button copy. Supports locale keys such as en/zh and a labels object.',
+        profileShellConfig: 'Profile Shell Config JSON',
+        profileShellConfigPlaceholder:
+          '{"en":{"labels":{"accountBalance":"Account Balance","basicsTitle":"Basic Profile","contactSupport":"Contact Support","sourceAvatar":"Avatar is synced from {providerName}"}}}',
+        profileShellConfigHint:
+          'Optional JSON for the profile overview, roles, metrics, basic profile, profile source, and support-card copy. Supports locale keys such as en/zh and a labels object.',
+        openpanelClientId: 'OpenPanel Client ID',
+        plausibleDomain: 'Plausible Domain',
+        plausibleSrc: 'Plausible Script URL',
+        publicIntegrationsEnabled: 'Enable Public Integrations',
+        publicIntegrationsEnabledHint: 'Controls whether the public frontend injects analytics, ads, affiliate, and customer-support scripts from public settings.',
+        promotekitEnabled: 'Enable PromoteKit',
+        promotekitId: 'PromoteKit ID',
+        promptCasesDescription: 'Cases Page Description',
+        promptCasesDescriptionPlaceholder: 'Browse prompt cases from multiple sources...',
+        promptCasesTitle: 'Cases Page Title',
+        promptCasesTitlePlaceholder: 'Prompt Case Library',
+        promptSection: 'Prompt and Generator Pages',
+        promptTemplatesDescription: 'Templates Page Description',
+        promptTemplatesDescriptionPlaceholder: 'Browse structured prompt templates...',
+        promptTemplatesTitle: 'Templates Page Title',
+        promptTemplatesTitlePlaceholder: 'Industrial Template Library',
+        promptCatalogShellConfig: 'Prompt Catalog Shell Config JSON',
+        promptCatalogShellConfigPlaceholder:
+          '{"en":{"defaults":{"sourceType":"case","pageSize":12,"sortBy":"imported_at","sortOrder":"desc","importXAuto":true},"labels":{"total":"Total","sources":"Sources","searchPlaceholder":"Search titles, prompts, tags, or sources","hasImage":"Images only","copyPrompt":"Copy prompt","charUnit":"chars","generate":"Use in generator"}}}',
+        promptCatalogShellConfigHint:
+          'Override catalog stats, filters, empty state, details, import copy, and default query/import behavior per locale. Supports labels plus defaults.sourceType, pageSize, sortBy, sortOrder, generatorPath, generatorDraftSource, and importXAuto. Leave empty or invalid JSON for the default copy.',
+        workspaceShellConfig: 'Workspace Shell Config JSON',
+        workspaceShellConfigPlaceholder:
+          '{"en":{"defaults":{"catalogPath":"/prompts","maxPromptLength":2000},"catalogLabel":"Prompt cases","eyebrow":"Prompt Workspace","title":"Prompt Staging Area","heroDescription":"Import a prompt from the catalog and refine it","promptLabel":"Prompt","promptPlaceholder":"Paste a prompt or import one from the gallery","clearLabel":"Clear","copyPromptLabel":"Copy Prompt","workspaceTitle":"Image Workspace","workspaceStatus":"Image generation is centrally managed by Sub2API","backToCatalogLabel":"Back to catalog"}}',
+        workspaceShellConfigHint:
+          'Override AI image workspace form, button, imported-draft, status copy, defaults.catalogPath, and defaults.maxPromptLength per locale. Leave empty or invalid JSON for the default copy.',
+        pricingSection: 'Pricing Page',
+        pricingCurrencySymbol: 'Pricing Currency Symbol',
+        pricingCurrencySymbolPlaceholder: '¥',
+        pricingCurrencySymbolHint: 'Display symbol used by public pricing cards. Amounts and checkout currency still come from payment configuration.',
+        pricingShellConfig: 'Pricing Shell Config JSON',
+        pricingShellConfigPlaceholder:
+          '{"en":{"groups":[{"name":"one-time","title":"One-time"}],"button":{"title":"Choose plan","icon":"Zap"},"labels":{"prompts":"Prompt cases","eyebrow":"Pricing","title":"Pricing","description":"Plans and credits are configured in Sub2API","recharge":"Recharge","subscription":"Subscription","buy":"Buy","catalogStatus":"Catalog status","emptyRecharge":"No recharge products are configured yet","recommended":"Recommended"}}}',
+        pricingShellConfigHint:
+          'Override groups, button, navigation, hero, tabs, cards, empty states, and labels per locale. Leave empty for the built-in shell.',
+        paymentShellConfig: 'Payment Shell Config JSON',
+        paymentShellConfigPlaceholder:
+          '{"en":{"labels":{"tabTopUp":"Top Up","tabSubscribe":"Subscribe","rechargeAccount":"Recharge Account","currentBalance":"Current Balance","createOrder":"Create Order","selectAmountFirst":"Select a recharge product"},"defaults":{"paymentStatusPollIntervalMs":3000,"paymentVerifyRetryIntervalMs":15000,"paymentVerifyRetryMaxAttempts":6,"paymentResultRefreshIntervalMs":2000,"paymentResultMaxRefreshAttempts":15,"stripePollIntervalMs":3000,"stripeCloseDelayMs":2000,"stripePopupInitTimeoutMs":15000}}}',
+        paymentShellConfigHint:
+          'Override labels, buttons, empty states, order confirmation copy, and payment polling defaults on the signed-in payment pages. Payment methods, amounts, and order logic still come from payment configuration. Supports defaults.paymentStatusPollIntervalMs, defaults.paymentVerifyRetryIntervalMs, defaults.paymentVerifyRetryMaxAttempts, defaults.paymentResultRefreshIntervalMs, defaults.paymentResultMaxRefreshAttempts, defaults.stripePollIntervalMs, defaults.stripeCloseDelayMs, and defaults.stripePopupInitTimeoutMs.',
+        saveFailed: 'Failed to save runtime settings',
+        saveSuccess: 'Runtime settings saved',
+        creditsPerBalance: 'Credits per Sub2API Balance',
+        creditsPerBalancePlaceholder: '10',
+        creditsPerBalanceHint: 'Positive number used by the public credits page. Example: 10 means 10 credits = 1 Sub2API balance.',
+        creditsShellConfig: 'Credits Shell Config JSON',
+        creditsShellConfigPlaceholder:
+          '{"en":{"labels":{"credits":"Credits","sub2apiBalance":"Sub2API balance","conversion":"Conversion: {creditsPerBalance} credits = 1 Sub2API balance.","actionsTitle":"Balance actions","recharge":"Recharge","viewOrders":"View orders"},"actions":{"title":"Balance actions","description":"Recharge and orders use the unified payment flow"},"buttons":{"recharge":"Recharge","orders":"View orders"}}}',
+        creditsShellConfigHint:
+          'Override credits page labels, actions, buttons, and conversion per locale. Conversion copy supports {creditsPerBalance}. Leave empty for the built-in shell.',
+        tawkEnabled: 'Enable Tawk',
+        tawkPropertyId: 'Tawk Property ID',
+        tawkWidgetId: 'Tawk Widget ID',
+        theme: 'Theme Name',
+        themePlaceholder: 'default',
+        title: 'Runtime Settings',
+        vercelAnalyticsEnabled: 'Enable Vercel Analytics'
+      },
       smtp: {
         addChannel: 'Add Channel',
         channelNamePlaceholder: 'Channel name, e.g. Backup Gmail',
@@ -5197,6 +5400,8 @@ export default {
       allGroups: 'All Groups',
       allModels: 'All Models',
       allTypes: 'All Types',
+      apiKeyFilter: 'API Key',
+      avgDuration: 'Avg Duration',
       billingMode: 'Billing Mode',
       billingModeImage: 'Image',
       billingModePerRequest: 'Per Request',
@@ -5243,23 +5448,45 @@ export default {
         warning: 'Cleanup is irreversible and will affect historical stats.'
       },
       clickToViewBalance: 'Click to view balance history',
+      cost: 'Cost',
       description: 'View and manage all user usage records',
+      duration: 'Duration',
+      endpoint: 'Endpoint',
+      exportExcel: 'Export Excel',
+      exportSuccess: 'Usage data exported successfully',
       failedToLoad: 'Failed to load usage records',
       failedToLoadUser: 'Failed to load user info',
+      firstToken: 'First Token',
       group: 'Group',
+      in: 'In',
+      inSelectedRange: 'in selected range',
       inputCost: 'Input Cost',
       inputTokens: 'Input Tokens',
       ipAddress: 'IP',
+      model: 'Model',
+      noRecords: 'No usage records found. Try adjusting your filters.',
+      original: 'Original',
+      out: 'Out',
       outputCost: 'Output Cost',
       outputTokens: 'Output Tokens',
+      rate: 'Rate',
+      reasoningEffort: 'Reasoning Effort',
       requestId: 'Request ID',
       requestIdCopied: 'Request ID copied',
       searchAccountPlaceholder: 'Search account by name...',
       searchApiKeyPlaceholder: 'Search API key by name...',
       searchUserPlaceholder: 'Search user by email...',
       selectedUser: 'Selected',
+      standardCost: 'Standard',
+      time: 'Time',
       title: 'Usage Records',
+      tokens: 'Tokens',
+      totalCost: 'Total Cost',
+      totalRequests: 'Total Requests',
+      totalTokens: 'Total Tokens',
+      type: 'Type',
       user: 'User',
+      userAgent: 'User-Agent',
       userDeletedBadge: 'Deleted user',
       userFilter: 'User'
     },
@@ -5565,77 +5792,6 @@ export default {
       withdrawing: 'Withdrawing...'
     }
   },
-  affiliate: {
-    codeCopied: 'Affiliate code copied',
-    copyCode: 'Copy Code',
-    copyLink: 'Copy Link',
-    description: 'Manage invite codes, invitees, rebate records, and rebate transfers in one place.',
-    inviteLink: 'Invite Link',
-    invitees: {
-      columns: {
-        email: 'Email',
-        joinedAt: 'Joined At',
-        rebate: 'Rebate',
-        username: 'Username'
-      },
-      empty: 'No invited users yet',
-      title: 'Invited Users'
-    },
-    linkCopied: 'Invite link copied',
-    loadFailed: 'Failed to load affiliate data',
-    rebates: {
-      columns: {
-        createdAt: 'Rebated At',
-        invitee: 'Invitee',
-        orderAmount: 'Top-up Amount',
-        orderStatus: 'Order Status',
-        payAmount: 'Paid Amount',
-        paymentType: 'Payment Method',
-        rebateAmount: 'Rebate Amount'
-      },
-      empty: 'No rebate records yet',
-      title: 'Rebate Records'
-    },
-    stats: {
-      availableQuota: 'Available Rebate Quota',
-      frozenQuota: 'Frozen',
-      frozenQuotaHint: 'Recently earned rebates pending release',
-      invitedUsers: 'Invited Users',
-      rebateRate: 'My Rebate Rate',
-      rebateRateHint: 'What you earn each time an invitee recharges',
-      totalQuota: 'Historical Rebate Quota'
-    },
-    tips: {
-      line1: 'Share your affiliate code or invite link with new users.',
-      line2: 'When invitees recharge, you receive {rate} of the recharge as rebate quota.',
-      line3: 'Transfer rebate quota to balance at any time.',
-      line4: 'Newly earned rebates may have a waiting period before they can be transferred.',
-      title: 'How It Works'
-    },
-    title: 'Invite Center',
-    transfer: {
-      button: 'Transfer to Balance',
-      description: 'Move available rebate quota into your account balance',
-      empty: 'No available rebate quota',
-      success: '{amount} has been transferred to your balance',
-      title: 'Transfer Rebate Quota',
-      transferring: 'Transferring...'
-    },
-    transferFailed: 'Failed to transfer affiliate quota',
-    transfersHistory: {
-      columns: {
-        amount: 'Transferred',
-        availableQuotaAfter: 'Available Quota After',
-        balanceAfter: 'Balance After',
-        createdAt: 'Transferred At',
-        frozenQuotaAfter: 'Frozen Quota After',
-        historyQuotaAfter: 'Historical Rebate After'
-      },
-      empty: 'No transfer records yet',
-      title: 'Transfer Records'
-    },
-    yourCode: 'Your Affiliate Code'
-  },
   announcements: {
     allMarkedAsRead: 'All announcements marked as read',
     description: 'View system announcements',
@@ -5657,99 +5813,6 @@ export default {
     unread: 'Unread',
     unreadOnly: 'Show unread only',
     viewAll: 'View all announcements'
-  },
-  apiGuide: {
-    authHeaderDescription: 'Bearers are recommended for Anthropic / OpenAI compatible routes. Native Gemini routes are clearer with `x-goog-api-key`.',
-    authHeaderTitle: 'Auth Header',
-    badge: 'Proxy API',
-    baseUrl: 'Gateway Base URL',
-    copyCurl: 'Copy curl',
-    copyCurlSuccess: 'curl example copied',
-    copyStreamCurl: 'Copy streaming curl',
-    copyStreamCurlSuccess: 'streaming curl example copied',
-    curlExample: 'curl Example',
-    currentKey: 'Current API Key',
-    defaultModel: 'Default Model',
-    defaultPrompt: 'Tell me the model you routed to in one sentence.',
-    description: 'Pick an API key and this page will generate the correct base URL, auth header, and curl examples for the platform currently bound to that key.',
-    endpoint: 'Endpoint',
-    groupName: 'Group',
-    headerMode: 'Auth Mode',
-    keySelector: 'Select API Key',
-    keySelectorHint: 'Routing behavior is determined by the group attached to the selected API key. Change the key and the examples update with it.',
-    keySummary: 'Key Summary',
-    manageKeys: 'Manage API Keys',
-    noEndpointVariants: 'No protocol examples are available for this API key yet. Usually that means the key has no group, or the current group platform is not supported here.',
-    noGroupAssigned: 'No group assigned',
-    noKeysDescription: 'Create an API key and assign a group before this page can generate gateway instructions and examples.',
-    noKeysTitle: 'No API key available yet',
-    noSelection: 'Not selected',
-    openTester: 'Open API Tester',
-    platform: 'Platform',
-    protocol: 'Protocol',
-    selectKeyHint: 'Choose a grouped API key to generate protocol-specific examples automatically.',
-    streamCurlExample: 'Streaming curl Example',
-    streamEndpoint: 'Stream Endpoint',
-    supportedEndpoints: 'Supported Endpoints',
-    testThisVariant: 'Test this protocol',
-    title: 'API Guide',
-    unassignedDescription: 'Ungrouped API keys cannot pass through the gateway. Assign it to a group first on the API Keys page.',
-    unassignedTitle: 'This API key has no group yet'
-  },
-  apiTest: {
-    badge: 'Live Request',
-    copyCurl: 'Copy curl',
-    copyCurlSuccess: 'curl command copied',
-    copyRequest: 'Copy Request Body',
-    copyRequestSuccess: 'request body copied',
-    copyResponse: 'Copy Response',
-    copyResponseSuccess: 'response copied',
-    customModel: 'Custom Model',
-    customModelHint: 'The exact model name entered here will be sent to the gateway as-is.',
-    customModelOption: 'Enter model manually',
-    customModelOptionHint: 'Switch to manual input when the dropdown does not include the model you want.',
-    description: 'Send a real request through the gateway from this page to verify routing, model names, permissions, and upstream responses.',
-    duration: 'Duration',
-    headerMode: 'Auth Header',
-    keySelector: 'Select API Key',
-    liveBillingDescription: 'The API tester does not use mock responses and is not billing-free. Successful requests are recorded through the normal gateway path and count toward balance, subscription, and limit statistics.',
-    liveBillingTitle: 'Requests here are real',
-    manageKeys: 'Manage API Keys',
-    model: 'Model',
-    modelHint: 'A common default model is prefilled, but you can replace it with the exact model you want to test.',
-    modelPlaceholder: 'Enter a model name',
-    modelSearchPlaceholder: 'Search models',
-    noGroupAssigned: 'No group assigned',
-    noKeysDescription: 'Create an API key and assign a group before running live gateway tests here.',
-    noKeysTitle: 'No API key available yet',
-    noSelection: 'Select an API key',
-    notReady: 'Not ready',
-    openGuide: 'Open API Guide',
-    openUsage: 'Open Usage Records',
-    platform: 'Group Platform',
-    prompt: 'Prompt',
-    promptHint: 'This text is sent directly to the gateway so you can validate the full request path quickly.',
-    promptPlaceholder: 'Enter the content you want to send',
-    protocol: 'Protocol',
-    rawResponse: 'Raw Response',
-    requestMeta: 'Request Details',
-    requestPreview: 'Request Preview',
-    responsePending: 'Run a test request and the raw gateway response will appear here.',
-    responsePreview: 'Response',
-    responseSummary: 'Response Summary',
-    send: 'Send Test Request',
-    sending: 'Sending...',
-    statusCode: 'HTTP Status',
-    stream: 'Enable streaming',
-    streamHint: 'When enabled, the raw response panel will show the SSE event stream instead of a compact JSON payload.',
-    title: 'API Test',
-    unassignedDescription: 'It has no group assignment. Ungrouped keys are rejected by the gateway until you assign one on the API Keys page.',
-    unassignedTitle: 'This API key cannot be tested yet',
-    usageRecordFound: 'Recorded in usage statistics: {time} · ${cost} · {tokens} tokens',
-    usageRecordIdle: 'After a successful test, this panel shows whether the request has appeared in usage statistics.',
-    usageRecordPending: 'The request succeeded, but usage records are written asynchronously. If the Usage or Dashboard page is already open, refresh it to see the latest record.',
-    usageRecordSyncing: 'The request has completed successfully. Checking for the corresponding usage record...',
-    usageRecordTitle: 'Usage Sync'
   },
   auth: {
     accountCreatedSuccess: 'Account created successfully! Welcome to {siteName}.',
@@ -5972,148 +6035,6 @@ export default {
     wechatProviderName: 'WeChat',
     welcomeBack: 'Welcome Back'
   },
-  availableChannels: {
-    columns: {
-      description: 'Description',
-      groups: 'Your Accessible Groups',
-      name: 'Channel',
-      platform: 'Platform',
-      supportedModels: 'Supported Models'
-    },
-    description: 'Channels you can access, along with their supported models and pricing',
-    empty: 'No available channels',
-    exclusive: 'Exclusive',
-    exclusiveTooltip: 'Exclusive groups granted to you by an admin',
-    noModels: 'No models configured',
-    noPricing: 'Pricing not configured',
-    pricing: {
-      billingMode: 'Billing Mode',
-      billingModeImage: 'Per Image',
-      billingModePerRequest: 'Per Request',
-      billingModeToken: 'Per Token',
-      cacheReadPrice: 'Cache Read',
-      cacheWritePrice: 'Cache Write',
-      imageOutputPrice: 'Image Output',
-      inputPrice: 'Input',
-      intervals: 'Tiered Pricing',
-      outputPrice: 'Output',
-      perRequestPrice: 'Per Request',
-      unitPerMillion: '/ 1M tokens',
-      unitPerRequest: '/ request'
-    },
-    public: 'Public',
-    publicTooltip: 'Groups open to all users',
-    searchPlaceholder: 'Search channels or models...',
-    title: 'Available Channels'
-  },
-  availableGroups: {
-    title: 'Available Groups',
-    description: 'See which public, exclusive, and subscription groups your account can currently use.',
-    searchPlaceholder: 'Search group names, descriptions, or platforms...',
-    emptyTitle: 'No available groups',
-    emptyDescription: 'This account does not have any available groups yet.',
-    emptyFilteredDescription: 'No groups match the current search.',
-    unlimited: 'Unlimited',
-    stats: {
-      total: 'Total Groups',
-      public: 'Public',
-      memberOnly: 'Exclusive / Subscription'
-    },
-    sections: {
-      public: {
-        title: 'Public Groups',
-        description: 'Standard groups that are available to all users.'
-      },
-      member: {
-        title: 'Exclusive / Subscription Groups',
-        description: 'Groups granted by admin authorization or active subscriptions.'
-      }
-    },
-    badges: {
-      public: 'Public',
-      exclusive: 'Exclusive',
-      subscription: 'Subscription',
-      standard: 'Standard',
-      imageEnabled: 'Image enabled'
-    },
-    fields: {
-      rate: 'Rate',
-      quota: 'Quota'
-    },
-    limits: {
-      daily: 'Daily {amount}',
-      weekly: 'Weekly {amount}',
-      monthly: 'Monthly {amount}'
-    }
-  },
-  modelsPlaza: {
-    badge: 'Model Plaza',
-    title: 'Public Model Catalog',
-    description: 'Configure and publish model cards directly from the admin backend for capability overviews, pricing communication, and a unified entry point.',
-    emptyTitle: 'Model plaza is not configured yet',
-    emptyDescription: 'Once the admin configures model plaza items, public model cards will appear here.',
-    quickFind: 'Quick find',
-    searchLabel: 'Search model plaza',
-    searchPlaceholder: 'Search models, capabilities, or tags',
-    groupsTitle: 'Groups',
-    currentSearch: 'Current search: {query}',
-    browseHint: 'Browse public model cards by provider group.',
-    results: 'Results',
-    emptyFilteredTitle: 'No matching model cards',
-    emptyFilteredDescription: 'Try another group or broaden the search terms.',
-    copyModelIds: 'Copy model IDs',
-    modelIdsCopied: 'Model IDs copied',
-    inputPrice: 'Input price',
-    outputPrice: 'Output price',
-    cacheReadPrice: 'Cache read price',
-    cacheWritePrice: 'Cache write price',
-    modelIdsConfigured: 'Model IDs configured',
-    groups: {
-      all: 'All models',
-      other: 'Other'
-    }
-  },
-  channelStatus: {
-    allProviders: 'All Providers',
-    closeDetail: 'Close',
-    columns: {
-      availability7d: '7d Availability',
-      groupName: 'Group',
-      latency: 'Latency (ms)',
-      name: 'Name',
-      primaryModel: 'Primary Model',
-      provider: 'Provider'
-    },
-    description: 'Inspect channel availability, latency and recent status',
-    detailColumns: {
-      availability15d: '15d Availability',
-      availability30d: '30d Availability',
-      availability7d: '7d Availability',
-      avgLatency7d: '7d Avg Latency (ms)',
-      latestLatency: 'Latest Latency (ms)',
-      latestStatus: 'Latest Status',
-      model: 'Model'
-    },
-    detailLoadError: 'Failed to load channel detail',
-    detailTitle: 'Channel Detail',
-    empty: {
-      description: 'No monitored channels have been configured yet.',
-      title: 'No channels available'
-    },
-    loadError: 'Failed to load channel status',
-    overall: {
-      degraded: 'DEGRADED',
-      operational: 'OPERATIONAL',
-      unavailable: 'UNAVAILABLE'
-    },
-    searchPlaceholder: 'Search channels...',
-    title: 'Channel Status',
-    windowTab: {
-      '15d': '15 days',
-      '30d': '30 days',
-      '7d': '7 days'
-    }
-  },
   common: {
     actions: 'Actions',
     active: 'Active',
@@ -6192,6 +6113,85 @@ export default {
     apply: 'Apply',
     change: 'Change',
     clear: 'Clear',
+    exportProgress: {
+      cancelExport: 'Cancel Export',
+      estimatedTime: 'Estimated time remaining: {time}',
+      exportedCount: 'Exported {current}/{total} records',
+      exporting: 'Exporting...',
+      exportingProgress: 'Exporting data...'
+    },
+    billingMetrics: {
+      accountBilled: 'Account billed',
+      accountCost: 'Cost',
+      accountMultiplier: 'Account rate',
+      userBilled: 'User billed'
+    },
+    usageRouting: {
+      endpoint: 'Endpoint',
+      endpointDistribution: 'Endpoint Distribution',
+      inbound: 'Inbound',
+      inboundEndpoint: 'Inbound Endpoint',
+      mapping: 'Mapped model',
+      path: 'Path',
+      requestedModel: 'Requested model',
+      upstream: 'Upstream',
+      upstreamEndpoint: 'Upstream Endpoint',
+      upstreamModel: 'Upstream model'
+    },
+    requestType: {
+      stream: 'Stream',
+      sync: 'Sync',
+      unknown: 'Unknown',
+      ws: 'WS'
+    },
+    imageUsage: {
+      billingSize: 'Billing size',
+      count: 'Image count',
+      inputSize: 'Input size',
+      outputSize: 'Output size',
+      sizeBreakdown: 'Size breakdown',
+      sizeLegacyUnstandardized: 'Legacy unstandardized',
+      sizeNotRecorded: 'Not recorded',
+      sizeSource: 'Size source',
+      sizeSourceDefault: 'Default billing tier',
+      sizeSourceInput: 'Request input',
+      sizeSourceLegacy: 'Legacy record',
+      sizeSourceMissing: 'Not recorded',
+      sizeSourceOutput: 'Upstream output',
+      sizeUnknown: 'Unknown',
+      totalPrice: 'Image total price',
+      unit: ' images',
+      unitPrice: 'Per-image price'
+    },
+    serviceTier: {
+      flex: 'Flex',
+      label: 'Service tier',
+      priority: 'Fast',
+      standard: 'Standard'
+    },
+    usageMetrics: {
+      cacheCreation1hTokens: 'Cache Write',
+      cacheCreation5mTokens: 'Cache Write',
+      cacheCreationCost: 'Cache Creation Cost',
+      cacheCreationTokens: 'Cache Creation Tokens',
+      cacheReadCost: 'Cache Read Cost',
+      cacheReadTokens: 'Cache Read Tokens',
+      cacheTtlOverridden1h: 'Billed as 1h',
+      cacheTtlOverridden5m: 'Billed as 5m',
+      cacheTtlOverriddenHint: 'Cache TTL Override enabled',
+      cacheTtlOverriddenLabel: 'TTL Override',
+      costDetails: 'Cost Breakdown',
+      inputCost: 'Input Cost',
+      inputTokenPrice: 'Input price',
+      inputTokens: 'Input Tokens',
+      outputCost: 'Output Cost',
+      outputTokenPrice: 'Output price',
+      outputTokens: 'Output Tokens',
+      perMillionTokens: '/ 1M tokens',
+      tokenDetails: 'Token Breakdown',
+      totalTokens: 'Total Tokens',
+      unitPrice: 'Per-request price'
+    },
     required: 'Required',
     tryAgain: 'Try again',
     time: {
@@ -6226,63 +6226,6 @@ export default {
     openInNewTab: 'Open in new tab',
     title: 'Custom Page'
   },
-  dashboard: {
-    actual: 'Actual',
-    addBalanceWithCode: 'Add balance with a code',
-    apiKeys: 'API Keys',
-    averageTime: 'Average time',
-    avgResponse: 'Avg Response',
-    balance: 'Balance',
-    cache: 'Cache',
-    cacheRead: 'Cache Read',
-    cacheToday: 'Cache (Today)',
-    cacheWrite: 'Cache Write',
-    checkDetailedLogs: 'Check detailed usage logs',
-    createApiKey: 'Create API Key',
-    day: 'Day',
-    generateNewKey: 'Generate a new API key',
-    granularity: 'Granularity',
-    group: 'Group',
-    groupDistribution: 'Group Usage Distribution',
-    hour: 'Hour',
-    input: 'Input',
-    last7Days: 'Last 7 days',
-    model: 'Model',
-    modelDistribution: 'Model Distribution',
-    noDataAvailable: 'No data available',
-    noGroup: 'No Group',
-    noUsageRecords: 'No usage records',
-    output: 'Output',
-    performance: 'Performance',
-    platformBreakdown: 'Platform breakdown',
-    platformCount: '{count} platforms',
-    platformOther: 'Other',
-    platformQuota: {
-      daily: 'Day',
-      disabled: 'Disabled',
-      monthly: 'Month',
-      resetsAt: 'Resets at {time}',
-      title: 'Platform quota',
-      weekly: 'Week'
-    },
-    quickActions: 'Quick Actions',
-    recentUsage: 'Recent Usage',
-    redeemCode: 'Redeem Code',
-    requests: 'Requests',
-    standard: 'Standard',
-    startUsingApi: 'Start using the API to see your usage history here.',
-    timeRange: 'Time Range',
-    title: 'Dashboard',
-    todayCost: 'Today Cost',
-    todayRequests: 'Today Requests',
-    todayTokens: 'Today Tokens',
-    tokenUsageTrend: 'Token Usage Trend',
-    tokens: 'Tokens',
-    totalTokens: 'Total Tokens',
-    viewAllUsage: 'View all usage',
-    viewUsage: 'View Usage',
-    welcomeMessage: 'Welcome back! Here\'s an overview of your account.'
-  },
   dates: {
     apply: 'Apply',
     custom: 'Custom',
@@ -6298,14 +6241,6 @@ export default {
     thisWeek: 'This Week',
     today: 'Today',
     yesterday: 'Yesterday'
-  },
-  docs: {
-    frameworkHint: 'Documentation is now powered by Docsify for lighter Markdown maintenance.',
-    navigation: 'Navigation',
-    nextPage: 'Next',
-    onThisPage: 'On this page',
-    previousPage: 'Previous',
-    searchPlaceholder: 'Search docs'
   },
   legalDocument: {
     agreementLabel: 'Login agreement',
@@ -6376,227 +6311,6 @@ export default {
   groups: {
     subscription: 'Sub'
   },
-  home: {
-    cards: {
-      billing: {
-        description: 'Recharge products, plans, and usage stay visible so developers can control spend.',
-        title: 'More transparent billing'
-      },
-      setup: {
-        description: 'Designed to fit better with CLI tools, IDE plugins, and the development habits people already have.',
-        title: 'Lower setup friction'
-      },
-      stability: {
-        description: 'Account-pool and routing capabilities help reduce interruptions caused by single-path limits.',
-        title: 'More stable routing'
-      },
-      unified: {
-        description: 'Use one consistent domain and key format instead of juggling multiple providers and setup flows.',
-        title: 'One key, unified access'
-      }
-    },
-    comparison: {
-      headers: {
-        feature: 'Comparison',
-        official: 'Official Subscriptions',
-        us: 'Our Platform'
-      },
-      items: {
-        control: {
-          feature: 'Usage Control',
-          official: 'Not available',
-          us: 'Quotas & detailed analytics'
-        },
-        management: {
-          feature: 'Account Management',
-          official: 'Manage each service separately',
-          us: 'Unified key, one dashboard'
-        },
-        models: {
-          feature: 'Model Selection',
-          official: 'Single provider only',
-          us: 'Switch between models freely'
-        },
-        pricing: {
-          feature: 'Pricing',
-          official: 'Fixed monthly fee, pay even if unused',
-          us: 'Pay only for what you use'
-        },
-        stability: {
-          feature: 'Stability',
-          official: 'Single account rate limits',
-          us: 'Multi-account pool, auto-failover'
-        }
-      },
-      title: 'Why Choose Us?'
-    },
-    cta: {
-      button: 'Sign Up Free',
-      description: 'Sign up now and get free trial credits to experience seamless AI access',
-      title: 'Ready to Get Started?'
-    },
-    dashboard: 'Dashboard',
-    docs: 'Docs',
-    experienceDescription: 'Less setup friction, less account switching, and less time decoding admin pages. More time spent shipping code.',
-    experienceKicker: 'Core Experience',
-    experienceTitle: 'A coding workflow designed for daily use ✦',
-    familyBadges: {
-      claude: 'System Design',
-      gemini: 'Visual Tasks',
-      gpt: 'Feature Delivery'
-    },
-    familyCapabilities: {
-      claude: {
-        architecture: 'System Design',
-        reasoning: 'Complex Reasoning',
-        review: 'Code Review'
-      },
-      gpt: {
-        agents: 'Agent Workflows',
-        coding: 'Code Generation',
-        iteration: 'Feature Iteration'
-      }
-    },
-    familyContent: {
-      claude: {
-        description: 'Best for architecture decisions, code review, and complex reasoning.',
-        tagline: 'Complex reasoning and system design'
-      },
-      gemini: {
-        description: 'Useful for screenshots, visual interpretation, and multimodal support.',
-        tagline: 'Visual understanding and multimodal help'
-      },
-      gpt: {
-        description: 'A strong fit for day-to-day coding, feature work, and high-frequency implementation.',
-        tagline: 'Code generation and implementation'
-      }
-    },
-    features: {
-      balanceQuota: 'Pay What You Use',
-      balanceQuotaDesc: 'Usage-based billing with quota limits. Full visibility into team consumption.',
-      multiAccount: 'Always Reliable',
-      multiAccountDesc: 'Smart routing across multiple upstream accounts with automatic failover. Say goodbye to errors.',
-      unifiedGateway: 'One-Click Access',
-      unifiedGatewayDesc: 'Get a single API key to call all connected AI models. No separate applications needed.'
-    },
-    footer: {
-      allRightsReserved: 'All rights reserved.'
-    },
-    footerDescription: 'A simpler entry point for model access, visible pricing, and day-to-day AI-assisted coding.',
-    footerSections: {
-      catalog: 'Catalog',
-      models: 'Models',
-      product: 'Product',
-      resources: 'Resources',
-      support: 'Support'
-    },
-    geminiGateway: {
-      button: 'Open Gemini Web Login',
-      description: 'Expose gemini-command-gateway startup, session import, and status checks directly from the main entry page. Admins can jump into the login center and activate Gemini Web with exported browser cookies.',
-      manageAccounts: 'Manage Gemini Web Accounts',
-      title: 'Gemini Web Login Entry'
-    },
-    getStarted: 'Get Started',
-    goToDashboard: 'Go to Dashboard',
-    heroBadge: 'Developer First',
-    heroDescription: 'No need to manage multiple subscriptions. Access Claude, GPT, and other core coding models with a single API key',
-    heroSubtitle: 'One Key, All AI Models',
-    heroTitle: 'AI Coding Workspace',
-    login: 'Login',
-    modelMatrixDescription: 'Show the major model families for coding, reasoning, and visual work directly from the current sellable catalog.',
-    modelMatrixEmpty: 'No public model catalog is available yet. Publish sellable plans first to surface models here.',
-    modelMatrixEmptyCard: 'A focused entry point for reasoning, coding, and agent workflows.',
-    modelMatrixEmptyPill: 'Capability entry',
-    modelMatrixKicker: 'Model Matrix',
-    modelMatrixTitle: 'Core models, compared in public ✦',
-    nav: {
-      experience: 'Core Experience',
-      home: 'Home',
-      models: 'Model Matrix'
-    },
-    painPoints: {
-      items: {
-        complex: {
-          desc: 'Managing scattered accounts and API keys across different platforms',
-          title: 'Account Chaos'
-        },
-        expensive: {
-          desc: 'Paying for multiple AI subscriptions that add up every month',
-          title: 'High Subscription Costs'
-        },
-        noControl: {
-          desc: 'Can\'t track where your money goes or limit team member usage',
-          title: 'No Usage Control'
-        },
-        unstable: {
-          desc: 'Single accounts hitting rate limits and disrupting your workflow',
-          title: 'Service Interruptions'
-        }
-      },
-      title: 'Sound Familiar?'
-    },
-    planValidityDays: '{count} day validity',
-    planValidityMonths: '{count} month validity',
-    planValidityYears: '{count} year validity',
-    pricingDescription: 'Pull public plans and top-up pricing straight from the backend catalog so the homepage stays aligned with what is actually sellable.',
-    pricingEmptyPlans: 'Subscription plans will appear here automatically once they are available for public sale.',
-    pricingEmptyRecharge: 'Top-up options will appear here as soon as the public payment catalog is ready.',
-    pricingKicker: 'Pricing & Plans',
-    pricingTitle: 'Public pricing, directly on the homepage ✦',
-    pricingUnavailable: 'No public pricing is available right now',
-    primaryCta: 'Try It Now',
-    privacyLink: 'Privacy',
-    providers: {
-      antigravity: 'Antigravity',
-      claude: 'Claude',
-      description: 'Unified access to Claude, GPT, and other mainstream models',
-      gemini: 'Gemini',
-      more: 'More',
-      soon: 'Soon',
-      supported: 'Supported',
-      title: 'Supported AI Models'
-    },
-    rechargeProductsTitle: 'Top-up Products',
-    secondaryCta: 'Browse Models',
-    solutions: {
-      subtitle: 'Three simple steps to stress-free AI access',
-      title: 'We Solve These Problems'
-    },
-    subscriptionPlansTitle: 'Subscription Plans',
-    switchToDark: 'Switch to Dark Mode',
-    switchToLight: 'Switch to Light Mode',
-    tags: {
-      realtimeBilling: 'Transparent Usage Billing',
-      stickySession: 'Reliable Routing',
-      subscriptionToApi: 'Unified Model Access'
-    },
-    termsLink: 'Terms',
-    topUpCreditLine: 'Credits delivered: ¥{amount}',
-    topUpPriceLabel: 'Top-up Price',
-    viewDocs: 'View Documentation',
-    viewOnGithub: 'View on GitHub',
-    whyCards: {
-      lowFriction: {
-        description: 'Compress scattered model and provider setup into a more unified experience built for repeat coding use.',
-        title: 'Less setup overhead'
-      },
-      routing: {
-        description: 'The product emphasizes coding workflows and routing stability instead of loading the homepage with unrelated platform features.',
-        title: 'Focused on coding throughput'
-      },
-      team: {
-        description: 'Simple enough for individual developers to adopt quickly, while still giving small teams a cleaner shared entry point.',
-        title: 'Fits solo devs and small teams'
-      },
-      transparent: {
-        description: 'The homepage surfaces the core model families directly so developers can judge the fit before signing in.',
-        title: 'Models visible at a glance'
-      }
-    },
-    whyChooseDescription: 'A more restrained product shape, clearer pricing, and a workflow that stays closer to day-to-day coding.',
-    whyChooseKicker: 'Why Choose Us',
-    whyChooseTitle: 'Built for solo developers and small teams ✦'
-  },
   keyUsage: {
     apply: 'Apply',
     avgDuration: 'Avg Duration',
@@ -6663,166 +6377,6 @@ export default {
     used: 'Used',
     usedQuota: 'Used Quota',
     walletBalance: 'Wallet Balance'
-  },
-  keys: {
-    allGroups: 'All Groups',
-    allStatus: 'All Status',
-    apiKey: 'API Key',
-    ccSwitchNotInstalled: 'CC-Switch is not installed or the protocol handler is not registered. Please install CC-Switch first or manually copy the API key.',
-    ccsClientSelect: {
-      claudeCode: 'Claude Code',
-      claudeCodeDesc: 'Import as Claude Code configuration',
-      description: 'Please select the client type to import to CC-Switch:',
-      geminiCli: 'Gemini CLI',
-      geminiCliDesc: 'Import as Gemini CLI configuration',
-      title: 'Select Client'
-    },
-    clickToChangeGroup: 'Click to change group',
-    copied: 'Copied!',
-    copyToClipboard: 'Copy to clipboard',
-    createFirstKey: 'Create your first API key to get started with the API.',
-    createKey: 'Create API Key',
-    created: 'Created',
-    currentExpiration: 'Current expiration',
-    customDate: 'Custom',
-    customKeyHint: 'Only letters, numbers, underscores and hyphens allowed. Minimum 16 characters.',
-    customKeyInvalidChars: 'Custom key can only contain letters, numbers, underscores, and hyphens',
-    customKeyLabel: 'Custom Key',
-    customKeyPlaceholder: 'Enter your custom key (min 16 chars)',
-    customKeyRequired: 'Please enter a custom key',
-    customKeyTooShort: 'Custom key must be at least 16 characters',
-    deleteConfirmMessage: 'Are you sure you want to delete \'{name}\'? This action cannot be undone.',
-    deleteKey: 'Delete API Key',
-    description: 'Manage your API keys and access tokens',
-    disable: 'Disable',
-    editKey: 'Edit API Key',
-    enable: 'Enable',
-    endpoints: {
-      clickToCopy: 'Click to copy this endpoint',
-      copied: 'Copied',
-      copiedHint: 'Copied to clipboard',
-      default: 'Default',
-      speedTest: 'Speed Test',
-      title: 'API Endpoints'
-    },
-    expiration: 'Expiration',
-    expirationDate: 'Expiration Date',
-    expirationDateHint: 'Select when this API key should expire.',
-    expiresAt: 'Expires',
-    expiresInDays: '{days} days',
-    extendDays: '+{days} days',
-    failedToChangeGroup: 'Failed to change group',
-    failedToDelete: 'Failed to delete API key',
-    failedToLoad: 'Failed to load API keys',
-    failedToResetQuota: 'Failed to reset quota',
-    failedToResetRateLimit: 'Failed to reset rate limit usage',
-    failedToSave: 'Failed to save API key',
-    failedToUpdateStatus: 'Failed to update API key status',
-    group: 'Group',
-    groupChangedSuccess: 'Group changed successfully',
-    groupLabel: 'Group',
-    groupRequired: 'Please select a group',
-    importToCcSwitch: 'Import to CCS',
-    ipBlacklist: 'IP Blacklist',
-    ipBlacklistHint: 'One IP or CIDR per line. These IPs will be blocked from using this key.',
-    ipBlacklistPlaceholder: '1.2.3.4\n5.6.0.0/16',
-    ipRestriction: 'IP Restriction',
-    ipRestrictionEnabled: 'IP restriction enabled',
-    ipWhitelist: 'IP Whitelist',
-    ipWhitelistHint: 'One IP or CIDR per line. Only these IPs can use this key when set.',
-    ipWhitelistPlaceholder: '192.168.1.100\n10.0.0.0/8',
-    keyCreatedSuccess: 'API key created successfully',
-    keyDeletedSuccess: 'API key deleted successfully',
-    keyDisabledSuccess: 'API key disabled successfully',
-    keyEnabledSuccess: 'API key enabled successfully',
-    keyUpdatedSuccess: 'API key updated successfully',
-    lastUsedAt: 'Last Used',
-    nameLabel: 'Name',
-    namePlaceholder: 'My API Key',
-    noExpiration: 'Never',
-    noGroup: 'No group',
-    noGroupFound: 'No groups found',
-    noKeysYet: 'No API keys yet',
-    quota: 'Quota',
-    quotaAmount: 'Quota Amount (USD)',
-    quotaAmountHint: 'Set the maximum amount this key can spend. 0 = unlimited.',
-    quotaAmountPlaceholder: 'Enter quota limit in USD',
-    quotaLimit: 'Quota Limit',
-    quotaResetSuccess: 'Quota reset successfully',
-    quotaUsed: 'Quota Used',
-    rateLimit1d: 'Daily Limit (USD)',
-    rateLimit5h: '5-Hour Limit (USD)',
-    rateLimit7d: '7-Day Limit (USD)',
-    rateLimitColumn: 'Rate Limit',
-    rateLimitHint: 'Set the maximum spending for this key within each time window. 0 = unlimited.',
-    rateLimitResetSuccess: 'Rate limit usage reset successfully',
-    rateLimitSection: 'Rate Limit',
-    rateLimitUsage: 'Rate Limit Usage',
-    reset: 'Reset',
-    resetNow: 'Resetting soon',
-    resetQuotaConfirmMessage: 'Are you sure you want to reset the used quota (${used}) for key "{name}" to 0? This action cannot be undone.',
-    resetQuotaTitle: 'Confirm Reset Quota',
-    resetQuotaUsed: 'Reset used quota to 0',
-    resetRateLimitConfirmMessage: 'Are you sure you want to reset the rate limit usage for key "{name}"? All time window usage will be reset to zero. This action cannot be undone.',
-    resetRateLimitTitle: 'Confirm Reset Rate Limit',
-    resetRateLimitUsage: 'Reset Rate Limit Usage',
-    resetUsage: 'Reset',
-    saving: 'Saving...',
-    searchGroup: 'Search groups...',
-    searchPlaceholder: 'Search name or key...',
-    selectGroup: 'Select a group',
-    selectStatus: 'Select status',
-    status: {
-      active: 'Active',
-      expired: 'Expired',
-      inactive: 'Inactive',
-      quota_exhausted: 'Quota Exhausted'
-    },
-    statusLabel: 'Status',
-    title: 'API Keys',
-    today: 'Today',
-    total: 'Total',
-    usage: 'Usage',
-    useKey: 'Use Key',
-    useKeyModal: {
-      antigravity: {
-        claudeCode: 'Claude Code',
-        claudeNote: 'These environment variables will be active in the current terminal session. For permanent configuration, add them to ~/.bashrc, ~/.zshrc, or the appropriate configuration file.',
-        description: 'Configure API access for Antigravity group. Select the configuration method based on your client.',
-        geminiCli: 'Gemini CLI',
-        geminiNote: 'These environment variables will be active in the current terminal session. For permanent configuration, add them to ~/.bashrc, ~/.zshrc, or the appropriate configuration file.'
-      },
-      cliTabs: {
-        claudeCode: 'Claude Code',
-        codexCli: 'Codex CLI',
-        codexCliWs: 'Codex CLI (WebSocket)',
-        geminiCli: 'Gemini CLI',
-        opencode: 'OpenCode'
-      },
-      copied: 'Copied',
-      copy: 'Copy',
-      description: 'Add the following environment variables to your terminal profile or run directly in terminal to configure API access.',
-      gemini: {
-        description: 'Add the following environment variables to your terminal profile or run directly in terminal to configure Gemini CLI access.',
-        modelComment: 'If you have Gemini 3 access, you can use: gemini-3-pro-preview',
-        note: 'These environment variables will be active in the current terminal session. For permanent configuration, add them to ~/.bashrc, ~/.zshrc, or the appropriate configuration file.'
-      },
-      noGroupDescription: 'This API key has not been assigned to a group. Please click the group column in the key list to assign one before viewing the configuration.',
-      noGroupTitle: 'Please assign a group first',
-      note: 'These environment variables will be active in the current terminal session. For permanent configuration, add them to ~/.bashrc, ~/.zshrc, or the appropriate configuration file.',
-      openai: {
-        configTomlHint: 'Make sure the following content is at the beginning of the config.toml file',
-        description: 'Add the following configuration files to your Codex CLI config directory.',
-        note: 'Make sure the config directory exists. macOS/Linux users can run mkdir -p ~/.codex to create it.',
-        noteWindows: 'Press Win+R and enter %userprofile%\\.codex to open the config directory. Create it manually if it does not exist.'
-      },
-      opencode: {
-        hint: 'Config path: ~/.config/opencode/opencode.json (or opencode.jsonc), create if not exists. Use default providers (openai/anthropic/google) or custom provider_id. API Key can be configured directly or via /connect command. This is an example, adjust models and options as needed.',
-        subtitle: 'opencode.json',
-        title: 'OpenCode Example'
-      },
-      title: 'Use API Key'
-    }
   },
   monitorCommon: {
     availabilityPrefix: 'Availability',
@@ -6903,6 +6457,7 @@ export default {
     riskControl: 'Risk Control',
     settings: 'Settings',
     subscriptions: 'Subscriptions',
+    runtimeSettings: 'Runtime Settings',
     usage: 'Usage',
     users: 'Users'
   },
@@ -7619,47 +7174,6 @@ export default {
     openInNewTab: 'Open in new tab',
     title: 'Recharge / Subscription'
   },
-  redeem: {
-    aboutCodes: 'About Redeem Codes',
-    added: 'Added',
-    adminAdjustment: 'Admin Adjustment',
-    balanceAddedAdmin: 'Balance Added (Admin)',
-    balanceAddedAffiliate: 'Balance Added (Affiliate Transfer)',
-    balanceAddedRedeem: 'Balance Added (Redeem)',
-    balanceDeductedAdmin: 'Balance Deducted (Admin)',
-    codeRedeemSuccess: 'Code redeemed successfully!',
-    codeRule1: 'Each code can only be used once',
-    codeRule2: 'Codes may add balance, increase concurrency, or grant trial access',
-    codeRule3: 'Contact support if you have issues redeeming a code',
-    codeRule4: 'Balance and concurrency updates are immediate',
-    concurrency: 'Concurrency',
-    concurrencyAddedAdmin: 'Concurrency Added (Admin)',
-    concurrencyAddedRedeem: 'Concurrency Added (Redeem)',
-    concurrencyReducedAdmin: 'Concurrency Reduced (Admin)',
-    concurrentRequests: 'concurrent requests',
-    currentBalance: 'Current Balance',
-    days: ' days',
-    description: 'Enter your redeem code to add balance or increase concurrency',
-    failedToRedeem: 'Failed to redeem code. Please check the code and try again.',
-    historyWillAppear: 'Your redemption history will appear here',
-    newBalance: 'New Balance',
-    newConcurrency: 'New Concurrency',
-    pleaseEnterCode: 'Please enter a redeem code',
-    recentActivity: 'Recent Activity',
-    redeemButton: 'Redeem Code',
-    redeemCodeHint: 'Redeem codes use uppercase letters and numbers and can be pasted directly',
-    redeemCodeLabel: 'Redeem Code',
-    redeemCodePlaceholder: 'Enter your redeem code',
-    redeemFailed: 'Redemption Failed',
-    redeemSuccess: 'Code Redeemed Successfully!',
-    redeeming: 'Redeeming...',
-    requests: 'requests',
-    subscriptionAssigned: 'Subscription Assigned',
-    subscriptionAssignedDesc: 'You have been granted access to {groupName}',
-    subscriptionDays: '{days} days',
-    subscriptionRefreshFailed: 'Redeemed successfully, but failed to refresh subscription status.',
-    title: 'Redeem Code'
-  },
   setup: {
     admin: {
       confirmPassword: 'Confirm Password',
@@ -7738,102 +7252,6 @@ export default {
   table: {
     collapseActions: 'Collapse Actions',
     expandActions: 'Expand More Actions'
-  },
-  usage: {
-    accountBilled: 'Account billed',
-    accountCost: 'Cost',
-    accountMultiplier: 'Account rate',
-    actualCost: 'Actual',
-    allApiKeys: 'All API Keys',
-    apiKeyFilter: 'API Key',
-    avgDuration: 'Avg Duration',
-    billed: 'Billed',
-    cacheRead: 'Read',
-    cacheTtlOverridden1h: 'Billed as 1h',
-    cacheTtlOverridden5m: 'Billed as 5m',
-    cacheTtlOverriddenHint: 'Cache TTL Override enabled',
-    cacheTtlOverriddenLabel: 'TTL Override',
-    cacheWrite: 'Write',
-    cancelExport: 'Cancel Export',
-    cost: 'Cost',
-    costDetails: 'Cost Breakdown',
-    description: 'View and analyze your API usage history',
-    duration: 'Duration',
-    endpoint: 'Endpoint',
-    endpointDistribution: 'Endpoint Distribution',
-    estimatedTime: 'Estimated time remaining: {time}',
-    exportCancelled: 'Export cancelled',
-    exportCsv: 'Export CSV',
-    exportExcel: 'Export Excel',
-    exportExcelFailed: 'Failed to export usage data',
-    exportExcelSuccess: 'Usage data exported successfully (Excel format)',
-    exportFailed: 'Failed to export usage data',
-    exportSuccess: 'Usage data exported successfully',
-    exportedCount: 'Exported {current}/{total} records',
-    exporting: 'Exporting...',
-    exportingProgress: 'Exporting data...',
-    failedToLoad: 'Failed to load usage logs',
-    firstToken: 'First Token',
-    imageBillingSize: 'Billing size',
-    imageCount: 'Image count',
-    imageInputSize: 'Input size',
-    imageOutputSize: 'Output size',
-    imageSizeBreakdown: 'Size breakdown',
-    imageSizeLegacyUnstandardized: 'Legacy unstandardized',
-    imageSizeNotRecorded: 'Not recorded',
-    imageSizeSource: 'Size source',
-    imageSizeSourceDefault: 'Default billing tier',
-    imageSizeSourceInput: 'Request input',
-    imageSizeSourceLegacy: 'Legacy record',
-    imageSizeSourceMissing: 'Not recorded',
-    imageSizeSourceOutput: 'Upstream output',
-    imageSizeUnknown: 'Unknown',
-    imageTotalPrice: 'Image total price',
-    imageUnit: ' images',
-    imageUnitPrice: 'Per-image price',
-    in: 'In',
-    inSelectedRange: 'in selected range',
-    inbound: 'Inbound',
-    inboundEndpoint: 'Inbound Endpoint',
-    inputTokenPrice: 'Input price',
-    model: 'Model',
-    mapping: 'Mapped model',
-    requestedModel: 'Requested model',
-    noDataToExport: 'No data to export',
-    noRecords: 'No usage records found. Try adjusting your filters.',
-    original: 'Original',
-    out: 'Out',
-    outputTokenPrice: 'Output price',
-    path: 'Path',
-    perMillionTokens: '/ 1M tokens',
-    perRequest: 'per request',
-    preparingExport: 'Preparing export...',
-    rate: 'Rate',
-    reasoningEffort: 'Reasoning Effort',
-    serviceTier: 'Service tier',
-    serviceTierFlex: 'Flex',
-    serviceTierPriority: 'Fast',
-    serviceTierStandard: 'Standard',
-    standardCost: 'Standard',
-    stream: 'Stream',
-    sync: 'Sync',
-    time: 'Time',
-    timeRange: 'Time Range',
-    title: 'Usage Records',
-    tokenDetails: 'Token Breakdown',
-    tokens: 'Tokens',
-    totalCost: 'Total Cost',
-    totalRequests: 'Total Requests',
-    totalTokens: 'Total Tokens',
-    type: 'Type',
-    unitPrice: 'Per-request price',
-    unknown: 'Unknown',
-    upstream: 'Upstream',
-    upstreamEndpoint: 'Upstream Endpoint',
-    upstreamModel: 'Upstream model',
-    userAgent: 'User-Agent',
-    userBilled: 'User billed',
-    ws: 'WS'
   },
   userSubscriptions: {
     daily: 'Daily',

@@ -30,7 +30,7 @@ withDefaults(
     linuxdoEnabled: false,
     dingtalkEnabled: false,
     oidcEnabled: false,
-    oidcProviderName: 'OIDC',
+    oidcProviderName: '',
     wechatEnabled: false,
     wechatOpenEnabled: undefined,
     wechatMpEnabled: undefined

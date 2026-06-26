@@ -32,6 +32,36 @@ describe('AppSidebar regular user navigation', () => {
       ".filter((item) => item.path !== '/keys' && item.path !== '/profile')"
     )
   })
+
+  it('reads regular user navigation paths from auth route defaults', () => {
+    expect(componentSource).toContain('useAuthRouteDefaults')
+    expect(componentSource).toContain('const navPaths = authRouteDefaults.value')
+    expect(componentSource).toContain('path: navPaths.userRedirectPath')
+    expect(componentSource).toContain('path: navPaths.apiKeysPath')
+    expect(componentSource).toContain('path: navPaths.usagePath')
+    expect(componentSource).toContain('path: navPaths.purchasePath')
+    expect(componentSource).toContain('path: navPaths.ordersPath')
+    expect(componentSource).toContain('path: navPaths.profilePath')
+    expect(componentSource).toContain(':data-tour="item.path === authRouteDefaults.apiKeysPath ?')
+    expect(componentSource).not.toMatch(/path: '\/(?:dashboard|keys|usage|available-channels|available-groups|subscriptions|purchase|orders|redeem|affiliate|profile)'/)
+    expect(componentSource).not.toContain("item.path === '/keys'")
+  })
+
+  it('reads primary admin entry paths from auth route defaults', () => {
+    expect(componentSource).toContain('path: navPaths.adminRedirectPath')
+    expect(componentSource).toContain('path: navPaths.adminRuntimeSettingsPath')
+    expect(componentSource).toContain('path: navPaths.adminSettingsPath')
+    expect(componentSource).not.toContain("path: '/admin/dashboard'")
+    expect(componentSource).not.toContain("path: '/admin/runtime-settings'")
+    expect(componentSource).not.toContain("path: '/admin/settings'")
+  })
+
+  it('delegates sidebar section assembly to shared sidebar runtime helpers', () => {
+    expect(componentSource).toContain("from './sidebarRuntime'")
+    expect(componentSource).toContain('buildSidebarVisibleItemMap')
+    expect(componentSource).toContain('buildSidebarSections')
+    expect(componentSource).not.toContain('function applyFeatureFlags(')
+  })
 })
 
 describe('Regular user onboarding key entry point', () => {

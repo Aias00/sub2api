@@ -3,21 +3,6 @@ import { flushPromises, mount } from '@vue/test-utils'
 
 const copyToClipboard = vi.fn().mockResolvedValue(true)
 
-const messages: Record<string, string> = {
-  'keys.endpoints.title': 'API 端点',
-  'keys.endpoints.default': '默认',
-  'keys.endpoints.copied': '已复制',
-  'keys.endpoints.copiedHint': '已复制到剪贴板',
-  'keys.endpoints.clickToCopy': '点击可复制此端点',
-  'keys.endpoints.speedTest': '测速',
-}
-
-vi.mock('vue-i18n', () => ({
-  useI18n: () => ({
-    t: (key: string) => messages[key] ?? key,
-  }),
-}))
-
 vi.mock('@/composables/useClipboard', () => ({
   useClipboard: () => ({
     copyToClipboard,
@@ -25,6 +10,15 @@ vi.mock('@/composables/useClipboard', () => ({
 }))
 
 import EndpointPopover from '../EndpointPopover.vue'
+
+const shellLabels = {
+  endpointTitle: 'API 端点',
+  endpointDefault: '默认',
+  endpointCopied: '已复制',
+  endpointCopiedHint: '已复制到剪贴板',
+  endpointClickToCopy: '点击可复制此端点',
+  endpointSpeedTest: '测速',
+}
 
 describe('EndpointPopover', () => {
   beforeEach(() => {
@@ -42,6 +36,7 @@ describe('EndpointPopover', () => {
             description: '自定义说明',
           },
         ],
+        shellLabels,
       },
     })
 
@@ -56,6 +51,7 @@ describe('EndpointPopover', () => {
       props: {
         apiBaseUrl: 'https://default.example.com/v1',
         customEndpoints: [],
+        shellLabels,
       },
     })
 

@@ -57,6 +57,7 @@ vi.mock('@/utils/apiError', () => ({
 }))
 
 const plansViewSource = readFileSync(resolve(process.cwd(), 'src/views/admin/orders/AdminPaymentPlansView.vue'), 'utf8')
+const planEditDialogSource = readFileSync(resolve(process.cwd(), 'src/views/admin/orders/PlanEditDialog.vue'), 'utf8')
 const rechargeManagerSource = readFileSync(resolve(process.cwd(), 'src/views/admin/orders/RechargeProductsManager.vue'), 'utf8')
 const zhLocaleSource = readFileSync(resolve(process.cwd(), 'src/i18n/locales/zh.ts'), 'utf8')
 const enLocaleSource = readFileSync(resolve(process.cwd(), 'src/i18n/locales/en.ts'), 'utf8')
@@ -89,9 +90,19 @@ describe('Admin products and plans catalog page', () => {
     expect(rechargeManagerSource).toContain('settingsAPI.getSettings()')
     expect(rechargeManagerSource).toContain('settingsAPI.updateSettings({ payment_recharge_products: normalized })')
     expect(rechargeManagerSource).toContain('credited_amount: Number(product.credited_amount) || 0')
+    expect(rechargeManagerSource).toContain('appStore.cachedPublicSettings?.pricing_currency_symbol?.trim()')
+    expect(rechargeManagerSource).not.toContain('>¥{{ highestAmount.toFixed(2) }}')
+    expect(rechargeManagerSource).not.toContain('>¥</span>')
     expect(plansViewSource).toContain('adminPaymentAPI.getPlans()')
     expect(plansViewSource).toContain('adminPaymentAPI.updatePlan')
     expect(plansViewSource).toContain('adminPaymentAPI.deletePlan')
+  })
+
+  it('does not synthesize subscription plan validity units for existing data', () => {
+    expect(plansViewSource).not.toContain("row.validity_unit || 'days'")
+    expect(plansViewSource).toContain('formatValidity(value, row.validity_unit)')
+    expect(planEditDialogSource).not.toContain("props.plan.validity_unit || 'days'")
+    expect(planEditDialogSource).toContain("props.plan.validity_unit || ''")
   })
 
   it('renames the admin navigation label to products and plans', () => {
@@ -136,8 +147,8 @@ describe('Admin products and plans catalog page', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain('商品/套餐管理')
-    expect(wrapper.text()).toContain('订阅套餐')
+    expect(wrapper.text()).toContain('payment.admin.plansPageTitle')
+    expect(wrapper.text()).toContain('payment.admin.catalog.tabs.plans')
     expect(wrapper.find('[data-testid="plans-table"]').exists()).toBe(true)
 
     await wrapper.get('button:nth-of-type(1)').trigger('click')

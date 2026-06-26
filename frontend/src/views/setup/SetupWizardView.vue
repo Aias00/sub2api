@@ -496,8 +496,10 @@ import { testDatabase, testRedis, install, type InstallRequest } from '@/api/set
 import Select from '@/components/common/Select.vue'
 import Toggle from '@/components/common/Toggle.vue'
 import Icon from '@/components/icons/Icon.vue'
+import { resolveAuthRouteDefaultsFromShellDefaults } from '@/router/setupRedirect'
 
 const { t } = useI18n()
+const setupLoginPath = resolveAuthRouteDefaultsFromShellDefaults().loginPath
 
 const steps = computed(() => [
   { id: 'database', title: t('setup.database.title') },
@@ -656,7 +658,7 @@ async function waitForServiceRestart() {
           serviceReady.value = true
           // Redirect to login page after a short delay
           setTimeout(() => {
-            window.location.href = '/login'
+            window.location.href = setupLoginPath
           }, 1500)
           return
         }

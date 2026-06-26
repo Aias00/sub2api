@@ -3,10 +3,14 @@
     <div class="space-y-6">
       <div class="text-center">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-          {{ t('auth.linuxdo.callbackTitle') }}
+          {{ authText('providerCallbackTitle', { providerName }) }}
         </h2>
         <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-          {{ isProcessing ? t('auth.linuxdo.callbackProcessing') : t('auth.linuxdo.callbackHint') }}
+          {{
+            isProcessing
+              ? authText('providerCallbackProcessing', { providerName })
+              : authText('providerCallbackHint')
+          }}
         </p>
       </div>
 
@@ -29,10 +33,10 @@
             <div class="space-y-3">
               <div class="space-y-1">
                 <p class="text-sm font-medium text-gray-900 dark:text-white">
-                  {{ t('auth.oauthFlow.profileDetailsTitle', { providerName }) }}
+                  {{ authText('oauthFlowProfileDetailsTitle', { providerName }) }}
                 </p>
                 <p class="text-xs text-gray-500 dark:text-dark-400">
-                  {{ t('auth.oauthFlow.profileDetailsDescription', { providerName }) }}
+                  {{ authText('oauthFlowProfileDetailsDescription', { providerName }) }}
                 </p>
               </div>
 
@@ -43,7 +47,7 @@
                 <input v-model="adoptDisplayName" type="checkbox" class="mt-1 h-4 w-4" />
                 <span class="space-y-1">
                   <span class="block font-medium text-gray-900 dark:text-white">
-                    {{ t('auth.oauthFlow.useDisplayName') }}
+                    {{ authText('oauthFlowUseDisplayName') }}
                   </span>
                   <span class="block text-gray-500 dark:text-dark-400">
                     {{ suggestedDisplayName }}
@@ -58,12 +62,12 @@
                 <input v-model="adoptAvatar" type="checkbox" class="mt-1 h-4 w-4" />
                 <img
                   :src="suggestedAvatarUrl"
-                  :alt="t('auth.oauthFlow.avatarAlt', { providerName })"
+                  :alt="authText('oauthFlowAvatarAlt', { providerName })"
                   class="h-10 w-10 rounded-full border border-gray-200 object-cover dark:border-dark-600"
                 />
                 <span class="space-y-1">
                   <span class="block font-medium text-gray-900 dark:text-white">
-                    {{ t('auth.oauthFlow.useAvatar') }}
+                    {{ authText('oauthFlowUseAvatar') }}
                   </span>
                   <span class="block break-all text-gray-500 dark:text-dark-400">
                     {{ suggestedAvatarUrl }}
@@ -75,14 +79,14 @@
 
           <template v-if="needsInvitation">
             <p class="text-sm text-gray-700 dark:text-gray-300">
-              {{ t('auth.linuxdo.invitationRequired') }}
+              {{ authText('providerInvitationRequired', { providerName }) }}
             </p>
             <div>
               <input
                 v-model="invitationCode"
                 type="text"
                 class="input w-full"
-                :placeholder="t('auth.invitationCodePlaceholder')"
+                :placeholder="authText('invitationCodePlaceholder')"
                 :disabled="isSubmitting"
                 @keyup.enter="handleSubmitInvitation"
               />
@@ -92,16 +96,16 @@
               :disabled="isSubmitting || !invitationCode.trim()"
               @click="handleSubmitInvitation"
             >
-              {{ isSubmitting ? t('auth.linuxdo.completing') : t('auth.linuxdo.completeRegistration') }}
+              {{ isSubmitting ? authText('providerCompletingRegistration') : authText('providerCompleteRegistration') }}
             </button>
           </template>
 
           <template v-else-if="needsAdoptionConfirmation">
             <p class="text-sm text-gray-700 dark:text-gray-300">
-              {{ t('auth.oauthFlow.reviewProfileBeforeContinue', { providerName }) }}
+              {{ authText('oauthFlowReviewProfileBeforeContinue', { providerName }) }}
             </p>
             <button class="btn btn-primary w-full" :disabled="isSubmitting" @click="handleContinueLogin">
-              {{ isSubmitting ? t('common.processing') : t('auth.continue') }}
+              {{ isSubmitting ? authText('processing') : authText('continue') }}
             </button>
           </template>
 
@@ -110,13 +114,13 @@
               <div class="space-y-4">
                 <div class="space-y-1">
                   <p class="text-sm font-medium text-gray-900 dark:text-white">
-                    {{ t('auth.oauthFlow.chooseHowToContinue') }}
+                    {{ authText('oauthFlowChooseHowToContinue') }}
                   </p>
                   <p class="text-xs text-gray-500 dark:text-dark-400">
                     {{
                       pendingAccountEmail
-                        ? t('auth.oauthFlow.suggestedEmail', { email: pendingAccountEmail })
-                        : t('auth.oauthFlow.chooseAccountActionHint')
+                        ? authText('oauthFlowSuggestedEmail', { email: pendingAccountEmail })
+                        : authText('oauthFlowChooseAccountActionHint')
                     }}
                   </p>
                 </div>
@@ -127,14 +131,14 @@
                     :disabled="isSubmitting"
                     @click="switchToBindLoginMode()"
                   >
-                    {{ t('auth.oauthFlow.bindExistingAccount') }}
+                    {{ authText('oauthFlowBindExistingAccount') }}
                   </button>
                   <button
                     class="btn btn-primary w-full"
                     :disabled="isSubmitting"
                     @click="switchToCreateAccountMode"
                   >
-                    {{ t('auth.oauthFlow.createNewAccount') }}
+                    {{ authText('oauthFlowCreateNewAccount') }}
                   </button>
                 </div>
               </div>
@@ -143,7 +147,7 @@
 
           <template v-else-if="needsCreateAccount">
             <p class="text-sm text-gray-700 dark:text-gray-300">
-              {{ t('auth.oauthFlow.createAccountHint') }}
+              {{ authText('oauthFlowCreateAccountHint') }}
             </p>
             <PendingOAuthCreateAccountForm
               test-id-prefix="linuxdo"
@@ -157,7 +161,7 @@
 
           <template v-else-if="needsBindLogin">
             <p class="text-sm text-gray-700 dark:text-gray-300">
-              {{ t('auth.oauthFlow.bindLoginHint', { providerName }) }}
+              {{ authText('oauthFlowBindLoginHint', { providerName }) }}
             </p>
             <div class="space-y-3">
               <input
@@ -165,7 +169,7 @@
                 data-testid="linuxdo-bind-login-email"
                 type="email"
                 class="input w-full"
-                :placeholder="t('auth.emailPlaceholder')"
+                :placeholder="authText('emailPlaceholder')"
                 :disabled="isSubmitting"
                 @keyup.enter="handleBindLogin"
               />
@@ -174,7 +178,7 @@
                 data-testid="linuxdo-bind-login-password"
                 type="password"
                 class="input w-full"
-                :placeholder="t('auth.passwordPlaceholder')"
+                :placeholder="authText('passwordPlaceholder')"
                 :disabled="isSubmitting"
                 @keyup.enter="handleBindLogin"
               />
@@ -184,7 +188,7 @@
                 :disabled="isSubmitting || !bindLoginEmail.trim() || !bindLoginPassword"
                 @click="handleBindLogin"
               >
-                {{ isSubmitting ? t('common.processing') : t('auth.oauthFlow.logInAndBind') }}
+                {{ isSubmitting ? authText('processing') : authText('oauthFlowLogInAndBind') }}
               </button>
               <button
                 v-if="canReturnToCreateAccount"
@@ -192,7 +196,7 @@
                 :disabled="isSubmitting"
                 @click="switchToCreateAccountMode"
               >
-                {{ t('auth.oauthFlow.useDifferentEmail') }}
+                {{ authText('oauthFlowUseDifferentEmail') }}
               </button>
             </div>
           </template>
@@ -200,9 +204,9 @@
           <template v-else-if="needsTotpChallenge">
             <p class="text-sm text-gray-700 dark:text-gray-300">
               {{
-                t('auth.oauthFlow.totpHint', {
+                authText('oauthFlowTotpHint', {
                   providerName,
-                  account: totpUserEmailMasked || t('auth.oauthFlow.yourAccount')
+                  account: totpUserEmailMasked || authText('oauthFlowYourAccount')
                 })
               }}
             </p>
@@ -224,7 +228,7 @@
                 :disabled="isSubmitting || totpCode.trim().length !== 6"
                 @click="handleSubmitTotpChallenge"
               >
-                {{ isSubmitting ? t('common.processing') : t('auth.oauthFlow.verifyAndContinue') }}
+                {{ isSubmitting ? authText('processing') : authText('oauthFlowVerifyAndContinue') }}
               </button>
             </div>
           </template>
@@ -242,17 +246,26 @@ import { AuthLayout } from '@/components/layout'
 import PendingOAuthCreateAccountForm, {
   type PendingOAuthCreateAccountPayload
 } from '@/components/auth/PendingOAuthCreateAccountForm.vue'
+import { useAuthShellText } from '@/composables/useAuthShellText'
 import { apiClient } from '@/api/client'
 import { useAuthStore, useAppStore } from '@/stores'
+import { getRequestErrorMessage } from './requestError'
+import {
+  buildStandardTotpChallengeState,
+  buildStandardPendingAccountState,
+  buildBindLoginSwitchState,
+  buildCreateAccountSwitchState,
+  extractStandardPendingAccountEmail,
+  isCreateAccountRecoveryError,
+  resolveStandardPendingAccountAction,
+} from './pendingAccountFlow'
 import {
   completeLinuxDoOAuthRegistration,
   exchangePendingOAuthCompletion,
   getOAuthCompletionKind,
   isOAuthLoginCompletion,
   login2FA,
-  persistOAuthTokenContext,
   type OAuthAdoptionDecision,
-  type OAuthTokenResponse,
   type PendingOAuthExchangeResponse
 } from '@/api/auth'
 import {
@@ -260,11 +273,14 @@ import {
   loadOAuthAffiliateCode,
   oauthAffiliatePayload
 } from '@/utils/oauthAffiliate'
+import { finalizeAuthLoginSuccess } from './finalizeAuthLogin'
 import { buildLoginAgreementAcceptancePayload } from '@/utils/loginAgreementConsent'
+import { DEFAULT_AUTH_REDIRECT_PATH, sanitizeAuthRedirectPath } from '@/utils/authRedirect'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useI18n()
+const { authText, defaultBindRedirectPath, defaultRedirectPath, loadAuthShellConfig } = useAuthShellText()
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
@@ -277,7 +293,7 @@ const needsInvitation = ref(false)
 const invitationCode = ref('')
 const isSubmitting = ref(false)
 const invitationError = ref('')
-const redirectTo = ref('/dashboard')
+const redirectTo = ref(DEFAULT_AUTH_REDIRECT_PATH)
 const adoptionRequired = ref(false)
 const suggestedDisplayName = ref('')
 const suggestedAvatarUrl = ref('')
@@ -288,7 +304,6 @@ const pendingAccountAction = ref<'none' | 'choose_account_action' | 'create_acco
 const pendingAccountEmail = ref('')
 const bindLoginEmail = ref('')
 const bindLoginPassword = ref('')
-const legacyPendingOAuthToken = ref('')
 const accountActionError = ref('')
 const canReturnToCreateAccount = ref(false)
 const bindSuccessMessage = t('profile.authBindings.bindSuccess')
@@ -334,15 +349,13 @@ type LinuxDoPendingActionResponse = PendingOAuthExchangeResponse & {
   resolved_email?: string
   pending_email?: string
   existing_account_email?: string
-  suggested_email?: string
 }
 
 function persistPendingAuthSession(redirect?: string) {
   authStore.setPendingAuthSession({
     token: '',
-    token_field: 'pending_oauth_token',
     provider: 'linuxdo',
-    redirect: sanitizeRedirectPath(redirect || redirectTo.value)
+    redirect: sanitizeAuthRedirectPath(redirect || redirectTo.value, defaultRedirectPath.value)
   })
 }
 
@@ -354,39 +367,6 @@ function parseFragmentParams(): URLSearchParams {
   const raw = typeof window !== 'undefined' ? window.location.hash : ''
   const hash = raw.startsWith('#') ? raw.slice(1) : raw
   return new URLSearchParams(hash)
-}
-
-function readLegacyFragmentLogin(params: URLSearchParams): OAuthTokenResponse | null {
-  const accessToken = params.get('access_token')?.trim() || ''
-  if (!accessToken) {
-    return null
-  }
-
-  const completion: OAuthTokenResponse = {
-    access_token: accessToken
-  }
-  const refreshToken = params.get('refresh_token')?.trim() || ''
-  if (refreshToken) {
-    completion.refresh_token = refreshToken
-  }
-  const expiresIn = Number.parseInt(params.get('expires_in')?.trim() || '', 10)
-  if (Number.isFinite(expiresIn) && expiresIn > 0) {
-    completion.expires_in = expiresIn
-  }
-  const tokenType = params.get('token_type')?.trim() || ''
-  if (tokenType) {
-    completion.token_type = tokenType
-  }
-  return completion
-}
-
-function sanitizeRedirectPath(path: string | null | undefined): string {
-  if (!path) return '/dashboard'
-  if (!path.startsWith('/')) return '/dashboard'
-  if (path.startsWith('//')) return '/dashboard'
-  if (path.includes('://')) return '/dashboard'
-  if (path.includes('\n') || path.includes('\r')) return '/dashboard'
-  return path
 }
 
 function currentAdoptionDecision(): OAuthAdoptionDecision {
@@ -431,53 +411,22 @@ function hasSuggestedProfile(completion: {
   return Boolean(completion.suggested_display_name || completion.suggested_avatar_url)
 }
 
-function normalizedPendingState(value: string | null | undefined): string {
-  return value?.trim().toLowerCase() || ''
-}
-
 function extractPendingAccountEmail(completion: LinuxDoPendingActionResponse): string {
-  return (
-    completion.pending_email ||
-    completion.existing_account_email ||
-    completion.email ||
-    completion.resolved_email ||
-    completion.suggested_email ||
-    ''
-  ).trim()
+  return extractStandardPendingAccountEmail(completion)
 }
 
 function resolvePendingAccountAction(
   completion: LinuxDoPendingActionResponse
 ): 'none' | 'choose_account_action' | 'create_account' | 'bind_login' {
-  const raw = normalizedPendingState(completion.step || completion.error || completion.intent)
-  if (
-    raw === 'choice' ||
-    raw === 'choose_account_action_required' ||
-    raw === 'choose_account_action' ||
-    raw === 'choose_account' ||
-    raw === 'choose'
-  ) {
-    return 'choose_account_action'
-  }
-  if (raw === 'email_required' || raw === 'create_account_required' || raw === 'create_account') {
-    return 'create_account'
-  }
-  if (
-    raw === 'bind_login_required' ||
-    raw === 'bind_login' ||
-    raw === 'existing_account' ||
-    raw === 'existing_account_required' ||
-    raw === 'existing_account_binding_required' ||
-    raw === 'adopt_existing_user_by_email'
-  ) {
-    return 'bind_login'
-  }
-  return 'none'
+  return resolveStandardPendingAccountAction(completion.step || completion.error || completion.intent) as
+    | 'none'
+    | 'choose_account_action'
+    | 'create_account'
+    | 'bind_login'
 }
 
 function applyPendingAccountAction(completion: LinuxDoPendingActionResponse) {
   const action = resolvePendingAccountAction(completion)
-  pendingAccountAction.value = action
   accountActionError.value = ''
   needsTotpChallenge.value = false
   totpTempToken.value = ''
@@ -486,93 +435,61 @@ function applyPendingAccountAction(completion: LinuxDoPendingActionResponse) {
   totpUserEmailMasked.value = ''
 
   const email = extractPendingAccountEmail(completion)
-  if (action === 'choose_account_action') {
-    pendingAccountEmail.value = email
-    bindLoginEmail.value = email
-    bindLoginPassword.value = ''
-    canReturnToCreateAccount.value = false
-    return
-  }
-
-  if (action === 'create_account') {
-    pendingAccountEmail.value = email
-    canReturnToCreateAccount.value = true
-    return
-  }
-
-  if (action === 'bind_login') {
-    bindLoginEmail.value = email
-    bindLoginPassword.value = ''
-    canReturnToCreateAccount.value = false
-    return
-  }
-
-  canReturnToCreateAccount.value = false
+  const nextState = buildStandardPendingAccountState(action, email)
+  pendingAccountAction.value = nextState.action
+  pendingAccountEmail.value = nextState.pendingAccountEmail
+  bindLoginEmail.value = nextState.bindLoginEmail
+  bindLoginPassword.value = nextState.bindLoginPassword
+  canReturnToCreateAccount.value = nextState.canReturnToCreateAccount
 }
 
 function applyTotpChallenge(completion: LinuxDoPendingActionResponse): boolean {
-  if (completion.requires_2fa !== true || !completion.temp_token) {
+  const nextState = buildStandardTotpChallengeState(completion)
+  if (!nextState) {
     return false
   }
 
-  pendingAccountAction.value = 'none'
-  needsInvitation.value = false
-  needsAdoptionConfirmation.value = false
-  needsTotpChallenge.value = true
-  totpTempToken.value = completion.temp_token
-  totpCode.value = ''
-  totpError.value = ''
-  totpUserEmailMasked.value = completion.user_email_masked || ''
-  isProcessing.value = false
+  pendingAccountAction.value = nextState.action
+  needsInvitation.value = nextState.needsInvitation
+  needsAdoptionConfirmation.value = nextState.needsAdoptionConfirmation
+  needsTotpChallenge.value = nextState.needsTotpChallenge
+  totpTempToken.value = nextState.totpTempToken
+  totpCode.value = nextState.totpCode
+  totpError.value = nextState.totpError
+  totpUserEmailMasked.value = nextState.totpUserEmailMasked
+  isProcessing.value = nextState.isProcessing
   return true
 }
 
 function switchToBindLoginMode(nextEmail?: string) {
-  pendingAccountAction.value = 'bind_login'
-  bindLoginEmail.value = bindLoginEmail.value.trim() || nextEmail?.trim() || pendingAccountEmail.value.trim()
-  bindLoginPassword.value = ''
-  accountActionError.value = ''
-  canReturnToCreateAccount.value = true
+  const nextState = buildBindLoginSwitchState(
+    bindLoginEmail.value,
+    pendingAccountEmail.value,
+    nextEmail,
+  )
+  pendingAccountAction.value = nextState.action
+  bindLoginEmail.value = nextState.bindLoginEmail
+  bindLoginPassword.value = nextState.bindLoginPassword
+  accountActionError.value = nextState.accountActionError
+  canReturnToCreateAccount.value = nextState.canReturnToCreateAccount
 }
 
 function switchToCreateAccountMode() {
-  pendingAccountAction.value = 'create_account'
-  pendingAccountEmail.value = pendingAccountEmail.value.trim() || bindLoginEmail.value.trim()
-  accountActionError.value = ''
-}
-
-function getRequestErrorMessage(error: unknown, fallback: string): string {
-  const err = error as { message?: string; response?: { data?: { detail?: string; message?: string } } }
-  return err.response?.data?.detail || err.response?.data?.message || err.message || fallback
-}
-
-function isCreateAccountRecoveryError(error: unknown): boolean {
-  const data = (error as {
-    response?: {
-      data?: {
-        reason?: string
-        error?: string
-        code?: string
-        step?: string
-        intent?: string
-      }
-    }
-  }).response?.data
-  const states = [data?.reason, data?.error, data?.code, data?.step, data?.intent]
-    .map(value => value?.trim().toLowerCase())
-    .filter((value): value is string => Boolean(value))
-
-  return states.includes('email_exists') ||
-    states.includes('bind_login_required') ||
-    states.includes('bind_login') ||
-    states.includes('adopt_existing_user_by_email') ||
-    states.includes('existing_account_required') ||
-    states.includes('existing_account_binding_required')
+  const nextState = buildCreateAccountSwitchState(
+    pendingAccountEmail.value,
+    bindLoginEmail.value,
+  )
+  pendingAccountAction.value = nextState.action
+  pendingAccountEmail.value = nextState.pendingAccountEmail
+  accountActionError.value = nextState.accountActionError
 }
 
 async function finalizeCompletion(completion: PendingOAuthExchangeResponse, redirect: string) {
   if (getOAuthCompletionKind(completion) === 'bind') {
-    const bindRedirect = sanitizeRedirectPath(completion.redirect || '/profile')
+    const bindRedirect = sanitizeAuthRedirectPath(
+      completion.redirect || defaultBindRedirectPath.value,
+      defaultBindRedirectPath.value
+    )
     clearPendingAuthSession()
     clearAllAffiliateReferralCodes()
     appStore.showSuccess(bindSuccessMessage)
@@ -584,16 +501,22 @@ async function finalizeCompletion(completion: PendingOAuthExchangeResponse, redi
     throw new Error(t('auth.linuxdo.callbackMissingToken'))
   }
 
-  persistOAuthTokenContext(completion)
-  await authStore.setToken(completion.access_token)
-  clearAllAffiliateReferralCodes()
-  appStore.showSuccess(t('auth.loginSuccess'))
-  await router.replace(redirect)
+  await finalizeAuthLoginSuccess({
+    tokenResponse: completion,
+    redirect,
+    authStore,
+    appStore,
+    router,
+    successMessage: t('auth.loginSuccess'),
+  })
 }
 
 async function finalizePendingAccountResponse(completion: LinuxDoPendingActionResponse) {
   applyAdoptionSuggestionState(completion)
-  const redirect = sanitizeRedirectPath(completion.redirect || redirectTo.value)
+  const redirect = sanitizeAuthRedirectPath(
+    completion.redirect || redirectTo.value,
+    defaultRedirectPath.value
+  )
 
   if (completion.error === 'invitation_required') {
     pendingAccountAction.value = 'none'
@@ -637,19 +560,9 @@ async function handleSubmitInvitation() {
   try {
     const affCode = loadOAuthAffiliateCode()
     const decision = currentAdoptionDecision()
-    const completion: LinuxDoPendingActionResponse = legacyPendingOAuthToken.value
-      ? (
-          await apiClient.post<LinuxDoPendingActionResponse>('/auth/oauth/linuxdo/complete-registration', {
-            pending_oauth_token: legacyPendingOAuthToken.value,
-            invitation_code: invitationCode.value.trim(),
-            ...oauthAffiliatePayload(affCode),
-            ...serializeAdoptionDecision(decision),
-            ...buildLoginAgreementAcceptancePayload()
-          })
-        ).data
-      : affCode
-        ? await completeLinuxDoOAuthRegistration(invitationCode.value.trim(), decision, affCode)
-        : await completeLinuxDoOAuthRegistration(invitationCode.value.trim(), decision)
+    const completion: LinuxDoPendingActionResponse = affCode
+      ? await completeLinuxDoOAuthRegistration(invitationCode.value.trim(), decision, affCode)
+      : await completeLinuxDoOAuthRegistration(invitationCode.value.trim(), decision)
     await finalizePendingAccountResponse(completion)
   } catch (e: unknown) {
     const err = e as { message?: string; response?: { data?: { message?: string } } }
@@ -733,10 +646,14 @@ async function handleSubmitTotpChallenge() {
       temp_token: totpTempToken.value,
       totp_code: code
     })
-    await authStore.setToken(completion.access_token)
-    clearAllAffiliateReferralCodes()
-    appStore.showSuccess(t('auth.loginSuccess'))
-    await router.replace(redirectTo.value)
+    await finalizeAuthLoginSuccess({
+      tokenResponse: completion,
+      redirect: redirectTo.value,
+      authStore,
+      appStore,
+      router,
+      successMessage: t('auth.loginSuccess'),
+    })
   } catch (e: unknown) {
     totpError.value = getRequestErrorMessage(e, t('auth.loginFailed'))
   } finally {
@@ -745,33 +662,12 @@ async function handleSubmitTotpChallenge() {
 }
 
 onMounted(async () => {
+  await loadAuthShellConfig()
+  redirectTo.value = defaultRedirectPath.value
   const params = parseFragmentParams()
-  const legacyLogin = readLegacyFragmentLogin(params)
-  const legacyPendingToken = params.get('pending_oauth_token')?.trim() || ''
   const error = params.get('error')
   const errorDesc = params.get('error_description') || params.get('error_message') || ''
-  const redirect = sanitizeRedirectPath(
-    params.get('redirect') || (route.query.redirect as string | undefined) || '/dashboard'
-  )
-
   try {
-    if (legacyLogin) {
-      persistOAuthTokenContext(legacyLogin)
-      await authStore.setToken(legacyLogin.access_token)
-      clearAllAffiliateReferralCodes()
-      appStore.showSuccess(t('auth.loginSuccess'))
-      await router.replace(redirect)
-      return
-    }
-
-    if (error === 'invitation_required' && legacyPendingToken) {
-      legacyPendingOAuthToken.value = legacyPendingToken
-      redirectTo.value = redirect
-      needsInvitation.value = true
-      isProcessing.value = false
-      return
-    }
-
     if (error) {
       errorMessage.value = errorDesc || error
       isProcessing.value = false
@@ -779,8 +675,9 @@ onMounted(async () => {
     }
 
     const completion = await exchangePendingOAuthCompletion()
-    const completionRedirect = sanitizeRedirectPath(
-      completion.redirect || (route.query.redirect as string | undefined) || '/dashboard'
+    const completionRedirect = sanitizeAuthRedirectPath(
+      completion.redirect || (route.query.redirect as string | undefined) || defaultRedirectPath.value,
+      defaultRedirectPath.value
     )
     applyAdoptionSuggestionState(completion)
     redirectTo.value = completionRedirect

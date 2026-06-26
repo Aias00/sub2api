@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { readFileSync } from 'node:fs'
 import { resolveDocumentTitle } from '@/router/title'
 
 describe('resolveDocumentTitle', () => {
@@ -10,9 +11,9 @@ describe('resolveDocumentTitle', () => {
     expect(resolveDocumentTitle(undefined, 'My Site')).toBe('My Site')
   })
 
-  it('站点名为空时，回退默认站点名', () => {
-    expect(resolveDocumentTitle('Dashboard', '')).toBe('Dashboard - Sub2API')
-    expect(resolveDocumentTitle(undefined, '   ')).toBe('Sub2API')
+  it('站点名为空时，不补本地默认品牌', () => {
+    expect(resolveDocumentTitle('Dashboard', '')).toBe('Dashboard')
+    expect(resolveDocumentTitle(undefined, '   ')).toBe('')
   })
 
   it('站点名变更时仅影响后续路由标题计算', () => {
@@ -21,5 +22,16 @@ describe('resolveDocumentTitle', () => {
 
     expect(before).toBe('Admin Dashboard - Alpha')
     expect(after).toBe('Admin Dashboard - Beta')
+  })
+
+  it('user shell-backed routes do not depend on local i18n title metadata', () => {
+    const routerSource = readFileSync('src/router/index.ts', 'utf8')
+
+    expect(routerSource).not.toContain("titleKey: 'dashboard.title'")
+    expect(routerSource).not.toContain("descriptionKey: 'dashboard.welcomeMessage'")
+    expect(routerSource).not.toContain("titleKey: 'keys.title'")
+    expect(routerSource).not.toContain("descriptionKey: 'keys.description'")
+    expect(routerSource).not.toContain("titleKey: 'usage.title'")
+    expect(routerSource).not.toContain("descriptionKey: 'usage.description'")
   })
 })

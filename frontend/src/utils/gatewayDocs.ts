@@ -28,6 +28,18 @@ export interface GatewayModelOption {
   description?: string
 }
 
+export interface GatewayVariantOverride {
+  defaultModel?: string
+  modelPlaceholder?: string
+  fallbackModels?: string[]
+}
+
+export type GatewayVariantOverrides = Partial<Record<GatewayVariantId, GatewayVariantOverride>>
+
+export interface GatewayRequestOptions {
+  maxTokens?: number
+}
+
 const gatewayVariants: Record<GatewayVariantId, GatewayVariant> = {
   anthropicMessages: {
     id: 'anthropicMessages',
@@ -156,30 +168,113 @@ const fallbackGatewayModels: Record<GatewayVariantId, string[]> = {
 }
 
 export const DEFAULT_GATEWAY_TEST_PROMPT = '请简短介绍一下你当前命中的模型和主要能力。'
+export const DEFAULT_GATEWAY_TEST_MAX_TOKENS = 256
 
-export function getGatewayVariantById(id: GatewayVariantId): GatewayVariant {
-  return gatewayVariants[id]
+const gatewayVariantIds = Object.keys(gatewayVariants) as GatewayVariantId[]
+
+function isGatewayVariantId(value: string): value is GatewayVariantId {
+  return gatewayVariantIds.includes(value as GatewayVariantId)
 }
 
-export function getGatewayVariantsForApiKey(apiKey: ApiKey | null | undefined): GatewayVariant[] {
+function trimOptionalString(value: unknown): string | undefined {
+  if (typeof value !== 'string') return undefined
+  const trimmed = value.trim()
+  return trimmed || undefined
+}
+
+function normalizeFallbackModels(value: unknown): string[] | undefined {
+  if (!Array.isArray(value)) return undefined
+  const models = Array.from(
+    new Set(
+      value
+        .map(item => trimOptionalString(item))
+        .filter((item): item is string => Boolean(item))
+    )
+  )
+  return models.length > 0 ? models : undefined
+}
+
+function selectLocalizedGatewayConfig(raw: string | undefined, runtimeLocale: string): unknown {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as Record<string, unknown>
+    const normalizedLocale = runtimeLocale.toLowerCase()
+    const localeKeys = [normalizedLocale, normalizedLocale.split('-')[0], 'en', 'zh']
+    for (const key of localeKeys) {
+      if (parsed[key] && typeof parsed[key] === 'object') return parsed[key]
+    }
+  } catch {
+    return null
+  }
+  return null
+}
+
+export function resolveGatewayVariantOverrides(
+  raw: string | undefined,
+  runtimeLocale: string,
+): GatewayVariantOverrides {
+  const localized = selectLocalizedGatewayConfig(raw, runtimeLocale)
+  if (!localized || typeof localized !== 'object') return {}
+
+  const source = (localized as { gatewayVariants?: unknown }).gatewayVariants
+  if (!source || typeof source !== 'object') return {}
+
+  const result: GatewayVariantOverrides = {}
+  for (const [variantId, rawOverride] of Object.entries(source as Record<string, unknown>)) {
+    if (!isGatewayVariantId(variantId) || !rawOverride || typeof rawOverride !== 'object') continue
+    const override = rawOverride as Record<string, unknown>
+    const normalized: GatewayVariantOverride = {
+      defaultModel: trimOptionalString(override.defaultModel),
+      modelPlaceholder: trimOptionalString(override.modelPlaceholder),
+      fallbackModels: normalizeFallbackModels(override.fallbackModels),
+    }
+    if (normalized.defaultModel || normalized.modelPlaceholder || normalized.fallbackModels) {
+      result[variantId] = normalized
+    }
+  }
+  return result
+}
+
+function applyGatewayVariantOverride(
+  variant: GatewayVariant,
+  overrides?: GatewayVariantOverrides,
+): GatewayVariant {
+  const override = overrides?.[variant.id]
+  if (!override) return variant
+  return {
+    ...variant,
+    defaultModel: override.defaultModel || variant.defaultModel,
+    modelPlaceholder: override.modelPlaceholder || override.defaultModel || variant.modelPlaceholder,
+  }
+}
+
+export function getGatewayVariantById(
+  id: GatewayVariantId,
+  overrides?: GatewayVariantOverrides,
+): GatewayVariant {
+  return applyGatewayVariantOverride(gatewayVariants[id], overrides)
+}
+
+export function getGatewayVariantsForApiKey(
+  apiKey: ApiKey | null | undefined,
+  overrides?: GatewayVariantOverrides,
+): GatewayVariant[] {
   const platform = apiKey?.group?.platform
   if (!platform) return []
 
+  const variantsFor = (ids: GatewayVariantId[]) => ids.map(id => getGatewayVariantById(id, overrides))
+
   switch (platform) {
     case 'anthropic':
-      return [gatewayVariants.anthropicMessages]
+      return variantsFor(['anthropicMessages'])
     case 'openai':
       return apiKey.group?.allow_messages_dispatch
-        ? [
-            gatewayVariants.openaiChat,
-            gatewayVariants.openaiResponses,
-            gatewayVariants.anthropicMessages
-          ]
-        : [gatewayVariants.openaiChat, gatewayVariants.openaiResponses]
+        ? variantsFor(['openaiChat', 'openaiResponses', 'anthropicMessages'])
+        : variantsFor(['openaiChat', 'openaiResponses'])
     case 'gemini':
-      return [gatewayVariants.geminiNative]
+      return variantsFor(['geminiNative'])
     case 'antigravity':
-      return [gatewayVariants.antigravityMessages, gatewayVariants.antigravityGemini]
+      return variantsFor(['antigravityMessages', 'antigravityGemini'])
     default:
       return []
   }
@@ -276,24 +371,30 @@ function shouldIncludeModelForVariant(variantId: GatewayVariantId, modelID: stri
   }
 }
 
-export function getGatewayFallbackModelOptions(variantId: GatewayVariantId): GatewayModelOption[] {
+export function getGatewayFallbackModelOptions(
+  variantId: GatewayVariantId,
+  overrides?: GatewayVariantOverrides,
+): GatewayModelOption[] {
+  const variant = getGatewayVariantById(variantId, overrides)
+  const modelIDs = overrides?.[variantId]?.fallbackModels || fallbackGatewayModels[variantId]
   return dedupeGatewayModelOptions(
-    fallbackGatewayModels[variantId].map((id) => ({ id, label: id })),
-    gatewayVariants[variantId].defaultModel
+    modelIDs.map((id) => ({ id, label: id })),
+    variant.defaultModel
   )
 }
 
 export function extractGatewayModelOptions(
   variantId: GatewayVariantId,
-  responseText: string
+  responseText: string,
+  overrides?: GatewayVariantOverrides,
 ): GatewayModelOption[] {
   if (!responseText.trim()) {
-    return getGatewayFallbackModelOptions(variantId)
+    return getGatewayFallbackModelOptions(variantId, overrides)
   }
 
   try {
     const parsed = JSON.parse(responseText)
-    const variant = getGatewayVariantById(variantId)
+    const variant = getGatewayVariantById(variantId, overrides)
 
     if (variant.bodyKind === 'geminiGenerate') {
       const models = Array.isArray(parsed?.models) ? parsed.models : []
@@ -333,7 +434,7 @@ export function extractGatewayModelOptions(
 
     return dedupeGatewayModelOptions(options, variant.defaultModel)
   } catch {
-    return getGatewayFallbackModelOptions(variantId)
+    return getGatewayFallbackModelOptions(variantId, overrides)
   }
 }
 
@@ -357,40 +458,58 @@ export function buildGatewayRequestBody(
   model: string,
   prompt: string,
   stream: boolean,
+  options: GatewayRequestOptions = {},
 ): Record<string, unknown> {
   const variant = getGatewayVariantById(variantId)
   const selectedModel = model.trim() || variant.defaultModel
   const selectedPrompt = prompt.trim() || DEFAULT_GATEWAY_TEST_PROMPT
+  const maxTokens = normalizeGatewayMaxTokens(options.maxTokens)
 
   switch (variant.bodyKind) {
     case 'anthropic':
       return {
         model: selectedModel,
-        max_tokens: 256,
+        max_tokens: maxTokens || DEFAULT_GATEWAY_TEST_MAX_TOKENS,
         stream,
         messages: [{ role: 'user', content: selectedPrompt }]
       }
     case 'openaiChat':
-      return {
+      return stripUndefinedFields({
         model: selectedModel,
+        max_tokens: maxTokens,
         stream,
         messages: [{ role: 'user', content: selectedPrompt }]
-      }
+      })
     case 'openaiResponses':
-      return {
+      return stripUndefinedFields({
         model: selectedModel,
+        max_output_tokens: maxTokens,
         stream,
         input: selectedPrompt
-      }
+      })
     case 'geminiGenerate':
-      return {
+      return stripUndefinedFields({
         contents: [
           {
             parts: [{ text: selectedPrompt }]
           }
-        ]
-      }
+        ],
+        generationConfig: maxTokens ? { maxOutputTokens: maxTokens } : undefined,
+      })
   }
+}
+
+function normalizeGatewayMaxTokens(value: unknown): number | undefined {
+  if (typeof value === 'number' && Number.isInteger(value) && value > 0) {
+    return value
+  }
+  return undefined
+}
+
+function stripUndefinedFields<T extends Record<string, unknown>>(value: T): Record<string, unknown> {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, entryValue]) => entryValue !== undefined),
+  )
 }
 
 function shellQuote(value: string): string {
@@ -404,8 +523,9 @@ export function buildGatewayCurlExample(
   model: string,
   prompt: string,
   stream: boolean,
+  options: GatewayRequestOptions = {},
 ): string {
-  const body = buildGatewayRequestBody(variantId, model, prompt, stream)
+  const body = buildGatewayRequestBody(variantId, model, prompt, stream, options)
   const headers = buildGatewayHeaders(apiKey, variantId)
   const headerLines = Object.entries(headers).map(([name, value]) => `  -H ${shellQuote(`${name}: ${value}`)}`)
   const payload = shellQuote(JSON.stringify(body, null, 2))

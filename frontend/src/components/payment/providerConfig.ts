@@ -10,7 +10,6 @@ export interface ConfigFieldDef {
   sensitive: boolean
   optional?: boolean
   clearable?: boolean
-  defaultValue?: string
   hintKey?: string
   options?: TypeOption[]
 }
@@ -96,21 +95,35 @@ export const WEBHOOK_PATHS: Record<string, string> = {
   alipay: '/api/v1/payment/webhook/alipay',
   wxpay: '/api/v1/payment/webhook/wxpay',
   stripe: '/api/v1/payment/webhook/stripe',
+  airwallex: '/api/v1/payment/webhook/airwallex',
   creem: '/api/v1/payment/webhook/creem',
   waffo: '/api/v1/payment/webhook/waffo',
 }
 
 export const RETURN_PATH = '/payment/result'
 
-/** Fixed callback paths per provider — displayed as read-only after base URL. */
-export const PROVIDER_CALLBACK_PATHS: Record<string, CallbackPaths> = {
-  easypay: { notifyUrl: WEBHOOK_PATHS.easypay, returnUrl: RETURN_PATH },
-  alipay: { notifyUrl: WEBHOOK_PATHS.alipay, returnUrl: RETURN_PATH },
-  wxpay: { notifyUrl: WEBHOOK_PATHS.wxpay },
-  creem: { notifyUrl: WEBHOOK_PATHS.creem, returnUrl: RETURN_PATH },
-  waffo: { notifyUrl: WEBHOOK_PATHS.waffo, returnUrl: RETURN_PATH },
-  // stripe: no callback URL config needed (webhook is separate)
+function sanitizeReturnPath(value: string | undefined): string {
+  if (typeof value !== 'string') return RETURN_PATH
+  const trimmed = value.trim()
+  if (!trimmed || !trimmed.startsWith('/') || trimmed.startsWith('//')) return RETURN_PATH
+  if (trimmed.includes('://') || trimmed.includes('\n') || trimmed.includes('\r')) return RETURN_PATH
+  return trimmed
 }
+
+export function buildProviderCallbackPaths(paymentResultPath = RETURN_PATH): Record<string, CallbackPaths> {
+  const returnPath = sanitizeReturnPath(paymentResultPath)
+  return {
+    easypay: { notifyUrl: WEBHOOK_PATHS.easypay, returnUrl: returnPath },
+    alipay: { notifyUrl: WEBHOOK_PATHS.alipay, returnUrl: returnPath },
+    wxpay: { notifyUrl: WEBHOOK_PATHS.wxpay },
+    creem: { notifyUrl: WEBHOOK_PATHS.creem, returnUrl: returnPath },
+    waffo: { notifyUrl: WEBHOOK_PATHS.waffo, returnUrl: returnPath },
+    // stripe: no callback URL config needed (webhook is separate)
+  }
+}
+
+/** Fixed callback paths per provider — displayed as read-only after base URL. */
+export const PROVIDER_CALLBACK_PATHS: Record<string, CallbackPaths> = buildProviderCallbackPaths()
 
 /** Per-provider config fields (excludes notifyUrl/returnUrl which are handled separately). */
 export const PROVIDER_CONFIG_FIELDS: Record<string, ConfigFieldDef[]> = {
@@ -139,21 +152,21 @@ export const PROVIDER_CONFIG_FIELDS: Record<string, ConfigFieldDef[]> = {
     { key: 'secretKey', label: '', sensitive: true },
     { key: 'publishableKey', label: '', sensitive: false },
     { key: 'webhookSecret', label: '', sensitive: true },
-    { key: 'currency', label: '', sensitive: false, defaultValue: 'CNY', hintKey: 'admin.settings.payment.field_paymentCurrencyHint', options: PAYMENT_CURRENCY_OPTIONS },
+    { key: 'currency', label: '', sensitive: false, hintKey: 'admin.settings.payment.field_paymentCurrencyHint', options: PAYMENT_CURRENCY_OPTIONS },
   ],
   airwallex: [
     { key: 'clientId', label: '', sensitive: false },
     { key: 'apiKey', label: '', sensitive: true },
     { key: 'webhookSecret', label: '', sensitive: true },
-    { key: 'apiBase', label: '', sensitive: false, defaultValue: 'https://api.airwallex.com/api/v1', hintKey: 'admin.settings.payment.field_airwallexApiBaseHint' },
-    { key: 'countryCode', label: '', sensitive: false, defaultValue: 'CN' },
-    { key: 'currency', label: '', sensitive: false, defaultValue: 'CNY', hintKey: 'admin.settings.payment.field_paymentCurrencyHint', options: PAYMENT_CURRENCY_OPTIONS },
+    { key: 'apiBase', label: '', sensitive: false, hintKey: 'admin.settings.payment.field_airwallexApiBaseHint' },
+    { key: 'countryCode', label: '', sensitive: false },
+    { key: 'currency', label: '', sensitive: false, hintKey: 'admin.settings.payment.field_paymentCurrencyHint', options: PAYMENT_CURRENCY_OPTIONS },
     { key: 'accountId', label: '', sensitive: false, optional: true, clearable: true, hintKey: 'admin.settings.payment.field_accountIdHint' },
   ],
   creem: [
     { key: 'apiKey', label: '', sensitive: true },
     { key: 'webhookSecret', label: '', sensitive: true },
-    { key: 'testMode', label: '', sensitive: false, optional: true, defaultValue: 'false' },
+    { key: 'testMode', label: '', sensitive: false, optional: true },
     { key: 'apiBase', label: '', sensitive: false, optional: true },
   ],
   waffo: [
@@ -161,8 +174,8 @@ export const PROVIDER_CONFIG_FIELDS: Record<string, ConfigFieldDef[]> = {
     { key: 'privateKey', label: '', sensitive: true },
     { key: 'waffoPublicKey', label: '', sensitive: true },
     { key: 'merchantId', label: '', sensitive: false, optional: true },
-    { key: 'currency', label: '', sensitive: false, optional: true, defaultValue: 'USD' },
-    { key: 'sandbox', label: '', sensitive: false, optional: true, defaultValue: 'false' },
+    { key: 'currency', label: '', sensitive: false, optional: true },
+    { key: 'sandbox', label: '', sensitive: false, optional: true },
     { key: 'notifyUrl', label: '', sensitive: false, optional: true },
     { key: 'returnUrl', label: '', sensitive: false, optional: true },
     { key: 'apiBase', label: '', sensitive: false, optional: true },

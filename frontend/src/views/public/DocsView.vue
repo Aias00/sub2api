@@ -9,7 +9,7 @@
       <div class="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 md:px-6">
         <div class="flex min-w-0 items-center gap-3">
           <RouterLink
-            to="/home"
+            :to="authRouteDefaults.homePath"
             class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 dark:border-dark-700 dark:bg-white/5"
           >
             <img
@@ -30,7 +30,7 @@
               {{ siteName }}
             </p>
             <h1 class="truncate text-lg font-semibold text-slate-950 dark:text-white">
-              {{ t('nav.docs') }}
+              {{ copy.title }}
             </h1>
           </div>
         </div>
@@ -42,15 +42,15 @@
             :to="dashboardPath"
             class="inline-flex items-center rounded-2xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:px-4 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
           >
-            <span class="hidden sm:inline">{{ t('home.goToDashboard') }}</span>
-            <span class="sm:hidden">{{ t('nav.dashboard') }}</span>
+            <span class="hidden sm:inline">{{ copy.dashboard }}</span>
+            <span class="sm:hidden">{{ copy.dashboard }}</span>
           </router-link>
           <router-link
             v-else
-            to="/login"
+            :to="loginPath"
             class="inline-flex items-center rounded-2xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:px-4 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
           >
-            {{ t('home.login') }}
+            {{ copy.login }}
           </router-link>
         </div>
       </div>
@@ -72,12 +72,22 @@ import { RouterLink, useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
+import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import docsifyScriptUrl from 'docsify/lib/docsify.min.js?url'
 import docsifySearchPluginUrl from 'docsify/lib/plugins/search.min.js?url'
 import docsifyZoomImagePluginUrl from 'docsify/lib/plugins/zoom-image.min.js?url'
 import docsifyThemeUrl from 'docsify/lib/themes/vue.css?url'
 import { normalizeDocsHashPath } from '@/utils/docs'
+import { resolveDocsContentBasePath } from '@/utils/docsContentBasePath'
+import { resolveDocsShellConfig } from '@/utils/docsShell'
+import { resolveRuntimeLanguage } from '@/utils/runtimeLocale'
+import {
+  buildDocsSearchNamespace,
+  getDocsHashPath,
+  resolveInitialDocsHash,
+  withDocsContentVersion,
+} from './docsRuntime'
 
 declare global {
   interface Window {
@@ -87,19 +97,33 @@ declare global {
 
 const route = useRoute()
 const router = useRouter()
-const { t, locale } = useI18n()
+const { locale } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const { authRouteDefaults, resolveHomePath } = useAuthRouteDefaults()
 
 const docsifyRoot = ref<HTMLElement | null>(null)
-const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Sub2API')
+const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName)
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const isAuthenticated = computed(() => authStore.isAuthenticated)
-const dashboardPath = computed(() => (authStore.isAdmin ? '/admin/dashboard' : '/dashboard'))
-const docsBasePath = computed(() => (locale.value === 'en' ? '/docs-content/en/' : '/docs-content/'))
-const docsContentVersion = encodeURIComponent(import.meta.env.VITE_DOCS_CONTENT_VERSION || '')
+const dashboardPath = computed(() => resolveHomePath(authStore.isAdmin))
+const loginPath = computed(() => authRouteDefaults.value.loginPath)
+const docsLocale = computed<'zh' | 'en'>(() => resolveRuntimeLanguage(locale))
+const docsBasePath = computed(() =>
+  resolveDocsContentBasePath(appStore.cachedPublicSettings?.docs_content_base_path, docsLocale.value),
+)
+const docsShellConfig = computed(() =>
+  resolveDocsShellConfig(appStore.cachedPublicSettings?.docs_shell_config, docsLocale.value),
+)
+const copy = computed(() => docsShellConfig.value.labels)
+const docsContentVersion = computed(() =>
+  encodeURIComponent(appStore.cachedPublicSettings?.version || ''),
+)
+const docsSearchNamespace = computed(() =>
+  buildDocsSearchNamespace([siteName.value, locale.value, docsContentVersion.value]),
+)
 const docsVersionQueryKey = '_docs_v'
-const appRouteDocsLinks = new Set(['#/home', '#/dashboard', '#/register', '#/purchase'])
+const appRouteDocsLinks = computed(() => new Set(docsShellConfig.value.defaults.appRouteLinks))
 
 const docsHash = computed(() => normalizeDocsHashPath(route.params.pathMatch as string | string[] | undefined))
 
@@ -151,7 +175,7 @@ function configureDocsify() {
   window.$docsify = {
     el: '#docsify-app',
     name: siteName.value,
-    nameLink: '/home',
+    nameLink: authRouteDefaults.value.homePath,
     basePath: docsBasePath.value,
     homepage: 'README.md',
     loadSidebar: '_sidebar.md',
@@ -169,28 +193,12 @@ function configureDocsify() {
     notFoundPage: true,
     plugins: [docsVersionPlugin],
     search: {
-      namespace: `cloudbase-docs-${locale.value}-${docsContentVersion}`,
-      placeholder: t('docs.searchPlaceholder'),
-      noData: t('empty.noData'),
+      namespace: docsSearchNamespace.value,
+      placeholder: copy.value.searchPlaceholder,
+      noData: copy.value.noData,
       depth: 4,
     },
   }
-}
-
-function withDocsContentVersion(hash: string) {
-  const normalizedHash = hash.startsWith('#') ? hash : `#${hash}`
-  if (!normalizedHash.startsWith('#/')) {
-    return normalizedHash
-  }
-
-  const [path, query = ''] = normalizedHash.slice(1).split('?')
-  const params = new URLSearchParams(query)
-  if (params.get(docsVersionQueryKey) !== docsContentVersion) {
-    params.set(docsVersionQueryKey, docsContentVersion)
-  }
-  const queryString = params.toString()
-
-  return queryString ? `#${path}?${queryString}` : `#${path}`
 }
 
 function rewriteDocsLinks() {
@@ -199,19 +207,12 @@ function rewriteDocsLinks() {
   root.querySelectorAll<HTMLAnchorElement>('a[href^="#/"]').forEach((link) => {
     const href = link.getAttribute('href')
     if (!href) return
-    if (appRouteDocsLinks.has(href.split('?')[0] ?? href)) {
+    if (appRouteDocsLinks.value.has(href.split('?')[0] ?? href)) {
       link.setAttribute('href', href.slice(1))
       return
     }
-    link.setAttribute('href', withDocsContentVersion(href))
+    link.setAttribute('href', withDocsContentVersion(href, docsContentVersion.value, docsVersionQueryKey))
   })
-}
-
-function getDocsHashPath(hash: string) {
-  const normalizedHash = hash.startsWith('#') ? hash : `#${hash}`
-  const path = normalizedHash.slice(1).split('?')[0] || '/'
-
-  return path === '/' ? '/' : path.replace(/\/+$/, '')
 }
 
 function syncSidebarActiveLink() {
@@ -276,7 +277,7 @@ async function loadDocsify() {
 
 function syncHash(force = false) {
   if (typeof window === 'undefined') return
-  const targetHash = withDocsContentVersion(docsHash.value)
+  const targetHash = withDocsContentVersion(docsHash.value, docsContentVersion.value, docsVersionQueryKey)
   if (force || window.location.hash !== targetHash) {
     window.location.hash = targetHash
   }
@@ -284,11 +285,7 @@ function syncHash(force = false) {
 
 function getInitialDocsHash() {
   if (typeof window === 'undefined') return docsHash.value
-  if (route.path === '/docs' && window.location.hash.startsWith('#/')) {
-    return window.location.hash
-  }
-
-  return docsHash.value
+  return resolveInitialDocsHash(route.path, window.location.hash, docsHash.value)
 }
 
 watch(
@@ -318,7 +315,7 @@ onMounted(async () => {
     await router.replace('/docs')
   }
   if (typeof window !== 'undefined') {
-    window.location.hash = withDocsContentVersion(initialHash)
+    window.location.hash = withDocsContentVersion(initialHash, docsContentVersion.value, docsVersionQueryKey)
   }
   await loadDocsify()
   window.addEventListener('hashchange', syncSidebarActiveLink)

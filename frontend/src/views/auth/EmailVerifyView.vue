@@ -4,10 +4,10 @@
       <!-- Title -->
       <div class="text-center">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-          {{ t('auth.verifyYourEmail') }}
+          {{ authText('emailVerifyTitle') }}
         </h2>
         <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-          {{ t('auth.sendCodeDesc') }}
+          {{ authText('emailVerifyDescriptionPrefix') }}
           <span class="font-medium text-gray-700 dark:text-gray-300">{{ email }}</span>
         </p>
       </div>
@@ -22,8 +22,8 @@
             <Icon name="exclamationCircle" size="md" class="text-amber-500" />
           </div>
           <div class="text-sm text-amber-700 dark:text-amber-400">
-            <p class="font-medium">{{ t('auth.sessionExpired') }}</p>
-            <p class="mt-1">{{ t('auth.sessionExpiredDesc') }}</p>
+            <p class="font-medium">{{ authText('emailVerifySessionExpiredTitle') }}</p>
+            <p class="mt-1">{{ authText('emailVerifySessionExpiredDescription') }}</p>
           </div>
         </div>
       </div>
@@ -33,7 +33,7 @@
         <!-- Verification Code Input -->
         <div>
           <label for="code" class="input-label text-center">
-            {{ t('auth.verificationCode') }}
+            {{ authText('emailVerifyCodeLabel') }}
           </label>
           <input
             id="code"
@@ -48,7 +48,7 @@
             :class="{ 'input-error': errors.code }"
             placeholder="000000"
           />
-          <p class="input-hint text-center">{{ t('auth.verificationCodeHint') }}</p>
+          <p class="input-hint text-center">{{ authText('emailVerifyCodeHint') }}</p>
         </div>
 
         <!-- Code Status -->
@@ -61,7 +61,7 @@
               <Icon name="checkCircle" size="md" class="text-green-500" />
             </div>
             <p class="text-sm text-green-700 dark:text-green-400">
-              {{ t('auth.codeSentSuccess') }}
+              {{ authText('emailVerifyCodeSentSuccess') }}
             </p>
           </div>
         </div>
@@ -100,7 +100,7 @@
             ></path>
           </svg>
           <Icon v-else name="checkCircle" size="md" class="mr-2" />
-          {{ isLoading ? t('auth.verifying') : t('auth.verifyAndCreate') }}
+          {{ isLoading ? authText('emailVerifyVerifying') : authText('emailVerifySubmit') }}
         </button>
 
         <!-- Resend Code -->
@@ -111,7 +111,7 @@
             disabled
             class="cursor-not-allowed text-sm text-gray-400 dark:text-dark-500"
           >
-            {{ t('auth.resendCountdown', { countdown }) }}
+            {{ authText('emailVerifyResendCountdown', { countdown }) }}
           </button>
           <button
             v-else
@@ -122,11 +122,11 @@
             "
             class="text-sm text-primary-600 transition-colors hover:text-primary-500 disabled:cursor-not-allowed disabled:opacity-50 dark:text-primary-400 dark:hover:text-primary-300"
           >
-            <span v-if="isSendingCode">{{ t('auth.sendingCode') }}</span>
+            <span v-if="isSendingCode">{{ authText('sendingCode') }}</span>
             <span v-else-if="turnstileEnabled && !showResendTurnstile">
-              {{ t('auth.clickToResend') }}
+              {{ authText('emailVerifyClickToResend') }}
             </span>
-            <span v-else>{{ t('auth.resendCode') }}</span>
+            <span v-else>{{ authText('emailVerifyResendCode') }}</span>
           </button>
         </div>
       </form>
@@ -139,7 +139,7 @@
         class="flex items-center gap-2 text-gray-500 transition-colors hover:text-gray-700 dark:text-dark-400 dark:hover:text-gray-300"
       >
         <Icon name="arrowLeft" size="sm" />
-        {{ t('auth.backToRegistration') }}
+        {{ authText('emailVerifyBackToRegistration') }}
       </button>
     </template>
   </AuthLayout>
@@ -174,6 +174,9 @@ import {
   oauthAffiliatePayload
 } from '@/utils/oauthAffiliate'
 import { buildLoginAgreementAcceptancePayload } from '@/utils/loginAgreementConsent'
+import { sanitizeAuthRedirectPath } from '@/utils/authRedirect'
+import { resolveRuntimeLanguage } from '@/utils/runtimeLocale'
+import { useAuthShellText } from '@/composables/useAuthShellText'
 
 const { t, locale } = useI18n()
 
@@ -182,6 +185,7 @@ const { t, locale } = useI18n()
 const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
+const { authText, authRouteDefaults, applyAuthShellConfig } = useAuthShellText()
 
 // ==================== State ====================
 
@@ -194,10 +198,8 @@ const countdown = ref<number>(0)
 let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 // Registration data from sessionStorage
-type PendingAuthTokenField = 'pending_auth_token' | 'pending_oauth_token'
 type PendingAuthSessionSummary = {
   token: string
-  token_field: PendingAuthTokenField
   provider: string
   redirect?: string
 }
@@ -218,7 +220,6 @@ const promoCode = ref<string>('')
 const invitationCode = ref<string>('')
 const affCode = ref<string>('')
 const pendingAuthToken = ref<string>('')
-const pendingAuthTokenField = ref<PendingAuthTokenField>('pending_auth_token')
 const pendingProvider = ref<string>('')
 const pendingRedirect = ref<string>('')
 const pendingAdoptionDecision = ref<{
@@ -230,7 +231,7 @@ const hasRegisterData = ref<boolean>(false)
 // Public settings
 const turnstileEnabled = ref<boolean>(false)
 const turnstileSiteKey = ref<string>('')
-const siteName = ref<string>('Sub2API')
+const siteName = ref<string>('')
 const registrationEmailSuffixWhitelist = ref<string[]>([])
 
 // Turnstile for resend
@@ -270,7 +271,6 @@ onMounted(async () => {
       invitationCode.value = registerData.invitation_code || ''
       affCode.value = registerData.aff_code || loadAffiliateReferralCode()
       pendingAuthToken.value = registerData.pending_auth_token || activePendingSession?.token || ''
-      pendingAuthTokenField.value = registerData.pending_auth_token_field || activePendingSession?.token_field || 'pending_auth_token'
       pendingProvider.value = registerData.pending_provider || activePendingSession?.provider || ''
       pendingRedirect.value = registerData.pending_redirect || activePendingSession?.redirect || ''
       pendingAdoptionDecision.value = registerData.pending_adoption_decision
@@ -285,7 +285,6 @@ onMounted(async () => {
     }
   } else if (activePendingSession) {
     pendingAuthToken.value = activePendingSession.token
-    pendingAuthTokenField.value = activePendingSession.token_field
     pendingProvider.value = activePendingSession.provider
     pendingRedirect.value = activePendingSession.redirect || ''
   }
@@ -295,10 +294,11 @@ onMounted(async () => {
     const settings = await getPublicSettings()
     turnstileEnabled.value = settings.turnstile_enabled
     turnstileSiteKey.value = settings.turnstile_site_key || ''
-    siteName.value = settings.site_name || 'Sub2API'
+    siteName.value = settings.site_name || ''
     registrationEmailSuffixWhitelist.value = normalizeRegistrationEmailSuffixWhitelist(
       settings.registration_email_suffix_whitelist || []
     )
+    applyAuthShellConfig(settings.auth_shell_config)
   } catch (error) {
     console.error('Failed to load public settings:', error)
   }
@@ -388,7 +388,6 @@ function getPendingOAuthSendCodeSessionResponse(
 function persistPendingOAuthSession(provider: string, redirect?: string): void {
   authStore.setPendingAuthSession({
     token: pendingAuthToken.value,
-    token_field: pendingAuthTokenField.value,
     provider: provider.trim() || pendingProvider.value.trim(),
     redirect: redirect || pendingRedirect.value || undefined,
   })
@@ -409,7 +408,7 @@ async function sendCode(): Promise<void> {
 
     const requestPayload = {
       email: email.value,
-      [pendingAuthTokenField.value]: pendingAuthToken.value || undefined,
+      pending_auth_token: pendingAuthToken.value || undefined,
       // 优先使用重发时新获取的 token（因为初始 token 可能已被使用）
       turnstile_token: resendTurnstileToken.value || initialTurnstileToken.value || undefined
     } as Parameters<typeof sendVerifyCode>[0]
@@ -549,7 +548,7 @@ async function handleVerify(): Promise<void> {
     appStore.showSuccess(t('auth.accountCreatedSuccess', { siteName: siteName.value }))
 
     // Redirect to dashboard
-    await router.push(pendingRedirect.value || '/dashboard')
+    await router.push(sanitizeAuthRedirectPath(pendingRedirect.value))
   } catch (error: unknown) {
     errorMessage.value = buildAuthErrorMessage(error, {
       fallback: t('auth.verifyFailed')
@@ -566,7 +565,7 @@ function handleBack(): void {
   sessionStorage.removeItem('register_data')
 
   // Go back to registration
-  router.push('/register')
+  router.push(authRouteDefaults.value.registerPath)
 }
 
 function buildEmailSuffixNotAllowedMessage(): string {
@@ -576,7 +575,7 @@ function buildEmailSuffixNotAllowedMessage(): string {
   if (normalizedWhitelist.length === 0) {
     return t('auth.emailSuffixNotAllowed')
   }
-  const separator = String(locale.value || '').toLowerCase().startsWith('zh') ? '、' : ', '
+  const separator = resolveRuntimeLanguage(locale) === 'zh' ? '、' : ', '
   return t('auth.emailSuffixNotAllowedWithAllowed', {
     suffixes: formatRegistrationEmailSuffixWhitelistForMessage(normalizedWhitelist, {
       separator,

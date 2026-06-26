@@ -138,7 +138,7 @@
                 data-lpignore="true"
                 data-bwignore="true"
                 spellcheck="false"
-                :placeholder="editing ? t('admin.accounts.leaveEmptyToKeep') : (field.defaultValue || '')"
+                :placeholder="editing ? t('admin.accounts.leaveEmptyToKeep') : ''"
               />
               <button
                 type="button"
@@ -160,7 +160,6 @@
               type="text"
               v-model="config[field.key]"
               class="input"
-              :placeholder="field.defaultValue || ''"
             />
             <p v-if="field.hintKey" class="mt-1 text-xs leading-relaxed text-gray-500 dark:text-gray-400">
               {{ t(field.hintKey) }}
@@ -271,15 +270,16 @@ import type { SelectOption } from '@/components/common/Select.vue'
 import ToggleSwitch from './ToggleSwitch.vue'
 import type { ProviderInstance } from '@/types/payment'
 import type { TypeOption } from './providerConfig'
+import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import {
   PROVIDER_CONFIG_FIELDS,
   PROVIDER_SUPPORTED_TYPES,
-  PROVIDER_CALLBACK_PATHS,
   WEBHOOK_PATHS,
   PAYMENT_MODE_QRCODE,
   PAYMENT_MODE_POPUP,
   PAYMENT_MODE_REDIRECT,
   STRIPE_SDK_API_VERSION,
+  buildProviderCallbackPaths,
   getAvailableTypes,
   extractBaseUrl,
 } from './providerConfig'
@@ -335,6 +335,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { authRouteDefaults } = useAuthRouteDefaults()
 
 interface PaymentGuideItem {
   title: string
@@ -352,7 +353,7 @@ interface PaymentGuide {
 // --- Form state ---
 const form = reactive({
   name: '',
-  provider_key: 'easypay',
+  provider_key: '',
   supported_types: [] as string[],
   enabled: true,
   payment_mode: PAYMENT_MODE_QRCODE,
@@ -383,7 +384,11 @@ const providerWebhookHint = computed(() =>
   providerWebhookHintMap[form.provider_key] || 'admin.settings.payment.stripeWebhookHint',
 )
 
-const callbackPaths = computed(() => PROVIDER_CALLBACK_PATHS[form.provider_key] || null)
+const providerCallbackPaths = computed(() =>
+  buildProviderCallbackPaths(authRouteDefaults.value.paymentResultPath),
+)
+
+const callbackPaths = computed(() => providerCallbackPaths.value[form.provider_key] || null)
 
 const supportsPaymentMode = computed(() => providerSupportsPaymentMode(form.provider_key))
 
@@ -514,7 +519,6 @@ function onKeyChange() {
   form.supported_types = [...(PROVIDER_SUPPORTED_TYPES[form.provider_key] || [])]
   form.payment_mode = defaultPaymentMode(form.provider_key)
   clearConfig()
-  applyDefaults()
 }
 
 function clearConfig() {
@@ -524,12 +528,6 @@ function clearConfig() {
   notifyBaseUrl.value = ''
   returnBaseUrl.value = ''
   limitsExpanded.value = false
-}
-
-function applyDefaults() {
-  for (const f of PROVIDER_CONFIG_FIELDS[form.provider_key] || []) {
-    if (f.defaultValue && !config[f.key]) config[f.key] = f.defaultValue
-  }
 }
 
 function getLimitVal(paymentType: string, field: string): string {
@@ -613,7 +611,7 @@ function handleSave() {
 
   // Inject computed callback URLs (each URL = independent base + fixed path)
   // If base URL is empty, auto-fill with current domain
-  const paths = PROVIDER_CALLBACK_PATHS[form.provider_key]
+  const paths = callbackPaths.value
   if (paths) {
     const notifyBase = notifyBaseUrl.value.trim() || defaultBaseUrl
     const returnBase = returnBaseUrl.value.trim() || defaultBaseUrl
@@ -652,7 +650,6 @@ function reset(defaultKey: string) {
   form.refund_enabled = false
   form.allow_user_refund = false
   clearConfig()
-  applyDefaults()
 }
 
 function loadProvider(provider: ProviderInstance) {
@@ -678,7 +675,7 @@ function loadProvider(provider: ProviderInstance) {
       config[k] = v
     }
     // Extract base URLs from existing callback URLs
-    const paths = PROVIDER_CALLBACK_PATHS[provider.provider_key]
+    const paths = providerCallbackPaths.value[provider.provider_key]
     if (paths?.notifyUrl && provider.config['notifyUrl']) {
       notifyBaseUrl.value = extractBaseUrl(provider.config['notifyUrl'], paths.notifyUrl)
     }
@@ -686,7 +683,6 @@ function loadProvider(provider: ProviderInstance) {
       returnBaseUrl.value = extractBaseUrl(provider.config['returnUrl'], paths.returnUrl)
     }
   }
-  applyDefaults()
   // Parse existing limits
   if (provider.limits) {
     try {

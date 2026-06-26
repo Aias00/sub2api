@@ -4,10 +4,10 @@
       <!-- Title -->
       <div class="text-center">
         <h2 class="text-2xl font-bold text-gray-900 dark:text-white">
-          {{ t('auth.resetPasswordTitle') }}
+          {{ authText('resetPasswordTitle') }}
         </h2>
         <p class="mt-2 text-sm text-gray-500 dark:text-dark-400">
-          {{ t('auth.resetPasswordHint') }}
+          {{ authText('resetPasswordHint') }}
         </p>
       </div>
 
@@ -20,10 +20,10 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold text-amber-800 dark:text-amber-200">
-                {{ t('auth.invalidResetLink') }}
+                {{ authText('invalidResetLink') }}
               </h3>
               <p class="mt-2 text-sm text-amber-700 dark:text-amber-300">
-                {{ t('auth.invalidResetLinkHint') }}
+                {{ authText('invalidResetLinkHint') }}
               </p>
             </div>
           </div>
@@ -31,10 +31,10 @@
 
         <div class="text-center">
           <router-link
-            to="/forgot-password"
+            :to="authRouteDefaults.forgotPasswordPath"
             class="inline-flex items-center gap-2 font-medium text-primary-600 transition-colors hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
           >
-            {{ t('auth.requestNewResetLink') }}
+            {{ authText('requestNewResetLink') }}
           </router-link>
         </div>
       </div>
@@ -48,10 +48,10 @@
             </div>
             <div>
               <h3 class="text-lg font-semibold text-green-800 dark:text-green-200">
-                {{ t('auth.passwordResetSuccess') }}
+                {{ authText('passwordResetSuccess') }}
               </h3>
               <p class="mt-2 text-sm text-green-700 dark:text-green-300">
-                {{ t('auth.passwordResetSuccessHint') }}
+                {{ authText('passwordResetSuccessHint') }}
               </p>
             </div>
           </div>
@@ -59,11 +59,11 @@
 
         <div class="text-center">
           <router-link
-            to="/login"
+            :to="authRouteDefaults.loginPath"
             class="btn btn-primary inline-flex items-center gap-2"
           >
             <Icon name="login" size="md" />
-            {{ t('auth.signIn') }}
+            {{ authText('signIn') }}
           </router-link>
         </div>
       </div>
@@ -73,7 +73,7 @@
         <!-- Email (readonly) -->
         <div>
           <label for="email" class="input-label">
-            {{ t('auth.emailLabel') }}
+            {{ authText('emailLabel') }}
           </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -93,7 +93,7 @@
         <!-- New Password Input -->
         <div>
           <label for="password" class="input-label">
-            {{ t('auth.newPassword') }}
+            {{ authText('newPassword') }}
           </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -108,7 +108,7 @@
               :disabled="isLoading"
               class="input pl-11 pr-11"
               :class="{ 'input-error': errors.password }"
-              :placeholder="t('auth.newPasswordPlaceholder')"
+              :placeholder="authText('newPasswordPlaceholder')"
             />
             <button
               type="button"
@@ -124,7 +124,7 @@
         <!-- Confirm Password Input -->
         <div>
           <label for="confirmPassword" class="input-label">
-            {{ t('auth.confirmPassword') }}
+            {{ authText('confirmPassword') }}
           </label>
           <div class="relative">
             <div class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3.5">
@@ -139,7 +139,7 @@
               :disabled="isLoading"
               class="input pl-11 pr-11"
               :class="{ 'input-error': errors.confirmPassword }"
-              :placeholder="t('auth.confirmPasswordPlaceholder')"
+              :placeholder="authText('confirmPasswordPlaceholder')"
             />
             <button
               type="button"
@@ -179,7 +179,7 @@
             ></path>
           </svg>
           <Icon v-else name="checkCircle" size="md" class="mr-2" />
-          {{ isLoading ? t('auth.resettingPassword') : t('auth.resetPassword') }}
+          {{ isLoading ? authText('resettingPassword') : authText('resetPassword') }}
         </button>
       </form>
     </div>
@@ -187,12 +187,12 @@
     <!-- Footer -->
     <template #footer>
       <p class="text-gray-500 dark:text-dark-400">
-        {{ t('auth.rememberedPassword') }}
+        {{ authText('rememberedPassword') }}
         <router-link
-          to="/login"
+          :to="authRouteDefaults.loginPath"
           class="font-medium text-primary-600 transition-colors hover:text-primary-500 dark:text-primary-400 dark:hover:text-primary-300"
         >
-          {{ t('auth.signIn') }}
+          {{ authText('signIn') }}
         </router-link>
       </p>
     </template>
@@ -208,8 +208,10 @@ import Icon from '@/components/icons/Icon.vue'
 import { useAppStore } from '@/stores'
 import { resetPassword } from '@/api/auth'
 import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
+import { useAuthShellText } from '@/composables/useAuthShellText'
 
 const { t } = useI18n()
+const { authText, authRouteDefaults, loadAuthShellLabels } = useAuthShellText()
 
 // ==================== Router & Stores ====================
 
@@ -256,13 +258,15 @@ const isInvalidLink = computed(() => !email.value || !token.value)
 
 // ==================== Lifecycle ====================
 
-onMounted(() => {
+onMounted(async () => {
+  await loadAuthShellLabels()
+
   // Get email and token from URL query parameters
   email.value = (route.query.email as string) || ''
   token.value = (route.query.token as string) || ''
 
   if (!email.value || !token.value) {
-    appStore.showError(t('auth.invalidResetLink'))
+    appStore.showError(authText('invalidResetLink'))
   }
 })
 
@@ -314,7 +318,7 @@ async function handleSubmit(): Promise<void> {
     })
 
     isSuccess.value = true
-    appStore.showSuccess(t('auth.passwordResetSuccess'))
+    appStore.showSuccess(authText('passwordResetSuccess'))
   } catch (error: unknown) {
     const err = error as { message?: string; response?: { data?: { detail?: string; code?: string } } }
 

@@ -94,18 +94,18 @@
                   {{ t('common.balance') }}
                 </div>
                 <div class="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                  ${{ user.balance?.toFixed(2) || '0.00' }}
+                  {{ formatHeaderBalance(user.balance) }}
                 </div>
               </div>
 
               <div v-if="showDropdownPrimaryActions" class="py-1">
                 <template v-if="showDropdownAccountLinks">
-                  <router-link to="/profile" @click="closeDropdown" class="dropdown-item">
+                  <router-link :to="authRouteDefaults.profilePath" @click="closeDropdown" class="dropdown-item">
                     <Icon name="user" size="sm" />
                     {{ t('nav.profile') }}
                   </router-link>
 
-                  <router-link to="/keys" @click="closeDropdown" class="dropdown-item">
+                  <router-link :to="authRouteDefaults.apiKeysPath" @click="closeDropdown" class="dropdown-item">
                     <Icon name="key" size="sm" />
                     {{ t('nav.apiKeys') }}
                   </router-link>
@@ -203,6 +203,14 @@ import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMi
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
 import DocsLink from '@/components/common/DocsLink.vue'
 import Icon from '@/components/icons/Icon.vue'
+import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
+import { formatPublicMoneyAmount } from '@/utils/paymentCurrency'
+import {
+  resolveCompactUserDropdown,
+  resolveHeaderDisplayName,
+  resolveHeaderPageTitle,
+  resolveHeaderUserInitials,
+} from './appHeaderRuntime'
 
 const router = useRouter()
 const route = useRoute()
@@ -210,8 +218,12 @@ const { t } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const adminSettingsStore = useAdminSettingsStore()
+const { authRouteDefaults } = useAuthRouteDefaults()
 
 const user = computed(() => authStore.user)
+const currencyPrefix = computed(() => appStore.cachedPublicSettings?.pricing_currency_symbol || '')
+const formatHeaderBalance = (value: number | null | undefined) =>
+  formatPublicMoneyAmount(value, currencyPrefix.value)
 const isAdmin = computed(() => user.value?.role === 'admin')
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
@@ -227,43 +239,25 @@ const showDropdownContactSupport = computed(
   () => !isAdmin.value && Boolean(contactInfo.value)
 )
 
-const compactUserDropdown = computed(() => {
-  return !showDropdownPrimaryActions.value && !showDropdownContactSupport.value
-})
+const compactUserDropdown = computed(() =>
+  resolveCompactUserDropdown(showDropdownPrimaryActions.value, showDropdownContactSupport.value),
+)
 
-const userInitials = computed(() => {
-  if (!user.value) return ''
-  // Prefer username, fallback to email
-  if (user.value.username) {
-    return user.value.username.substring(0, 2).toUpperCase()
-  }
-  if (user.value.email) {
-    // Get the part before @ and take first 2 chars
-    const localPart = user.value.email.split('@')[0]
-    return localPart.substring(0, 2).toUpperCase()
-  }
-  return ''
-})
+const userInitials = computed(() => resolveHeaderUserInitials(user.value))
 
-const displayName = computed(() => {
-  if (!user.value) return ''
-  return user.value.username || user.value.email?.split('@')[0] || ''
-})
+const displayName = computed(() => resolveHeaderDisplayName(user.value))
 
 const pageTitle = computed(() => {
-  // For custom pages, use the menu item's label instead of generic "自定义页面"
-  if (route.name === 'CustomPage') {
-    const id = route.params.id as string
-    const publicItems = appStore.cachedPublicSettings?.custom_menu_items ?? []
-    const menuItem = publicItems.find((item) => item.id === id)
-      ?? (authStore.isAdmin ? adminSettingsStore.customMenuItems.find((item) => item.id === id) : undefined)
-    if (menuItem?.label) return menuItem.label
-  }
-  const titleKey = route.meta.titleKey as string
-  if (titleKey) {
-    return t(titleKey)
-  }
-  return (route.meta.title as string) || ''
+  return resolveHeaderPageTitle({
+    routeName: route.name,
+    routeCustomId: route.params.id as string | undefined,
+    routeMetaTitleKey: route.meta.titleKey as string | undefined,
+    routeMetaTitle: route.meta.title as string | undefined,
+    publicMenuItems: appStore.cachedPublicSettings?.custom_menu_items ?? [],
+    adminMenuItems: adminSettingsStore.customMenuItems,
+    isAdmin: authStore.isAdmin,
+    translate: t,
+  })
 })
 
 function toggleMobileSidebar() {
@@ -286,7 +280,7 @@ async function handleLogout() {
     // Ignore logout errors - still redirect to login
     console.error('Logout error:', error)
   }
-  await router.push('/login')
+  await router.push(authRouteDefaults.value.loginPath)
 }
 
 function handleClickOutside(event: MouseEvent) {

@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -36,7 +37,6 @@ const (
 	wechatOAuthDefaultRedirectTo  = "/dashboard"
 	wechatOAuthDefaultFrontendCB  = "/auth/wechat/callback"
 	wechatOAuthProviderKey        = "wechat-main"
-	wechatOAuthLegacyProviderKey  = "wechat"
 	wechatPaymentOAuthCookiePath  = "/api/v1/auth/oauth/wechat/payment"
 	wechatPaymentOAuthStateName   = "wechat_payment_oauth_state"
 	wechatPaymentOAuthRedirect    = "wechat_payment_oauth_redirect"
@@ -278,13 +278,6 @@ func (h *AuthHandler) WeChatOAuthCallback(c *gin.Context) {
 		redirectOAuthError(c, frontendCallback, "session_error", infraerrors.Reason(err), infraerrors.Message(err))
 		return
 	}
-	if existingIdentityUser == nil {
-		existingIdentityUser, err = h.findWeChatUserByLegacyOpenID(c.Request.Context(), identityRef, cfg, openid)
-		if err != nil {
-			redirectOAuthError(c, frontendCallback, "session_error", infraerrors.Reason(err), infraerrors.Message(err))
-			return
-		}
-	}
 	if existingIdentityUser != nil {
 		if err := h.ensureWeChatRuntimeIdentityBinding(c.Request.Context(), existingIdentityUser.ID, identityRef, upstreamClaims); err != nil {
 			redirectOAuthError(c, frontendCallback, "session_error", infraerrors.Reason(err), infraerrors.Message(err))
@@ -482,12 +475,7 @@ func (h *AuthHandler) WeChatPaymentOAuthCallback(c *gin.Context) {
 }
 
 func (h *AuthHandler) wechatPaymentResumeService() *service.PaymentResumeService {
-	var legacyKey []byte
-	key, err := payment.ProvideEncryptionKey(h.cfg)
-	if err == nil {
-		legacyKey = []byte(key)
-	}
-	return service.NewLegacyAwarePaymentResumeService(legacyKey)
+	return service.NewPaymentResumeService(service.ParsePaymentResumeSigningKey(os.Getenv("PAYMENT_RESUME_SIGNING_KEY")))
 }
 
 type completeWeChatOAuthRequest struct {
@@ -540,14 +528,14 @@ func (h *AuthHandler) CompleteWeChatOAuthRegistration(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	if updatedSession, handled, err := h.legacyCompleteRegistrationSessionStatus(c, session); err != nil {
+	if currentSession, handled, err := currentCompleteRegistrationSessionStatus(session); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	} else if handled {
-		c.JSON(http.StatusOK, buildPendingOAuthSessionStatusPayload(updatedSession))
+		c.JSON(http.StatusOK, buildPendingOAuthSessionStatusPayload(currentSession))
 		return
 	} else {
-		session = updatedSession
+		session = currentSession
 	}
 	if err := h.ensureBackendModeAllowsNewUserLogin(c.Request.Context()); err != nil {
 		response.ErrorFrom(c, err)
@@ -695,10 +683,8 @@ func (h *AuthHandler) createWeChatChoicePendingSession(
 		"email":                     suggestionEmail,
 		"resolved_email":            canonicalEmail,
 		"existing_account_email":    "",
-		"existing_account_bindable": false,
 		"create_account_allowed":    true,
 		"force_email_on_signup":     forceEmailOnSignup,
-		"choice_reason":             "third_party_signup",
 	}
 	if strings.TrimSpace(compatEmail) != "" {
 		completionResponse["compat_email"] = strings.TrimSpace(compatEmail)
@@ -706,11 +692,6 @@ func (h *AuthHandler) createWeChatChoicePendingSession(
 	if compatEmailUser != nil {
 		completionResponse["email"] = strings.TrimSpace(compatEmailUser.Email)
 		completionResponse["existing_account_email"] = strings.TrimSpace(compatEmailUser.Email)
-		completionResponse["existing_account_bindable"] = true
-		completionResponse["choice_reason"] = "compat_email_match"
-	}
-	if forceEmailOnSignup {
-		completionResponse["choice_reason"] = "force_email_on_signup"
 	}
 
 	resolvedChoiceEmail := suggestionEmail
@@ -793,7 +774,7 @@ func (h *AuthHandler) ensureWeChatBindOwnership(
 	identities, err := client.AuthIdentity.Query().
 		Where(
 			authidentity.ProviderTypeEQ("wechat"),
-			authidentity.ProviderKeyIn(wechatCompatibleProviderKeys(wechatOAuthProviderKey)...),
+			authidentity.ProviderKeyEQ(wechatOAuthProviderKey),
 			authidentity.ProviderSubjectEQ(strings.TrimSpace(providerSubject)),
 		).
 		All(ctx)
@@ -821,7 +802,7 @@ func (h *AuthHandler) ensureWeChatBindOwnership(
 	channels, err := client.AuthIdentityChannel.Query().
 		Where(
 			authidentitychannel.ProviderTypeEQ("wechat"),
-			authidentitychannel.ProviderKeyIn(wechatCompatibleProviderKeys(wechatOAuthProviderKey)...),
+			authidentitychannel.ProviderKeyEQ(wechatOAuthProviderKey),
 			authidentitychannel.ChannelEQ(strings.TrimSpace(cfg.mode)),
 			authidentitychannel.ChannelAppIDEQ(channelAppID),
 			authidentitychannel.ChannelSubjectEQ(channelSubject),
@@ -843,135 +824,6 @@ func (h *AuthHandler) ensureWeChatBindOwnership(
 		}
 	}
 	return nil
-}
-
-func (h *AuthHandler) findWeChatUserByLegacyOpenID(
-	ctx context.Context,
-	identity service.PendingAuthIdentityKey,
-	cfg wechatOAuthConfig,
-	openid string,
-) (*dbent.User, error) {
-	client := h.entClient()
-	if client == nil {
-		return nil, infraerrors.ServiceUnavailable("PENDING_AUTH_NOT_READY", "pending auth service is not ready")
-	}
-
-	providerType := strings.TrimSpace(identity.ProviderType)
-	providerSubject := strings.TrimSpace(identity.ProviderSubject)
-	providerKeys := wechatCompatibleProviderKeys(identity.ProviderKey)
-	if providerSubject != "" {
-		records, err := client.AuthIdentity.Query().
-			Where(
-				authidentity.ProviderTypeEQ(providerType),
-				authidentity.ProviderKeyIn(providerKeys...),
-				authidentity.ProviderSubjectEQ(providerSubject),
-			).
-			WithUser().
-			All(ctx)
-		if err != nil {
-			return nil, infraerrors.InternalServer("AUTH_IDENTITY_LOOKUP_FAILED", "failed to inspect auth identity ownership").WithCause(err)
-		}
-		if user, err := singleWeChatIdentityUser(records); err != nil || user != nil {
-			if err != nil || user == nil {
-				return user, err
-			}
-			return findActiveUserByID(ctx, client, user.ID)
-		}
-	}
-
-	openid = strings.TrimSpace(openid)
-	channel := strings.TrimSpace(cfg.mode)
-	channelAppID := strings.TrimSpace(cfg.appID)
-	if openid != "" && channel != "" && channelAppID != "" {
-		records, err := client.AuthIdentityChannel.Query().
-			Where(
-				authidentitychannel.ProviderTypeEQ(providerType),
-				authidentitychannel.ProviderKeyIn(providerKeys...),
-				authidentitychannel.ChannelEQ(channel),
-				authidentitychannel.ChannelAppIDEQ(channelAppID),
-				authidentitychannel.ChannelSubjectEQ(openid),
-			).
-			WithIdentity(func(q *dbent.AuthIdentityQuery) {
-				q.WithUser()
-			}).
-			All(ctx)
-		if err != nil {
-			return nil, infraerrors.InternalServer("AUTH_IDENTITY_CHANNEL_LOOKUP_FAILED", "failed to inspect auth identity channel ownership").WithCause(err)
-		}
-		if user, err := singleWeChatChannelUser(records); err != nil || user != nil {
-			if err != nil || user == nil {
-				return user, err
-			}
-			return findActiveUserByID(ctx, client, user.ID)
-		}
-	}
-
-	if openid == "" {
-		return nil, nil
-	}
-
-	records, err := client.AuthIdentity.Query().
-		Where(
-			authidentity.ProviderTypeEQ(providerType),
-			authidentity.ProviderKeyIn(providerKeys...),
-			authidentity.ProviderSubjectEQ(openid),
-		).
-		WithUser().
-		All(ctx)
-	if err != nil {
-		return nil, infraerrors.InternalServer("AUTH_IDENTITY_LOOKUP_FAILED", "failed to inspect auth identity ownership").WithCause(err)
-	}
-	user, err := singleWeChatIdentityUser(records)
-	if err != nil || user == nil {
-		return user, err
-	}
-	return findActiveUserByID(ctx, client, user.ID)
-}
-
-func wechatCompatibleProviderKeys(providerKey string) []string {
-	preferred := strings.TrimSpace(providerKey)
-	if preferred == "" {
-		preferred = wechatOAuthProviderKey
-	}
-	keys := []string{preferred}
-	if !strings.EqualFold(preferred, wechatOAuthLegacyProviderKey) {
-		keys = append(keys, wechatOAuthLegacyProviderKey)
-	}
-	return keys
-}
-
-func singleWeChatIdentityUser(records []*dbent.AuthIdentity) (*dbent.User, error) {
-	var resolved *dbent.User
-	for _, record := range records {
-		if record == nil || record.Edges.User == nil {
-			continue
-		}
-		if resolved == nil {
-			resolved = record.Edges.User
-			continue
-		}
-		if resolved.ID != record.Edges.User.ID {
-			return nil, infraerrors.Conflict("AUTH_IDENTITY_OWNERSHIP_CONFLICT", "auth identity already belongs to another user")
-		}
-	}
-	return resolved, nil
-}
-
-func singleWeChatChannelUser(records []*dbent.AuthIdentityChannel) (*dbent.User, error) {
-	var resolved *dbent.User
-	for _, record := range records {
-		if record == nil || record.Edges.Identity == nil || record.Edges.Identity.Edges.User == nil {
-			continue
-		}
-		if resolved == nil {
-			resolved = record.Edges.Identity.Edges.User
-			continue
-		}
-		if resolved.ID != record.Edges.Identity.Edges.User.ID {
-			return nil, infraerrors.Conflict("AUTH_IDENTITY_CHANNEL_OWNERSHIP_CONFLICT", "auth identity channel already belongs to another user")
-		}
-	}
-	return resolved, nil
 }
 
 func (h *AuthHandler) ensureWeChatRuntimeIdentityBinding(

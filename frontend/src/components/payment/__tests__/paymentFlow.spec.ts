@@ -264,16 +264,29 @@ describe('buildCreateOrderPayload', () => {
       paymentType: 'alipay_direct',
       orderType: 'balance',
       origin: 'https://app.example.com/',
+      returnPath: '/configured-payment-result',
       isMobile: true,
       isWechatBrowser: false,
     })).toEqual({
       amount: 88,
       payment_type: 'alipay',
       order_type: 'balance',
-      return_url: 'https://app.example.com/payment/result',
+      return_url: 'https://app.example.com/configured-payment-result',
       is_mobile: true,
       payment_source: 'hosted_redirect',
     })
+  })
+
+  it('falls back to the built-in result path for unsafe return paths', () => {
+    expect(buildCreateOrderPayload({
+      amount: 88,
+      paymentType: 'alipay',
+      orderType: 'balance',
+      origin: 'https://app.example.com',
+      returnPath: 'https://evil.example/payment-result',
+      isMobile: true,
+      isWechatBrowser: false,
+    }).return_url).toBe('https://app.example.com/payment/result')
   })
 
   it('uses WeChat in-app resume source for visible WeChat payments in the WeChat browser', () => {

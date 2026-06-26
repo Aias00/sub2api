@@ -8,26 +8,26 @@
     </template>
     <template v-if="showUser" #cell-user_email="{ value, row }">
       <div class="text-sm">
-        <span class="text-gray-900 dark:text-white">{{ value || row.user_name || '#' + row.user_id }}</span>
+        <span class="text-gray-900 dark:text-white">{{ userDisplayName(row, value) }}</span>
         <span v-if="row.user_notes" class="ml-1 text-xs text-gray-400">({{ row.user_notes }})</span>
       </div>
     </template>
     <template #cell-pay_amount="{ value, row }">
       <div class="text-sm">
-        <span class="font-medium text-gray-900 dark:text-white">¥{{ value.toFixed(2) }}</span>
-        <span v-if="row.fee_rate > 0" class="ml-1 text-xs text-gray-400" :title="t('payment.orders.fee') + ': ' + row.fee_rate + '%'">
-          ({{ t('payment.orders.fee') }} {{ row.fee_rate }}%)
+        <span class="font-medium text-gray-900 dark:text-white">{{ formatOrderPaymentAmount(value, row) }}</span>
+        <span v-if="row.fee_rate > 0" class="ml-1 text-xs text-gray-400" :title="orderText('fee') + ': ' + row.fee_rate + '%'">
+          ({{ orderText('fee') }} {{ row.fee_rate }}%)
         </span>
         <div v-if="row.amount !== row.pay_amount" class="text-xs text-gray-500">
-          {{ t('payment.orders.creditedAmount') }}: {{ row.order_type === 'balance' ? '$' : '¥' }}{{ row.amount.toFixed(2) }}
+          {{ orderText('creditedAmount') }}: {{ formatOrderCreditedAmount(row) }}
         </div>
       </div>
     </template>
     <template #cell-payment_type="{ value }">
-      <span class="text-sm text-gray-700 dark:text-gray-300">{{ t('payment.methods.' + value, value) }}</span>
+      <span class="text-sm text-gray-700 dark:text-gray-300">{{ paymentMethodLabel(value) }}</span>
     </template>
     <template #cell-status="{ value }">
-      <OrderStatusBadge :status="value" />
+      <OrderStatusBadge :status="value" :labels="statusBadgeLabels" />
     </template>
     <template #cell-created_at="{ value }">
       <span class="text-xs text-gray-500 dark:text-gray-400">{{ formatDate(value) }}</span>
@@ -46,30 +46,74 @@ import type { Column } from '@/components/common/types'
 import DataTable from '@/components/common/DataTable.vue'
 import OrderStatusBadge from '@/components/payment/OrderStatusBadge.vue'
 
-const { t } = useI18n()
+import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
+import { formatOrderCreditedAmount } from '@/utils/paymentCurrency'
+import { renderOrderTableText, type OrderTableLabelKey, type OrderTableLabels } from '@/utils/paymentShell'
+
+const { locale } = useI18n()
 
 const props = defineProps<{
   orders: PaymentOrder[]
   loading: boolean
   showUser?: boolean
+  labels?: OrderTableLabels
 }>()
+
+function orderText(key: OrderTableLabelKey): string {
+  return renderOrderTableText(props.labels, key)
+}
 
 function formatDate(dateStr: string) { return new Date(dateStr).toLocaleString() }
 
+function formatOrderPaymentAmount(value: number, order: PaymentOrder): string {
+  return formatPaymentAmount(value, normalizePaymentCurrency(order.currency), locale.value)
+}
+
+function cleanString(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : ''
+}
+
+function userDisplayName(row: PaymentOrder & { user_name?: string }, value: unknown): string {
+  return cleanString(value) || cleanString(row.user_name)
+}
+
+function paymentMethodLabel(type: string): string {
+  if (type.includes('alipay')) return orderText('methodAlipay')
+  if (type.includes('wxpay')) return orderText('methodWxpay')
+  if (type === 'stripe') return orderText('methodStripe')
+  if (type === 'airwallex') return orderText('methodAirwallex')
+  return type
+}
+
+const statusBadgeLabels = computed(() => ({
+  PENDING: orderText('statusPending'),
+  PAID: orderText('statusPaid'),
+  RECHARGING: orderText('statusRecharging'),
+  COMPLETED: orderText('statusCompleted'),
+  EXPIRED: orderText('statusExpired'),
+  CANCELLED: orderText('statusCancelled'),
+  FAILED: orderText('statusFailed'),
+  REFUND_REQUESTED: orderText('statusRefundRequested'),
+  REFUNDING: orderText('statusRefunding'),
+  REFUNDED: orderText('statusRefunded'),
+  PARTIALLY_REFUNDED: orderText('statusPartiallyRefunded'),
+  REFUND_FAILED: orderText('statusRefundFailed'),
+}))
+
 const columns = computed((): Column[] => {
   const cols: Column[] = [
-    { key: 'id', label: t('payment.orders.orderId') },
-    { key: 'out_trade_no', label: t('payment.orders.orderNo') },
+    { key: 'id', label: orderText('orderId') },
+    { key: 'out_trade_no', label: orderText('orderNo') },
   ]
   if (props.showUser) {
-    cols.push({ key: 'user_email', label: t('payment.admin.colUser') })
+    cols.push({ key: 'user_email', label: orderText('user') })
   }
   cols.push(
-    { key: 'pay_amount', label: t('payment.orders.payAmount') },
-    { key: 'payment_type', label: t('payment.orders.paymentMethod') },
-    { key: 'status', label: t('payment.orders.status') },
-    { key: 'created_at', label: t('payment.orders.createdAt') },
-    { key: 'actions', label: t('common.actions') },
+    { key: 'pay_amount', label: orderText('payAmount') },
+    { key: 'payment_type', label: orderText('paymentMethod') },
+    { key: 'status', label: orderText('status') },
+    { key: 'created_at', label: orderText('createdAt') },
+    { key: 'actions', label: orderText('actions') },
   )
   return cols
 })

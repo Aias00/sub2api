@@ -550,8 +550,6 @@ func TestLinuxDoOAuthCallbackCreatesBindPendingSessionForCompatEmailUser(t *test
 	require.Equal(t, oauthPendingChoiceStep, completion["step"])
 	require.Equal(t, strings.TrimSpace(existingUser.Email), completion["email"])
 	require.Equal(t, strings.TrimSpace(existingUser.Email), completion["existing_account_email"])
-	require.Equal(t, true, completion["existing_account_bindable"])
-	require.Equal(t, "compat_email_match", completion["choice_reason"])
 	_, hasAccessToken := completion["access_token"]
 	require.False(t, hasAccessToken)
 }
@@ -616,7 +614,6 @@ func TestLinuxDoOAuthCallbackCreatesChoicePendingSessionWhenSignupRequiresInvite
 	require.True(t, ok)
 	require.Equal(t, oauthPendingChoiceStep, completion["step"])
 	require.Equal(t, "/dashboard", completion["redirect"])
-	require.Equal(t, "third_party_signup", completion["choice_reason"])
 }
 
 func TestLinuxDoOAuthCallbackCreatesBindPendingSessionForCurrentUser(t *testing.T) {

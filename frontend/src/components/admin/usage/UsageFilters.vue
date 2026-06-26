@@ -43,7 +43,7 @@
 
         <!-- API Key Search -->
         <div ref="apiKeySearchRef" class="usage-filter-dropdown relative w-full sm:w-auto sm:min-w-[240px]">
-          <label class="input-label">{{ t('usage.apiKeyFilter') }}</label>
+          <label class="input-label">{{ t('admin.usage.apiKeyFilter') }}</label>
           <input
             v-model="apiKeyKeyword"
             type="text"
@@ -80,7 +80,7 @@
 
         <!-- Model Filter -->
         <div class="w-full sm:w-auto sm:min-w-[220px]">
-          <label class="input-label">{{ t('usage.model') }}</label>
+          <label class="input-label">{{ t('admin.usage.model') }}</label>
           <Select v-model="filters.model" :options="modelOptions" searchable @change="emitChange" />
         </div>
 
@@ -123,7 +123,7 @@
 
         <!-- Request Type Filter -->
         <div class="w-full sm:w-auto sm:min-w-[180px]">
-          <label class="input-label">{{ t('usage.type') }}</label>
+          <label class="input-label">{{ t('admin.usage.type') }}</label>
           <Select v-model="filters.request_type" :options="requestTypeOptions" @change="emitChange" />
         </div>
 
@@ -160,7 +160,7 @@
           {{ t('admin.usage.cleanup.button') }}
         </button>
         <button type="button" @click="$emit('export')" :disabled="exporting" class="btn btn-primary">
-          {{ t('usage.exportExcel') }}
+          {{ t('admin.usage.exportExcel') }}
         </button>
       </div>
     </div>
@@ -231,9 +231,9 @@ const groupOptions = ref<SelectOption[]>([{ value: null, label: t('admin.usage.a
 
 const requestTypeOptions = ref<SelectOption[]>([
   { value: null, label: t('admin.usage.allTypes') },
-  { value: 'ws_v2', label: t('usage.ws') },
-  { value: 'stream', label: t('usage.stream') },
-  { value: 'sync', label: t('usage.sync') }
+  { value: 'ws_v2', label: t('common.requestType.ws') },
+  { value: 'stream', label: t('common.requestType.stream') },
+  { value: 'sync', label: t('common.requestType.sync') }
 ])
 
 const billingTypeOptions = ref<SelectOption[]>([

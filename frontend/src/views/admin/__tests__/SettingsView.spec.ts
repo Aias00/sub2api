@@ -1,8 +1,11 @@
+import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { defineComponent, h } from "vue";
 import { flushPromises, mount } from "@vue/test-utils";
 
 import SettingsView from "../SettingsView.vue";
+
+const settingsViewSource = readFileSync("src/views/admin/SettingsView.vue", "utf8");
 
 const {
   getSettings,
@@ -336,10 +339,10 @@ const baseSettingsResponse = {
   linuxdo_connect_client_secret_configured: false,
   linuxdo_connect_redirect_url: "",
   wechat_connect_enabled: true,
-  wechat_connect_app_id: "wx-app-id-123",
-  wechat_connect_app_secret_configured: true,
   wechat_connect_open_enabled: false,
   wechat_connect_mp_enabled: true,
+  wechat_connect_mp_app_id: "wx-app-id-123",
+  wechat_connect_mp_app_secret_configured: true,
   wechat_connect_mode: "mp",
   wechat_connect_scopes: "",
   wechat_connect_redirect_url:
@@ -607,6 +610,89 @@ describe("admin SettingsView payment visible method controls", () => {
     }
   });
 
+  it("does not carry the login agreement updated-at default in the frontend", () => {
+    expect(settingsViewSource).not.toContain("2026-03-31");
+    expect(settingsViewSource).toContain('settings.login_agreement_updated_at || ""');
+  });
+
+  it("does not synthesize a payment product name suffix in the frontend", () => {
+    expect(settingsViewSource).not.toContain('placeholder="CNY"');
+    expect(settingsViewSource).not.toContain('form.payment_product_name_suffix || "CNY"');
+    expect(settingsViewSource).toContain("paymentProductNamePreview");
+  });
+
+  it("does not keep frontend-owned table page size defaults in the settings form", () => {
+    expect(settingsViewSource).not.toContain('tablePageSizeOptionsInput = ref("10, 20, 50, 100")');
+    expect(settingsViewSource).not.toContain("table_page_size_options: [10, 20, 50, 100]");
+    expect(settingsViewSource).not.toContain(": [10, 20, 50, 100]");
+  });
+
+  it("does not initialize payment limits and cancel policy from frontend defaults", () => {
+    expect(settingsViewSource).not.toContain("payment_min_amount: 1,");
+    expect(settingsViewSource).not.toContain("payment_max_amount: 10000,");
+    expect(settingsViewSource).not.toContain("payment_daily_limit: 50000,");
+    expect(settingsViewSource).not.toContain("payment_max_pending_orders: 3,");
+    expect(settingsViewSource).not.toContain("payment_order_timeout_minutes: 30,");
+    expect(settingsViewSource).not.toContain('payment_load_balance_strategy: "round-robin"');
+    expect(settingsViewSource).not.toContain("payment_cancel_rate_limit_max: 10,");
+    expect(settingsViewSource).not.toContain("payment_cancel_rate_limit_window: 1,");
+    expect(settingsViewSource).not.toContain('payment_cancel_rate_limit_unit: "day"');
+    expect(settingsViewSource).not.toContain('payment_cancel_rate_limit_window_mode: "rolling"');
+  });
+
+  it("does not initialize site, user, affiliate, or recharge multiplier business defaults in the frontend", () => {
+    expect(settingsViewSource).not.toContain('site_name: "Sub2API"');
+    expect(settingsViewSource).not.toContain('site_subtitle: "Subscription to API Conversion Platform"');
+    expect(settingsViewSource).not.toContain("default_concurrency: 1,");
+    expect(settingsViewSource).not.toContain("affiliate_rebate_rate: 20,");
+    expect(settingsViewSource).not.toContain("payment_balance_recharge_multiplier: 1,");
+    expect(settingsViewSource).not.toContain("Number(form.payment_balance_recharge_multiplier) || 1");
+  });
+
+  it("does not initialize AI fallback model defaults in the frontend", () => {
+    expect(settingsViewSource).not.toContain('fallback_model_anthropic: "claude-3-5-sonnet-20241022"');
+    expect(settingsViewSource).not.toContain('fallback_model_openai: "gpt-4o"');
+    expect(settingsViewSource).not.toContain('fallback_model_gemini: "gemini-2.5-pro"');
+    expect(settingsViewSource).not.toContain('fallback_model_antigravity: "gemini-2.5-pro"');
+  });
+
+  it("does not initialize connection, oauth, notification, or ops defaults in the frontend", () => {
+    expect(settingsViewSource).not.toContain("smtp_port: 587,");
+    expect(settingsViewSource).not.toContain("smtp_use_tls: true,");
+    expect(settingsViewSource).not.toContain('wechat_connect_mode: "open"');
+    expect(settingsViewSource).not.toContain('wechat_connect_scopes: "snsapi_login"');
+    expect(settingsViewSource).not.toContain('wechat_connect_frontend_redirect_url: "/auth/wechat/callback"');
+    expect(settingsViewSource).not.toContain('oidc_connect_provider_name: "OIDC"');
+    expect(settingsViewSource).not.toContain('oidc_connect_scopes: "openid email profile"');
+    expect(settingsViewSource).not.toContain('oidc_connect_frontend_redirect_url: "/auth/oidc/callback"');
+    expect(settingsViewSource).not.toContain('oidc_connect_token_auth_method: "client_secret_post"');
+    expect(settingsViewSource).not.toContain('oidc_connect_allowed_signing_algs: "RS256,ES256,PS256"');
+    expect(settingsViewSource).not.toContain("oidc_connect_clock_skew_seconds: 120,");
+    expect(settingsViewSource).not.toContain('github_oauth_frontend_redirect_url: "/auth/oauth/callback"');
+    expect(settingsViewSource).not.toContain('google_oauth_frontend_redirect_url: "/auth/oauth/callback"');
+    expect(settingsViewSource).not.toContain("enable_identity_patch: true,");
+    expect(settingsViewSource).not.toContain("ops_monitoring_enabled: true,");
+    expect(settingsViewSource).not.toContain("ops_realtime_monitoring_enabled: true,");
+    expect(settingsViewSource).not.toContain('ops_query_mode_default: "auto"');
+    expect(settingsViewSource).not.toContain("ops_metrics_interval_seconds: 60,");
+    expect(settingsViewSource).not.toContain("enable_fingerprint_unification: true,");
+    expect(settingsViewSource).not.toContain("subscription_expiry_notify_enabled: true,");
+    expect(settingsViewSource).not.toContain("channel_monitor_enabled: true,");
+    expect(settingsViewSource).not.toContain("channel_monitor_default_interval_seconds: 60,");
+    expect(settingsViewSource).not.toContain("Number(form.channel_monitor_default_interval_seconds) || 60");
+  });
+
+  it("does not default provider creation to easypay when no provider key is enabled", () => {
+    expect(settingsViewSource).not.toContain('enabledProviderKeyOptions.value[0]?.value || "easypay"');
+    expect(settingsViewSource).toContain('enabledProviderKeyOptions.value[0]?.value || ""');
+  });
+
+  it("does not synthesize payment load-balance or cancel-rate defaults in the frontend", () => {
+    expect(settingsViewSource).not.toContain('settings.payment_load_balance_strategy || "round-robin"');
+    expect(settingsViewSource).not.toContain('Number(form.payment_cancel_rate_limit_max) || 10');
+    expect(settingsViewSource).not.toContain('Number(form.payment_cancel_rate_limit_window) || 1');
+  });
+
   it("does not submit legacy visible payment method settings", async () => {
     const wrapper = mountView();
 
@@ -621,6 +707,29 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(payload).not.toHaveProperty("payment_visible_method_wxpay_source");
     expect(payload).not.toHaveProperty("payment_visible_method_alipay_enabled");
     expect(payload).not.toHaveProperty("payment_visible_method_wxpay_enabled");
+  });
+
+  it("preserves empty payment cancel-rate numbers instead of applying frontend defaults", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      payment_cancel_rate_limit_max: 0,
+      payment_cancel_rate_limit_window: 0,
+    });
+
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payment_cancel_rate_limit_max: 0,
+        payment_cancel_rate_limit_window: 0,
+      }),
+    );
   });
 
   it("submits Anthropic cache TTL injection gateway setting", async () => {
@@ -1024,7 +1133,6 @@ describe("admin SettingsView wechat connect controls", () => {
     expect(updateSettings).toHaveBeenCalledWith(
       expect.objectContaining({
         wechat_connect_enabled: true,
-        wechat_connect_app_id: "wx-app-id-updated",
         wechat_connect_open_enabled: true,
         wechat_connect_mp_enabled: true,
         wechat_connect_mp_app_id: "wx-app-id-updated",

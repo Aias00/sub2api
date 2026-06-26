@@ -88,7 +88,7 @@
               </div>
             </template>
             <template #cell-validity_days="{ value, row }">
-              <span class="text-sm">{{ value }} {{ t('payment.admin.' + (row.validity_unit || 'days')) }}</span>
+              <span class="text-sm">{{ formatValidity(value, row.validity_unit) }}</span>
             </template>
             <template #cell-for_sale="{ value, row }">
               <button
@@ -187,6 +187,10 @@ function getPlanNameClass(groupId: number): string {
   return group ? platformTextClass(group.platform) : 'text-gray-900 dark:text-white'
 }
 
+function formatValidity(days: number, unit: string): string {
+  const normalizedUnit = typeof unit === 'string' ? unit.trim() : ''
+  return [days, normalizedUnit ? t('payment.admin.' + normalizedUnit) : ''].filter(Boolean).join(' ')
+}
 
 // ==================== Plans ====================
 

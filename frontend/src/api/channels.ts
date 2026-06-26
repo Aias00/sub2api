@@ -5,13 +5,14 @@
 
 import { apiClient } from './client'
 import type { BillingMode } from '@/constants/channel'
+import type { SubscriptionType } from '@/types'
 
 export interface UserAvailableGroup {
   id: number
   name: string
   platform: string
   /** 'standard' | 'subscription' — 订阅分组视觉加深，和 API 密钥页保持一致。 */
-  subscription_type: string
+  subscription_type?: SubscriptionType
   /** 分组默认倍率。用户专属倍率（若有）通过 /groups/rates 获取后在前端 join。 */
   rate_multiplier: number
   /** true = 专属分组（小范围授权）；false = 公开分组。 */

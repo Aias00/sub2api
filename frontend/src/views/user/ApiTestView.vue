@@ -6,23 +6,23 @@
           <div class="space-y-4">
             <div class="page-kicker">
               <Icon name="beaker" size="sm" />
-              <span>{{ t('apiTest.badge') }}</span>
+              <span>{{ apiTestText('badge') }}</span>
             </div>
             <div class="space-y-3">
               <h1 class="max-w-3xl text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
-                {{ t('apiTest.title') }}
+                {{ apiTestText('title') }}
               </h1>
               <p class="max-w-3xl text-sm leading-7 text-gray-600 dark:text-gray-300">
-                {{ t('apiTest.description') }}
+                {{ apiTestText('description') }}
               </p>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
-              <router-link to="/gateway-guide" class="btn btn-secondary">
-                {{ t('apiTest.openGuide') }}
+              <router-link :to="apiTestDefaults.guidePath" class="btn btn-secondary">
+                {{ apiTestText('openGuide') }}
               </router-link>
               <button class="btn btn-primary" :disabled="sending || !canSend" @click="runTest">
-                {{ sending ? t('apiTest.sending') : t('apiTest.send') }}
+                {{ sending ? apiTestText('sending') : apiTestText('send') }}
               </button>
             </div>
           </div>
@@ -35,13 +35,13 @@
                 </div>
                 <div class="min-w-0">
                   <div class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                    {{ t('apiTest.keySelector') }}
+                    {{ apiTestText('keySelector') }}
                   </div>
                   <p class="mt-2 truncate text-sm font-semibold text-gray-900 dark:text-white">
-                    {{ selectedKey?.name || t('apiTest.noSelection') }}
+                    {{ selectedKey?.name || apiTestText('noSelection') }}
                   </p>
                   <p class="mt-1 truncate text-xs text-gray-500 dark:text-gray-400">
-                    {{ selectedKey ? maskKey(selectedKey.key) : t('apiTest.noGroupAssigned') }}
+                    {{ selectedKey ? maskKey(selectedKey.key) : apiTestText('noGroupAssigned') }}
                   </p>
                 </div>
               </div>
@@ -54,7 +54,7 @@
                 </div>
                 <div class="min-w-0">
                   <div class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                    {{ t('apiTest.protocol') }}
+                    {{ apiTestText('protocol') }}
                   </div>
                   <p class="mt-2 text-sm font-semibold text-gray-900 dark:text-white">
                     {{ selectedVariantLabel }}
@@ -73,13 +73,13 @@
                 </div>
                 <div class="min-w-0">
                   <div class="text-xs font-semibold uppercase tracking-[0.18em] text-gray-500 dark:text-gray-400">
-                    {{ t('apiTest.model') }}
+                    {{ apiTestText('model') }}
                   </div>
                   <p class="mt-2 truncate text-sm font-semibold text-gray-900 dark:text-white">
                     {{ selectedModelLabel }}
                   </p>
                   <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    {{ stream && selectedVariant?.supportsStream ? t('apiTest.stream') : t('apiTest.requestMeta') }}
+                    {{ stream && selectedVariant?.supportsStream ? apiTestText('stream') : apiTestText('requestMeta') }}
                   </p>
                 </div>
               </div>
@@ -94,10 +94,10 @@
 
       <EmptyState
         v-else-if="keys.length === 0"
-        :title="t('apiTest.noKeysTitle')"
-        :description="t('apiTest.noKeysDescription')"
-        :action-text="t('apiTest.manageKeys')"
-        action-to="/keys"
+        :title="apiTestText('noKeysTitle')"
+        :description="apiTestText('noKeysDescription')"
+        :action-text="apiTestText('manageKeys')"
+        :action-to="authRouteDefaults.apiKeysPath"
       >
         <template #icon>
           <Icon name="key" size="xl" class="text-gray-400" />
@@ -108,54 +108,54 @@
         <aside class="sticky-panel space-y-4 self-start">
           <div class="surface-panel-strong space-y-4">
             <div>
-              <label class="input-label mb-1.5 block">{{ t('apiTest.keySelector') }}</label>
+              <label class="input-label mb-1.5 block">{{ apiTestText('keySelector') }}</label>
               <Select
                 v-model="selectedKeyId"
                 :options="keyOptions"
-                :placeholder="t('apiTest.keySelector')"
+                :placeholder="apiTestText('keySelector')"
                 searchable
               />
             </div>
 
             <div>
-              <label class="input-label mb-1.5 block">{{ t('apiTest.protocol') }}</label>
+              <label class="input-label mb-1.5 block">{{ apiTestText('protocol') }}</label>
               <Select
                 v-model="selectedVariantId"
                 :options="variantOptions"
-                :placeholder="t('apiTest.protocol')"
+                :placeholder="apiTestText('protocol')"
                 :disabled="variantOptions.length === 0"
               />
             </div>
 
             <div>
-              <label class="input-label mb-1.5 block">{{ t('apiTest.model') }}</label>
+              <label class="input-label mb-1.5 block">{{ apiTestText('model') }}</label>
               <Select
                 v-model="selectedModelOption"
                 :options="modelOptionsForSelect"
-                :placeholder="selectedVariant?.modelPlaceholder || t('apiTest.modelPlaceholder')"
-                :search-placeholder="t('apiTest.modelSearchPlaceholder')"
-                :empty-text="loadingModels ? t('common.loading') : t('common.noOptionsFound')"
+                :placeholder="selectedVariant?.modelPlaceholder || apiTestText('modelPlaceholder')"
+                :search-placeholder="apiTestText('modelSearchPlaceholder')"
+                :empty-text="loadingModels ? apiTestText('loading') : apiTestText('noOptionsFound')"
                 :disabled="!selectedVariant"
                 searchable
               />
               <p class="input-hint mt-1.5">
-                {{ loadingModels ? t('common.loading') : t('apiTest.modelHint') }}
+                {{ loadingModels ? apiTestText('loading') : apiTestText('modelHint') }}
               </p>
             </div>
 
             <Input
               v-if="showCustomModelInput"
               v-model="model"
-              :label="t('apiTest.customModel')"
-              :placeholder="selectedVariant?.modelPlaceholder || t('apiTest.modelPlaceholder')"
-              :hint="t('apiTest.customModelHint')"
+              :label="apiTestText('customModel')"
+              :placeholder="selectedVariant?.modelPlaceholder || apiTestText('modelPlaceholder')"
+              :hint="apiTestText('customModelHint')"
             />
 
             <TextArea
               v-model="prompt"
-              :label="t('apiTest.prompt')"
-              :placeholder="t('apiTest.promptPlaceholder')"
-              :hint="t('apiTest.promptHint')"
+              :label="apiTestText('prompt')"
+              :placeholder="apiTestText('promptPlaceholder')"
+              :hint="apiTestText('promptHint')"
               rows="6"
             />
 
@@ -165,9 +165,9 @@
             >
               <input v-model="stream" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary-500 focus-visible:ring-2 focus-visible:ring-primary-500" />
               <div>
-                <div class="font-medium text-gray-900 dark:text-white">{{ t('apiTest.stream') }}</div>
+                <div class="font-medium text-gray-900 dark:text-white">{{ apiTestText('stream') }}</div>
                 <div class="mt-1 text-xs leading-5 text-gray-500 dark:text-gray-400">
-                  {{ t('apiTest.streamHint') }}
+                  {{ apiTestText('streamHint') }}
                 </div>
               </div>
             </label>
@@ -176,23 +176,23 @@
               v-if="selectedKey && !selectedKey.group"
               class="surface-panel border-amber-200/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100"
             >
-              <div class="font-semibold">{{ t('apiTest.unassignedTitle') }}</div>
-              <div class="mt-1 text-xs leading-5">{{ t('apiTest.unassignedDescription') }}</div>
+              <div class="font-semibold">{{ apiTestText('unassignedTitle') }}</div>
+              <div class="mt-1 text-xs leading-5">{{ apiTestText('unassignedDescription') }}</div>
             </div>
 
             <div
               class="surface-panel border-sky-200/80 bg-sky-50/90 px-4 py-3 text-sm text-sky-900 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-100"
             >
-              <div class="font-semibold">{{ t('apiTest.liveBillingTitle') }}</div>
-              <div class="mt-1 text-xs leading-5">{{ t('apiTest.liveBillingDescription') }}</div>
+              <div class="font-semibold">{{ apiTestText('liveBillingTitle') }}</div>
+              <div class="mt-1 text-xs leading-5">{{ apiTestText('liveBillingDescription') }}</div>
             </div>
 
             <div class="flex flex-wrap items-center gap-3">
               <button class="btn btn-primary" :disabled="sending || !canSend" @click="runTest">
-                {{ sending ? t('apiTest.sending') : t('apiTest.send') }}
+                {{ sending ? apiTestText('sending') : apiTestText('send') }}
               </button>
               <button class="btn btn-secondary" :disabled="!curlCommand" @click="copyCurlCommand">
-                {{ t('apiTest.copyCurl') }}
+                {{ apiTestText('copyCurl') }}
               </button>
             </div>
           </div>
@@ -200,20 +200,20 @@
           <div class="surface-panel space-y-3">
             <div class="flex items-center justify-between">
               <div>
-                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('apiTest.requestMeta') }}</div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ apiTestText('requestMeta') }}</div>
                 <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ requestUrl }}</div>
               </div>
             </div>
 
             <dl class="space-y-3 text-sm">
               <div>
-                <dt class="text-gray-500 dark:text-gray-400">{{ t('apiTest.platform') }}</dt>
+                <dt class="text-gray-500 dark:text-gray-400">{{ apiTestText('platform') }}</dt>
                 <dd class="mt-1 font-medium text-gray-900 dark:text-white">
-                  {{ selectedKey?.group ? t(`gateway.platforms.${selectedKey.group.platform}`) : t('apiTest.notReady') }}
+                  {{ selectedKey?.group ? t(`gateway.platforms.${selectedKey.group.platform}`) : apiTestText('notReady') }}
                 </dd>
               </div>
               <div>
-                <dt class="text-gray-500 dark:text-gray-400">{{ t('apiTest.headerMode') }}</dt>
+                <dt class="text-gray-500 dark:text-gray-400">{{ apiTestText('headerMode') }}</dt>
                 <dd class="mt-1 break-all font-mono text-xs text-gray-900 dark:text-white">
                   {{ headerPreview }}
                 </dd>
@@ -226,11 +226,11 @@
           <div class="surface-panel">
             <div class="mb-3 flex items-center justify-between gap-3">
               <div>
-                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('apiTest.requestPreview') }}</div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ apiTestText('requestPreview') }}</div>
                 <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ requestUrl }}</div>
               </div>
               <button class="btn btn-secondary" :disabled="!requestBodyPreview" @click="copyRequestBody">
-                {{ t('apiTest.copyRequest') }}
+                {{ apiTestText('copyRequest') }}
               </button>
             </div>
             <pre class="code-surface">{{ requestBodyPreview }}</pre>
@@ -239,18 +239,18 @@
           <div class="surface-panel min-h-[28rem]">
             <div class="mb-3 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
-                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('apiTest.responsePreview') }}</div>
+                <div class="text-sm font-semibold text-gray-900 dark:text-white">{{ apiTestText('responsePreview') }}</div>
                 <div class="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                  <span class="badge badge-gray">{{ t('apiTest.statusCode') }} · {{ responseStatusLabel }}</span>
-                  <span class="badge badge-gray">{{ t('apiTest.duration') }} · {{ responseDurationLabel }}</span>
+                  <span class="badge badge-gray">{{ apiTestText('statusCode') }} · {{ responseStatusLabel }}</span>
+                  <span class="badge badge-gray">{{ apiTestText('duration') }} · {{ responseDurationLabel }}</span>
                   <span v-if="stream && selectedVariant?.supportsStream" class="badge badge-primary">
-                    {{ t('apiTest.stream') }}
+                    {{ apiTestText('stream') }}
                   </span>
                 </div>
               </div>
 
               <button class="btn btn-secondary" :disabled="!responseText" @click="copyResponseText">
-                {{ t('apiTest.copyResponse') }}
+                {{ apiTestText('copyResponse') }}
               </button>
             </div>
 
@@ -264,7 +264,7 @@
                   : 'border-amber-200 bg-amber-50 text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-100'
               ]"
             >
-              <div class="font-semibold">{{ t('apiTest.responseSummary') }}</div>
+              <div class="font-semibold">{{ apiTestText('responseSummary') }}</div>
               <div class="mt-1 whitespace-pre-wrap break-words text-xs leading-6">{{ responsePreview }}</div>
             </div>
 
@@ -275,18 +275,18 @@
             >
               <div class="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                 <div>
-                  <div class="font-semibold">{{ t('apiTest.usageRecordTitle') }}</div>
+                  <div class="font-semibold">{{ apiTestText('usageRecordTitle') }}</div>
                   <div class="mt-1 text-xs leading-5">{{ usageRecordSummary }}</div>
                 </div>
                 <router-link :to="usageInspectTo" class="btn btn-secondary">
-                  {{ t('apiTest.openUsage') }}
+                  {{ apiTestText('openUsage') }}
                 </router-link>
               </div>
             </div>
 
             <div v-if="responseText" class="space-y-2">
               <div class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
-                {{ t('apiTest.rawResponse') }}
+                {{ apiTestText('rawResponse') }}
               </div>
               <pre class="code-surface">{{ formattedResponseText }}</pre>
             </div>
@@ -295,7 +295,7 @@
               v-else
               class="rounded-2xl border border-dashed border-gray-300 px-6 py-10 text-center text-sm text-gray-500 dark:border-dark-600 dark:text-gray-400"
             >
-              {{ t('apiTest.responsePending') }}
+              {{ apiTestText('responsePending') }}
             </div>
           </div>
         </section>
@@ -305,6 +305,7 @@
 </template>
 
 <script setup lang="ts">
+import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -316,12 +317,18 @@ import Select from '@/components/common/Select.vue'
 import TextArea from '@/components/common/TextArea.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { keysAPI, usageAPI } from '@/api'
+import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import { useClipboard } from '@/composables/useClipboard'
 import { useAppStore } from '@/stores/app'
 import type { ApiKey, UsageLog } from '@/types'
 import type { GatewayModelOption, GatewayVariant, GatewayVariantId } from '@/utils/gatewayDocs'
 import {
-  DEFAULT_GATEWAY_TEST_PROMPT,
+  renderAPITestShellText,
+  resolveAPITestShellDefaults,
+  resolveAPITestShellLabels,
+  type APITestLabelKey,
+} from '@/utils/apiTestShell'
+import {
   buildGatewayAbsoluteUrl,
   buildGatewayCurlExample,
   buildGatewayHeaders,
@@ -333,13 +340,40 @@ import {
   getGatewayFallbackModelOptions,
   getGatewayBaseUrl,
   getGatewayVariantById,
-  getGatewayVariantsForApiKey
+  getGatewayVariantsForApiKey,
+  resolveGatewayVariantOverrides
 } from '@/utils/gatewayDocs'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const route = useRoute()
 const appStore = useAppStore()
 const { copyToClipboard } = useClipboard()
+const { authRouteDefaults } = useAuthRouteDefaults()
+
+
+const apiTestLabels = computed(() =>
+  resolveAPITestShellLabels(
+    appStore.cachedPublicSettings?.api_test_shell_config,
+    resolveRuntimeLocale(locale),
+  ),
+)
+const apiTestDefaults = computed(() =>
+  resolveAPITestShellDefaults(
+    appStore.cachedPublicSettings?.api_test_shell_config,
+    resolveRuntimeLocale(locale),
+  ),
+)
+
+const gatewayVariantOverrides = computed(() =>
+  resolveGatewayVariantOverrides(
+    appStore.cachedPublicSettings?.api_guide_shell_config,
+    resolveRuntimeLocale(locale),
+  ),
+)
+
+function apiTestText(key: APITestLabelKey, values?: Record<string, string | number>): string {
+  return renderAPITestShellText(apiTestLabels.value, key, values)
+}
 
 const loadingKeys = ref(false)
 const loadingModels = ref(false)
@@ -349,7 +383,7 @@ const selectedKeyId = ref<number | null>(null)
 const selectedVariantId = ref<GatewayVariantId | null>(null)
 const model = ref('')
 const modelOptions = ref<GatewayModelOption[]>([])
-const prompt = ref(DEFAULT_GATEWAY_TEST_PROMPT)
+const prompt = ref('')
 const stream = ref(false)
 const responseStatus = ref<number | null>(null)
 const responseDurationMs = ref<number | null>(null)
@@ -360,20 +394,21 @@ const CUSTOM_MODEL_OPTION = '__custom_model__'
 const customModelMode = ref(false)
 let activeModelRequestID = 0
 let activeTestAbortController: AbortController | null = null
+let lastAppliedDefaultPrompt = ''
 
 const gatewayBaseUrl = computed(() => getGatewayBaseUrl(appStore.cachedPublicSettings?.api_base_url))
 
 const selectedKey = computed(() => keys.value.find(key => key.id === selectedKeyId.value) ?? null)
-const availableVariants = computed(() => getGatewayVariantsForApiKey(selectedKey.value))
+const availableVariants = computed(() => getGatewayVariantsForApiKey(selectedKey.value, gatewayVariantOverrides.value))
 const selectedVariant = computed<GatewayVariant | null>(() => {
   if (!selectedVariantId.value) return null
   return availableVariants.value.find(variant => variant.id === selectedVariantId.value) ?? null
 })
 const selectedVariantLabel = computed(() => {
-  return selectedVariant.value ? t(`${selectedVariant.value.translationKey}.label`) : t('apiTest.notReady')
+  return selectedVariant.value ? t(`${selectedVariant.value.translationKey}.label`) : apiTestText('notReady')
 })
 const selectedPlatformLabel = computed(() => {
-  return selectedKey.value?.group ? t(`gateway.platforms.${selectedKey.value.group.platform}`) : t('apiTest.notReady')
+  return selectedKey.value?.group ? t(`gateway.platforms.${selectedKey.value.group.platform}`) : apiTestText('notReady')
 })
 const selectedModelLabel = computed(() => {
   const selectedModel = model.value.trim()
@@ -384,7 +419,7 @@ const selectedModelLabel = computed(() => {
 const keyOptions = computed(() => keys.value.map(key => ({
   value: key.id,
   label: `${key.name} · ${maskKey(key.key)}`,
-  description: key.group?.name || t('apiTest.noGroupAssigned')
+  description: key.group?.name || apiTestText('noGroupAssigned')
 })))
 
 const variantOptions = computed(() => availableVariants.value.map(variant => ({
@@ -402,8 +437,8 @@ const modelOptionsForSelect = computed(() => [
   })),
   {
     value: CUSTOM_MODEL_OPTION,
-    label: t('apiTest.customModelOption'),
-    description: t('apiTest.customModelOptionHint')
+    label: apiTestText('customModelOption'),
+    description: apiTestText('customModelOptionHint')
   }
 ])
 const selectedModelOption = computed<string | null>({
@@ -444,7 +479,13 @@ const requestUrl = computed(() => {
 const requestBodyPreview = computed(() => {
   if (!selectedVariant.value) return ''
   return JSON.stringify(
-    buildGatewayRequestBody(selectedVariant.value.id, model.value, prompt.value, stream.value),
+    buildGatewayRequestBody(
+      selectedVariant.value.id,
+      model.value,
+      prompt.value,
+      stream.value,
+      { maxTokens: apiTestDefaults.value.maxTokens },
+    ),
     null,
     2
   )
@@ -458,7 +499,8 @@ const curlCommand = computed(() => {
     selectedVariant.value.id,
     model.value,
     prompt.value,
-    stream.value
+    stream.value,
+    { maxTokens: apiTestDefaults.value.maxTokens }
   )
 })
 
@@ -487,7 +529,7 @@ const responseStatusLabel = computed(() => responseStatus.value === null ? '-' :
 const responseDurationLabel = computed(() => responseDurationMs.value === null ? '-' : `${responseDurationMs.value} ms`)
 const todayDate = computed(() => formatLocalDate(new Date()))
 const usageInspectTo = computed(() => ({
-  path: '/usage',
+  path: authRouteDefaults.value.usagePath,
   query: selectedKey.value
     ? {
         api_key_id: String(selectedKey.value.id),
@@ -501,24 +543,35 @@ const showUsageRecordNotice = computed(() => {
 })
 const usageRecordSummary = computed(() => {
   if (usageRecordSyncState.value === 'checking') {
-    return t('apiTest.usageRecordSyncing')
+    return apiTestText('usageRecordSyncing')
   }
   if (usageRecordSyncState.value === 'found' && latestUsageRecord.value) {
-    return t('apiTest.usageRecordFound', {
+    return apiTestText('usageRecordFound', {
       time: formatUsageRecordTime(latestUsageRecord.value.created_at),
       cost: latestUsageRecord.value.actual_cost.toFixed(4),
       tokens: totalUsageTokens(latestUsageRecord.value).toLocaleString()
     })
   }
   if (usageRecordSyncState.value === 'pending') {
-    return t('apiTest.usageRecordPending')
+    return apiTestText('usageRecordPending')
   }
-  return t('apiTest.usageRecordIdle')
+  return apiTestText('usageRecordIdle')
 })
 
 const canSend = computed(() => {
   return !!selectedKey.value?.group && !!selectedVariant.value && !!model.value.trim()
 })
+
+watch(
+  () => apiTestDefaults.value.defaultPrompt,
+  (defaultPrompt) => {
+    if (!prompt.value.trim() || prompt.value === lastAppliedDefaultPrompt) {
+      prompt.value = defaultPrompt
+    }
+    lastAppliedDefaultPrompt = defaultPrompt
+  },
+  { immediate: true }
+)
 
 function formatLocalDate(date: Date): string {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
@@ -544,7 +597,7 @@ function applyVariantDefaults(variantId: GatewayVariantId | null) {
     stream.value = false
     return
   }
-  const variant = getGatewayVariantById(variantId)
+  const variant = getGatewayVariantById(variantId, gatewayVariantOverrides.value)
   model.value = variant.defaultModel
   customModelMode.value = false
   if (!variant.supportsStream) {
@@ -563,7 +616,7 @@ async function loadModelOptions() {
   }
 
   const requestID = ++activeModelRequestID
-  const fallbackOptions = getGatewayFallbackModelOptions(variant.id)
+  const fallbackOptions = getGatewayFallbackModelOptions(variant.id, gatewayVariantOverrides.value)
   modelOptions.value = fallbackOptions
   loadingModels.value = true
 
@@ -574,7 +627,7 @@ async function loadModelOptions() {
     })
     const responseText = await response.text()
     const options = response.ok
-      ? extractGatewayModelOptions(variant.id, responseText)
+      ? extractGatewayModelOptions(variant.id, responseText, gatewayVariantOverrides.value)
       : fallbackOptions
 
     if (requestID !== activeModelRequestID) return
@@ -592,23 +645,23 @@ async function loadModelOptions() {
 
 async function copyCurlCommand() {
   if (!curlCommand.value) return
-  await copyToClipboard(curlCommand.value, t('apiTest.copyCurlSuccess'))
+  await copyToClipboard(curlCommand.value, apiTestText('copyCurlSuccess'))
 }
 
 async function copyRequestBody() {
   if (!requestBodyPreview.value) return
-  await copyToClipboard(requestBodyPreview.value, t('apiTest.copyRequestSuccess'))
+  await copyToClipboard(requestBodyPreview.value, apiTestText('copyRequestSuccess'))
 }
 
 async function copyResponseText() {
   if (!formattedResponseText.value) return
-  await copyToClipboard(formattedResponseText.value, t('apiTest.copyResponseSuccess'))
+  await copyToClipboard(formattedResponseText.value, apiTestText('copyResponseSuccess'))
 }
 
 async function loadKeys() {
   loadingKeys.value = true
   try {
-    const response = await keysAPI.list(1, 100)
+    const response = await keysAPI.list(1, apiTestDefaults.value.apiKeyPageSize)
     keys.value = response.items
 
     const queryKeyId = Number(route.query.key)
@@ -620,7 +673,7 @@ async function loadKeys() {
     }
   } catch (error) {
     console.error('Failed to load API keys for tester:', error)
-    appStore.showError(t('keys.failedToLoad'))
+    appStore.showError(apiTestText('loadKeysFailed'))
   } finally {
     loadingKeys.value = false
   }
@@ -636,7 +689,13 @@ async function runTest() {
 
   const requestPath = buildGatewayRelativePath(selectedVariant.value.id, model.value)
   const headers = buildGatewayHeaders(selectedKey.value.key, selectedVariant.value.id)
-  const body = buildGatewayRequestBody(selectedVariant.value.id, model.value, prompt.value, stream.value)
+  const body = buildGatewayRequestBody(
+    selectedVariant.value.id,
+    model.value,
+    prompt.value,
+    stream.value,
+    { maxTokens: apiTestDefaults.value.maxTokens },
+  )
   const start = performance.now()
   const startedAt = Date.now()
 
@@ -662,7 +721,7 @@ async function runTest() {
     if (error instanceof DOMException && error.name === 'AbortError') {
       return
     }
-    const message = error instanceof Error ? error.message : t('common.unknownError')
+    const message = error instanceof Error ? error.message : apiTestText('unknownError')
     responseText.value = message
     appStore.showError(message)
   } finally {
@@ -734,7 +793,7 @@ async function syncLatestUsageRecord(startedAt: number) {
     try {
       const response = await usageAPI.query({
         page: 1,
-        page_size: 10,
+        page_size: apiTestDefaults.value.usageSyncPageSize,
         api_key_id: selectedKey.value.id,
         start_date: day,
         end_date: day

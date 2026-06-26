@@ -23,6 +23,16 @@ const showInfo = vi.hoisted(() => vi.fn())
 const showWarning = vi.hoisted(() => vi.fn())
 const getCheckoutInfo = vi.hoisted(() => vi.fn())
 const bridgeInvoke = vi.hoisted(() => vi.fn())
+const appStoreState = vi.hoisted(() => ({
+  cachedPublicSettings: null as null | {
+    auth_shell_config?: string
+    payment_shell_config?: string
+    pricing_currency_symbol?: string
+  },
+  showError,
+  showInfo,
+  showWarning,
+}))
 
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
@@ -71,11 +81,7 @@ vi.mock('@/stores/subscriptions', () => ({
 }))
 
 vi.mock('@/stores', () => ({
-  useAppStore: () => ({
-    showError,
-    showInfo,
-    showWarning,
-  }),
+  useAppStore: () => appStoreState,
 }))
 
 vi.mock('@/api/payment', () => ({
@@ -203,6 +209,7 @@ describe('PaymentView WeChat JSAPI flow', () => {
     showWarning.mockReset()
     getCheckoutInfo.mockReset().mockResolvedValue(checkoutInfoFixture())
     bridgeInvoke.mockReset()
+    appStoreState.cachedPublicSettings = null
     window.localStorage.clear()
     ;(window as Window & { WeixinJSBridge?: { invoke: typeof bridgeInvoke } }).WeixinJSBridge = {
       invoke: bridgeInvoke,
@@ -239,6 +246,15 @@ describe('PaymentView WeChat JSAPI flow', () => {
   })
 
   it('resets payment state when JSAPI reports cancellation', async () => {
+    appStoreState.cachedPublicSettings = {
+      payment_shell_config: JSON.stringify({
+        en: {
+          labels: {
+            cancelled: 'Configured payment cancelled',
+          },
+        },
+      }),
+    }
     createOrder.mockResolvedValue(jsapiOrderFixture('resume-token-cancel'))
     bridgeInvoke.mockImplementation((_action, _payload, callback) => {
       callback({ err_msg: 'get_brand_wcpay_request:cancel' })
@@ -255,7 +271,7 @@ describe('PaymentView WeChat JSAPI flow', () => {
     await flushPromises()
     await flushPromises()
 
-    expect(showInfo).toHaveBeenCalledWith('payment.qr.cancelled')
+    expect(showInfo).toHaveBeenCalledWith('Configured payment cancelled')
     expect(routerPush).not.toHaveBeenCalled()
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toBeNull()
   })
@@ -376,7 +392,73 @@ describe('PaymentView WeChat JSAPI flow', () => {
     })
   })
 
+  it('uses the configured purchase path when WeChat OAuth authorize URL omits redirect', async () => {
+    routeState.query = {
+      wechat_resume: '1',
+      wechat_resume_token: 'resume-subscription-7',
+      payment_type: 'wxpay_direct',
+      order_type: 'subscription',
+      plan_id: '7',
+    }
+    appStoreState.cachedPublicSettings = {
+      auth_shell_config: JSON.stringify({
+        en: {
+          defaults: {
+            purchasePath: '/configured-purchase',
+          },
+        },
+      }),
+    }
+    getCheckoutInfo.mockResolvedValue(checkoutInfoWithPlansFixture())
+    createOrder.mockResolvedValue({
+      ...oauthOrderFixture(),
+      oauth: {
+        ...oauthOrderFixture().oauth,
+        authorize_url: '/api/v1/auth/oauth/wechat/payment/start?payment_type=wxpay',
+      },
+    })
+
+    const originalLocation = window.location
+    const locationState = {
+      href: 'http://localhost/purchase',
+      origin: 'http://localhost',
+    }
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: locationState,
+    })
+
+    shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+    await flushPromises()
+    await flushPromises()
+
+    expect(new URL(locationState.href, 'http://localhost').searchParams.get('redirect')).toBe(
+      '/configured-purchase?payment_type=wxpay&order_type=subscription&plan_id=7',
+    )
+
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: originalLocation,
+    })
+  })
+
   it('falls back to QR flow when mobile WeChat payment is unavailable', async () => {
+    appStoreState.cachedPublicSettings = {
+      payment_shell_config: JSON.stringify({
+        en: {
+          labels: {
+            mobilePaymentFallbackToQr: 'Configured QR fallback',
+          },
+        },
+      }),
+    }
     routeState.query = {
       wechat_resume: '1',
       wechat_resume_token: 'resume-token-h5',
@@ -416,7 +498,7 @@ describe('PaymentView WeChat JSAPI flow', () => {
       is_mobile: false,
       payment_source: 'hosted_redirect',
     }))
-    expect(showWarning).toHaveBeenCalledWith('payment.errors.mobilePaymentFallbackToQr')
+    expect(showWarning).toHaveBeenCalledWith('Configured QR fallback')
     expect(showError).not.toHaveBeenCalled()
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toContain('weixin://wxpay/bizpayurl?pr=fallback-native')
   })
@@ -461,13 +543,51 @@ describe('PaymentView configurable recharge catalog', () => {
 
   it('renders recharge products instead of the legacy quick-amount matrix when products are configured', async () => {
     expect(paymentViewSource).toContain('rechargeProducts.length === 0')
-    expect(paymentViewSource).toContain("t('payment.noRechargeProducts')")
+    expect(paymentViewSource).toContain('appStore.cachedPublicSettings?.payment_shell_config')
+    expect(paymentViewSource).toContain('resolvePaymentViewLabels')
+    expect(paymentViewSource).toContain('renderPaymentViewText')
+    expect(paymentViewSource).toContain("paymentText('noRechargeProducts')")
+    expect(paymentViewSource).toContain(':labels="rechargeProductCardLabels"')
+    expect(paymentViewSource).toContain(':method-labels="paymentMethodLabels"')
+    expect(paymentViewSource).toContain(':labels="subscriptionPlanCardLabels"')
+    expect(paymentViewSource).toContain(':currency="selectedCurrency"')
+    expect(paymentViewSource).toContain(':locale="localeCode"')
+    expect(paymentViewSource).toContain(':labels="paymentStatusPanelLabels"')
+    expect(paymentViewSource).toContain(':poll-interval-ms="paymentStatusPollingDefaults.pollIntervalMs"')
+    expect(paymentViewSource).toContain('resolvePaymentStatusPollingDefaults')
     expect(paymentViewSource).toContain('<RechargeProductCard')
     expect(paymentViewSource).not.toContain('<AmountInput')
+    expect(paymentViewSource).not.toContain('paymentShellFallbackKeys')
+    expect(paymentViewSource).not.toContain('const paymentShellLabelKeys')
+    expect(paymentViewSource).not.toContain('resolvePaymentShellLabels(')
+    expect(paymentViewSource).not.toContain('payment.tabTopUp')
+    expect(paymentViewSource).not.toContain('payment.rechargeProducts.recommended')
+    expect(paymentViewSource).not.toContain("t('payment.")
+    expect(paymentViewSource).not.toContain('${{ selectedPlan.daily_limit_usd }}')
+    expect(paymentViewSource).not.toContain('${{ selectedPlan.weekly_limit_usd }}')
+    expect(paymentViewSource).not.toContain('${{ selectedPlan.monthly_limit_usd }}')
+    expect(paymentViewSource).not.toContain('${{ rechargeSelectionCreditedAmount')
+    expect(paymentViewSource).toContain('pricing_currency_symbol')
+    expect(paymentViewSource).toContain('formatPublicMoneyAmount')
+    expect(paymentViewSource).toContain('authRouteDefaults.value.paymentResultPath')
+    expect(paymentViewSource).toContain('returnPath: authRouteDefaults.value.paymentResultPath')
+    expect(paymentViewSource).toContain("from './paymentViewRuntime'")
+    expect(paymentViewSource).toContain('createEmptyPaymentRecoveryState')
+    expect(paymentViewSource).toContain('buildPaymentResultRedirectQuery')
+    expect(paymentViewSource).toContain('buildWechatPaymentAuthorizeUrl')
+    expect(paymentViewSource).not.toContain("path: '/payment/result'")
+    expect(paymentViewSource).not.toContain("|| 'wxpay'")
+    expect(paymentViewSource).not.toContain("validity_unit || 'day'")
+    expect(paymentViewSource).not.toContain("group_platform || ''")
+    expect(paymentViewSource).not.toContain("group?.platform || ''")
+    expect(paymentViewSource).not.toContain("platformLabel(selectedPlan.group_platform || '')")
+    expect(paymentViewSource).toContain('useAuthRouteDefaults')
+    expect(paymentViewSource).toContain('authRouteDefaults.value.purchasePath')
+    expect(paymentViewSource).not.toContain("|| '/purchase'")
   })
 
   it('shows a select-amount prompt instead of a fake zero-yuan submit label before recharge selection', async () => {
     expect(paymentViewSource).toContain('rechargeButtonLabel')
-    expect(paymentViewSource).toContain("t('payment.selectAmountFirst')")
+    expect(paymentViewSource).toContain("paymentText('selectAmountFirst')")
   })
 })

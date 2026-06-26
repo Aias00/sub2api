@@ -25,15 +25,15 @@
                   {{ displayName }}
                 </h2>
                 <span :class="['badge', user?.role === 'admin' ? 'badge-primary' : 'badge-gray']">
-                  {{ user?.role === 'admin' ? t('profile.administrator') : t('profile.user') }}
+                  {{ user?.role === 'admin' ? profileText('administrator') : profileText('user') }}
                 </span>
                 <span
                   :class="['badge', user?.status === 'active' ? 'badge-success' : 'badge-danger']"
                 >
                   {{
                     user?.status === 'active'
-                      ? t('common.active')
-                      : t('common.disabled')
+                      ? profileText('profileStatusActive')
+                      : profileText('profileStatusDisabled')
                   }}
                 </span>
               </div>
@@ -64,7 +64,7 @@
                 class="rounded-2xl bg-white/85 px-4 py-3 shadow-sm ring-1 ring-white/70 dark:bg-dark-900/60 dark:ring-dark-700"
               >
                 <p class="text-xs font-medium uppercase tracking-[0.16em] text-gray-400 dark:text-gray-500">
-                  {{ t('profile.accountBalance') }}
+                  {{ profileText('accountBalance') }}
                 </p>
                 <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {{ formatCurrency(user?.balance || 0) }}
@@ -75,7 +75,7 @@
                 class="rounded-2xl bg-white/85 px-4 py-3 shadow-sm ring-1 ring-white/70 dark:bg-dark-900/60 dark:ring-dark-700"
               >
                 <p class="text-xs font-medium uppercase tracking-[0.16em] text-gray-400 dark:text-gray-500">
-                  {{ t('profile.concurrencyLimit') }}
+                  {{ profileText('concurrencyLimit') }}
                 </p>
                 <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {{ user?.concurrency || 0 }}
@@ -86,7 +86,7 @@
                 class="rounded-2xl bg-white/85 px-4 py-3 shadow-sm ring-1 ring-white/70 dark:bg-dark-900/60 dark:ring-dark-700"
               >
                 <p class="text-xs font-medium uppercase tracking-[0.16em] text-gray-400 dark:text-gray-500">
-                  {{ t('profile.memberSince') }}
+                  {{ profileText('memberSince') }}
                 </p>
                 <p class="mt-1 text-lg font-semibold text-gray-900 dark:text-white">
                   {{ memberSinceLabel }}
@@ -107,10 +107,10 @@
           <div class="mb-5 flex items-start justify-between gap-4">
             <div>
               <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-                {{ t('profile.basicsTitle') }}
+                {{ profileText('basicsTitle') }}
               </h3>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                {{ t('profile.basicsDescription') }}
+                {{ profileText('basicsDescription') }}
               </p>
             </div>
           </div>
@@ -119,6 +119,7 @@
             <div class="rounded-3xl border border-gray-100 bg-gray-50/80 p-5 dark:border-dark-700 dark:bg-dark-900/30">
               <ProfileAvatarCard
                 :user="user"
+                :labels="labels"
                 embedded
               />
             </div>
@@ -126,6 +127,7 @@
             <div class="rounded-3xl border border-gray-100 bg-gray-50/80 p-5 dark:border-dark-700 dark:bg-dark-900/30">
               <ProfileEditForm
                 :initial-username="user?.username || ''"
+                :labels="labels"
                 embedded
               />
             </div>
@@ -145,6 +147,7 @@
             :wechat-enabled="wechatEnabled"
             :wechat-open-enabled="wechatOpenEnabled"
             :wechat-mp-enabled="wechatMpEnabled"
+            :labels="labels"
             embedded
             compact
           />
@@ -157,10 +160,10 @@
           class="card border border-gray-100 bg-white/90 p-6 dark:border-dark-700 dark:bg-dark-900/50"
         >
           <h3 class="text-lg font-semibold text-gray-900 dark:text-white">
-            {{ t('profile.linkedProfileSources') }}
+            {{ profileText('linkedProfileSources') }}
           </h3>
           <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-            {{ t('profile.linkedProfileSourcesDescription') }}
+            {{ profileText('linkedProfileSourcesDescription') }}
           </p>
 
           <div class="mt-5 grid gap-3">
@@ -181,11 +184,16 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import ProfileAvatarCard from '@/components/user/profile/ProfileAvatarCard.vue'
 import ProfileEditForm from '@/components/user/profile/ProfileEditForm.vue'
 import ProfileIdentityBindingsSection from '@/components/user/profile/ProfileIdentityBindingsSection.vue'
+import {
+  interpolateProfileShellLabel,
+  resolveAuthBindingProviderLabel,
+  type ProfileLabelKey,
+  type ProfileViewShellLabels,
+} from '@/utils/profileShell'
 import type { User, UserAuthBindingStatus, UserAuthProvider, UserProfileSourceContext } from '@/types'
 
 const props = withDefaults(defineProps<{
@@ -197,17 +205,22 @@ const props = withDefaults(defineProps<{
   wechatEnabled?: boolean
   wechatOpenEnabled?: boolean
   wechatMpEnabled?: boolean
+  labels?: ProfileViewShellLabels
 }>(), {
   linuxdoEnabled: false,
   dingtalkEnabled: false,
   oidcEnabled: false,
-  oidcProviderName: 'OIDC',
+  oidcProviderName: '',
   wechatEnabled: false,
   wechatOpenEnabled: undefined,
   wechatMpEnabled: undefined,
+  labels: () => ({}),
 })
 
-const { t } = useI18n()
+function profileText(key: ProfileLabelKey, params?: Record<string, string | number>): string {
+  const configured = props.labels?.[key]
+  return interpolateProfileShellLabel(configured || '', params)
+}
 
 function normalizeBindingStatus(binding: boolean | UserAuthBindingStatus | undefined): boolean | null {
   if (typeof binding === 'boolean') {
@@ -233,7 +246,7 @@ function isEmailBound(user: User | null | undefined): boolean {
 }
 
 const avatarUrl = computed(() => props.user?.avatar_url?.trim() || '')
-const displayName = computed(() => props.user?.username?.trim() || props.user?.email?.trim() || t('profile.user'))
+const displayName = computed(() => props.user?.username?.trim() || props.user?.email?.trim() || profileText('user'))
 const primaryEmailDisplay = computed(() => {
   const email = props.user?.email?.trim() || ''
   if (!email) {
@@ -263,13 +276,13 @@ const memberSinceLabel = computed(() => {
 })
 
 const providerLabels = computed<Record<UserAuthProvider, string>>(() => ({
-  email: t('profile.authBindings.providers.email'),
-  linuxdo: t('profile.authBindings.providers.linuxdo'),
-  dingtalk: t('profile.authBindings.providers.dingtalk'),
-  oidc: t('profile.authBindings.providers.oidc', { providerName: props.oidcProviderName }),
-  wechat: t('profile.authBindings.providers.wechat'),
-  github: 'GitHub',
-  google: 'Google'
+  email: resolveAuthBindingProviderLabel(props.labels, 'email', props.oidcProviderName),
+  linuxdo: resolveAuthBindingProviderLabel(props.labels, 'linuxdo', props.oidcProviderName),
+  dingtalk: resolveAuthBindingProviderLabel(props.labels, 'dingtalk', props.oidcProviderName),
+  oidc: resolveAuthBindingProviderLabel(props.labels, 'oidc', props.oidcProviderName),
+  wechat: resolveAuthBindingProviderLabel(props.labels, 'wechat', props.oidcProviderName),
+  github: resolveAuthBindingProviderLabel(props.labels, 'github', props.oidcProviderName),
+  google: resolveAuthBindingProviderLabel(props.labels, 'google', props.oidcProviderName),
 }))
 
 function formatCurrency(value: number): string {
@@ -365,14 +378,14 @@ const sourceHints = computed(() => {
   if (avatarSource) {
     hints.push({
       key: 'avatar',
-      text: t('profile.authBindings.source.avatar', { providerName: avatarSource.label })
+      text: profileText('sourceAvatar', { providerName: avatarSource.label })
     })
   }
 
   if (usernameSource) {
     hints.push({
       key: 'username',
-      text: t('profile.authBindings.source.username', { providerName: usernameSource.label })
+      text: profileText('sourceUsername', { providerName: usernameSource.label })
     })
   }
 

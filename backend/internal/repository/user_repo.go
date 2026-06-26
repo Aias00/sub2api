@@ -67,6 +67,8 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		}
 	}
 
+	signupSource := userSignupSourceOrDefault(userIn.SignupSource)
+
 	releaseEmailLock, err := lockRepositoryScopedKeys(
 		txCtx,
 		txClient,
@@ -78,7 +80,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	}
 	defer releaseEmailLock()
 
-	if err := ensureNormalizedEmailAvailableWithClient(txCtx, txClient, 0, userIn.Email); err != nil {
+	if err := ensureNormalizedEmailAvailableWithClient(txCtx, txClient, 0, userIn.Email, signupSource); err != nil {
 		return err
 	}
 
@@ -91,7 +93,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		SetBalance(userIn.Balance).
 		SetConcurrency(userIn.Concurrency).
 		SetStatus(userIn.Status).
-		SetSignupSource(userSignupSourceOrDefault(userIn.SignupSource)).
+		SetSignupSource(signupSource).
 		SetNillableLastLoginAt(userIn.LastLoginAt).
 		SetNillableLastActiveAt(userIn.LastActiveAt).
 		SetLoginAgreementAcceptedRevision(userIn.LoginAgreementAcceptedRevision).
@@ -105,8 +107,10 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	if err := r.syncUserAllowedGroupsWithClient(txCtx, txClient, created.ID, userIn.AllowedGroups); err != nil {
 		return err
 	}
-	if err := ensureEmailAuthIdentityWithClient(txCtx, txClient, created.ID, created.Email, "user_repo_create"); err != nil {
-		return err
+	if signupSource != "touch" {
+		if err := ensureEmailAuthIdentityWithClient(txCtx, txClient, created.ID, created.Email, "user_repo_create"); err != nil {
+			return err
+		}
 	}
 
 	if tx != nil {
@@ -180,6 +184,32 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*service
 	return out, nil
 }
 
+func (r *userRepository) GetByEmailAndSignupSource(ctx context.Context, email string, signupSource string) (*service.User, error) {
+	m, err := r.client.User.Query().
+		Where(
+			userNormalizedEmailLookupPredicate(email),
+			dbuser.SignupSourceEQ(userSignupSourceOrDefault(signupSource)),
+		).
+		Order(dbent.Asc(dbuser.FieldID)).
+		Only(ctx)
+	if err != nil {
+		if dbent.IsNotFound(err) {
+			return nil, service.ErrUserNotFound
+		}
+		return nil, err
+	}
+
+	out := userEntityToService(m)
+	groups, err := r.loadAllowedGroups(ctx, []int64{m.ID})
+	if err != nil {
+		return nil, err
+	}
+	if v, ok := groups[m.ID]; ok {
+		out.AllowedGroups = v
+	}
+	return out, nil
+}
+
 func (r *userRepository) Update(ctx context.Context, userIn *service.User) error {
 	if userIn == nil {
 		return nil
@@ -206,6 +236,16 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 		}
 	}
 
+	existing, err := clientFromContext(txCtx, txClient).User.Get(txCtx, userIn.ID)
+	if err != nil {
+		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+	}
+	oldEmail := existing.Email
+	signupSource := userSignupSourceOrDefault(userIn.SignupSource)
+	if strings.TrimSpace(userIn.SignupSource) == "" {
+		signupSource = userSignupSourceOrDefault(existing.SignupSource)
+	}
+
 	releaseEmailLock, err := lockRepositoryScopedKeys(
 		txCtx,
 		txClient,
@@ -217,15 +257,9 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	}
 	defer releaseEmailLock()
 
-	if err := ensureNormalizedEmailAvailableWithClient(txCtx, txClient, userIn.ID, userIn.Email); err != nil {
+	if err := ensureNormalizedEmailAvailableWithClient(txCtx, txClient, userIn.ID, userIn.Email, signupSource); err != nil {
 		return err
 	}
-
-	existing, err := clientFromContext(txCtx, txClient).User.Get(txCtx, userIn.ID)
-	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
-	}
-	oldEmail := existing.Email
 
 	updateOp := txClient.User.UpdateOneID(userIn.ID).
 		SetEmail(userIn.Email).
@@ -268,8 +302,21 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	if err := r.syncUserAllowedGroupsWithClient(txCtx, txClient, updated.ID, userIn.AllowedGroups); err != nil {
 		return err
 	}
-	if err := replaceEmailAuthIdentityWithClient(txCtx, txClient, updated.ID, oldEmail, updated.Email, "user_repo_update"); err != nil {
-		return err
+	if signupSource != "touch" {
+		if err := replaceEmailAuthIdentityWithClient(txCtx, txClient, updated.ID, oldEmail, updated.Email, "user_repo_update"); err != nil {
+			return err
+		}
+	} else {
+		_, err := clientFromContext(txCtx, txClient).AuthIdentity.Delete().
+			Where(
+				authidentity.UserIDEQ(updated.ID),
+				authidentity.ProviderTypeEQ("email"),
+				authidentity.ProviderKeyEQ("email"),
+			).
+			Exec(txCtx)
+		if err != nil {
+			return err
+		}
 	}
 
 	if tx != nil {
@@ -791,6 +838,29 @@ func (r *userRepository) DeductBalance(ctx context.Context, id int64, amount flo
 	return nil
 }
 
+// DeductBalanceIfEnough deducts balance only when the current balance can cover the amount.
+func (r *userRepository) DeductBalanceIfEnough(ctx context.Context, id int64, amount float64) error {
+	client := clientFromContext(ctx, r.client)
+	n, err := client.User.Update().
+		Where(dbuser.IDEQ(id), dbuser.BalanceGTE(amount)).
+		AddBalance(-amount).
+		Save(ctx)
+	if err != nil {
+		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+	}
+	if n > 0 {
+		return nil
+	}
+	exists, err := client.User.Query().Where(dbuser.IDEQ(id)).Exist(ctx)
+	if err != nil {
+		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+	}
+	if !exists {
+		return service.ErrUserNotFound
+	}
+	return service.ErrInsufficientBalance
+}
+
 func (r *userRepository) UpdateConcurrency(ctx context.Context, id int64, amount int) error {
 	client := clientFromContext(ctx, r.client)
 	n, err := client.User.Update().Where(dbuser.IDEQ(id)).AddConcurrency(amount).Save(ctx)
@@ -838,20 +908,38 @@ func (r *userRepository) ExistsByEmail(ctx context.Context, email string) (bool,
 	return r.client.User.Query().Where(userEmailLookupPredicate(email)).Exist(ctx)
 }
 
-func ensureNormalizedEmailAvailableWithClient(ctx context.Context, client *dbent.Client, userID int64, email string) error {
+func (r *userRepository) ExistsByEmailAndSignupSource(ctx context.Context, email string, signupSource string) (bool, error) {
+	return r.client.User.Query().
+		Where(
+			userNormalizedEmailLookupPredicate(email),
+			dbuser.SignupSourceEQ(userSignupSourceOrDefault(signupSource)),
+		).
+		Exist(ctx)
+}
+
+func ensureNormalizedEmailAvailableWithClient(ctx context.Context, client *dbent.Client, userID int64, email string, signupSource string) error {
 	client = clientFromContext(ctx, client)
 	if client == nil {
 		return nil
 	}
 
 	matches, err := client.User.Query().
-		Where(userEmailLookupPredicate(email)).
+		Where(userNormalizedEmailLookupPredicate(email)).
 		All(ctx)
 	if err != nil {
 		return err
 	}
 	for _, match := range matches {
-		if match.ID != userID {
+		if match.ID == userID {
+			continue
+		}
+		if signupSource == "touch" {
+			if userSignupSourceOrDefault(match.SignupSource) == "touch" {
+				return service.ErrEmailExists
+			}
+			continue
+		}
+		if userSignupSourceOrDefault(match.SignupSource) != "touch" {
 			return service.ErrEmailExists
 		}
 	}
@@ -859,6 +947,13 @@ func ensureNormalizedEmailAvailableWithClient(ctx context.Context, client *dbent
 }
 
 func userEmailLookupPredicate(email string) predicate.User {
+	return dbuser.And(
+		dbuser.SignupSourceNEQ("touch"),
+		userNormalizedEmailLookupPredicate(email),
+	)
+}
+
+func userNormalizedEmailLookupPredicate(email string) predicate.User {
 	normalized := normalizeEmailLookupValue(email)
 	if normalized == "" {
 		return dbuser.EmailEQ(email)
@@ -1026,7 +1121,7 @@ func userSignupSourceOrDefault(signupSource string) string {
 	switch strings.TrimSpace(strings.ToLower(signupSource)) {
 	case "", "email":
 		return "email"
-	case "linuxdo", "wechat", "oidc", "github", "google":
+	case "linuxdo", "wechat", "oidc", "github", "google", "dingtalk", "touch":
 		return strings.TrimSpace(strings.ToLower(signupSource))
 	default:
 		return "email"

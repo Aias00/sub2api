@@ -28,6 +28,8 @@ type mockUserRepo struct {
 	updateBalanceFn         func(ctx context.Context, id int64, amount float64) error
 	getByIDUser             *User
 	getByIDErr              error
+	getByEmailUser          *User
+	getByEmailErr           error
 	identities              []UserAuthIdentityRecord
 	unbindIdentityErr       error
 	unboundProviders        []string
@@ -36,12 +38,14 @@ type mockUserRepo struct {
 	updateLastActiveAt      []time.Time
 	updateFn                func(ctx context.Context, user *User) error
 	updateCalls             int
+	updateBalanceCalls      []float64
 	upsertAvatarFn          func(ctx context.Context, userID int64, input UpsertUserAvatarInput) (*UserAvatar, error)
 	upsertAvatarArgs        []UpsertUserAvatarInput
 	deleteAvatarFn          func(ctx context.Context, userID int64) error
 	deleteAvatarIDs         []int64
 	getAvatarFn             func(ctx context.Context, userID int64) (*UserAvatar, error)
 	txCalls                 int
+	createdUsers            []User
 }
 
 type mockUserRepoTxKey struct{}
@@ -90,7 +94,15 @@ func (m *mockUserSettingRepo) Delete(context.Context, string) error {
 	panic("unexpected Delete call")
 }
 
-func (m *mockUserRepo) Create(context.Context, *User) error { return nil }
+func (m *mockUserRepo) Create(_ context.Context, user *User) error {
+	if user != nil {
+		if user.ID == 0 {
+			user.ID = int64(len(m.createdUsers) + 1000)
+		}
+		m.createdUsers = append(m.createdUsers, *user)
+	}
+	return nil
+}
 func (m *mockUserRepo) GetByID(ctx context.Context, _ int64) (*User, error) {
 	if m.getByIDErr != nil {
 		return nil, m.getByIDErr
@@ -105,8 +117,17 @@ func (m *mockUserRepo) GetByID(ctx context.Context, _ int64) (*User, error) {
 	}
 	return &User{}, nil
 }
-func (m *mockUserRepo) GetByEmail(context.Context, string) (*User, error) { return &User{}, nil }
-func (m *mockUserRepo) GetFirstAdmin(context.Context) (*User, error)      { return &User{}, nil }
+func (m *mockUserRepo) GetByEmail(context.Context, string) (*User, error) {
+	if m.getByEmailErr != nil {
+		return nil, m.getByEmailErr
+	}
+	if m.getByEmailUser != nil {
+		cloned := *m.getByEmailUser
+		return &cloned, nil
+	}
+	return &User{}, nil
+}
+func (m *mockUserRepo) GetFirstAdmin(context.Context) (*User, error) { return &User{}, nil }
 func (m *mockUserRepo) Update(ctx context.Context, user *User) error {
 	m.updateCalls++
 	if m.updateFn != nil {
@@ -184,6 +205,7 @@ func (m *mockUserRepo) ListWithFilters(context.Context, pagination.PaginationPar
 	return nil, nil, nil
 }
 func (m *mockUserRepo) UpdateBalance(ctx context.Context, id int64, amount float64) error {
+	m.updateBalanceCalls = append(m.updateBalanceCalls, amount)
 	if m.updateBalanceFn != nil {
 		return m.updateBalanceFn(ctx, id, amount)
 	}

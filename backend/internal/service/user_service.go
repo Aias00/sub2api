@@ -7,6 +7,7 @@ import (
 	"crypto/subtle"
 	"encoding/base64"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -990,6 +991,22 @@ func (s *UserService) GetByID(ctx context.Context, id int64) (*User, error) {
 		return nil, fmt.Errorf("get user avatar: %w", err)
 	}
 	return user, nil
+}
+
+// IsAdminByEmail checks admin status for integrations that map users by email.
+func (s *UserService) IsAdminByEmail(ctx context.Context, email string) (bool, error) {
+	email = strings.TrimSpace(email)
+	if email == "" {
+		return false, nil
+	}
+	user, err := s.userRepo.GetByEmail(ctx, email)
+	if err != nil {
+		if errors.Is(err, ErrUserNotFound) {
+			return false, nil
+		}
+		return false, fmt.Errorf("get user by email: %w", err)
+	}
+	return user.IsActive() && user.IsAdmin(), nil
 }
 
 func normalizeLoadedUserTokenVersion(user *User) {

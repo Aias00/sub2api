@@ -1,0 +1,50 @@
+package routes
+
+import (
+	"github.com/Wei-Shaw/sub2api/internal/handler"
+	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
+	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/gin-gonic/gin"
+)
+
+func RegisterWeChatExportRoutes(
+	v1 *gin.RouterGroup,
+	h *handler.Handlers,
+	jwtAuth middleware.JWTAuthMiddleware,
+	settingService *service.SettingService,
+) {
+	if h == nil || h.WeChatExport == nil {
+		return
+	}
+
+	authenticated := v1.Group("/wechat")
+	authenticated.Use(gin.HandlerFunc(jwtAuth))
+	authenticated.Use(middleware.BackendModeUserGuard(settingService))
+	{
+		authenticated.GET("/session", h.WeChatExport.GetSession)
+		authenticated.POST("/session/qrcode", h.WeChatExport.CreateQRCodeSession)
+		authenticated.GET("/session/poll/:sessionID", h.WeChatExport.PollSession)
+		authenticated.POST("/session/logout", h.WeChatExport.LogoutSession)
+
+		authenticated.GET("/accounts/search", h.WeChatExport.SearchAccounts)
+		authenticated.POST("/accounts/bind", h.WeChatExport.BindAccount)
+		authenticated.POST("/accounts/:accountID/sync", h.WeChatExport.SyncAccount)
+
+		authenticated.GET("/articles", h.WeChatExport.ListArticles)
+		authenticated.POST("/articles/import-link", h.WeChatExport.ImportArticleLink)
+
+		authenticated.POST("/tasks/quote", h.WeChatExport.QuoteTask)
+		authenticated.POST("/tasks", h.WeChatExport.CreateTask)
+		authenticated.GET("/tasks", h.WeChatExport.ListTasks)
+		authenticated.GET("/tasks/:taskID", h.WeChatExport.GetTask)
+		authenticated.GET("/tasks/:taskID/artifacts", h.WeChatExport.ListArtifacts)
+		authenticated.GET("/artifacts/:artifactID/download", h.WeChatExport.DownloadArtifact)
+	}
+
+	worker := v1.Group("/wechat/worker")
+	{
+		worker.POST("/tasks/claim", h.WeChatExport.WorkerClaimTask)
+		worker.POST("/tasks/:taskID/complete", h.WeChatExport.WorkerCompleteTask)
+		worker.POST("/tasks/:taskID/fail", h.WeChatExport.WorkerFailTask)
+	}
+}

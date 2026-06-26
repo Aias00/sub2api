@@ -93,16 +93,60 @@ describe('OidcCallbackView', () => {
     getPublicSettings.mockResolvedValue({
       oidc_oauth_provider_name: 'ExampleID',
       turnstile_enabled: false,
-      turnstile_site_key: ''
+      turnstile_site_key: '',
+      auth_shell_config: JSON.stringify({
+        en: {
+          defaults: {
+            defaultRedirectPath: '/configured-dashboard',
+            bindRedirectPath: '/configured-profile',
+          },
+          labels: {
+            oauthFlowProfileDetailsTitle: 'Configured profile for {providerName}',
+            oauthFlowProfileDetailsDescription: 'Configured profile description for {providerName}',
+            oauthFlowUseDisplayName: 'Configured use display name',
+            oauthFlowUseAvatar: 'Configured use avatar',
+            oauthFlowReviewProfileBeforeContinue: 'Configured review profile for {providerName}',
+            oauthFlowChooseHowToContinue: 'Configured choose action',
+            oauthFlowSuggestedEmail: 'Configured suggested email {email}',
+            oauthFlowChooseAccountActionHint: 'Configured choose account action hint',
+            oauthFlowBindExistingAccount: 'Configured bind existing',
+            oauthFlowCreateNewAccount: 'Configured create new',
+            oauthFlowCreateAccountHint: 'Configured create account hint',
+            oauthFlowBindLoginHint: 'Configured bind login for {providerName}',
+            oauthFlowLogInAndBind: 'Configured log in and bind',
+            oauthFlowUseDifferentEmail: 'Configured use different email',
+            oauthFlowTotpHint: 'Configured TOTP for {account} with {providerName}',
+            oauthFlowVerifyAndContinue: 'Configured verify and continue',
+            oauthFlowYourAccount: 'Configured account',
+            processing: 'Configured processing',
+            continue: 'Configured continue',
+            emailPlaceholder: 'configured-bind@example.com',
+            passwordPlaceholder: 'configured-bind-password',
+            invitationCodePlaceholder: 'Configured invitation code',
+            providerCallbackTitle: 'Configured callback title for {providerName}',
+            providerCallbackProcessing: 'Configured callback processing for {providerName}',
+            providerCallbackHint: 'Configured callback hint',
+            providerInvitationRequired: 'Configured invitation required for {providerName}',
+            providerCompletingRegistration: 'Configured completing registration',
+            providerCompleteRegistration: 'Configured complete registration',
+          },
+        },
+      }),
     })
     window.location.hash = ''
     localStorage.clear()
     sessionStorage.clear()
   })
 
-  it('accepts the legacy fragment token success callback without pending-session exchange', async () => {
+  it('ignores legacy fragment token payloads and uses the current pending-session exchange', async () => {
     window.location.hash =
       '#access_token=legacy-access-token&refresh_token=legacy-refresh-token&expires_in=3600&token_type=Bearer&redirect=%2Flegacy-dashboard'
+    exchangePendingOAuthCompletion.mockResolvedValue({
+      access_token: 'current-access-token',
+      refresh_token: 'current-refresh-token',
+      expires_in: 3600,
+      redirect: '/current-dashboard',
+    })
     setToken.mockResolvedValue({})
 
     mount(OidcCallbackView, {
@@ -118,23 +162,51 @@ describe('OidcCallbackView', () => {
 
     await flushPromises()
 
-    expect(exchangePendingOAuthCompletion).not.toHaveBeenCalled()
-    expect(setToken).toHaveBeenCalledWith('legacy-access-token')
-    expect(localStorage.getItem('refresh_token')).toBe('legacy-refresh-token')
+    expect(exchangePendingOAuthCompletion).toHaveBeenCalledTimes(1)
+    expect(setToken).toHaveBeenCalledWith('current-access-token')
+    expect(localStorage.getItem('refresh_token')).toBe('current-refresh-token')
     expect(localStorage.getItem('token_expires_at')).not.toBeNull()
     expect(showSuccess).toHaveBeenCalledWith('auth.loginSuccess')
-    expect(replace).toHaveBeenCalledWith('/legacy-dashboard')
+    expect(replace).toHaveBeenCalledWith('/current-dashboard')
   })
 
-  it('accepts the legacy pending oauth invitation fragment without pending-session exchange', async () => {
-    window.location.hash = '#error=invitation_required&pending_oauth_token=legacy-pending-token&redirect=%2Flegacy-invite'
-    apiClientPost.mockResolvedValue({
-      data: {
-        access_token: 'legacy-access-token',
-        refresh_token: 'legacy-refresh-token',
-        expires_in: 3600,
-        token_type: 'Bearer'
+  it('uses auth shell redirect defaults for current pending-session callbacks without redirect params', async () => {
+    window.location.hash = '#access_token=legacy-access-token&token_type=Bearer'
+    exchangePendingOAuthCompletion.mockResolvedValue({
+      access_token: 'current-access-token',
+      token_type: 'Bearer',
+    })
+    setToken.mockResolvedValue({})
+
+    mount(OidcCallbackView, {
+      global: {
+        stubs: {
+          AuthLayout: { template: '<div><slot /></div>' },
+          Icon: true,
+          RouterLink: { template: '<a><slot /></a>' },
+          transition: false
+        }
       }
+    })
+
+    await flushPromises()
+
+    expect(exchangePendingOAuthCompletion).toHaveBeenCalledTimes(1)
+    expect(setToken).toHaveBeenCalledWith('current-access-token')
+    expect(replace).toHaveBeenCalledWith('/configured-dashboard')
+  })
+
+  it('uses the current pending-session invitation flow without legacy pending token fragments', async () => {
+    window.location.hash = ''
+    exchangePendingOAuthCompletion.mockResolvedValue({
+      error: 'invitation_required',
+      redirect: '/legacy-invite',
+    })
+    completeOIDCOAuthRegistration.mockResolvedValue({
+      access_token: 'current-access-token',
+      refresh_token: 'current-refresh-token',
+      expires_in: 3600,
+      token_type: 'Bearer',
     })
     setToken.mockResolvedValue({})
 
@@ -151,18 +223,16 @@ describe('OidcCallbackView', () => {
 
     await flushPromises()
 
-    expect(exchangePendingOAuthCompletion).not.toHaveBeenCalled()
+    expect(exchangePendingOAuthCompletion).toHaveBeenCalledTimes(1)
     await wrapper.find('input[type="text"]').setValue('invite-code')
     await wrapper.find('button').trigger('click')
     await flushPromises()
 
-    expect(apiClientPost).toHaveBeenCalledWith('/auth/oauth/oidc/complete-registration', {
-      adopt_display_name: true,
-      adopt_avatar: true,
-      pending_oauth_token: 'legacy-pending-token',
-      invitation_code: 'invite-code'
+    expect(completeOIDCOAuthRegistration).toHaveBeenCalledWith('invite-code', {
+      adoptDisplayName: false,
+      adoptAvatar: false,
     })
-    expect(setToken).toHaveBeenCalledWith('legacy-access-token')
+    expect(setToken).toHaveBeenCalledWith('current-access-token')
     expect(replace).toHaveBeenCalledWith('/legacy-invite')
   })
 
@@ -191,6 +261,27 @@ describe('OidcCallbackView', () => {
 
     expect(exchangePendingOAuthCompletion).toHaveBeenCalledTimes(1)
     expect(exchangePendingOAuthCompletion).toHaveBeenCalledWith()
+  })
+
+  it('uses auth shell bind redirect defaults when bind completion has no redirect', async () => {
+    exchangePendingOAuthCompletion.mockResolvedValue({})
+
+    mount(OidcCallbackView, {
+      global: {
+        stubs: {
+          AuthLayout: { template: '<div><slot /></div>' },
+          Icon: true,
+          RouterLink: { template: '<a><slot /></a>' },
+          transition: false
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(setToken).not.toHaveBeenCalled()
+    expect(showSuccess).toHaveBeenCalledWith('profile.authBindings.bindSuccess')
+    expect(replace).toHaveBeenCalledWith('/configured-profile')
   })
 
   it('waits for explicit adoption confirmation before finishing a non-invitation login', async () => {
@@ -223,6 +314,10 @@ describe('OidcCallbackView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('OIDC Nick')
+    expect(wrapper.text()).toContain('Configured profile for ExampleID')
+    expect(wrapper.text()).toContain('Configured profile description for ExampleID')
+    expect(wrapper.text()).toContain('Configured use display name')
+    expect(wrapper.text()).toContain('Configured use avatar')
     expect(setToken).not.toHaveBeenCalled()
     expect(replace).not.toHaveBeenCalled()
 
@@ -339,7 +434,6 @@ describe('OidcCallbackView', () => {
 
     expect(setPendingAuthSession).toHaveBeenCalledWith({
       token: '',
-      token_field: 'pending_oauth_token',
       provider: 'oidc',
       redirect: '/welcome'
     })
@@ -426,8 +520,10 @@ describe('OidcCallbackView', () => {
     })
     expect(setToken).not.toHaveBeenCalled()
     expect(replace).not.toHaveBeenCalled()
-    expect(wrapper.text()).toContain('auth.oauthFlow.bindExistingAccount')
-    expect(wrapper.text()).toContain('auth.oauthFlow.createNewAccount')
+    expect(wrapper.text()).toContain('Configured choose action')
+    expect(wrapper.text()).toContain('Configured suggested email fresh@example.com')
+    expect(wrapper.text()).toContain('Configured bind existing')
+    expect(wrapper.text()).toContain('Configured create new')
   })
 
   it('collects email, password, and verify code for pending oauth account creation and submits adoption decisions', async () => {
@@ -617,6 +713,8 @@ describe('OidcCallbackView', () => {
 
     await flushPromises()
 
+    expect(wrapper.text()).toContain('Configured bind login for ExampleID')
+    expect(wrapper.text()).toContain('Configured log in and bind')
     const checkboxes = wrapper.findAll('input[type="checkbox"]')
     expect(checkboxes).toHaveLength(2)
     await checkboxes[0].setValue(false)
@@ -674,6 +772,8 @@ describe('OidcCallbackView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('o***g@example.com')
+    expect(wrapper.text()).toContain('Configured TOTP for o***g@example.com with ExampleID')
+    expect(wrapper.text()).toContain('Configured verify and continue')
     expect(login2FA).not.toHaveBeenCalled()
 
     await wrapper.get('[data-testid="oidc-bind-login-totp"]').setValue('123456')

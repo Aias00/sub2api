@@ -1,6 +1,10 @@
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import OAuthCallbackView from '@/views/auth/OAuthCallbackView.vue'
+
+const oauthCallbackSource = readFileSync(resolve(process.cwd(), 'src/views/auth/OAuthCallbackView.vue'), 'utf8')
 
 const {
   routeState,
@@ -11,6 +15,7 @@ const {
   setTokenMock,
   copyToClipboardMock,
   exchangePendingOAuthCompletionMock,
+  getPublicSettingsMock,
   apiPostMock,
 } = vi.hoisted(() => ({
   routeState: {
@@ -29,6 +34,7 @@ const {
   setTokenMock: vi.fn(),
   copyToClipboardMock: vi.fn(),
   exchangePendingOAuthCompletionMock: vi.fn(),
+  getPublicSettingsMock: vi.fn(),
   apiPostMock: vi.fn(),
 }))
 
@@ -42,6 +48,7 @@ vi.mock('vue-router', () => ({
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
     t: (key: string) => key,
+    locale: { value: 'en' },
   }),
 }))
 
@@ -59,6 +66,8 @@ vi.mock('@/api/client', () => ({
   apiClient: {
     post: (...args: any[]) => apiPostMock(...args),
   },
+  buildApiUrl: (path: string, settings?: { api_base_url?: string | null } | null) =>
+    `${settings?.api_base_url?.replace(/\/+$/, '') || '/api/v1'}${path.startsWith('/') ? path : `/${path}`}`,
 }))
 
 vi.mock('@/api/auth', async () => {
@@ -66,6 +75,7 @@ vi.mock('@/api/auth', async () => {
   return {
     ...actual,
     exchangePendingOAuthCompletion: (...args: any[]) => exchangePendingOAuthCompletionMock(...args),
+    getPublicSettings: (...args: any[]) => getPublicSettingsMock(...args),
     persistOAuthTokenContext: vi.fn(),
   }
 })
@@ -94,20 +104,58 @@ describe('OAuthCallbackView', () => {
     setTokenMock.mockReset()
     copyToClipboardMock.mockReset()
     exchangePendingOAuthCompletionMock.mockReset()
+    getPublicSettingsMock.mockReset()
+    getPublicSettingsMock.mockResolvedValue({
+      auth_shell_config: JSON.stringify({
+        en: {
+          defaults: {
+            defaultRedirectPath: '/configured-dashboard',
+            loginPath: '/configured-login',
+          },
+          labels: {
+            backToLogin: 'Configured back to login',
+            emailLabel: 'Configured email label',
+            passwordLabel: 'Configured password label',
+            createPasswordPlaceholder: 'configured-password-placeholder',
+            confirmPassword: 'Configured confirm password',
+            confirmPasswordPlaceholder: 'configured-confirm-placeholder',
+            invitationCodeLabel: 'Configured invitation label',
+            invitationCodePlaceholder: 'configured-invitation-placeholder',
+            optional: 'Configured optional',
+            oauthCallbackCode: 'Configured code',
+            oauthCallbackFullUrl: 'Configured full URL',
+            oauthCallbackHint: 'Configured callback hint',
+            oauthCallbackInvalidHint: 'Configured invalid hint',
+            oauthCallbackInvalidTitle: 'Configured invalid title',
+            oauthCallbackPasswordOptionalHint: 'Configured optional password for {providerName}',
+            oauthCallbackRegistrationHint: 'Configured registration hint',
+            oauthCallbackRegistrationInvitationRequired: 'Configured invitation required for {providerName}',
+            oauthCallbackState: 'Configured state',
+            oauthCallbackSubmitRegistration: 'Configured complete registration',
+            oauthCallbackTitle: 'Configured OAuth callback',
+            processing: 'Configured processing',
+          },
+        },
+      }),
+    })
     apiPostMock.mockReset()
     window.sessionStorage.clear()
   })
 
-  it('renders localized callback copy actions', () => {
+  it('renders localized callback copy actions', async () => {
     routeState.query = {
       code: 'oauth-code',
       state: 'oauth-state',
     }
 
     const wrapper = mount(OAuthCallbackView)
+    await flushPromises()
 
-    expect(wrapper.text()).toContain('auth.oauth.callbackTitle')
-    expect(wrapper.text()).toContain('auth.oauth.callbackHint')
+    expect(wrapper.text()).toContain('Configured OAuth callback')
+    expect(wrapper.text()).toContain('Configured callback hint')
+    expect(wrapper.text()).toContain('Configured code')
+    expect(wrapper.text()).toContain('Configured state')
+    expect(wrapper.text()).toContain('Configured full URL')
     expect(wrapper.text()).toContain('common.copy')
     expect(wrapper.find('input[value="oauth-code"]').exists()).toBe(true)
     expect(wrapper.find('input[value="oauth-state"]').exists()).toBe(true)
@@ -133,8 +181,9 @@ describe('OAuthCallbackView', () => {
     await vi.dynamicImportSettled()
 
     expect(exchangePendingOAuthCompletionMock).toHaveBeenCalledTimes(1)
-    expect(wrapper.text()).toContain('auth.oauth.invalidCallbackTitle')
-    expect(wrapper.text()).toContain('auth.oauth.invalidCallbackHint')
+    expect(wrapper.text()).toContain('Configured invalid title')
+    expect(wrapper.text()).toContain('Configured invalid hint')
+    expect(wrapper.text()).toContain('Configured back to login')
     expect(wrapper.find('input[readonly]').exists()).toBe(false)
   })
 
@@ -153,6 +202,16 @@ describe('OAuthCallbackView', () => {
       '/api/v1/auth/oauth/google/callback?code=provider-code&state=provider-state'
     )
     expect(exchangePendingOAuthCompletionMock).not.toHaveBeenCalled()
+  })
+
+  it('uses auth shell redirect defaults for direct token callbacks without redirect param', async () => {
+    window.location.hash = '#access_token=token-direct&token_type=Bearer'
+
+    mount(OAuthCallbackView)
+    await vi.dynamicImportSettled()
+
+    expect(setTokenMock).toHaveBeenCalledWith('token-direct')
+    expect(routerReplaceMock).toHaveBeenCalledWith('/configured-dashboard')
   })
 
   it('submits stored affiliate code when completing invited email oauth registration', async () => {
@@ -229,7 +288,6 @@ describe('OAuthCallbackView', () => {
     exchangePendingOAuthCompletionMock.mockResolvedValue({
       error: 'registration_completion_required',
       provider: 'google',
-      redirect: '/dashboard',
       resolved_email: 'google-only@example.com',
       invitation_required: false,
     })
@@ -248,5 +306,42 @@ describe('OAuthCallbackView', () => {
 
     expect(apiPostMock).toHaveBeenCalledWith('/auth/oauth/google/complete-registration', {})
     expect(setTokenMock).toHaveBeenCalledWith('token-3')
+    expect(routerReplaceMock).toHaveBeenCalledWith('/configured-dashboard')
+  })
+
+  it('renders optional password labels from auth shell public settings', async () => {
+    routeState.path = '/auth/oauth/callback'
+    exchangePendingOAuthCompletionMock.mockResolvedValue({
+      error: 'registration_completion_required',
+      provider: 'google',
+      redirect: '/dashboard',
+      resolved_email: 'google-only@example.com',
+      invitation_required: false,
+    })
+
+    const wrapper = mount(OAuthCallbackView)
+    await vi.dynamicImportSettled()
+
+    expect(wrapper.text()).toContain('(Configured optional)')
+    expect(wrapper.text()).toContain('Configured optional password for Google')
+    expect(getPublicSettingsMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps callback shell status labels on auth shell settings', () => {
+    expect(oauthCallbackSource).toContain('loadAuthShellConfig')
+    expect(oauthCallbackSource).toContain('defaultRedirectPath')
+    expect(oauthCallbackSource).toContain('authRouteDefaults.loginPath')
+    expect(oauthCallbackSource).toContain('sanitizeAuthRedirectPath(redirect, defaultRedirectPath.value)')
+    expect(oauthCallbackSource).toContain("authText('optional')")
+    expect(oauthCallbackSource).toContain("authText('processing')")
+    expect(oauthCallbackSource).toContain("authText('oauthCallbackTitle')")
+    expect(oauthCallbackSource).toContain("authText('oauthCallbackHint')")
+    expect(oauthCallbackSource).toContain("authText('oauthCallbackSubmitRegistration')")
+    expect(oauthCallbackSource).not.toContain("t('common.optional')")
+    expect(oauthCallbackSource).not.toContain("t('common.processing')")
+    expect(oauthCallbackSource).not.toContain("t('auth.oauth.callbackTitle')")
+    expect(oauthCallbackSource).not.toContain("t('auth.oauth.callbackHint')")
+    expect(oauthCallbackSource).not.toContain("t('auth.oidc.completeRegistration')")
+    expect(oauthCallbackSource).not.toContain("router.replace('/login')")
   })
 })

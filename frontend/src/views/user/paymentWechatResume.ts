@@ -1,13 +1,11 @@
 import type { LocationQuery, LocationQueryRaw } from 'vue-router'
-import type { SubscriptionPlan } from '@/types/payment'
-import { normalizeVisibleMethod } from '@/components/payment/paymentFlow'
+import { resolveVisiblePaymentMethod } from '@/components/payment/paymentMethod'
 
 export interface ParsedWechatResumeRoute {
   orderAmount: number
   orderType: 'balance' | 'subscription'
   paymentType: string
   planId?: number
-  openid?: string
   wechatResumeToken?: string
 }
 
@@ -24,53 +22,32 @@ export function hasWechatResumeQuery(query: LocationQuery): boolean {
     return true
   }
   return readQueryString(query, 'wechat_resume_token') !== ''
-    || readQueryString(query, 'openid') !== ''
 }
 
 export function parseWechatResumeRoute(
   query: LocationQuery,
-  plans: SubscriptionPlan[],
-  fallbackBalanceAmount: number,
 ): ParsedWechatResumeRoute | null {
   if (!hasWechatResumeQuery(query)) {
     return null
   }
 
   const wechatResumeToken = readQueryString(query, 'wechat_resume_token')
-  const paymentType = normalizeVisibleMethod(readQueryString(query, 'payment_type')) || 'wxpay'
+  const paymentType = resolveVisiblePaymentMethod(readQueryString(query, 'payment_type'))
   const planId = Number.parseInt(readQueryString(query, 'plan_id'), 10)
   const hasPlanId = Number.isFinite(planId) && planId > 0
   const orderType = readQueryString(query, 'order_type') === 'subscription' || hasPlanId
     ? 'subscription'
     : 'balance'
 
-  if (wechatResumeToken) {
-    return {
-      wechatResumeToken,
-      paymentType,
-      orderType,
-      orderAmount: 0,
-      planId: hasPlanId ? planId : undefined,
-    }
-  }
-
-  const openid = readQueryString(query, 'openid')
-  if (!openid) {
+  if (!wechatResumeToken) {
     return null
   }
 
-  const rawAmount = Number.parseFloat(readQueryString(query, 'amount'))
-  const orderAmount = Number.isFinite(rawAmount) && rawAmount > 0
-    ? rawAmount
-    : (orderType === 'subscription'
-      ? (plans.find(plan => plan.id === planId)?.price ?? 0)
-      : fallbackBalanceAmount)
-
   return {
-    openid,
+    wechatResumeToken,
     paymentType,
     orderType,
-    orderAmount,
+    orderAmount: 0,
     planId: hasPlanId ? planId : undefined,
   }
 }

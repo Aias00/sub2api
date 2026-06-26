@@ -10,9 +10,9 @@
           </svg>
         </div>
         <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.balance') }}</p>
-          <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">${{ formatBalance(balance) }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('common.available') }}</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ dashboardText('balance') }}</p>
+          <p class="text-xl font-bold text-emerald-600 dark:text-emerald-400">{{ formatMoney(balance, 2) }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ dashboardText('available') }}</p>
         </div>
       </div>
     </div>
@@ -24,9 +24,9 @@
           <Icon name="key" size="md" class="text-blue-600 dark:text-blue-400" :stroke-width="2" />
         </div>
         <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.apiKeys') }}</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ dashboardText('apiKeys') }}</p>
           <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stats?.total_api_keys || 0 }}</p>
-          <p class="text-xs text-green-600 dark:text-green-400">{{ stats?.active_api_keys || 0 }} {{ t('common.active') }}</p>
+          <p class="text-xs text-green-600 dark:text-green-400">{{ stats?.active_api_keys || 0 }} {{ dashboardText('active') }}</p>
         </div>
       </div>
     </div>
@@ -38,9 +38,9 @@
           <Icon name="chart" size="md" class="text-green-600 dark:text-green-400" :stroke-width="2" />
         </div>
         <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.todayRequests') }}</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ dashboardText('todayRequests') }}</p>
           <p class="text-xl font-bold text-gray-900 dark:text-white">{{ stats?.today_requests || 0 }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('common.total') }}: {{ formatNumber(stats?.total_requests || 0) }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ dashboardText('total') }}: {{ formatNumber(stats?.total_requests || 0) }}</p>
         </div>
       </div>
     </div>
@@ -52,15 +52,15 @@
           <Icon name="dollar" size="md" class="text-purple-600 dark:text-purple-400" :stroke-width="2" />
         </div>
         <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.todayCost') }}</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ dashboardText('todayCost') }}</p>
           <p class="text-xl font-bold text-gray-900 dark:text-white">
-            <span class="text-purple-600 dark:text-purple-400" :title="t('dashboard.actual')">${{ formatCost(stats?.today_actual_cost || 0) }}</span>
-            <span class="text-sm font-normal text-gray-400 dark:text-gray-500" :title="t('dashboard.standard')"> / ${{ formatCost(stats?.today_cost || 0) }}</span>
+            <span class="text-purple-600 dark:text-purple-400" :title="dashboardText('actual')">{{ formatMoney(stats?.today_actual_cost, 4) }}</span>
+            <span class="text-sm font-normal text-gray-400 dark:text-gray-500" :title="dashboardText('standard')"> / {{ formatMoney(stats?.today_cost, 4) }}</span>
           </p>
           <p class="text-xs">
-            <span class="text-gray-500 dark:text-gray-400">{{ t('common.total') }}: </span>
-            <span class="text-purple-600 dark:text-purple-400" :title="t('dashboard.actual')">${{ formatCost(stats?.total_actual_cost || 0) }}</span>
-            <span class="text-gray-400 dark:text-gray-500" :title="t('dashboard.standard')"> / ${{ formatCost(stats?.total_cost || 0) }}</span>
+            <span class="text-gray-500 dark:text-gray-400">{{ dashboardText('total') }}: </span>
+            <span class="text-purple-600 dark:text-purple-400" :title="dashboardText('actual')">{{ formatMoney(stats?.total_actual_cost, 4) }}</span>
+            <span class="text-gray-400 dark:text-gray-500" :title="dashboardText('standard')"> / {{ formatMoney(stats?.total_cost, 4) }}</span>
           </p>
         </div>
       </div>
@@ -76,11 +76,11 @@
           <Icon name="cube" size="md" class="text-amber-600 dark:text-amber-400" :stroke-width="2" />
         </div>
         <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.todayTokens') }}</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ dashboardText('todayTokens') }}</p>
           <p class="text-xl font-bold text-gray-900 dark:text-white">{{ formatTokens(stats?.today_tokens || 0) }}</p>
           <div class="space-y-0.5 text-xs text-gray-500 dark:text-gray-400">
-            <p>{{ t('dashboard.input') }}: {{ formatTokens(stats?.today_input_tokens || 0) }} / {{ t('dashboard.output') }}: {{ formatTokens(stats?.today_output_tokens || 0) }}</p>
-            <p>{{ t('dashboard.cacheWrite') }}: {{ formatTokens(stats?.today_cache_creation_tokens || 0) }} / {{ t('dashboard.cacheRead') }}: {{ formatTokens(stats?.today_cache_read_tokens || 0) }}</p>
+            <p>{{ dashboardText('input') }}: {{ formatTokens(stats?.today_input_tokens || 0) }} / {{ dashboardText('output') }}: {{ formatTokens(stats?.today_output_tokens || 0) }}</p>
+            <p>{{ dashboardText('cacheWrite') }}: {{ formatTokens(stats?.today_cache_creation_tokens || 0) }} / {{ dashboardText('cacheRead') }}: {{ formatTokens(stats?.today_cache_read_tokens || 0) }}</p>
           </div>
         </div>
       </div>
@@ -93,11 +93,11 @@
           <Icon name="database" size="md" class="text-indigo-600 dark:text-indigo-400" :stroke-width="2" />
         </div>
         <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.totalTokens') }}</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ dashboardText('totalTokens') }}</p>
           <p class="text-xl font-bold text-gray-900 dark:text-white">{{ formatTokens(stats?.total_tokens || 0) }}</p>
           <div class="space-y-0.5 text-xs text-gray-500 dark:text-gray-400">
-            <p>{{ t('dashboard.input') }}: {{ formatTokens(stats?.total_input_tokens || 0) }} / {{ t('dashboard.output') }}: {{ formatTokens(stats?.total_output_tokens || 0) }}</p>
-            <p>{{ t('dashboard.cacheWrite') }}: {{ formatTokens(stats?.total_cache_creation_tokens || 0) }} / {{ t('dashboard.cacheRead') }}: {{ formatTokens(stats?.total_cache_read_tokens || 0) }}</p>
+            <p>{{ dashboardText('input') }}: {{ formatTokens(stats?.total_input_tokens || 0) }} / {{ dashboardText('output') }}: {{ formatTokens(stats?.total_output_tokens || 0) }}</p>
+            <p>{{ dashboardText('cacheWrite') }}: {{ formatTokens(stats?.total_cache_creation_tokens || 0) }} / {{ dashboardText('cacheRead') }}: {{ formatTokens(stats?.total_cache_read_tokens || 0) }}</p>
           </div>
         </div>
       </div>
@@ -110,7 +110,7 @@
           <Icon name="bolt" size="md" class="text-violet-600 dark:text-violet-400" :stroke-width="2" />
         </div>
         <div class="flex-1">
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.performance') }}</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ dashboardText('performance') }}</p>
           <div class="flex items-baseline gap-2">
             <p class="text-xl font-bold text-gray-900 dark:text-white">{{ formatTokens(stats?.rpm || 0) }}</p>
             <span class="text-xs text-gray-500 dark:text-gray-400">RPM</span>
@@ -130,9 +130,9 @@
           <Icon name="clock" size="md" class="text-rose-600 dark:text-rose-400" :stroke-width="2" />
         </div>
         <div>
-          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ t('dashboard.avgResponse') }}</p>
+          <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ dashboardText('avgResponse') }}</p>
           <p class="text-xl font-bold text-gray-900 dark:text-white">{{ formatDuration(stats?.average_duration_ms || 0) }}</p>
-          <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('dashboard.averageTime') }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400">{{ dashboardText('averageTime') }}</p>
         </div>
       </div>
     </div>
@@ -159,25 +159,25 @@
       >
         <div class="flex items-center justify-between">
           <span class="text-sm font-semibold text-gray-900 dark:text-white">
-            {{ item.isOther ? t('dashboard.platformOther') : platformLabel(item.platform) }}
+            {{ item.isOther ? dashboardText('platformOther') : platformLabel(item.platform) }}
           </span>
-          <span class="font-mono text-sm text-purple-600 dark:text-purple-400" :title="t('dashboard.actual')">
-            ${{ formatCost(item.total_actual_cost) }}
+          <span class="font-mono text-sm text-purple-600 dark:text-purple-400" :title="dashboardText('actual')">
+            {{ formatMoney(item.total_actual_cost, 4) }}
           </span>
         </div>
         <div class="mt-2 space-y-1 text-xs">
           <div class="flex items-center justify-between">
-            <span class="text-gray-500 dark:text-gray-400">{{ t('dashboard.todayCost') }}</span>
-            <span class="font-mono text-gray-900 dark:text-white">${{ formatCost(item.today_actual_cost) }}</span>
+            <span class="text-gray-500 dark:text-gray-400">{{ dashboardText('todayCost') }}</span>
+            <span class="font-mono text-gray-900 dark:text-white">{{ formatMoney(item.today_actual_cost, 4) }}</span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-500 dark:text-gray-400">{{ t('dashboard.requests') }}</span>
+            <span class="text-gray-500 dark:text-gray-400">{{ dashboardText('requests') }}</span>
             <span class="font-mono text-gray-700 dark:text-gray-300">
               {{ item.total_requests > 0 ? formatNumber(item.total_requests) : '-' }}
             </span>
           </div>
           <div class="flex items-center justify-between">
-            <span class="text-gray-500 dark:text-gray-400">{{ t('dashboard.tokens') }}</span>
+            <span class="text-gray-500 dark:text-gray-400">{{ dashboardText('tokens') }}</span>
             <span class="font-mono text-gray-700 dark:text-gray-300">
               {{ item.total_tokens > 0 ? formatTokens(item.total_tokens) : '-' }}
             </span>
@@ -187,15 +187,15 @@
         <!-- Quota 区：仅当 quota 配置存在、非 __other__ 且至少有一个窗口配了 limit 时显示 -->
         <div v-if="hasAnyLimit(item.quota) && !item.isOther" class="mt-3 space-y-1.5 border-t border-gray-200 pt-2 dark:border-dark-700">
           <p class="text-[10px] uppercase tracking-wide text-gray-400">
-            {{ t('dashboard.platformQuota.title') }}
+            {{ dashboardText('platformQuotaTitle') }}
           </p>
           <template v-for="w in (['daily', 'weekly', 'monthly'] as const)" :key="w">
             <div v-if="quotaVal(item.quota, `${w}_limit_usd`) != null" class="space-y-0.5">
               <!-- limit=0：完全禁用 -->
               <template v-if="(quotaVal(item.quota, `${w}_limit_usd`) as number) === 0">
                 <div class="flex items-center justify-between text-xs">
-                  <span class="text-gray-600 dark:text-gray-300">{{ t(`dashboard.platformQuota.${w}`) }}</span>
-                  <span class="font-mono text-red-500">{{ t('dashboard.platformQuota.disabled') }}</span>
+                  <span class="text-gray-600 dark:text-gray-300">{{ quotaWindowLabel(w) }}</span>
+                  <span class="font-mono text-red-500">{{ dashboardText('platformQuotaDisabled') }}</span>
                 </div>
                 <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-700">
                   <div class="h-full w-full rounded-full bg-red-500" />
@@ -204,9 +204,9 @@
               <!-- limit>0：正常用量进度条 -->
               <template v-else>
                 <div class="flex items-center justify-between text-xs">
-                  <span class="text-gray-600 dark:text-gray-300">{{ t(`dashboard.platformQuota.${w}`) }}</span>
+                  <span class="text-gray-600 dark:text-gray-300">{{ quotaWindowLabel(w) }}</span>
                   <span class="font-mono text-gray-700 dark:text-gray-200">
-                    ${{ formatUsd((quotaVal(item.quota, `${w}_usage_usd`) as number) ?? 0) }} / ${{ formatUsd(quotaVal(item.quota, `${w}_limit_usd`) as number) }}
+                    {{ formatMoney((quotaVal(item.quota, `${w}_usage_usd`) as number) ?? 0, 2) }} / {{ formatMoney(quotaVal(item.quota, `${w}_limit_usd`) as number, 2) }}
                   </span>
                 </div>
                 <div class="h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-700">
@@ -217,7 +217,7 @@
                   />
                 </div>
                 <p v-if="quotaVal(item.quota, `${w}_window_resets_at`)" class="text-[10px] text-gray-400">
-                  {{ t('dashboard.platformQuota.resetsAt', { time: formatResetTime(quotaVal(item.quota, `${w}_window_resets_at`) as string) }) }}
+                  {{ dashboardText('platformQuotaResetsAt', { time: formatResetTime(quotaVal(item.quota, `${w}_window_resets_at`) as string) }) }}
                 </p>
               </template>
             </div>
@@ -230,10 +230,15 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import type { UserDashboardStats as UserStatsType } from '@/api/usage'
 import type { PlatformQuotaItem } from '@/types'
+import {
+  interpolateDashboardLabel,
+  type DashboardShellLabelKey,
+  type DashboardShellLabels,
+} from './dashboardShellLabels'
+import { formatPublicMoneyAmount } from '@/utils/paymentCurrency'
 
 interface FusedPlatformCard {
   platform: string
@@ -250,8 +255,13 @@ const props = defineProps<{
   balance: number
   isSimple: boolean
   platformQuotas?: PlatformQuotaItem[] | null
+  labels?: DashboardShellLabels
+  currencyPrefix?: string
 }>()
-const { t, te, locale } = useI18n()
+
+function dashboardText(key: DashboardShellLabelKey, params?: Record<string, string | number>): string {
+  return interpolateDashboardLabel(props.labels?.[key] || '', params)
+}
 
 const PLATFORM_LABELS: Record<string, string> = {
   anthropic: 'Claude',
@@ -263,18 +273,18 @@ const PLATFORM_LABELS: Record<string, string> = {
 const platformLabel = (p: string) => PLATFORM_LABELS[p] ?? p
 
 const platformBreakdownLabel = computed(() =>
-  te('dashboard.platformBreakdown')
-    ? t('dashboard.platformBreakdown')
-    : (locale.value.startsWith('zh') ? '平台拆分' : 'Platform breakdown'),
+  dashboardText('platformBreakdown'),
 )
 
 const platformCountLabel = computed(() =>
-  te('dashboard.platformCount')
-    ? t('dashboard.platformCount', { count: sortedPlatforms.value.length })
-    : (locale.value.startsWith('zh')
-        ? `${sortedPlatforms.value.length} 个平台`
-        : `${sortedPlatforms.value.length} platforms`),
+  dashboardText('platformCount', { count: sortedPlatforms.value.length }),
 )
+
+function quotaWindowLabel(window: 'daily' | 'weekly' | 'monthly'): string {
+  if (window === 'daily') return dashboardText('platformQuotaDaily')
+  if (window === 'weekly') return dashboardText('platformQuotaWeekly')
+  return dashboardText('platformQuotaMonthly')
+}
 
 const sortedPlatforms = computed(() => {
   const list = props.stats?.by_platform ?? []
@@ -370,20 +380,9 @@ function quotaBarClass(p: number): string {
   return 'bg-green-500'
 }
 
-// 与 formatBalance 一致使用 Intl.NumberFormat 做半偶舍入，避免 toFixed 在不同 JS 引擎
-// 下偶发截断而非四舍五入（与后端展示精度不一致）。
-const usdFormatter = new Intl.NumberFormat('en-US', {
-  minimumFractionDigits: 2,
-  maximumFractionDigits: 2,
-})
-
 function safeNumber(value: unknown): number {
   const numberValue = Number(value)
   return Number.isFinite(numberValue) ? numberValue : 0
-}
-
-function formatUsd(n: number): string {
-  return usdFormatter.format(safeNumber(n))
 }
 
 function formatResetTime(iso: string | null | undefined): string {
@@ -399,14 +398,9 @@ function formatResetTime(iso: string | null | undefined): string {
   })
 }
 
-const formatBalance = (b: number) =>
-  new Intl.NumberFormat('en-US', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  }).format(safeNumber(b))
-
 const formatNumber = (n: number) => safeNumber(n).toLocaleString()
-const formatCost = (c: number) => safeNumber(c).toFixed(4)
+const formatMoney = (value: number | null | undefined, fractionDigits: number) =>
+  formatPublicMoneyAmount(safeNumber(value), props.currencyPrefix, fractionDigits)
 const formatTokens = (t: number) => {
   const tokens = safeNumber(t)
   if (tokens >= 1_000_000) return `${(tokens / 1_000_000).toFixed(1)}M`

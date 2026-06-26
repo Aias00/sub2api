@@ -5,20 +5,20 @@
       class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
     >
       <h2 class="text-lg font-medium text-gray-900 dark:text-white">
-        {{ t('profile.authBindings.title') }}
+        {{ authBindingText('authBindingsTitle') }}
       </h2>
       <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-        {{ t('profile.authBindings.description') }}
+        {{ authBindingText('authBindingsDescription') }}
       </p>
     </div>
 
     <div :class="props.embedded ? 'space-y-4' : 'divide-y divide-gray-100 dark:divide-dark-700'">
       <div v-if="props.embedded">
         <p class="text-sm font-semibold text-gray-900 dark:text-white">
-          {{ t('profile.authBindings.title') }}
+          {{ authBindingText('authBindingsTitle') }}
         </p>
         <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
-          {{ t('profile.authBindings.description') }}
+          {{ authBindingText('authBindingsDescription') }}
         </p>
       </div>
 
@@ -53,10 +53,10 @@
                 >
                   {{
                     item.bound
-                      ? t('profile.authBindings.status.bound')
+                      ? authBindingText('authBindingsStatusBound')
                       : item.provider === 'email'
-                        ? t('profile.authBindings.status.passwordNotSet')
-                        : t('profile.authBindings.status.notBound')
+                        ? authBindingText('authBindingsStatusPasswordNotSet')
+                        : authBindingText('authBindingsStatusNotBound')
                   }}
                 </span>
               </div>
@@ -99,7 +99,7 @@
                   data-testid="profile-binding-email-input"
                   type="email"
                   class="input"
-                  :placeholder="t('profile.authBindings.emailPlaceholder')"
+                  :placeholder="authBindingText('authBindingsEmailPlaceholder')"
                   :disabled="isSendingEmailCode || isBindingEmail"
                 />
                 <button
@@ -111,8 +111,8 @@
                 >
                   {{
                     isSendingEmailCode
-                      ? t('common.loading')
-                      : t('profile.authBindings.sendCodeAction')
+                      ? authBindingText('authBindingsLoading')
+                      : authBindingText('authBindingsSendCodeAction')
                   }}
                 </button>
                 <input
@@ -122,7 +122,7 @@
                   inputmode="numeric"
                   maxlength="6"
                   class="input"
-                  :placeholder="t('profile.authBindings.codePlaceholder')"
+                  :placeholder="authBindingText('authBindingsCodePlaceholder')"
                   :disabled="isBindingEmail"
                 />
                 <input
@@ -142,8 +142,8 @@
                 >
                   {{
                     isBindingEmail
-                      ? t('common.loading')
-                      : emailSubmitActionLabel
+                  ? authBindingText('authBindingsLoading')
+                  : emailSubmitActionLabel
                   }}
                 </button>
               </div>
@@ -160,8 +160,8 @@
             >
               {{
                 showEmailForm
-                  ? t('profile.authBindings.hideEmailFormAction')
-                  : t('profile.authBindings.manageEmailAction')
+                  ? authBindingText('authBindingsHideEmailFormAction')
+                  : authBindingText('authBindingsManageEmailAction')
               }}
             </button>
             <button
@@ -171,7 +171,7 @@
               class="btn btn-primary btn-sm"
               @click="startBinding(item.provider)"
             >
-              {{ t('profile.authBindings.bindAction', { providerName: item.label }) }}
+              {{ authBindingText('authBindingsBindAction', { providerName: item.label }) }}
             </button>
             <button
               v-if="item.canUnbind"
@@ -183,8 +183,8 @@
             >
               {{
                 unbindingProvider === item.provider
-                  ? t('common.loading')
-                  : t('profile.authBindings.unbindAction')
+                  ? authBindingText('authBindingsLoading')
+                  : authBindingText('authBindingsUnbindAction')
               }}
             </button>
           </div>
@@ -196,7 +196,6 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import {
   hasExplicitWeChatOAuthCapabilities,
@@ -212,7 +211,17 @@ import {
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore, useAuthStore } from '@/stores'
 import type { User, UserAuthBindingStatus, UserAuthProvider } from '@/types'
+import { resolveAuthBindRedirect } from '@/utils/authRedirect'
 import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
+import {
+  authBindingLabelKeySet,
+  authBindingNoteKeyMap,
+  legacyAuthBindingNoteKeys,
+  resolveAuthBindingProviderLabel,
+  resolveAuthBindingText,
+  type AuthBindingLabels,
+  type AuthBindingLabelKey,
+} from '@/utils/profileShell'
 
 type BindableProvider = Exclude<UserAuthProvider, 'email'>
 
@@ -228,21 +237,22 @@ const props = withDefaults(
     wechatMpEnabled?: boolean
     embedded?: boolean
     compact?: boolean
+    labels?: AuthBindingLabels
   }>(),
   {
     linuxdoEnabled: false,
     dingtalkEnabled: false,
     oidcEnabled: false,
-    oidcProviderName: 'OIDC',
+    oidcProviderName: '',
     wechatEnabled: false,
     wechatOpenEnabled: undefined,
     wechatMpEnabled: undefined,
     embedded: false,
     compact: false,
+    labels: () => ({}),
   }
 )
 
-const { t } = useI18n()
 const route = useRoute()
 const appStore = useAppStore()
 const authStore = useAuthStore()
@@ -298,20 +308,20 @@ const emailBound = computed(() => getBindingStatus('email'))
 const showEmailForm = computed(() => !compact.value || isEmailFormExpanded.value)
 const emailPasswordPlaceholder = computed(() =>
   emailBound.value
-    ? t('profile.authBindings.replaceEmailPasswordPlaceholder')
-    : t('profile.authBindings.passwordPlaceholder')
+    ? authBindingText('authBindingsReplaceEmailPasswordPlaceholder')
+    : authBindingText('authBindingsPasswordPlaceholder')
 )
 const emailSubmitActionLabel = computed(() =>
   emailBound.value
-    ? t('profile.authBindings.confirmEmailReplaceAction')
-    : t('profile.authBindings.confirmEmailBindAction')
+    ? authBindingText('authBindingsConfirmEmailReplaceAction')
+    : authBindingText('authBindingsConfirmEmailBindAction')
 )
-const legacyBindingNoteKeys: Record<string, string> = {
-  'Primary account email is managed from the profile form.':
-    'profile.authBindings.notes.emailManagedFromProfile',
-  'You can unbind this sign-in method.': 'profile.authBindings.notes.canUnbind',
-  'Bind another sign-in method before unbinding.':
-    'profile.authBindings.notes.bindAnotherBeforeUnbind',
+function authBindingText(key: AuthBindingLabelKey, params?: Record<string, string | number>): string {
+  return resolveAuthBindingText(props.labels, key, params)
+}
+
+function providerLabel(provider: UserAuthProvider): string {
+  return resolveAuthBindingProviderLabel(props.labels, provider, props.oidcProviderName)
 }
 
 function resolveLegacyCompatibleWeChatSettings(
@@ -426,7 +436,7 @@ function isProviderEnabledForBinding(provider: BindableProvider): boolean {
 const providerItems = computed(() => [
   {
     provider: 'email' as const,
-    label: t('profile.authBindings.providers.email'),
+    label: providerLabel('email'),
     bound: getBindingStatus('email'),
     canBind: false,
     canUnbind: false,
@@ -434,7 +444,7 @@ const providerItems = computed(() => [
   },
   {
     provider: 'linuxdo' as const,
-    label: t('profile.authBindings.providers.linuxdo'),
+    label: providerLabel('linuxdo'),
     bound: getBindingStatus('linuxdo'),
     canBind:
       !getBindingStatus('linuxdo') &&
@@ -445,7 +455,7 @@ const providerItems = computed(() => [
   },
   {
     provider: 'dingtalk' as const,
-    label: t('profile.authBindings.providers.dingtalk'),
+    label: providerLabel('dingtalk'),
     bound: getBindingStatus('dingtalk'),
     canBind:
       !getBindingStatus('dingtalk') &&
@@ -456,7 +466,7 @@ const providerItems = computed(() => [
   },
   {
     provider: 'oidc' as const,
-    label: t('profile.authBindings.providers.oidc', { providerName: props.oidcProviderName }),
+    label: providerLabel('oidc'),
     bound: getBindingStatus('oidc'),
     canBind:
       !getBindingStatus('oidc') &&
@@ -467,7 +477,7 @@ const providerItems = computed(() => [
   },
   {
     provider: 'wechat' as const,
-    label: t('profile.authBindings.providers.wechat'),
+    label: providerLabel('wechat'),
     bound: getBindingStatus('wechat'),
     canBind:
       !getBindingStatus('wechat') &&
@@ -530,7 +540,7 @@ function bindingCountLabel(details: UserAuthBindingStatus | null): string {
   if (!details || typeof details.bound_count !== 'number' || details.bound_count <= 1) {
     return ''
   }
-  return t('profile.authBindings.boundCount', { count: details.bound_count })
+  return authBindingText('authBindingsBoundCount', { count: details.bound_count })
 }
 
 function bindingNote(details: UserAuthBindingStatus | null): string {
@@ -538,11 +548,11 @@ function bindingNote(details: UserAuthBindingStatus | null): string {
     return ''
   }
 
-  const noteKey = details.note_key?.trim() || legacyBindingNoteKeys[details.note?.trim() || ''] || ''
+  const noteKey = details.note_key?.trim() || legacyAuthBindingNoteKeys[details.note?.trim() || ''] || ''
   if (noteKey) {
-    const translated = t(noteKey)
-    if (translated !== noteKey) {
-      return translated
+    const mappedKey = authBindingNoteKeyMap[noteKey] || (noteKey as AuthBindingLabelKey)
+    if (authBindingLabelKeySet.has(mappedKey)) {
+      return authBindingText(mappedKey)
     }
   }
 
@@ -572,7 +582,8 @@ function startBinding(provider: UserAuthProvider): void {
     return
   }
   startOAuthBinding(provider, {
-    redirectTo: route.fullPath || '/profile',
+    redirectTo: resolveAuthBindRedirect(route.fullPath),
+    apiBaseSettings: appStore.cachedPublicSettings,
     wechatOAuthSettings: provider === 'wechat' ? wechatOAuthSettings.value : null,
   })
 }
@@ -587,9 +598,9 @@ async function handleUnbind(provider: BindableProvider, providerLabel: string): 
   try {
     const user = await unbindAuthIdentity(provider)
     applyUpdatedUser(user)
-    appStore.showSuccess(t('profile.authBindings.unbindSuccess', { providerName: providerLabel }))
+    appStore.showSuccess(authBindingText('authBindingsUnbindSuccess', { providerName: providerLabel }))
   } catch (error) {
-    appStore.showError((error as { message?: string }).message || t('common.tryAgain'))
+    appStore.showError((error as { message?: string }).message || authBindingText('authBindingsTryAgain'))
   } finally {
     unbindingProvider.value = null
   }
@@ -604,23 +615,23 @@ function handleUnbindForItem(provider: UserAuthProvider, providerLabel: string):
 
 function validateEmailBindingForm(requireCode: boolean): boolean {
   if (!emailBindingForm.email) {
-    appStore.showError(t('auth.emailRequired'))
+    appStore.showError(authBindingText('authBindingsEmailRequired'))
     return false
   }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailBindingForm.email)) {
-    appStore.showError(t('auth.invalidEmail'))
+    appStore.showError(authBindingText('authBindingsInvalidEmail'))
     return false
   }
   if (requireCode && !emailBindingForm.verifyCode) {
-    appStore.showError(t('auth.codeRequired'))
+    appStore.showError(authBindingText('authBindingsCodeRequired'))
     return false
   }
   if (requireCode && !emailBindingForm.password) {
-    appStore.showError(t('auth.passwordRequired'))
+    appStore.showError(authBindingText('authBindingsPasswordRequired'))
     return false
   }
   if (requireCode && !emailBound.value && emailBindingForm.password.length < passwordMinLength.value) {
-    appStore.showError(t('auth.passwordMinLength', { count: passwordMinLength.value }))
+    appStore.showError(authBindingText('authBindingsPasswordMinLength', { count: passwordMinLength.value }))
     return false
   }
   return true
@@ -634,9 +645,9 @@ async function sendEmailCode(): Promise<void> {
   isSendingEmailCode.value = true
   try {
     await sendEmailBindingCode(emailBindingForm.email)
-    appStore.showSuccess(t('profile.authBindings.codeSentTo', { email: emailBindingForm.email }))
+    appStore.showSuccess(authBindingText('authBindingsCodeSentTo', { email: emailBindingForm.email }))
   } catch (error) {
-    appStore.showError((error as { message?: string }).message || t('auth.sendCodeFailed'))
+    appStore.showError((error as { message?: string }).message || authBindingText('authBindingsSendCodeFailed'))
   } finally {
     isSendingEmailCode.value = false
   }
@@ -663,11 +674,11 @@ async function bindEmail(): Promise<void> {
     }
     appStore.showSuccess(
       replacingBoundEmail
-        ? t('profile.authBindings.replaceSuccess')
-        : t('profile.authBindings.bindSuccess')
+        ? authBindingText('authBindingsReplaceSuccess')
+        : authBindingText('authBindingsBindSuccess')
     )
   } catch (error) {
-    appStore.showError((error as { message?: string }).message || t('common.tryAgain'))
+    appStore.showError((error as { message?: string }).message || authBindingText('authBindingsTryAgain'))
   } finally {
     isBindingEmail.value = false
   }

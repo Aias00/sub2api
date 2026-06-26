@@ -1,7 +1,7 @@
 <template>
   <div>
     <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
-      {{ t('payment.paymentMethod') }}
+      {{ label || '' }}
     </label>
     <div class="grid grid-cols-2 gap-3 sm:flex">
       <button
@@ -20,14 +20,14 @@
         @click="method.available && emit('select', method.type)"
       >
         <span class="flex items-center gap-2">
-          <img :src="methodIcon(method.type)" :alt="t(`payment.methods.${method.type}`)" class="h-7 w-7 object-contain" />
+          <img v-if="methodIcon(method.type)" :src="methodIcon(method.type)" :alt="methodLabel(method.type)" class="h-7 w-7 object-contain" />
           <span class="flex flex-col items-start leading-none">
-            <span class="text-base font-semibold">{{ t(`payment.methods.${method.type}`) }}</span>
+            <span class="text-base font-semibold">{{ methodLabel(method.type) }}</span>
             <span
               v-if="method.fee_rate > 0"
               class="text-[10px] tracking-wide text-gray-500 dark:text-dark-400"
             >
-              {{ t('payment.fee') }} {{ method.fee_rate }}%
+              {{ feeLabel || '' }} {{ method.fee_rate }}%
             </span>
           </span>
         </span>
@@ -38,12 +38,12 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { METHOD_ORDER } from './providerConfig'
 import alipayIcon from '@/assets/icons/alipay.svg'
 import wxpayIcon from '@/assets/icons/wxpay.svg'
 import stripeIcon from '@/assets/icons/stripe.svg'
 import airwallexIcon from '@/assets/icons/airwallex.svg'
+import { paymentMethodLabelKeys, type PaymentMethodLabelKey, type PaymentMethodLabels } from '@/utils/paymentShell'
 
 export interface PaymentMethodOption {
   type: string
@@ -54,13 +54,14 @@ export interface PaymentMethodOption {
 const props = defineProps<{
   methods: PaymentMethodOption[]
   selected: string
+  label?: string
+  feeLabel?: string
+  methodLabels?: PaymentMethodLabels
 }>()
 
 const emit = defineEmits<{
   select: [type: string]
 }>()
-
-const { t } = useI18n()
 
 const METHOD_ICONS: Record<string, string> = {
   alipay: alipayIcon,
@@ -82,7 +83,23 @@ function methodIcon(type: string): string {
   if (type.includes('alipay')) return METHOD_ICONS.alipay
   if (type.includes('wxpay')) return METHOD_ICONS.wxpay
   if (type === 'airwallex') return METHOD_ICONS.airwallex
-  return METHOD_ICONS[type] || alipayIcon
+  return METHOD_ICONS[type] || ''
+}
+
+function methodLabel(type: string): string {
+  const labelKey = paymentMethodLabelKey(type)
+  return (labelKey ? props.methodLabels?.[labelKey] : undefined) || type
+}
+
+function paymentMethodLabelKey(type: string): PaymentMethodLabelKey | null {
+  const normalized = type.includes('alipay')
+    ? 'alipay'
+    : type.includes('wxpay')
+      ? 'wxpay'
+      : type
+  return paymentMethodLabelKeys.includes(normalized as PaymentMethodLabelKey)
+    ? normalized as PaymentMethodLabelKey
+    : null
 }
 
 function methodSelectedClass(type: string): string {

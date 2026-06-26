@@ -52,6 +52,7 @@ describe('ModelDistributionChart', () => {
       cache_read_tokens: 0,
       total_tokens: 1000,
       cost: 1.5,
+      account_cost: 1.5,
       actual_cost: 0.2,
     },
     {
@@ -63,6 +64,7 @@ describe('ModelDistributionChart', () => {
       cache_read_tokens: 0,
       total_tokens: 500,
       cost: 0.5,
+      account_cost: 0.5,
       actual_cost: 1.4,
     },
   ]

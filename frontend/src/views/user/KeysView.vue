@@ -6,7 +6,7 @@
           <div class="flex flex-wrap items-center gap-3">
             <SearchInput
               v-model="filterSearch"
-              :placeholder="t('keys.searchPlaceholder')"
+              :placeholder="apiKeysText('searchPlaceholder')"
               class="w-full sm:w-64"
               @search="onFilterChange"
             />
@@ -27,6 +27,7 @@
             v-if="publicSettings?.api_base_url || (publicSettings?.custom_endpoints?.length ?? 0) > 0"
             :api-base-url="publicSettings?.api_base_url || ''"
             :custom-endpoints="publicSettings?.custom_endpoints || []"
+            :shell-labels="apiKeysShellLabels"
           />
         </div>
       </template>
@@ -37,13 +38,13 @@
           @click="loadApiKeys"
           :disabled="loading"
           class="btn btn-secondary"
-          :title="t('common.refresh')"
+          :title="apiKeysText('refresh')"
         >
           <Icon name="refresh" size="md" :class="loading ? 'animate-spin' : ''" />
         </button>
         <button @click="showCreateModal = true" class="btn btn-primary" data-tour="keys-create-btn">
           <Icon name="plus" size="md" class="mr-2" />
-          {{ t('keys.createKey') }}
+          {{ apiKeysText('createKey') }}
         </button>
       </div>
       </template>
@@ -71,7 +72,7 @@
                     ? 'text-green-500'
                     : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
                 "
-                :title="copiedKeyId === row.id ? t('keys.copied') : t('keys.copyToClipboard')"
+                :title="copiedKeyId === row.id ? apiKeysText('copied') : apiKeysText('copyToClipboard')"
               >
                 <Icon
                   v-if="copiedKeyId === row.id"
@@ -92,7 +93,7 @@
                 name="shield"
                 size="sm"
                 class="text-blue-500"
-                :title="t('keys.ipRestrictionEnabled')"
+                :title="apiKeysText('ipRestrictionEnabled')"
               />
             </div>
           </template>
@@ -103,7 +104,7 @@
                 :ref="(el) => setGroupButtonRef(row.id, el)"
                 @click="openGroupSelector(row)"
                 class="-mx-2 -my-1 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1 transition-all duration-200 hover:bg-gray-100 dark:hover:bg-dark-700"
-                :title="t('keys.clickToChangeGroup')"
+                :title="apiKeysText('clickToChangeGroup')"
               >
                 <GroupBadge
                   v-if="row.group"
@@ -114,9 +115,9 @@
                   :user-rate-multiplier="userGroupRates[row.group.id]"
                 />
                 <span v-else class="text-sm text-gray-400 dark:text-dark-500">{{
-                  t('keys.noGroup')
+                  apiKeysText('noGroup')
                 }}</span>
-                <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('keys.selectGroup') }}</span>
+                <span class="text-xs text-gray-500 dark:text-gray-400">{{ apiKeysText('selectGroup') }}</span>
                 <svg
                   class="h-3.5 w-3.5 text-gray-400 opacity-60 transition-opacity group-hover/dropdown:opacity-100"
                   fill="none"
@@ -137,28 +138,28 @@
           <template #cell-usage="{ row }">
             <div class="text-sm">
               <div class="flex items-center gap-1.5">
-                <span class="text-gray-500 dark:text-gray-400">{{ t('keys.today') }}:</span>
+                <span class="text-gray-500 dark:text-gray-400">{{ apiKeysText('today') }}:</span>
                 <span class="font-medium text-gray-900 dark:text-white">
-                  ${{ (usageStats[row.id]?.today_actual_cost ?? 0).toFixed(4) }}
+                  {{ formatApiKeyCost(usageStats[row.id]?.today_actual_cost, 4) }}
                 </span>
               </div>
               <div class="mt-0.5 flex items-center gap-1.5">
-                <span class="text-gray-500 dark:text-gray-400">{{ t('keys.total') }}:</span>
+                <span class="text-gray-500 dark:text-gray-400">{{ apiKeysText('total') }}:</span>
                 <span class="font-medium text-gray-900 dark:text-white">
-                  ${{ (usageStats[row.id]?.total_actual_cost ?? 0).toFixed(4) }}
+                  {{ formatApiKeyCost(usageStats[row.id]?.total_actual_cost, 4) }}
                 </span>
               </div>
               <!-- Quota progress (if quota is set) -->
               <div v-if="row.quota > 0" class="mt-1.5">
                 <div class="flex items-center gap-1.5">
-                  <span class="text-gray-500 dark:text-gray-400">{{ t('keys.quota') }}:</span>
+                  <span class="text-gray-500 dark:text-gray-400">{{ apiKeysText('quota') }}:</span>
                   <span :class="[
                     'font-medium',
                     row.quota_used >= row.quota ? 'text-red-500' :
                     row.quota_used >= row.quota * 0.8 ? 'text-yellow-500' :
                     'text-gray-900 dark:text-white'
                   ]">
-                    ${{ row.quota_used?.toFixed(2) || '0.00' }} / ${{ row.quota?.toFixed(2) }}
+                    {{ formatApiKeyCost(row.quota_used, 2) }} / {{ formatApiKeyCost(row.quota, 2) }}
                   </span>
                 </div>
                 <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -188,7 +189,7 @@
                     row.usage_5h >= row.rate_limit_5h * 0.8 ? 'text-yellow-500' :
                     'text-gray-700 dark:text-gray-300'
                   ]">
-                    ${{ row.usage_5h?.toFixed(2) || '0.00' }}/${{ row.rate_limit_5h?.toFixed(2) }}
+                    {{ formatApiKeyCost(row.usage_5h, 2) }}/{{ formatApiKeyCost(row.rate_limit_5h, 2) }}
                   </span>
                 </div>
                 <div class="h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -216,7 +217,7 @@
                     row.usage_1d >= row.rate_limit_1d * 0.8 ? 'text-yellow-500' :
                     'text-gray-700 dark:text-gray-300'
                   ]">
-                    ${{ row.usage_1d?.toFixed(2) || '0.00' }}/${{ row.rate_limit_1d?.toFixed(2) }}
+                    {{ formatApiKeyCost(row.usage_1d, 2) }}/{{ formatApiKeyCost(row.rate_limit_1d, 2) }}
                   </span>
                 </div>
                 <div class="h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -244,7 +245,7 @@
                     row.usage_7d >= row.rate_limit_7d * 0.8 ? 'text-yellow-500' :
                     'text-gray-700 dark:text-gray-300'
                   ]">
-                    ${{ row.usage_7d?.toFixed(2) || '0.00' }}/${{ row.rate_limit_7d?.toFixed(2) }}
+                    {{ formatApiKeyCost(row.usage_7d, 2) }}/{{ formatApiKeyCost(row.rate_limit_7d, 2) }}
                   </span>
                 </div>
                 <div class="h-1 w-full overflow-hidden rounded-full bg-gray-200 dark:bg-dark-600">
@@ -267,10 +268,10 @@
                 v-if="row.usage_5h > 0 || row.usage_1d > 0 || row.usage_7d > 0"
                 @click.stop="confirmResetRateLimitFromTable(row)"
                 class="mt-0.5 inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 dark:hover:bg-dark-700 dark:hover:text-primary-400"
-                :title="t('keys.resetRateLimitUsage')"
+                :title="apiKeysText('resetRateLimitUsage')"
               >
                 <Icon name="refresh" size="xs" />
-                {{ t('keys.resetUsage') }}
+                {{ apiKeysText('resetUsage') }}
               </button>
             </div>
             <span v-else class="text-sm text-gray-400 dark:text-dark-500">-</span>
@@ -283,7 +284,7 @@
             ]">
               {{ formatDateTime(value) }}
             </span>
-            <span v-else class="text-sm text-gray-400 dark:text-dark-500">{{ t('keys.noExpiration') }}</span>
+            <span v-else class="text-sm text-gray-400 dark:text-dark-500">{{ apiKeysText('noExpiration') }}</span>
           </template>
 
           <template #cell-status="{ value }">
@@ -294,7 +295,7 @@
               value === 'expired' ? 'badge-danger' :
               'badge-gray'
             ]">
-              {{ t('keys.status.' + value) }}
+              {{ apiKeysStatusText(String(value)) }}
             </span>
           </template>
 
@@ -317,7 +318,7 @@
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
               >
                 <Icon name="terminal" size="sm" />
-                <span class="text-xs">{{ t('keys.useKey') }}</span>
+                <span class="text-xs">{{ apiKeysText('useKey') }}</span>
               </button>
               <!-- Import to CC Switch Button -->
               <button
@@ -326,7 +327,7 @@
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
               >
                 <Icon name="upload" size="sm" />
-                <span class="text-xs">{{ t('keys.importToCcSwitch') }}</span>
+                <span class="text-xs">{{ apiKeysText('importToCcSwitch') }}</span>
               </button>
               <!-- Toggle Status Button -->
               <button
@@ -340,7 +341,7 @@
               >
                 <Icon v-if="row.status === 'active'" name="ban" size="sm" />
                 <Icon v-else name="checkCircle" size="sm" />
-                <span class="text-xs">{{ row.status === 'active' ? t('keys.disable') : t('keys.enable') }}</span>
+                <span class="text-xs">{{ row.status === 'active' ? apiKeysText('disable') : apiKeysText('enable') }}</span>
               </button>
               <!-- Edit Button -->
               <button
@@ -348,7 +349,7 @@
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-primary-600 dark:hover:bg-dark-700 dark:hover:text-primary-400"
               >
                 <Icon name="edit" size="sm" />
-                <span class="text-xs">{{ t('common.edit') }}</span>
+                <span class="text-xs">{{ apiKeysText('edit') }}</span>
               </button>
               <!-- Delete Button -->
               <button
@@ -356,16 +357,16 @@
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
               >
                 <Icon name="trash" size="sm" />
-                <span class="text-xs">{{ t('common.delete') }}</span>
+                <span class="text-xs">{{ apiKeysText('delete') }}</span>
               </button>
             </div>
           </template>
 
           <template #empty>
             <EmptyState
-              :title="t('keys.noKeysYet')"
-              :description="t('keys.createFirstKey')"
-              :action-text="t('keys.createKey')"
+              :title="apiKeysText('noKeysYet')"
+              :description="apiKeysText('createFirstKey')"
+              :action-text="apiKeysText('createKey')"
               @action="showCreateModal = true"
             />
           </template>
@@ -387,31 +388,31 @@
     <!-- Create/Edit Modal -->
     <BaseDialog
       :show="showCreateModal || showEditModal"
-      :title="showEditModal ? t('keys.editKey') : t('keys.createKey')"
+      :title="showEditModal ? apiKeysText('editKey') : apiKeysText('createKey')"
       width="normal"
       @close="closeModals"
     >
       <form id="key-form" @submit.prevent="handleSubmit" class="space-y-5">
         <div>
-          <label class="input-label">{{ t('keys.nameLabel') }}</label>
+          <label class="input-label">{{ apiKeysText('nameLabel') }}</label>
           <input
             v-model="formData.name"
             type="text"
             required
             class="input"
-            :placeholder="t('keys.namePlaceholder')"
+            :placeholder="apiKeysText('namePlaceholder')"
             data-tour="key-form-name"
           />
         </div>
 
         <div>
-          <label class="input-label">{{ t('keys.groupLabel') }}</label>
+          <label class="input-label">{{ apiKeysText('groupLabel') }}</label>
           <Select
             v-model="formData.group_id"
             :options="groupOptions"
-            :placeholder="t('keys.selectGroup')"
+            :placeholder="apiKeysText('selectGroup')"
             :searchable="true"
-            :search-placeholder="t('keys.searchGroup')"
+            :search-placeholder="apiKeysText('searchGroup')"
             data-tour="key-form-group"
           >
             <template #selected="{ option }">
@@ -423,7 +424,7 @@
                 :rate-multiplier="(option as unknown as GroupOption).rate"
                 :user-rate-multiplier="(option as unknown as GroupOption).userRate"
               />
-              <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
+              <span v-else class="text-gray-400">{{ apiKeysText('selectGroup') }}</span>
             </template>
             <template #option="{ option, selected }">
               <GroupOptionItem
@@ -442,7 +443,7 @@
         <!-- Custom Key Section (only for create) -->
         <div v-if="!showEditModal" class="space-y-3">
           <div class="flex items-center justify-between">
-            <label class="input-label mb-0">{{ t('keys.customKeyLabel') }}</label>
+            <label class="input-label mb-0">{{ apiKeysText('customKeyLabel') }}</label>
             <button
               type="button"
               @click="formData.use_custom_key = !formData.use_custom_key"
@@ -464,27 +465,27 @@
               v-model="formData.custom_key"
               type="text"
               class="input font-mono"
-              :placeholder="t('keys.customKeyPlaceholder')"
+              :placeholder="apiKeysText('customKeyPlaceholder')"
               :class="{ 'border-red-500 dark:border-red-500': customKeyError }"
             />
             <p v-if="customKeyError" class="mt-1 text-sm text-red-500">{{ customKeyError }}</p>
-            <p v-else class="input-hint">{{ t('keys.customKeyHint') }}</p>
+            <p v-else class="input-hint">{{ apiKeysText('customKeyHint') }}</p>
           </div>
         </div>
 
         <div v-if="showEditModal">
-          <label class="input-label">{{ t('keys.statusLabel') }}</label>
+          <label class="input-label">{{ apiKeysText('statusLabel') }}</label>
           <Select
             v-model="formData.status"
             :options="statusOptions"
-            :placeholder="t('keys.selectStatus')"
+            :placeholder="apiKeysText('selectStatus')"
           />
         </div>
 
         <!-- IP Restriction Section -->
         <div class="space-y-3">
           <div class="flex items-center justify-between">
-            <label class="input-label mb-0">{{ t('keys.ipRestriction') }}</label>
+            <label class="input-label mb-0">{{ apiKeysText('ipRestriction') }}</label>
             <button
               type="button"
               @click="formData.enable_ip_restriction = !formData.enable_ip_restriction"
@@ -504,35 +505,35 @@
 
           <div v-if="formData.enable_ip_restriction" class="space-y-4 pt-2">
             <div>
-              <label class="input-label">{{ t('keys.ipWhitelist') }}</label>
+              <label class="input-label">{{ apiKeysText('ipWhitelist') }}</label>
               <textarea
                 v-model="formData.ip_whitelist"
                 rows="3"
                 class="input font-mono text-sm"
-                :placeholder="t('keys.ipWhitelistPlaceholder')"
+                :placeholder="apiKeysText('ipWhitelistPlaceholder')"
               />
-              <p class="input-hint">{{ t('keys.ipWhitelistHint') }}</p>
+              <p class="input-hint">{{ apiKeysText('ipWhitelistHint') }}</p>
             </div>
 
             <div>
-              <label class="input-label">{{ t('keys.ipBlacklist') }}</label>
+              <label class="input-label">{{ apiKeysText('ipBlacklist') }}</label>
               <textarea
                 v-model="formData.ip_blacklist"
                 rows="3"
                 class="input font-mono text-sm"
-                :placeholder="t('keys.ipBlacklistPlaceholder')"
+                :placeholder="apiKeysText('ipBlacklistPlaceholder')"
               />
-              <p class="input-hint">{{ t('keys.ipBlacklistHint') }}</p>
+              <p class="input-hint">{{ apiKeysText('ipBlacklistHint') }}</p>
             </div>
           </div>
         </div>
 
         <!-- Quota Limit Section -->
         <div class="space-y-3">
-          <label class="input-label">{{ t('keys.quotaLimit') }}</label>
+          <label class="input-label">{{ apiKeysText('quotaLimit') }}</label>
           <!-- Switch commented out - always show input, 0 = unlimited
           <div class="flex items-center justify-between">
-            <label class="input-label mb-0">{{ t('keys.quotaLimit') }}</label>
+            <label class="input-label mb-0">{{ apiKeysText('quotaLimit') }}</label>
             <button
               type="button"
               @click="formData.enable_quota = !formData.enable_quota"
@@ -554,39 +555,39 @@
           <div class="space-y-4">
             <div>
               <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span v-if="apiKeyCurrencyPrefix" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">{{ apiKeyCurrencyPrefix }}</span>
                 <input
                   v-model.number="formData.quota"
                   type="number"
                   step="0.01"
                   min="0"
                   class="input pl-7"
-                  :placeholder="t('keys.quotaAmountPlaceholder')"
+                  :placeholder="apiKeysText('quotaAmountPlaceholder')"
                 />
               </div>
-              <p class="input-hint">{{ t('keys.quotaAmountHint') }}</p>
+              <p class="input-hint">{{ apiKeysText('quotaAmountHint') }}</p>
             </div>
 
             <!-- Quota used display (only in edit mode) -->
             <div v-if="showEditModal && selectedKey && selectedKey.quota > 0">
-              <label class="input-label">{{ t('keys.quotaUsed') }}</label>
+              <label class="input-label">{{ apiKeysText('quotaUsed') }}</label>
               <div class="flex items-center gap-2">
                 <div class="flex-1 rounded-lg bg-gray-100 px-3 py-2 dark:bg-dark-700">
                   <span class="font-medium text-gray-900 dark:text-white">
-                    ${{ selectedKey.quota_used?.toFixed(4) || '0.0000' }}
+                    {{ formatApiKeyCost(selectedKey.quota_used, 4) }}
                   </span>
                   <span class="mx-2 text-gray-400">/</span>
                   <span class="text-gray-500 dark:text-gray-400">
-                    ${{ selectedKey.quota?.toFixed(2) || '0.00' }}
+                    {{ formatApiKeyCost(selectedKey.quota, 2) }}
                   </span>
                 </div>
                 <button
                   type="button"
                   @click="confirmResetQuota"
                   class="btn btn-secondary text-sm"
-                  :title="t('keys.resetQuotaUsed')"
+                  :title="apiKeysText('resetQuotaUsed')"
                 >
-                  {{ t('keys.reset') }}
+                  {{ apiKeysText('reset') }}
                 </button>
               </div>
             </div>
@@ -596,7 +597,7 @@
         <!-- Rate Limit Section -->
         <div class="space-y-3">
           <div class="flex items-center justify-between">
-            <label class="input-label mb-0">{{ t('keys.rateLimitSection') }}</label>
+            <label class="input-label mb-0">{{ apiKeysText('rateLimitSection') }}</label>
             <button
               type="button"
               @click="formData.enable_rate_limit = !formData.enable_rate_limit"
@@ -615,12 +616,12 @@
           </div>
 
           <div v-if="formData.enable_rate_limit" class="space-y-4 pt-2">
-            <p class="input-hint -mt-2">{{ t('keys.rateLimitHint') }}</p>
+            <p class="input-hint -mt-2">{{ apiKeysText('rateLimitHint') }}</p>
             <!-- 5-Hour Limit -->
             <div>
-              <label class="input-label">{{ t('keys.rateLimit5h') }}</label>
+              <label class="input-label">{{ apiKeysText('rateLimit5h') }}</label>
               <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span v-if="apiKeyCurrencyPrefix" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">{{ apiKeyCurrencyPrefix }}</span>
                 <input
                   v-model.number="formData.rate_limit_5h"
                   type="number"
@@ -640,11 +641,11 @@
                       selectedKey.usage_5h >= selectedKey.rate_limit_5h * 0.8 ? 'text-yellow-500' :
                       'text-gray-900 dark:text-white'
                     ]">
-                      ${{ selectedKey.usage_5h?.toFixed(4) || '0.0000' }}
+                      {{ formatApiKeyCost(selectedKey.usage_5h, 4) }}
                     </span>
                     <span class="mx-2 text-gray-400">/</span>
                     <span class="text-gray-500 dark:text-gray-400">
-                      ${{ selectedKey.rate_limit_5h?.toFixed(2) || '0.00' }}
+                      {{ formatApiKeyCost(selectedKey.rate_limit_5h, 2) }}
                     </span>
                   </div>
                 </div>
@@ -664,9 +665,9 @@
 
             <!-- Daily Limit -->
             <div>
-              <label class="input-label">{{ t('keys.rateLimit1d') }}</label>
+              <label class="input-label">{{ apiKeysText('rateLimit1d') }}</label>
               <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span v-if="apiKeyCurrencyPrefix" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">{{ apiKeyCurrencyPrefix }}</span>
                 <input
                   v-model.number="formData.rate_limit_1d"
                   type="number"
@@ -686,11 +687,11 @@
                       selectedKey.usage_1d >= selectedKey.rate_limit_1d * 0.8 ? 'text-yellow-500' :
                       'text-gray-900 dark:text-white'
                     ]">
-                      ${{ selectedKey.usage_1d?.toFixed(4) || '0.0000' }}
+                      {{ formatApiKeyCost(selectedKey.usage_1d, 4) }}
                     </span>
                     <span class="mx-2 text-gray-400">/</span>
                     <span class="text-gray-500 dark:text-gray-400">
-                      ${{ selectedKey.rate_limit_1d?.toFixed(2) || '0.00' }}
+                      {{ formatApiKeyCost(selectedKey.rate_limit_1d, 2) }}
                     </span>
                   </div>
                 </div>
@@ -710,9 +711,9 @@
 
             <!-- 7-Day Limit -->
             <div>
-              <label class="input-label">{{ t('keys.rateLimit7d') }}</label>
+              <label class="input-label">{{ apiKeysText('rateLimit7d') }}</label>
               <div class="relative">
-                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">$</span>
+                <span v-if="apiKeyCurrencyPrefix" class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">{{ apiKeyCurrencyPrefix }}</span>
                 <input
                   v-model.number="formData.rate_limit_7d"
                   type="number"
@@ -732,11 +733,11 @@
                       selectedKey.usage_7d >= selectedKey.rate_limit_7d * 0.8 ? 'text-yellow-500' :
                       'text-gray-900 dark:text-white'
                     ]">
-                      ${{ selectedKey.usage_7d?.toFixed(4) || '0.0000' }}
+                      {{ formatApiKeyCost(selectedKey.usage_7d, 4) }}
                     </span>
                     <span class="mx-2 text-gray-400">/</span>
                     <span class="text-gray-500 dark:text-gray-400">
-                      ${{ selectedKey.rate_limit_7d?.toFixed(2) || '0.00' }}
+                      {{ formatApiKeyCost(selectedKey.rate_limit_7d, 2) }}
                     </span>
                   </div>
                 </div>
@@ -761,7 +762,7 @@
                 @click="confirmResetRateLimit"
                 class="btn btn-secondary text-sm"
               >
-                {{ t('keys.resetRateLimitUsage') }}
+                {{ apiKeysText('resetRateLimitUsage') }}
               </button>
             </div>
           </div>
@@ -770,7 +771,7 @@
         <!-- Expiration Section -->
         <div class="space-y-3">
           <div class="flex items-center justify-between">
-            <label class="input-label mb-0">{{ t('keys.expiration') }}</label>
+            <label class="input-label mb-0">{{ apiKeysText('expiration') }}</label>
             <button
               type="button"
               @click="formData.enable_expiration = !formData.enable_expiration"
@@ -803,7 +804,7 @@
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-700 dark:text-gray-400 dark:hover:bg-dark-600'
                 ]"
               >
-                {{ showEditModal ? t('keys.extendDays', { days }) : t('keys.expiresInDays', { days }) }}
+                {{ showEditModal ? apiKeysText('extendDays', { days }) : apiKeysText('expiresInDays', { days }) }}
               </button>
               <button
                 type="button"
@@ -815,24 +816,24 @@
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-dark-700 dark:text-gray-400 dark:hover:bg-dark-600'
                 ]"
               >
-                {{ t('keys.customDate') }}
+                {{ apiKeysText('customDate') }}
               </button>
             </div>
 
             <!-- Date picker (always show for precise adjustment) -->
             <div>
-              <label class="input-label">{{ t('keys.expirationDate') }}</label>
+              <label class="input-label">{{ apiKeysText('expirationDate') }}</label>
               <input
                 v-model="formData.expiration_date"
                 type="datetime-local"
                 class="input"
               />
-              <p class="input-hint">{{ t('keys.expirationDateHint') }}</p>
+              <p class="input-hint">{{ apiKeysText('expirationDateHint') }}</p>
             </div>
 
             <!-- Current expiration display (only in edit mode) -->
             <div v-if="showEditModal && selectedKey?.expires_at" class="text-sm">
-              <span class="text-gray-500 dark:text-gray-400">{{ t('keys.currentExpiration') }}: </span>
+              <span class="text-gray-500 dark:text-gray-400">{{ apiKeysText('currentExpiration') }}: </span>
               <span class="font-medium text-gray-900 dark:text-white">
                 {{ formatDateTime(selectedKey.expires_at) }}
               </span>
@@ -843,7 +844,7 @@
       <template #footer>
         <div class="flex justify-end gap-3">
           <button @click="closeModals" type="button" class="btn btn-secondary">
-            {{ t('common.cancel') }}
+            {{ apiKeysText('cancel') }}
           </button>
           <button
             form="key-form"
@@ -874,10 +875,10 @@
             </svg>
             {{
               submitting
-                ? t('keys.saving')
+                ? apiKeysText('saving')
                 : showEditModal
-                  ? t('common.update')
-                  : t('common.create')
+                  ? apiKeysText('update')
+                  : apiKeysText('create')
             }}
           </button>
         </div>
@@ -887,10 +888,10 @@
     <!-- Delete Confirmation Dialog -->
     <ConfirmDialog
       :show="showDeleteDialog"
-      :title="t('keys.deleteKey')"
-      :message="t('keys.deleteConfirmMessage', { name: selectedKey?.name })"
-      :confirm-text="t('common.delete')"
-      :cancel-text="t('common.cancel')"
+      :title="apiKeysText('deleteKey')"
+      :message="apiKeysText('deleteConfirmMessage', { name: selectedKey?.name || '' })"
+      :confirm-text="apiKeysText('delete')"
+      :cancel-text="apiKeysText('cancel')"
       :danger="true"
       @confirm="handleDelete"
       @cancel="showDeleteDialog = false"
@@ -899,10 +900,10 @@
     <!-- Reset Quota Confirmation Dialog -->
     <ConfirmDialog
       :show="showResetQuotaDialog"
-      :title="t('keys.resetQuotaTitle')"
-      :message="t('keys.resetQuotaConfirmMessage', { name: selectedKey?.name, used: selectedKey?.quota_used?.toFixed(4) })"
-      :confirm-text="t('keys.reset')"
-      :cancel-text="t('common.cancel')"
+      :title="apiKeysText('resetQuotaTitle')"
+      :message="apiKeysText('resetQuotaConfirmMessage', { name: selectedKey?.name || '', used: selectedKey?.quota_used?.toFixed(4) || '0.0000' })"
+      :confirm-text="apiKeysText('reset')"
+      :cancel-text="apiKeysText('cancel')"
       :danger="true"
       @confirm="resetQuotaUsed"
       @cancel="showResetQuotaDialog = false"
@@ -911,10 +912,10 @@
     <!-- Reset Rate Limit Confirmation Dialog -->
     <ConfirmDialog
       :show="showResetRateLimitDialog"
-      :title="t('keys.resetRateLimitTitle')"
-      :message="t('keys.resetRateLimitConfirmMessage', { name: selectedKey?.name })"
-      :confirm-text="t('keys.reset')"
-      :cancel-text="t('common.cancel')"
+      :title="apiKeysText('resetRateLimitTitle')"
+      :message="apiKeysText('resetRateLimitConfirmMessage', { name: selectedKey?.name || '' })"
+      :confirm-text="apiKeysText('reset')"
+      :cancel-text="apiKeysText('cancel')"
       :danger="true"
       @confirm="resetRateLimitUsage"
       @cancel="showResetRateLimitDialog = false"
@@ -927,51 +928,52 @@
       :base-url="publicSettings?.api_base_url || ''"
       :platform="selectedKey?.group?.platform || null"
       :allow-messages-dispatch="selectedKey?.group?.allow_messages_dispatch || false"
+      :shell-labels="apiKeysShellLabels"
       @close="closeUseKeyModal"
     />
 
     <!-- CCS Client Selection Dialog for Antigravity -->
     <BaseDialog
       :show="showCcsClientSelect"
-      :title="t('keys.ccsClientSelect.title')"
+      :title="apiKeysText('ccsClientSelectTitle')"
       width="narrow"
       @close="closeCcsClientSelect"
     >
       <div class="space-y-4">
         <p class="text-sm text-gray-600 dark:text-gray-400">
-          {{ t('keys.ccsClientSelect.description') }}
-	        </p>
-	        <div class="grid grid-cols-2 gap-3">
-	          <button
-	            @click="handleCcsClientSelect('claude')"
-	            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
-	          >
-	            <Icon name="terminal" size="xl" class="text-gray-600 dark:text-gray-400" />
-	            <span class="font-medium text-gray-900 dark:text-white">{{
-	              t('keys.ccsClientSelect.claudeCode')
-	            }}</span>
-	            <span class="text-xs text-gray-500 dark:text-gray-400">{{
-	              t('keys.ccsClientSelect.claudeCodeDesc')
-	            }}</span>
-	          </button>
-	          <button
-	            @click="handleCcsClientSelect('gemini')"
-	            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
-	          >
-	            <Icon name="sparkles" size="xl" class="text-gray-600 dark:text-gray-400" />
-	            <span class="font-medium text-gray-900 dark:text-white">{{
-	              t('keys.ccsClientSelect.geminiCli')
-	            }}</span>
-	            <span class="text-xs text-gray-500 dark:text-gray-400">{{
-	              t('keys.ccsClientSelect.geminiCliDesc')
-	            }}</span>
-	          </button>
-	        </div>
-	      </div>
+          {{ apiKeysText('ccsClientSelectDescription') }}
+        </p>
+        <div class="grid grid-cols-2 gap-3">
+          <button
+            @click="handleCcsClientSelect('claude')"
+            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
+          >
+            <Icon name="terminal" size="xl" class="text-gray-600 dark:text-gray-400" />
+            <span class="font-medium text-gray-900 dark:text-white">{{
+              apiKeysText('ccsClientSelectClaudeCode')
+            }}</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{
+              apiKeysText('ccsClientSelectClaudeCodeDesc')
+            }}</span>
+          </button>
+          <button
+            @click="handleCcsClientSelect('gemini')"
+            class="flex flex-col items-center gap-2 p-4 rounded-xl border-2 border-gray-200 dark:border-dark-600 hover:border-primary-500 dark:hover:border-primary-500 hover:bg-primary-50 dark:hover:bg-primary-900/20 transition-all"
+          >
+            <Icon name="sparkles" size="xl" class="text-gray-600 dark:text-gray-400" />
+            <span class="font-medium text-gray-900 dark:text-white">{{
+              apiKeysText('ccsClientSelectGeminiCli')
+            }}</span>
+            <span class="text-xs text-gray-500 dark:text-gray-400">{{
+              apiKeysText('ccsClientSelectGeminiCliDesc')
+            }}</span>
+          </button>
+        </div>
+      </div>
       <template #footer>
         <div class="flex justify-end">
           <button @click="closeCcsClientSelect" class="btn btn-secondary">
-            {{ t('common.cancel') }}
+            {{ apiKeysText('cancel') }}
           </button>
         </div>
       </template>
@@ -1000,7 +1002,7 @@
               v-model="groupSearchQuery"
               type="text"
               class="w-full rounded-lg border border-gray-200 bg-gray-50 py-1.5 pl-8 pr-3 text-sm text-gray-900 placeholder-gray-400 outline-none focus:border-primary-300 focus:ring-1 focus:ring-primary-300 dark:border-dark-600 dark:bg-dark-700 dark:text-white dark:placeholder-gray-500 dark:focus:border-primary-600 dark:focus:ring-primary-600"
-              :placeholder="t('keys.searchGroup')"
+              :placeholder="apiKeysText('searchGroup')"
               @click.stop
             />
           </div>
@@ -1036,7 +1038,7 @@
           </button>
           <!-- Empty state when search has no results -->
           <div v-if="filteredGroupOptions.length === 0" class="py-4 text-center text-sm text-gray-400 dark:text-gray-500">
-            {{ t('keys.noGroupFound') }}
+            {{ apiKeysText('noGroupFound') }}
           </div>
         </div>
       </div>
@@ -1045,38 +1047,45 @@
 </template>
 
 <script setup lang="ts">
-	import { ref, computed, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue'
-	import { useI18n } from 'vue-i18n'
-	import { useAppStore } from '@/stores/app'
-	import { useOnboardingStore } from '@/stores/onboarding'
-	import { useClipboard } from '@/composables/useClipboard'
+import { ref, computed, onMounted, onUnmounted, type ComponentPublicInstance } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useAppStore } from '@/stores/app'
+import { useOnboardingStore } from '@/stores/onboarding'
+import { useClipboard } from '@/composables/useClipboard'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
-
-const { t } = useI18n()
 import { keysAPI, authAPI, usageAPI, userGroupsAPI } from '@/api'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
-	import DataTable from '@/components/common/DataTable.vue'
-	import Pagination from '@/components/common/Pagination.vue'
-	import BaseDialog from '@/components/common/BaseDialog.vue'
-	import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
-	import EmptyState from '@/components/common/EmptyState.vue'
-	import Select from '@/components/common/Select.vue'
-	import SearchInput from '@/components/common/SearchInput.vue'
-	import Icon from '@/components/icons/Icon.vue'
-	import UseKeyModal from '@/components/keys/UseKeyModal.vue'
-	import EndpointPopover from '@/components/keys/EndpointPopover.vue'
-	import GroupBadge from '@/components/common/GroupBadge.vue'
-	import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
-	import type { ApiKey, Group, PublicSettings, SubscriptionType, GroupPlatform } from '@/types'
+import DataTable from '@/components/common/DataTable.vue'
+import Pagination from '@/components/common/Pagination.vue'
+import BaseDialog from '@/components/common/BaseDialog.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
+import Select from '@/components/common/Select.vue'
+import SearchInput from '@/components/common/SearchInput.vue'
+import Icon from '@/components/icons/Icon.vue'
+import UseKeyModal from '@/components/keys/UseKeyModal.vue'
+import EndpointPopover from '@/components/keys/EndpointPopover.vue'
+import GroupBadge from '@/components/common/GroupBadge.vue'
+import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
+import type { ApiKey, Group, PublicSettings, SubscriptionType, GroupPlatform } from '@/types'
 import type { Column } from '@/components/common/types'
 import type { BatchApiKeyUsageStats } from '@/api/usage'
 import { formatDateTime } from '@/utils/format'
 import { maskApiKey } from '@/utils/maskApiKey'
 import {
+  renderApiKeysShellText,
+  resolveApiKeysShellLabels,
+  type ApiKeysShellLabelKey,
+  type ApiKeysShellLabels,
+} from '@/utils/apiKeysShell'
+import { resolveRuntimeLanguage } from '@/utils/runtimeLocale'
+import {
   buildCcSwitchImportDeeplink,
   type CcSwitchClientType
 } from '@/utils/ccswitchImport'
+
+const { locale } = useI18n()
 
 // Helper to format date for datetime-local input
 const formatDateTimeLocal = (isoDate: string): string => {
@@ -1099,17 +1108,51 @@ const appStore = useAppStore()
 const onboardingStore = useOnboardingStore()
 const { copyToClipboard: clipboardCopy } = useClipboard()
 
+const runtimeLocale = computed<'zh' | 'en'>(() => resolveRuntimeLanguage(locale))
+
+const apiKeysShellLabels = computed<ApiKeysShellLabels>(() => {
+  return resolveApiKeysShellLabels(
+    publicSettings.value?.api_keys_shell_config || appStore.cachedPublicSettings?.api_keys_shell_config,
+    runtimeLocale.value,
+  )
+})
+
+const apiKeysText = (key: ApiKeysShellLabelKey, params: Record<string, string | number> = {}) => {
+  return renderApiKeysShellText(apiKeysShellLabels.value, key, params)
+}
+
+const apiKeyCurrencyPrefix = computed(() =>
+  publicSettings.value?.pricing_currency_symbol?.trim() ||
+  appStore.cachedPublicSettings?.pricing_currency_symbol?.trim() ||
+  ''
+)
+
+const formatApiKeyCost = (value: number | null | undefined, fractionDigits = 2): string => {
+  const amount = Number.isFinite(value) ? Number(value) : 0
+  return `${apiKeyCurrencyPrefix.value}${amount.toFixed(fractionDigits)}`
+}
+
+const apiKeysStatusText = (status: string) => {
+  const statusKey: Record<string, ApiKeysShellLabelKey> = {
+    active: 'statusActive',
+    inactive: 'statusInactive',
+    quota_exhausted: 'statusQuotaExhausted',
+    expired: 'statusExpired'
+  }
+  return apiKeysText(statusKey[status] || status)
+}
+
 const columns = computed<Column[]>(() => [
-  { key: 'name', label: t('common.name'), sortable: true },
-  { key: 'key', label: t('keys.apiKey'), sortable: false },
-  { key: 'group', label: t('keys.group'), sortable: false },
-  { key: 'usage', label: t('keys.usage'), sortable: false },
-  { key: 'rate_limit', label: t('keys.rateLimitColumn'), sortable: false },
-  { key: 'expires_at', label: t('keys.expiresAt'), sortable: true },
-  { key: 'status', label: t('common.status'), sortable: true },
-  { key: 'last_used_at', label: t('keys.lastUsedAt'), sortable: true },
-  { key: 'created_at', label: t('keys.created'), sortable: true },
-  { key: 'actions', label: t('common.actions'), sortable: false }
+  { key: 'name', label: apiKeysText('name'), sortable: true },
+  { key: 'key', label: apiKeysText('apiKey'), sortable: false },
+  { key: 'group', label: apiKeysText('group'), sortable: false },
+  { key: 'usage', label: apiKeysText('usage'), sortable: false },
+  { key: 'rate_limit', label: apiKeysText('rateLimitColumn'), sortable: false },
+  { key: 'expires_at', label: apiKeysText('expiresAt'), sortable: true },
+  { key: 'status', label: apiKeysText('status'), sortable: true },
+  { key: 'last_used_at', label: apiKeysText('lastUsedAt'), sortable: true },
+  { key: 'created_at', label: apiKeysText('created'), sortable: true },
+  { key: 'actions', label: apiKeysText('actions'), sortable: false }
 ])
 
 const apiKeys = ref<ApiKey[]>([])
@@ -1197,33 +1240,33 @@ const customKeyError = computed(() => {
   }
   const key = formData.value.custom_key
   if (key.length < 16) {
-    return t('keys.customKeyTooShort')
+    return apiKeysText('customKeyTooShort')
   }
   // 检查字符：只允许字母、数字、下划线、连字符
   if (!/^[a-zA-Z0-9_-]+$/.test(key)) {
-    return t('keys.customKeyInvalidChars')
+    return apiKeysText('customKeyInvalidChars')
   }
   return ''
 })
 
 const statusOptions = computed(() => [
-  { value: 'active', label: t('common.active') },
-  { value: 'inactive', label: t('common.inactive') }
+  { value: 'active', label: apiKeysText('active') },
+  { value: 'inactive', label: apiKeysText('inactive') }
 ])
 
 // Filter dropdown options
 const groupFilterOptions = computed(() => [
-  { value: '', label: t('keys.allGroups') },
-  { value: 0, label: t('keys.noGroup') },
+  { value: '', label: apiKeysText('allGroups') },
+  { value: 0, label: apiKeysText('noGroup') },
   ...groups.value.map((g) => ({ value: g.id, label: g.name }))
 ])
 
 const statusFilterOptions = computed(() => [
-  { value: '', label: t('keys.allStatus') },
-  { value: 'active', label: t('keys.status.active') },
-  { value: 'inactive', label: t('keys.status.inactive') },
-  { value: 'quota_exhausted', label: t('keys.status.quota_exhausted') },
-  { value: 'expired', label: t('keys.status.expired') }
+  { value: '', label: apiKeysText('allStatus') },
+  { value: 'active', label: apiKeysText('statusActive') },
+  { value: 'inactive', label: apiKeysText('statusInactive') },
+  { value: 'quota_exhausted', label: apiKeysText('statusQuotaExhausted') },
+  { value: 'expired', label: apiKeysText('statusExpired') }
 ])
 
 const onFilterChange = () => {
@@ -1266,7 +1309,7 @@ const filteredGroupOptions = computed(() => {
 })
 
 const copyToClipboard = async (text: string, keyId: number) => {
-  const success = await clipboardCopy(text, t('keys.copied'))
+  const success = await clipboardCopy(text, apiKeysText('copied'))
   if (success) {
     copiedKeyId.value = keyId
     setTimeout(() => {
@@ -1327,7 +1370,7 @@ const loadApiKeys = async () => {
     if (isAbortError(error)) {
       return
     }
-    appStore.showError(t('keys.failedToLoad'))
+    appStore.showError(apiKeysText('failedToLoad'))
   } finally {
     if (abortController === controller) {
       loading.value = false
@@ -1418,11 +1461,11 @@ const toggleKeyStatus = async (key: ApiKey) => {
   try {
     await keysAPI.toggleStatus(key.id, newStatus)
     appStore.showSuccess(
-      newStatus === 'active' ? t('keys.keyEnabledSuccess') : t('keys.keyDisabledSuccess')
+      newStatus === 'active' ? apiKeysText('keyEnabledSuccess') : apiKeysText('keyDisabledSuccess')
     )
     loadApiKeys()
   } catch (error) {
-    appStore.showError(t('keys.failedToUpdateStatus'))
+    appStore.showError(apiKeysText('failedToUpdateStatus'))
   }
 }
 
@@ -1464,10 +1507,10 @@ const changeGroup = async (key: ApiKey, newGroupId: number | null) => {
 
   try {
     await keysAPI.update(key.id, { group_id: newGroupId })
-    appStore.showSuccess(t('keys.groupChangedSuccess'))
+    appStore.showSuccess(apiKeysText('groupChangedSuccess'))
     loadApiKeys()
   } catch (error) {
-    appStore.showError(t('keys.failedToChangeGroup'))
+    appStore.showError(apiKeysText('failedToChangeGroup'))
   }
 }
 
@@ -1488,14 +1531,14 @@ const confirmDelete = (key: ApiKey) => {
 const handleSubmit = async () => {
   // Validate group_id is required
   if (formData.value.group_id === null) {
-    appStore.showError(t('keys.groupRequired'))
+    appStore.showError(apiKeysText('groupRequired'))
     return
   }
 
   // Validate custom key if enabled
   if (!showEditModal.value && formData.value.use_custom_key) {
     if (!formData.value.custom_key) {
-      appStore.showError(t('keys.customKeyRequired'))
+      appStore.showError(apiKeysText('customKeyRequired'))
       return
     }
     if (customKeyError.value) {
@@ -1554,7 +1597,7 @@ const handleSubmit = async () => {
         rate_limit_1d: rateLimitData.rate_limit_1d,
         rate_limit_7d: rateLimitData.rate_limit_7d,
       })
-      appStore.showSuccess(t('keys.keyUpdatedSuccess'))
+      appStore.showSuccess(apiKeysText('keyUpdatedSuccess'))
     } else {
       const customKey = formData.value.use_custom_key ? formData.value.custom_key : undefined
       await keysAPI.create(
@@ -1567,7 +1610,7 @@ const handleSubmit = async () => {
         expiresInDays,
         rateLimitData
       )
-      appStore.showSuccess(t('keys.keyCreatedSuccess'))
+      appStore.showSuccess(apiKeysText('keyCreatedSuccess'))
       // Only advance tour if active, on submit step, and creation succeeded
       if (onboardingStore.isCurrentStep('[data-tour="key-form-submit"]')) {
         onboardingStore.nextStep(500)
@@ -1576,7 +1619,7 @@ const handleSubmit = async () => {
     closeModals()
     loadApiKeys()
   } catch (error: any) {
-    const errorMsg = error.response?.data?.detail || t('keys.failedToSave')
+    const errorMsg = error.response?.data?.detail || apiKeysText('failedToSave')
     appStore.showError(errorMsg)
     // Don't advance tour on error
   } finally {
@@ -1594,12 +1637,12 @@ const handleDelete = async () => {
 
   try {
     await keysAPI.delete(selectedKey.value.id)
-    appStore.showSuccess(t('keys.keyDeletedSuccess'))
+    appStore.showSuccess(apiKeysText('keyDeletedSuccess'))
     showDeleteDialog.value = false
     loadApiKeys()
   } catch (error: any) {
     // 优先使用后端返回的错误消息，提供更具体的错误信息给用户
-    const errorMsg = error?.message || t('keys.failedToDelete')
+    const errorMsg = error?.message || apiKeysText('failedToDelete')
     appStore.showError(errorMsg)
   }
 }
@@ -1648,13 +1691,13 @@ const resetQuotaUsed = async () => {
   showResetQuotaDialog.value = false
   try {
     await keysAPI.update(selectedKey.value.id, { reset_quota: true })
-    appStore.showSuccess(t('keys.quotaResetSuccess'))
+    appStore.showSuccess(apiKeysText('quotaResetSuccess'))
     // Update local state
     if (selectedKey.value) {
       selectedKey.value.quota_used = 0
     }
   } catch (error: any) {
-    const errorMsg = error.response?.data?.detail || t('keys.failedToResetQuota')
+    const errorMsg = error.response?.data?.detail || apiKeysText('failedToResetQuota')
     appStore.showError(errorMsg)
   }
 }
@@ -1676,7 +1719,7 @@ const resetRateLimitUsage = async () => {
   showResetRateLimitDialog.value = false
   try {
     await keysAPI.update(selectedKey.value.id, { reset_rate_limit_usage: true })
-    appStore.showSuccess(t('keys.rateLimitResetSuccess'))
+    appStore.showSuccess(apiKeysText('rateLimitResetSuccess'))
     // Refresh key data
     await loadApiKeys()
     // Update the editing key with fresh data
@@ -1685,13 +1728,13 @@ const resetRateLimitUsage = async () => {
       selectedKey.value = refreshedKey
     }
   } catch (error: any) {
-    const errorMsg = error.response?.data?.detail || t('keys.failedToResetRateLimit')
+    const errorMsg = error.response?.data?.detail || apiKeysText('failedToResetRateLimit')
     appStore.showError(errorMsg)
   }
 }
 
 const importToCcswitch = (row: ApiKey) => {
-  const platform = row.group?.platform || 'anthropic'
+  const platform = row.group?.platform
 
   // For antigravity platform, show client selection dialog
   if (platform === 'antigravity') {
@@ -1706,7 +1749,7 @@ const importToCcswitch = (row: ApiKey) => {
 
 const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
   const baseUrl = publicSettings.value?.api_base_url || window.location.origin
-  const platform = row.group?.platform || 'anthropic'
+  const platform = row.group?.platform
 
   const usageScript = `({
     request: {
@@ -1716,7 +1759,7 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
     },
     extractor: function(response) {
       const remaining = response?.remaining ?? response?.quota?.remaining ?? response?.balance;
-      const unit = response?.unit ?? response?.quota?.unit ?? "USD";
+      const unit = response?.unit ?? response?.quota?.unit;
       return {
         isValid: response?.is_active ?? response?.isValid ?? true,
         remaining,
@@ -1724,7 +1767,7 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
       };
     }
   })`
-  const providerName = (publicSettings.value?.site_name || 'sub2api').trim() || 'sub2api'
+  const providerName = publicSettings.value?.site_name?.trim() || ''
   const deeplink = buildCcSwitchImportDeeplink({
     baseUrl,
     platform,
@@ -1741,11 +1784,11 @@ const executeCcsImport = (row: ApiKey, clientType: CcSwitchClientType) => {
     setTimeout(() => {
       if (document.hasFocus()) {
         // Still focused means the protocol handler likely failed
-        appStore.showError(t('keys.ccSwitchNotInstalled'))
+        appStore.showError(apiKeysText('ccSwitchNotInstalled'))
       }
     }, 100)
   } catch (error) {
-    appStore.showError(t('keys.ccSwitchNotInstalled'))
+    appStore.showError(apiKeysText('ccSwitchNotInstalled'))
   }
 }
 
@@ -1765,7 +1808,7 @@ const closeCcsClientSelect = () => {
 function formatResetTime(resetAt: string | null): string {
   if (!resetAt) return ''
   const diff = new Date(resetAt).getTime() - now.value.getTime()
-  if (diff <= 0) return t('keys.resetNow')
+  if (diff <= 0) return apiKeysText('resetNow')
   const days = Math.floor(diff / 86400000)
   const hours = Math.floor((diff % 86400000) / 3600000)
   const mins = Math.floor((diff % 3600000) / 60000)

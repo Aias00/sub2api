@@ -5,9 +5,9 @@
 
       <header class="relative z-10 px-6 py-5">
         <nav class="mx-auto flex max-w-6xl items-center justify-between">
-          <RouterLink to="/home" class="flex items-center gap-3">
-            <div class="h-9 w-9 overflow-hidden rounded-xl border border-white/10 bg-white/5">
-              <img :src="siteLogo || '/logo.png'" alt="Logo" class="h-full w-full object-contain" />
+          <RouterLink :to="authRouteDefaults.homePath" class="flex items-center gap-3">
+            <div v-if="siteLogo" class="h-9 w-9 overflow-hidden rounded-xl border border-white/10 bg-white/5">
+              <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
             </div>
             <span class="text-sm font-semibold text-white">{{ siteName }}</span>
           </RouterLink>
@@ -18,13 +18,13 @@
               :doc-url="docUrl"
               class="hidden rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition hover:border-white/20 hover:text-white sm:inline-flex"
             >
-              {{ t('home.viewDocs') }}
+              {{ copy.viewDocs }}
             </DocsLink>
             <RouterLink
-              :to="isAuthenticated ? dashboardPath : '/login'"
+              :to="isAuthenticated ? dashboardPath : loginPath"
               class="inline-flex items-center rounded-full border border-white/10 bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-white/90"
             >
-              {{ isAuthenticated ? t('home.goToDashboard') : t('home.login') }}
+              {{ isAuthenticated ? copy.dashboard : copy.login }}
             </RouterLink>
           </div>
         </nav>
@@ -33,13 +33,13 @@
       <section class="relative z-10 px-6 pb-16 pt-10 sm:pb-20 sm:pt-14">
         <div class="mx-auto max-w-5xl text-center">
           <div class="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-4 py-2 text-sm font-medium text-white/70 backdrop-blur">
-            {{ t('modelsPlaza.badge') }}
+            {{ copy.badge }}
           </div>
           <h1 class="mt-6 text-balance text-5xl font-black tracking-tight text-white sm:text-6xl">
-            {{ t('modelsPlaza.title') }}
+            {{ copy.title }}
           </h1>
           <p class="mx-auto mt-5 max-w-3xl text-balance text-base leading-8 text-white/60 sm:text-lg">
-            {{ t('modelsPlaza.description') }}
+            {{ copy.description }}
           </p>
         </div>
       </section>
@@ -56,10 +56,10 @@
           class="rounded-[32px] border border-white/10 bg-white/[0.03] px-8 py-16 text-center"
         >
           <h2 class="text-2xl font-bold text-white">
-            {{ t('modelsPlaza.emptyTitle') }}
+            {{ copy.emptyTitle }}
           </h2>
           <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/60 sm:text-base">
-            {{ t('modelsPlaza.emptyDescription') }}
+            {{ copy.emptyDescription }}
           </p>
         </div>
 
@@ -68,22 +68,22 @@
             <div class="rounded-3xl border border-white/10 bg-[#17181d] p-4 shadow-[0_20px_50px_rgba(0,0,0,0.22)] sm:p-5">
               <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/35">
-                  {{ t('modelsPlaza.quickFind') }}
+                  {{ copy.quickFind }}
                 </p>
                 <label class="mt-3 block">
-                  <span class="sr-only">{{ t('modelsPlaza.searchLabel') }}</span>
+                  <span class="sr-only">{{ copy.searchLabel }}</span>
                   <input
                     v-model.trim="searchQuery"
                     type="search"
                     class="w-full rounded-2xl border border-white/10 bg-white/[0.04] px-4 py-3 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-white/20 focus:bg-white/[0.06]"
-                    :placeholder="t('modelsPlaza.searchPlaceholder')"
+                    :placeholder="copy.searchPlaceholder"
                   />
                 </label>
               </div>
 
               <div class="mt-6">
                 <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/35">
-                  {{ t('modelsPlaza.groupsTitle') }}
+                  {{ copy.groupsTitle }}
                 </p>
                 <div class="mt-3 flex gap-2 overflow-x-auto pb-1 lg:block lg:space-y-2 lg:overflow-visible lg:pb-0">
                   <button
@@ -120,13 +120,13 @@
                 <p class="mt-1 text-sm text-white/45">
                   {{
                     searchQuery
-                      ? t('modelsPlaza.currentSearch', { query: searchQuery })
-                      : t('modelsPlaza.browseHint')
+                      ? formatModelsPlazaTemplate(copy.currentSearch, { query: searchQuery })
+                      : copy.browseHint
                   }}
                 </p>
               </div>
               <div class="inline-flex items-center rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 text-sm text-white/70">
-                {{ t('modelsPlaza.results') }} · {{ filteredItems.length }}
+                {{ copy.results }} · {{ filteredItems.length }}
               </div>
             </div>
 
@@ -135,10 +135,10 @@
               class="rounded-[32px] border border-white/10 bg-white/[0.03] px-8 py-16 text-center"
             >
               <h2 class="text-2xl font-bold text-white">
-                {{ t('modelsPlaza.emptyFilteredTitle') }}
+                {{ copy.emptyFilteredTitle }}
               </h2>
               <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-white/60 sm:text-base">
-                {{ t('modelsPlaza.emptyFilteredDescription') }}
+                {{ copy.emptyFilteredDescription }}
               </p>
             </div>
 
@@ -181,18 +181,18 @@
                     v-if="item.model_ids.length > 0"
                     type="button"
                     class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 text-white/60 transition hover:border-white/20 hover:text-white"
-                    :title="t('modelsPlaza.copyModelIds')"
-                    @click="copyToClipboard(item.model_ids.join('\n'), t('modelsPlaza.modelIdsCopied'))"
+                    :title="copy.copyModelIds"
+                    @click="copyToClipboard(item.model_ids.join('\n'), copy.modelIdsCopied)"
                   >
                     <Icon name="copy" size="sm" />
                   </button>
                 </div>
 
                 <div class="mt-8 grid gap-2 text-sm text-white/78 sm:grid-cols-2 sm:text-base">
-                  <p v-if="item.input_price" class="rounded-2xl border border-white/8 bg-white/[0.025] px-3 py-2">{{ t('modelsPlaza.inputPrice') }} {{ item.input_price }}</p>
-                  <p v-if="item.output_price" class="rounded-2xl border border-white/8 bg-white/[0.025] px-3 py-2">{{ t('modelsPlaza.outputPrice') }} {{ item.output_price }}</p>
-                  <p v-if="item.cache_read_price" class="rounded-2xl border border-white/8 bg-white/[0.018] px-3 py-2 text-white/58">{{ t('modelsPlaza.cacheReadPrice') }} {{ item.cache_read_price }}</p>
-                  <p v-if="item.cache_write_price" class="rounded-2xl border border-white/8 bg-white/[0.018] px-3 py-2 text-white/58">{{ t('modelsPlaza.cacheWritePrice') }} {{ item.cache_write_price }}</p>
+                  <p v-if="item.input_price" class="rounded-2xl border border-white/8 bg-white/[0.025] px-3 py-2">{{ copy.inputPrice }} {{ item.input_price }}</p>
+                  <p v-if="item.output_price" class="rounded-2xl border border-white/8 bg-white/[0.025] px-3 py-2">{{ copy.outputPrice }} {{ item.output_price }}</p>
+                  <p v-if="item.cache_read_price" class="rounded-2xl border border-white/8 bg-white/[0.018] px-3 py-2 text-white/58">{{ copy.cacheReadPrice }} {{ item.cache_read_price }}</p>
+                  <p v-if="item.cache_write_price" class="rounded-2xl border border-white/8 bg-white/[0.018] px-3 py-2 text-white/58">{{ copy.cacheWritePrice }} {{ item.cache_write_price }}</p>
                 </div>
 
                 <div class="mt-8 flex flex-wrap gap-2">
@@ -214,7 +214,7 @@
                   </span>
                   <div v-else></div>
                   <p v-if="item.model_ids.length > 0" class="text-xs text-white/35">
-                    {{ t('modelsPlaza.modelIdsConfigured') }} · {{ item.model_ids.length }}
+                    {{ copy.modelIdsConfigured }} · {{ item.model_ids.length }}
                   </p>
                 </div>
               </article>
@@ -234,140 +234,67 @@ import DocsLink from '@/components/common/DocsLink.vue'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAuthStore, useAppStore } from '@/stores'
+import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import { useClipboard } from '@/composables/useClipboard'
-import type { ModelPlazaItem } from '@/types'
+import {
+  MODEL_PLAZA_ALL_GROUP_KEY,
+  formatModelsPlazaTemplate,
+  resolveModelPlazaProviderIconClass,
+  resolveModelPlazaProviderInitial,
+  resolveModelsPlazaCopy,
+} from '@/utils/modelPlazaDisplay'
+import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
+import {
+  filterModelsPlazaItems,
+  resolveModelsPlazaActiveGroupLabel,
+  resolveModelsPlazaGroupOptions,
+  resolveVisibleModelsPlazaItems,
+} from './modelsPlazaRuntime'
 
-const { t } = useI18n()
+const { locale } = useI18n()
 const authStore = useAuthStore()
 const appStore = useAppStore()
+const { authRouteDefaults, resolveHomePath } = useAuthRouteDefaults()
 const { copyToClipboard } = useClipboard()
 
 const loading = ref(false)
 const searchQuery = ref('')
-const activeGroup = ref('all')
+const activeGroup = ref(MODEL_PLAZA_ALL_GROUP_KEY)
 
-const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'Sub2API')
+const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName)
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const isAuthenticated = computed(() => authStore.isAuthenticated)
-const dashboardPath = computed(() => (authStore.isAdmin ? '/admin/dashboard' : '/dashboard'))
+const dashboardPath = computed(() => resolveHomePath(authStore.isAdmin))
+const loginPath = computed(() => authRouteDefaults.value.loginPath)
+
+const copy = computed(() =>
+  resolveModelsPlazaCopy(
+    appStore.cachedPublicSettings?.model_plaza_shell_config,
+    resolveRuntimeLocale(locale),
+  ),
+)
 
 const items = computed(() =>
-  (appStore.cachedPublicSettings?.model_plaza_items || [])
-    .filter((item) => item.visible !== false)
-    .slice()
-    .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
+  resolveVisibleModelsPlazaItems(appStore.cachedPublicSettings?.model_plaza_items || []),
 )
 
-const groupOptions = computed(() => {
-  const counts = new Map<string, number>()
+const groupOptions = computed(() => resolveModelsPlazaGroupOptions(items.value, copy.value))
 
-  for (const item of items.value) {
-    const key = providerGroupKey(item.provider)
-    counts.set(key, (counts.get(key) || 0) + 1)
-  }
-
-  const groups = Array.from(counts.entries())
-    .map(([key, count]) => ({
-      key,
-      count,
-      label: providerGroupLabel(key),
-      rank: providerGroupRank(key),
-    }))
-    .sort((a, b) => a.rank - b.rank || a.label.localeCompare(b.label))
-
-  return [
-    {
-      key: 'all',
-      label: t('modelsPlaza.groups.all'),
-      count: items.value.length,
-      rank: -1,
-    },
-    ...groups,
-  ]
-})
-
-const activeGroupLabel = computed(() => {
-  const match = groupOptions.value.find((group) => group.key === activeGroup.value)
-  return match?.label || t('modelsPlaza.groups.all')
-})
+const activeGroupLabel = computed(() =>
+  resolveModelsPlazaActiveGroupLabel(groupOptions.value, activeGroup.value, copy.value),
+)
 
 const filteredItems = computed(() =>
-  items.value.filter((item) => {
-    if (activeGroup.value !== 'all' && providerGroupKey(item.provider) !== activeGroup.value) {
-      return false
-    }
-    return matchesSearch(item, searchQuery.value)
-  }),
+  filterModelsPlazaItems(items.value, activeGroup.value, searchQuery.value),
 )
 
-function providerGroupKey(provider: string): string {
-  const normalized = provider.trim().toLowerCase()
-  if (normalized.includes('anthropic') || normalized.includes('claude')) return 'claude'
-  if (normalized.includes('openai') || normalized.includes('gpt')) return 'gpt'
-  if (normalized.includes('gemini') || normalized.includes('google')) return 'gemini'
-  return normalized || 'other'
-}
-
-function providerGroupLabel(groupKey: string): string {
-  if (groupKey === 'claude') return 'Claude'
-  if (groupKey === 'gpt') return 'GPT'
-  if (groupKey === 'gemini') return 'Gemini'
-  if (groupKey === 'other') return t('modelsPlaza.groups.other')
-  return groupKey.toUpperCase()
-}
-
-function providerGroupRank(groupKey: string): number {
-  if (groupKey === 'claude') return 0
-  if (groupKey === 'gpt') return 1
-  if (groupKey === 'gemini') return 2
-  if (groupKey === 'other') return 99
-  return 50
-}
-
-function matchesSearch(item: ModelPlazaItem, query: string): boolean {
-  const normalized = query.trim().toLowerCase()
-  if (!normalized) return true
-
-  const haystack = [
-    item.title,
-    item.provider,
-    item.badge,
-    item.description,
-    item.input_price,
-    item.output_price,
-    item.cache_read_price,
-    item.cache_write_price,
-    item.billing_badge,
-    ...item.capability_tags,
-    ...item.model_ids,
-  ]
-    .join('\n')
-    .toLowerCase()
-
-  return haystack.includes(normalized)
-}
-
 function providerInitial(provider: string): string {
-  const normalized = provider.trim().toLowerCase()
-  if (normalized.includes('anthropic') || normalized.includes('claude')) return 'C'
-  if (normalized.includes('openai') || normalized.includes('gpt')) return 'G'
-  if (normalized.includes('gemini') || normalized.includes('google')) return 'G'
-  return normalized.slice(0, 1).toUpperCase() || 'M'
+  return resolveModelPlazaProviderInitial(provider)
 }
 
 function providerIconClass(provider: string): string {
-  const normalized = provider.trim().toLowerCase()
-  if (normalized.includes('anthropic') || normalized.includes('claude')) {
-    return 'bg-[linear-gradient(135deg,#ef8e67,#d2745c)]'
-  }
-  if (normalized.includes('openai') || normalized.includes('gpt')) {
-    return 'bg-[linear-gradient(135deg,#48b774,#2f9360)]'
-  }
-  if (normalized.includes('gemini') || normalized.includes('google')) {
-    return 'bg-[linear-gradient(135deg,#5b7cff,#4a5ce4)]'
-  }
-  return 'bg-[linear-gradient(135deg,#64748b,#475569)]'
+  return resolveModelPlazaProviderIconClass(provider)
 }
 
 onMounted(async () => {

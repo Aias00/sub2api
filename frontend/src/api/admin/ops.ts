@@ -4,7 +4,7 @@
  * - Dashboard overview (raw path)
  */
 
-import { apiClient } from '../client'
+import { apiClient, resolveApiBaseUrl } from '../client'
 import type { PaginatedResponse } from '@/types'
 
 export type OpsQueryMode = 'auto' | 'raw' | 'preagg'
@@ -503,6 +503,29 @@ export const OPS_WS_CLOSE_CODES = {
 } as const
 
 const OPS_WS_BASE_PROTOCOL = 'sub2api-admin'
+const OPS_WS_QPS_PATH = '/admin/ops/ws/qps'
+
+function toWebSocketProtocol(protocol: string): 'ws:' | 'wss:' {
+  return protocol === 'https:' || protocol === 'wss:' ? 'wss:' : 'ws:'
+}
+
+export function resolveOpsWebSocketURL(path: string, wsBaseUrl?: string | null): string {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  const explicitBase = wsBaseUrl?.trim()
+
+  if (explicitBase) {
+    const baseURL = new URL(
+      explicitBase.includes('://') ? explicitBase : `${window.location.protocol}//${explicitBase}`,
+    )
+    baseURL.protocol = toWebSocketProtocol(baseURL.protocol)
+    return new URL(`/api/v1${normalizedPath}`, baseURL).toString()
+  }
+
+  const apiBaseURL = new URL(resolveApiBaseUrl(), window.location.origin)
+  apiBaseURL.protocol = toWebSocketProtocol(apiBaseURL.protocol)
+  const apiBasePath = apiBaseURL.pathname.replace(/\/+$/, '')
+  return new URL(`${apiBasePath}${normalizedPath}`, apiBaseURL).toString()
+}
 
 export function subscribeQPS(onMessage: (data: any) => void, options: SubscribeQPSOptions = {}): () => void {
   let ws: WebSocket | null = null
@@ -593,9 +616,7 @@ export function subscribeQPS(onMessage: (data: any) => void, options: SubscribeQ
 
     isConnecting = true
     setStatus(hasConnectedOnce ? 'reconnecting' : 'connecting')
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsBaseUrl = options.wsBaseUrl || import.meta.env.VITE_WS_BASE_URL || window.location.host
-    const wsURL = new URL(`${protocol}//${wsBaseUrl}/api/v1/admin/ops/ws/qps`)
+    const wsURL = new URL(resolveOpsWebSocketURL(OPS_WS_QPS_PATH, options.wsBaseUrl))
 
     // Do NOT put admin JWT in the URL query string (it can leak via access logs, proxies, etc).
     // Browsers cannot set Authorization headers for WebSockets, so we pass the token via

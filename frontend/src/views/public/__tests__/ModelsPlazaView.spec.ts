@@ -1,6 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
 import ModelsPlazaView from '../ModelsPlazaView.vue'
+
+const modelsPlazaViewSource = readFileSync('src/views/public/ModelsPlazaView.vue', 'utf8')
 
 const authStoreState = vi.hoisted(() => ({
   isAuthenticated: false,
@@ -10,6 +13,7 @@ const authStoreState = vi.hoisted(() => ({
 
 const copyToClipboard = vi.hoisted(() => vi.fn())
 const fetchPublicSettings = vi.hoisted(() => vi.fn())
+const currentLocale = vi.hoisted(() => ({ value: 'zh-CN' }))
 
 const appStoreState = vi.hoisted(() => ({
   publicSettingsLoaded: true,
@@ -20,6 +24,18 @@ const appStoreState = vi.hoisted(() => ({
     site_name: 'cloudbase',
     site_logo: '',
     doc_url: '/docs',
+    model_plaza_shell_config: JSON.stringify({
+      zh: {
+        labels: {
+          badge: '模型展示',
+          title: '可售模型',
+          description: '由 public settings 管理展示文案。',
+          quickFind: '配置搜索',
+          inputPrice: '输入价',
+          emptyFilteredTitle: '没有匹配的模型卡片',
+        },
+      },
+    }),
     model_plaza_items: [
       {
         id: 'claude-opus-4-6',
@@ -76,33 +92,11 @@ const appStoreState = vi.hoisted(() => ({
 
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
-  const messages: Record<string, string> = {
-    'home.viewDocs': '查看文档',
-    'home.goToDashboard': '前往控制台',
-    'home.login': '登录',
-    'modelsPlaza.badge': '模型广场',
-    'modelsPlaza.title': '公开模型目录',
-    'modelsPlaza.description': '从后台直接配置并公开展示可售模型卡片。',
-    'modelsPlaza.quickFind': '快速查找',
-    'modelsPlaza.searchLabel': '搜索模型广场',
-    'modelsPlaza.searchPlaceholder': '搜索模型、能力或标签',
-    'modelsPlaza.groupsTitle': '平台分组',
-    'modelsPlaza.results': '结果',
-    'modelsPlaza.emptyFilteredTitle': '没有匹配的模型卡片',
-    'modelsPlaza.emptyFilteredDescription': '试试切换分组，或者换一个更宽松的关键词搜索。',
-    'modelsPlaza.groups.all': '全部模型',
-    'modelsPlaza.groups.other': '其他',
-  }
   return {
     ...actual,
     useI18n: () => ({
-      t: (key: string, params?: Record<string, string | number>) => {
-        if (key === 'modelsPlaza.currentSearch') {
-          return `当前搜索：${params?.query ?? ''}`
-        }
-        return messages[key] ?? key
-      },
-      locale: { value: 'zh-CN' },
+      t: (key: string) => key,
+      locale: currentLocale,
     }),
   }
 })
@@ -126,6 +120,19 @@ describe('ModelsPlazaView', () => {
     copyToClipboard.mockReset()
     fetchPublicSettings.mockReset()
     appStoreState.publicSettingsLoaded = true
+    currentLocale.value = 'zh-CN'
+    appStoreState.cachedPublicSettings.model_plaza_shell_config = JSON.stringify({
+      zh: {
+        labels: {
+          badge: '模型展示',
+          title: '可售模型',
+          description: '由 public settings 管理展示文案。',
+          quickFind: '配置搜索',
+          inputPrice: '输入价',
+          emptyFilteredTitle: '没有匹配的模型卡片',
+        },
+      },
+    })
   })
 
   it('renders visible plaza cards from public settings', async () => {
@@ -147,6 +154,10 @@ describe('ModelsPlazaView', () => {
 
     expect(wrapper.text()).toContain('Claude Opus 4.6')
     expect(wrapper.text()).toContain('GPT-5.3 Codex')
+    expect(wrapper.text()).toContain('模型展示')
+    expect(wrapper.text()).toContain('可售模型')
+    expect(wrapper.text()).toContain('配置搜索')
+    expect(wrapper.text()).toContain('输入价 ¥2.0000 / 1M Tokens')
     expect(wrapper.text()).toContain('复杂推理')
     expect(wrapper.text()).toContain('¥2.0000 / 1M Tokens')
     expect(wrapper.text()).not.toContain('Hidden')
@@ -183,5 +194,41 @@ describe('ModelsPlazaView', () => {
 
     await searchInput.setValue('不存在的关键词')
     expect(wrapper.text()).toContain('没有匹配的模型卡片')
+  })
+
+  it('does not keep locale-specific model plaza fallback copy in the view bootstrap layer', () => {
+    expect(modelsPlazaViewSource).toContain('useAuthRouteDefaults')
+    expect(modelsPlazaViewSource).toContain(':to="authRouteDefaults.homePath"')
+    expect(modelsPlazaViewSource).not.toContain('to="/home"')
+    expect(modelsPlazaViewSource).not.toContain("isAuthenticated ? dashboardPath : '/login'")
+    expect(modelsPlazaViewSource).not.toContain("authStore.isAdmin ? '/admin/dashboard' : '/dashboard'")
+    expect(modelsPlazaViewSource).not.toContain('EMPTY_MODELS_PLAZA_COPY')
+    expect(modelsPlazaViewSource).not.toContain('DEFAULT_MODELS_PLAZA_COPY')
+    expect(modelsPlazaViewSource).not.toContain("badge: '模型广场'")
+    expect(modelsPlazaViewSource).not.toContain("title: '公开模型目录'")
+    expect(modelsPlazaViewSource).not.toContain("searchPlaceholder: '搜索模型、能力或标签'")
+    expect(modelsPlazaViewSource).not.toContain("badge: 'Model Plaza'")
+    expect(modelsPlazaViewSource).not.toContain("title: 'Public Model Catalog'")
+    expect(modelsPlazaViewSource).not.toContain("searchPlaceholder: 'Search models, capabilities, or tags'")
+    expect(modelsPlazaViewSource).not.toContain("const activeGroup = ref('all')")
+    expect(modelsPlazaViewSource).not.toContain("return normalized || 'other'")
+    expect(modelsPlazaViewSource).not.toContain("|| 'M'")
+    expect(modelsPlazaViewSource).not.toContain('type ModelsPlazaCopy')
+    expect(modelsPlazaViewSource).not.toContain('const modelsPlazaCopyKeys')
+    expect(modelsPlazaViewSource).not.toContain('function formatTemplate')
+    expect(modelsPlazaViewSource).toContain("from './modelsPlazaRuntime'")
+    expect(modelsPlazaViewSource).toContain('resolveVisibleModelsPlazaItems')
+    expect(modelsPlazaViewSource).toContain('resolveModelsPlazaGroupOptions')
+    expect(modelsPlazaViewSource).toContain('filterModelsPlazaItems')
+    expect(modelsPlazaViewSource).toContain('resolveModelPlazaProviderInitial')
+    expect(modelsPlazaViewSource).toContain('resolveModelsPlazaCopy')
+  })
+
+  it('does not keep the legacy model plaza locale section in frontend bundles', () => {
+    const zhLocaleSource = readFileSync('src/i18n/locales/zh.ts', 'utf8')
+    const enLocaleSource = readFileSync('src/i18n/locales/en.ts', 'utf8')
+    for (const source of [zhLocaleSource, enLocaleSource]) {
+      expect(source).not.toContain('\n  modelsPlaza: {')
+    }
   })
 })

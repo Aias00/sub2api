@@ -3,7 +3,7 @@
     <div v-if="showDivider" class="flex items-center gap-3">
       <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
       <span class="text-xs text-gray-500 dark:text-dark-400">
-        {{ t('auth.oauthOrContinue') }}
+        {{ authText('oauthAlternativeMethods') }}
       </span>
       <div class="h-px flex-1 bg-gray-200 dark:bg-dark-700"></div>
     </div>
@@ -28,9 +28,11 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
-import { useI18n } from 'vue-i18n'
 import GitHubMark from './GitHubMark.vue'
 import GoogleMark from './GoogleMark.vue'
+import { buildApiUrl } from '@/api/client'
+import { renderAuthShellText, type AuthShellLabelKey, type AuthShellLabels } from '@/utils/authShell'
+import { resolveRouteAuthRedirect } from '@/utils/authRedirect'
 import { resolveAffiliateReferralCode, storeOAuthAffiliateCode } from '@/utils/oauthAffiliate'
 
 type EmailOAuthProvider = 'github' | 'google'
@@ -44,12 +46,12 @@ const props = withDefaults(defineProps<{
   agreementRevision?: string
   turnstileToken?: string
   showDivider?: boolean
+  shellLabels?: AuthShellLabels
 }>(), {
   showDivider: true
 })
 
 const route = useRoute()
-const { t } = useI18n()
 
 const visibleProviders = computed<EmailOAuthProvider[]>(() => {
   const providers: EmailOAuthProvider[] = []
@@ -69,16 +71,18 @@ const providerGridClass = computed(() => [
 
 function providerLabel(provider: EmailOAuthProvider): string {
   const name = provider === 'github' ? 'GitHub' : 'Google'
-  return hasMultipleProviders.value ? name : t('auth.emailOAuth.signIn', { providerName: name })
+  return hasMultipleProviders.value ? name : authText('signInWithProvider', { providerName: name })
+}
+
+function authText(key: AuthShellLabelKey, params: Record<string, string | number> = {}): string {
+  return renderAuthShellText(props.shellLabels || {}, key, params)
 }
 
 function startLogin(provider: EmailOAuthProvider): void {
-  const redirectTo = (route.query.redirect as string) || '/dashboard'
+  const redirectTo = resolveRouteAuthRedirect(route.query.redirect)
   const affiliateCode = resolveAffiliateReferralCode(props.affCode, route.query.aff, route.query.aff_code)
   storeOAuthAffiliateCode(affiliateCode)
   window.sessionStorage.setItem(EMAIL_OAUTH_PENDING_PROVIDER_KEY, provider)
-  const apiBase = (import.meta.env.VITE_API_BASE_URL as string | undefined) || '/api/v1'
-  const normalized = apiBase.replace(/\/$/, '')
   const params = new URLSearchParams({ redirect: redirectTo })
   if (affiliateCode) {
     params.set('aff_code', affiliateCode)
@@ -91,7 +95,7 @@ function startLogin(provider: EmailOAuthProvider): void {
   if (turnstileToken) {
     params.set('turnstile_token', turnstileToken)
   }
-  const startURL = `${normalized}/auth/oauth/${provider}/start?${params.toString()}`
+  const startURL = buildApiUrl(`/auth/oauth/${provider}/start?${params.toString()}`)
   window.location.href = startURL
 }
 </script>

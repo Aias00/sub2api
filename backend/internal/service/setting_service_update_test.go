@@ -230,6 +230,85 @@ func TestSettingService_UpdateSettings_RegistrationEmailSuffixWhitelist_Invalid(
 	require.Equal(t, "INVALID_REGISTRATION_EMAIL_SUFFIX_WHITELIST", infraerrors.Reason(err))
 }
 
+func TestSettingService_UpdateSettings_PersistsWebRuntimeSettings(t *testing.T) {
+	repo := &settingUpdateRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		WebAppName:                    " Prompt Web ",
+		WebAppDescription:             " Managed by Sub2API ",
+		WebAppLogo:                    " https://static.example.com/logo.png ",
+		WebDefaultLocale:              " zh ",
+		WebPromptCasesTitle:           " Cases title ",
+		WebPromptCasesDescription:     " Cases description ",
+		WebPromptTemplatesTitle:       " Templates title ",
+		WebPromptTemplatesDescription: " Templates description ",
+		PromptCatalogShellConfig:      ` {"zh":{"labels":{"total":"总数"}}} `,
+		WebWorkspaceShellConfig:       ` {"zh":{"title":"工作台"}} `,
+		WebPricingTitle:               " Pricing title ",
+		WebPricingDescription:         " Pricing description ",
+		WebPricingShellConfig:         ` {"zh":{"button":{"title":"选择"}}} `,
+		WebPaymentShellConfig:         ` {"zh":{"labels":{"createOrder":"下单"}}} `,
+		WebPricingCurrencySymbol:      " $ ",
+		WebCreditsTitle:               " Credits title ",
+		WebCreditsDescription:         " Credits description ",
+		WebCreditsPurchaseLabel:       " Buy credits ",
+		WebCreditsBalanceLabel:        " Balance: {balance} ",
+		WebCreditsPerBalance:          " 12 ",
+		CreditsShellConfig:            ` {"en":{"actions":{"title":"Balance actions"}}} `,
+		WebLocaleDetectEnabled:        true,
+		WebEmailAuthVisible:           true,
+		WebGoogleAuthVisible:          false,
+		WebGitHubAuthVisible:          true,
+		WebGoogleAnalyticsID:          " G-WEB ",
+		WebPublicIntegrationsEnabled:  false,
+		WebVercelAnalyticsEnabled:     true,
+		WebAdsenseCode:                " ca-pub-web ",
+		WebAffonsoEnabled:             true,
+		WebAffonsoID:                  " affonso-public ",
+		WebPromoteKitEnabled:          true,
+		WebPromoteKitID:               " promotekit-public ",
+		WebCrispEnabled:               true,
+		WebCrispWebsiteID:             " crisp-public ",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "Prompt Web", repo.updates[SettingKeyWebAppName])
+	require.Equal(t, "Managed by Sub2API", repo.updates[SettingKeyWebAppDescription])
+	require.Equal(t, "https://static.example.com/logo.png", repo.updates[SettingKeyWebAppLogo])
+	require.Equal(t, "zh", repo.updates[SettingKeyWebDefaultLocale])
+	require.Equal(t, "Cases title", repo.updates[SettingKeyPromptCasesTitle])
+	require.Equal(t, "Cases description", repo.updates[SettingKeyPromptCasesDescription])
+	require.Equal(t, "Templates title", repo.updates[SettingKeyPromptTemplatesTitle])
+	require.Equal(t, "Templates description", repo.updates[SettingKeyPromptTemplatesDescription])
+	require.Equal(t, `{"zh":{"labels":{"total":"总数"}}}`, repo.updates[SettingKeyPromptCatalogShellConfig])
+	require.Equal(t, `{"zh":{"title":"工作台"}}`, repo.updates[SettingKeyWorkspaceShellConfig])
+	require.Equal(t, "Pricing title", repo.updates[SettingKeyPricingTitle])
+	require.Equal(t, "Pricing description", repo.updates[SettingKeyPricingDescription])
+	require.Equal(t, `{"zh":{"button":{"title":"选择"}}}`, repo.updates[SettingKeyPricingShellConfig])
+	require.Equal(t, `{"zh":{"labels":{"createOrder":"下单"}}}`, repo.updates[SettingKeyPaymentShellConfig])
+	require.Equal(t, "$", repo.updates[SettingKeyPricingCurrencySymbol])
+	require.Equal(t, "Credits title", repo.updates[SettingKeyCreditsTitle])
+	require.Equal(t, "Credits description", repo.updates[SettingKeyCreditsDescription])
+	require.Equal(t, "Buy credits", repo.updates[SettingKeyCreditsPurchaseLabel])
+	require.Equal(t, "Balance: {balance}", repo.updates[SettingKeyCreditsBalanceLabel])
+	require.Equal(t, "12", repo.updates[SettingKeyCreditsPerBalance])
+	require.Equal(t, `{"en":{"actions":{"title":"Balance actions"}}}`, repo.updates[SettingKeyCreditsShellConfig])
+	require.Equal(t, "true", repo.updates[SettingKeyWebLocaleDetectEnabled])
+	require.Equal(t, "true", repo.updates[SettingKeyWebEmailAuthVisible])
+	require.Equal(t, "false", repo.updates[SettingKeyWebGoogleAuthVisible])
+	require.Equal(t, "true", repo.updates[SettingKeyWebGitHubAuthVisible])
+	require.Equal(t, "G-WEB", repo.updates[SettingKeyWebGoogleAnalyticsID])
+	require.Equal(t, "false", repo.updates[SettingKeyWebPublicIntegrationsEnabled])
+	require.Equal(t, "true", repo.updates[SettingKeyWebVercelAnalyticsEnabled])
+	require.Equal(t, "ca-pub-web", repo.updates[SettingKeyWebAdsenseCode])
+	require.Equal(t, "true", repo.updates[SettingKeyWebAffonsoEnabled])
+	require.Equal(t, "affonso-public", repo.updates[SettingKeyWebAffonsoID])
+	require.Equal(t, "true", repo.updates[SettingKeyWebPromoteKitEnabled])
+	require.Equal(t, "promotekit-public", repo.updates[SettingKeyWebPromoteKitID])
+	require.Equal(t, "true", repo.updates[SettingKeyWebCrispEnabled])
+	require.Equal(t, "crisp-public", repo.updates[SettingKeyWebCrispWebsiteID])
+}
+
 func TestParseDefaultSubscriptions_NormalizesValues(t *testing.T) {
 	got := parseDefaultSubscriptions(`[{"group_id":11,"validity_days":30},{"group_id":11,"validity_days":60},{"group_id":0,"validity_days":10},{"group_id":12,"validity_days":99999}]`)
 	require.Equal(t, []DefaultSubscriptionSetting{

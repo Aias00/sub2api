@@ -8,7 +8,8 @@ import {
   extractGatewayModelOptions,
   extractGatewayResponsePreview,
   getGatewayFallbackModelOptions,
-  getGatewayVariantsForApiKey
+  getGatewayVariantsForApiKey,
+  resolveGatewayVariantOverrides
 } from '@/utils/gatewayDocs'
 
 function createApiKey(platform: GroupPlatform, allowMessagesDispatch?: boolean): ApiKey {
@@ -79,6 +80,31 @@ describe('gatewayDocs', () => {
     ])
   })
 
+  it('applies gateway variant defaults from public API guide settings', () => {
+    const overrides = resolveGatewayVariantOverrides(JSON.stringify({
+      zh: {
+        gatewayVariants: {
+          openaiChat: {
+            defaultModel: 'configured-gpt',
+            modelPlaceholder: 'configured-placeholder',
+            fallbackModels: ['configured-gpt', 'configured-mini', 'configured-gpt']
+          },
+          missingVariant: {
+            defaultModel: 'ignored'
+          }
+        }
+      }
+    }), 'zh-CN')
+
+    const variants = getGatewayVariantsForApiKey(createApiKey('openai'), overrides)
+    expect(variants.find(variant => variant.id === 'openaiChat')?.defaultModel).toBe('configured-gpt')
+    expect(variants.find(variant => variant.id === 'openaiChat')?.modelPlaceholder).toBe('configured-placeholder')
+    expect(getGatewayFallbackModelOptions('openaiChat', overrides).map(option => option.id)).toEqual([
+      'configured-gpt',
+      'configured-mini'
+    ])
+  })
+
   it('returns Antigravity dedicated routes', () => {
     const variants = getGatewayVariantsForApiKey(createApiKey('antigravity'))
     expect(variants.map(variant => variant.id)).toEqual([
@@ -102,6 +128,31 @@ describe('gatewayDocs', () => {
   it('builds Gemini request bodies in native format', () => {
     expect(buildGatewayRequestBody('antigravityGemini', 'gemini-2.5-flash', 'hello', false)).toEqual({
       contents: [{ parts: [{ text: 'hello' }] }]
+    })
+  })
+
+  it('applies configured max tokens to gateway test request bodies', () => {
+    expect(buildGatewayRequestBody('anthropicMessages', 'claude-sonnet-4-5', 'hello', false, {
+      maxTokens: 128,
+    })).toMatchObject({
+      max_tokens: 128,
+    })
+    expect(buildGatewayRequestBody('openaiChat', 'gpt-4.1', 'hello', false, {
+      maxTokens: 128,
+    })).toMatchObject({
+      max_tokens: 128,
+    })
+    expect(buildGatewayRequestBody('openaiResponses', 'gpt-4.1', 'hello', false, {
+      maxTokens: 128,
+    })).toMatchObject({
+      max_output_tokens: 128,
+    })
+    expect(buildGatewayRequestBody('geminiNative', 'gemini-2.5-flash', 'hello', false, {
+      maxTokens: 128,
+    })).toMatchObject({
+      generationConfig: {
+        maxOutputTokens: 128,
+      },
     })
   })
 

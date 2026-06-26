@@ -48,9 +48,13 @@ func (s *paymentPublicCatalogSettingRepoStub) GetMultiple(_ context.Context, key
 	return out, nil
 }
 
-func (s *paymentPublicCatalogSettingRepoStub) SetMultiple(context.Context, map[string]string) error { return nil }
-func (s *paymentPublicCatalogSettingRepoStub) GetAll(context.Context) (map[string]string, error)    { return s.values, nil }
-func (s *paymentPublicCatalogSettingRepoStub) Delete(context.Context, string) error                 { return nil }
+func (s *paymentPublicCatalogSettingRepoStub) SetMultiple(context.Context, map[string]string) error {
+	return nil
+}
+func (s *paymentPublicCatalogSettingRepoStub) GetAll(context.Context) (map[string]string, error) {
+	return s.values, nil
+}
+func (s *paymentPublicCatalogSettingRepoStub) Delete(context.Context, string) error { return nil }
 
 func TestPaymentHandlerGetPublicCatalog(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -70,6 +74,8 @@ func TestPaymentHandlerGetPublicCatalog(t *testing.T) {
 		SetName("Claude").
 		SetPlatform("anthropic").
 		SetSubscriptionType("standard").
+		SetDailyLimitUsd(25).
+		SetMonthlyLimitUsd(120).
 		SetSupportedModelScopes([]string{"Claude Opus 4.6", "Claude Sonnet 4.6"}).
 		Save(context.Background())
 	require.NoError(t, err)
@@ -112,9 +118,11 @@ func TestPaymentHandlerGetPublicCatalog(t *testing.T) {
 
 	rechargeProductsJSON := `[{"id":"starter","name":"入门包","description":"适合快速体验","amount":30,"credited_amount":45,"badge":"推荐","recommended":true,"features":["45 credits"],"sort_order":1}]`
 	repo := &paymentPublicCatalogSettingRepoStub{values: map[string]string{
-		service.SettingPaymentEnabled:    "true",
-		service.SettingRechargeProducts:  rechargeProductsJSON,
+		service.SettingPaymentEnabled:      "true",
+		service.SettingRechargeProducts:    rechargeProductsJSON,
 		service.SettingBalanceRechargeMult: "1",
+		service.SettingEnabledPaymentTypes: "stripe,alipay",
+		service.SettingRechargeFeeRate:     "2.5",
 	}}
 
 	configSvc := service.NewPaymentConfigService(client, repo, nil)
@@ -136,10 +144,15 @@ func TestPaymentHandlerGetPublicCatalog(t *testing.T) {
 				Name string `json:"name"`
 			} `json:"recharge_products"`
 			Plans []struct {
-				GroupPlatform      string   `json:"group_platform"`
-				Name               string   `json:"name"`
+				GroupPlatform        string   `json:"group_platform"`
+				GroupDisplayLabel    string   `json:"group_display_label"`
+				QuotaLabel           string   `json:"quota_label"`
+				Name                 string   `json:"name"`
 				SupportedModelScopes []string `json:"supported_model_scopes"`
 			} `json:"plans"`
+			EnabledPaymentTypes []string `json:"enabled_payment_types"`
+			BalanceDisabled     bool     `json:"balance_disabled"`
+			RechargeFeeRate     float64  `json:"recharge_fee_rate"`
 		} `json:"data"`
 	}
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
@@ -148,5 +161,13 @@ func TestPaymentHandlerGetPublicCatalog(t *testing.T) {
 	require.Equal(t, "starter", resp.Data.RechargeProducts[0].ID)
 	require.Len(t, resp.Data.Plans, 2)
 	require.Equal(t, "anthropic", resp.Data.Plans[0].GroupPlatform)
+	require.Equal(t, "Claude", resp.Data.Plans[0].GroupDisplayLabel)
+	require.Equal(t, "$120", resp.Data.Plans[0].QuotaLabel)
 	require.Contains(t, resp.Data.Plans[0].SupportedModelScopes, "Claude Opus 4.6")
+	require.Equal(t, "openai", resp.Data.Plans[1].GroupPlatform)
+	require.Equal(t, "OpenAI", resp.Data.Plans[1].GroupDisplayLabel)
+	require.Equal(t, "", resp.Data.Plans[1].QuotaLabel)
+	require.Equal(t, []string{"stripe", "alipay"}, resp.Data.EnabledPaymentTypes)
+	require.False(t, resp.Data.BalanceDisabled)
+	require.Equal(t, 2.5, resp.Data.RechargeFeeRate)
 }

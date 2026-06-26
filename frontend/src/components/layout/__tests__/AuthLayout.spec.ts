@@ -11,4 +11,12 @@ describe('AuthLayout brand block', () => {
     expect(source).not.toContain('{{ siteSubtitle }}')
     expect(source).not.toContain('Subscription to API Conversion Platform')
   })
+
+  it('reads footer copy from auth shell public settings', () => {
+    expect(source).toContain("authText('allRightsReserved')")
+    expect(source).toContain('useAuthShellText')
+    expect(source).toContain('loadAuthShellConfig')
+    expect(source).not.toContain('function authText(key: string')
+    expect(source).not.toContain('All rights reserved.')
+  })
 })

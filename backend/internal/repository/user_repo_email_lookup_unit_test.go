@@ -9,6 +9,7 @@ import (
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
+	"github.com/Wei-Shaw/sub2api/ent/authidentity"
 	"github.com/Wei-Shaw/sub2api/ent/enttest"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/stretchr/testify/require"
@@ -93,6 +94,97 @@ func TestUserRepositoryCreateRejectsNormalizedEmailDuplicate(t *testing.T) {
 		Status:       service.StatusActive,
 	})
 	require.ErrorIs(t, err, service.ErrEmailExists)
+}
+
+func TestUserRepositoryAllowsTouchAndEmailUsersToShareEmail(t *testing.T) {
+	repo, _ := newUserEntRepo(t)
+	ctx := context.Background()
+
+	err := repo.Create(ctx, &service.User{
+		Email:        "shared@example.com",
+		Username:     "touch-user",
+		PasswordHash: "hash",
+		Role:         service.RoleUser,
+		Status:       service.StatusActive,
+		SignupSource: "touch",
+	})
+	require.NoError(t, err)
+
+	err = repo.Create(ctx, &service.User{
+		Email:        " shared@example.com ",
+		Username:     "email-user",
+		PasswordHash: "hash",
+		Role:         service.RoleUser,
+		Status:       service.StatusActive,
+		SignupSource: "email",
+	})
+	require.NoError(t, err)
+
+	touchUser, err := repo.GetByEmailAndSignupSource(ctx, "SHARED@example.com", "touch")
+	require.NoError(t, err)
+	require.Equal(t, "touch-user", touchUser.Username)
+
+	emailUser, err := repo.GetByEmailAndSignupSource(ctx, "shared@example.com", "email")
+	require.NoError(t, err)
+	require.Equal(t, "email-user", emailUser.Username)
+}
+
+func TestUserRepositoryRejectsDuplicateTouchEmail(t *testing.T) {
+	repo, _ := newUserEntRepo(t)
+	ctx := context.Background()
+
+	require.NoError(t, repo.Create(ctx, &service.User{
+		Email:        "touch@example.com",
+		Username:     "touch-user-1",
+		PasswordHash: "hash",
+		Role:         service.RoleUser,
+		Status:       service.StatusActive,
+		SignupSource: "touch",
+	}))
+
+	err := repo.Create(ctx, &service.User{
+		Email:        " TOUCH@example.com ",
+		Username:     "touch-user-2",
+		PasswordHash: "hash",
+		Role:         service.RoleUser,
+		Status:       service.StatusActive,
+		SignupSource: "touch",
+	})
+	require.ErrorIs(t, err, service.ErrEmailExists)
+}
+
+func TestUserRepositoryUpdatePreservesTouchSourceWhenInputOmitsSignupSource(t *testing.T) {
+	repo, client := newUserEntRepo(t)
+	ctx := context.Background()
+
+	user := &service.User{
+		Email:        "touch-update@example.com",
+		Username:     "touch-user",
+		PasswordHash: "hash",
+		Role:         service.RoleUser,
+		Status:       service.StatusActive,
+		SignupSource: "touch",
+	}
+	require.NoError(t, repo.Create(ctx, user))
+
+	user.SignupSource = ""
+	user.Username = "touch-updated"
+	require.NoError(t, repo.Update(ctx, user))
+
+	stored, err := client.User.Get(ctx, user.ID)
+	require.NoError(t, err)
+	require.Equal(t, "touch", stored.SignupSource)
+	require.Equal(t, "touch-updated", stored.Username)
+
+	emailIdentityCount, err := client.AuthIdentity.Query().
+		Where(
+			authidentity.UserIDEQ(user.ID),
+			authidentity.ProviderTypeEQ("email"),
+			authidentity.ProviderKeyEQ("email"),
+		).
+		Count(ctx)
+	require.NoError(t, err)
+	require.Zero(t, emailIdentityCount)
 }
 
 func TestUserRepositoryUpdateRejectsNormalizedEmailDuplicate(t *testing.T) {

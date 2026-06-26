@@ -2,9 +2,15 @@ package handler
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/base64"
+	"encoding/json"
 	"log/slog"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
@@ -32,6 +38,18 @@ type AuthHandler struct {
 	dingTalkClientMu       sync.Mutex
 }
 
+const (
+	webAuthSource                   = "touch"
+	webBridgeTokenQueryName         = "sub2api_web_bridge_token"
+	webAuthSourceTrustedContextName = "web_auth_source_trusted"
+)
+
+type webOAuthBridgeTokenPayload struct {
+	Source   string `json:"source"`
+	Provider string `json:"provider"`
+	Expires  int64  `json:"exp"`
+}
+
 // NewAuthHandler creates a new AuthHandler
 func NewAuthHandler(cfg *config.Config, authService *service.AuthService, userService *service.UserService, settingService *service.SettingService, promoService *service.PromoService, redeemService *service.RedeemService, totpService *service.TotpService, userAttributeService *service.UserAttributeService) *AuthHandler {
 	return &AuthHandler{
@@ -46,6 +64,77 @@ func NewAuthHandler(cfg *config.Config, authService *service.AuthService, userSe
 	}
 }
 
+func isWebAuthSource(source string) bool {
+	return strings.EqualFold(strings.TrimSpace(source), webAuthSource)
+}
+
+func (h *AuthHandler) ensureWebAuthSourceAllowed(c *gin.Context, source string, expectedProvider ...string) error {
+	if !isWebAuthSource(source) {
+		return nil
+	}
+	if trusted, ok := c.Get(webAuthSourceTrustedContextName); ok && trusted == true {
+		return nil
+	}
+	if h.settingSvc == nil {
+		return infraerrors.Unauthorized("WEB_SOURCE_UNAUTHORIZED", "web auth source requires bridge authorization")
+	}
+
+	inboundKey := strings.TrimSpace(c.GetHeader("x-api-key"))
+	storedKey, err := h.settingSvc.GetAdminAPIKey(c.Request.Context())
+	if err != nil {
+		return infraerrors.InternalServer("WEB_SOURCE_AUTH_CHECK_FAILED", "failed to verify web auth source")
+	}
+	if storedKey == "" {
+		return infraerrors.Unauthorized("WEB_SOURCE_UNAUTHORIZED", "web auth source requires bridge authorization")
+	}
+	if inboundKey != "" && subtle.ConstantTimeCompare([]byte(inboundKey), []byte(storedKey)) == 1 {
+		return nil
+	}
+
+	if len(expectedProvider) > 0 && strings.TrimSpace(expectedProvider[0]) != "" && h.verifyWebOAuthBridgeToken(c, storedKey, expectedProvider...) {
+		return nil
+	}
+	return infraerrors.Unauthorized("WEB_SOURCE_UNAUTHORIZED", "web auth source requires bridge authorization")
+}
+
+func (h *AuthHandler) verifyWebOAuthBridgeToken(c *gin.Context, secret string, expectedProvider ...string) bool {
+	if c == nil || secret == "" {
+		return false
+	}
+	token := strings.TrimSpace(c.Query(webBridgeTokenQueryName))
+	parts := strings.Split(token, ".")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return false
+	}
+	payloadBytes, err := base64.RawURLEncoding.DecodeString(parts[0])
+	if err != nil {
+		return false
+	}
+	signature, err := base64.RawURLEncoding.DecodeString(parts[1])
+	if err != nil {
+		return false
+	}
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(parts[0]))
+	if !hmac.Equal(signature, mac.Sum(nil)) {
+		return false
+	}
+	var payload webOAuthBridgeTokenPayload
+	if err := json.Unmarshal(payloadBytes, &payload); err != nil {
+		return false
+	}
+	if !isWebAuthSource(payload.Source) || payload.Expires < time.Now().Unix() {
+		return false
+	}
+	if len(expectedProvider) > 0 {
+		provider := strings.ToLower(strings.TrimSpace(expectedProvider[0]))
+		if provider != "" && !strings.EqualFold(strings.TrimSpace(payload.Provider), provider) {
+			return false
+		}
+	}
+	return true
+}
+
 // RegisterRequest represents the registration request payload
 type RegisterRequest struct {
 	Email             string `json:"email" binding:"required,email"`
@@ -57,6 +146,7 @@ type RegisterRequest struct {
 	AffCode           string `json:"aff_code"`           // 邀请返利码
 	AgreementAccepted bool   `json:"agreement_accepted"` // 登录条款确认
 	AgreementRevision string `json:"agreement_revision"`
+	Source            string `json:"source"`
 }
 
 // SendVerifyCodeRequest 发送验证码请求
@@ -78,6 +168,7 @@ type LoginRequest struct {
 	TurnstileToken    string `json:"turnstile_token"`
 	AgreementAccepted bool   `json:"agreement_accepted"`
 	AgreementRevision string `json:"agreement_revision"`
+	Source            string `json:"source"`
 }
 
 // AuthResponse 认证响应格式（匹配前端期望）
@@ -182,8 +273,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	if err := h.ensureWebAuthSourceAllowed(c, req.Source); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 
-	_, user, err := h.authService.RegisterWithVerification(
+	_, user, err := h.authService.RegisterWithVerificationSource(
 		c.Request.Context(),
 		req.Email,
 		req.Password,
@@ -191,6 +286,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		req.PromoCode,
 		req.InvitationCode,
 		req.AffCode,
+		req.Source,
 	)
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -243,8 +339,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	if err := h.ensureWebAuthSourceAllowed(c, req.Source); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 
-	token, user, err := h.authService.Login(c.Request.Context(), req.Email, req.Password)
+	token, user, err := h.authService.LoginWithSource(c.Request.Context(), req.Email, req.Password, req.Source)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

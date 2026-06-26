@@ -2,6 +2,10 @@ package handler
 
 import (
 	"context"
+	"crypto/hmac"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -18,6 +22,21 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
+
+func buildWebBridgeTokenForTest(t *testing.T, secret string, provider string, expires int64) string {
+	t.Helper()
+	payload, err := json.Marshal(webOAuthBridgeTokenPayload{
+		Source:   webAuthSource,
+		Provider: provider,
+		Expires:  expires,
+	})
+	require.NoError(t, err)
+	encodedPayload := base64.RawURLEncoding.EncodeToString(payload)
+	mac := hmac.New(sha256.New, []byte(secret))
+	_, _ = mac.Write([]byte(encodedPayload))
+	signature := base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
+	return encodedPayload + "." + signature
+}
 
 func TestEmailOAuthCallbackRequiresPendingRegistrationWhenInvitationEnabled(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandler(t, true)
@@ -76,7 +95,6 @@ func TestEmailOAuthCallbackRequiresPendingRegistrationWhenInvitationEnabled(t *t
 	require.Equal(t, true, completion["invitation_required"])
 	require.Equal(t, "fresh@example.com", completion["email"])
 	require.Equal(t, "fresh@example.com", completion["resolved_email"])
-	require.Equal(t, true, completion["create_account_allowed"])
 
 	require.NotEmpty(t, findSetCookieValue(recorder.Result().Cookies(), oauthPendingSessionCookieName))
 	require.NotEmpty(t, findSetCookieValue(recorder.Result().Cookies(), oauthPendingBrowserCookieName))
@@ -87,9 +105,9 @@ func TestEmailOAuthStartRequiresTurnstileWhenEnabled(t *testing.T) {
 	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
 		turnstileVerifier: verifier,
 		settingValues: map[string]string{
-			service.SettingKeyTurnstileEnabled:   "true",
-			service.SettingKeyTurnstileSiteKey:   "site-key",
-			service.SettingKeyTurnstileSecretKey: "secret",
+			service.SettingKeyTurnstileEnabled:               "true",
+			service.SettingKeyTurnstileSiteKey:               "site-key",
+			service.SettingKeyTurnstileSecretKey:             "secret",
 			service.SettingKeyGoogleOAuthEnabled:             "true",
 			service.SettingKeyGoogleOAuthClientID:            "google-client",
 			service.SettingKeyGoogleOAuthClientSecret:        "google-secret",
@@ -107,6 +125,209 @@ func TestEmailOAuthStartRequiresTurnstileWhenEnabled(t *testing.T) {
 	require.Equal(t, http.StatusBadRequest, recorder.Code)
 	require.Contains(t, recorder.Body.String(), "TURNSTILE_VERIFICATION_FAILED")
 	require.Equal(t, 0, verifier.called)
+}
+
+func TestEmailOAuthStartStoresFrontendRedirectOverride(t *testing.T) {
+	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		settingValues: map[string]string{
+			service.SettingKeyGoogleOAuthEnabled:             "true",
+			service.SettingKeyGoogleOAuthClientID:            "google-client",
+			service.SettingKeyGoogleOAuthClientSecret:        "google-secret",
+			service.SettingKeyGoogleOAuthRedirectURL:         "https://api.example.com/api/v1/auth/oauth/google/callback",
+			service.SettingKeyGoogleOAuthFrontendRedirectURL: "/auth/oauth/callback",
+		},
+	})
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?redirect=/dashboard&frontend_redirect_url=https%3A%2F%2Ftouch.example.com%2Fauth-callback", nil)
+
+	handler.GoogleOAuthStart(c)
+
+	require.Equal(t, http.StatusFound, recorder.Code)
+	require.Equal(t, "https://touch.example.com/auth-callback", decodeCookieValueForTest(t, findSetCookieValue(recorder.Result().Cookies(), emailOAuthFrontendCallbackCookie)))
+}
+
+func TestEmailOAuthStartStoresWebSource(t *testing.T) {
+	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		settingValues: map[string]string{
+			service.SettingKeyGoogleOAuthEnabled:             "true",
+			service.SettingKeyGoogleOAuthClientID:            "google-client",
+			service.SettingKeyGoogleOAuthClientSecret:        "google-secret",
+			service.SettingKeyGoogleOAuthRedirectURL:         "https://api.example.com/api/v1/auth/oauth/google/callback",
+			service.SettingKeyGoogleOAuthFrontendRedirectURL: "/auth/oauth/callback",
+			service.SettingKeyAdminAPIKey:                    "touch-admin-key",
+		},
+	})
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	token := buildWebBridgeTokenForTest(t, "touch-admin-key", "google", time.Now().Add(time.Minute).Unix())
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?redirect=/dashboard&source=touch&sub2api_web_bridge_token="+url.QueryEscape(token), nil)
+	c.Request = req
+
+	handler.GoogleOAuthStart(c)
+
+	require.Equal(t, http.StatusFound, recorder.Code)
+	require.Equal(t, "touch", decodeCookieValueForTest(t, findSetCookieValue(recorder.Result().Cookies(), emailOAuthSourceCookie)))
+}
+
+func TestEmailOAuthStartRejectsWebSourceWithoutBridgeKey(t *testing.T) {
+	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		settingValues: map[string]string{
+			service.SettingKeyGoogleOAuthEnabled:             "true",
+			service.SettingKeyGoogleOAuthClientID:            "google-client",
+			service.SettingKeyGoogleOAuthClientSecret:        "google-secret",
+			service.SettingKeyGoogleOAuthRedirectURL:         "https://api.example.com/api/v1/auth/oauth/google/callback",
+			service.SettingKeyGoogleOAuthFrontendRedirectURL: "/auth/oauth/callback",
+			service.SettingKeyAdminAPIKey:                    "touch-admin-key",
+		},
+	})
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?redirect=/dashboard&source=touch", nil)
+
+	handler.GoogleOAuthStart(c)
+
+	require.Equal(t, http.StatusUnauthorized, recorder.Code)
+	require.Contains(t, recorder.Body.String(), "WEB_SOURCE_UNAUTHORIZED")
+}
+
+func TestAuthHandlerAllowsWebSourceOnlyWithBridgeKey(t *testing.T) {
+	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		settingValues: map[string]string{
+			service.SettingKeyAdminAPIKey: "touch-admin-key",
+		},
+	})
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/auth/login", nil)
+
+	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "email"))
+
+	err := handler.ensureWebAuthSourceAllowed(c, "touch")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "WEB_SOURCE_UNAUTHORIZED")
+
+	c.Request.Header.Set("x-api-key", "wrong-key")
+	err = handler.ensureWebAuthSourceAllowed(c, "touch")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "WEB_SOURCE_UNAUTHORIZED")
+
+	c.Request.Header.Set("x-api-key", "touch-admin-key")
+	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "touch"))
+}
+
+func TestAuthHandlerAllowsWebOAuthBridgeToken(t *testing.T) {
+	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		settingValues: map[string]string{
+			service.SettingKeyAdminAPIKey: "touch-admin-key",
+		},
+	})
+
+	token := buildWebBridgeTokenForTest(t, "touch-admin-key", "google", time.Now().Add(time.Minute).Unix())
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?sub2api_web_bridge_token="+url.QueryEscape(token), nil)
+
+	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "touch", "google"))
+	require.Error(t, handler.ensureWebAuthSourceAllowed(c, "touch", "github"))
+}
+
+func TestAuthHandlerRejectsLegacyTouchOAuthBridgeTokenName(t *testing.T) {
+	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		settingValues: map[string]string{
+			service.SettingKeyAdminAPIKey: "touch-admin-key",
+		},
+	})
+
+	token := buildWebBridgeTokenForTest(t, "touch-admin-key", "google", time.Now().Add(time.Minute).Unix())
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?touch_bridge_token="+url.QueryEscape(token), nil)
+
+	err := handler.ensureWebAuthSourceAllowed(c, "touch", "google")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "WEB_SOURCE_UNAUTHORIZED")
+}
+
+func TestAuthHandlerAllowsTrustedTouchOAuthSourceContext(t *testing.T) {
+	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{})
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/web/auth/oauth/google/start", nil)
+	c.Set(webAuthSourceTrustedContextName, true)
+
+	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "touch", "google"))
+}
+
+func TestAuthHandlerRejectsWebOAuthBridgeTokenWithoutProviderScope(t *testing.T) {
+	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		settingValues: map[string]string{
+			service.SettingKeyAdminAPIKey: "touch-admin-key",
+		},
+	})
+
+	token := buildWebBridgeTokenForTest(t, "touch-admin-key", "google", time.Now().Add(time.Minute).Unix())
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/auth/login?sub2api_web_bridge_token="+url.QueryEscape(token), nil)
+
+	err := handler.ensureWebAuthSourceAllowed(c, "touch")
+	require.Error(t, err)
+	require.Contains(t, err.Error(), "WEB_SOURCE_UNAUTHORIZED")
+}
+
+func TestEmailOAuthCallbackWebSourceSkipsPendingManualCompletion(t *testing.T) {
+	handler, client := newOAuthPendingFlowTestHandler(t, true)
+	ctx := context.Background()
+
+	recorder := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(recorder)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/github/callback", nil)
+	req.AddCookie(&http.Cookie{Name: emailOAuthSourceCookie, Value: encodeCookieValue("touch")})
+	c.Request = req
+
+	handler.emailOAuthCallbackWithProfile(c, "github", config.EmailOAuthProviderConfig{
+		Enabled:             true,
+		ClientID:            "github-client",
+		ClientSecret:        "github-secret",
+		RedirectURL:         "https://app.example/api/v1/auth/oauth/github/callback",
+		FrontendRedirectURL: "/auth/oauth/callback",
+	}, "/auth/oauth/callback", "/dashboard", &emailOAuthProfile{
+		Subject:       "github-touch-123",
+		Email:         "touch-github@example.com",
+		EmailVerified: true,
+		Username:      "touch-github",
+		DisplayName:   "Touch GitHub",
+	})
+
+	require.Equal(t, http.StatusFound, recorder.Code)
+	location := recorder.Header().Get("Location")
+	require.Contains(t, location, "access_token=")
+	require.Contains(t, location, "redirect=%252Fdashboard")
+
+	userCount, err := client.User.Query().Where(dbuser.EmailEQ("touch-github@example.com")).Count(ctx)
+	require.NoError(t, err)
+	require.Equal(t, 1, userCount)
+	user, err := client.User.Query().Where(dbuser.EmailEQ("touch-github@example.com")).Only(ctx)
+	require.NoError(t, err)
+	require.Equal(t, "touch", user.SignupSource)
+
+	identity, err := client.AuthIdentity.Query().Where(
+		authidentity.ProviderTypeEQ("github"),
+		authidentity.ProviderKeyEQ("touch"),
+		authidentity.ProviderSubjectEQ("github-touch-123"),
+	).Only(ctx)
+	require.NoError(t, err)
+	require.Equal(t, user.ID, identity.UserID)
+
+	sessionCount, err := client.PendingAuthSession.Query().Count(ctx)
+	require.NoError(t, err)
+	require.Zero(t, sessionCount)
 }
 
 func TestEmailOAuthCallbackExistingEmailLogsInWhenInvitationEnabled(t *testing.T) {
@@ -162,13 +383,13 @@ func TestGoogleOAuthStartRequiresTurnstileWhenEnabled(t *testing.T) {
 	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
 		turnstileVerifier: verifier,
 		settingValues: map[string]string{
-			service.SettingKeyTurnstileEnabled:             "true",
-			service.SettingKeyTurnstileSiteKey:             "site-key",
-			service.SettingKeyTurnstileSecretKey:           "secret",
-			service.SettingKeyGoogleOAuthEnabled:           "true",
-			service.SettingKeyGoogleOAuthClientID:          "google-client",
-			service.SettingKeyGoogleOAuthClientSecret:      "google-secret",
-			service.SettingKeyGoogleOAuthRedirectURL:       "https://api.example.com/api/v1/auth/oauth/google/callback",
+			service.SettingKeyTurnstileEnabled:               "true",
+			service.SettingKeyTurnstileSiteKey:               "site-key",
+			service.SettingKeyTurnstileSecretKey:             "secret",
+			service.SettingKeyGoogleOAuthEnabled:             "true",
+			service.SettingKeyGoogleOAuthClientID:            "google-client",
+			service.SettingKeyGoogleOAuthClientSecret:        "google-secret",
+			service.SettingKeyGoogleOAuthRedirectURL:         "https://api.example.com/api/v1/auth/oauth/google/callback",
 			service.SettingKeyGoogleOAuthFrontendRedirectURL: "/auth/oauth/callback",
 		},
 	})
@@ -300,7 +521,6 @@ func TestEmailOAuthCallbackCreatesPasswordRegistrationSessionForNewEmail(t *test
 	require.Equal(t, oauthPendingChoiceStep, completion["step"])
 	require.Equal(t, "registration_completion_required", completion["error"])
 	require.Equal(t, false, completion["invitation_required"])
-	require.Equal(t, true, completion["create_account_allowed"])
 	require.Equal(t, true, completion["force_email_on_signup"])
 	require.Equal(t, "aff-user@example.com", completion["resolved_email"])
 }

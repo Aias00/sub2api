@@ -32,7 +32,7 @@
         </div>
         <div class="rounded-2xl bg-gray-50 p-4 dark:bg-dark-800/70">
           <p class="text-xs text-gray-500 dark:text-gray-400">{{ t('payment.admin.rechargeProductsEditor.stats.highestAmount') }}</p>
-          <p class="mt-1 text-2xl font-black text-gray-950 dark:text-white">¥{{ highestAmount.toFixed(2) }}</p>
+          <p class="mt-1 text-2xl font-black text-gray-950 dark:text-white">{{ pricingCurrencySymbol }}{{ highestAmount.toFixed(2) }}</p>
         </div>
       </div>
     </div>
@@ -141,7 +141,7 @@
               <h4 class="text-lg font-black text-gray-950 dark:text-white">{{ product.name || t('payment.admin.rechargeProductsEditor.previewFallbackTitle') }}</h4>
               <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ product.description || t('payment.admin.rechargeProductsEditor.previewFallbackSubtitle') }}</p>
               <div class="mt-4 flex items-end gap-1 text-gray-950 dark:text-white">
-                <span class="text-sm text-gray-400">¥</span>
+                <span v-if="pricingCurrencySymbol" class="text-sm text-gray-400">{{ pricingCurrencySymbol }}</span>
                 <span class="text-3xl font-black">{{ Number(product.amount || 0).toFixed(2) }}</span>
               </div>
               <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
@@ -193,6 +193,7 @@ const saving = ref(false)
 
 const featuredCount = computed(() => products.value.filter((product) => product.recommended).length)
 const highestAmount = computed(() => products.value.reduce((max, product) => Math.max(max, Number(product.amount) || 0), 0))
+const pricingCurrencySymbol = computed(() => appStore.cachedPublicSettings?.pricing_currency_symbol?.trim() || '')
 const dirty = computed(() => snapshot(products.value) !== originalSnapshot.value)
 
 function snapshot(input: RechargeProduct[]) {

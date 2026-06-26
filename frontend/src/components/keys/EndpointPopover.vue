@@ -1,25 +1,32 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import { useClipboard } from '@/composables/useClipboard'
 import type { CustomEndpoint } from '@/types'
+import {
+  renderApiKeysShellText,
+  type ApiKeysShellLabels,
+} from '@/utils/apiKeysShell'
 
 const props = defineProps<{
   apiBaseUrl: string
   customEndpoints: CustomEndpoint[]
+  shellLabels?: ApiKeysShellLabels
 }>()
 
-const { t } = useI18n()
 const { copyToClipboard } = useClipboard()
 const copiedEndpoint = ref<string | null>(null)
 
 let copiedResetTimer: number | undefined
 
+const endpointText = (
+  key: 'endpointClickToCopy' | 'endpointCopied' | 'endpointCopiedHint' | 'endpointDefault' | 'endpointSpeedTest' | 'endpointTitle',
+) => renderApiKeysShellText(props.shellLabels || {}, key)
+
 const allEndpoints = computed(() => {
   const items: Array<{ name: string; endpoint: string; description: string; isDefault: boolean }> = []
   if (props.apiBaseUrl) {
     items.push({
-      name: t('keys.endpoints.title'),
+      name: endpointText('endpointTitle'),
       endpoint: props.apiBaseUrl,
       description: '',
       isDefault: true,
@@ -32,7 +39,7 @@ const allEndpoints = computed(() => {
 })
 
 async function copy(url: string) {
-  const success = await copyToClipboard(url, t('keys.endpoints.copied'))
+  const success = await copyToClipboard(url, endpointText('endpointCopied'))
   if (!success) return
 
   copiedEndpoint.value = url
@@ -48,8 +55,8 @@ async function copy(url: string) {
 
 function tooltipHint(endpoint: string): string {
   return copiedEndpoint.value === endpoint
-    ? t('keys.endpoints.copiedHint')
-    : t('keys.endpoints.clickToCopy')
+    ? endpointText('endpointCopiedHint')
+    : endpointText('endpointClickToCopy')
 }
 
 function speedTestUrl(endpoint: string): string {
@@ -74,7 +81,7 @@ onBeforeUnmount(() => {
       <span
         v-if="item.isDefault"
         class="rounded bg-primary-50 px-1 py-px text-[10px] font-medium leading-tight text-primary-600 dark:bg-primary-900/30 dark:text-primary-400"
-      >{{ t('keys.endpoints.default') }}</span>
+      >{{ endpointText('endpointDefault') }}</span>
 
       <span class="text-gray-300 dark:text-dark-500">|</span>
 
@@ -129,7 +136,7 @@ onBeforeUnmount(() => {
           target="_blank"
           rel="noopener noreferrer"
           class="rounded p-0.5 text-gray-400 transition-colors hover:text-amber-500 dark:text-gray-500 dark:hover:text-amber-400"
-          :title="t('keys.endpoints.speedTest')"
+          :title="endpointText('endpointSpeedTest')"
         >
           <svg class="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z" />
