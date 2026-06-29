@@ -4785,7 +4785,7 @@ export default {
         authSection: 'Login Entry Points',
         authShellConfig: 'Auth Shell Config JSON',
         authShellConfigPlaceholder:
-          '{"en":{"labels":{"welcomeBack":"Welcome Back","signIn":"Sign In","createAccount":"Create Account"},"defaults":{"homePath":"/home","loginPath":"/login","registerPath":"/register","forgotPasswordPath":"/forgot-password","emailVerifyPath":"/email-verify","defaultRedirectPath":"/dashboard","apiKeysPath":"/keys","usagePath":"/usage","purchasePath":"/purchase","paymentResultPath":"/payment/result","ordersPath":"/orders","profilePath":"/profile","adminRedirectPath":"/admin/dashboard","adminRuntimeSettingsPath":"/admin/runtime-settings","adminOpsPath":"/admin/ops","adminUsersPath":"/admin/users","adminGroupsPath":"/admin/groups","adminAccountsPath":"/admin/accounts","adminOrdersRootPath":"/admin/orders","adminPaymentPlansPath":"/admin/orders/plans","adminUsagePath":"/admin/usage","userSidebarSections":[{"id":"main","items":["dashboard","apiKeys","usage","purchase","orders","profile"]}],"adminPersonalSidebarSections":[{"id":"personal","items":["apiKeys","usage","purchase","orders","profile"]}],"adminSidebarSections":[{"id":"main","items":["dashboard","ops","users","groups","channels","orders","usage"]},{"id":"settings","items":["runtimeSettings","settings"]}],"dingtalkCallbackPath":"/auth/dingtalk/callback","dingtalkEmailCompletionPath":"/auth/dingtalk/email-completion"}}}',
+          '{{"en":{{"labels":{{"welcomeBack":"Welcome Back","signIn":"Sign In","createAccount":"Create Account"}},"defaults":{{"homePath":"/home","loginPath":"/login","registerPath":"/register","forgotPasswordPath":"/forgot-password","emailVerifyPath":"/email-verify","defaultRedirectPath":"/dashboard","apiKeysPath":"/keys","usagePath":"/usage","purchasePath":"/purchase","paymentResultPath":"/payment/result","ordersPath":"/orders","profilePath":"/profile","adminRedirectPath":"/admin/dashboard","adminRuntimeSettingsPath":"/admin/runtime-settings","adminOpsPath":"/admin/ops","adminUsersPath":"/admin/users","adminGroupsPath":"/admin/groups","adminAccountsPath":"/admin/accounts","adminOrdersRootPath":"/admin/orders","adminPaymentPlansPath":"/admin/orders/plans","adminUsagePath":"/admin/usage","userSidebarSections":[{{"id":"main","items":["dashboard","apiKeys","usage","purchase","orders","profile"]}}],"adminPersonalSidebarSections":[{{"id":"personal","items":["apiKeys","usage","purchase","orders","profile"]}}],"adminSidebarSections":[{{"id":"main","items":["dashboard","ops","users","groups","channels","orders","usage"]}},{{"id":"settings","items":["runtimeSettings","settings"]}}],"dingtalkCallbackPath":"/auth/dingtalk/callback","dingtalkEmailCompletionPath":"/auth/dingtalk/email-completion"}}}}}}',
         authShellConfigHint:
           'Optional JSON for public login/registration labels and shared route defaults. Supports locale keys such as en/zh, a labels object, defaults.homePath/loginPath/registerPath/forgotPasswordPath/emailVerifyPath/defaultRedirectPath/apiKeysPath/usagePath/purchasePath/paymentResultPath/ordersPath/profilePath/adminRedirectPath/adminRuntimeSettingsPath, admin sidebar entry paths such as adminOpsPath/adminUsersPath/adminGroupsPath/adminAccountsPath/adminOrdersRootPath/adminPaymentPlansPath/adminUsagePath, plus sidebar grouping/order schemas via defaults.userSidebarSections, defaults.adminPersonalSidebarSections, and defaults.adminSidebarSections=[{id,items[]}...]. User/personal items: dashboard/apiKeys/usage/availableChannels/availableGroups/subscriptions/purchase/orders/redeem/affiliate/profile. Admin items: dashboard/ops/users/groups/channels/subscriptions/accounts/announcements/proxies/riskControl/redeem/promoCodes/affiliates/orders/usage/apiKeys/runtimeSettings/settings, dingtalkCallbackPath, and dingtalkEmailCompletionPath.',
         badge: 'Public Runtime',
@@ -4810,99 +4810,99 @@ export default {
         modelPlazaSection: 'Models Plaza Page',
         modelPlazaShellConfig: 'Models Plaza Shell Config JSON',
         modelPlazaShellConfigPlaceholder:
-          '{"en":{"labels":{"badge":"Models plaza","title":"Public model catalog","description":"Browse configured model cards","quickFind":"Quick find","searchPlaceholder":"Search models, capabilities, or tags","results":"Results","inputPrice":"Input","outputPrice":"Output"}}}',
+          '{{"en":{{"labels":{{"badge":"Models plaza","title":"Public model catalog","description":"Browse configured model cards","quickFind":"Quick find","searchPlaceholder":"Search models, capabilities, or tags","results":"Results","inputPrice":"Input","outputPrice":"Output"}}}}}}',
         modelPlazaShellConfigHint:
           'Optional JSON for public /models page labels. Supports locale keys such as en/zh and a labels object for hero, search, empty state, group, copy, and price labels.',
         homeSection: 'Home Page',
         homeShellConfig: 'Home Shell Config JSON',
         homeShellConfigPlaceholder:
-          '{"en":{"labels":{"navHome":"Home","navDocs":"Docs","navModels":"Models","navExperience":"Experience","viewDocs":"Docs","dashboard":"Dashboard","login":"Log in","heroBadge":"Unified AI gateway","heroTitle":"One gateway for your AI stack","primaryCta":"Start now","secondaryCta":"Browse models"},"defaults":{"links":{"homeAnchor":"#top","modelsPath":"/models","experienceAnchor":"#experience","docsPath":"/docs","termsPath":"/legal/terms","privacyPath":"/legal/privacy-policy"}},"experienceCards":[{"key":"unified","title":"Unified access","description":"One API surface for configured providers"}],"whyChooseCards":[{"key":"lowFriction","title":"Low-friction setup","description":"Start from existing keys and settings"}]}}',
+          '{{"en":{{"labels":{{"navHome":"Home","navDocs":"Docs","navModels":"Models","navExperience":"Experience","viewDocs":"Docs","dashboard":"Dashboard","login":"Log in","heroBadge":"Unified AI gateway","heroTitle":"One gateway for your AI stack","primaryCta":"Start now","secondaryCta":"Browse models"}},"defaults":{{"links":{{"homeAnchor":"#top","modelsPath":"/models","experienceAnchor":"#experience","docsPath":"/docs","termsPath":"/legal/terms","privacyPath":"/legal/privacy-policy"}}}},"experienceCards":[{{"key":"unified","title":"Unified access","description":"One API surface for configured providers"}}],"whyChooseCards":[{{"key":"lowFriction","title":"Low-friction setup","description":"Start from existing keys and settings"}}]}}}}',
         homeShellConfigHint:
           'Optional JSON for the default home page shell copy and links. Supports locale keys such as en/zh, labels, defaults.links, experienceCards, and whyChooseCards.',
         homeBusinessShellConfig: 'Business Home Shell Config JSON',
         homeBusinessShellConfigPlaceholder:
-          '{"en":{"labels":{"heroBadge":"Business capability home","heroTitle":"An AI workspace organized around business capabilities","primaryCta":"Open the platform","secondaryCta":"Browse prompt cases"},"businessCards":[{"key":"prompt-catalog","title":"Image Prompt Cases","description":"Keep image prompt cases in a searchable catalog","capabilityTags":["Prompt library"],"path":"/prompts","pathLabel":"Open prompt catalog"}]}}',
+          '{{"en":{{"labels":{{"heroBadge":"Business capability home","heroTitle":"An AI workspace organized around business capabilities","primaryCta":"Open the platform","secondaryCta":"Browse prompt cases"}},"businessCards":[{{"key":"prompt-catalog","title":"Image Prompt Cases","description":"Keep image prompt cases in a searchable catalog","capabilityTags":["Prompt library"],"path":"/prompts","pathLabel":"Open prompt catalog"}}]}}}}',
         homeBusinessShellConfigHint:
           'Optional JSON for the /home business-capability homepage. Supports locale keys such as en/zh, labels, defaults.links, businessCards, experienceCards, and whyChooseCards.',
         docsSection: 'Docs Page',
         docsContentBasePath: 'Docs Content Base Path Config',
         docsContentBasePathPlaceholder:
-          '{"zh":"/docs-content/","en":"/docs-content/en/"}',
+          '{{"zh":"/docs-content/","en":"/docs-content/en/"}}',
         docsContentBasePathHint:
           'Optional JSON or a single path/URL. The public docs page uses it as the Docsify content base path before falling back to bundled docs-content.',
         docsShellConfig: 'Docs Shell Config JSON',
         docsShellConfigPlaceholder:
-          '{"en":{"labels":{"title":"Docs","dashboard":"Dashboard","login":"Log in","searchPlaceholder":"Search docs","noData":"No results"}}}',
+          '{{"en":{{"labels":{{"title":"Docs","dashboard":"Dashboard","login":"Log in","searchPlaceholder":"Search docs","noData":"No results"}}}}}}',
         docsShellConfigHint:
           'Optional JSON for the public docs shell and Docsify search copy. Supports locale keys such as en/zh and a labels object.',
         legalDocumentShellConfig: 'Legal Document Shell Config JSON',
         legalDocumentShellConfigPlaceholder:
-          '{"en":{"labels":{"login":"Log in","agreementLabel":"Login agreement","loadFailedTitle":"Failed to load document","missingTitle":"Document not found","updatedAt":"Updated: {date}","emptyContent":"No document content yet"}}}',
+          '{{"en":{{"labels":{{"login":"Log in","agreementLabel":"Login agreement","loadFailedTitle":"Failed to load document","missingTitle":"Document not found","updatedAt":"Updated: {{date}}","emptyContent":"No document content yet"}}}}}}',
         legalDocumentShellConfigHint:
           'Optional JSON for the public legal document page chrome. Supports locale keys such as en/zh and a labels object.',
         apiKeysShellConfig: 'API Keys Shell Config JSON',
         apiKeysShellConfigPlaceholder:
-          '{"en":{"labels":{"searchPlaceholder":"Search API keys","createKey":"Create Key","allGroups":"All groups","failedToLoad":"Failed to load API keys"}}}',
+          '{{"en":{{"labels":{{"searchPlaceholder":"Search API keys","createKey":"Create Key","allGroups":"All groups","failedToLoad":"Failed to load API keys"}}}}}}',
         apiKeysShellConfigHint:
           'Optional JSON for the signed-in API Keys page search, filters, table headers, buttons, and common feedback copy. Supports locale keys such as en/zh and a labels object.',
         keyUsageShellConfig: 'Key Usage Shell Config JSON',
         keyUsageShellConfigPlaceholder:
-          '{"en":{"labels":{"title":"API Key Usage","query":"Query","dailyDetail":"Daily Detail"},"defaults":{"defaultDateRange":"today","dailyUsageDays":30}}}',
+          '{{"en":{{"labels":{{"title":"API Key Usage","query":"Query","dailyDetail":"Daily Detail"}},"defaults":{{"defaultDateRange":"today","dailyUsageDays":30}}}}}}',
         keyUsageShellConfigHint:
           'Optional JSON for the public API key usage page labels, table headers, status messages, date range copy, default query range, and daily detail days. Supports locale keys such as en/zh, a labels object, defaults.defaultDateRange, and defaults.dailyUsageDays.',
         dashboardShellConfig: 'User Dashboard Shell Config JSON',
         dashboardShellConfigPlaceholder:
-          '{"en":{"labels":{"balance":"Balance","recentUsage":"Recent usage","quickActions":"Quick actions"},"defaults":{"dateRangeDays":7,"defaultGranularity":"day","recentUsageLimit":5,"quickActions":{"createApiKeyPath":"/keys","usagePath":"/usage","redeemPath":"/redeem"}}}}',
+          '{{"en":{{"labels":{{"balance":"Balance","recentUsage":"Recent usage","quickActions":"Quick actions"}},"defaults":{{"dateRangeDays":7,"defaultGranularity":"day","recentUsageLimit":5,"quickActions":{{"createApiKeyPath":"/keys","usagePath":"/usage","redeemPath":"/redeem"}}}}}}}}',
         dashboardShellConfigHint:
           'Optional JSON for the signed-in user dashboard stat cards, charts, recent usage, default date range, default granularity, recent usage limit, and quick actions. Supports locale keys such as en/zh, a labels object, defaults.dateRangeDays, defaults.defaultGranularity, defaults.recentUsageLimit, and defaults.quickActions.',
         usageShellConfig: 'User Usage Shell Config JSON',
         usageShellConfigPlaceholder:
-          '{"en":{"labels":{"totalRequests":"Total Requests","totalTokens":"Total Tokens","exportCsv":"Export CSV"},"defaults":{"dateRangeDays":7,"apiKeyPageSize":100,"exportPageSize":100}}}',
+          '{{"en":{{"labels":{{"totalRequests":"Total Requests","totalTokens":"Total Tokens","exportCsv":"Export CSV"}},"defaults":{{"dateRangeDays":7,"apiKeyPageSize":100,"exportPageSize":100}}}}}}',
         usageShellConfigHint:
           'Optional JSON for the signed-in user usage history stat cards, filters, buttons, table headers, default date range, API key fetch page size, and CSV export batch size. Supports locale keys such as en/zh, a labels object, defaults.dateRangeDays, defaults.apiKeyPageSize, and defaults.exportPageSize.',
         apiGuideShellConfig: 'API Guide Shell Config JSON',
         apiGuideShellConfigPlaceholder:
-          '{"en":{"labels":{"title":"Gateway API Guide","openTester":"Open Tester","copyCurl":"Copy curl"},"defaults":{"testPath":"/gateway-test","defaultPrompt":"Describe the current model capabilities","maxTokens":256,"apiKeyPageSize":100}}}',
+          '{{"en":{{"labels":{{"title":"Gateway API Guide","openTester":"Open Tester","copyCurl":"Copy curl"}},"defaults":{{"testPath":"/gateway-test","defaultPrompt":"Describe the current model capabilities","maxTokens":256,"apiKeyPageSize":100}}}}}}',
         apiGuideShellConfigHint:
           'Optional JSON for the API guide title, buttons, key selector, endpoint cards, curl example copy, tester route, default example prompt, max output tokens, and API key fetch page size. Supports locale keys such as en/zh, a labels object, defaults.testPath, defaults.defaultPrompt, defaults.maxTokens, and defaults.apiKeyPageSize.',
         apiTestShellConfig: 'API Test Shell Config JSON',
         apiTestShellConfigPlaceholder:
-          '{"en":{"labels":{"title":"API Test","send":"Send Test Request","responsePreview":"Response"},"defaults":{"guidePath":"/gateway-guide","defaultPrompt":"Describe the current model capabilities","maxTokens":256,"apiKeyPageSize":100,"usageSyncPageSize":10}}}',
+          '{{"en":{{"labels":{{"title":"API Test","send":"Send Test Request","responsePreview":"Response"}},"defaults":{{"guidePath":"/gateway-guide","defaultPrompt":"Describe the current model capabilities","maxTokens":256,"apiKeyPageSize":100,"usageSyncPageSize":10}}}}}}',
         apiTestShellConfigHint:
           'Optional JSON for the API test title, form, buttons, request/response panels, usage sync hints, copy status messages, guide route, default test prompt, max output tokens, API key fetch page size, and usage sync page size. Supports locale keys such as en/zh, a labels object, defaults.guidePath, defaults.defaultPrompt, defaults.maxTokens, defaults.apiKeyPageSize, and defaults.usageSyncPageSize.',
         availableGroupsShellConfig: 'Available Groups Shell Config JSON',
         availableGroupsShellConfigPlaceholder:
-          '{"en":{"labels":{"title":"Available Groups","publicTitle":"Public Groups","memberTitle":"Member or Exclusive Groups"}}}',
+          '{{"en":{{"labels":{{"title":"Available Groups","publicTitle":"Public Groups","memberTitle":"Member or Exclusive Groups"}}}}}}',
         availableGroupsShellConfigHint:
           'Optional JSON for the available groups page title, stats, search, empty states, sections, badges, fields, and quota copy. Supports locale keys such as en/zh and a labels object.',
         redeemShellConfig: 'Redeem Page Shell Config JSON',
         redeemShellConfigPlaceholder:
-          '{"en":{"labels":{"currentBalance":"Current Balance","redeemButton":"Redeem Code","recentActivity":"Recent Activity"}}}',
+          '{{"en":{{"labels":{{"currentBalance":"Current Credits","redeemButton":"Redeem Code","recentActivity":"Recent Activity"}}}}}}',
         redeemShellConfigHint:
           'Optional JSON for the redeem page balance card, redeem form, result messages, info card, and history copy. Supports locale keys such as en/zh and a labels object.',
         affiliateShellConfig: 'Affiliate Page Shell Config JSON',
         affiliateShellConfigPlaceholder:
-          '{"en":{"labels":{"title":"Invite Center","copyCode":"Copy Code","transferButton":"Transfer to Balance"}}}',
+          '{{"en":{{"labels":{{"title":"Invite Center","copyCode":"Copy Code","transferButton":"Transfer to Balance"}}}}}}',
         affiliateShellConfigHint:
           'Optional JSON for the affiliate page stats, code, invite link, tips, rebate transfer, and record table copy. Supports locale keys such as en/zh and a labels object.',
         availableChannelsShellConfig: 'Available Channels Shell Config JSON',
         availableChannelsShellConfigPlaceholder:
-          '{"en":{"labels":{"searchPlaceholder":"Search channels or models...","empty":"No available channels","columns":{"name":"Channel","supportedModels":"Supported Models"}}}}',
+          '{{"en":{{"labels":{{"searchPlaceholder":"Search channels or models...","empty":"No available channels","columns":{{"name":"Channel","supportedModels":"Supported Models"}}}}}}}}',
         availableChannelsShellConfigHint:
           'Optional JSON for the available channels page search, refresh, empty state, table headers, and public/exclusive group labels. Supports locale keys such as en/zh and a labels object.',
         channelStatusShellConfig: 'Channel Status Shell Config JSON',
         channelStatusShellConfigPlaceholder:
-          '{"en":{"defaults":{"refreshIntervalSeconds":60},"labels":{"refreshTitle":"Refresh","emptyTitle":"No channels available","windowTab":{"7d":"7 days"},"detailColumns":{"model":"Model"}}}}',
+          '{{"en":{{"defaults":{{"refreshIntervalSeconds":60}},"labels":{{"refreshTitle":"Refresh","emptyTitle":"No channels available","windowTab":{{"7d":"7 days"}},"detailColumns":{{"model":"Model"}}}}}}}}',
         channelStatusShellConfigHint:
           'Optional JSON for the channel status page refresh interval, window tabs, overall status, refresh, empty state, card metrics, detail table headers, and error copy. Supports locale keys such as en/zh, defaults.refreshIntervalSeconds, and a labels object.',
         customPageShellConfig: 'Custom Page Shell Config JSON',
         customPageShellConfigPlaceholder:
-          '{"en":{"labels":{"tocTitle":"Table of Contents","openInNewTab":"Open in new tab","copyCode":"Copy","copyCodeSuccess":"Copied ✓"}}}',
+          '{{"en":{{"labels":{{"tocTitle":"Table of Contents","openInNewTab":"Open in new tab","copyCode":"Copy","copyCodeSuccess":"Copied ✓"}}}}}}',
         customPageShellConfigHint:
           'Optional JSON for custom page missing states, invalid URL state, Markdown table of contents, open-in-new-tab action, load failures, and code-copy button copy. Supports locale keys such as en/zh and a labels object.',
         profileShellConfig: 'Profile Shell Config JSON',
         profileShellConfigPlaceholder:
-          '{"en":{"labels":{"accountBalance":"Account Balance","basicsTitle":"Basic Profile","contactSupport":"Contact Support","sourceAvatar":"Avatar is synced from {providerName}"}}}',
+          '{{"en":{{"labels":{{"accountBalance":"Account Credits","basicsTitle":"Basic Profile","contactSupport":"Contact Support","sourceAvatar":"Avatar is synced from {{providerName}}"}}}}}}',
         profileShellConfigHint:
           'Optional JSON for the profile overview, roles, metrics, basic profile, profile source, and support-card copy. Supports locale keys such as en/zh and a labels object.',
         openpanelClientId: 'OpenPanel Client ID',
@@ -4923,36 +4923,41 @@ export default {
         promptTemplatesTitlePlaceholder: 'Industrial Template Library',
         promptCatalogShellConfig: 'Prompt Catalog Shell Config JSON',
         promptCatalogShellConfigPlaceholder:
-          '{"en":{"defaults":{"sourceType":"case","pageSize":12,"sortBy":"imported_at","sortOrder":"desc","importXAuto":true},"labels":{"total":"Total","sources":"Sources","searchPlaceholder":"Search titles, prompts, tags, or sources","hasImage":"Images only","copyPrompt":"Copy prompt","charUnit":"chars","generate":"Use in generator"}}}',
+          '{{"en":{{"defaults":{{"sourceType":"case","pageSize":12,"sortBy":"imported_at","sortOrder":"desc","importXAuto":true}},"labels":{{"total":"Total","sources":"Sources","searchPlaceholder":"Search titles, prompts, tags, or sources","hasImage":"Images only","copyPrompt":"Copy prompt","charUnit":"chars","generate":"Use in generator"}}}}}}',
         promptCatalogShellConfigHint:
           'Override catalog stats, filters, empty state, details, import copy, and default query/import behavior per locale. Supports labels plus defaults.sourceType, pageSize, sortBy, sortOrder, generatorPath, generatorDraftSource, and importXAuto. Leave empty or invalid JSON for the default copy.',
         workspaceShellConfig: 'Workspace Shell Config JSON',
         workspaceShellConfigPlaceholder:
-          '{"en":{"defaults":{"catalogPath":"/prompts","maxPromptLength":2000},"catalogLabel":"Prompt cases","eyebrow":"Prompt Workspace","title":"Prompt Staging Area","heroDescription":"Import a prompt from the catalog and refine it","promptLabel":"Prompt","promptPlaceholder":"Paste a prompt or import one from the gallery","clearLabel":"Clear","copyPromptLabel":"Copy Prompt","workspaceTitle":"Image Workspace","workspaceStatus":"Image generation is centrally managed by Sub2API","backToCatalogLabel":"Back to catalog"}}',
+          '{{"en":{{"defaults":{{"catalogPath":"/prompts","maxPromptLength":2000}},"catalogLabel":"Prompt cases","eyebrow":"Image Workspace","title":"AI Image Workspace","heroDescription":"Import a prompt, choose a model and parameters, then create an image task.","promptLabel":"Prompt","promptPlaceholder":"Enter a prompt or import one from the catalog","clearLabel":"Clear","copyPromptLabel":"Copy Prompt","workspaceTitle":"Task and artifact status","workspaceStatus":"After login, users can create real image tasks; the worker calls the configured upstream model and writes image artifacts back.","backToCatalogLabel":"Back to catalog"}}}}',
         workspaceShellConfigHint:
           'Override AI image workspace form, button, imported-draft, status copy, defaults.catalogPath, and defaults.maxPromptLength per locale. Leave empty or invalid JSON for the default copy.',
+        imagePromptFilterConfig: 'Image Prompt Filter Config JSON',
+        imagePromptFilterConfigPlaceholder:
+          '{{"enabled":true,"explicit_keywords":["panty","panties","underwear","lingerie","crotch","legs spread","provocative","seductive","bra","nude","sex"],"youth_context_keywords":["school uniform","student","teen","teenage","young girl","underage","minor"],"warning_message":"提示词包含露骨性内容或校园/未成年语境的性化描写，无法创建生图任务。","youth_warning_message":"提示词包含年轻人物的露骨性化描写，无法创建生图任务。"}}',
+        imagePromptFilterConfigHint:
+          'Configure the image prompt safety filter. Set enabled to false to disable. Customize keyword lists and warning messages. Leave empty or invalid JSON for defaults.',
         pricingSection: 'Pricing Page',
         pricingCurrencySymbol: 'Pricing Currency Symbol',
         pricingCurrencySymbolPlaceholder: '¥',
         pricingCurrencySymbolHint: 'Display symbol used by public pricing cards. Amounts and checkout currency still come from payment configuration.',
         pricingShellConfig: 'Pricing Shell Config JSON',
         pricingShellConfigPlaceholder:
-          '{"en":{"groups":[{"name":"one-time","title":"One-time"}],"button":{"title":"Choose plan","icon":"Zap"},"labels":{"prompts":"Prompt cases","eyebrow":"Pricing","title":"Pricing","description":"Plans and credits are configured in Sub2API","recharge":"Recharge","subscription":"Subscription","buy":"Buy","catalogStatus":"Catalog status","emptyRecharge":"No recharge products are configured yet","recommended":"Recommended"}}}',
+          '{{"en":{{"groups":[{{"name":"one-time","title":"One-time"}}],"button":{{"title":"Choose plan","icon":"Zap"}},"labels":{{"prompts":"Prompt cases","eyebrow":"Pricing","title":"Pricing","description":"Plans and credits are configured in Sub2API","recharge":"Recharge","subscription":"Subscription","buy":"Buy","catalogStatus":"Catalog status","emptyRecharge":"No recharge products are configured yet","recommended":"Recommended"}}}}}}',
         pricingShellConfigHint:
           'Override groups, button, navigation, hero, tabs, cards, empty states, and labels per locale. Leave empty for the built-in shell.',
         paymentShellConfig: 'Payment Shell Config JSON',
         paymentShellConfigPlaceholder:
-          '{"en":{"labels":{"tabTopUp":"Top Up","tabSubscribe":"Subscribe","rechargeAccount":"Recharge Account","currentBalance":"Current Balance","createOrder":"Create Order","selectAmountFirst":"Select a recharge product"},"defaults":{"paymentStatusPollIntervalMs":3000,"paymentVerifyRetryIntervalMs":15000,"paymentVerifyRetryMaxAttempts":6,"paymentResultRefreshIntervalMs":2000,"paymentResultMaxRefreshAttempts":15,"stripePollIntervalMs":3000,"stripeCloseDelayMs":2000,"stripePopupInitTimeoutMs":15000}}}',
+          '{{"en":{{"labels":{{"tabTopUp":"Top Up","tabSubscribe":"Subscribe","rechargeAccount":"Recharge Account","currentBalance":"Current Credits","createOrder":"Create Order","selectAmountFirst":"Select a recharge product"}},"defaults":{{"paymentStatusPollIntervalMs":3000,"paymentVerifyRetryIntervalMs":15000,"paymentVerifyRetryMaxAttempts":6,"paymentResultRefreshIntervalMs":2000,"paymentResultMaxRefreshAttempts":15,"stripePollIntervalMs":3000,"stripeCloseDelayMs":2000,"stripePopupInitTimeoutMs":15000}}}}}}',
         paymentShellConfigHint:
-          'Override labels, buttons, empty states, order confirmation copy, and payment polling defaults on the signed-in payment pages. Payment methods, amounts, and order logic still come from payment configuration. Supports defaults.paymentStatusPollIntervalMs, defaults.paymentVerifyRetryIntervalMs, defaults.paymentVerifyRetryMaxAttempts, defaults.paymentResultRefreshIntervalMs, defaults.paymentResultMaxRefreshAttempts, defaults.stripePollIntervalMs, defaults.stripeCloseDelayMs, and defaults.stripePopupInitTimeoutMs.',
+          'Override labels, buttons, empty states, order confirmation copy, and payment polling defaults on the signed-in payment pages. User-facing copy should say credits, while payment methods, amounts, order logic, and the backend balance ledger still come from payment configuration. Supports defaults.paymentStatusPollIntervalMs, defaults.paymentVerifyRetryIntervalMs, defaults.paymentVerifyRetryMaxAttempts, defaults.paymentResultRefreshIntervalMs, defaults.paymentResultMaxRefreshAttempts, defaults.stripePollIntervalMs, defaults.stripeCloseDelayMs, and defaults.stripePopupInitTimeoutMs.',
         saveFailed: 'Failed to save runtime settings',
         saveSuccess: 'Runtime settings saved',
-        creditsPerBalance: 'Credits per Sub2API Balance',
-        creditsPerBalancePlaceholder: '10',
-        creditsPerBalanceHint: 'Positive number used by the public credits page. Example: 10 means 10 credits = 1 Sub2API balance.',
+        creditsPerBalance: 'Credits to ledger balance',
+        creditsPerBalancePlaceholder: '1',
+        creditsPerBalanceHint: 'Unified unit is fixed at 1: the frontend says credits, while the backend keeps balance as the only ledger field.',
         creditsShellConfig: 'Credits Shell Config JSON',
         creditsShellConfigPlaceholder:
-          '{"en":{"labels":{"credits":"Credits","sub2apiBalance":"Sub2API balance","conversion":"Conversion: {creditsPerBalance} credits = 1 Sub2API balance.","actionsTitle":"Balance actions","recharge":"Recharge","viewOrders":"View orders"},"actions":{"title":"Balance actions","description":"Recharge and orders use the unified payment flow"},"buttons":{"recharge":"Recharge","orders":"View orders"}}}',
+          '{{"en":{{"labels":{{"credits":"Credits","sub2apiBalance":"Ledger balance","conversion":"Unified unit: 1 credit = 1 balance ledger unit.","actionsTitle":"Credit actions","recharge":"Recharge","viewOrders":"View orders"}},"actions":{{"title":"Credit actions","description":"Recharge and orders use the unified payment flow and write to the same balance ledger."}},"buttons":{{"recharge":"Recharge","orders":"View orders"}}}}}}',
         creditsShellConfigHint:
           'Override credits page labels, actions, buttons, and conversion per locale. Conversion copy supports {creditsPerBalance}. Leave empty for the built-in shell.',
         tawkEnabled: 'Enable Tawk',
@@ -6376,7 +6381,7 @@ export default {
     totalTokensLabel: 'Total Tokens',
     used: 'Used',
     usedQuota: 'Used Quota',
-    walletBalance: 'Wallet Balance'
+    walletBalance: 'Credit Balance'
   },
   monitorCommon: {
     availabilityPrefix: 'Availability',
@@ -6426,6 +6431,7 @@ export default {
     apiTest: 'API Test',
     availableChannels: 'Available Channels',
     availableGroups: 'Available Groups',
+    businessCapabilities: 'Business Capabilities',
     buySubscription: 'Recharge / Subscription',
     channelManagement: 'Channels',
     channelMonitor: 'Channel Monitor',
@@ -6439,6 +6445,8 @@ export default {
     expand: 'Expand',
     github: 'GitHub',
     groups: 'Groups',
+    hotTopics: 'Hot Topics',
+    imageGenerator: 'Image Generator',
     lightMode: 'Light Mode',
     logout: 'Logout',
     myAccount: 'My Account',
@@ -6450,6 +6458,7 @@ export default {
     paymentDashboard: 'Payment Dashboard',
     paymentPlans: 'Products & Plans',
     profile: 'Profile',
+    promptCatalog: 'Prompt Catalog',
     promoCodes: 'Promo Codes',
     proxies: 'Proxies',
     redeem: 'Redeem',
@@ -6459,7 +6468,53 @@ export default {
     subscriptions: 'Subscriptions',
     runtimeSettings: 'Runtime Settings',
     usage: 'Usage',
+    wechatExport: 'WeChat Export',
     users: 'Users'
+  },
+  hotContent: {
+    title: 'Hot Topic Tracking',
+    subtitle: 'Aggregate hot events, daily digests, WeChat MP rankings, and collector run events as a real-time editorial entry point.',
+    signalDesk: 'Signal Desk',
+    capabilityStatus: 'Capability Status',
+    capabilityMain: 'Hot Topics',
+    capabilityMainDesc: 'Aggregated hot events displayed here; historical source lists are no longer exposed.',
+    capabilityDaily: 'Daily Digest & WeChat MP',
+    capabilityDailyDesc: 'Daily digests, WeChat MP rankings, and run events retained as editorial entry points.',
+    capabilitySources: '{count} sources connected',
+    capabilitySourcesDesc: 'Sources are used for backend aggregation only; historical source lists are not shown.',
+    statSources: 'Sources',
+    statHot: 'Hot',
+    statDaily: 'Daily',
+    statMp: 'WeChat MP',
+    tabItems: 'Hot Items',
+    tabDaily: 'Daily Digest',
+    tabMp: 'WeChat MP',
+    tabEvents: 'Run Events',
+    search: 'Search / Refresh',
+    searchItems: 'Search title, summary, or body',
+    searchMp: 'Search articles or accounts',
+    loading: 'Loading…',
+    loadFailed: 'Failed to load hot content data',
+    emptyItems: 'No hot data yet. Run the import script or connect the hot collector.',
+    emptyDaily: 'No daily digest data available.',
+    emptyDailyHint: 'Select a daily digest to view details.',
+    emptyMp: 'No WeChat MP data available.',
+    emptyEvents: 'Enter a run_id to view collector run events.',
+    latest: 'Latest',
+    eventsLabel: 'Run ID',
+    eventsPlaceholder: 'Enter hot_runs.run_id to view events',
+    loadEvents: 'Load Events',
+    eventsMeta: '#{id}',
+    emptyEvent: '(empty event)',
+    sourceAggregated: 'Aggregated',
+    mpReads: 'Reads',
+    mpLikes: 'Likes',
+    mpShares: 'Shares',
+    paginationPrev: 'Previous',
+    paginationNext: 'Next',
+    paginationPage: 'Page {page}',
+    paginationTotal: '{total} total',
+    paginationInfo: 'Page {page} / {totalPages} · {total} results',
   },
   onboarding: {
     admin: {
@@ -6824,8 +6879,8 @@ export default {
     confirmCancel: 'Are you sure you want to cancel this order?',
     confirmSubscription: 'Confirm Subscription',
     createOrder: 'Confirm Payment',
-    creditedBalance: 'Credited Balance',
-    currentBalance: 'Current Balance',
+    creditedBalance: 'Credited Credits',
+    currentBalance: 'Current Credits',
     customAmount: 'Custom Amount',
     days: 'days',
     enterAmount: 'Enter amount',
@@ -7000,7 +7055,7 @@ export default {
     years: 'years'
   },
   profile: {
-    accountBalance: 'Account Balance',
+    accountBalance: 'Account Credits',
     administrator: 'Administrator',
     authBindings: {
       bindAction: 'Bind {providerName}',
@@ -7279,6 +7334,142 @@ export default {
     weekly: 'Weekly',
     windowNotActive: 'Awaiting first use'
   },
+  wechatExport: {
+    pageTitle: 'WeChat Export',
+    pageDescription: 'Export WeChat Official Account Articles to HTML, Markdown, and JSON',
+    pageHint: 'Import WeChat article links, create export tasks, and let the local worker generate downloadable artifacts.',
+    loginRequired: 'Please log in to use WeChat Export. Sessions, tasks, and artifacts will be archived under your account.',
+
+    session: {
+      title: 'WeChat Session',
+      statusLabel: 'Status',
+      statusNotConnected: 'not connected',
+      statusReady: 'ready',
+      statusScanConfirmed: 'scan confirmed',
+      statusExpired: 'expired',
+      statusPending: 'pending',
+      warningNoSession: 'No ready WeChat session. Scan a QR code before syncing official-account articles or requesting engagement metrics.',
+      warningExpired: 'The WeChat session has expired. Create a new QR code and scan again before syncing or fetching engagement metrics.',
+      warningNotReady: 'Login is not ready yet. Keep this page open until the session changes to ready.',
+      createQRCode: 'Create QR Code',
+      creating: 'Creating',
+      validateSession: 'Validate Session',
+      validating: 'Validating',
+      logout: 'Logout',
+      scanHint: 'Scan with WeChat, page auto-polls status.',
+      pollHint: 'Page auto-polls every 3 seconds.'
+    },
+
+    account: {
+      title: 'Account Management',
+      boundCount: '{count} bound',
+      bindTitle: 'Bind Account',
+      bindHint: 'Bind official account fakeid, sync historical articles after session is ready.',
+      fakeidPlaceholder: 'fakeid',
+      nicknamePlaceholder: 'Name',
+      bind: 'Bind',
+      binding: 'Saving',
+      searchPlaceholder: 'Search accounts',
+      search: 'Search',
+      searching: 'Searching',
+      searchResult: 'Found {count} accounts.',
+      sync: 'Sync',
+      syncing: 'Syncing',
+      syncResult: 'Synced {synced} articles across {pages} pages. {more}',
+      syncHasMore: 'More articles may be available.',
+      noAccounts: 'No accounts bound yet.',
+      lastSync: 'Last sync {time}'
+    },
+
+    article: {
+      title: 'Article Import',
+      hint: 'Paste WeChat article links, filter and select articles to export',
+      allAccounts: 'All Accounts',
+      importPlaceholder: 'https://mp.weixin.qq.com/s/...',
+      import: 'Import Link',
+      importing: 'Importing',
+      importSuccess: 'Article link imported.',
+      filterPlaceholder: 'Filter imported articles',
+      statusAll: 'All Status',
+      statusPending: 'Pending',
+      statusFetched: 'Fetched',
+      statusNormal: 'Normal',
+      statusDeleted: 'Deleted',
+      selectFiltered: 'Select Filtered ({count})',
+      clearSelection: 'Clear',
+      selectedCount: '{count} selected',
+      noArticles: 'No article links imported yet.',
+      noFiltered: 'No articles match current filters.',
+      listTitle: 'Imported Articles'
+    },
+
+    task: {
+      title: 'Create Task',
+      hint: 'Worker will pick up queued tasks and generate export artifacts.',
+      formatLabel: '{format}',
+      includeEngagement: 'Engagement Data',
+      create: 'Export ({count} articles)',
+      creating: 'Creating',
+      createSuccess: 'Task #{id} queued, worker will generate export artifacts.',
+      message: 'Message',
+      error: 'Error'
+    },
+
+    monitor: {
+      title: 'Task Monitor',
+      hint: 'View Worker status, task progress, and export artifacts.',
+      workerStatus: {
+        queued: 'Queued',
+        running: 'Running',
+        completed: 'Completed',
+        failed: 'Failed',
+        staleLease: 'Stale Lease',
+        status: 'Status',
+        lastUpdate: 'Last Update',
+        noActivity: 'No activity'
+      },
+      filterAll: 'All Tasks',
+      filterQueued: 'Queued',
+      filterRunning: 'Running',
+      filterCompleted: 'Completed',
+      filterPartial: 'Partial',
+      filterFailed: 'Failed',
+      filterCancelled: 'Cancelled',
+      selectFiltered: 'Select Filtered ({count})',
+      clearSelection: 'Clear',
+      batchCancel: 'Cancel ({count})',
+      canceling: 'Canceling',
+      batchRetry: 'Retry ({count})',
+      retrying: 'Retrying',
+      batchDownload: 'Download Artifacts',
+      downloading: 'Preparing',
+      selectedCount: '{count} selected',
+      noTasks: 'No export tasks yet.',
+      noFiltered: 'No tasks match current filters.',
+
+      taskItem: {
+        id: 'Task #{id}',
+        status: 'Status',
+        progress: '{success}/{total} exported',
+        failedCount: '{count} failed',
+        failureDetail: 'Failure Details',
+        loadArtifacts: 'Load Artifacts',
+        downloadZip: 'Download ZIP',
+        cancel: 'Cancel',
+        retry: 'Retry',
+        preview: 'Preview',
+        previewing: 'Loading'
+      }
+    },
+
+    preview: {
+      title: '{format} Preview',
+      close: 'Close',
+      downloadOriginal: 'Download original',
+      sourceHint: 'Preview content from authorized artifact download response.',
+      htmlTitle: 'WeChat Export HTML Preview'
+    }
+  },
   version: {
     currentVersion: 'Current Version',
     latestVersion: 'Latest Version',
@@ -7300,5 +7491,77 @@ export default {
     viewChangelog: 'View Changelog',
     viewRelease: 'View Release',
     viewUpdate: 'View Update'
+  },
+  imageWorkspace: {
+    negativePrompt: 'Negative Prompt',
+    negativePromptPlaceholder: 'Elements you don\'t want...',
+    model: 'Model',
+    size: 'Size',
+    quality: 'Quality',
+    batchSize: 'Batch Size',
+    style: 'Style Note',
+    stylePlaceholder: 'Cinematic, product render...',
+    queuing: 'Queuing...',
+    startGenerating: 'Start Generating',
+    copyPromptLabel: 'Copy Prompt',
+    clearLabel: 'Clear',
+    cancel: 'Cancel',
+    cancelling: 'Cancelling...',
+    refresh: 'Refresh',
+    preview: 'Preview',
+    viewFullSize: 'View Full Size',
+    download: 'Download',
+    downloadOriginal: 'Download Original',
+    delete: 'Delete',
+    close: 'Close',
+    saveTemplate: 'Save',
+    templateName: 'Template Name',
+    statusQueued: 'Queued',
+    statusRunning: 'Generating',
+    statusSucceeded: 'Completed',
+    statusFailed: 'Failed',
+    statusCancelled: 'Cancelled',
+    filterAll: 'All',
+    loginRequired: 'Log in to create image generation tasks, save templates, and keep your generation history.',
+    balanceProtection: 'Credit Protection',
+    balanceProtectionDesc: 'Estimated credit cost will be checked before creating a task.',
+    currentBalance: 'Current Credits',
+    estimatedCost: 'Estimated Cost',
+    balanceAfter: 'Credits After',
+    topUp: 'Top Up',
+    insufficientBalance: 'Insufficient credits for this task. Please top up or choose a cheaper model.',
+    noUsageRecords: 'No image usage records yet.',
+    noTemplates: 'No saved templates yet.',
+    noTasks: 'No image generation tasks yet.',
+    ledger: 'Ledger',
+    images: 'images',
+    balance: 'Credits',
+    refunded: 'Refunded',
+    settled: 'Settled',
+    recorded: 'Recorded',
+    generationHistory: 'Generation History',
+    imageTasks: 'Image Tasks',
+    totalTasks: '{count} tasks total',
+    pageInfo: 'Page {current} / {total}',
+    paginationAriaLabel: 'Pagination',
+    prevPage: 'Previous',
+    nextPage: 'Next',
+    workerGenerating: 'Worker is generating images, the page will refresh automatically.',
+    workerLeaseUntil: 'Worker lease until: ',
+    cost: 'Cost',
+    balanceSnapshot: 'Credit Snapshot',
+    batchLabel: 'Batch',
+    errorUpstream404: 'Image upstream returned 404. Please contact the admin to check upstream configuration.',
+    errorUpstreamApiKeyMissing: 'Image upstream API Key is not configured. Please contact the admin.',
+    errorUpstreamAuth: 'Image upstream authentication failed. Please contact the admin to check the API Key.',
+    errorRequestFailed: 'Request failed',
+    imageLoadFailed: 'Image load failed',
+    taskQueued: 'Image task #{id} has been queued.',
+    templateSaved: 'Template saved.',
+    taskId: 'Task #{id}',
+    imageId: 'Image #{id}',
+    costPerImage: '{cost} / image',
+    recentUsage: 'Recent Usage',
+    templates: 'Templates'
   }
 };

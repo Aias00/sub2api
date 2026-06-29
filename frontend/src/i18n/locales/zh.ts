@@ -4779,7 +4779,7 @@ export default {
         authSection: '登录入口',
         authShellConfig: '登录注册页展示配置 JSON',
         authShellConfigPlaceholder:
-          '{"zh":{"labels":{"welcomeBack":"欢迎回来","signIn":"登录","createAccount":"创建账户"},"defaults":{"homePath":"/home","loginPath":"/login","registerPath":"/register","forgotPasswordPath":"/forgot-password","emailVerifyPath":"/email-verify","defaultRedirectPath":"/dashboard","apiKeysPath":"/keys","usagePath":"/usage","purchasePath":"/purchase","paymentResultPath":"/payment/result","ordersPath":"/orders","profilePath":"/profile","adminRedirectPath":"/admin/dashboard","adminRuntimeSettingsPath":"/admin/runtime-settings","adminOpsPath":"/admin/ops","adminUsersPath":"/admin/users","adminGroupsPath":"/admin/groups","adminAccountsPath":"/admin/accounts","adminOrdersRootPath":"/admin/orders","adminPaymentPlansPath":"/admin/orders/plans","adminUsagePath":"/admin/usage","userSidebarSections":[{"id":"main","items":["dashboard","apiKeys","usage","purchase","orders","profile"]}],"adminPersonalSidebarSections":[{"id":"personal","items":["apiKeys","usage","purchase","orders","profile"]}],"adminSidebarSections":[{"id":"main","items":["dashboard","ops","users","groups","channels","orders","usage"]},{"id":"settings","items":["runtimeSettings","settings"]}],"dingtalkCallbackPath":"/auth/dingtalk/callback","dingtalkEmailCompletionPath":"/auth/dingtalk/email-completion"}}}',
+          '{{"zh":{{"labels":{{"welcomeBack":"欢迎回来","signIn":"登录","createAccount":"创建账户"}},"defaults":{{"homePath":"/home","loginPath":"/login","registerPath":"/register","forgotPasswordPath":"/forgot-password","emailVerifyPath":"/email-verify","defaultRedirectPath":"/dashboard","apiKeysPath":"/keys","usagePath":"/usage","purchasePath":"/purchase","paymentResultPath":"/payment/result","ordersPath":"/orders","profilePath":"/profile","adminRedirectPath":"/admin/dashboard","adminRuntimeSettingsPath":"/admin/runtime-settings","adminOpsPath":"/admin/ops","adminUsersPath":"/admin/users","adminGroupsPath":"/admin/groups","adminAccountsPath":"/admin/accounts","adminOrdersRootPath":"/admin/orders","adminPaymentPlansPath":"/admin/orders/plans","adminUsagePath":"/admin/usage","userSidebarSections":[{{"id":"main","items":["dashboard","apiKeys","usage","purchase","orders","profile"]}}],"adminPersonalSidebarSections":[{{"id":"personal","items":["apiKeys","usage","purchase","orders","profile"]}}],"adminSidebarSections":[{{"id":"main","items":["dashboard","ops","users","groups","channels","orders","usage"]}},{{"id":"settings","items":["runtimeSettings","settings"]}}],"dingtalkCallbackPath":"/auth/dingtalk/callback","dingtalkEmailCompletionPath":"/auth/dingtalk/email-completion"}}}}}}',
         authShellConfigHint:
           '可选 JSON，用于配置公开登录/注册页面文案和共享路由默认值。支持 en/zh 等语言键、labels 对象以及 defaults.homePath/loginPath/registerPath/forgotPasswordPath/emailVerifyPath/defaultRedirectPath/apiKeysPath/usagePath/purchasePath/paymentResultPath/ordersPath/profilePath/adminRedirectPath/adminRuntimeSettingsPath、管理员侧边栏入口路径如 adminOpsPath/adminUsersPath/adminGroupsPath/adminAccountsPath/adminOrdersRootPath/adminPaymentPlansPath/adminUsagePath，以及侧边栏分组/顺序 schema：defaults.userSidebarSections、defaults.adminPersonalSidebarSections、defaults.adminSidebarSections=[{id,items[]}...]；用户/个人区 items 支持 dashboard/apiKeys/usage/availableChannels/availableGroups/subscriptions/purchase/orders/redeem/affiliate/profile，管理员区 items 支持 dashboard/ops/users/groups/channels/subscriptions/accounts/announcements/proxies/riskControl/redeem/promoCodes/affiliates/orders/usage/apiKeys/runtimeSettings/settings、dingtalkCallbackPath、dingtalkEmailCompletionPath。',
         badge: 'Public Runtime',
@@ -4804,99 +4804,99 @@ export default {
         modelPlazaSection: '模型广场页面',
         modelPlazaShellConfig: '模型广场展示配置 JSON',
         modelPlazaShellConfigPlaceholder:
-          '{"zh":{"labels":{"badge":"模型广场","title":"公开模型目录","description":"浏览后台配置的模型卡片","quickFind":"快速查找","searchPlaceholder":"搜索模型、能力或标签","results":"结果","inputPrice":"输入","outputPrice":"输出"}}}',
+          '{{"zh":{{"labels":{{"badge":"模型广场","title":"公开模型目录","description":"浏览后台配置的模型卡片","quickFind":"快速查找","searchPlaceholder":"搜索模型、能力或标签","results":"结果","inputPrice":"输入","outputPrice":"输出"}}}}}}',
         modelPlazaShellConfigHint:
           '可选 JSON，用于配置公开 /models 页面文案。支持 en/zh 等语言键，以及 labels 对象中的首屏、搜索、空态、分组、复制和价格标签。',
         homeSection: '首页',
         homeShellConfig: '首页展示配置 JSON',
         homeShellConfigPlaceholder:
-          '{"zh":{"labels":{"navHome":"首页","navDocs":"文档","navModels":"模型","navExperience":"体验","viewDocs":"文档","dashboard":"控制台","login":"登录","heroBadge":"统一 AI 网关","heroTitle":"一个网关管理 AI 能力","primaryCta":"立即开始","secondaryCta":"查看模型"},"defaults":{"links":{"homeAnchor":"#top","modelsPath":"/models","experienceAnchor":"#experience","docsPath":"/docs","termsPath":"/legal/terms","privacyPath":"/legal/privacy-policy"}},"experienceCards":[{"key":"unified","title":"统一访问","description":"用一个 API 面接入配置好的供应商"}],"whyChooseCards":[{"key":"lowFriction","title":"低摩擦接入","description":"从已有密钥和配置开始"}]}}',
+          '{{"zh":{{"labels":{{"navHome":"首页","navDocs":"文档","navModels":"模型","navExperience":"体验","viewDocs":"文档","dashboard":"控制台","login":"登录","heroBadge":"统一 AI 网关","heroTitle":"一个网关管理 AI 能力","primaryCta":"立即开始","secondaryCta":"查看模型"}},"defaults":{{"links":{{"homeAnchor":"#top","modelsPath":"/models","experienceAnchor":"#experience","docsPath":"/docs","termsPath":"/legal/terms","privacyPath":"/legal/privacy-policy"}}}},"experienceCards":[{{"key":"unified","title":"统一访问","description":"用一个 API 面接入配置好的供应商"}}],"whyChooseCards":[{{"key":"lowFriction","title":"低摩擦接入","description":"从已有密钥和配置开始"}}]}}}}',
         homeShellConfigHint:
           '可选 JSON，用于配置默认首页展示文案和链接。支持 en/zh 等语言键，以及 labels、defaults.links、experienceCards、whyChooseCards。',
         homeBusinessShellConfig: '业务首页展示配置 JSON',
         homeBusinessShellConfigPlaceholder:
-          '{"zh":{"labels":{"heroBadge":"业务能力首页","heroTitle":"面向业务场景的 AI 能力工作台","primaryCta":"进入能力中台","secondaryCta":"查看图片提示词"},"businessCards":[{"key":"prompt-catalog","title":"图片提示词","description":"把提示词案例沉淀为可检索目录","capabilityTags":["案例目录"],"path":"/prompts","pathLabel":"进入提示词库"}]}}',
+          '{{"zh":{{"labels":{{"heroBadge":"业务能力首页","heroTitle":"面向业务场景的 AI 能力工作台","primaryCta":"进入能力中台","secondaryCta":"查看图片提示词"}},"businessCards":[{{"key":"prompt-catalog","title":"图片提示词","description":"把提示词案例沉淀为可检索目录","capabilityTags":["案例目录"],"path":"/prompts","pathLabel":"进入提示词库"}}]}}}}',
         homeBusinessShellConfigHint:
           '可选 JSON，用于配置 /home 业务能力首页。支持 en/zh 等语言键，以及 labels、defaults.links、businessCards、experienceCards、whyChooseCards。',
         docsSection: '文档页面',
         docsContentBasePath: '文档内容根路径配置',
         docsContentBasePathPlaceholder:
-          '{"zh":"/docs-content/","en":"/docs-content/en/"}',
+          '{{"zh":"/docs-content/","en":"/docs-content/en/"}}',
         docsContentBasePathHint:
           '可选 JSON 或单一路径/URL。公开文档页会优先从这里读取 Docsify 内容根路径，未配置时回退到前端静态 docs-content。',
         docsShellConfig: '文档页展示配置 JSON',
         docsShellConfigPlaceholder:
-          '{"zh":{"labels":{"title":"文档","dashboard":"控制台","login":"登录","searchPlaceholder":"搜索文档","noData":"没有结果"}}}',
+          '{{"zh":{{"labels":{{"title":"文档","dashboard":"控制台","login":"登录","searchPlaceholder":"搜索文档","noData":"没有结果"}}}}}}',
         docsShellConfigHint:
           '可选 JSON，用于配置公开文档页外壳和 Docsify 搜索文案。支持 en/zh 等语言键以及 labels 对象。',
         legalDocumentShellConfig: '法务文档页展示配置 JSON',
         legalDocumentShellConfigPlaceholder:
-          '{"zh":{"labels":{"login":"登录","agreementLabel":"登录条款","loadFailedTitle":"文档加载失败","missingTitle":"文档不存在","updatedAt":"更新日期：{date}","emptyContent":"暂无正文内容"}}}',
+          '{{"zh":{{"labels":{{"login":"登录","agreementLabel":"登录条款","loadFailedTitle":"文档加载失败","missingTitle":"文档不存在","updatedAt":"更新日期：{{date}}","emptyContent":"暂无正文内容"}}}}}}',
         legalDocumentShellConfigHint:
           '可选 JSON，用于配置公开法务文档页外壳文案。支持 en/zh 等语言键以及 labels 对象。',
         apiKeysShellConfig: 'API Keys 管理页展示配置 JSON',
         apiKeysShellConfigPlaceholder:
-          '{"zh":{"labels":{"searchPlaceholder":"搜索 API Key","createKey":"创建 Key","allGroups":"所有分组","failedToLoad":"加载 API Keys 失败"}}}',
+          '{{"zh":{{"labels":{{"searchPlaceholder":"搜索 API Key","createKey":"创建 Key","allGroups":"所有分组","failedToLoad":"加载 API Keys 失败"}}}}}}',
         apiKeysShellConfigHint:
           '可选 JSON，用于配置登录用户 API Keys 管理页搜索、筛选、表头、按钮和常见反馈文案。支持 en/zh 等语言键以及 labels 对象。',
         keyUsageShellConfig: 'API Key 用量页展示配置 JSON',
         keyUsageShellConfigPlaceholder:
-          '{"zh":{"labels":{"title":"API Key 用量查询","query":"查询","dailyDetail":"每日明细"},"defaults":{"defaultDateRange":"today","dailyUsageDays":30}}}',
+          '{{"zh":{{"labels":{{"title":"API Key 用量查询","query":"查询","dailyDetail":"每日明细"}},"defaults":{{"defaultDateRange":"today","dailyUsageDays":30}}}}}}',
         keyUsageShellConfigHint:
           '可选 JSON，用于配置公开 API Key 用量页标签、表头、状态消息、时间范围文案、默认查询范围和每日明细天数。支持 en/zh 等语言键、labels 对象、defaults.defaultDateRange 和 defaults.dailyUsageDays。',
         dashboardShellConfig: '用户仪表盘展示配置 JSON',
         dashboardShellConfigPlaceholder:
-          '{"zh":{"labels":{"balance":"余额","recentUsage":"最近使用","quickActions":"快捷操作"},"defaults":{"dateRangeDays":7,"defaultGranularity":"day","recentUsageLimit":5,"quickActions":{"createApiKeyPath":"/keys","usagePath":"/usage","redeemPath":"/redeem"}}}}',
+          '{{"zh":{{"labels":{{"balance":"余额","recentUsage":"最近使用","quickActions":"快捷操作"}},"defaults":{{"dateRangeDays":7,"defaultGranularity":"day","recentUsageLimit":5,"quickActions":{{"createApiKeyPath":"/keys","usagePath":"/usage","redeemPath":"/redeem"}}}}}}}}',
         dashboardShellConfigHint:
           '可选 JSON，用于配置登录用户仪表盘统计卡、图表、最近使用、默认时间窗、默认粒度、最近使用条数和快捷操作。支持 en/zh 等语言键、labels 对象、defaults.dateRangeDays、defaults.defaultGranularity、defaults.recentUsageLimit 和 defaults.quickActions。',
         usageShellConfig: '用户用量历史页展示配置 JSON',
         usageShellConfigPlaceholder:
-          '{"zh":{"labels":{"totalRequests":"总请求数","totalTokens":"总 Tokens","exportCsv":"导出 CSV"},"defaults":{"dateRangeDays":7,"apiKeyPageSize":100,"exportPageSize":100}}}',
+          '{{"zh":{{"labels":{{"totalRequests":"总请求数","totalTokens":"总 Tokens","exportCsv":"导出 CSV"}},"defaults":{{"dateRangeDays":7,"apiKeyPageSize":100,"exportPageSize":100}}}}}}',
         usageShellConfigHint:
           '可选 JSON，用于配置登录用户用量历史页统计卡、筛选器、按钮、表头文案、默认日期范围、API Key 拉取页大小和 CSV 导出批量大小。支持 en/zh 等语言键、labels 对象、defaults.dateRangeDays、defaults.apiKeyPageSize 和 defaults.exportPageSize。',
         apiGuideShellConfig: 'API 调用说明页展示配置 JSON',
         apiGuideShellConfigPlaceholder:
-          '{"zh":{"labels":{"title":"网关调用说明","openTester":"打开在线测试","copyCurl":"复制 curl"},"defaults":{"testPath":"/gateway-test","defaultPrompt":"请介绍当前模型能力","maxTokens":256,"apiKeyPageSize":100}}}',
+          '{{"zh":{{"labels":{{"title":"网关调用说明","openTester":"打开在线测试","copyCurl":"复制 curl"}},"defaults":{{"testPath":"/gateway-test","defaultPrompt":"请介绍当前模型能力","maxTokens":256,"apiKeyPageSize":100}}}}}}',
         apiGuideShellConfigHint:
           '可选 JSON，用于配置 API 调用说明页标题、按钮、密钥选择、端点卡片、curl 示例文案、测试页路由、默认示例提示词、最大输出 token 和 API Key 拉取页大小。支持 en/zh 等语言键、labels 对象、defaults.testPath、defaults.defaultPrompt、defaults.maxTokens 和 defaults.apiKeyPageSize。',
         apiTestShellConfig: 'API 调用测试页展示配置 JSON',
         apiTestShellConfigPlaceholder:
-          '{"zh":{"labels":{"title":"调用测试","send":"发送测试请求","responsePreview":"响应结果"},"defaults":{"guidePath":"/gateway-guide","defaultPrompt":"请介绍当前模型能力","maxTokens":256,"apiKeyPageSize":100,"usageSyncPageSize":10}}}',
+          '{{"zh":{{"labels":{{"title":"调用测试","send":"发送测试请求","responsePreview":"响应结果"}},"defaults":{{"guidePath":"/gateway-guide","defaultPrompt":"请介绍当前模型能力","maxTokens":256,"apiKeyPageSize":100,"usageSyncPageSize":10}}}}}}',
         apiTestShellConfigHint:
           '可选 JSON，用于配置 API 调用测试页标题、表单、按钮、请求/响应面板、用量同步提示、复制状态文案、说明页路由、默认测试提示词、最大输出 token、API Key 拉取页大小和用量同步页大小。支持 en/zh 等语言键、labels 对象、defaults.guidePath、defaults.defaultPrompt、defaults.maxTokens、defaults.apiKeyPageSize 和 defaults.usageSyncPageSize。',
         availableGroupsShellConfig: '可用分组页展示配置 JSON',
         availableGroupsShellConfigPlaceholder:
-          '{"zh":{"labels":{"title":"可用分组","publicTitle":"公开分组","memberTitle":"会员或专属分组"}}}',
+          '{{"zh":{{"labels":{{"title":"可用分组","publicTitle":"公开分组","memberTitle":"会员或专属分组"}}}}}}',
         availableGroupsShellConfigHint:
           '可选 JSON，用于配置可用分组页标题、统计卡、搜索、空状态、分区、徽标、字段和额度文案。支持 en/zh 等语言键以及 labels 对象。',
         redeemShellConfig: '兑换码页展示配置 JSON',
         redeemShellConfigPlaceholder:
-          '{"zh":{"labels":{"currentBalance":"当前余额","redeemButton":"兑换","recentActivity":"最近活动"}}}',
+          '{{"zh":{{"labels":{{"currentBalance":"当前积分","redeemButton":"兑换","recentActivity":"最近活动"}}}}}}',
         redeemShellConfigHint:
           '可选 JSON，用于配置兑换码页余额卡、兑换表单、结果提示、说明卡和历史记录文案。支持 en/zh 等语言键以及 labels 对象。',
         affiliateShellConfig: '邀请中心页展示配置 JSON',
         affiliateShellConfigPlaceholder:
-          '{"zh":{"labels":{"title":"邀请中心","copyCode":"复制邀请码","transferButton":"转入余额"}}}',
+          '{{"zh":{{"labels":{{"title":"邀请中心","copyCode":"复制邀请码","transferButton":"转入余额"}}}}}}',
         affiliateShellConfigHint:
           '可选 JSON，用于配置邀请中心统计卡、邀请码、邀请链接、说明、返利转余额和记录表文案。支持 en/zh 等语言键以及 labels 对象。',
         availableChannelsShellConfig: '可用渠道页展示配置 JSON',
         availableChannelsShellConfigPlaceholder:
-          '{"zh":{"labels":{"searchPlaceholder":"搜索渠道或模型...","empty":"暂无可用渠道","columns":{"name":"渠道名","supportedModels":"支持模型"}}}}',
+          '{{"zh":{{"labels":{{"searchPlaceholder":"搜索渠道或模型...","empty":"暂无可用渠道","columns":{{"name":"渠道名","supportedModels":"支持模型"}}}}}}}}',
         availableChannelsShellConfigHint:
           '可选 JSON，用于配置可用渠道页搜索、刷新、空状态、表头和公开/专属分组标签文案。支持 en/zh 等语言键以及 labels 对象。',
         channelStatusShellConfig: '渠道状态页展示配置 JSON',
         channelStatusShellConfigPlaceholder:
-          '{"zh":{"defaults":{"refreshIntervalSeconds":60},"labels":{"refreshTitle":"刷新","emptyTitle":"暂无可显示的渠道","windowTab":{"7d":"7 天"},"detailColumns":{"model":"模型"}}}}',
+          '{{"zh":{{"defaults":{{"refreshIntervalSeconds":60}},"labels":{{"refreshTitle":"刷新","emptyTitle":"暂无可显示的渠道","windowTab":{{"7d":"7 天"}},"detailColumns":{{"model":"模型"}}}}}}}}',
         channelStatusShellConfigHint:
           '可选 JSON，用于配置渠道状态页刷新间隔、窗口标签、整体状态、刷新、空状态、卡片指标、详情表头和错误文案。支持 en/zh 等语言键、defaults.refreshIntervalSeconds 和 labels 对象。',
         customPageShellConfig: '自定义页面展示配置 JSON',
         customPageShellConfigPlaceholder:
-          '{"zh":{"labels":{"tocTitle":"目录","openInNewTab":"新窗口打开","copyCode":"复制","copyCodeSuccess":"已复制 ✓"}}}',
+          '{{"zh":{{"labels":{{"tocTitle":"目录","openInNewTab":"新窗口打开","copyCode":"复制","copyCodeSuccess":"已复制 ✓"}}}}}}',
         customPageShellConfigHint:
           '可选 JSON，用于配置自定义页面的缺失态、未配置态、Markdown 目录、打开新窗口、加载失败和代码复制按钮文案。支持 en/zh 等语言键以及 labels 对象。',
         profileShellConfig: '用户资料页展示配置 JSON',
         profileShellConfigPlaceholder:
-          '{"zh":{"labels":{"accountBalance":"账户余额","basicsTitle":"基础资料","contactSupport":"联系客服","sourceAvatar":"头像当前来自 {providerName}"}}}',
+          '{{"zh":{{"labels":{{"accountBalance":"账户积分","basicsTitle":"基础资料","contactSupport":"联系客服","sourceAvatar":"头像当前来自 {{providerName}}"}}}}}}',
         profileShellConfigHint:
           '可选 JSON，用于配置用户资料页概览、角色、指标、基础资料、资料来源和客服卡片文案。支持 en/zh 等语言键以及 labels 对象。',
         openpanelClientId: 'OpenPanel Client ID',
@@ -4917,36 +4917,41 @@ export default {
         promptTemplatesTitlePlaceholder: '工业模板库',
         promptCatalogShellConfig: '案例库展示配置 JSON',
         promptCatalogShellConfigPlaceholder:
-          '{"zh":{"defaults":{"sourceType":"case","pageSize":12,"sortBy":"imported_at","sortOrder":"desc","importXAuto":true},"labels":{"total":"总数","sources":"来源","searchPlaceholder":"搜索标题、提示词、标签或来源","hasImage":"只看有图","copyPrompt":"复制提示词","charUnit":"字符","generate":"去生图"}}}',
+          '{{"zh":{{"defaults":{{"sourceType":"case","pageSize":12,"sortBy":"imported_at","sortOrder":"desc","importXAuto":true}},"labels":{{"total":"总数","sources":"来源","searchPlaceholder":"搜索标题、提示词、标签或来源","hasImage":"只看有图","copyPrompt":"复制提示词","charUnit":"字符","generate":"去生图"}}}}}}',
         promptCatalogShellConfigHint:
           '可按 locale 覆盖案例库统计、筛选、空态、详情、导入区域文案和默认查询/导入策略。支持 labels 以及 defaults.sourceType、pageSize、sortBy、sortOrder、generatorPath、generatorDraftSource、importXAuto；留空或 JSON 无效时使用默认文案。',
         workspaceShellConfig: '工作台展示配置 JSON',
         workspaceShellConfigPlaceholder:
-          '{"zh":{"defaults":{"catalogPath":"/prompts","maxPromptLength":2000},"catalogLabel":"提示词案例","eyebrow":"提示词工作台","title":"提示词暂存区","heroDescription":"从案例库带入提示词并继续整理","promptLabel":"提示词","promptPlaceholder":"粘贴或从画廊带入提示词","clearLabel":"清空","copyPromptLabel":"复制提示词","workspaceTitle":"生图工作台","workspaceStatus":"生图能力由 Sub2API 统一托管","backToCatalogLabel":"返回案例库"}}',
+          '{{"zh":{{"defaults":{{"catalogPath":"/prompts","maxPromptLength":2000}},"catalogLabel":"提示词案例","eyebrow":"生图工作台","title":"AI 生图工作台","heroDescription":"从案例库带入提示词，选择模型和参数后直接创建生图任务。","promptLabel":"提示词","promptPlaceholder":"输入或从案例库导入提示词","clearLabel":"清空","copyPromptLabel":"复制提示词","workspaceTitle":"任务与产物状态","workspaceStatus":"登录后可创建真实生图任务，worker 会调用配置的上游模型并回写图片产物。","backToCatalogLabel":"返回案例库"}}}}',
         workspaceShellConfigHint:
           '可按 locale 覆盖 AI 生图工作台表单、按钮、导入提示、状态文案、defaults.catalogPath 和 defaults.maxPromptLength；留空或 JSON 无效时使用默认文案。',
+        imagePromptFilterConfig: '图片提示词过滤配置 JSON',
+        imagePromptFilterConfigPlaceholder:
+          '{{"enabled":true,"explicit_keywords":["panty","panties","underwear","lingerie","crotch","legs spread","provocative","seductive","bra","nude","sex"],"youth_context_keywords":["school uniform","student","teen","teenage","young girl","underage","minor"],"warning_message":"提示词包含露骨性内容或校园/未成年语境的性化描写，无法创建生图任务。","youth_warning_message":"提示词包含年轻人物的露骨性化描写，无法创建生图任务。"}}',
+        imagePromptFilterConfigHint:
+          '配置图片提示词安全过滤。设置 enabled 为 false 可关闭过滤。可自定义关键词列表和警告文案。留空或 JSON 无效时使用默认配置。',
         pricingSection: '价格页',
         pricingCurrencySymbol: '价格页币种符号',
         pricingCurrencySymbolPlaceholder: '¥',
         pricingCurrencySymbolHint: '公开价格卡片使用的展示符号；实际金额和支付币种仍由支付配置决定。',
         pricingShellConfig: '价格页展示配置 JSON',
         pricingShellConfigPlaceholder:
-          '{"zh":{"groups":[{"name":"one-time","title":"按次使用"}],"button":{"title":"选择方案","icon":"Zap"},"labels":{"prompts":"提示词案例","eyebrow":"价格","title":"价格","description":"套餐和积分由 Sub2API 配置","recharge":"充值包","subscription":"订阅包","buy":"购买","catalogStatus":"目录状态","emptyRecharge":"暂未配置充值包","recommended":"推荐"}}}',
+          '{{"zh":{{"groups":[{{"name":"one-time","title":"按次使用"}}],"button":{{"title":"选择方案","icon":"Zap"}},"labels":{{"prompts":"提示词案例","eyebrow":"价格","title":"价格","description":"套餐和积分由 Sub2API 配置","recharge":"充值包","subscription":"订阅包","buy":"购买","catalogStatus":"目录状态","emptyRecharge":"暂未配置充值包","recommended":"推荐"}}}}}}',
         pricingShellConfigHint:
           '可按 locale 覆盖 groups、button、导航、首屏、标签页、卡片、空态和标签；留空时使用内置展示壳。',
         paymentShellConfig: '支付页展示配置 JSON',
         paymentShellConfigPlaceholder:
-          '{"zh":{"labels":{"tabTopUp":"充值","tabSubscribe":"订阅","rechargeAccount":"充值账户","currentBalance":"当前余额","createOrder":"创建订单","selectAmountFirst":"请选择充值商品"},"defaults":{"paymentStatusPollIntervalMs":3000,"paymentVerifyRetryIntervalMs":15000,"paymentVerifyRetryMaxAttempts":6,"paymentResultRefreshIntervalMs":2000,"paymentResultMaxRefreshAttempts":15,"stripePollIntervalMs":3000,"stripeCloseDelayMs":2000,"stripePopupInitTimeoutMs":15000}}}',
+          '{{"zh":{{"labels":{{"tabTopUp":"充值","tabSubscribe":"订阅","rechargeAccount":"充值账户","currentBalance":"当前积分","createOrder":"创建订单","selectAmountFirst":"请选择充值商品"}},"defaults":{{"paymentStatusPollIntervalMs":3000,"paymentVerifyRetryIntervalMs":15000,"paymentVerifyRetryMaxAttempts":6,"paymentResultRefreshIntervalMs":2000,"paymentResultMaxRefreshAttempts":15,"stripePollIntervalMs":3000,"stripeCloseDelayMs":2000,"stripePopupInitTimeoutMs":15000}}}}}}',
         paymentShellConfigHint:
-          '覆盖登录后支付页的标签、按钮、空态、订单确认文案和支付轮询默认值；支付方式、金额和订单逻辑仍由支付配置决定。支持 defaults.paymentStatusPollIntervalMs、defaults.paymentVerifyRetryIntervalMs、defaults.paymentVerifyRetryMaxAttempts、defaults.paymentResultRefreshIntervalMs、defaults.paymentResultMaxRefreshAttempts、defaults.stripePollIntervalMs、defaults.stripeCloseDelayMs 和 defaults.stripePopupInitTimeoutMs。',
+          '覆盖登录后支付页的标签、按钮、空态、订单确认文案和支付轮询默认值；用户侧展示统一称为积分，支付方式、金额、订单逻辑和后端 balance 账本仍由支付配置决定。支持 defaults.paymentStatusPollIntervalMs、defaults.paymentVerifyRetryIntervalMs、defaults.paymentVerifyRetryMaxAttempts、defaults.paymentResultRefreshIntervalMs、defaults.paymentResultMaxRefreshAttempts、defaults.stripePollIntervalMs、defaults.stripeCloseDelayMs 和 defaults.stripePopupInitTimeoutMs。',
         saveFailed: '保存运行配置失败',
         saveSuccess: '运行配置已保存',
-        creditsPerBalance: '每 1 Sub2API 余额对应积分',
-        creditsPerBalancePlaceholder: '10',
-        creditsPerBalanceHint: '公开积分页使用的正数换算比例。例如 10 表示 10 credits = 1 Sub2API balance。',
+        creditsPerBalance: '积分与账本余额换算',
+        creditsPerBalancePlaceholder: '1',
+        creditsPerBalanceHint: '统一口径固定为 1：前端展示 credits/积分，后端仍使用 balance 作为唯一账本字段。',
         creditsShellConfig: '积分页展示配置 JSON',
         creditsShellConfigPlaceholder:
-          '{"zh":{"labels":{"credits":"积分","sub2apiBalance":"Sub2API 余额","conversion":"换算规则：{creditsPerBalance} credits = 1 Sub2API balance.","actionsTitle":"余额操作","recharge":"去充值","viewOrders":"查看订单"},"actions":{"title":"余额操作","description":"充值和订单进入统一支付体系"},"buttons":{"recharge":"去充值","orders":"查看订单"}}}',
+          '{{"zh":{{"labels":{{"credits":"积分","sub2apiBalance":"账本余额","conversion":"统一口径：1 credit = 1 balance 账本单位。","actionsTitle":"积分操作","recharge":"去充值","viewOrders":"查看订单"}},"actions":{{"title":"积分操作","description":"充值和订单进入统一支付体系，最终写入同一份 balance 账本。"}},"buttons":{{"recharge":"去充值","orders":"查看订单"}}}}}}',
         creditsShellConfigHint:
           '可按 locale 覆盖积分页标签、actions、buttons 和 conversion；conversion 支持 {creditsPerBalance}；留空时使用内置展示壳。',
         tawkEnabled: '启用 Tawk',
@@ -6376,7 +6381,7 @@ export default {
     totalTokensLabel: '累计 Tokens',
     used: '已使用',
     usedQuota: '已用额度',
-    walletBalance: '钱包余额'
+    walletBalance: '积分余额'
   },
   monitorCommon: {
     availabilityPrefix: '可用性',
@@ -6426,6 +6431,7 @@ export default {
     apiTest: '调用测试',
     availableChannels: '可用渠道',
     availableGroups: '可用分组',
+    businessCapabilities: '业务能力',
     buySubscription: '充值/订阅',
     channelManagement: '渠道管理',
     channelMonitor: '渠道监控',
@@ -6439,6 +6445,8 @@ export default {
     expand: '展开',
     github: 'GitHub',
     groups: '分组管理',
+    hotTopics: '热点追踪',
+    imageGenerator: '生图工作台',
     lightMode: '浅色模式',
     logout: '退出登录',
     myAccount: '我的账户',
@@ -6450,6 +6458,7 @@ export default {
     paymentDashboard: '支付概览',
     paymentPlans: '商品/套餐',
     profile: '个人资料',
+    promptCatalog: '提示词画廊',
     promoCodes: '优惠码',
     proxies: 'IP管理',
     redeem: '兑换',
@@ -6459,7 +6468,53 @@ export default {
     subscriptions: '订阅管理',
     runtimeSettings: '运行配置',
     usage: '使用记录',
+    wechatExport: '微信导出',
     users: '用户管理'
+  },
+  hotContent: {
+    title: '热点追踪',
+    subtitle: '汇总热点事件、日报、公众号榜和采集运行事件，作为内容中台的实时选题入口。',
+    signalDesk: 'Signal Desk',
+    capabilityStatus: '能力状态',
+    capabilityMain: '热点主线',
+    capabilityMainDesc: '展示当前聚合后的热点事件，不再暴露历史来源清单。',
+    capabilityDaily: '日报与公众号榜',
+    capabilityDailyDesc: '保留日报、公众号榜和运行事件，作为内容中台选题入口。',
+    capabilitySources: '已接入 {count} 个采集源',
+    capabilitySourcesDesc: '采集源仅用于后台汇总，前台不展示历史来源清单。',
+    statSources: '采集源',
+    statHot: '热点',
+    statDaily: '日报',
+    statMp: '公众号',
+    tabItems: '主热点',
+    tabDaily: '日报',
+    tabMp: '公众号榜',
+    tabEvents: '运行事件',
+    search: '搜索/刷新',
+    searchItems: '搜索标题、摘要或正文',
+    searchMp: '搜索公众号文章或账号',
+    loading: '加载中…',
+    loadFailed: '加载热点数据失败',
+    emptyItems: '暂无热点数据。先运行导入脚本或接入 hot collector。',
+    emptyDaily: '暂无 Hot 日报数据。',
+    emptyDailyHint: '选择一份日报查看详情。',
+    emptyMp: '暂无公众号榜数据。',
+    emptyEvents: '输入 run_id 后查看旧 collector 运行事件。',
+    latest: '最新',
+    eventsLabel: 'Run ID',
+    eventsPlaceholder: '输入 hot_runs.run_id 查看运行事件',
+    loadEvents: '加载事件',
+    eventsMeta: '#{id}',
+    emptyEvent: '(empty event)',
+    sourceAggregated: '聚合来源',
+    mpReads: '阅读',
+    mpLikes: '点赞',
+    mpShares: '分享',
+    paginationPrev: '上一页',
+    paginationNext: '下一页',
+    paginationPage: '第 {page} 页',
+    paginationTotal: '共 {total} 条',
+    paginationInfo: '第 {page} / {totalPages} 页 · 共 {total} 条',
   },
   onboarding: {
     admin: {
@@ -6824,8 +6879,8 @@ export default {
     confirmCancel: '确定要取消此订单吗？',
     confirmSubscription: '确认订阅',
     createOrder: '确认支付',
-    creditedBalance: '到账余额',
-    currentBalance: '当前余额',
+    creditedBalance: '到账积分',
+    currentBalance: '当前积分',
     customAmount: '自定义金额',
     days: '天',
     enterAmount: '输入金额',
@@ -7000,7 +7055,7 @@ export default {
     years: '年'
   },
   profile: {
-    accountBalance: '账户余额',
+    accountBalance: '账户积分',
     administrator: '管理员',
     authBindings: {
       bindAction: '绑定 {providerName}',
@@ -7279,6 +7334,142 @@ export default {
     weekly: '每周',
     windowNotActive: '等待首次使用'
   },
+  wechatExport: {
+    pageTitle: '微信导出',
+    pageDescription: '把公众号文章导出为 HTML、Markdown 和 JSON',
+    pageHint: '导入公众号文章链接，创建导出任务，由本地 worker 生成可下载产物。',
+    loginRequired: '请先登录再使用微信导出。会话、任务和产物都会归档到你的账号下。',
+
+    session: {
+      title: '微信会话',
+      statusLabel: '状态',
+      statusNotConnected: '未连接',
+      statusReady: '已就绪',
+      statusScanConfirmed: '扫码确认',
+      statusExpired: '已过期',
+      statusPending: '等待扫码',
+      warningNoSession: 'No ready WeChat session. Scan a QR code before syncing official-account articles or requesting engagement metrics.',
+      warningExpired: '微信会话已过期。请创建新的二维码并重新扫码后再同步或获取互动数据。',
+      warningNotReady: '登录尚未就绪。请保持页面打开直到会话变为已就绪状态。',
+      createQRCode: '创建二维码',
+      creating: '创建中',
+      validateSession: '校验会话',
+      validating: '检查中',
+      logout: '退出',
+      scanHint: '请用微信扫码，页面自动轮询状态。',
+      pollHint: '页面每 3 秒自动轮询一次。'
+    },
+
+    account: {
+      title: '公众号管理',
+      boundCount: '{count} 个已绑定',
+      bindTitle: '绑定公众号',
+      bindHint: '绑定公众号 fakeid，扫码会话就绪后可以同步历史文章。',
+      fakeidPlaceholder: 'fakeid',
+      nicknamePlaceholder: '名称',
+      bind: '绑定',
+      binding: '保存中',
+      searchPlaceholder: '搜索公众号',
+      search: '搜索',
+      searching: '搜索中',
+      searchResult: '找到 {count} 个公众号。',
+      sync: '同步',
+      syncing: '同步中',
+      syncResult: '已同步 {synced} 篇文章，共 {pages} 页。{more}',
+      syncHasMore: '可能还有更多文章未同步。',
+      noAccounts: '还没有绑定公众号。',
+      lastSync: '上次同步 {time}'
+    },
+
+    article: {
+      title: '文章导入',
+      hint: '粘贴公众号文章链接，筛选并选择要导出的文章',
+      allAccounts: '全部公众号',
+      importPlaceholder: 'https://mp.weixin.qq.com/s/...',
+      import: '导入链接',
+      importing: '导入中',
+      importSuccess: '文章链接已导入。',
+      filterPlaceholder: '筛选已导入文章',
+      statusAll: '全部状态',
+      statusPending: '待抓取',
+      statusFetched: '已抓取',
+      statusNormal: '正常',
+      statusDeleted: '已删除',
+      selectFiltered: '选择筛选结果 ({count})',
+      clearSelection: '清空',
+      selectedCount: '已选 {count} 篇',
+      noArticles: '还没有导入文章链接。',
+      noFiltered: '没有符合当前筛选条件的文章。',
+      listTitle: '已导入文章'
+    },
+
+    task: {
+      title: '创建任务',
+      hint: 'Worker 会领取任务并生成导出产物。',
+      formatLabel: '{format}',
+      includeEngagement: '互动数据',
+      create: '导出 ({count} 篇)',
+      creating: '创建中',
+      createSuccess: '任务 #{id} 已排队，worker 会生成导出产物。',
+      message: '提示信息',
+      error: '错误信息'
+    },
+
+    monitor: {
+      title: '任务监控',
+      hint: '查看 Worker 状态、任务进度和导出产物。',
+      workerStatus: {
+        queued: '排队',
+        running: '运行',
+        completed: '完成',
+        failed: '失败',
+        staleLease: '过期租约',
+        status: '状态',
+        lastUpdate: '最近更新',
+        noActivity: '暂无活动'
+      },
+      filterAll: '全部任务',
+      filterQueued: '排队中',
+      filterRunning: '运行中',
+      filterCompleted: '已完成',
+      filterPartial: '部分完成',
+      filterFailed: '失败',
+      filterCancelled: '已取消',
+      selectFiltered: '选择筛选 ({count})',
+      clearSelection: '清空',
+      batchCancel: '取消 ({count})',
+      canceling: '取消中',
+      batchRetry: '重试 ({count})',
+      retrying: '重试中',
+      batchDownload: '下载产物',
+      downloading: '准备中',
+      selectedCount: '已选 {count} 个',
+      noTasks: '还没有导出任务。',
+      noFiltered: '没有符合当前筛选条件的任务。',
+
+      taskItem: {
+        id: '任务 #{id}',
+        status: '状态',
+        progress: '{success}/{total} 已导出',
+        failedCount: '{count} 失败',
+        failureDetail: '失败详情',
+        loadArtifacts: '加载产物',
+        downloadZip: '下载 ZIP',
+        cancel: '取消',
+        retry: '重试',
+        preview: '预览',
+        previewing: '加载中'
+      }
+    },
+
+    preview: {
+      title: '{format} 预览',
+      close: '关闭',
+      downloadOriginal: 'Download original',
+      sourceHint: '预览内容来自授权产物下载响应。',
+      htmlTitle: '微信导出 HTML 预览'
+    }
+  },
   version: {
     currentVersion: '当前版本',
     latestVersion: '最新版本',
@@ -7300,5 +7491,77 @@ export default {
     viewChangelog: '查看更新日志',
     viewRelease: '查看发布',
     viewUpdate: '查看更新'
+  },
+  imageWorkspace: {
+    negativePrompt: '反向提示词',
+    negativePromptPlaceholder: '不希望出现的元素...',
+    model: '模型',
+    size: '尺寸',
+    quality: '质量',
+    batchSize: '批量',
+    style: '风格备注',
+    stylePlaceholder: '电影感、产品渲染...',
+    queuing: '排队中...',
+    startGenerating: '开始生图',
+    copyPromptLabel: '复制提示词',
+    clearLabel: '清除',
+    cancel: '取消',
+    cancelling: '取消中...',
+    refresh: '刷新',
+    preview: '查看',
+    viewFullSize: '查看大图',
+    download: '下载',
+    downloadOriginal: '下载原图',
+    delete: '删除',
+    close: '关闭',
+    saveTemplate: '保存',
+    templateName: '模板名称',
+    statusQueued: '排队中',
+    statusRunning: '生成中',
+    statusSucceeded: '已完成',
+    statusFailed: '失败',
+    statusCancelled: '已取消',
+    filterAll: '全部',
+    loginRequired: '登录后可以创建生图任务、保存模板并保留生成历史。',
+    balanceProtection: '积分保护',
+    balanceProtectionDesc: '创建任务前会检查所选模型的预计积分消耗。',
+    currentBalance: '当前积分',
+    estimatedCost: '预计消耗',
+    balanceAfter: '扣减后积分',
+    topUp: '充值',
+    insufficientBalance: '积分低于本次任务预计消耗。请先充值，或选择成本更低的模型。',
+    noUsageRecords: '还没有生图用量记录。',
+    noTemplates: '还没有保存模板。',
+    noTasks: '还没有生图任务。',
+    ledger: '账本',
+    images: '张图',
+    balance: '积分',
+    refunded: '已退回',
+    settled: '已结算',
+    recorded: '已记录',
+    generationHistory: '生成历史',
+    imageTasks: '生图任务',
+    totalTasks: '共 {count} 个任务',
+    pageInfo: '第 {current} / {total} 页',
+    paginationAriaLabel: '分页',
+    prevPage: '上一页',
+    nextPage: '下一页',
+    workerGenerating: 'Worker 正在生成图片，页面会自动刷新。',
+    workerLeaseUntil: 'Worker 租约到期：',
+    cost: '消耗',
+    balanceSnapshot: '积分快照',
+    batchLabel: '批量',
+    errorUpstream404: '生图上游返回 404，请联系管理员检查上游配置。',
+    errorUpstreamApiKeyMissing: '生图上游 API Key 未配置，请联系管理员。',
+    errorUpstreamAuth: '生图上游鉴权失败，请联系管理员检查 API Key。',
+    errorRequestFailed: '请求失败',
+    imageLoadFailed: '图片加载失败',
+    taskQueued: '生图任务 #{id} 已进入队列。',
+    templateSaved: '模板已保存。',
+    taskId: '任务 #{id}',
+    imageId: '图片 #{id}',
+    costPerImage: '{cost} / 张',
+    recentUsage: '最近用量',
+    templates: '模板'
   }
 };
