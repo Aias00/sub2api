@@ -15,7 +15,13 @@ export function loadImageGeneratorDraft(): ImageGeneratorDraft | null {
   const rawDraft = window.sessionStorage.getItem(IMAGE_GENERATOR_DRAFT_KEY)
   if (!rawDraft) return null
 
-  const draft = JSON.parse(rawDraft) as Partial<ImageGeneratorDraft>
+  let draft: Partial<ImageGeneratorDraft>
+  try {
+    draft = JSON.parse(rawDraft) as Partial<ImageGeneratorDraft>
+  } catch {
+    clearImageGeneratorDraft()
+    return null
+  }
   return typeof draft.prompt === 'string' && draft.prompt.trim()
     ? {
         prompt: draft.prompt,

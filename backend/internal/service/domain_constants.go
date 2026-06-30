@@ -253,6 +253,7 @@ const (
 	SettingKeyHomeShellConfig              = "home_shell_config"               // 首页默认页面壳配置（JSON）
 	SettingKeyHomeBusinessShellConfig      = "home_business_shell_config"      // 业务能力首页页面壳配置（JSON）
 	SettingKeyModelPlazaItems              = "model_plaza_items"               // 模型广场配置（JSON 数组）
+	SettingKeyImageWorkspaceModelConfig    = "image_workspace_model_config"    // 生图工作台模型配置（JSON）
 	SettingKeyModelPlazaShellConfig        = "model_plaza_shell_config"        // 模型广场页面壳配置（JSON）
 	SettingKeyDocsShellConfig              = "docs_shell_config"               // 文档页页面壳配置（JSON）
 	SettingKeyLegalDocumentShellConfig     = "legal_document_shell_config"     // 法务文档页页面壳配置（JSON）
@@ -294,6 +295,7 @@ const (
 	SettingKeyPromptTemplatesDescription   = "prompt_templates_description"
 	SettingKeyPromptCatalogShellConfig     = "prompt_catalog_shell_config"
 	SettingKeyWorkspaceShellConfig         = "workspace_shell_config"
+	SettingKeyImagePromptFilterConfig      = "image_prompt_filter_config"
 	SettingKeyPricingTitle                 = "pricing_title"
 	SettingKeyPricingDescription           = "pricing_description"
 	SettingKeyPricingShellConfig           = "pricing_shell_config"

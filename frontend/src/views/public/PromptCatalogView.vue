@@ -1,187 +1,69 @@
 <template>
-  <div class="min-h-screen bg-[#101114] text-white">
-    <header class="border-b border-white/10 bg-[#15171d] px-6 py-5">
-      <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4">
-        <RouterLink :to="authRouteDefaults.homePath" class="flex min-w-0 items-center gap-3">
-          <div v-if="siteLogo" class="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5">
-            <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
-          </div>
-          <span class="truncate text-sm font-semibold text-white">{{ siteName }}</span>
-        </RouterLink>
-
-        <div class="flex items-center gap-3">
-          <LocaleSwitcher />
-          <RouterLink
-            :to="isAuthenticated ? dashboardPath : loginPath"
-            class="inline-flex items-center rounded-full border border-white/10 bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-white/90"
-          >
-            {{ copy.accountAction }}
-          </RouterLink>
-        </div>
-      </nav>
-    </header>
+  <div class="home-business-page public-dark-page min-h-screen bg-[#101114] text-white">
+    <PublicDarkHeader :account-label="copy.accountAction" />
 
     <main class="px-6 py-10 sm:py-14">
       <div class="mx-auto max-w-7xl">
-        <section class="grid gap-6 lg:grid-cols-[minmax(0,1fr)_320px] lg:items-end">
-          <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200/70">
-              {{ copy.eyebrow }}
-            </p>
-            <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-white sm:text-5xl">
-              {{ pageTitle }}
-            </h1>
-            <p class="mt-4 max-w-3xl text-base leading-8 text-white/60">
-              {{ pageDescription }}
-            </p>
-          </div>
+        <section>
+          <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(420px,620px)] lg:items-end">
+            <div>
+              <p class="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200/70">
+                {{ copy.eyebrow }}
+              </p>
+              <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-white sm:text-5xl">
+                {{ pageTitle }}
+              </h1>
+              <p class="mt-4 max-w-3xl text-base leading-8 text-white/60">
+                {{ pageDescription }}
+              </p>
+            </div>
 
-          <div class="grid grid-cols-2 gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-4">
-            <div>
-              <p class="text-xs text-white/40">{{ copy.total }}</p>
-              <p class="mt-1 text-2xl font-black text-white">{{ summary.total }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-white/40">{{ copy.sources }}</p>
-              <p class="mt-1 text-2xl font-black text-white">{{ summary.source_count }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-white/40">{{ copy.cases }}</p>
-              <p class="mt-1 text-2xl font-black text-white">{{ summary.case_count }}</p>
-            </div>
-            <div>
-              <p class="text-xs text-white/40">{{ copy.templates }}</p>
-              <p class="mt-1 text-2xl font-black text-white">{{ summary.template_count }}</p>
-            </div>
-          </div>
-        </section>
-
-        <section class="mt-8 rounded-2xl border border-white/10 bg-[#17181d] p-4 sm:p-5">
-          <div class="grid gap-3 lg:grid-cols-[minmax(220px,1fr)_180px_220px_220px_auto] lg:items-center">
-            <label class="block">
-              <span class="sr-only">{{ copy.search }}</span>
-              <input
-                v-model.trim="draftSearch"
-                type="search"
-                class="h-12 w-full rounded-xl border border-white/10 bg-white/[0.045] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.065]"
-                :placeholder="copy.searchPlaceholder"
-                @keyup.enter="applySearch"
-              />
-            </label>
-
-            <select
-              v-model="filters.sourceType"
-              class="h-12 rounded-xl border border-white/10 bg-[#111318] px-3 text-sm text-white outline-none focus:border-cyan-300/40"
-              @change="reloadFromFirstPage"
+            <div
+              v-if="isAdmin"
+              class="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.055] p-3 sm:p-4"
             >
-              <option value="case">{{ copy.caseOnly }}</option>
-              <option value="template">{{ copy.templateOnly }}</option>
-              <option value="">{{ copy.allTypes }}</option>
-            </select>
-
-            <select
-              v-model="filters.sourceProject"
-              class="h-12 rounded-xl border border-white/10 bg-[#111318] px-3 text-sm text-white outline-none focus:border-cyan-300/40"
-              @change="reloadFromFirstPage"
-            >
-              <option value="">{{ copy.allSources }}</option>
-              <option v-for="source in sourceOptions" :key="source.value" :value="source.value">
-                {{ facetLabel(source) }}
-              </option>
-            </select>
-
-            <select
-              v-model="filters.category"
-              class="h-12 rounded-xl border border-white/10 bg-[#111318] px-3 text-sm text-white outline-none focus:border-cyan-300/40"
-              @change="reloadFromFirstPage"
-            >
-              <option value="">{{ copy.allCategories }}</option>
-              <option v-for="category in categoryOptions" :key="category.value" :value="category.value">
-                {{ facetLabel(category) }}
-              </option>
-            </select>
-
-            <button
-              type="button"
-              class="inline-flex h-12 items-center justify-center rounded-xl border border-white/10 px-4 text-sm font-semibold transition"
-              :class="filters.hasImage ? 'bg-cyan-300 text-slate-950' : 'bg-white/[0.045] text-white/70 hover:bg-white/[0.07]'"
-              @click="toggleImageFilter"
-            >
-              {{ copy.hasImage }}
-            </button>
-          </div>
-
-          <div class="mt-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <p class="text-sm text-white/45">
-              {{ copy.resultPrefix }} {{ total }} · {{ copy.page }} {{ page }} / {{ pages }}
-            </p>
-            <div class="flex gap-2">
-              <button
-                type="button"
-                class="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
-                :disabled="page <= 1 || loading"
-                @click="goToPage(page - 1)"
-              >
-                {{ copy.previous }}
-              </button>
-              <button
-                type="button"
-                class="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
-                :disabled="page >= pages || loading"
-                @click="goToPage(page + 1)"
-              >
-                {{ copy.next }}
-              </button>
+              <div class="mb-3 flex items-center justify-between gap-3">
+                <p class="shrink-0 text-sm font-bold text-cyan-100">{{ copy.importTitle }}</p>
+                <p class="hidden truncate text-xs text-white/45 xl:block">{{ copy.importDescription }}</p>
+              </div>
+              <form class="grid gap-2 sm:grid-cols-[140px_minmax(220px,1fr)_auto]" @submit.prevent="importFromSource">
+                <select
+                  v-model="importForm.provider"
+                  class="h-12 rounded-xl border border-white/10 bg-[#111318] px-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                  :disabled="importing"
+                >
+                  <option value="x">{{ copy.importProviderX }}</option>
+                </select>
+                <input
+                  v-model.trim="importForm.url"
+                  type="url"
+                  class="h-12 rounded-xl border border-white/10 bg-white/[0.045] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.065]"
+                  :placeholder="copy.importPlaceholder"
+                  :disabled="importing"
+                  required
+                />
+                <button
+                  type="submit"
+                  class="inline-flex h-12 items-center justify-center rounded-xl bg-cyan-300 px-5 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  :disabled="importing || !importForm.url"
+                >
+                  {{ importing ? copy.importing : copy.importAction }}
+                </button>
+              </form>
             </div>
-          </div>
-        </section>
-
-        <section
-          v-if="isAdmin"
-          class="mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.055] p-4 sm:p-5"
-        >
-          <div class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-            <div>
-              <p class="text-sm font-bold text-cyan-100">{{ copy.importTitle }}</p>
-              <p class="mt-1 text-sm leading-6 text-white/52">{{ copy.importDescription }}</p>
-            </div>
-            <form class="grid gap-3 lg:min-w-[620px] lg:grid-cols-[160px_minmax(260px,1fr)_auto]" @submit.prevent="importFromSource">
-              <select
-                v-model="importForm.provider"
-                class="h-12 rounded-xl border border-white/10 bg-[#111318] px-3 text-sm text-white outline-none focus:border-cyan-300/40"
-                :disabled="importing"
-              >
-                <option value="x">{{ copy.importProviderX }}</option>
-              </select>
-              <input
-                v-model.trim="importForm.url"
-                type="url"
-                class="h-12 rounded-xl border border-white/10 bg-white/[0.045] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.065]"
-                :placeholder="copy.importPlaceholder"
-                :disabled="importing"
-                required
-              />
-              <button
-                type="submit"
-                class="inline-flex h-12 items-center justify-center rounded-xl bg-cyan-300 px-5 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
-                :disabled="importing || !importForm.url"
-              >
-                {{ importing ? copy.importing : copy.importAction }}
-              </button>
-            </form>
           </div>
 
           <div
             v-if="importMessage"
-            class="mt-4 rounded-xl border px-4 py-3 text-sm"
-            :class="importError ? 'border-red-400/25 bg-red-500/10 text-red-100' : 'border-cyan-300/20 bg-cyan-300/10 text-cyan-50'"
+            class="mt-4 rounded-2xl border px-4 py-3 text-sm"
+            :class="importError ? 'border-red-300/20 bg-red-300/10 text-red-100' : 'border-cyan-300/20 bg-cyan-300/10 text-cyan-50'"
           >
             {{ importMessage }}
           </div>
 
           <div
             v-if="importWarnings.length > 0"
-            class="mt-3 rounded-xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-50"
+            class="mt-3 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-50"
           >
             <p class="font-bold">{{ copy.importWarnings }}</p>
             <ul class="mt-2 list-disc space-y-1 pl-5">
@@ -190,106 +72,179 @@
           </div>
         </section>
 
-        <div v-if="loading" class="flex justify-center py-20">
-          <div class="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
-        </div>
+        <div class="mt-8 grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
+          <aside class="rounded-2xl border border-white/10 bg-[#17181d] p-4 sm:p-5">
+            <div class="space-y-4">
+              <label class="block">
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/38">{{ copy.search }}</span>
+                <input
+                  v-model.trim="draftSearch"
+                  type="search"
+                  class="h-12 w-full rounded-xl border border-white/10 bg-white/[0.045] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.065]"
+                  :placeholder="copy.searchPlaceholder"
+                  @keyup.enter="applySearch"
+                />
+              </label>
 
-        <div
-          v-else-if="errorMessage"
-          class="mt-8 rounded-2xl border border-red-400/20 bg-red-500/10 px-5 py-4 text-sm text-red-100"
-        >
-          {{ errorMessage }}
-        </div>
-
-        <div
-          v-else-if="items.length === 0"
-          class="mt-8 rounded-2xl border border-white/10 bg-white/[0.03] px-8 py-16 text-center"
-        >
-          <h2 class="text-2xl font-bold text-white">{{ copy.emptyTitle }}</h2>
-          <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-white/55">{{ copy.emptyDescription }}</p>
-        </div>
-
-        <section v-else class="mt-8 grid gap-5 lg:grid-cols-2 xl:grid-cols-3">
-          <article
-            v-for="item in items"
-            :key="item.id"
-            class="flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#17181d] shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
-          >
-            <div class="relative aspect-[4/3] bg-[#0f1117]">
-              <img
-                v-if="item.primary_image_url"
-                :src="item.primary_image_url"
-                :alt="item.title"
-                loading="lazy"
-                class="h-full w-full object-contain"
-              />
-              <div v-else class="flex h-full items-center justify-center px-6 text-center text-sm text-white/35">
-                {{ copy.noImage }}
-              </div>
-            </div>
-
-            <div class="flex flex-1 flex-col p-5">
-              <div class="flex flex-wrap gap-2">
-                <span
-                  v-if="item.source_display_label"
-                  class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-white/60"
-                >
-                  {{ item.source_display_label }}
-                </span>
-                <span
-                  v-if="item.category"
-                  class="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100"
-                >
-                  {{ item.category }}
-                </span>
-              </div>
-
-              <h2 class="mt-4 line-clamp-2 text-xl font-black leading-tight text-white">
-                {{ item.title }}
-              </h2>
-              <p class="mt-3 line-clamp-4 text-sm leading-7 text-white/58">
-                {{ item.prompt_preview || item.prompt }}
-              </p>
-
-              <div class="mt-4 flex flex-wrap gap-2">
-                <span
-                  v-for="tag in item.visible_tags"
-                  :key="tag"
-                  class="rounded-full bg-white/[0.045] px-2.5 py-1 text-xs text-white/50"
-                >
-                  {{ tag }}
-                </span>
-              </div>
-
-              <div class="mt-auto flex items-center justify-between gap-3 pt-5">
-                <p class="text-xs text-white/35">{{ formattedDate(item.imported_at || item.created_at) }}</p>
-                <div class="flex shrink-0 flex-wrap justify-end gap-2">
+              <div>
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/38">{{ copy.allCategories }}</span>
+                <div class="flex flex-wrap items-start gap-2">
                   <button
                     type="button"
-                    class="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/[0.06]"
-                    @click="openDetails(item)"
+                    class="inline-flex min-h-10 max-w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-sm font-semibold transition"
+                    :class="!filters.category ? 'border-cyan-300/35 bg-cyan-300/10 text-cyan-50' : 'border-white/10 bg-white/[0.035] text-white/68 hover:bg-white/[0.06]'"
+                    @click="setCategoryFilter('')"
                   >
-                    {{ copy.details }}
+                    <span>{{ copy.allCategories }}</span>
+                    <span class="text-xs text-white/35">{{ summary.total }}</span>
                   </button>
                   <button
+                    v-for="(category, index) in categoryOptions"
+                    :key="category.value"
                     type="button"
-                    class="rounded-xl border border-violet-300/20 bg-violet-300/10 px-3 py-2 text-xs font-semibold text-violet-100 transition hover:bg-violet-300/20"
-                    @click="openGenerator(item)"
+                    class="inline-flex min-h-10 max-w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-sm font-semibold transition"
+                    :class="[categoryChipClass(index), filters.category === category.value ? 'border-cyan-300/35 bg-cyan-300/10 text-cyan-50' : 'border-white/10 bg-white/[0.035] text-white/68 hover:bg-white/[0.06]']"
+                    @click="setCategoryFilter(category.value)"
                   >
-                    {{ copy.generate }}
-                  </button>
-                  <button
-                    type="button"
-                    class="rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
-                    @click="copyPrompt(item)"
-                  >
-                    {{ copy.copyPrompt }}
+                    <span class="min-w-0 truncate">{{ facetLabel(category) }}</span>
+                    <span class="shrink-0 text-xs text-white/35">{{ category.count }}</span>
                   </button>
                 </div>
               </div>
+
+              <button
+                type="button"
+                class="inline-flex h-12 w-full items-center justify-center rounded-xl bg-cyan-300 px-4 text-sm font-black text-slate-950 transition hover:bg-cyan-200"
+                @click="applySearch"
+              >
+                {{ copy.search }}
+              </button>
             </div>
-          </article>
-        </section>
+          </aside>
+
+          <div class="min-w-0">
+            <div v-if="loading && items.length === 0" class="flex justify-center py-20">
+              <div class="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+            </div>
+
+            <div
+              v-else-if="errorMessage"
+              class="rounded-2xl border border-red-300/20 bg-red-300/10 px-5 py-4 text-sm text-red-100"
+            >
+              {{ errorMessage }}
+            </div>
+
+            <div
+              v-else-if="items.length === 0"
+              class="rounded-2xl border border-white/10 bg-white/[0.03] px-8 py-16 text-center"
+            >
+              <h2 class="text-2xl font-bold text-white">{{ copy.emptyTitle }}</h2>
+              <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-white/55">{{ copy.emptyDescription }}</p>
+            </div>
+
+            <section
+              v-else
+              class="rounded-2xl border border-white/10"
+            >
+              <div class="grid gap-5 p-1 xl:grid-cols-2 2xl:grid-cols-3">
+                <article
+                  v-for="item in items"
+                  :key="item.id"
+                  class="flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#17181d] shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
+                >
+                  <button
+                    type="button"
+                    class="group/image relative aspect-[4/3] w-full overflow-hidden bg-[#0f1117] text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/50"
+                    @click="openDetails(item)"
+                  >
+                    <img
+                      v-if="item.primary_image_url"
+                      :src="item.primary_image_url"
+                      :alt="item.title"
+                      loading="lazy"
+                      class="h-full w-full object-contain transition duration-300 group-hover/image:scale-[1.02]"
+                    />
+                    <div v-else class="flex h-full items-center justify-center px-6 text-center text-sm text-white/35">
+                      {{ copy.noImage }}
+                    </div>
+                  </button>
+
+                  <div class="flex flex-1 flex-col p-5">
+                    <div class="flex flex-wrap gap-2">
+                      <span
+                        v-if="item.source_display_label"
+                        class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-white/60"
+                      >
+                        {{ item.source_display_label }}
+                      </span>
+                      <span
+                        v-if="item.category"
+                        class="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100"
+                      >
+                        {{ categoryLabel(item.category) }}
+                      </span>
+                    </div>
+
+                    <h2 class="mt-4 line-clamp-2 text-xl font-black leading-tight text-white">
+                      {{ item.title }}
+                    </h2>
+                    <p class="mt-3 line-clamp-4 text-sm leading-7 text-white/58">
+                      {{ item.prompt_preview || item.prompt }}
+                    </p>
+
+                    <div class="mt-4 flex flex-wrap gap-2">
+                      <span
+                        v-for="tag in item.visible_tags"
+                        :key="tag"
+                        class="rounded-full bg-white/[0.045] px-2.5 py-1 text-xs text-white/50"
+                      >
+                        {{ tag }}
+                      </span>
+                    </div>
+
+                    <div class="mt-auto flex items-center justify-between gap-3 pt-5">
+                      <p class="text-xs text-white/35">{{ formattedDate(item.imported_at || item.created_at) }}</p>
+                      <div class="flex shrink-0 flex-wrap justify-end gap-2">
+                        <button
+                          type="button"
+                          class="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/[0.06]"
+                          @click="openDetails(item)"
+                        >
+                          {{ copy.details }}
+                        </button>
+                        <button
+                          type="button"
+                          class="rounded-xl border border-violet-300/20 bg-violet-300/10 px-3 py-2 text-xs font-semibold text-violet-100 transition hover:bg-violet-300/20"
+                          @click="openGenerator(item)"
+                        >
+                          {{ copy.generate }}
+                        </button>
+                        <button
+                          type="button"
+                          class="rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                          @click="copyPrompt(item)"
+                        >
+                          {{ copy.copyPrompt }}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              </div>
+
+              <div v-if="loadingMore" class="flex justify-center py-6">
+                <div class="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+              </div>
+
+              <div
+                v-if="!loadingMore && page >= pages && items.length > 0"
+                class="py-4 text-center text-xs text-white/30"
+              >
+                {{ copy.noMoreResults || '· · ·' }}
+              </div>
+            </section>
+          </div>
+        </div>
       </div>
     </main>
 
@@ -338,7 +293,7 @@
               v-if="selectedPrompt.category"
               class="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-100"
             >
-              {{ selectedPrompt.category }}
+              {{ categoryLabel(selectedPrompt.category) }}
             </span>
           </div>
 
@@ -392,13 +347,11 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from 'vue'
-import { RouterLink } from 'vue-router'
+import { computed, onMounted, onUnmounted, reactive, ref } from 'vue'
 import { getLocale } from '@/i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
-import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
+import PublicDarkHeader from '@/components/layout/PublicDarkHeader.vue'
 import { useClipboard } from '@/composables/useClipboard'
-import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import { promptsAPI, type PromptCatalogFacet, type PromptCatalogItem, type PromptCatalogSummary } from '@/api/prompts'
 import { useAppStore, useAuthStore } from '@/stores'
 import { saveImageGeneratorDraft } from '@/utils/imageGeneratorDraft'
@@ -410,6 +363,7 @@ import {
   buildPromptCatalogListParams,
   formatPromptCatalogDate,
   resolvePromptCatalogFacetLabel,
+  resolvePromptCatalogValueLabel,
   resolvePromptCatalogGeneratorDraftSource,
   resolvePromptCatalogGeneratorPath,
   resolvePromptCatalogImportXAuto,
@@ -419,10 +373,10 @@ import {
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
-const { authRouteDefaults, resolveHomePath } = useAuthRouteDefaults()
 const { copyToClipboard } = useClipboard()
 
 const loading = ref(false)
+const loadingMore = ref(false)
 const importing = ref(false)
 const errorMessage = ref('')
 const importMessage = ref('')
@@ -440,6 +394,7 @@ const emptySummary = (): PromptCatalogSummary => ({
   template_groups: [],
 })
 const summary = ref<PromptCatalogSummary>(emptySummary())
+const allCategories = ref<PromptCatalogFacet[]>([])
 const total = ref(0)
 const page = ref(1)
 const pages = ref(1)
@@ -448,8 +403,6 @@ const selectedPrompt = ref<PromptCatalogItem | null>(null)
 
 const filters = reactive({
   search: '',
-  sourceType: '',
-  sourceProject: '',
   category: '',
   hasImage: false,
 })
@@ -459,12 +412,8 @@ const importForm = reactive({
   url: '',
 })
 
-const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName)
-const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const isAdmin = computed(() => authStore.isAdmin)
-const dashboardPath = computed(() => resolveHomePath(isAdmin.value))
-const loginPath = computed(() => authRouteDefaults.value.loginPath)
 const locale = computed(() => getLocale())
 const promptCatalogLocale = computed<'zh' | 'en'>(() => resolveRuntimeLanguage(locale))
 
@@ -485,15 +434,14 @@ const copy = computed<PromptCatalogCopy>(() => {
 })
 
 const pageTitle = computed(() => {
-  return resolvePromptCatalogPageTitle(copy.value, filters.sourceType)
+  return resolvePromptCatalogPageTitle(copy.value, '')
 })
 
 const pageDescription = computed(() => {
-  return resolvePromptCatalogPageDescription(copy.value, filters.sourceType)
+  return resolvePromptCatalogPageDescription(copy.value, '')
 })
 
-const sourceOptions = computed(() => summary.value.sources)
-const categoryOptions = computed(() => summary.value.categories)
+const categoryOptions = computed(() => allCategories.value.length > 0 ? allCategories.value : summary.value.categories)
 const catalogDefaults = computed(() => shellConfig.value.defaults)
 
 function applyConfiguredDefaults() {
@@ -501,14 +449,26 @@ function applyConfiguredDefaults() {
 }
 
 async function fetchCatalog(nextPage = 1) {
-  loading.value = true
+  const isLoadMore = nextPage > 1
+  if (isLoadMore) {
+    loadingMore.value = true
+  } else {
+    loading.value = true
+  }
   errorMessage.value = ''
 
   try {
     const { data } = await promptsAPI.listCases(buildPromptCatalogListParams(filters, catalogDefaults.value, nextPage))
 
-    items.value = data.items
+    if (isLoadMore) {
+      items.value = [...items.value, ...data.items]
+    } else {
+      items.value = data.items
+    }
     summary.value = data.summary
+    if (!filters.category) {
+      allCategories.value = data.summary.categories
+    }
     total.value = data.total
     page.value = data.page
     pages.value = Math.max(data.pages, 1)
@@ -516,6 +476,7 @@ async function fetchCatalog(nextPage = 1) {
     errorMessage.value = error instanceof Error ? error.message : copy.value.loadError
   } finally {
     loading.value = false
+    loadingMore.value = false
   }
 }
 
@@ -525,20 +486,49 @@ function applySearch() {
 }
 
 function reloadFromFirstPage() {
+  // Sync any pending search input before reloading so the API call uses the
+  // text the user currently sees in the search box, even if they haven't
+  // pressed Enter yet.
+  if (filters.search !== draftSearch.value) {
+    filters.search = draftSearch.value
+  }
   void fetchCatalog(1)
 }
 
-function goToPage(nextPage: number) {
-  void fetchCatalog(Math.min(Math.max(nextPage, 1), pages.value))
-}
-
-function toggleImageFilter() {
-  filters.hasImage = !filters.hasImage
+function setCategoryFilter(category: string) {
+  filters.category = category
   reloadFromFirstPage()
 }
 
+function categoryChipClass(index: number): string {
+  const variants = [
+    'basis-[58%] -translate-y-0.5',
+    'basis-[38%] translate-y-1',
+    'basis-[48%]',
+    'basis-[44%] -translate-y-1',
+    'basis-[64%] translate-y-0.5',
+    'basis-[34%]',
+  ]
+  return variants[index % variants.length]
+}
+
+function handlePageScroll() {
+  if (loading.value || loadingMore.value || page.value >= pages.value) return
+  const threshold = 200
+  const scrollTop = window.scrollY || document.documentElement.scrollTop
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight
+  const scrollHeight = document.documentElement.scrollHeight
+  if (scrollHeight - scrollTop - viewportHeight < threshold) {
+    void fetchCatalog(page.value + 1)
+  }
+}
+
 function facetLabel(facet: PromptCatalogFacet): string {
-  return resolvePromptCatalogFacetLabel(facet)
+  return resolvePromptCatalogFacetLabel(facet, promptCatalogLocale.value)
+}
+
+function categoryLabel(value: string): string {
+  return resolvePromptCatalogValueLabel(value, promptCatalogLocale.value)
 }
 
 function formattedDate(value?: string | null): string {
@@ -607,5 +597,10 @@ onMounted(async () => {
   }
   applyConfiguredDefaults()
   await fetchCatalog(1)
+  window.addEventListener('scroll', handlePageScroll, { passive: true })
+})
+
+onUnmounted(() => {
+  window.removeEventListener('scroll', handlePageScroll)
 })
 </script>

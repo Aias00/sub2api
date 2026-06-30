@@ -197,6 +197,9 @@ func (s *apiKeyRepoStubForGroupUpdate) GetRateLimitData(context.Context, int64) 
 func (s *apiKeyRepoStubForGroupUpdate) UpdateGroupIDByUserAndGroup(context.Context, int64, int64, int64) (int64, error) {
 	panic("unexpected")
 }
+func (s *apiKeyRepoStubForGroupUpdate) DisableAllActiveKeysByUserID(context.Context, int64) (int64, error) {
+	panic("unexpected")
+}
 
 // groupRepoStubForGroupUpdate implements GroupRepository for AdminUpdateAPIKeyGroupID tests.
 type groupRepoStubForGroupUpdate struct {

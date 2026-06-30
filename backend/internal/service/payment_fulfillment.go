@@ -70,8 +70,15 @@ func parseLegacyPaymentOrderID(orderID string, lookupErr error) (int64, bool) {
 func (s *PaymentService) confirmPayment(ctx context.Context, oid int64, tradeNo string, paid float64, pk string, metadata map[string]string) error {
 	o, err := s.entClient.PaymentOrder.Get(ctx, oid)
 	if err != nil {
-		slog.Error("order not found", "orderID", oid)
-		return nil
+		if dbent.IsNotFound(err) {
+			// Order genuinely not found — this is terminal for this webhook delivery.
+			// Return a non-retryable error so the caller can respond 2xx to stop retries.
+			slog.Error("order not found in confirmPayment", "orderID", oid)
+			return fmt.Errorf("%w: order_id=%d", ErrOrderNotFound, oid)
+		}
+		// Transient DB error — propagate so the webhook handler returns 5xx
+		// and the payment provider retries the notification.
+		return fmt.Errorf("get order %d for confirmation: %w", oid, err)
 	}
 	instanceProviderKey := ""
 	if inst, instErr := s.getOrderProviderInstance(ctx, o); instErr == nil && inst != nil {
@@ -178,6 +185,8 @@ func (s *PaymentService) toPaid(ctx context.Context, o *dbent.PaymentOrder, trad
 	return s.executeFulfillment(ctx, o.ID)
 }
 
+const maxWebhookFulfillmentRetries = 3
+
 func (s *PaymentService) alreadyProcessed(ctx context.Context, o *dbent.PaymentOrder) error {
 	cur, err := s.entClient.PaymentOrder.Get(ctx, o.ID)
 	if err != nil {
@@ -187,6 +196,25 @@ func (s *PaymentService) alreadyProcessed(ctx context.Context, o *dbent.PaymentO
 	case OrderStatusCompleted, OrderStatusRefunded:
 		return nil
 	case OrderStatusFailed:
+		// Limit automatic retries from webhook redelivery to prevent
+		// unbounded retry loops for permanently-failing orders.
+		retryCount, _ := s.entClient.PaymentAuditLog.Query().
+			Where(paymentauditlog.OrderIDEQ(strconv.FormatInt(o.ID, 10)), paymentauditlog.ActionEQ("FULFILLMENT_FAILED")).
+			Limit(maxWebhookFulfillmentRetries + 1).
+			Count(ctx)
+		if retryCount >= maxWebhookFulfillmentRetries {
+			slog.Warn("skipping webhook-triggered retry: fulfillment has failed too many times",
+				"orderID", o.ID,
+				"retryCount", retryCount,
+				"failedReason", cur.FailedReason,
+			)
+			s.writeAuditLog(ctx, o.ID, "FULFILLMENT_RETRY_SKIPPED", "system", map[string]any{
+				"reason":      "max retries exceeded",
+				"retryCount":  retryCount,
+				"failedReason": cur.FailedReason,
+			})
+			return nil
+		}
 		return s.executeFulfillment(ctx, o.ID)
 	case OrderStatusPaid, OrderStatusRecharging:
 		return fmt.Errorf("order %d is being processed", o.ID)
@@ -305,13 +333,54 @@ func (s *PaymentService) markCompleted(ctx context.Context, o *dbent.PaymentOrde
 	if err != nil {
 		return fmt.Errorf("mark completed: %w", err)
 	}
-	s.writeAuditLog(ctx, o.ID, auditAction, "system", map[string]any{
-		"rechargeCode":   o.RechargeCode,
-		"creditedAmount": o.Amount,
-		"payAmount":      o.PayAmount,
-	})
+	// For subscription fulfillment, update the SUBSCRIPTION_PENDING claim row
+	// to SUBSCRIPTION_SUCCESS instead of inserting a new row. This preserves
+	// the claim-before-act idempotency chain and avoids a unique-constraint
+	// conflict on (order_id, action).
+	if auditAction == "SUBSCRIPTION_SUCCESS" {
+		s.updateClaimedSubscriptionAudit(ctx, o.ID, o.Amount)
+	} else {
+		s.writeAuditLog(ctx, o.ID, auditAction, "system", map[string]any{
+			"rechargeCode":   o.RechargeCode,
+			"creditedAmount": o.Amount,
+			"payAmount":      o.PayAmount,
+		})
+	}
 	s.dispatchPaymentFulfillmentNotification(o, auditAction)
 	return nil
+}
+
+// updateClaimedSubscriptionAudit updates the previously claimed SUBSCRIPTION_PENDING
+// audit log to SUBSCRIPTION_SUCCESS, completing the idempotency chain.
+func (s *PaymentService) updateClaimedSubscriptionAudit(ctx context.Context, orderID int64, baseAmount float64) {
+	oid := strconv.FormatInt(orderID, 10)
+	detail, _ := json.Marshal(map[string]any{
+		"baseAmount": baseAmount,
+		"status":     "success",
+	})
+	updated, err := s.entClient.PaymentAuditLog.Update().
+		Where(
+			paymentauditlog.OrderIDEQ(oid),
+			paymentauditlog.ActionEQ("SUBSCRIPTION_PENDING"),
+		).
+		SetAction("SUBSCRIPTION_SUCCESS").
+		SetDetail(string(detail)).
+		SetOperator("system").
+		Save(ctx)
+	if err != nil {
+		slog.Error("failed to update subscription audit claim to SUCCESS", "orderID", orderID, "error", err)
+		return
+	}
+	if updated == 0 {
+		// No pending claim row found — fall back to writing a new audit log entry
+		// so that the completion is still recorded.
+		slog.Warn("no SUBSCRIPTION_PENDING audit row found, writing fallback log", "orderID", orderID)
+		s.writeAuditLog(ctx, orderID, "SUBSCRIPTION_SUCCESS", "system", map[string]any{
+			"baseAmount": baseAmount,
+			"status":     "success",
+			"fallback":   true,
+		})
+	}
 }
 
 func (s *PaymentService) dispatchPaymentFulfillmentNotification(o *dbent.PaymentOrder, auditAction string) {
@@ -429,11 +498,25 @@ func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder) error
 	if err != nil || g.Status != payment.EntityStatusActive {
 		return fmt.Errorf("group %d no longer exists or inactive", gid)
 	}
-	// Idempotency: check audit log to see if subscription was already assigned.
-	// Prevents double-extension on retry after markCompleted fails.
-	if s.hasAuditLog(ctx, o.ID, "SUBSCRIPTION_SUCCESS") {
-		slog.Info("subscription already assigned for order, skipping", "orderID", o.ID, "groupID", gid)
-		return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
+	// Claim-before-act idempotency: INSERT a SUBSCRIPTION_PENDING audit log with
+	// ON CONFLICT DO NOTHING. If the insert returns no rows, the claim already
+	// exists from a previous attempt — skip the subscription assignment entirely.
+	claimed, err := s.tryClaimSubscriptionAudit(ctx, o.ID, o.Amount)
+	if err != nil {
+		return fmt.Errorf("claim subscription audit: %w", err)
+	}
+	if !claimed {
+		// The claim already exists — but is it a completed claim or a pending one?
+		// If SUBSCRIPTION_SUCCESS already exists, the subscription was already assigned; safe to mark completed.
+		// If only SUBSCRIPTION_PENDING exists, a previous attempt may have crashed before
+		// AssignOrExtendSubscription ran; returning an error prevents falsely completing the order.
+		if s.hasAuditLog(ctx, o.ID, "SUBSCRIPTION_SUCCESS") {
+			slog.Info("subscription already completed for order", "orderID", o.ID, "groupID", gid)
+			return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
+		}
+		slog.Error("subscription pending but not completed for order; manual recovery needed",
+			"orderID", o.ID, "groupID", gid)
+		return fmt.Errorf("subscription fulfillment in progress for order %d (SUBSCRIPTION_PENDING exists but no SUBSCRIPTION_SUCCESS); manual recovery required", o.ID)
 	}
 	orderNote := fmt.Sprintf("payment order %d", o.ID)
 	_, _, err = s.subscriptionSvc.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{UserID: o.UserID, GroupID: gid, ValidityDays: days, AssignedBy: 0, Notes: orderNote})
@@ -441,6 +524,46 @@ func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder) error
 		return fmt.Errorf("assign subscription: %w", err)
 	}
 	return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
+}
+
+// tryClaimSubscriptionAudit uses INSERT ... ON CONFLICT DO NOTHING to atomically
+// claim the subscription fulfillment slot for an order. Returns true if the claim
+// was inserted (caller should proceed), false if a row already exists (skip).
+func (s *PaymentService) tryClaimSubscriptionAudit(ctx context.Context, orderID int64, baseAmount float64) (bool, error) {
+	if s.entClient == nil {
+		return false, errors.New("nil payment client")
+	}
+	oid := strconv.FormatInt(orderID, 10)
+	detail, _ := json.Marshal(map[string]any{
+		"baseAmount": baseAmount,
+		"status":     "pending",
+	})
+	rows, err := s.entClient.QueryContext(ctx, `
+INSERT INTO payment_audit_logs (order_id, action, detail, operator, created_at)
+SELECT $1::text, 'SUBSCRIPTION_PENDING', $2::text, 'system', NOW()
+WHERE NOT EXISTS (
+	SELECT 1
+	FROM payment_audit_logs
+	WHERE order_id = $1::text
+	  AND action IN ('SUBSCRIPTION_PENDING', 'SUBSCRIPTION_SUCCESS')
+)
+ON CONFLICT (order_id, action) DO NOTHING
+RETURNING id`, oid, string(detail))
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = rows.Close() }()
+	if !rows.Next() {
+		if err := rows.Err(); err != nil {
+			return false, err
+		}
+		return false, nil
+	}
+	var claimID int64
+	if err := rows.Scan(&claimID); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
 func (s *PaymentService) hasAuditLog(ctx context.Context, orderID int64, action string) bool {
@@ -615,19 +738,28 @@ func (s *PaymentService) RetryFulfillment(ctx context.Context, oid int64) error 
 	if psIsRefundStatus(o.Status) {
 		return infraerrors.BadRequest("INVALID_STATUS", "refund-related order cannot retry")
 	}
-	if o.Status == OrderStatusRecharging {
-		return infraerrors.Conflict("CONFLICT", "order is being processed")
-	}
 	if o.Status == OrderStatusCompleted {
 		return infraerrors.BadRequest("INVALID_STATUS", "order already completed")
 	}
-	if o.Status != OrderStatusFailed && o.Status != OrderStatusPaid {
-		return infraerrors.BadRequest("INVALID_STATUS", "only paid and failed orders can retry")
+	// Allow retry for RECHARGING orders that have been stuck for at least
+	// 10 minutes (likely a crashed/lost fulfillment). Fresh RECHARGING orders
+	// are still being processed and should not be interrupted.
+	if o.Status == OrderStatusRecharging {
+		if !o.UpdatedAt.IsZero() && time.Since(o.UpdatedAt) < 10*time.Minute {
+			return infraerrors.Conflict("CONFLICT", "order is being processed, retry later")
+		}
+		slog.Warn("retrying stuck RECHARGING order", "orderID", oid, "updatedAt", o.UpdatedAt)
 	}
-	_, err = s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusFailed, OrderStatusPaid)).SetStatus(OrderStatusPaid).ClearFailedAt().ClearFailedReason().Save(ctx)
+	if o.Status != OrderStatusFailed && o.Status != OrderStatusPaid && o.Status != OrderStatusRecharging {
+		return infraerrors.BadRequest("INVALID_STATUS", "only paid, failed, and stuck recharging orders can retry")
+	}
+	_, err = s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusFailed, OrderStatusPaid, OrderStatusRecharging)).SetStatus(OrderStatusPaid).ClearFailedAt().ClearFailedReason().Save(ctx)
 	if err != nil {
 		return fmt.Errorf("reset for retry: %w", err)
 	}
-	s.writeAuditLog(ctx, oid, "RECHARGE_RETRY", "admin", map[string]any{"detail": "admin manual retry"})
+	s.writeAuditLog(ctx, oid, "RECHARGE_RETRY", "admin", map[string]any{
+		"detail":          "admin manual retry",
+		"previous_status": string(o.Status),
+	})
 	return s.executeFulfillment(ctx, oid)
 }

@@ -59,7 +59,11 @@ type Handlers struct {
 	PromptCatalog    *PromptCatalogHandler
 	TwitterImport    *TwitterImportHandler
 	WeChatExport     *WeChatExportHandler
+	ImageWorkspace   *ImageWorkspaceHandler
+	HotContent       *HotContentHandler
+	HomeBusiness     *HomeBusinessCapabilityHandler
 	Web              *WebHandler
+	BalanceLedger    *UserBalanceLedgerHandler
 }
 
 // BuildInfo contains build-time information

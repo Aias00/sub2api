@@ -156,6 +156,7 @@ type SystemSettings struct {
 	HomeShellConfig              string           `json:"home_shell_config"`
 	HomeBusinessShellConfig      string           `json:"home_business_shell_config"`
 	ModelPlazaItems              []ModelPlazaItem `json:"model_plaza_items"`
+	ImageWorkspaceModelConfig    string           `json:"image_workspace_model_config"`
 	ModelPlazaShellConfig        string           `json:"model_plaza_shell_config"`
 	DocsShellConfig              string           `json:"docs_shell_config"`
 	LegalDocumentShellConfig     string           `json:"legal_document_shell_config"`
@@ -195,6 +196,7 @@ type SystemSettings struct {
 	PromptTemplatesTitle       string `json:"prompt_templates_title"`
 	PromptTemplatesDescription string `json:"prompt_templates_description"`
 	WorkspaceShellConfig       string `json:"workspace_shell_config"`
+	ImagePromptFilterConfig   string `json:"image_prompt_filter_config"`
 	PricingTitle               string `json:"pricing_title"`
 	PricingDescription         string `json:"pricing_description"`
 	PricingShellConfig         string `json:"pricing_shell_config"`
@@ -411,6 +413,7 @@ type PublicSettings struct {
 	HomeShellConfig                  string                   `json:"home_shell_config"`
 	HomeBusinessShellConfig          string                   `json:"home_business_shell_config"`
 	ModelPlazaItems                  []ModelPlazaItem         `json:"model_plaza_items"`
+	ImageWorkspaceModelConfig        string                   `json:"image_workspace_model_config"`
 	ModelPlazaShellConfig            string                   `json:"model_plaza_shell_config"`
 	DocsShellConfig                  string                   `json:"docs_shell_config"`
 	LegalDocumentShellConfig         string                   `json:"legal_document_shell_config"`
@@ -470,6 +473,7 @@ type PublicSettings struct {
 	PromptTemplatesDescription string `json:"prompt_templates_description"`
 	PromptCatalogShellConfig   string `json:"prompt_catalog_shell_config"`
 	WorkspaceShellConfig       string `json:"workspace_shell_config"`
+	ImagePromptFilterConfig   string `json:"image_prompt_filter_config"`
 	PricingTitle               string `json:"pricing_title"`
 	PricingDescription         string `json:"pricing_description"`
 	PricingShellConfig         string `json:"pricing_shell_config"`
@@ -722,4 +726,13 @@ func normalizeStringList(values []string) []string {
 		}
 	}
 	return out
+}
+
+// ImagePromptFilterConfig 图片提示词过滤配置 DTO
+type ImagePromptFilterConfig struct {
+	Enabled              bool     `json:"enabled"`
+	ExplicitKeywords     []string `json:"explicit_keywords"`
+	YouthContextKeywords []string `json:"youth_context_keywords"`
+	WarningMessage       string   `json:"warning_message"`
+	YouthWarningMessage  string   `json:"youth_warning_message"`
 }

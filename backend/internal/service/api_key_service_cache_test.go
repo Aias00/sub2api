@@ -119,6 +119,10 @@ func (s *authRepoStub) GetRateLimitData(ctx context.Context, id int64) (*APIKeyR
 	panic("unexpected GetRateLimitData call")
 }
 
+func (s *authRepoStub) DisableAllActiveKeysByUserID(ctx context.Context, userID int64) (int64, error) {
+	panic("unexpected DisableAllActiveKeysByUserID call")
+}
+
 type authCacheStub struct {
 	getAuthCache   func(ctx context.Context, key string) (*APIKeyAuthCacheEntry, error)
 	setAuthKeys    []string

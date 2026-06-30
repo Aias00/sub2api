@@ -120,6 +120,9 @@ func registerRoutes(
 	routes.RegisterPaymentRoutes(v1, h.Payment, h.PaymentWebhook, h.Admin.Payment, jwtAuth, adminAuth, settingService)
 	routes.RegisterPromptRoutes(v1, h, adminAuth)
 	routes.RegisterWeChatExportRoutes(v1, h, jwtAuth, settingService)
+	routes.RegisterImageWorkspaceRoutes(v1, h, jwtAuth, settingService)
+	routes.RegisterHotContentRoutes(v1, h)
+	routes.RegisterHomeBusinessCapabilityRoutes(v1, h)
 	routes.RegisterWebRoutes(v1, h)
 
 	handler.RegisterPageRoutes(v1, cfg.Pricing.DataDir, gin.HandlerFunc(jwtAuth), gin.HandlerFunc(adminAuth), settingService)

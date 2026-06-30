@@ -489,6 +489,7 @@ export interface SystemSettings {
   appearance?: string;
   default_locale?: string;
   workspace_shell_config?: string;
+  image_prompt_filter_config?: string;
   pricing_shell_config?: string;
   payment_shell_config?: string;
   pricing_currency_symbol?: string;
@@ -809,6 +810,7 @@ export interface UpdateSettingsRequest {
   appearance?: string;
   default_locale?: string;
   workspace_shell_config?: string;
+  image_prompt_filter_config?: string;
   pricing_shell_config?: string;
   payment_shell_config?: string;
   pricing_currency_symbol?: string;
@@ -1014,6 +1016,34 @@ export async function updateSettings(
     "/admin/settings",
     settings,
   );
+  return data;
+}
+
+export interface RuntimeWorkerStatus {
+  id: string;
+  name: string;
+  health: string;
+  message?: string;
+  queue?: number;
+  running?: number;
+  stale?: number;
+  failed?: number;
+  succeeded?: number;
+  total?: number;
+  last_updated_at?: string;
+  last_age_seconds?: number;
+  oldest_queued_at?: string;
+  attention_reasons?: string[];
+  configured: boolean;
+  status_path?: string;
+}
+
+export interface RuntimeWorkersResponse {
+  workers: RuntimeWorkerStatus[];
+}
+
+export async function getRuntimeWorkers(): Promise<RuntimeWorkersResponse> {
+  const { data } = await apiClient.get<RuntimeWorkersResponse>("/admin/runtime/workers");
   return data;
 }
 
@@ -1238,6 +1268,33 @@ export async function updateOverloadCooldownSettings(
   const { data } = await apiClient.put<OverloadCooldownSettings>(
     "/admin/settings/overload-cooldown",
     settings,
+  );
+  return data;
+}
+
+// ==================== Image Prompt Filter Config ====================
+
+export interface ImagePromptFilterConfig {
+  enabled: boolean;
+  explicit_keywords: string[];
+  youth_context_keywords: string[];
+  warning_message: string;
+  youth_warning_message: string;
+}
+
+export async function getImagePromptFilterConfig(): Promise<ImagePromptFilterConfig> {
+  const { data } = await apiClient.get<ImagePromptFilterConfig>(
+    "/admin/settings/image-prompt-filter",
+  );
+  return data;
+}
+
+export async function updateImagePromptFilterConfig(
+  config: ImagePromptFilterConfig,
+): Promise<ImagePromptFilterConfig> {
+  const { data } = await apiClient.put<ImagePromptFilterConfig>(
+    "/admin/settings/image-prompt-filter",
+    config,
   );
   return data;
 }
@@ -1478,6 +1535,7 @@ export async function resetWebSearchUsage(payload: {
 export const settingsAPI = {
   getSettings,
   updateSettings,
+  getRuntimeWorkers,
   testSmtpConnection,
   sendTestEmail,
   getEmailTemplates,
@@ -1490,6 +1548,8 @@ export const settingsAPI = {
   deleteAdminApiKey,
   getOverloadCooldownSettings,
   updateOverloadCooldownSettings,
+  getImagePromptFilterConfig,
+  updateImagePromptFilterConfig,
   getRateLimit429CooldownSettings,
   updateRateLimit429CooldownSettings,
   getStreamTimeoutSettings,

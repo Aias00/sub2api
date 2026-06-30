@@ -99,11 +99,17 @@ describe('DocsView docsify integration', () => {
     expect(docsViewSource).not.toContain("nameLink: '/home'")
     expect(docsViewSource).not.toContain('to="/login"')
     expect(docsViewSource).not.toContain("authStore.isAdmin ? '/admin/dashboard' : '/dashboard'")
-    expect(docsViewSource).toContain('{{ copy.title }}')
     expect(docsViewSource).toContain('{{ copy.dashboard }}')
     expect(docsViewSource).toContain('{{ copy.login }}')
     expect(docsViewSource).toContain('placeholder: copy.value.searchPlaceholder')
     expect(docsViewSource).toContain('noData: copy.value.noData')
+  })
+
+  it('keeps the header brand aligned with other public pages', () => {
+    expect(docsViewSource).toContain(':to="authRouteDefaults.homePath"')
+    expect(docsViewSource).toContain('{{ siteName }}</span>')
+    expect(docsViewSource).not.toContain('{{ copy.title }}')
+    expect(docsViewSource).not.toContain('uppercase tracking-[0.24em] text-sky-600')
   })
 
   it('does not keep locale-specific docs fallback copy in the view bootstrap layer', () => {

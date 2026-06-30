@@ -49,8 +49,9 @@ describe('legacy Touch Vue route aliases', () => {
     const { default: router } = await import('@/router')
     const paths = router.getRoutes().map((route) => route.path)
 
-    expect(paths).toContain('/prompts')
     expect(paths).toContain('/image-generator')
+    expect(paths).toContain('/prompts')
+    expect(paths).toContain('/wechat')
     expect(paths).toContain('/wechat-export')
     expect(paths).toContain('/pricing')
     expect(paths).toContain('/settings/credits')

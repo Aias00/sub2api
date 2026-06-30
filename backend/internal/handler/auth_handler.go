@@ -137,6 +137,7 @@ func (h *AuthHandler) verifyWebOAuthBridgeToken(c *gin.Context, secret string, e
 
 // RegisterRequest represents the registration request payload
 type RegisterRequest struct {
+	Username          string `json:"username"`
 	Email             string `json:"email" binding:"required,email"`
 	Password          string `json:"password" binding:"required"`
 	VerifyCode        string `json:"verify_code"`
@@ -278,9 +279,10 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
-	_, user, err := h.authService.RegisterWithVerificationSource(
+	_, user, err := h.authService.RegisterWithVerificationSourceAndUsername(
 		c.Request.Context(),
 		req.Email,
+		req.Username,
 		req.Password,
 		req.VerifyCode,
 		req.PromoCode,

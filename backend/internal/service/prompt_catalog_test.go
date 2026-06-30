@@ -262,3 +262,57 @@ func TestPromptCatalogServiceUpsertCaseInfersModelTags(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, []string{"nano-banana-pro"}, repo.upsertItem.ModelTags)
 }
+
+func TestPromptCatalogServiceUpsertCaseRejectsInvalidStatus(t *testing.T) {
+	repo := &promptCatalogRepoStub{}
+	svc := NewPromptCatalogService(repo)
+
+	err := svc.UpsertCase(context.Background(), &PromptCatalogCase{
+		ID:     "case-1",
+		Title:  "Title",
+		Prompt: "Body",
+		Status: "archived",
+	})
+	require.ErrorIs(t, err, ErrPromptCatalogInvalidInput)
+}
+
+func TestPromptCatalogServiceUpsertCaseRejectsInvalidSourceType(t *testing.T) {
+	repo := &promptCatalogRepoStub{}
+	svc := NewPromptCatalogService(repo)
+
+	err := svc.UpsertCase(context.Background(), &PromptCatalogCase{
+		ID:         "case-1",
+		Title:      "Title",
+		Prompt:     "Body",
+		SourceType: "unknown",
+	})
+	require.ErrorIs(t, err, ErrPromptCatalogInvalidInput)
+}
+
+func TestPromptCatalogServiceUpsertCaseAcceptsDraftStatus(t *testing.T) {
+	repo := &promptCatalogRepoStub{}
+	svc := NewPromptCatalogService(repo)
+
+	err := svc.UpsertCase(context.Background(), &PromptCatalogCase{
+		ID:     "case-1",
+		Title:  "Title",
+		Prompt: "Body",
+		Status: PromptCatalogStatusDraft,
+	})
+	require.NoError(t, err)
+	require.Equal(t, PromptCatalogStatusDraft, repo.upsertItem.Status)
+}
+
+func TestPromptCatalogServiceUpsertCaseAcceptsTemplateSourceType(t *testing.T) {
+	repo := &promptCatalogRepoStub{}
+	svc := NewPromptCatalogService(repo)
+
+	err := svc.UpsertCase(context.Background(), &PromptCatalogCase{
+		ID:         "case-1",
+		Title:      "Title",
+		Prompt:     "Body",
+		SourceType: "template",
+	})
+	require.NoError(t, err)
+	require.Equal(t, "template", repo.upsertItem.SourceType)
+}

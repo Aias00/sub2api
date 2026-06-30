@@ -77,6 +77,10 @@ type APIKeyRepository interface {
 	IncrementRateLimitUsage(ctx context.Context, id int64, cost float64) error
 	ResetRateLimitWindows(ctx context.Context, id int64) error
 	GetRateLimitData(ctx context.Context, id int64) (*APIKeyRateLimitData, error)
+
+	// DisableAllActiveKeysByUserID disables all active (non-deleted) API keys for a user.
+	// Returns the number of keys disabled.
+	DisableAllActiveKeysByUserID(ctx context.Context, userID int64) (int64, error)
 }
 
 // APIKeyRateLimitData holds rate limit usage and window state for an API key.
@@ -659,6 +663,19 @@ func (s *APIKeyService) Delete(ctx context.Context, id int64, userID int64) erro
 	}
 	s.lastUsedTouchL1.Delete(id)
 
+	return nil
+}
+
+// DisableAllUserKeys disables all active API keys for a user and invalidates their auth cache.
+// Used during user deletion to prevent further access via API keys.
+func (s *APIKeyService) DisableAllUserKeys(ctx context.Context, userID int64) error {
+	disabled, err := s.apiKeyRepo.DisableAllActiveKeysByUserID(ctx, userID)
+	if err != nil {
+		return fmt.Errorf("disable all active keys for user %d: %w", userID, err)
+	}
+	if disabled > 0 {
+		s.InvalidateAuthCacheByUserID(ctx, userID)
+	}
 	return nil
 }
 

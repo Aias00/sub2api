@@ -216,17 +216,33 @@ type UserService struct {
 	settingRepo          SettingRepository
 	authCacheInvalidator APIKeyAuthCacheInvalidator
 	billingCache         BillingCache
+	tokenRevoker         TokenRevoker
+	keyDisabler          UserKeyDisabler
 	lastActiveTouchL1    sync.Map
 	lastActiveTouchSF    singleflight.Group
 }
 
+// TokenRevoker invalidates all user tokens (JWT TokenVersion bump + refresh token cleanup).
+// Used during user deletion to prevent further access with existing tokens.
+type TokenRevoker interface {
+	RevokeAllUserTokens(ctx context.Context, userID int64) error
+}
+
+// UserKeyDisabler disables all active API keys for a user.
+// Used during user deletion to prevent further access via API keys.
+type UserKeyDisabler interface {
+	DisableAllUserKeys(ctx context.Context, userID int64) error
+}
+
 // NewUserService 创建用户服务实例
-func NewUserService(userRepo UserRepository, settingRepo SettingRepository, authCacheInvalidator APIKeyAuthCacheInvalidator, billingCache BillingCache) *UserService {
+func NewUserService(userRepo UserRepository, settingRepo SettingRepository, authCacheInvalidator APIKeyAuthCacheInvalidator, billingCache BillingCache, tokenRevoker TokenRevoker, keyDisabler UserKeyDisabler) *UserService {
 	return &UserService{
 		userRepo:             userRepo,
 		settingRepo:          settingRepo,
 		authCacheInvalidator: authCacheInvalidator,
 		billingCache:         billingCache,
+		tokenRevoker:         tokenRevoker,
+		keyDisabler:          keyDisabler,
 	}
 }
 
@@ -1155,10 +1171,28 @@ func (s *UserService) UpdateStatus(ctx context.Context, userID int64, status str
 }
 
 // Delete 删除用户（管理员功能）
+// 级联操作：吊销所有令牌 → 禁用所有 API Key → 失效缓存 → 软删除用户
 func (s *UserService) Delete(ctx context.Context, userID int64) error {
-	if s.authCacheInvalidator != nil {
+	// 1. 吊销所有令牌（JWT TokenVersion 递增 + 清除 Refresh Token）
+	if s.tokenRevoker != nil {
+		if err := s.tokenRevoker.RevokeAllUserTokens(ctx, userID); err != nil {
+			slog.Error("revoke all tokens during user deletion", "user_id", userID, "error", err)
+			// 继续执行删除流程，令牌自然过期后会失效
+		}
+	}
+
+	// 2. 禁用所有活跃 API Key 并失效认证缓存
+	if s.keyDisabler != nil {
+		if err := s.keyDisabler.DisableAllUserKeys(ctx, userID); err != nil {
+			slog.Error("disable all keys during user deletion", "user_id", userID, "error", err)
+			// 继续执行删除流程
+		}
+	} else if s.authCacheInvalidator != nil {
+		// 降级：仅失效缓存，不禁用 Key
 		s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, userID)
 	}
+
+	// 3. 软删除用户
 	if err := s.userRepo.Delete(ctx, userID); err != nil {
 		return fmt.Errorf("delete user: %w", err)
 	}

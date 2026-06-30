@@ -70,4 +70,12 @@ type RefreshTokenCache interface {
 	// IsTokenInFamily 检查Token是否属于指定家族
 	// 用于验证Token家族关系
 	IsTokenInFamily(ctx context.Context, familyID string, tokenHash string) (bool, error)
+
+	// RemoveFromUserTokenSet 从用户的Token集合中移除指定Token
+	// 用于Token轮转时清理集合中的过期引用，避免集合无限膨胀
+	RemoveFromUserTokenSet(ctx context.Context, userID int64, tokenHash string) error
+
+	// RemoveFromFamilyTokenSet 从家族Token集合中移除指定Token
+	// 用于Token轮转时清理集合中的过期引用，避免集合无限膨胀
+	RemoveFromFamilyTokenSet(ctx context.Context, familyID string, tokenHash string) error
 }

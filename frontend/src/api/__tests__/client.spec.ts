@@ -37,6 +37,17 @@ describe('API Client', () => {
       )
     })
 
+    it('keeps bare public origins unchanged', async () => {
+      const { buildApiUrl, resolveApiBaseUrl } = await import('@/api/client')
+
+      expect(resolveApiBaseUrl({ api_base_url: 'https://cloudbase.eu.org/' })).toBe(
+        'https://cloudbase.eu.org'
+      )
+      expect(buildApiUrl('/hot/items', { api_base_url: 'https://cloudbase.eu.org/' })).toBe(
+        'https://cloudbase.eu.org/hot/items'
+      )
+    })
+
     it('builds API URLs from injected runtime config before using the default', async () => {
       const { buildApiUrl, resolveApiBaseUrl } = await import('@/api/client')
 

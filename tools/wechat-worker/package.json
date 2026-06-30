@@ -4,13 +4,20 @@
   "type": "module",
   "version": "0.0.0",
   "scripts": {
-    "worker": "tsx src/bin/worker.ts"
+    "worker": "tsx src/bin/worker.ts",
+    "typecheck": "tsc --noEmit",
+    "fidelity-check": "tsx src/bin/fidelity-check.ts"
   },
   "dependencies": {
     "cheerio": "^1.1.0",
     "exceljs": "^4.4.0",
     "html-docx-js-typescript": "^0.1.5",
-    "turndown": "^7.2.0",
-    "tsx": "^4.20.0"
+    "tsx": "^4.20.0",
+    "turndown": "^7.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^26.0.1",
+    "@types/turndown": "^5.0.6",
+    "typescript": "^6.0.3"
   }
 }

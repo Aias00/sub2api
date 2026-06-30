@@ -60,6 +60,12 @@ vi.mock('@/api/payment', () => ({
   },
 }))
 
+vi.mock('@/components/layout/PublicDarkHeader.vue', () => ({
+  default: {
+    template: '<header data-public-dark-header><slot name="actions" /></header>',
+  },
+}))
+
 describe('PricingView', () => {
   beforeEach(() => {
     fetchPublicSettings.mockReset()
@@ -245,7 +251,7 @@ describe('PricingView', () => {
     expect(pricingViewSource).not.toContain("title: 'Pricing'")
     expect(pricingViewSource).not.toContain("catalogStatus: 'Catalog status'")
     expect(pricingViewSource).not.toContain("prompts: 'Prompt cases'")
-    expect(pricingViewSource).not.toContain("rechargeCta: 'Buy credits'")
+    expect(pricingViewSource).not.toContain("rechargeCta: 'Buy balance'")
     expect(pricingViewSource).not.toContain('function shellLabel(key: keyof PricingShellConfig[\'labels\'], fallback')
     expect(pricingViewSource).not.toContain('function shellGroupLabel(name: string, fallback')
     expect(pricingViewSource).not.toContain("pricing_currency_symbol?.trim() || '¥'")
@@ -257,8 +263,9 @@ describe('PricingView', () => {
     expect(pricingViewSource).not.toContain('plan.rate_multiplier ?? 1')
     expect(pricingViewSource).not.toContain('plan.quota_label || unlimitedLabel')
     expect(pricingViewSource).not.toContain('to="/prompts"')
-    expect(pricingViewSource).toContain('useAuthRouteDefaults')
-    expect(pricingViewSource).toContain(':to="authRouteDefaults.homePath"')
+    expect(pricingViewSource).toContain('PublicDarkHeader')
+    expect(pricingViewSource).not.toContain('useAuthRouteDefaults')
+    expect(pricingViewSource).not.toContain(':to="authRouteDefaults.homePath"')
     expect(pricingViewSource).not.toContain('to="/home"')
     expect(pricingViewSource).not.toContain("path: '/purchase'")
     expect(pricingViewSource).not.toContain("'/purchase?tab=recharge'")

@@ -1,5 +1,5 @@
 <template>
-  <div class="docs-page relative min-h-screen overflow-x-hidden bg-white text-slate-900 dark:bg-dark-950 dark:text-white">
+  <div class="docs-page home-business-page relative min-h-screen overflow-x-hidden bg-white text-slate-900 dark:bg-dark-950 dark:text-white">
     <div class="pointer-events-none absolute inset-0 overflow-hidden">
       <div class="absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(circle_at_18%_16%,rgba(125,211,252,0.22),transparent_24%),radial-gradient(circle_at_86%_0%,rgba(191,219,254,0.2),transparent_26%),linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0))] dark:bg-[radial-gradient(circle_at_18%_16%,rgba(56,189,248,0.12),transparent_24%),radial-gradient(circle_at_86%_0%,rgba(59,130,246,0.1),transparent_26%),linear-gradient(180deg,rgba(15,23,42,0.9),rgba(2,6,23,0))]"></div>
       <div class="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:72px_72px] opacity-30 dark:opacity-10"></div>
@@ -7,33 +7,21 @@
 
     <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/92 backdrop-blur-xl dark:border-dark-700/80 dark:bg-dark-950/88">
       <div class="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 md:px-6">
-        <div class="flex min-w-0 items-center gap-3">
-          <RouterLink
-            :to="authRouteDefaults.homePath"
-            class="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/5 dark:border-dark-700 dark:bg-white/5"
-          >
-            <img
-              v-if="siteLogo"
-              :src="siteLogo"
-              :alt="siteName"
-              class="h-full w-full object-cover"
-            >
-            <span
-              v-else
-              class="text-sm font-semibold tracking-[0.18em] text-primary-600 dark:text-primary-300"
-            >
-              {{ siteName.slice(0, 2).toUpperCase() }}
-            </span>
-          </RouterLink>
-          <div class="min-w-0">
-            <p class="truncate text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300">
-              {{ siteName }}
-            </p>
-            <h1 class="truncate text-lg font-semibold text-slate-950 dark:text-white">
-              {{ copy.title }}
-            </h1>
+        <RouterLink
+          :to="authRouteDefaults.homePath"
+          class="flex min-w-0 items-center gap-3"
+        >
+          <div v-if="siteLogo" class="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white/80 dark:border-white/10 dark:bg-white/5">
+            <img :src="siteLogo" :alt="siteName" class="h-full w-full object-contain" />
           </div>
-        </div>
+          <span
+            v-else
+            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white/80 text-xs font-semibold tracking-[0.12em] text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-white"
+          >
+            {{ siteName.slice(0, 2).toUpperCase() }}
+          </span>
+          <span class="truncate text-sm font-semibold text-slate-950 dark:text-white">{{ siteName }}</span>
+        </RouterLink>
 
         <div class="flex items-center gap-2">
           <LocaleSwitcher />
@@ -189,7 +177,7 @@ function configureDocsify() {
       'Cache-Control': 'no-cache',
       Pragma: 'no-cache',
     },
-    themeColor: '#4c409c',
+    themeColor: '#0284c7',
     notFoundPage: true,
     plugins: [docsVersionPlugin],
     search: {

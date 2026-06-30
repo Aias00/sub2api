@@ -32,7 +32,7 @@
         >
           <Icon name="book" size="sm" />
           <span
-            class="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 rounded-lg bg-gray-950 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition duration-150 group-hover:opacity-100 dark:bg-white dark:text-gray-900"
+            class="pointer-events-none absolute left-1/2 top-full z-20 mt-2 -translate-x-1/2 whitespace-nowrap rounded-lg bg-gray-950 px-2.5 py-1 text-xs font-medium text-white opacity-0 shadow-lg transition duration-150 group-hover:opacity-100 dark:bg-white dark:text-gray-900"
           >
             {{ t('nav.docs') }}
           </span>
@@ -99,6 +99,11 @@
               </div>
 
               <div v-if="showDropdownPrimaryActions" class="py-1">
+                <router-link to="/tasks" @click="closeDropdown" class="dropdown-item">
+                  <Icon name="clipboard" size="sm" />
+                  {{ t('nav.myTasks') }}
+                </router-link>
+
                 <template v-if="showDropdownAccountLinks">
                   <router-link :to="authRouteDefaults.profilePath" @click="closeDropdown" class="dropdown-item">
                     <Icon name="user" size="sm" />
@@ -230,10 +235,11 @@ const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => appStore.docUrl)
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
+const showDropdownTaskLink = computed(() => true)
 const showDropdownAccountLinks = computed(() => false)
 const showGithubLink = computed(() => false)
 const showDropdownPrimaryActions = computed(
-  () => showDropdownAccountLinks.value || showGithubLink.value
+  () => showDropdownTaskLink.value || showDropdownAccountLinks.value || showGithubLink.value
 )
 const showDropdownContactSupport = computed(
   () => !isAdmin.value && Boolean(contactInfo.value)

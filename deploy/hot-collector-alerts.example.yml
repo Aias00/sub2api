@@ -1,0 +1,70 @@
+# Example monitoring rules for the Hot collector worker.
+#
+# These rules assume an external probe or node exporter textfile collector maps
+# the worker status JSON at HOT_WORKER_STATUS_PATH into gauges:
+#
+# - sub2api_hot_collector_status{status="ok|running|error|fatal"}
+# - sub2api_hot_collector_apply_mode
+# - sub2api_hot_collector_mode{mode="loop|once"}
+# - sub2api_hot_collector_interval_seconds
+# - sub2api_hot_collector_max_backoff_seconds
+# - sub2api_hot_collector_status_age_seconds
+# - sub2api_hot_collector_last_run_duration_seconds
+# - sub2api_hot_collector_last_success_age_seconds
+# - sub2api_hot_collector_last_failure_age_seconds
+#
+# Container platforms should also alert on the Docker/Kubernetes healthcheck
+# result from `node hot-rss-collector-worker.mjs --healthcheck`.
+
+groups:
+  - name: sub2api-hot-collector
+    rules:
+      - alert: HotCollectorWorkerUnhealthy
+        expr: sub2api_hot_collector_status{status=~"error|fatal"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          service: sub2api-hot-collector
+        annotations:
+          summary: "Hot collector worker is unhealthy"
+          description: "The Hot collector worker status file reports error/fatal. Check HOT_WORKER_STATUS_PATH and container logs."
+
+      - alert: HotCollectorStatusStale
+        expr: sub2api_hot_collector_status_age_seconds > 4200
+        for: 10m
+        labels:
+          severity: warning
+          service: sub2api-hot-collector
+        annotations:
+          summary: "Hot collector status has gone stale"
+          description: "The worker status file has not been updated for more than 70 minutes. The collector loop or healthcheck may be stuck."
+
+      - alert: HotCollectorDryRunMode
+        expr: sub2api_hot_collector_apply_mode == 0
+        for: 15m
+        labels:
+          severity: warning
+          service: sub2api-hot-collector
+        annotations:
+          summary: "Hot collector is not writing to PostgreSQL"
+          description: "The Hot collector status file reports apply=false. Production requires the RSS collector to write directly to PostgreSQL."
+
+      - alert: HotCollectorNoRecentSuccess
+        expr: sub2api_hot_collector_last_success_age_seconds > 7200
+        for: 15m
+        labels:
+          severity: warning
+          service: sub2api-hot-collector
+        annotations:
+          summary: "Hot collector has not completed recently"
+          description: "No successful Hot RSS collection has completed for more than 2 hours."
+
+      - alert: HotCollectorRecentFailure
+        expr: sub2api_hot_collector_last_failure_age_seconds < 900
+        for: 5m
+        labels:
+          severity: warning
+          service: sub2api-hot-collector
+        annotations:
+          summary: "Hot collector failed recently"
+          description: "A Hot RSS collection failed within the last 15 minutes. Check PostgreSQL connectivity, source feeds, and worker logs."

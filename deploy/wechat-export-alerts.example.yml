@@ -1,0 +1,59 @@
+# Example monitoring rules for the WeChat export worker.
+#
+# These rules assume an external probe periodically authenticates against
+# GET /api/v1/wechat/worker/status and maps the JSON fields below to gauges:
+#
+# - sub2api_wechat_export_worker_health{health="idle|waiting|active|attention"}
+# - sub2api_wechat_export_queued_count
+# - sub2api_wechat_export_running_count
+# - sub2api_wechat_export_stale_running_count
+# - sub2api_wechat_export_failed_count
+# - sub2api_wechat_export_oldest_queued_seconds
+# - sub2api_wechat_export_last_task_age_seconds
+#
+# The API is user-scoped today. For production monitoring, create a dedicated
+# low-privilege service account whose visible tasks represent the worker queue,
+# or replace this probe with a server-side aggregate metrics endpoint.
+
+groups:
+  - name: sub2api-wechat-export
+    rules:
+      - alert: WeChatExportStaleRunningTask
+        expr: sub2api_wechat_export_stale_running_count > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: sub2api-wechat-export
+        annotations:
+          summary: "WeChat export has stale running tasks"
+          description: "At least one running task lease expired and should be reclaimed by the worker."
+
+      - alert: WeChatExportQueueBacklog
+        expr: sub2api_wechat_export_oldest_queued_seconds > 900
+        for: 10m
+        labels:
+          severity: warning
+          service: sub2api-wechat-export
+        annotations:
+          summary: "WeChat export queue is waiting too long"
+          description: "The oldest queued task has been waiting for more than 15 minutes."
+
+      - alert: WeChatExportFailureBacklog
+        expr: sub2api_wechat_export_failed_count >= 3
+        for: 10m
+        labels:
+          severity: warning
+          service: sub2api-wechat-export
+        annotations:
+          summary: "WeChat export has multiple failed tasks"
+          description: "Three or more failed/partial tasks are visible in the worker status snapshot."
+
+      - alert: WeChatExportWorkerAttention
+        expr: sub2api_wechat_export_worker_health{health="attention"} == 1
+        for: 5m
+        labels:
+          severity: warning
+          service: sub2api-wechat-export
+        annotations:
+          summary: "WeChat export worker status needs attention"
+          description: "The worker status endpoint reports attention state. Check attention_reasons and task logs."

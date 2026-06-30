@@ -116,6 +116,13 @@ vi.mock('@/utils/imageGeneratorDraft', () => ({
   saveImageGeneratorDraft,
 }))
 
+vi.mock('@/components/layout/PublicDarkHeader.vue', () => ({
+  default: {
+    props: ['accountLabel'],
+    template: '<header data-public-dark-header>{{ accountLabel }}<slot name="actions" /></header>',
+  },
+}))
+
 describe('PromptCatalogView', () => {
   beforeEach(() => {
     fetchPublicSettings.mockReset()
@@ -191,7 +198,6 @@ describe('PromptCatalogView', () => {
     expect(wrapper.text()).toContain('Configured eyebrow')
     expect(wrapper.text()).toContain('Configured X source')
     expect(wrapper.text()).toContain('API Source')
-    expect(wrapper.text()).toContain('API Source Filter (1)')
     expect(wrapper.text()).toContain('API Category Filter (1)')
     expect(wrapper.find('img[src="https://static.example.com/primary.jpg"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('OpenAI Image')
@@ -204,7 +210,6 @@ describe('PromptCatalogView', () => {
     expect(wrapper.text()).toContain('42 characters')
     expect(wrapper.text()).toContain('editorial')
     expect(listCases).toHaveBeenCalledWith(expect.objectContaining({
-      source_type: 'case',
       has_image: true,
       page_size: 12,
       sort_by: 'title',
@@ -256,6 +261,76 @@ describe('PromptCatalogView', () => {
         value: originalLocation,
       })
     }
+  })
+
+  it('keeps all category chips visible after selecting a category', async () => {
+    listCases
+      .mockResolvedValueOnce({
+        data: {
+          items: [],
+          summary: {
+            total: 30,
+            case_count: 30,
+            template_count: 0,
+            source_count: 1,
+            sources: [],
+            categories: [
+              { value: 'education', count: 15, display_label: '信息图与教育视觉' },
+              { value: 'portrait', count: 15, display_label: '头像与个人形象' },
+            ],
+          },
+          total: 30,
+          page: 1,
+          pages: 1,
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          items: [],
+          summary: {
+            total: 15,
+            case_count: 15,
+            template_count: 0,
+            source_count: 1,
+            sources: [],
+            categories: [
+              { value: 'education', count: 15, display_label: '信息图与教育视觉' },
+            ],
+          },
+          total: 15,
+          page: 1,
+          pages: 1,
+        },
+      })
+
+    const wrapper = mount(PromptCatalogView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
+          },
+          LocaleSwitcher: { template: '<div>locale</div>' },
+          BaseDialog: {
+            props: ['show', 'title'],
+            template: '<div v-if="show"><h2>{{ title }}</h2><slot /></div>',
+          },
+        },
+      },
+    })
+
+    await flushPromises()
+    expect(wrapper.text()).toContain('education')
+    expect(wrapper.text()).toContain('portrait')
+
+    const educationButton = wrapper.findAll('button').find((button) => button.text().includes('education'))
+    expect(educationButton).toBeTruthy()
+    await educationButton!.trigger('click')
+    await flushPromises()
+
+    expect(listCases).toHaveBeenLastCalledWith(expect.objectContaining({ category: 'education' }))
+    expect(wrapper.text()).toContain('education')
+    expect(wrapper.text()).toContain('portrait')
   })
 
   it('uses configured X import automation mode from prompt catalog shell defaults', async () => {
@@ -318,8 +393,28 @@ describe('PromptCatalogView', () => {
   })
 
   it('does not embed default prompt catalog shell copy in the Vue view', () => {
-    expect(promptCatalogViewSource).toContain('useAuthRouteDefaults')
-    expect(promptCatalogViewSource).toContain(':to="authRouteDefaults.homePath"')
+    expect(promptCatalogViewSource).toContain('PublicDarkHeader')
+    expect(promptCatalogViewSource).toContain(':account-label="copy.accountAction"')
+    expect(promptCatalogViewSource).not.toContain('useAuthRouteDefaults')
+    expect(promptCatalogViewSource).not.toContain(':to="authRouteDefaults.homePath"')
+    expect(promptCatalogViewSource).not.toContain('const avatarUrl = computed(() => authStore.user?.avatar_url?.trim() || \'\')')
+    expect(promptCatalogViewSource).not.toContain(':aria-label="displayName"')
+    expect(promptCatalogViewSource).not.toContain('{{ userInitial }}')
+    expect(promptCatalogViewSource).not.toContain("lg:grid-cols-[minmax(0,1fr)_320px]")
+    expect(promptCatalogViewSource).not.toContain('summary.source_count')
+    expect(promptCatalogViewSource).toContain('lg:grid-cols-[300px_minmax(0,1fr)]')
+    expect(promptCatalogViewSource).not.toContain('lg:sticky lg:top-6')
+    expect(promptCatalogViewSource).toContain('@click="setCategoryFilter(category.value)"')
+    expect(promptCatalogViewSource).toContain('categoryChipClass(index)')
+    expect(promptCatalogViewSource).toContain('flex flex-wrap items-start gap-2')
+    expect(promptCatalogViewSource).not.toContain('max-h-[44vh]')
+    expect(promptCatalogViewSource).not.toContain('max-h-[72vh] overflow-y-auto rounded-2xl border border-white/10')
+    expect(promptCatalogViewSource).toContain("window.addEventListener('scroll', handlePageScroll, { passive: true })")
+    expect(promptCatalogViewSource).toContain("window.removeEventListener('scroll', handlePageScroll)")
+    expect(promptCatalogViewSource).not.toContain('max-h-[44vh] space-y-2')
+    expect(promptCatalogViewSource).toContain('@click="applySearch"')
+    expect(promptCatalogViewSource).not.toContain('v-model="filters.category"')
+    expect(promptCatalogViewSource).not.toContain('@click="toggleImageFilter"')
     expect(promptCatalogViewSource).not.toContain('to="/home"')
     expect(promptCatalogViewSource).not.toContain("isAuthenticated ? dashboardPath : '/login'")
     expect(promptCatalogViewSource).not.toContain("authStore.isAdmin ? '/admin/dashboard' : '/dashboard'")
@@ -339,6 +434,9 @@ describe('PromptCatalogView', () => {
     expect(promptCatalogViewSource).not.toContain('<option value="x">X / Twitter</option>')
     expect(promptCatalogViewSource).not.toContain('x_auto: true')
     expect(promptCatalogViewSource).toContain('x_auto: resolvePromptCatalogImportXAuto(catalogDefaults.value)')
+    expect(promptCatalogViewSource).toContain('lg:grid-cols-[minmax(0,1fr)_minmax(420px,620px)]')
+    expect(promptCatalogViewSource).toContain('sm:grid-cols-[140px_minmax(220px,1fr)_auto]')
+    expect(promptCatalogViewSource).not.toContain('mt-5 rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.055] p-4 sm:p-5')
     expect(promptCatalogViewSource).not.toContain('const PAGE_SIZE = 24')
     expect(promptCatalogViewSource).not.toContain('|| 24')
     expect(promptCatalogViewSource).not.toContain("sort_by: 'imported_at'")

@@ -114,7 +114,11 @@ func ProvideHandlers(
 	promptCatalogHandler *PromptCatalogHandler,
 	twitterImportHandler *TwitterImportHandler,
 	weChatExportHandler *WeChatExportHandler,
+	imageWorkspaceHandler *ImageWorkspaceHandler,
+	hotContentHandler *HotContentHandler,
+	homeBusinessHandler *HomeBusinessCapabilityHandler,
 	webHandler *WebHandler,
+	balanceLedgerHandler *UserBalanceLedgerHandler,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 ) *Handlers {
@@ -138,7 +142,11 @@ func ProvideHandlers(
 		PromptCatalog:    promptCatalogHandler,
 		TwitterImport:    twitterImportHandler,
 		WeChatExport:     weChatExportHandler,
+		ImageWorkspace:   imageWorkspaceHandler,
+		HotContent:       hotContentHandler,
+		HomeBusiness:     homeBusinessHandler,
 		Web:              webHandler,
+		BalanceLedger:    balanceLedgerHandler,
 	}
 }
 
@@ -163,7 +171,11 @@ var ProviderSet = wire.NewSet(
 	NewPromptCatalogHandler,
 	NewTwitterImportHandler,
 	NewWeChatExportHandler,
+	NewImageWorkspaceHandler,
+	NewHotContentHandler,
+	NewHomeBusinessCapabilityHandler,
 	NewWebHandler,
+	NewUserBalanceLedgerHandler,
 
 	// Admin handlers
 	admin.NewDashboardHandler,

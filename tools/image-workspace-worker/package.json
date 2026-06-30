@@ -1,0 +1,14 @@
+{
+  "name": "image-workspace-worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/worker.mjs",
+    "check": "node --check src/worker.mjs",
+    "healthcheck": "node src/worker.mjs --healthcheck",
+    "once": "node src/worker.mjs --once",
+    "upstream-check": "node src/worker.mjs --upstream-check",
+    "storage-check": "node src/worker.mjs --storage-check"
+  }
+}

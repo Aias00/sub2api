@@ -95,6 +95,13 @@ func TestTwitterImportServiceImportUsesXAutoAndUpsertsStaticImages(t *testing.T)
 	require.Equal(t, staticItem.ImageURL, repo.upsertItem.ImageURL)
 }
 
+func TestXAutoPythonPathPrefersCorrectSpelling(t *testing.T) {
+	t.Setenv("X_ATUO_PYTHON_PATH", "/legacy/x-atuo")
+	t.Setenv("X_AUTO_PYTHON_PATH", "/correct/x-auto")
+
+	require.Equal(t, "/correct/x-auto", xAutoPythonPath())
+}
+
 func TestTwitterImportServiceRejectsInvalidURL(t *testing.T) {
 	svc := NewTwitterImportServiceForTest(NewPromptCatalogService(&promptCatalogRepoStub{}), nil, nil, nil)
 

@@ -46,4 +46,19 @@ describe('imageGeneratorDraft', () => {
 
     expect(window.sessionStorage.getItem(DRAFT_KEY)).toBeNull()
   })
+
+  it('returns null and clears storage when JSON is corrupted', () => {
+    window.sessionStorage.setItem(DRAFT_KEY, '{invalid json')
+
+    const result = loadImageGeneratorDraft()
+
+    expect(result).toBeNull()
+    expect(window.sessionStorage.getItem(DRAFT_KEY)).toBeNull()
+  })
+
+  it('returns null when draft has no prompt', () => {
+    window.sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ title: 'No prompt' }))
+
+    expect(loadImageGeneratorDraft()).toBeNull()
+  })
 })

@@ -47,7 +47,11 @@ const (
 	orderIDPrefix = "sub2_"
 )
 
-const paymentResumeSigningKeyEnv = "PAYMENT_RESUME_SIGNING_KEY"
+const (
+	paymentResumeSigningKeyEnv       = "PAYMENT_RESUME_SIGNING_KEY"
+	paymentResumeVerifyKeysEnv       = "PAYMENT_RESUME_VERIFY_KEYS"
+	paymentResumeLegacySigningKeyEnv = "PAYMENT_RESUME_LEGACY_SIGNING_KEY"
+)
 
 // --- Types ---
 
@@ -280,7 +284,31 @@ func (s *PaymentService) paymentResume() *PaymentResumeService {
 }
 
 func psNewPaymentResumeService(configService *PaymentConfigService) *PaymentResumeService {
-	return NewPaymentResumeService(ParsePaymentResumeSigningKey(os.Getenv(paymentResumeSigningKeyEnv)))
+	return NewPaymentResumeServiceFromEnv()
+}
+
+func NewPaymentResumeServiceFromEnv() *PaymentResumeService {
+	return NewPaymentResumeServiceFromEnvWithLegacyKeys()
+}
+
+func NewPaymentResumeServiceFromEnvWithLegacyKeys(legacyKeys ...[]byte) *PaymentResumeService {
+	signingKey := ParsePaymentResumeSigningKey(os.Getenv(paymentResumeSigningKeyEnv))
+	verifyKeys := ParsePaymentResumeVerifyKeys(
+		os.Getenv(paymentResumeVerifyKeysEnv),
+		os.Getenv(paymentResumeLegacySigningKeyEnv),
+	)
+	for _, key := range legacyKeys {
+		if len(key) > 0 {
+			if len(signingKey) == 0 {
+				signingKey = key
+			}
+			verifyKeys = append(verifyKeys, key)
+		}
+	}
+	return NewPaymentResumeService(
+		signingKey,
+		verifyKeys...,
+	)
 }
 
 func ParsePaymentResumeSigningKey(raw string) []byte {
@@ -294,6 +322,21 @@ func ParsePaymentResumeSigningKey(raw string) []byte {
 		}
 	}
 	return []byte(raw)
+}
+
+func ParsePaymentResumeVerifyKeys(values ...string) [][]byte {
+	var keys [][]byte
+	for _, value := range values {
+		for _, part := range strings.FieldsFunc(value, func(r rune) bool {
+			return r == ',' || r == '\n' || r == ';'
+		}) {
+			key := ParsePaymentResumeSigningKey(part)
+			if len(key) > 0 {
+				keys = append(keys, key)
+			}
+		}
+	}
+	return keys
 }
 
 func psSliceContains(sl []string, s string) bool {

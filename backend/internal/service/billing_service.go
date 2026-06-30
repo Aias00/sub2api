@@ -238,11 +238,24 @@ func (s *BillingService) initFallbackPricing() {
 		SupportsCacheBreakdown:     false,
 	}
 
-	// Claude 4.6 Opus (与4.5同价)
-	s.fallbackPrices["claude-opus-4.6"] = s.fallbackPrices["claude-opus-4.5"]
+	// Claude 4.6 Opus (与4.5同价，但必须独立拷贝以避免共享指针被意外修改)
+	s.fallbackPrices["claude-opus-4.6"] = &ModelPricing{
+		InputPricePerToken:         s.fallbackPrices["claude-opus-4.5"].InputPricePerToken,
+		OutputPricePerToken:        s.fallbackPrices["claude-opus-4.5"].OutputPricePerToken,
+		CacheCreationPricePerToken: s.fallbackPrices["claude-opus-4.5"].CacheCreationPricePerToken,
+		CacheReadPricePerToken:     s.fallbackPrices["claude-opus-4.5"].CacheReadPricePerToken,
+		SupportsCacheBreakdown:     s.fallbackPrices["claude-opus-4.5"].SupportsCacheBreakdown,
+	}
 
-	// Claude 4.7 Opus (暂与4.6同价，待官方定价更新)
-	s.fallbackPrices["claude-opus-4.7"] = s.fallbackPrices["claude-opus-4.6"]
+	// Claude 4.7 Opus (暂与4.6同价，独立拷贝)
+	opus46 := s.fallbackPrices["claude-opus-4.6"]
+	s.fallbackPrices["claude-opus-4.7"] = &ModelPricing{
+		InputPricePerToken:         opus46.InputPricePerToken,
+		OutputPricePerToken:        opus46.OutputPricePerToken,
+		CacheCreationPricePerToken: opus46.CacheCreationPricePerToken,
+		CacheReadPricePerToken:     opus46.CacheReadPricePerToken,
+		SupportsCacheBreakdown:     opus46.SupportsCacheBreakdown,
+	}
 
 	// Gemini 3.1 Pro
 	s.fallbackPrices["gemini-3.1-pro"] = &ModelPricing{
@@ -267,8 +280,21 @@ func (s *BillingService) initFallbackPricing() {
 		LongContextInputMultiplier:     openAIGPT54LongContextInputMultiplier,
 		LongContextOutputMultiplier:    openAIGPT54LongContextOutputMultiplier,
 	}
-	// GPT-5.5 暂无独立定价，回退到 GPT-5.4
-	s.fallbackPrices["gpt-5.5"] = s.fallbackPrices["gpt-5.4"]
+	// GPT-5.5 暂无独立定价，回退到 GPT-5.4（独立拷贝）
+	gpt54 := s.fallbackPrices["gpt-5.4"]
+	s.fallbackPrices["gpt-5.5"] = &ModelPricing{
+		InputPricePerToken:             gpt54.InputPricePerToken,
+		InputPricePerTokenPriority:     gpt54.InputPricePerTokenPriority,
+		OutputPricePerToken:            gpt54.OutputPricePerToken,
+		OutputPricePerTokenPriority:    gpt54.OutputPricePerTokenPriority,
+		CacheCreationPricePerToken:     gpt54.CacheCreationPricePerToken,
+		CacheReadPricePerToken:         gpt54.CacheReadPricePerToken,
+		CacheReadPricePerTokenPriority: gpt54.CacheReadPricePerTokenPriority,
+		SupportsCacheBreakdown:         gpt54.SupportsCacheBreakdown,
+		LongContextInputThreshold:      gpt54.LongContextInputThreshold,
+		LongContextInputMultiplier:     gpt54.LongContextInputMultiplier,
+		LongContextOutputMultiplier:    gpt54.LongContextOutputMultiplier,
+	}
 
 	s.fallbackPrices["gpt-5.4-mini"] = &ModelPricing{
 		InputPricePerToken:     7.5e-7,
@@ -418,22 +444,23 @@ func (s *BillingService) GetModelPricingWithChannel(model string, channelPricing
 	if channelPricing == nil {
 		return pricing, nil
 	}
+	// Clone before mutating: GetModelPricing may return a pointer into
+	// fallbackPrices (alias-shared across models). Without cloning, a channel
+	// override would permanently corrupt the shared in-memory pricing.
+	cloned := *pricing
+	pricing = &cloned
+
 	if channelPricing.InputPrice != nil {
 		pricing.InputPricePerToken = *channelPricing.InputPrice
-		pricing.InputPricePerTokenPriority = *channelPricing.InputPrice
 	}
 	if channelPricing.OutputPrice != nil {
 		pricing.OutputPricePerToken = *channelPricing.OutputPrice
-		pricing.OutputPricePerTokenPriority = *channelPricing.OutputPrice
 	}
 	if channelPricing.CacheWritePrice != nil {
 		pricing.CacheCreationPricePerToken = *channelPricing.CacheWritePrice
-		pricing.CacheCreation5mPrice = *channelPricing.CacheWritePrice
-		pricing.CacheCreation1hPrice = *channelPricing.CacheWritePrice
 	}
 	if channelPricing.CacheReadPrice != nil {
 		pricing.CacheReadPricePerToken = *channelPricing.CacheReadPrice
-		pricing.CacheReadPricePerTokenPriority = *channelPricing.CacheReadPrice
 	}
 	if channelPricing.ImageOutputPrice != nil {
 		pricing.ImageOutputPricePerToken = *channelPricing.ImageOutputPrice

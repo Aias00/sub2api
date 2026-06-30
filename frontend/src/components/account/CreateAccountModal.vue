@@ -3590,7 +3590,7 @@ adminAPI.settings.getWebSearchEmulationConfig().then(cfg => {
 
 loadQuotaNotifyGlobal()
 const mixedScheduling = ref(false) // For antigravity accounts: enable mixed scheduling
-const allowOverages = ref(false) // For antigravity accounts: enable AI Credits overages
+const allowOverages = ref(false) // For antigravity accounts: enable AI Balance overages
 const antigravityAccountType = ref<'oauth' | 'upstream'>('oauth') // For antigravity: oauth or upstream
 const upstreamBaseUrl = ref('') // For upstream type: base URL
 const upstreamApiKey = ref('') // For upstream type: API key

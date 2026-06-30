@@ -16,10 +16,10 @@ const configuredCreditsShellConfig = vi.hoisted(() => JSON.stringify({
     labels: {
       eyebrow: 'Configured eyebrow',
       title: 'Wallet overview',
-      description: 'Configured credits copy.',
+      description: 'Configured balance copy.',
       purchase: 'Buy balance',
       orders: 'Billing history',
-      credits: 'Configured credits',
+      credits: 'Configured balance',
       sub2apiBalance: 'Configured balance',
       balanceLabel: 'Configured balance: {balance}',
       actionsTitle: 'Configured actions',
@@ -65,6 +65,12 @@ vi.mock('@/i18n', () => ({
   getLocale: () => currentLocale.value,
 }))
 
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => key,
+  }),
+}))
+
 describe('CreditsView', () => {
   beforeEach(() => {
     fetchPublicSettings.mockReset()
@@ -79,7 +85,7 @@ describe('CreditsView', () => {
     }
   })
 
-  it('renders credits shell labels from public settings', async () => {
+  it('renders balance shell labels from public settings', async () => {
     const wrapper = mount(CreditsView, {
       global: {
         stubs: {
@@ -96,16 +102,16 @@ describe('CreditsView', () => {
 
     expect(wrapper.text()).toContain('Configured eyebrow')
     expect(wrapper.text()).toContain('Wallet overview')
-    expect(wrapper.text()).toContain('Configured credits copy.')
+    expect(wrapper.text()).toContain('Configured balance copy.')
     expect(wrapper.text()).toContain('Buy balance')
     expect(wrapper.text()).toContain('Billing history')
-    expect(wrapper.text()).toContain('Configured credits')
-    expect(wrapper.text()).toContain('30')
+    expect(wrapper.text()).toContain('Configured balance')
+    expect(wrapper.text()).toContain('2.50')
     expect(wrapper.text()).toContain('Configured balance')
     expect(wrapper.text()).toContain('€2.50')
     expect(wrapper.text()).not.toContain('$2.50')
     expect(wrapper.text()).toContain('Configured balance: 2.50')
-    expect(wrapper.text()).toContain('Configured conversion: 12 to 1.')
+    expect(wrapper.text()).toContain('Configured conversion: 1 to 1.')
     expect(wrapper.text()).toContain('Configured action block')
     expect(wrapper.text()).toContain('Configured action block description.')
     expect(wrapper.text()).toContain('Configured recharge button')
@@ -119,13 +125,13 @@ describe('CreditsView', () => {
   it('does not embed default credits shell copy in the Vue view', () => {
     expect(creditsViewSource).not.toContain('EMPTY_CREDITS_COPY')
     expect(creditsViewSource).not.toContain('DEFAULT_CREDITS_COPY')
-    expect(creditsViewSource).not.toContain("title: '积分余额'")
-    expect(creditsViewSource).not.toContain("purchase: '购买积分'")
+    expect(creditsViewSource).not.toContain("title: '余额'")
+    expect(creditsViewSource).not.toContain("purchase: '购买余额'")
     expect(creditsViewSource).not.toContain("orders: '订单记录'")
     expect(creditsViewSource).not.toContain("recharge: '去充值'")
     expect(creditsViewSource).not.toContain("viewOrders: '查看订单'")
-    expect(creditsViewSource).not.toContain("title: 'Credit Balance'")
-    expect(creditsViewSource).not.toContain("purchase: 'Purchase credits'")
+    expect(creditsViewSource).not.toContain("title: 'Balance'")
+    expect(creditsViewSource).not.toContain("purchase: 'Recharge balance'")
     expect(creditsViewSource).not.toContain("orders: 'Orders'")
     expect(creditsViewSource).not.toContain("recharge: 'Recharge'")
     expect(creditsViewSource).not.toContain("viewOrders: 'View orders'")

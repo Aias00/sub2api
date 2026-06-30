@@ -305,7 +305,7 @@ func buildPromptCatalogWhere(filters service.PromptCatalogListFilters) (string, 
 		addClause("featured = $%d", *filters.Featured)
 	}
 	if filters.HasImage != nil {
-		imageClause := `(NULLIF(image_url, '') IS NOT NULL OR NULLIF(image_thumb_url, '') IS NOT NULL OR NULLIF(image_preview_url, '') IS NOT NULL OR NULLIF(image_original_url, '') IS NOT NULL OR jsonb_array_length(image_urls) > 0)`
+		imageClause := `(NULLIF(image_url, '') IS NOT NULL OR NULLIF(image_thumb_url, '') IS NOT NULL OR NULLIF(image_preview_url, '') IS NOT NULL OR NULLIF(image_original_url, '') IS NOT NULL OR COALESCE(jsonb_array_length(image_urls), 0) > 0)`
 		if *filters.HasImage {
 			clauses = append(clauses, imageClause)
 		} else {
@@ -345,7 +345,7 @@ SELECT
 	styles,
 	scenes,
 	import_source,
-	raw_json::text,
+	COALESCE(raw_json::text, '{}'),
 	status,
 	imported_at,
 	created_at,

@@ -2,7 +2,7 @@
   <div class="space-y-6">
     <section
       data-testid="profile-overview-hero"
-      class="card overflow-hidden border border-primary-100/80 bg-gradient-to-br from-primary-50 via-white to-amber-50/70 dark:border-primary-900/40 dark:from-primary-950/40 dark:via-dark-900 dark:to-dark-950"
+      class="card overflow-hidden border border-sky-100/80 bg-gradient-to-br from-sky-50 via-white to-blue-50/70 dark:border-sky-900/40 dark:from-sky-950/40 dark:via-dark-900 dark:to-dark-950"
     >
       <div class="px-6 py-6 md:px-8">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-start">

@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 	"time"
 
@@ -27,6 +28,10 @@ type userRepoStub struct {
 	getByEmailErr error
 }
 
+func userRepoStubSourceKey(email string, signupSource string) string {
+	return strings.ToLower(strings.TrimSpace(email)) + "\x00" + strings.ToLower(strings.TrimSpace(signupSource))
+}
+
 func (s *userRepoStub) Create(ctx context.Context, user *User) error {
 	if s.createErr != nil {
 		return s.createErr
@@ -39,6 +44,7 @@ func (s *userRepoStub) Create(ctx context.Context, user *User) error {
 		s.usersByEmail = make(map[string]*User)
 	}
 	s.usersByEmail[user.Email] = user
+	s.usersByEmail[userRepoStubSourceKey(user.Email, user.SignupSource)] = user
 	s.user = user
 	return nil
 }
@@ -61,8 +67,27 @@ func (s *userRepoStub) GetByEmail(ctx context.Context, email string) (*User, err
 		if user, ok := s.usersByEmail[email]; ok {
 			return user, nil
 		}
+		if user, ok := s.usersByEmail[strings.ToLower(strings.TrimSpace(email))]; ok {
+			return user, nil
+		}
 	}
 	if s.user != nil && s.user.Email == email {
+		return s.user, nil
+	}
+	return nil, ErrUserNotFound
+}
+
+func (s *userRepoStub) GetByEmailAndSignupSource(ctx context.Context, email string, signupSource string) (*User, error) {
+	if s.getByEmailErr != nil {
+		return nil, s.getByEmailErr
+	}
+	if s.usersByEmail != nil {
+		if user, ok := s.usersByEmail[userRepoStubSourceKey(email, signupSource)]; ok {
+			return user, nil
+		}
+	}
+	if s.user != nil && strings.EqualFold(strings.TrimSpace(s.user.Email), strings.TrimSpace(email)) &&
+		strings.EqualFold(strings.TrimSpace(s.user.SignupSource), strings.TrimSpace(signupSource)) {
 		return s.user, nil
 	}
 	return nil, ErrUserNotFound
@@ -78,6 +103,7 @@ func (s *userRepoStub) Update(ctx context.Context, user *User) error {
 		s.usersByEmail = make(map[string]*User)
 	}
 	s.usersByEmail[user.Email] = user
+	s.usersByEmail[userRepoStubSourceKey(user.Email, user.SignupSource)] = user
 	s.user = user
 	return nil
 }
@@ -139,6 +165,20 @@ func (s *userRepoStub) ExistsByEmail(ctx context.Context, email string) (bool, e
 		return false, s.existsErr
 	}
 	return s.exists, nil
+}
+
+func (s *userRepoStub) ExistsByEmailAndSignupSource(ctx context.Context, email string, signupSource string) (bool, error) {
+	if s.existsErr != nil {
+		return false, s.existsErr
+	}
+	if s.exists {
+		return true, nil
+	}
+	if s.usersByEmail != nil {
+		_, ok := s.usersByEmail[userRepoStubSourceKey(email, signupSource)]
+		return ok, nil
+	}
+	return false, nil
 }
 
 func (s *userRepoStub) RemoveGroupFromAllowedGroups(ctx context.Context, groupID int64) (int64, error) {

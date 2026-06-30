@@ -8,15 +8,23 @@
   >
     <!-- Logo/Brand -->
     <div class="sidebar-header" :class="{ 'sidebar-header-collapsed': sidebarCollapsed }">
-      <!-- Custom Logo or Default Logo -->
-      <div v-if="settingsLoaded && siteLogo" class="sidebar-logo flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-glow">
-        <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
-      </div>
-      <div class="sidebar-brand" :class="{ 'sidebar-brand-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">
-        <span class="sidebar-brand-title text-lg font-bold text-gray-900 dark:text-white">
-          {{ siteName }}
-        </span>
-      </div>
+      <router-link
+        :to="authRouteDefaults.homePath"
+        class="sidebar-home-link"
+        :class="{ 'sidebar-home-link-collapsed': sidebarCollapsed }"
+        :aria-label="siteName"
+        @click="closeMobile"
+      >
+        <!-- Custom Logo or Default Logo -->
+        <div v-if="settingsLoaded && siteLogo" class="sidebar-logo flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl shadow-glow">
+          <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
+        </div>
+        <div class="sidebar-brand" :class="{ 'sidebar-brand-collapsed': sidebarCollapsed }" :aria-hidden="sidebarCollapsed ? 'true' : 'false'">
+          <span class="sidebar-brand-title text-lg font-bold text-gray-900 dark:text-white">
+            {{ siteName }}
+          </span>
+        </div>
+      </router-link>
     </div>
 
     <!-- Navigation -->
@@ -623,6 +631,56 @@ const PriceTagIcon = {
     )
 }
 
+const PromptIcon = {
+  render: () =>
+    h(
+      'svg',
+      { fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '1.5' },
+      [
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          d: 'M8.25 6.75h7.5M8.25 10.5h7.5M8.25 14.25h4.5M5.25 3.75h13.5A2.25 2.25 0 0121 6v10.5a2.25 2.25 0 01-2.25 2.25H9l-4.125 2.475A.75.75 0 013.75 20.58V6A2.25 2.25 0 016 3.75z'
+        })
+      ]
+    )
+}
+
+const ImageIcon = {
+  render: () =>
+    h(
+      'svg',
+      { fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '1.5' },
+      [
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          d: 'M3.75 6A2.25 2.25 0 016 3.75h12A2.25 2.25 0 0120.25 6v12A2.25 2.25 0 0118 20.25H6A2.25 2.25 0 013.75 18V6z'
+        }),
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          d: 'M3.75 16.5l4.72-4.72a1.5 1.5 0 012.12 0l2.66 2.66 1.22-1.22a1.5 1.5 0 012.12 0l3.66 3.66M14.25 8.25h.008v.008h-.008V8.25z'
+        })
+      ]
+    )
+}
+
+const FlameIcon = {
+  render: () =>
+    h(
+      'svg',
+      { fill: 'none', viewBox: '0 0 24 24', stroke: 'currentColor', 'stroke-width': '1.5' },
+      [
+        h('path', {
+          'stroke-linecap': 'round',
+          'stroke-linejoin': 'round',
+          d: 'M15.36 5.64c.58 1.96.26 3.64-.97 5.04-.6.69-1.05 1.36-1.34 2.02-.36-1.85-1.27-3.29-2.72-4.34-2.56 2.23-3.84 4.66-3.84 7.28 0 3.18 2.38 5.61 5.51 5.61s5.51-2.43 5.51-5.61c0-3.04-1.5-6.37-2.15-10z'
+        })
+      ]
+    )
+}
+
 const ChevronDownIcon = {
   render: () =>
     h(
@@ -666,6 +724,11 @@ const customMenuItemsForAdmin = computed(() => {
 function buildSelfNavItemMap(withDashboard: boolean): Partial<Record<SelfSidebarItemKey, NavItem>> {
   const navPaths = authRouteDefaults.value
   const itemMap: Partial<Record<SelfSidebarItemKey, NavItem>> = {
+    tasks: { path: '/tasks', label: t('nav.myTasks'), icon: OrderIcon },
+    promptCatalog: { path: '/prompts', label: t('nav.promptCatalog'), icon: PromptIcon },
+    imageGenerator: { path: '/image-generator', label: t('nav.imageGenerator'), icon: ImageIcon },
+    wechatExport: { path: '/wechat-export', label: t('nav.wechatExport'), icon: OrderListIcon },
+    hotTopics: { path: '/hot', label: t('nav.hotTopics'), icon: FlameIcon },
     apiKeys: { path: navPaths.apiKeysPath, label: t('nav.apiKeys'), icon: KeyIcon },
     usage: { path: navPaths.usagePath, label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     availableChannels: { path: navPaths.availableChannelsPath, label: t('nav.availableChannels'), icon: ChannelIcon, hideInSimpleMode: true, featureFlag: flagAvailableChannels },
@@ -710,6 +773,11 @@ const userNavSections = computed((): NavSection[] => {
       id: 'user-main',
       items: [
         'dashboard',
+        'tasks',
+        'promptCatalog',
+        'imageGenerator',
+        'wechatExport',
+        'hotTopics',
         'apiKeys',
         'usage',
         'availableChannels',
@@ -738,6 +806,11 @@ const personalNavSections = computed((): TitledNavSection[] => {
     {
       id: 'admin-personal',
       items: [
+        'tasks',
+        'promptCatalog',
+        'imageGenerator',
+        'wechatExport',
+        'hotTopics',
         'apiKeys',
         'usage',
         'availableChannels',
@@ -989,6 +1062,26 @@ onMounted(() => {
 .sidebar-logo {
   flex: 0 0 2.25rem;
   min-width: 2.25rem;
+}
+
+.sidebar-home-link {
+  display: flex;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: center;
+  gap: 0.75rem;
+  border-radius: 0.875rem;
+  outline: none;
+}
+
+.sidebar-home-link:focus-visible {
+  outline: 2px solid rgba(14, 165, 233, 0.65);
+  outline-offset: 4px;
+}
+
+.sidebar-home-link-collapsed {
+  justify-content: center;
+  gap: 0;
 }
 
 .sidebar-header-collapsed {

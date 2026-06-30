@@ -310,6 +310,7 @@ export interface PublicSettings {
   custom_endpoints: CustomEndpoint[]
   prompt_catalog_shell_config?: string
   workspace_shell_config?: string
+  image_prompt_filter_config?: string
   pricing_shell_config?: string
   payment_shell_config?: string
   pricing_currency_symbol?: string

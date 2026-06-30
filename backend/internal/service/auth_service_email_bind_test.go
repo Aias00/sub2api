@@ -725,6 +725,24 @@ func (s *emailBindRefreshTokenCacheStub) IsTokenInFamily(_ context.Context, fami
 	return ok, nil
 }
 
+func (s *emailBindRefreshTokenCacheStub) RemoveFromUserTokenSet(_ context.Context, userID int64, tokenHash string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.userSets[userID] != nil {
+		delete(s.userSets[userID], tokenHash)
+	}
+	return nil
+}
+
+func (s *emailBindRefreshTokenCacheStub) RemoveFromFamilyTokenSet(_ context.Context, familyID string, tokenHash string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.families[familyID] != nil {
+		delete(s.families[familyID], tokenHash)
+	}
+	return nil
+}
+
 type emailBindUserRepoStub struct {
 	mu           sync.Mutex
 	usersByID    map[int64]*service.User

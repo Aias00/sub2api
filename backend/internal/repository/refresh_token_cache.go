@@ -156,3 +156,13 @@ func (c *refreshTokenCache) IsTokenInFamily(ctx context.Context, familyID string
 	key := tokenFamilyKey(familyID)
 	return c.rdb.SIsMember(ctx, key, tokenHash).Result()
 }
+
+func (c *refreshTokenCache) RemoveFromUserTokenSet(ctx context.Context, userID int64, tokenHash string) error {
+	key := userRefreshTokensKey(userID)
+	return c.rdb.SRem(ctx, key, tokenHash).Err()
+}
+
+func (c *refreshTokenCache) RemoveFromFamilyTokenSet(ctx context.Context, familyID string, tokenHash string) error {
+	key := tokenFamilyKey(familyID)
+	return c.rdb.SRem(ctx, key, tokenHash).Err()
+}

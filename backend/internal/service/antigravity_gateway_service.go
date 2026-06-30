@@ -541,7 +541,7 @@ func (s *AntigravityGatewayService) handleSingleAccountRetryInPlace(
 
 // antigravityRetryLoop 执行带 URL fallback 的重试循环
 func (s *AntigravityGatewayService) antigravityRetryLoop(p antigravityRetryLoopParams) (*antigravityRetryLoopResult, error) {
-	// 预检查：模型限流 + overages 启用 + 积分未耗尽 → 直接注入 AI Credits
+	// 预检查：模型限流 + overages 启用 + 余额未耗尽 → 直接注入 AI Credits
 	overagesInjected := false
 	if p.requestedModel != "" && p.account.Platform == PlatformAntigravity &&
 		p.account.IsOveragesEnabled() && !p.account.isCreditsExhausted() &&
@@ -557,7 +557,7 @@ func (s *AntigravityGatewayService) antigravityRetryLoop(p antigravityRetryLoopP
 	// 预检查：如果账号已限流，直接返回切换信号
 	if p.requestedModel != "" {
 		if remaining := p.account.GetRateLimitRemainingTimeWithContext(p.ctx, p.requestedModel); remaining > 0 {
-			// 已注入积分的请求不再受普通模型限流预检查阻断。
+			// 已注入余额的请求不再受普通模型限流预检查阻断。
 			if overagesInjected {
 				logger.LegacyPrintf("service.antigravity_gateway", "%s pre_check: credits_injected_ignore_rate_limit remaining=%v model=%s account=%d",
 					p.prefix, remaining.Truncate(time.Millisecond), p.requestedModel, p.account.ID)

@@ -11,7 +11,7 @@
 
   <div
     v-else
-    class="relative min-h-screen overflow-x-hidden bg-white text-slate-900 dark:bg-dark-950 dark:text-white"
+    class="home-business-page relative min-h-screen overflow-x-hidden bg-white text-slate-900 dark:bg-dark-950 dark:text-white"
   >
     <div class="pointer-events-none absolute inset-0 overflow-hidden">
       <div class="absolute inset-x-0 top-0 h-[36rem] bg-[radial-gradient(circle_at_20%_60%,rgba(59,130,246,0.24),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(96,165,250,0.18),transparent_28%),linear-gradient(180deg,rgba(239,246,255,0.95),rgba(255,255,255,0.96))] dark:bg-[radial-gradient(circle_at_20%_60%,rgba(59,130,246,0.18),transparent_32%),radial-gradient(circle_at_80%_20%,rgba(96,165,250,0.12),transparent_28%),linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,1))]"></div>
@@ -22,16 +22,20 @@
 
     <header class="relative z-20 px-6 py-5">
       <nav class="mx-auto flex max-w-5xl items-center justify-between">
-        <div class="flex items-center gap-3">
-          <div v-if="siteLogo" class="h-9 w-9 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-900">
+        <router-link
+          :to="authRouteDefaults.homePath"
+          class="flex min-w-0 items-center gap-3 rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-400"
+          :aria-label="siteName"
+        >
+          <div v-if="siteLogo" class="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5">
             <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
           </div>
           <div class="flex items-center gap-2">
-            <span class="text-sm font-semibold text-slate-900 dark:text-white">{{ siteName }}</span>
+            <span data-home-nav-text class="truncate text-sm font-semibold leading-none text-slate-900 dark:text-white">{{ siteName }}</span>
           </div>
-        </div>
+        </router-link>
 
-        <div class="hidden items-center gap-8 text-xs font-medium tracking-[0.12em] text-slate-500 lg:flex">
+        <div data-home-nav-text class="hidden items-center gap-8 text-sm font-semibold leading-none text-slate-500 lg:flex">
           <template v-for="item in navItems" :key="item.label">
             <DocsLink
               v-if="item.doc"
@@ -61,13 +65,16 @@
           <LocaleSwitcher />
           <DocsLink
             :doc-url="docUrl"
-            class="hidden rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-dark-700 dark:text-dark-200 dark:hover:border-dark-500 dark:hover:text-white sm:inline-flex"
+            data-home-nav-text
+            class="hidden h-10 items-center rounded-full border border-slate-200 px-5 text-sm font-semibold leading-none text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-dark-700 dark:text-dark-200 dark:hover:border-dark-500 dark:hover:text-white sm:inline-flex"
           >
             {{ copy.viewDocs }}
           </DocsLink>
           <router-link
             :to="isAuthenticated ? dashboardPath : loginPath"
-            class="inline-flex items-center rounded-full border border-slate-900 bg-slate-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 dark:border-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
+            data-home-nav-text
+            data-home-primary-action
+            class="inline-flex h-10 items-center rounded-full border border-slate-900 bg-slate-900 px-5 text-sm font-semibold leading-none text-white transition hover:bg-slate-800 dark:border-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
           >
             {{ isAuthenticated ? copy.dashboard : copy.login }}
           </router-link>
@@ -76,44 +83,29 @@
     </header>
 
     <main class="relative z-10">
-      <section id="top" class="px-6 pb-28 pt-12 sm:pb-32 sm:pt-16">
-        <div class="mx-auto flex max-w-5xl flex-col items-center text-center">
-          <div class="mb-6 inline-flex items-center rounded-full border border-slate-300/80 bg-white/70 px-4 py-2 text-sm font-medium text-slate-700 backdrop-blur dark:border-dark-600 dark:bg-dark-900/70 dark:text-dark-100">
-            {{ copy.heroBadge }}
-          </div>
-          <h1 class="max-w-3xl text-balance text-5xl font-black tracking-tight text-slate-950 dark:text-white sm:text-6xl lg:text-7xl">
-            {{ copy.heroTitle }}
-          </h1>
-          <p class="mt-6 max-w-3xl text-balance text-base leading-8 text-slate-600 dark:text-dark-200 sm:text-lg">
-            {{ copy.heroDescription }}
-          </p>
-          <div class="mt-10 flex flex-col items-center gap-3 sm:flex-row">
-            <router-link
-              :to="isAuthenticated ? dashboardPath : loginPath"
-              class="inline-flex items-center rounded-full bg-slate-950 px-7 py-3 text-sm font-semibold text-white shadow-lg shadow-slate-900/10 transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
-            >
-              {{ isAuthenticated ? copy.dashboard : copy.primaryCta }}
-            </router-link>
-            <router-link
-              :to="homeLinks.modelsPath"
-              class="inline-flex items-center rounded-full border border-slate-300 bg-white/70 px-7 py-3 text-sm font-semibold text-slate-700 backdrop-blur transition hover:border-slate-400 hover:text-slate-950 dark:border-dark-600 dark:bg-dark-900/60 dark:text-dark-100 dark:hover:border-dark-400 dark:hover:text-white"
-            >
-              {{ copy.secondaryCta }}
-            </router-link>
+      <section id="top" class="px-6 pb-8 pt-8 sm:pb-10 sm:pt-10">
+        <div class="mx-auto max-w-6xl">
+          <div data-home-hero>
+            <h1 class="max-w-3xl text-balance text-5xl font-black tracking-tight text-slate-950 dark:text-white sm:text-6xl lg:text-7xl">
+              {{ copy.heroTitle }}
+            </h1>
+            <p class="mt-6 max-w-2xl text-balance text-base leading-8 text-slate-600 dark:text-dark-200 sm:text-lg">
+              {{ copy.heroDescription }}
+            </p>
           </div>
         </div>
       </section>
 
-      <section id="models" class="px-6 py-12 sm:py-16">
-        <div class="mx-auto max-w-5xl">
-          <div class="text-center">
+      <section :id="isBusinessHome ? 'capabilities' : 'models'" class="px-6 pb-16 pt-4 sm:pb-20 sm:pt-6">
+        <div class="mx-auto max-w-6xl">
+          <div v-if="!isBusinessHome" class="text-center">
             <p class="text-sm font-medium uppercase tracking-[0.2em] text-sky-600 dark:text-sky-400">
               {{ copy.modelMatrixKicker }}
             </p>
             <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
               {{ copy.modelMatrixTitle }}
             </h2>
-            <p class="mx-auto mt-4 max-w-xl text-sm leading-7 text-slate-500 dark:text-dark-300 sm:text-base">
+            <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-500 dark:text-dark-300 sm:text-base" :class="isBusinessHome ? '' : 'mx-auto'">
               {{ copy.modelMatrixDescription }}
             </p>
           </div>
@@ -125,27 +117,48 @@
           <div
             v-if="isBusinessHome"
             data-home-model-grid
-            class="mt-12 grid gap-5 lg:grid-cols-2"
+            data-home-capability-grid
+            class="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
           >
             <article
               v-for="card in businessCards"
               :key="card.key"
-              class="rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_12px_50px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_18px_65px_rgba(15,23,42,0.08)] dark:border-dark-700 dark:bg-dark-900 dark:shadow-none"
+              class="flex min-h-[22rem] flex-col rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_12px_50px_rgba(15,23,42,0.05)] transition dark:border-dark-700 dark:bg-dark-900 dark:shadow-none"
+              :class="businessCardDisabled(card) ? 'opacity-70' : 'hover:-translate-y-1 hover:shadow-[0_18px_65px_rgba(15,23,42,0.08)]'"
             >
               <div class="flex items-start justify-between gap-4">
                 <div>
-                  <p class="text-sm font-medium uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400">
+                  <p class="text-xs font-black uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400">
                     {{ card.badge }}
                   </p>
-                  <h3 class="mt-3 text-2xl font-bold text-slate-950 dark:text-white">
+                  <h3 class="mt-3 text-2xl font-black leading-tight text-slate-950 dark:text-white">
                     {{ card.title }}
                   </h3>
                 </div>
-                <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-sm font-bold text-white">
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-slate-950 text-base font-black text-white dark:bg-white dark:text-slate-950">
                   {{ card.title[0] }}
                 </div>
               </div>
-              <p class="mt-4 max-w-xl text-sm leading-7 text-slate-500 dark:text-dark-300">
+              <span
+                v-if="card.statusLabel"
+                class="mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-bold"
+                :class="businessCardStatusClass(card)"
+              >
+                {{ card.statusLabel }}
+              </span>
+              <span
+                v-if="businessCardCountLabel(card)"
+                class="ml-2 mt-4 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-300"
+              >
+                {{ businessCardCountLabel(card) }}
+              </span>
+              <p
+                v-if="card.statusMessage"
+                class="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100"
+              >
+                {{ card.statusMessage }}
+              </p>
+              <p class="mt-4 max-w-xl text-sm leading-7 text-slate-500 dark:text-dark-300 sm:text-[0.9375rem]">
                 {{ card.description }}
               </p>
               <div class="mt-6 flex flex-wrap gap-2">
@@ -158,37 +171,43 @@
                 </span>
               </div>
               <router-link
-                v-if="card.path && card.pathLabel"
+                v-if="!businessCardDisabled(card) && card.path && card.pathLabel"
                 :to="card.path"
-                class="mt-6 inline-flex items-center rounded-full border border-slate-300 bg-white/70 px-4 py-2 text-sm font-semibold text-slate-700 backdrop-blur transition hover:border-slate-400 hover:text-slate-950 dark:border-dark-600 dark:bg-dark-900/60 dark:text-dark-100 dark:hover:border-dark-400 dark:hover:text-white"
+                class="mt-auto inline-flex items-center justify-center rounded-full border border-slate-300 bg-white/70 px-5 py-2.5 text-sm font-semibold text-slate-700 backdrop-blur transition hover:border-slate-400 hover:text-slate-950 dark:border-dark-600 dark:bg-dark-900/60 dark:text-dark-100 dark:hover:border-dark-400 dark:hover:text-white"
               >
                 {{ card.pathLabel }}
               </router-link>
+              <span
+                v-else-if="card.pathLabel"
+                class="mt-auto inline-flex cursor-not-allowed items-center justify-center rounded-full border border-slate-200 bg-slate-50 px-5 py-2.5 text-sm font-semibold text-slate-400 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-400"
+              >
+                {{ card.pathLabel }}
+              </span>
             </article>
           </div>
 
           <div
             v-else
             data-home-model-grid
-            class="mt-12 grid gap-5"
+            class="mt-14 grid gap-6"
             :class="modelGridClass"
           >
             <article
               v-for="family in visibleModelFamilies"
               :key="family.key"
-              class="rounded-[28px] border border-slate-200 bg-white p-7 shadow-[0_12px_50px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_18px_65px_rgba(15,23,42,0.08)] dark:border-dark-700 dark:bg-dark-900 dark:shadow-none"
+              class="rounded-[28px] border border-slate-200 bg-white p-8 shadow-[0_12px_50px_rgba(15,23,42,0.05)] transition hover:-translate-y-1 hover:shadow-[0_18px_65px_rgba(15,23,42,0.08)] dark:border-dark-700 dark:bg-dark-900 dark:shadow-none"
             >
               <div class="flex items-start justify-between gap-4">
                 <div>
                   <p class="text-sm font-medium uppercase tracking-[0.18em] text-sky-600 dark:text-sky-400">
                     {{ familyBadge(family.key) }}
                   </p>
-                  <h3 class="mt-3 text-2xl font-bold text-slate-950 dark:text-white">
+                  <h3 class="mt-3 text-2xl font-bold text-slate-950 dark:text-white sm:text-3xl">
                     {{ family.name }}
                   </h3>
                 </div>
                 <div
-                  class="flex h-12 w-12 items-center justify-center rounded-2xl text-sm font-bold text-white"
+                  class="flex h-14 w-14 items-center justify-center rounded-2xl text-base font-bold text-white"
                   :class="familyIconClass(family.key)"
                 >
                   {{ family.name[0] }}
@@ -197,7 +216,7 @@
               <p class="mt-6 text-sm font-semibold text-slate-800 dark:text-dark-100">
                 {{ familyTagline(family.key) }}
               </p>
-              <p class="mt-2 max-w-xs text-sm leading-7 text-slate-500 dark:text-dark-300">
+              <p class="mt-2 max-w-xs text-sm leading-7 text-slate-500 dark:text-dark-300 sm:text-[0.9375rem]">
                 {{ family.models.length > 0 ? familyDescription(family.key) : copy.modelMatrixEmptyCard }}
               </p>
               <div v-if="family.models.length > 0" class="mt-6 flex flex-wrap gap-2">
@@ -219,59 +238,63 @@
         </div>
       </section>
 
-      <section class="border-y border-sky-100/80 bg-sky-50/70 px-6 py-24 dark:border-dark-800 dark:bg-dark-950/50">
-        <div id="experience" class="mx-auto max-w-5xl">
-          <div class="text-center">
+      <section v-if="!isBusinessHome" class="border-y border-sky-100/80 bg-sky-50/70 px-6 py-20 dark:border-dark-800 dark:bg-dark-950/50">
+        <div id="experience" class="mx-auto grid max-w-6xl gap-12 lg:grid-cols-[0.85fr_1.15fr] lg:items-start">
+          <div>
             <p class="text-sm font-medium uppercase tracking-[0.2em] text-sky-600 dark:text-sky-400">
               {{ copy.experienceKicker }}
             </p>
             <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
               {{ copy.experienceTitle }}
             </h2>
-            <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-500 dark:text-dark-300 sm:text-base">
+            <p class="mt-4 max-w-xl text-sm leading-7 text-slate-500 dark:text-dark-300 sm:text-base">
               {{ copy.experienceDescription }}
             </p>
           </div>
 
-          <div class="mt-12 grid gap-5 md:grid-cols-2 xl:grid-cols-4">
+          <div class="grid gap-4 md:grid-cols-3 lg:grid-cols-1">
             <article
               v-for="feature in experienceCards"
               :key="feature.title"
-              class="rounded-[24px] border border-white/90 bg-white/85 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur dark:border-dark-800 dark:bg-dark-900/80 dark:shadow-none"
+              class="rounded-[20px] border border-white/90 bg-white/85 p-5 shadow-[0_10px_30px_rgba(15,23,42,0.04)] backdrop-blur dark:border-dark-800 dark:bg-dark-900/80 dark:shadow-none"
             >
-              <div
-                v-if="feature.icon"
-                class="flex h-12 w-12 items-center justify-center rounded-2xl text-white"
-                :class="feature.iconClass"
-              >
-                <Icon :name="feature.icon" size="lg" />
+              <div class="flex items-start gap-4">
+                <div
+                  v-if="feature.icon"
+                  class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-white"
+                  :class="feature.iconClass"
+                >
+                  <Icon :name="feature.icon" size="lg" />
+                </div>
+                <div>
+                  <h3 class="text-base font-bold text-slate-950 dark:text-white">{{ feature.title }}</h3>
+                  <p class="mt-2 text-sm leading-7 text-slate-500 dark:text-dark-300">{{ feature.description }}</p>
+                </div>
               </div>
-              <h3 class="mt-5 text-lg font-bold text-slate-950 dark:text-white">{{ feature.title }}</h3>
-              <p class="mt-3 text-sm leading-7 text-slate-500 dark:text-dark-300">{{ feature.description }}</p>
             </article>
           </div>
 
-          <div class="mt-24 text-center">
+          <div class="lg:col-span-2">
             <p class="text-sm font-medium uppercase tracking-[0.2em] text-sky-600 dark:text-sky-400">
               {{ copy.whyChooseKicker }}
             </p>
-            <h2 class="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-white sm:text-4xl">
+            <h2 class="mt-3 text-2xl font-black tracking-tight text-slate-950 dark:text-white sm:text-3xl">
               {{ copy.whyChooseTitle }}
             </h2>
-            <p class="mx-auto mt-4 max-w-2xl text-sm leading-7 text-slate-500 dark:text-dark-300 sm:text-base">
+            <p class="mt-4 max-w-2xl text-sm leading-7 text-slate-500 dark:text-dark-300 sm:text-base">
               {{ copy.whyChooseDescription }}
             </p>
-          </div>
 
-          <div class="mt-10 grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-            <article
-              v-for="point in whyChooseCards"
-              :key="point.title"
-              class="rounded-[24px] border border-white/90 bg-white/80 p-5 backdrop-blur dark:border-dark-800 dark:bg-dark-900/80"
-            >
-              <h3 class="text-lg font-semibold text-slate-950 dark:text-white">{{ point.title }}</h3>
-              <p class="mt-3 text-sm leading-7 text-slate-500 dark:text-dark-300">{{ point.description }}</p>
-            </article>
+            <div class="mt-8 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+              <article
+                v-for="point in whyChooseCards"
+                :key="point.title"
+                class="border-t border-slate-200 pt-4 dark:border-dark-800"
+              >
+                <h3 class="text-base font-semibold text-slate-950 dark:text-white">{{ point.title }}</h3>
+                <p class="mt-2 text-sm leading-7 text-slate-500 dark:text-dark-300">{{ point.description }}</p>
+              </article>
+            </div>
           </div>
         </div>
       </section>
@@ -323,16 +346,23 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useAppStore } from '@/stores'
 import DocsLink from '@/components/common/DocsLink.vue'
 import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
+import {
+  HOME_BUSINESS_CAPABILITY_STATUS_UNAVAILABLE,
+  probeHomeBusinessCapabilities,
+  type HomeBusinessCapabilityStatusMap,
+} from '@/api/home-business-capabilities'
 import { paymentAPI } from '@/api/payment'
 import type { HomeCatalogResponse } from '@/types/payment'
 import {
+  applyBusinessHomeCardRuntimeStatuses,
+  resolveBusinessHomeCardsForRoutes,
   resolveBusinessHomeShellConfig,
   resolveHomeShellConfig,
   type HomeBusinessCard,
@@ -343,6 +373,7 @@ import { buildHomeModelFamilies } from '@/views/home/homeCatalog'
 
 const { locale } = useI18n()
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const appStore = useAppStore()
 const { authRouteDefaults, resolveHomePath } = useAuthRouteDefaults()
@@ -367,7 +398,15 @@ const shellConfig = computed(() =>
 )
 const copy = computed<HomeShellCopy>(() => shellConfig.value.labels)
 const homeLinks = computed(() => shellConfig.value.defaults.links)
-const businessCards = computed<HomeBusinessCard[]>(() => shellConfig.value.businessCards)
+const businessRoutePaths = computed(() => router.getRoutes().map((item) => item.path))
+const businessCapabilityStatuses = ref<HomeBusinessCapabilityStatusMap>({})
+const businessCards = computed<HomeBusinessCard[]>(() =>
+  applyBusinessHomeCardRuntimeStatuses(
+    resolveBusinessHomeCardsForRoutes(shellConfig.value.businessCards, businessRoutePaths.value, homeLocale.value),
+    businessCapabilityStatuses.value,
+    homeLocale.value,
+  ).filter((card) => card.visible && card.status !== 'hidden'),
+)
 
 const isHomeContentUrl = computed(() => {
   const content = homeContent.value.trim()
@@ -380,12 +419,20 @@ const dashboardPath = computed(() => resolveHomePath(isAdmin.value))
 const loginPath = computed(() => authRouteDefaults.value.loginPath)
 const currentYear = computed(() => new Date().getFullYear())
 
-const navItems = computed(() => [
-  { href: homeLinks.value.homeAnchor, label: copy.value.navHome },
-  { doc: true, label: copy.value.navDocs },
-  { to: homeLinks.value.modelsPath, label: copy.value.navModels },
-  { href: homeLinks.value.experienceAnchor, label: copy.value.navExperience },
-])
+const navItems = computed(() => {
+  if (isBusinessHome.value) {
+    return [
+      { href: homeLinks.value.homeAnchor, label: copy.value.navHome },
+      { doc: true, label: copy.value.navDocs },
+    ]
+  }
+  return [
+    { href: homeLinks.value.homeAnchor, label: copy.value.navHome },
+    { doc: true, label: copy.value.navDocs },
+    { to: homeLinks.value.promptsPath, label: copy.value.navModels },
+    { href: homeLinks.value.experienceAnchor, label: copy.value.navExperience },
+  ]
+})
 
 const publicCatalog = ref<HomeCatalogResponse>(emptyCatalog)
 const catalogLoading = ref(false)
@@ -417,14 +464,14 @@ const footerSections = computed(() => [
     title: copy.value.footerProduct,
     items: [
       { label: copy.value.navHome, href: homeLinks.value.homeAnchor },
-      { label: copy.value.navModels, href: homeLinks.value.modelsPath },
+      { label: copy.value.navModels, href: homeLinks.value.promptsPath },
       { label: isAuthenticated.value ? copy.value.dashboard : copy.value.login, href: isAuthenticated.value ? dashboardPath.value : loginPath.value },
     ],
   },
   {
     title: copy.value.footerCatalog,
     items: [
-      { label: copy.value.navModels, href: homeLinks.value.modelsPath },
+      { label: copy.value.navModels, href: homeLinks.value.promptsPath },
       { label: copy.value.navExperience, href: homeLinks.value.experienceAnchor },
     ],
   },
@@ -471,6 +518,27 @@ function familyDescription(key: string): string {
   }
 }
 
+function businessCardDisabled(card: HomeBusinessCard) {
+  return card.disabled || card.status === 'disabled' || card.status === 'in_progress' || !card.path
+}
+
+function businessCardStatusClass(card: HomeBusinessCard) {
+  if (card.status === 'available' && !businessCardDisabled(card)) {
+    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100'
+  }
+  if (card.status === 'in_progress') {
+    return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100'
+  }
+  return 'border-slate-200 bg-slate-50 text-slate-500 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-300'
+}
+
+function businessCardCountLabel(card: HomeBusinessCard) {
+  if (!Number.isFinite(card.statusCount) || card.statusCount === undefined || card.statusCount <= 0) {
+    return ''
+  }
+  return new Intl.NumberFormat(homeLocale.value).format(card.statusCount)
+}
+
 function familyCapabilities(key: string): string[] {
   switch (key) {
     case 'claude':
@@ -514,10 +582,22 @@ async function loadPublicCatalog() {
   }
 }
 
+async function loadBusinessCapabilityStatuses() {
+  try {
+    businessCapabilityStatuses.value = await probeHomeBusinessCapabilities()
+  } catch (error) {
+    console.error('[home] failed to probe business capability statuses', error)
+    businessCapabilityStatuses.value = HOME_BUSINESS_CAPABILITY_STATUS_UNAVAILABLE
+  }
+}
+
 onMounted(() => {
   authStore.checkAuth()
   if (!appStore.publicSettingsLoaded) {
     appStore.fetchPublicSettings()
+  }
+  if (isBusinessHome.value) {
+    void loadBusinessCapabilityStatuses()
   }
   if (!homeContent.value.trim() && !isBusinessHome.value) {
     void loadPublicCatalog()

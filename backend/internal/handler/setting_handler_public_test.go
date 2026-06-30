@@ -126,9 +126,9 @@ func TestSettingHandler_GetPublicSettings_ExposesGenericRuntimeSettingAliases(t 
 			service.SettingKeyPricingDescription:         "Pricing description",
 			service.SettingKeyPricingShellConfig:         `{"zh":{"button":{"title":"选择"}}}`,
 			service.SettingKeyPricingCurrencySymbol:      "$",
-			service.SettingKeyCreditsTitle:               "Credits title",
-			service.SettingKeyCreditsDescription:         "Credits description",
-			service.SettingKeyCreditsPurchaseLabel:       "Buy credits",
+			service.SettingKeyCreditsTitle:               "Balance title",
+			service.SettingKeyCreditsDescription:         "Balance description",
+			service.SettingKeyCreditsPurchaseLabel:       "Buy balance",
 			service.SettingKeyCreditsBalanceLabel:        "Balance: {balance}",
 			service.SettingKeyCreditsPerBalance:          "12",
 			service.SettingKeyCreditsShellConfig:         `{"en":{"actions":{"title":"Balance actions"}}}`,
@@ -195,9 +195,9 @@ func TestSettingHandler_GetPublicSettings_ExposesGenericRuntimeSettingAliases(t 
 	require.Equal(t, `{"zh":{"button":{"title":"选择"}}}`, resp.Data.PricingShellConfig)
 	require.NotEmpty(t, resp.Data.PaymentShellConfig)
 	require.Equal(t, "$", resp.Data.PricingCurrencySymbol)
-	require.Equal(t, "Credits title", resp.Data.CreditsTitle)
-	require.Equal(t, "Credits description", resp.Data.CreditsDescription)
-	require.Equal(t, "Buy credits", resp.Data.CreditsPurchaseLabel)
+	require.Equal(t, "Balance title", resp.Data.CreditsTitle)
+	require.Equal(t, "Balance description", resp.Data.CreditsDescription)
+	require.Equal(t, "Buy balance", resp.Data.CreditsPurchaseLabel)
 	require.Equal(t, "Balance: {balance}", resp.Data.CreditsBalanceLabel)
 	require.Equal(t, "12", resp.Data.CreditsPerBalance)
 	require.Equal(t, `{"en":{"actions":{"title":"Balance actions"}}}`, resp.Data.CreditsShellConfig)
@@ -415,6 +415,8 @@ func TestSettingHandler_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *
 	h := NewSettingHandler(service.NewSettingService(&settingHandlerPublicRepoStub{
 		values: map[string]string{
 			service.SettingKeyWeChatConnectEnabled:             "true",
+			service.SettingKeyWeChatConnectOpenAppID:           "wx-open-app",
+			service.SettingKeyWeChatConnectOpenAppSecret:       "wx-open-secret",
 			service.SettingKeyWeChatConnectMPAppID:             "wx-mp-app",
 			service.SettingKeyWeChatConnectMPAppSecret:         "wx-mp-secret",
 			service.SettingKeyWeChatConnectMode:                "mp",

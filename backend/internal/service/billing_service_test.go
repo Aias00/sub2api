@@ -860,9 +860,10 @@ func TestGetModelPricingWithChannel_OverrideInputPriceOnly(t *testing.T) {
 	pricing, err := svc.GetModelPricingWithChannel("claude-sonnet-4", chPricing)
 	require.NoError(t, err)
 
-	// InputPrice overridden (both normal and priority)
+	// InputPrice 覆盖基础价格；priority 字段保留默认值（不因覆盖而清零）
 	require.InDelta(t, 99e-6, pricing.InputPricePerToken, 1e-12)
-	require.InDelta(t, 99e-6, pricing.InputPricePerTokenPriority, 1e-12)
+	// claude-sonnet-4 fallback 无 priority 价格，所以仍为 0
+	require.InDelta(t, 0, pricing.InputPricePerTokenPriority, 1e-12)
 
 	// OutputPrice unchanged (claude-sonnet-4 fallback = 15e-6)
 	require.InDelta(t, 15e-6, pricing.OutputPricePerToken, 1e-12)
@@ -877,9 +878,9 @@ func TestGetModelPricingWithChannel_OverrideOutputPriceOnly(t *testing.T) {
 	pricing, err := svc.GetModelPricingWithChannel("claude-sonnet-4", chPricing)
 	require.NoError(t, err)
 
-	// OutputPrice overridden
+	// OutputPrice 覆盖基础价格；priority 字段保留默认值
 	require.InDelta(t, 88e-6, pricing.OutputPricePerToken, 1e-12)
-	require.InDelta(t, 88e-6, pricing.OutputPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 0, pricing.OutputPricePerTokenPriority, 1e-12)
 
 	// InputPrice unchanged (claude-sonnet-4 fallback = 3e-6)
 	require.InDelta(t, 3e-6, pricing.InputPricePerToken, 1e-12)
@@ -899,14 +900,14 @@ func TestGetModelPricingWithChannel_OverrideAllFields(t *testing.T) {
 	require.NoError(t, err)
 
 	require.InDelta(t, 10e-6, pricing.InputPricePerToken, 1e-12)
-	require.InDelta(t, 10e-6, pricing.InputPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 0, pricing.InputPricePerTokenPriority, 1e-12) // claude-sonnet-4 fallback 无 priority 价格
 	require.InDelta(t, 20e-6, pricing.OutputPricePerToken, 1e-12)
-	require.InDelta(t, 20e-6, pricing.OutputPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 0, pricing.OutputPricePerTokenPriority, 1e-12) // claude-sonnet-4 fallback 无 priority 价格
 	require.InDelta(t, 5e-6, pricing.CacheCreationPricePerToken, 1e-12)
-	require.InDelta(t, 5e-6, pricing.CacheCreation5mPrice, 1e-12)
-	require.InDelta(t, 5e-6, pricing.CacheCreation1hPrice, 1e-12)
+	require.InDelta(t, 0, pricing.CacheCreation5mPrice, 1e-12) // claude-sonnet-4 fallback 无缓存分层
+	require.InDelta(t, 0, pricing.CacheCreation1hPrice, 1e-12) // claude-sonnet-4 fallback 无缓存分层
 	require.InDelta(t, 1e-6, pricing.CacheReadPricePerToken, 1e-12)
-	require.InDelta(t, 1e-6, pricing.CacheReadPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 0, pricing.CacheReadPricePerTokenPriority, 1e-12) // claude-sonnet-4 fallback 无 priority 价格
 	require.InDelta(t, 50e-6, pricing.ImageOutputPricePerToken, 1e-12)
 }
 
@@ -919,10 +920,10 @@ func TestGetModelPricingWithChannel_CacheWritePriceAffects5mAnd1h(t *testing.T) 
 	pricing, err := svc.GetModelPricingWithChannel("claude-sonnet-4", chPricing)
 	require.NoError(t, err)
 
-	// CacheWritePrice should set all three: CacheCreationPricePerToken, 5m, and 1h
+	// CacheWritePrice 设置基础缓存创建价格；5m/1h 分层价格保留默认值（claude-sonnet-4 fallback 为 0）
 	require.InDelta(t, 7e-6, pricing.CacheCreationPricePerToken, 1e-12)
-	require.InDelta(t, 7e-6, pricing.CacheCreation5mPrice, 1e-12)
-	require.InDelta(t, 7e-6, pricing.CacheCreation1hPrice, 1e-12)
+	require.InDelta(t, 0, pricing.CacheCreation5mPrice, 1e-12)
+	require.InDelta(t, 0, pricing.CacheCreation1hPrice, 1e-12)
 }
 
 func TestGetModelPricingWithChannel_CacheReadPriceAffectsPriority(t *testing.T) {
@@ -934,9 +935,9 @@ func TestGetModelPricingWithChannel_CacheReadPriceAffectsPriority(t *testing.T) 
 	pricing, err := svc.GetModelPricingWithChannel("claude-sonnet-4", chPricing)
 	require.NoError(t, err)
 
-	// CacheReadPrice should set both normal and priority
+	// CacheReadPrice 设置基础缓存读取价格；priority 字段保留默认值（claude-sonnet-4 fallback 为 0）
 	require.InDelta(t, 2e-6, pricing.CacheReadPricePerToken, 1e-12)
-	require.InDelta(t, 2e-6, pricing.CacheReadPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 0, pricing.CacheReadPricePerTokenPriority, 1e-12)
 }
 
 func TestGetModelPricingWithChannel_UnknownModelReturnsError(t *testing.T) {
@@ -949,4 +950,60 @@ func TestGetModelPricingWithChannel_UnknownModelReturnsError(t *testing.T) {
 	require.Error(t, err)
 	require.Nil(t, pricing)
 	require.Contains(t, err.Error(), "pricing not found")
+}
+
+// TestGetModelPricingWithChannel_PriorityTierPreservedAfterOverride 验证：
+// 当 channel 覆盖了基础价格后，priority 字段保留默认值，
+// 而不是被清零。对于有 priority 价格的模型，usePriorityServiceTierPricing
+// 仍然返回 true，使用原始 priority 价格而非 2x 倍率。
+// 对于 claude-sonnet-4 fallback（无 priority 价格），仍走倍率逻辑。
+func TestGetModelPricingWithChannel_PriorityTierPreservedAfterOverride(t *testing.T) {
+	svc := newTestBillingService()
+
+	// claude-sonnet-4 fallback 没有 priority 价格，覆盖后仍为 0
+	chPricing := &ChannelModelPricing{
+		InputPrice:     testPtrFloat64(2e-6),
+		OutputPrice:    testPtrFloat64(10e-6),
+		CacheReadPrice: testPtrFloat64(0.2e-6),
+	}
+	pricing, err := svc.GetModelPricingWithChannel("claude-sonnet-4", chPricing)
+	require.NoError(t, err)
+
+	// claude-sonnet-4 fallback 无 priority 价格，所以保留后仍为 0
+	require.InDelta(t, 0, pricing.InputPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 0, pricing.OutputPricePerTokenPriority, 1e-12)
+	require.InDelta(t, 0, pricing.CacheReadPricePerTokenPriority, 1e-12)
+
+	// 基础价格被覆盖
+	require.InDelta(t, 2e-6, pricing.InputPricePerToken, 1e-12)
+	require.InDelta(t, 10e-6, pricing.OutputPricePerToken, 1e-12)
+	require.InDelta(t, 0.2e-6, pricing.CacheReadPricePerToken, 1e-12)
+
+	// fallback 无 priority 价格 → usePriorityServiceTierPricing 返回 false → 走倍率
+	require.False(t, usePriorityServiceTierPricing("priority", pricing))
+}
+
+// TestGetModelPricingWithChannel_PreservesPriorityPricingFromBaseModel 验证：
+// 当底座模型有 priority 价格（如 gpt-5.4）时，channel 覆盖标准价格
+// 不应清零 priority 价格。priority 价格保留底座模型原值。
+func TestGetModelPricingWithChannel_PreservesPriorityPricingFromBaseModel(t *testing.T) {
+	svc := newTestBillingService()
+
+	// gpt-5.4 有明确的 priority 价格：InputPriority=5e-6, OutputPriority=30e-6, CacheReadPriority=0.5e-6
+	chPricing := &ChannelModelPricing{
+		InputPrice: testPtrFloat64(1.5e-6),
+	}
+	pricing, err := svc.GetModelPricingWithChannel("gpt-5.4", chPricing)
+	require.NoError(t, err)
+
+	// 标准价格被 channel 覆盖
+	require.InDelta(t, 1.5e-6, pricing.InputPricePerToken, 1e-12)
+
+	// priority 价格保留底座模型的值，不被清零
+	require.InDelta(t, 5e-6, pricing.InputPricePerTokenPriority, 1e-12, "InputPricePerTokenPriority should be preserved from base model")
+	require.InDelta(t, 30e-6, pricing.OutputPricePerTokenPriority, 1e-12, "OutputPricePerTokenPriority should be preserved from base model")
+	require.InDelta(t, 0.5e-6, pricing.CacheReadPricePerTokenPriority, 1e-12, "CacheReadPricePerTokenPriority should be preserved from base model")
+
+	// priority 价格存在 → usePriorityServiceTierPricing 返回 true → 走 priority 定价而非倍率
+	require.True(t, usePriorityServiceTierPricing("priority", pricing))
 }

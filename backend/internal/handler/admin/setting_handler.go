@@ -68,6 +68,340 @@ func optionalBool(value *bool, fallback bool) bool {
 	return *value
 }
 
+func requestHasSettingField(fields map[string]json.RawMessage, key string) bool {
+	_, ok := fields[key]
+	return ok
+}
+
+func defaultSubscriptionsToDTO(input []service.DefaultSubscriptionSetting) []dto.DefaultSubscriptionSetting {
+	if len(input) == 0 {
+		return nil
+	}
+	result := make([]dto.DefaultSubscriptionSetting, 0, len(input))
+	for _, sub := range input {
+		result = append(result, dto.DefaultSubscriptionSetting{
+			GroupID:      sub.GroupID,
+			ValidityDays: sub.ValidityDays,
+		})
+	}
+	return result
+}
+
+func preserveMissingSecuritySettings(req *UpdateSettingsRequest, previous *service.SystemSettings, fields map[string]json.RawMessage) {
+	if previous == nil {
+		return
+	}
+
+	if !requestHasSettingField(fields, "registration_enabled") {
+		req.RegistrationEnabled = previous.RegistrationEnabled
+	}
+	if !requestHasSettingField(fields, "email_verify_enabled") {
+		req.EmailVerifyEnabled = previous.EmailVerifyEnabled
+	}
+	if !requestHasSettingField(fields, "registration_email_suffix_whitelist") {
+		req.RegistrationEmailSuffixWhitelist = previous.RegistrationEmailSuffixWhitelist
+	}
+	if !requestHasSettingField(fields, "promo_code_enabled") {
+		req.PromoCodeEnabled = previous.PromoCodeEnabled
+	}
+	if !requestHasSettingField(fields, "invitation_code_enabled") {
+		req.InvitationCodeEnabled = previous.InvitationCodeEnabled
+	}
+	if !requestHasSettingField(fields, "password_reset_enabled") {
+		req.PasswordResetEnabled = previous.PasswordResetEnabled
+	}
+	if !requestHasSettingField(fields, "password_min_length") {
+		req.PasswordMinLength = previous.PasswordMinLength
+	}
+	if !requestHasSettingField(fields, "totp_enabled") {
+		req.TotpEnabled = previous.TotpEnabled
+	}
+	if !requestHasSettingField(fields, "login_agreement_mode") {
+		req.LoginAgreementMode = previous.LoginAgreementMode
+	}
+	if !requestHasSettingField(fields, "login_agreement_updated_at") {
+		req.LoginAgreementUpdatedAt = previous.LoginAgreementUpdatedAt
+	}
+	if !requestHasSettingField(fields, "login_agreement_documents") {
+		req.LoginAgreementDocuments = loginAgreementDocumentsToDTO(previous.LoginAgreementDocuments)
+	}
+
+	if !requestHasSettingField(fields, "smtp_host") {
+		req.SMTPHost = previous.SMTPHost
+	}
+	if !requestHasSettingField(fields, "smtp_port") {
+		req.SMTPPort = previous.SMTPPort
+	}
+	if !requestHasSettingField(fields, "smtp_username") {
+		req.SMTPUsername = previous.SMTPUsername
+	}
+	if !requestHasSettingField(fields, "smtp_from_email") {
+		req.SMTPFrom = previous.SMTPFrom
+	}
+	if !requestHasSettingField(fields, "smtp_from_name") {
+		req.SMTPFromName = previous.SMTPFromName
+	}
+	if !requestHasSettingField(fields, "smtp_use_tls") {
+		req.SMTPUseTLS = previous.SMTPUseTLS
+	}
+	if !requestHasSettingField(fields, "smtp_channels") {
+		req.SMTPChannels = previous.SMTPChannels
+	}
+
+	if !requestHasSettingField(fields, "turnstile_enabled") {
+		req.TurnstileEnabled = previous.TurnstileEnabled
+	}
+	if !requestHasSettingField(fields, "turnstile_site_key") {
+		req.TurnstileSiteKey = previous.TurnstileSiteKey
+	}
+	if !requestHasSettingField(fields, "turnstile_secret_key") {
+		req.TurnstileSecretKey = previous.TurnstileSecretKey
+	}
+
+	if !requestHasSettingField(fields, "linuxdo_connect_enabled") {
+		req.LinuxDoConnectEnabled = previous.LinuxDoConnectEnabled
+	}
+	if !requestHasSettingField(fields, "linuxdo_connect_client_id") {
+		req.LinuxDoConnectClientID = previous.LinuxDoConnectClientID
+	}
+	if !requestHasSettingField(fields, "linuxdo_connect_client_secret") {
+		req.LinuxDoConnectClientSecret = previous.LinuxDoConnectClientSecret
+	}
+	if !requestHasSettingField(fields, "linuxdo_connect_redirect_url") {
+		req.LinuxDoConnectRedirectURL = previous.LinuxDoConnectRedirectURL
+	}
+
+	if !requestHasSettingField(fields, "dingtalk_connect_enabled") {
+		req.DingTalkConnectEnabled = previous.DingTalkConnectEnabled
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_client_id") {
+		req.DingTalkConnectClientID = previous.DingTalkConnectClientID
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_client_secret") {
+		req.DingTalkConnectClientSecret = previous.DingTalkConnectClientSecret
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_redirect_url") {
+		req.DingTalkConnectRedirectURL = previous.DingTalkConnectRedirectURL
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_corp_restriction_policy") {
+		req.DingTalkConnectCorpRestrictionPolicy = previous.DingTalkConnectCorpRestrictionPolicy
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_internal_corp_id") {
+		req.DingTalkConnectInternalCorpID = previous.DingTalkConnectInternalCorpID
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_bypass_registration") {
+		req.DingTalkConnectBypassRegistration = previous.DingTalkConnectBypassRegistration
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_sync_corp_email") {
+		req.DingTalkConnectSyncCorpEmail = previous.DingTalkConnectSyncCorpEmail
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_sync_display_name") {
+		req.DingTalkConnectSyncDisplayName = previous.DingTalkConnectSyncDisplayName
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_sync_dept") {
+		req.DingTalkConnectSyncDept = previous.DingTalkConnectSyncDept
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_sync_corp_email_attr_key") {
+		req.DingTalkConnectSyncCorpEmailAttrKey = previous.DingTalkConnectSyncCorpEmailAttrKey
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_sync_display_name_attr_key") {
+		req.DingTalkConnectSyncDisplayNameAttrKey = previous.DingTalkConnectSyncDisplayNameAttrKey
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_sync_dept_attr_key") {
+		req.DingTalkConnectSyncDeptAttrKey = previous.DingTalkConnectSyncDeptAttrKey
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_sync_corp_email_attr_name") {
+		req.DingTalkConnectSyncCorpEmailAttrName = previous.DingTalkConnectSyncCorpEmailAttrName
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_sync_display_name_attr_name") {
+		req.DingTalkConnectSyncDisplayNameAttrName = previous.DingTalkConnectSyncDisplayNameAttrName
+	}
+	if !requestHasSettingField(fields, "dingtalk_connect_sync_dept_attr_name") {
+		req.DingTalkConnectSyncDeptAttrName = previous.DingTalkConnectSyncDeptAttrName
+	}
+
+	if !requestHasSettingField(fields, "wechat_connect_enabled") {
+		req.WeChatConnectEnabled = previous.WeChatConnectEnabled
+	}
+	if !requestHasSettingField(fields, "wechat_connect_open_app_id") {
+		req.WeChatConnectOpenAppID = previous.WeChatConnectOpenAppID
+	}
+	if !requestHasSettingField(fields, "wechat_connect_open_app_secret") {
+		req.WeChatConnectOpenAppSecret = previous.WeChatConnectOpenAppSecret
+	}
+	if !requestHasSettingField(fields, "wechat_connect_mp_app_id") {
+		req.WeChatConnectMPAppID = previous.WeChatConnectMPAppID
+	}
+	if !requestHasSettingField(fields, "wechat_connect_mp_app_secret") {
+		req.WeChatConnectMPAppSecret = previous.WeChatConnectMPAppSecret
+	}
+	if !requestHasSettingField(fields, "wechat_connect_mobile_app_id") {
+		req.WeChatConnectMobileAppID = previous.WeChatConnectMobileAppID
+	}
+	if !requestHasSettingField(fields, "wechat_connect_mobile_app_secret") {
+		req.WeChatConnectMobileAppSecret = previous.WeChatConnectMobileAppSecret
+	}
+	if !requestHasSettingField(fields, "wechat_connect_open_enabled") {
+		req.WeChatConnectOpenEnabled = previous.WeChatConnectOpenEnabled
+	}
+	if !requestHasSettingField(fields, "wechat_connect_mp_enabled") {
+		req.WeChatConnectMPEnabled = previous.WeChatConnectMPEnabled
+	}
+	if !requestHasSettingField(fields, "wechat_connect_mobile_enabled") {
+		req.WeChatConnectMobileEnabled = previous.WeChatConnectMobileEnabled
+	}
+	if !requestHasSettingField(fields, "wechat_connect_mode") {
+		req.WeChatConnectMode = previous.WeChatConnectMode
+	}
+	if !requestHasSettingField(fields, "wechat_connect_scopes") {
+		req.WeChatConnectScopes = previous.WeChatConnectScopes
+	}
+	if !requestHasSettingField(fields, "wechat_connect_redirect_url") {
+		req.WeChatConnectRedirectURL = previous.WeChatConnectRedirectURL
+	}
+	if !requestHasSettingField(fields, "wechat_connect_frontend_redirect_url") {
+		req.WeChatConnectFrontendRedirectURL = previous.WeChatConnectFrontendRedirectURL
+	}
+
+	if !requestHasSettingField(fields, "oidc_connect_enabled") {
+		req.OIDCConnectEnabled = previous.OIDCConnectEnabled
+	}
+	if !requestHasSettingField(fields, "oidc_connect_provider_name") {
+		req.OIDCConnectProviderName = previous.OIDCConnectProviderName
+	}
+	if !requestHasSettingField(fields, "oidc_connect_client_id") {
+		req.OIDCConnectClientID = previous.OIDCConnectClientID
+	}
+	if !requestHasSettingField(fields, "oidc_connect_client_secret") {
+		req.OIDCConnectClientSecret = previous.OIDCConnectClientSecret
+	}
+	if !requestHasSettingField(fields, "oidc_connect_issuer_url") {
+		req.OIDCConnectIssuerURL = previous.OIDCConnectIssuerURL
+	}
+	if !requestHasSettingField(fields, "oidc_connect_discovery_url") {
+		req.OIDCConnectDiscoveryURL = previous.OIDCConnectDiscoveryURL
+	}
+	if !requestHasSettingField(fields, "oidc_connect_authorize_url") {
+		req.OIDCConnectAuthorizeURL = previous.OIDCConnectAuthorizeURL
+	}
+	if !requestHasSettingField(fields, "oidc_connect_token_url") {
+		req.OIDCConnectTokenURL = previous.OIDCConnectTokenURL
+	}
+	if !requestHasSettingField(fields, "oidc_connect_userinfo_url") {
+		req.OIDCConnectUserInfoURL = previous.OIDCConnectUserInfoURL
+	}
+	if !requestHasSettingField(fields, "oidc_connect_jwks_url") {
+		req.OIDCConnectJWKSURL = previous.OIDCConnectJWKSURL
+	}
+	if !requestHasSettingField(fields, "oidc_connect_scopes") {
+		req.OIDCConnectScopes = previous.OIDCConnectScopes
+	}
+	if !requestHasSettingField(fields, "oidc_connect_redirect_url") {
+		req.OIDCConnectRedirectURL = previous.OIDCConnectRedirectURL
+	}
+	if !requestHasSettingField(fields, "oidc_connect_frontend_redirect_url") {
+		req.OIDCConnectFrontendRedirectURL = previous.OIDCConnectFrontendRedirectURL
+	}
+	if !requestHasSettingField(fields, "oidc_connect_token_auth_method") {
+		req.OIDCConnectTokenAuthMethod = previous.OIDCConnectTokenAuthMethod
+	}
+	if !requestHasSettingField(fields, "oidc_connect_allowed_signing_algs") {
+		req.OIDCConnectAllowedSigningAlgs = previous.OIDCConnectAllowedSigningAlgs
+	}
+	if !requestHasSettingField(fields, "oidc_connect_clock_skew_seconds") {
+		req.OIDCConnectClockSkewSeconds = previous.OIDCConnectClockSkewSeconds
+	}
+	if !requestHasSettingField(fields, "oidc_connect_require_email_verified") {
+		req.OIDCConnectRequireEmailVerified = previous.OIDCConnectRequireEmailVerified
+	}
+	if !requestHasSettingField(fields, "oidc_connect_userinfo_email_path") {
+		req.OIDCConnectUserInfoEmailPath = previous.OIDCConnectUserInfoEmailPath
+	}
+	if !requestHasSettingField(fields, "oidc_connect_userinfo_id_path") {
+		req.OIDCConnectUserInfoIDPath = previous.OIDCConnectUserInfoIDPath
+	}
+	if !requestHasSettingField(fields, "oidc_connect_userinfo_username_path") {
+		req.OIDCConnectUserInfoUsernamePath = previous.OIDCConnectUserInfoUsernamePath
+	}
+
+	if !requestHasSettingField(fields, "github_oauth_enabled") {
+		req.GitHubOAuthEnabled = previous.GitHubOAuthEnabled
+	}
+	if !requestHasSettingField(fields, "github_oauth_client_id") {
+		req.GitHubOAuthClientID = previous.GitHubOAuthClientID
+	}
+	if !requestHasSettingField(fields, "github_oauth_client_secret") {
+		req.GitHubOAuthClientSecret = previous.GitHubOAuthClientSecret
+	}
+	if !requestHasSettingField(fields, "github_oauth_redirect_url") {
+		req.GitHubOAuthRedirectURL = previous.GitHubOAuthRedirectURL
+	}
+	if !requestHasSettingField(fields, "github_oauth_frontend_redirect_url") {
+		req.GitHubOAuthFrontendRedirectURL = previous.GitHubOAuthFrontendRedirectURL
+	}
+	if !requestHasSettingField(fields, "google_oauth_enabled") {
+		req.GoogleOAuthEnabled = previous.GoogleOAuthEnabled
+	}
+	if !requestHasSettingField(fields, "google_oauth_client_id") {
+		req.GoogleOAuthClientID = previous.GoogleOAuthClientID
+	}
+	if !requestHasSettingField(fields, "google_oauth_client_secret") {
+		req.GoogleOAuthClientSecret = previous.GoogleOAuthClientSecret
+	}
+	if !requestHasSettingField(fields, "google_oauth_redirect_url") {
+		req.GoogleOAuthRedirectURL = previous.GoogleOAuthRedirectURL
+	}
+	if !requestHasSettingField(fields, "google_oauth_frontend_redirect_url") {
+		req.GoogleOAuthFrontendRedirectURL = previous.GoogleOAuthFrontendRedirectURL
+	}
+
+	if !requestHasSettingField(fields, "default_concurrency") {
+		req.DefaultConcurrency = previous.DefaultConcurrency
+	}
+	if !requestHasSettingField(fields, "default_balance") {
+		req.DefaultBalance = previous.DefaultBalance
+	}
+	if !requestHasSettingField(fields, "default_user_rpm_limit") {
+		req.DefaultUserRPMLimit = previous.DefaultUserRPMLimit
+	}
+	if !requestHasSettingField(fields, "default_subscriptions") {
+		req.DefaultSubscriptions = defaultSubscriptionsToDTO(previous.DefaultSubscriptions)
+	}
+	if !requestHasSettingField(fields, "enable_model_fallback") {
+		req.EnableModelFallback = previous.EnableModelFallback
+	}
+	if !requestHasSettingField(fields, "fallback_model_anthropic") {
+		req.FallbackModelAnthropic = previous.FallbackModelAnthropic
+	}
+	if !requestHasSettingField(fields, "fallback_model_openai") {
+		req.FallbackModelOpenAI = previous.FallbackModelOpenAI
+	}
+	if !requestHasSettingField(fields, "fallback_model_gemini") {
+		req.FallbackModelGemini = previous.FallbackModelGemini
+	}
+	if !requestHasSettingField(fields, "fallback_model_antigravity") {
+		req.FallbackModelAntigravity = previous.FallbackModelAntigravity
+	}
+	if !requestHasSettingField(fields, "enable_identity_patch") {
+		req.EnableIdentityPatch = previous.EnableIdentityPatch
+	}
+	if !requestHasSettingField(fields, "identity_patch_prompt") {
+		req.IdentityPatchPrompt = previous.IdentityPatchPrompt
+	}
+	if !requestHasSettingField(fields, "min_claude_code_version") {
+		req.MinClaudeCodeVersion = previous.MinClaudeCodeVersion
+	}
+	if !requestHasSettingField(fields, "max_claude_code_version") {
+		req.MaxClaudeCodeVersion = previous.MaxClaudeCodeVersion
+	}
+	if !requestHasSettingField(fields, "allow_ungrouped_key_scheduling") {
+		req.AllowUngroupedKeyScheduling = previous.AllowUngroupedKeyScheduling
+	}
+	if !requestHasSettingField(fields, "backend_mode_enabled") {
+		req.BackendModeEnabled = previous.BackendModeEnabled
+	}
+}
+
 func dtoRechargeProducts(products []service.RechargeProduct) []dto.RechargeProductConfig {
 	if len(products) == 0 {
 		return []dto.RechargeProductConfig{}
@@ -282,6 +616,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		HomeContent:                            settings.HomeContent,
 		HomeShellConfig:                        settings.HomeShellConfig,
 		ModelPlazaItems:                        dto.ParseModelPlazaItems(settings.ModelPlazaItems),
+		ImageWorkspaceModelConfig:              settings.ImageWorkspaceModelConfig,
 		ModelPlazaShellConfig:                  settings.ModelPlazaShellConfig,
 		DocsShellConfig:                        settings.DocsShellConfig,
 		LegalDocumentShellConfig:               settings.LegalDocumentShellConfig,
@@ -320,6 +655,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		PromptTemplatesTitle:                   settings.WebPromptTemplatesTitle,
 		PromptTemplatesDescription:             settings.WebPromptTemplatesDescription,
 		WorkspaceShellConfig:                   settings.WebWorkspaceShellConfig,
+		ImagePromptFilterConfig:                settings.WebImagePromptFilterConfig,
 		PricingTitle:                           settings.WebPricingTitle,
 		PricingDescription:                     settings.WebPricingDescription,
 		PricingShellConfig:                     settings.WebPricingShellConfig,
@@ -661,6 +997,7 @@ type UpdateSettingsRequest struct {
 	HomeShellConfig              *string               `json:"home_shell_config"`
 	HomeBusinessShellConfig      *string               `json:"home_business_shell_config"`
 	ModelPlazaItems              *[]dto.ModelPlazaItem `json:"model_plaza_items"`
+	ImageWorkspaceModelConfig    *string               `json:"image_workspace_model_config"`
 	ModelPlazaShellConfig        *string               `json:"model_plaza_shell_config"`
 	DocsShellConfig              *string               `json:"docs_shell_config"`
 	LegalDocumentShellConfig     *string               `json:"legal_document_shell_config"`
@@ -700,6 +1037,7 @@ type UpdateSettingsRequest struct {
 	PromptTemplatesTitle       *string `json:"prompt_templates_title"`
 	PromptTemplatesDescription *string `json:"prompt_templates_description"`
 	WorkspaceShellConfig       *string `json:"workspace_shell_config"`
+	ImagePromptFilterConfig    *string `json:"image_prompt_filter_config"`
 	PricingTitle               *string `json:"pricing_title"`
 	PricingDescription         *string `json:"pricing_description"`
 	PricingShellConfig         *string `json:"pricing_shell_config"`
@@ -900,7 +1238,17 @@ type UpdateSettingsRequest struct {
 // PUT /api/v1/admin/settings
 func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	var req UpdateSettingsRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
+	rawBody, err := c.GetRawData()
+	if err != nil {
+		response.BadRequestWithError(c, err)
+		return
+	}
+	var requestedFields map[string]json.RawMessage
+	if err := json.Unmarshal(rawBody, &requestedFields); err != nil {
+		response.BadRequestWithError(c, err)
+		return
+	}
+	if err := json.Unmarshal(rawBody, &req); err != nil {
 		response.BadRequestWithError(c, err)
 		return
 	}
@@ -915,6 +1263,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	preserveMissingSecuritySettings(&req, previousSettings, requestedFields)
 
 	// 验证参数
 	if req.DefaultConcurrency < 1 {
@@ -1116,6 +1465,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	webPromptTemplatesDescription := optionalTrimmedString(req.PromptTemplatesDescription, previousSettings.WebPromptTemplatesDescription)
 	promptCatalogShellConfig := optionalTrimmedString(req.PromptCatalogShellConfig, previousSettings.PromptCatalogShellConfig)
 	webWorkspaceShellConfig := optionalTrimmedString(req.WorkspaceShellConfig, previousSettings.WebWorkspaceShellConfig)
+	webImagePromptFilterConfig := optionalTrimmedString(req.ImagePromptFilterConfig, previousSettings.WebImagePromptFilterConfig)
 	webPricingTitle := optionalTrimmedString(req.PricingTitle, previousSettings.WebPricingTitle)
 	webPricingDescription := optionalTrimmedString(req.PricingDescription, previousSettings.WebPricingDescription)
 	webPricingShellConfig := optionalTrimmedString(req.PricingShellConfig, previousSettings.WebPricingShellConfig)
@@ -1762,6 +2112,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		}
 		modelPlazaJSON = string(payload)
 	}
+	imageWorkspaceModelConfig := optionalTrimmedString(req.ImageWorkspaceModelConfig, previousSettings.ImageWorkspaceModelConfig)
 	modelPlazaShellConfig := optionalTrimmedString(req.ModelPlazaShellConfig, previousSettings.ModelPlazaShellConfig)
 	docsShellConfig := optionalTrimmedString(req.DocsShellConfig, previousSettings.DocsShellConfig)
 	legalDocumentShellConfig := optionalTrimmedString(req.LegalDocumentShellConfig, previousSettings.LegalDocumentShellConfig)
@@ -1946,6 +2297,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		HomeShellConfig:                        homeShellConfig,
 		HomeBusinessShellConfig:                homeBusinessShellConfig,
 		ModelPlazaItems:                        modelPlazaJSON,
+		ImageWorkspaceModelConfig:              imageWorkspaceModelConfig,
 		ModelPlazaShellConfig:                  modelPlazaShellConfig,
 		DocsShellConfig:                        docsShellConfig,
 		LegalDocumentShellConfig:               legalDocumentShellConfig,
@@ -1985,6 +2337,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		WebPromptTemplatesDescription:          webPromptTemplatesDescription,
 		PromptCatalogShellConfig:               promptCatalogShellConfig,
 		WebWorkspaceShellConfig:                webWorkspaceShellConfig,
+		WebImagePromptFilterConfig:             webImagePromptFilterConfig,
 		WebPricingTitle:                        webPricingTitle,
 		WebPricingDescription:                  webPricingDescription,
 		WebPricingShellConfig:                  webPricingShellConfig,
@@ -2478,6 +2831,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		HomeShellConfig:                        updatedSettings.HomeShellConfig,
 		HomeBusinessShellConfig:                updatedSettings.HomeBusinessShellConfig,
 		ModelPlazaItems:                        dto.ParseModelPlazaItems(updatedSettings.ModelPlazaItems),
+		ImageWorkspaceModelConfig:              updatedSettings.ImageWorkspaceModelConfig,
 		ModelPlazaShellConfig:                  updatedSettings.ModelPlazaShellConfig,
 		DocsShellConfig:                        updatedSettings.DocsShellConfig,
 		LegalDocumentShellConfig:               updatedSettings.LegalDocumentShellConfig,
@@ -2516,6 +2870,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		PromptTemplatesTitle:                   updatedSettings.WebPromptTemplatesTitle,
 		PromptTemplatesDescription:             updatedSettings.WebPromptTemplatesDescription,
 		WorkspaceShellConfig:                   updatedSettings.WebWorkspaceShellConfig,
+		ImagePromptFilterConfig:                updatedSettings.WebImagePromptFilterConfig,
 		PricingTitle:                           updatedSettings.WebPricingTitle,
 		PricingDescription:                     updatedSettings.WebPricingDescription,
 		PricingShellConfig:                     updatedSettings.WebPricingShellConfig,
@@ -3641,6 +3996,84 @@ func (h *SettingHandler) UpdateOverloadCooldownSettings(c *gin.Context) {
 	response.Success(c, dto.OverloadCooldownSettings{
 		Enabled:         updatedSettings.Enabled,
 		CooldownMinutes: updatedSettings.CooldownMinutes,
+	})
+}
+
+// GetImagePromptFilterConfig 获取图片提示词过滤配置
+// GET /api/v1/admin/settings/image-prompt-filter
+func (h *SettingHandler) GetImagePromptFilterConfig(c *gin.Context) {
+	config, err := h.settingService.GetImagePromptFilterConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, dto.ImagePromptFilterConfig{
+		Enabled:              config.Enabled,
+		ExplicitKeywords:     config.ExplicitKeywords,
+		YouthContextKeywords: config.YouthContextKeywords,
+		WarningMessage:       config.WarningMessage,
+		YouthWarningMessage:  config.YouthWarningMessage,
+	})
+}
+
+// UpdateImagePromptFilterConfigRequest 更新图片提示词过滤配置请求
+type UpdateImagePromptFilterConfigRequest struct {
+	Enabled              *bool    `json:"enabled"`
+	ExplicitKeywords     []string `json:"explicit_keywords"`
+	YouthContextKeywords []string `json:"youth_context_keywords"`
+	WarningMessage       *string  `json:"warning_message"`
+	YouthWarningMessage  *string  `json:"youth_warning_message"`
+}
+
+// UpdateImagePromptFilterConfig 更新图片提示词过滤配置
+// PUT /api/v1/admin/settings/image-prompt-filter
+func (h *SettingHandler) UpdateImagePromptFilterConfig(c *gin.Context) {
+	var req UpdateImagePromptFilterConfigRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequestWithError(c, err)
+		return
+	}
+
+	current, err := h.settingService.GetImagePromptFilterConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	if req.Enabled != nil {
+		current.Enabled = *req.Enabled
+	}
+	if req.ExplicitKeywords != nil {
+		current.ExplicitKeywords = req.ExplicitKeywords
+	}
+	if req.YouthContextKeywords != nil {
+		current.YouthContextKeywords = req.YouthContextKeywords
+	}
+	if req.WarningMessage != nil {
+		current.WarningMessage = *req.WarningMessage
+	}
+	if req.YouthWarningMessage != nil {
+		current.YouthWarningMessage = *req.YouthWarningMessage
+	}
+
+	if err := h.settingService.SetImagePromptFilterConfig(c.Request.Context(), current); err != nil {
+		response.BadRequestWithError(c, err)
+		return
+	}
+
+	updated, err := h.settingService.GetImagePromptFilterConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, dto.ImagePromptFilterConfig{
+		Enabled:              updated.Enabled,
+		ExplicitKeywords:     updated.ExplicitKeywords,
+		YouthContextKeywords: updated.YouthContextKeywords,
+		WarningMessage:       updated.WarningMessage,
+		YouthWarningMessage:  updated.YouthWarningMessage,
 	})
 }
 

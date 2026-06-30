@@ -250,9 +250,9 @@ func TestSettingService_UpdateSettings_PersistsWebRuntimeSettings(t *testing.T) 
 		WebPricingShellConfig:         ` {"zh":{"button":{"title":"选择"}}} `,
 		WebPaymentShellConfig:         ` {"zh":{"labels":{"createOrder":"下单"}}} `,
 		WebPricingCurrencySymbol:      " $ ",
-		WebCreditsTitle:               " Credits title ",
-		WebCreditsDescription:         " Credits description ",
-		WebCreditsPurchaseLabel:       " Buy credits ",
+		WebCreditsTitle:               " Balance title ",
+		WebCreditsDescription:         " Balance description ",
+		WebCreditsPurchaseLabel:       " Buy balance ",
 		WebCreditsBalanceLabel:        " Balance: {balance} ",
 		WebCreditsPerBalance:          " 12 ",
 		CreditsShellConfig:            ` {"en":{"actions":{"title":"Balance actions"}}} `,
@@ -287,9 +287,9 @@ func TestSettingService_UpdateSettings_PersistsWebRuntimeSettings(t *testing.T) 
 	require.Equal(t, `{"zh":{"button":{"title":"选择"}}}`, repo.updates[SettingKeyPricingShellConfig])
 	require.Equal(t, `{"zh":{"labels":{"createOrder":"下单"}}}`, repo.updates[SettingKeyPaymentShellConfig])
 	require.Equal(t, "$", repo.updates[SettingKeyPricingCurrencySymbol])
-	require.Equal(t, "Credits title", repo.updates[SettingKeyCreditsTitle])
-	require.Equal(t, "Credits description", repo.updates[SettingKeyCreditsDescription])
-	require.Equal(t, "Buy credits", repo.updates[SettingKeyCreditsPurchaseLabel])
+	require.Equal(t, "Balance title", repo.updates[SettingKeyCreditsTitle])
+	require.Equal(t, "Balance description", repo.updates[SettingKeyCreditsDescription])
+	require.Equal(t, "Buy balance", repo.updates[SettingKeyCreditsPurchaseLabel])
 	require.Equal(t, "Balance: {balance}", repo.updates[SettingKeyCreditsBalanceLabel])
 	require.Equal(t, "12", repo.updates[SettingKeyCreditsPerBalance])
 	require.Equal(t, `{"en":{"actions":{"title":"Balance actions"}}}`, repo.updates[SettingKeyCreditsShellConfig])

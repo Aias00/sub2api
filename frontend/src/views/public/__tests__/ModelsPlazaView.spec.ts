@@ -197,8 +197,9 @@ describe('ModelsPlazaView', () => {
   })
 
   it('does not keep locale-specific model plaza fallback copy in the view bootstrap layer', () => {
-    expect(modelsPlazaViewSource).toContain('useAuthRouteDefaults')
-    expect(modelsPlazaViewSource).toContain(':to="authRouteDefaults.homePath"')
+    expect(modelsPlazaViewSource).toContain('PublicDarkHeader')
+    expect(modelsPlazaViewSource).not.toContain('useAuthRouteDefaults')
+    expect(modelsPlazaViewSource).not.toContain(':to="authRouteDefaults.homePath"')
     expect(modelsPlazaViewSource).not.toContain('to="/home"')
     expect(modelsPlazaViewSource).not.toContain("isAuthenticated ? dashboardPath : '/login'")
     expect(modelsPlazaViewSource).not.toContain("authStore.isAdmin ? '/admin/dashboard' : '/dashboard'")

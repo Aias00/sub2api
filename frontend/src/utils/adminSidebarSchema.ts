@@ -30,6 +30,11 @@ export type AdminSidebarSection = {
 
 export const selfSidebarItemKeys = [
   'dashboard',
+  'tasks',
+  'promptCatalog',
+  'imageGenerator',
+  'wechatExport',
+  'hotTopics',
   'apiKeys',
   'usage',
   'availableChannels',

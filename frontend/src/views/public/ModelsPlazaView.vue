@@ -1,34 +1,18 @@
 <template>
-  <div class="min-h-screen bg-[#101114] text-white">
+  <div class="home-business-page min-h-screen bg-[#101114] text-white">
     <div class="relative overflow-hidden border-b border-white/10">
       <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_30%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.16),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_45%)]"></div>
 
-      <header class="relative z-10 px-6 py-5">
-        <nav class="mx-auto flex max-w-6xl items-center justify-between">
-          <RouterLink :to="authRouteDefaults.homePath" class="flex items-center gap-3">
-            <div v-if="siteLogo" class="h-9 w-9 overflow-hidden rounded-xl border border-white/10 bg-white/5">
-              <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
-            </div>
-            <span class="text-sm font-semibold text-white">{{ siteName }}</span>
-          </RouterLink>
-
-          <div class="flex items-center gap-3">
-            <LocaleSwitcher />
-            <DocsLink
-              :doc-url="docUrl"
-              class="hidden rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition hover:border-white/20 hover:text-white sm:inline-flex"
-            >
-              {{ copy.viewDocs }}
-            </DocsLink>
-            <RouterLink
-              :to="isAuthenticated ? dashboardPath : loginPath"
-              class="inline-flex items-center rounded-full border border-white/10 bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-white/90"
-            >
-              {{ isAuthenticated ? copy.dashboard : copy.login }}
-            </RouterLink>
-          </div>
-        </nav>
-      </header>
+      <PublicDarkHeader :account-label="isAuthenticated ? copy.dashboard : copy.login">
+        <template #actions>
+          <DocsLink
+            :doc-url="docUrl"
+            class="hidden rounded-full border border-white/10 px-4 py-2 text-sm font-medium text-white/70 transition hover:border-white/20 hover:text-white sm:inline-flex"
+          >
+            {{ copy.viewDocs }}
+          </DocsLink>
+        </template>
+      </PublicDarkHeader>
 
       <section class="relative z-10 px-6 pb-16 pt-10 sm:pb-20 sm:pt-14">
         <div class="mx-auto max-w-5xl text-center">
@@ -228,13 +212,11 @@
 
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { RouterLink } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import DocsLink from '@/components/common/DocsLink.vue'
-import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
+import PublicDarkHeader from '@/components/layout/PublicDarkHeader.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAuthStore, useAppStore } from '@/stores'
-import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import { useClipboard } from '@/composables/useClipboard'
 import {
   MODEL_PLAZA_ALL_GROUP_KEY,
@@ -254,19 +236,14 @@ import {
 const { locale } = useI18n()
 const authStore = useAuthStore()
 const appStore = useAppStore()
-const { authRouteDefaults, resolveHomePath } = useAuthRouteDefaults()
 const { copyToClipboard } = useClipboard()
 
 const loading = ref(false)
 const searchQuery = ref('')
 const activeGroup = ref(MODEL_PLAZA_ALL_GROUP_KEY)
 
-const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName)
-const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const isAuthenticated = computed(() => authStore.isAuthenticated)
-const dashboardPath = computed(() => resolveHomePath(authStore.isAdmin))
-const loginPath = computed(() => authRouteDefaults.value.loginPath)
 
 const copy = computed(() =>
   resolveModelsPlazaCopy(

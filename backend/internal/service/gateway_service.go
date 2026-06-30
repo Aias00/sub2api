@@ -622,6 +622,7 @@ type GatewayService struct {
 	tlsFPProfileService   *TLSFingerprintProfileService
 	balanceNotifyService  *BalanceNotifyService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
+	ledgerService        *UserBalanceLedgerService
 }
 
 // NewGatewayService creates a new GatewayService
@@ -653,6 +654,7 @@ func NewGatewayService(
 	resolver *ModelPricingResolver,
 	balanceNotifyService *BalanceNotifyService,
 	userPlatformQuotaRepo UserPlatformQuotaRepository,
+	ledgerService *UserBalanceLedgerService,
 ) *GatewayService {
 	userGroupRateTTL := resolveUserGroupRateCacheTTL(cfg)
 	modelsListTTL := resolveModelsListCacheTTL(cfg)
@@ -689,6 +691,7 @@ func NewGatewayService(
 		resolver:              resolver,
 		balanceNotifyService:  balanceNotifyService,
 		userPlatformQuotaRepo: userPlatformQuotaRepo,
+		ledgerService:        ledgerService,
 	}
 	svc.userGroupRateResolver = newUserGroupRateResolver(
 		userGroupRateRepo,
@@ -8539,6 +8542,28 @@ func finalizePostUsageBilling(ctx context.Context, p *postUsageBillingParams, de
 		}
 	} else if p.Cost.ActualCost > 0 && p.User != nil {
 		deps.billingCacheService.QueueDeductBalance(p.User.ID, p.Cost.ActualCost)
+
+		// 写入余额流水（仅在余额扣费时）
+		if deps.ledgerService != nil && result != nil && result.NewBalance != nil {
+			oldBalance := *result.NewBalance + p.Cost.ActualCost
+			if err := deps.ledgerService.WriteLedger(
+				ctx,
+				p.User.ID,
+				EntryTypeAPIUsage,
+				-p.Cost.ActualCost,
+				&oldBalance,
+				SourceTypeUsageLog,
+				nil, // usage_log ID 未知
+				"API调用扣费",
+				map[string]interface{}{
+					"actual_cost":  p.Cost.ActualCost,
+					"billing_mode": p.Cost.BillingMode,
+					"account_id":   p.Account.ID,
+				},
+			); err != nil {
+				slog.Warn("write balance ledger for API usage failed", "user_id", p.User.ID, "error", err)
+			}
+		}
 	}
 
 	if p.Cost.ActualCost > 0 && p.APIKey != nil && p.APIKey.HasRateLimits() {
@@ -8694,6 +8719,7 @@ type billingDeps struct {
 	balanceNotifyService  *BalanceNotifyService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
 	cfg                   *config.Config
+	ledgerService         *UserBalanceLedgerService
 }
 
 func (s *GatewayService) billingDeps() *billingDeps {
@@ -8706,6 +8732,7 @@ func (s *GatewayService) billingDeps() *billingDeps {
 		balanceNotifyService:  s.balanceNotifyService,
 		userPlatformQuotaRepo: s.userPlatformQuotaRepo,
 		cfg:                   s.cfg,
+		ledgerService:         s.ledgerService,
 	}
 }
 

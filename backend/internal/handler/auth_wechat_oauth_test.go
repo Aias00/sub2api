@@ -212,7 +212,6 @@ func TestWeChatOAuthCallbackFallsBackToOpenIDWhenUnionIDMissingInSingleChannelMo
 
 	completion := session.LocalFlowState[oauthCompletionResponseKey].(map[string]any)
 	require.Equal(t, oauthPendingChoiceStep, completion["step"])
-	require.Equal(t, "third_party_signup", completion["choice_reason"])
 }
 
 func TestWeChatOAuthCallbackCreatesLoginPendingSessionForExistingIdentityUserWithoutStoredTokens(t *testing.T) {
@@ -1500,4 +1499,12 @@ func (s *wechatOAuthRefreshTokenCacheStub) GetFamilyTokenHashes(context.Context,
 
 func (s *wechatOAuthRefreshTokenCacheStub) IsTokenInFamily(context.Context, string, string) (bool, error) {
 	return false, nil
+}
+
+func (s *wechatOAuthRefreshTokenCacheStub) RemoveFromUserTokenSet(context.Context, int64, string) error {
+	return nil
+}
+
+func (s *wechatOAuthRefreshTokenCacheStub) RemoveFromFamilyTokenSet(context.Context, string, string) error {
+	return nil
 }

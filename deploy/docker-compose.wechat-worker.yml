@@ -1,0 +1,35 @@
+# Optional WeChat export worker overlay.
+#
+# Usage with the default named-volume deployment:
+#   docker compose -f docker-compose.yml -f docker-compose.wechat-worker.yml --profile wechat-worker up -d
+#
+# Usage with docker-compose.local.yml:
+#   WECHAT_EXPORT_DATA_MOUNT=./data docker compose -f docker-compose.local.yml -f docker-compose.wechat-worker.yml --profile wechat-worker up -d
+
+services:
+  wechat-export-worker:
+    build:
+      context: ../tools/wechat-worker
+      dockerfile: Dockerfile
+    image: sub2api-wechat-export-worker:${WECHAT_EXPORT_WORKER_IMAGE_TAG:-local}
+    container_name: sub2api-wechat-export-worker
+    restart: unless-stopped
+    profiles:
+      - wechat-worker
+    environment:
+      - SUB2API_BASE_URL=${SUB2API_BASE_URL:-http://sub2api:8080/api/v1}
+      - WECHAT_EXPORT_WORKER_TOKEN=${WECHAT_EXPORT_WORKER_TOKEN:-}
+      - WECHAT_EXPORT_OUTPUT_DIR=${WECHAT_EXPORT_OUTPUT_DIR:-/app/data/wechat-export}
+      - WECHAT_EXPORT_STORAGE_KEY_ROOT=${WECHAT_EXPORT_STORAGE_KEY_ROOT:-/app/data/wechat-export}
+      - WECHAT_EXPORT_WORKER_INTERVAL_MS=${WECHAT_EXPORT_WORKER_INTERVAL_MS:-5000}
+      - WECHAT_EXPORT_WORKER_MAX_BACKOFF_MS=${WECHAT_EXPORT_WORKER_MAX_BACKOFF_MS:-60000}
+      - WECHAT_EXPORT_WORKER_CONCURRENCY=${WECHAT_EXPORT_WORKER_CONCURRENCY:-1}
+      - WECHAT_EXPORT_WORKER_LEASE_SECONDS=${WECHAT_EXPORT_WORKER_LEASE_SECONDS:-300}
+      - WECHAT_EXPORT_FETCH_RETRIES=${WECHAT_EXPORT_FETCH_RETRIES:-2}
+      - WECHAT_EXPORT_FETCH_TIMEOUT_MS=${WECHAT_EXPORT_FETCH_TIMEOUT_MS:-20000}
+    volumes:
+      - ${WECHAT_EXPORT_DATA_MOUNT:-sub2api_data}:/app/data
+    depends_on:
+      - sub2api
+    networks:
+      - sub2api-network

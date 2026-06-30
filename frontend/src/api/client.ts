@@ -17,7 +17,21 @@ export function resolveApiBaseUrl(settings?: { api_base_url?: string | null } | 
     || (typeof window !== 'undefined' ? window.__APP_CONFIG__?.api_base_url?.trim() : '')
     || DEFAULT_API_BASE_URL
 
-  return configured.replace(/\/+$/, '') || DEFAULT_API_BASE_URL
+  return normalizeApiBaseUrl(configured)
+}
+
+function normalizeApiBaseUrl(value: string): string {
+  const normalized = value.replace(/\/+$/, '') || DEFAULT_API_BASE_URL
+  if (normalized === DEFAULT_API_BASE_URL || normalized.endsWith(DEFAULT_API_BASE_URL)) {
+    return normalized
+  }
+  if (normalized === '') {
+    return DEFAULT_API_BASE_URL
+  }
+  if (normalized === '/') {
+    return DEFAULT_API_BASE_URL
+  }
+  return normalized
 }
 
 export function buildApiUrl(path: string, settings?: { api_base_url?: string | null } | null): string {

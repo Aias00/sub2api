@@ -197,6 +197,8 @@ type LinuxDoConnectConfig struct {
 
 type WeChatConnectConfig struct {
 	Enabled             bool   `mapstructure:"enabled"`
+	AppID               string `mapstructure:"app_id"`
+	AppSecret           string `mapstructure:"app_secret"`
 	OpenAppID           string `mapstructure:"open_app_id"`
 	OpenAppSecret       string `mapstructure:"open_app_secret"`
 	MPAppID             string `mapstructure:"mp_app_id"`
@@ -392,6 +394,8 @@ func normalizeWeChatConnectConfig(cfg *WeChatConnectConfig) {
 		return
 	}
 
+	cfg.AppID = strings.TrimSpace(cfg.AppID)
+	cfg.AppSecret = strings.TrimSpace(cfg.AppSecret)
 	cfg.OpenAppID = strings.TrimSpace(cfg.OpenAppID)
 	cfg.OpenAppSecret = strings.TrimSpace(cfg.OpenAppSecret)
 	cfg.MPAppID = strings.TrimSpace(cfg.MPAppID)
@@ -401,6 +405,29 @@ func normalizeWeChatConnectConfig(cfg *WeChatConnectConfig) {
 	cfg.Mode = normalizeWeChatConnectMode(cfg.Mode)
 	cfg.RedirectURL = strings.TrimSpace(cfg.RedirectURL)
 	cfg.FrontendRedirectURL = strings.TrimSpace(cfg.FrontendRedirectURL)
+
+	if cfg.AppID != "" {
+		if cfg.OpenAppID == "" {
+			cfg.OpenAppID = cfg.AppID
+		}
+		if cfg.MPAppID == "" {
+			cfg.MPAppID = cfg.AppID
+		}
+		if cfg.MobileAppID == "" {
+			cfg.MobileAppID = cfg.AppID
+		}
+	}
+	if cfg.AppSecret != "" {
+		if cfg.OpenAppSecret == "" {
+			cfg.OpenAppSecret = cfg.AppSecret
+		}
+		if cfg.MPAppSecret == "" {
+			cfg.MPAppSecret = cfg.AppSecret
+		}
+		if cfg.MobileAppSecret == "" {
+			cfg.MobileAppSecret = cfg.AppSecret
+		}
+	}
 
 	if !cfg.OpenEnabled && !cfg.MPEnabled && !cfg.MobileEnabled && cfg.Enabled {
 		switch cfg.Mode {

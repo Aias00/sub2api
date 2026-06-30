@@ -75,7 +75,10 @@ type defaultSubscriptionAssignerStub struct {
 	err   error
 }
 
-type refreshTokenCacheStub struct{}
+type refreshTokenCacheStub struct {
+	tokens        map[string]*RefreshTokenData
+	deletedHashes []string
+}
 
 type authRegisterAffiliateBindCall struct {
 	userID    int64
@@ -98,15 +101,28 @@ func (s *defaultSubscriptionAssignerStub) AssignOrExtendSubscription(_ context.C
 	return &UserSubscription{UserID: input.UserID, GroupID: input.GroupID}, false, nil
 }
 
-func (s *refreshTokenCacheStub) StoreRefreshToken(context.Context, string, *RefreshTokenData, time.Duration) error {
+func (s *refreshTokenCacheStub) StoreRefreshToken(_ context.Context, tokenHash string, data *RefreshTokenData, _ time.Duration) error {
+	if s.tokens == nil {
+		s.tokens = make(map[string]*RefreshTokenData)
+	}
+	s.tokens[tokenHash] = data
 	return nil
 }
 
-func (s *refreshTokenCacheStub) GetRefreshToken(context.Context, string) (*RefreshTokenData, error) {
+func (s *refreshTokenCacheStub) GetRefreshToken(_ context.Context, tokenHash string) (*RefreshTokenData, error) {
+	if s.tokens != nil {
+		if data, ok := s.tokens[tokenHash]; ok {
+			return data, nil
+		}
+	}
 	return nil, ErrRefreshTokenNotFound
 }
 
-func (s *refreshTokenCacheStub) DeleteRefreshToken(context.Context, string) error {
+func (s *refreshTokenCacheStub) DeleteRefreshToken(_ context.Context, tokenHash string) error {
+	s.deletedHashes = append(s.deletedHashes, tokenHash)
+	if s.tokens != nil {
+		delete(s.tokens, tokenHash)
+	}
 	return nil
 }
 
@@ -136,6 +152,14 @@ func (s *refreshTokenCacheStub) GetFamilyTokenHashes(context.Context, string) ([
 
 func (s *refreshTokenCacheStub) IsTokenInFamily(context.Context, string, string) (bool, error) {
 	return false, nil
+}
+
+func (s *refreshTokenCacheStub) RemoveFromUserTokenSet(context.Context, int64, string) error {
+	return nil
+}
+
+func (s *refreshTokenCacheStub) RemoveFromFamilyTokenSet(context.Context, string, string) error {
+	return nil
 }
 
 func (r *authRegisterAffiliateRepoStub) EnsureUserAffiliate(_ context.Context, userID int64) (*AffiliateSummary, error) {
@@ -563,6 +587,138 @@ func TestAuthService_Register_Success(t *testing.T) {
 	require.True(t, user.CheckPassword("password"))
 }
 
+func TestAuthService_RegisterWithUsernamePersistsUsername(t *testing.T) {
+	repo := &userRepoStub{nextID: 9}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:                 "true",
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "false",
+	}, nil, nil)
+
+	token, user, err := service.RegisterWithVerificationSourceAndUsername(
+		context.Background(),
+		"user-with-name@test.com",
+		"  display name  ",
+		"password",
+		"",
+		"",
+		"",
+		"",
+		authSignupSourceEmail,
+	)
+
+	require.NoError(t, err)
+	require.NotEmpty(t, token)
+	require.NotNil(t, user)
+	require.Equal(t, "display name", user.Username)
+	require.Len(t, repo.created, 1)
+	require.Equal(t, "display name", repo.created[0].Username)
+}
+
+func TestAuthService_LoginOrRegisterOAuthWithTokenPairUsesSourceAwareLookup(t *testing.T) {
+	emailUser := &User{
+		ID:           1,
+		Email:        "shared@example.com",
+		Username:     "email-user",
+		PasswordHash: "hash",
+		Role:         RoleUser,
+		Status:       StatusActive,
+		SignupSource: "email",
+	}
+	wechatUser := &User{
+		ID:           2,
+		Email:        "shared@example.com",
+		Username:     "wechat-user",
+		PasswordHash: "hash",
+		Role:         RoleUser,
+		Status:       StatusActive,
+		SignupSource: "wechat",
+	}
+	repo := &userRepoStub{
+		usersByEmail: map[string]*User{
+			"shared@example.com": emailUser,
+			userRepoStubSourceKey("shared@example.com", "email"):  emailUser,
+			userRepoStubSourceKey("shared@example.com", "wechat"): wechatUser,
+		},
+	}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled: "true",
+	}, nil, nil)
+	service.refreshTokenCache = &refreshTokenCacheStub{}
+
+	tokenPair, user, err := service.LoginOrRegisterOAuthWithTokenPair(
+		context.Background(),
+		"shared@example.com",
+		"new-wechat-name",
+		"",
+		"",
+		"wechat",
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, tokenPair)
+	require.NotNil(t, user)
+	require.Equal(t, int64(2), user.ID)
+	require.Equal(t, "wechat", user.SignupSource)
+	require.Empty(t, repo.created)
+	require.Equal(t, "wechat-user", user.Username)
+}
+
+func TestAuthService_ValidateRefreshTokenForUserRejectsDifferentOwner(t *testing.T) {
+	repo := &userRepoStub{}
+	authService := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled: "true",
+	}, nil, nil)
+	refreshToken := "rt_owner_mismatch"
+	authService.refreshTokenCache = &refreshTokenCacheStub{
+		tokens: map[string]*RefreshTokenData{
+			hashToken(refreshToken): {
+				UserID:       99,
+				TokenVersion: 4,
+				FamilyID:     "family",
+				CreatedAt:    time.Now().Add(-time.Minute),
+				ExpiresAt:    time.Now().Add(time.Hour),
+			},
+		},
+	}
+
+	err := authService.ValidateRefreshTokenForUser(context.Background(), refreshToken, &User{
+		ID:                   42,
+		TokenVersion:         4,
+		TokenVersionResolved: true,
+		Status:               StatusActive,
+	})
+
+	require.ErrorIs(t, err, ErrRefreshTokenInvalid)
+}
+
+func TestAuthService_ValidateRefreshTokenForUserAcceptsMatchingOwner(t *testing.T) {
+	repo := &userRepoStub{}
+	authService := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled: "true",
+	}, nil, nil)
+	refreshToken := "rt_matching_owner"
+	authService.refreshTokenCache = &refreshTokenCacheStub{
+		tokens: map[string]*RefreshTokenData{
+			hashToken(refreshToken): {
+				UserID:       42,
+				TokenVersion: 4,
+				FamilyID:     "family",
+				CreatedAt:    time.Now().Add(-time.Minute),
+				ExpiresAt:    time.Now().Add(time.Hour),
+			},
+		},
+	}
+
+	err := authService.ValidateRefreshTokenForUser(context.Background(), refreshToken, &User{
+		ID:                   42,
+		TokenVersion:         4,
+		TokenVersionResolved: true,
+		Status:               StatusActive,
+	})
+
+	require.NoError(t, err)
+}
+
 func TestAuthService_Register_AllowsAffiliateInviteWhenInvitationGateEnabled(t *testing.T) {
 	repo := &userRepoStub{nextID: 101}
 	authService := newAuthService(repo, map[string]string{
@@ -841,6 +997,7 @@ func TestAuthService_LoginOrRegisterOAuthWithTokenPair_ExistingUserDoesNotGrantA
 		ID:           88,
 		Email:        "linuxdo-123@linuxdo-connect.invalid",
 		Username:     "existing-linuxdo",
+		SignupSource: "linuxdo",
 		Role:         RoleUser,
 		Status:       StatusActive,
 		Balance:      4,

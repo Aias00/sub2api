@@ -831,6 +831,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyHomeShellConfig,
 		SettingKeyHomeBusinessShellConfig,
 		SettingKeyModelPlazaItems,
+		SettingKeyImageWorkspaceModelConfig,
 		SettingKeyModelPlazaShellConfig,
 		SettingKeyDocsShellConfig,
 		SettingKeyLegalDocumentShellConfig,
@@ -1028,6 +1029,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		HomeShellConfig:                  homeShellConfigSetting(settings[SettingKeyHomeShellConfig]),
 		HomeBusinessShellConfig:          homeBusinessShellConfigSetting(settings[SettingKeyHomeBusinessShellConfig]),
 		ModelPlazaItems:                  settings[SettingKeyModelPlazaItems],
+		ImageWorkspaceModelConfig:        imageWorkspaceModelConfigSetting(settings[SettingKeyImageWorkspaceModelConfig]),
 		ModelPlazaShellConfig:            modelPlazaShellConfigSetting(settings[SettingKeyModelPlazaShellConfig]),
 		DocsShellConfig:                  docsShellConfigSetting(settings[SettingKeyDocsShellConfig]),
 		LegalDocumentShellConfig:         legalDocumentShellConfigSetting(settings[SettingKeyLegalDocumentShellConfig]),
@@ -1127,6 +1129,7 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		TawkPropertyID:                strings.TrimSpace(settings[SettingKeyWebTawkPropertyID]),
 		TawkWidgetID:                  strings.TrimSpace(settings[SettingKeyWebTawkWidgetID]),
 		WebWorkspaceShellConfig:       workspaceShellConfigSetting(settings[SettingKeyWorkspaceShellConfig]),
+		WebImagePromptFilterConfig:    strings.TrimSpace(settings[SettingKeyImagePromptFilterConfig]),
 		WebPricingTitle:               strings.TrimSpace(settings[SettingKeyPricingTitle]),
 		WebPricingDescription:         strings.TrimSpace(settings[SettingKeyPricingDescription]),
 		WebPricingShellConfig:         pricingShellConfigSetting(settings[SettingKeyPricingShellConfig]),
@@ -1164,12 +1167,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 func creditsPerBalanceSetting(raw string) string {
 	value := strings.TrimSpace(raw)
-	if value == "" {
-		return "10"
-	}
-	parsed, err := strconv.ParseFloat(value, 64)
-	if err != nil || parsed <= 0 {
-		return "10"
+	if value == "" || value == "10" {
+		return "1"
 	}
 	return value
 }
@@ -1190,7 +1189,7 @@ func webAffonsoCookieDurationSetting(raw string) string {
 	return value
 }
 
-const defaultWorkspaceShellConfig = `{"zh":{"catalogLabel":"提示词案例","eyebrow":"提示词工作台","title":"AI 生图工作区","heroDescription":"从案例库带入提示词，整理后复制到你的生图模型或后续 Sub2API 原生生成流程。","draftImported":"已导入「{title}」","draftImportedDescription":"提示词已填入工作区，可以继续调整。","promptLabel":"提示词","promptPlaceholder":"输入或从案例库导入提示词","promptTooLong":"提示词过长","clearLabel":"清空","copyPromptLabel":"复制提示词","copySuccessMessage":"提示词已复制","copyEmptyError":"请先输入提示词","workspaceTitle":"工作区状态","workspaceDescription":"这里先提供提示词准备体验，后续可以接入 Sub2API 原生生图任务。","workspaceStatus":"当前版本不会直接发起模型调用；复制提示词或从案例库继续选择。","backToCatalogLabel":"返回案例库"},"en":{"catalogLabel":"Prompt catalog","eyebrow":"Prompt Workspace","title":"AI Image Workspace","heroDescription":"Bring prompts from the catalog, refine them, and copy them into your image model or a future Sub2API-native generation flow.","draftImported":"Imported \"{title}\"","draftImportedDescription":"The prompt is ready in the workspace.","promptLabel":"Prompt","promptPlaceholder":"Enter a prompt or import one from the catalog","promptTooLong":"Prompt is too long","clearLabel":"Clear","copyPromptLabel":"Copy prompt","copySuccessMessage":"Prompt copied","copyEmptyError":"Enter a prompt first","workspaceTitle":"Workspace status","workspaceDescription":"This workspace keeps prompt preparation available while the native Sub2API generation task UI is migrated.","workspaceStatus":"This version does not call a model directly. Copy the prompt or continue browsing the catalog.","backToCatalogLabel":"Back to catalog"}}`
+const defaultWorkspaceShellConfig = `{"zh":{"catalogLabel":"提示词案例","eyebrow":"生图工作台","title":"AI 生图工作台","heroDescription":"从案例库带入提示词，选择模型和参数后直接创建 Sub2API 生图任务。","draftImported":"已导入「{title}」","draftImportedDescription":"提示词已填入工作台，可以继续调整参数后生成。","promptLabel":"提示词","promptPlaceholder":"输入或从案例库导入提示词","promptTooLong":"提示词过长","clearLabel":"清空","copyPromptLabel":"复制提示词","copySuccessMessage":"提示词已复制","copyEmptyError":"请先输入提示词","workspaceTitle":"任务与产物状态","workspaceDescription":"模型配置、任务历史和产物存储由 Sub2API 生图工作台统一管理。","workspaceStatus":"登录后可创建真实生图任务，worker 会调用配置的上游模型并回写图片产物。","backToCatalogLabel":"返回案例库"},"en":{"catalogLabel":"Prompt catalog","eyebrow":"Image Workspace","title":"AI Image Workspace","heroDescription":"Bring prompts from the catalog, choose a model and parameters, then create a native Sub2API image task.","draftImported":"Imported \"{title}\"","draftImportedDescription":"The prompt is ready in the workspace. Adjust parameters before generating.","promptLabel":"Prompt","promptPlaceholder":"Enter a prompt or import one from the catalog","promptTooLong":"Prompt is too long","clearLabel":"Clear","copyPromptLabel":"Copy prompt","copySuccessMessage":"Prompt copied","copyEmptyError":"Enter a prompt first","workspaceTitle":"Task and artifact status","workspaceDescription":"Model config, task history, and artifact storage are managed by the Sub2API image workspace.","workspaceStatus":"After login, users can create real image tasks; the worker calls the configured upstream model and writes image artifacts back.","backToCatalogLabel":"Back to catalog"}}`
 
 func workspaceShellConfigSetting(raw string) string {
 	value := strings.TrimSpace(raw)
@@ -1200,11 +1199,14 @@ func workspaceShellConfigSetting(raw string) string {
 	return value
 }
 
-const defaultPromptCatalogShellConfig = `{"zh":{"defaults":{"sourceType":"case","hasImage":true,"pageSize":24,"sortBy":"imported_at","sortOrder":"desc","generatorPath":"/image-generator","generatorDraftSource":"sub2api-vue-prompt-catalog"},"labels":{"accountActionAuthenticated":"进入控制台","accountActionAnonymous":"登录","eyebrow":"Prompt Catalog","title":"提示词案例库","description":"直接浏览 Sub2API 中的提示词案例。筛选和分页由共享 Prompt API 提供。","caseTitle":"提示词案例库","caseDescription":"直接浏览 Sub2API 中的提示词案例。筛选和分页由共享 Prompt API 提供。","templateTitle":"提示词模板库","templateDescription":"直接浏览 Sub2API 中的提示词模板。筛选和分页由共享 Prompt API 提供。","total":"总数","sources":"来源","cases":"案例","templates":"模板","search":"搜索","searchPlaceholder":"搜索标题、提示词、标签或来源","caseOnly":"案例","templateOnly":"模板","allTypes":"全部类型","allSources":"全部来源","allCategories":"全部分类","hasImage":"只看有图","resultPrefix":"结果","page":"页","previous":"上一页","next":"下一页","emptyTitle":"没有匹配的案例","emptyDescription":"换一个关键词、来源或分类再试。","noImage":"暂无图片","source":"查看来源","details":"查看","prompt":"提示词","charUnit":"字符","copyPrompt":"复制提示词","promptCopied":"提示词已复制","generate":"去生图","importTitle":"从链接导入案例","importDescription":"管理员可直接导入 X/Twitter 帖子，图片会通过 Sub2API/R2 同步后进入案例库。","importProviderX":"X / Twitter","importPlaceholder":"粘贴 X/Twitter 帖子链接","importAction":"导入","importing":"导入中...","importSuccess":"已导入案例","importWarnings":"导入提示","loadError":"加载提示词案例失败"}},"en":{"defaults":{"sourceType":"case","hasImage":true,"pageSize":24,"sortBy":"imported_at","sortOrder":"desc","generatorPath":"/image-generator","generatorDraftSource":"sub2api-vue-prompt-catalog"},"labels":{"accountActionAuthenticated":"Dashboard","accountActionAnonymous":"Log in","eyebrow":"Prompt Catalog","title":"Prompt Catalog","description":"Browse prompt cases directly from Sub2API. Filtering and pagination are served by the shared prompt API.","caseTitle":"Prompt Catalog","caseDescription":"Browse prompt cases directly from Sub2API. Filtering and pagination are served by the shared prompt API.","templateTitle":"Prompt Templates","templateDescription":"Browse prompt templates directly from Sub2API. Filtering and pagination are served by the shared prompt API.","total":"Total","sources":"Sources","cases":"Cases","templates":"Templates","search":"Search","searchPlaceholder":"Search titles, prompts, tags, or sources","caseOnly":"Cases","templateOnly":"Templates","allTypes":"All types","allSources":"All sources","allCategories":"All categories","hasImage":"Images only","resultPrefix":"Results","page":"Page","previous":"Previous","next":"Next","emptyTitle":"No matching prompts","emptyDescription":"Try another keyword, source, or category.","noImage":"No image","source":"View source","details":"Details","prompt":"Prompt","charUnit":"chars","copyPrompt":"Copy prompt","promptCopied":"Prompt copied","generate":"Use in generator","importTitle":"Import from link","importDescription":"Admins can import X/Twitter posts directly. Images are synced through Sub2API/R2 before entering the catalog.","importProviderX":"X / Twitter","importPlaceholder":"Paste an X/Twitter post URL","importAction":"Import","importing":"Importing...","importSuccess":"Imported prompt case","importWarnings":"Import warnings","loadError":"Failed to load prompt cases"}}}`
+const defaultPromptCatalogShellConfig = `{"zh":{"defaults":{"sourceType":"case","hasImage":true,"pageSize":24,"sortBy":"imported_at","sortOrder":"desc","generatorPath":"/image-generator","generatorDraftSource":"sub2api-vue-prompt-catalog"},"labels":{"accountActionAuthenticated":"进入控制台","accountActionAnonymous":"登录","eyebrow":"提示词画廊","title":"提示词案例库","description":"直接浏览 Sub2API 中的提示词案例。筛选和分页由共享 Prompt API 提供。","caseTitle":"提示词案例库","caseDescription":"直接浏览 Sub2API 中的提示词案例。筛选和分页由共享 Prompt API 提供。","templateTitle":"提示词模板库","templateDescription":"直接浏览 Sub2API 中的提示词模板。筛选和分页由共享 Prompt API 提供。","total":"总数","sources":"来源","cases":"案例","templates":"模板","search":"搜索","searchPlaceholder":"搜索标题、提示词、标签或来源","caseOnly":"案例","templateOnly":"模板","allTypes":"全部类型","allSources":"全部来源","allCategories":"全部分类","hasImage":"只看有图","resultPrefix":"结果","page":"页","previous":"上一页","next":"下一页","emptyTitle":"没有匹配的案例","emptyDescription":"换一个关键词、来源或分类再试。","noImage":"暂无图片","source":"查看来源","details":"查看","prompt":"提示词","charUnit":"字符","copyPrompt":"复制提示词","promptCopied":"提示词已复制","generate":"去生图","importTitle":"从链接导入案例","importDescription":"管理员可直接导入 X/Twitter 帖子，图片会通过 Sub2API/R2 同步后进入案例库。","importProviderX":"X / Twitter","importPlaceholder":"粘贴 X/Twitter 帖子链接","importAction":"导入","importing":"导入中...","importSuccess":"已导入案例","importWarnings":"导入提示","loadError":"加载提示词案例失败"}},"en":{"defaults":{"sourceType":"case","hasImage":true,"pageSize":24,"sortBy":"imported_at","sortOrder":"desc","generatorPath":"/image-generator","generatorDraftSource":"sub2api-vue-prompt-catalog"},"labels":{"accountActionAuthenticated":"Dashboard","accountActionAnonymous":"Log in","eyebrow":"Prompt Catalog","title":"Prompt Catalog","description":"Browse prompt cases directly from Sub2API. Filtering and pagination are served by the shared prompt API.","caseTitle":"Prompt Catalog","caseDescription":"Browse prompt cases directly from Sub2API. Filtering and pagination are served by the shared prompt API.","templateTitle":"Prompt Templates","templateDescription":"Browse prompt templates directly from Sub2API. Filtering and pagination are served by the shared prompt API.","total":"Total","sources":"Sources","cases":"Cases","templates":"Templates","search":"Search","searchPlaceholder":"Search titles, prompts, tags, or sources","caseOnly":"Cases","templateOnly":"Templates","allTypes":"All types","allSources":"All sources","allCategories":"All categories","hasImage":"Images only","resultPrefix":"Results","page":"Page","previous":"Previous","next":"Next","emptyTitle":"No matching prompts","emptyDescription":"Try another keyword, source, or category.","noImage":"No image","source":"View source","details":"Details","prompt":"Prompt","charUnit":"chars","copyPrompt":"Copy prompt","promptCopied":"Prompt copied","generate":"Use in generator","importTitle":"Import from link","importDescription":"Admins can import X/Twitter posts directly. Images are synced through Sub2API/R2 before entering the catalog.","importProviderX":"X / Twitter","importPlaceholder":"Paste an X/Twitter post URL","importAction":"Import","importing":"Importing...","importSuccess":"Imported prompt case","importWarnings":"Import warnings","loadError":"Failed to load prompt cases"}}}`
 
 func promptCatalogShellConfigSetting(raw string) string {
 	value := strings.TrimSpace(raw)
 	if value == "" {
+		return defaultPromptCatalogShellConfig
+	}
+	if !json.Valid([]byte(value)) {
 		return defaultPromptCatalogShellConfig
 	}
 	return value
@@ -1220,7 +1222,7 @@ func dashboardShellConfigSetting(raw string) string {
 	return value
 }
 
-const defaultPricingShellConfig = `{"zh":{"button":{"title":"去购买"},"groups":[{"name":"one-time","title":"充值包"},{"name":"subscription","title":"订阅包"}],"labels":{"prompts":"提示词案例","eyebrow":"价格","title":"价格与套餐","description":"浏览由 Sub2API 统一配置的充值包和订阅套餐，选择后进入统一支付流程。","catalogStatus":"目录状态","rechargeProducts":"充值包","subscriptionPlans":"订阅包","recharge":"充值包","subscription":"订阅包","buy":"去购买","rechargeCta":"购买充值包","subscriptionCta":"购买订阅包","loadFailed":"价格目录加载失败，请稍后重试。","emptyRecharge":"暂未配置充值包。","emptyPlans":"暂未配置订阅包。","recommended":"推荐","creditedBalance":"到账余额","rate":"倍率","quota":"额度","unlimited":"不限","day":"天","days":"天","month":"月"}},"en":{"button":{"title":"Buy"},"groups":[{"name":"one-time","title":"Recharge"},{"name":"subscription","title":"Subscription"}],"labels":{"prompts":"Prompt cases","eyebrow":"Pricing","title":"Pricing","description":"Browse recharge products and subscription plans configured by Sub2API, then continue to the unified checkout flow.","catalogStatus":"Catalog status","rechargeProducts":"Recharge products","subscriptionPlans":"Subscription plans","recharge":"Recharge","subscription":"Subscription","buy":"Buy","rechargeCta":"Buy credits","subscriptionCta":"Buy subscription","loadFailed":"Failed to load the pricing catalog. Please try again later.","emptyRecharge":"No recharge products are configured yet.","emptyPlans":"No subscription plans are configured yet.","recommended":"Recommended","creditedBalance":"Credited balance","rate":"Rate","quota":"Quota","unlimited":"Unlimited","day":"day","days":"days","month":"month"}}}`
+const defaultPricingShellConfig = `{"zh":{"button":{"title":"去购买"},"groups":[{"name":"one-time","title":"充值包"},{"name":"subscription","title":"订阅包"}],"labels":{"prompts":"提示词案例","eyebrow":"价格","title":"价格与套餐","description":"浏览由 Sub2API 统一配置的充值包和订阅套餐，选择后进入统一支付流程。","catalogStatus":"目录状态","rechargeProducts":"充值包","subscriptionPlans":"订阅包","recharge":"充值包","subscription":"订阅包","buy":"去购买","rechargeCta":"购买充值包","subscriptionCta":"购买订阅包","loadFailed":"价格目录加载失败，请稍后重试。","emptyRecharge":"暂未配置充值包。","emptyPlans":"暂未配置订阅包。","recommended":"推荐","creditedBalance":"到账余额","rate":"倍率","quota":"额度","unlimited":"不限","day":"天","days":"天","month":"月"}},"en":{"button":{"title":"Buy"},"groups":[{"name":"one-time","title":"Recharge"},{"name":"subscription","title":"Subscription"}],"labels":{"prompts":"Prompt cases","eyebrow":"Pricing","title":"Pricing","description":"Browse recharge products and subscription plans configured by Sub2API, then continue to the unified checkout flow.","catalogStatus":"Catalog status","rechargeProducts":"Recharge products","subscriptionPlans":"Subscription plans","recharge":"Recharge","subscription":"Subscription","buy":"Buy","rechargeCta":"Buy balance","subscriptionCta":"Buy subscription","loadFailed":"Failed to load the pricing catalog. Please try again later.","emptyRecharge":"No recharge products are configured yet.","emptyPlans":"No subscription plans are configured yet.","recommended":"Recommended","creditedBalance":"Credited balance","rate":"Rate","quota":"Quota","unlimited":"Unlimited","day":"day","days":"days","month":"month"}}}`
 
 func pricingShellConfigSetting(raw string) string {
 	value := strings.TrimSpace(raw)
@@ -1240,7 +1242,7 @@ func paymentShellConfigSetting(raw string) string {
 	return value
 }
 
-const defaultCreditsShellConfig = `{"zh":{"labels":{"eyebrow":"积分","title":"积分余额","description":"积分已由 Sub2API 余额统一驱动；旧本地 credit 记录不再作为余额来源。","purchase":"购买积分","orders":"订单记录","credits":"积分","sub2apiBalance":"Sub2API 余额","conversion":"换算规则：{creditsPerBalance} credits = 1 Sub2API balance。","balanceLabel":"Sub2API 余额：{balance}","actionsTitle":"余额操作","actionsDescription":"充值、订单、退款等流程均进入 Sub2API 统一支付体系。","recharge":"去充值","viewOrders":"查看订单"},"actions":{"title":"余额操作","description":"充值、订单、退款等流程均进入 Sub2API 统一支付体系。"},"buttons":{"recharge":"去充值","orders":"查看订单"},"conversion":"换算规则：{creditsPerBalance} credits = 1 Sub2API balance。"},"en":{"labels":{"eyebrow":"Credits","title":"Credit Balance","description":"Credits are now driven by Sub2API balance. Legacy local credit records are no longer used as the balance source.","purchase":"Purchase credits","orders":"Orders","credits":"Credits","sub2apiBalance":"Sub2API balance","conversion":"Conversion: {creditsPerBalance} credits = 1 Sub2API balance.","balanceLabel":"Sub2API balance: {balance}","actionsTitle":"Balance actions","actionsDescription":"Recharge, orders, and refunds now go through the unified Sub2API payment flow.","recharge":"Recharge","viewOrders":"View orders"},"actions":{"title":"Balance actions","description":"Recharge, orders, and refunds now go through the unified Sub2API payment flow."},"buttons":{"recharge":"Recharge","orders":"View orders"},"conversion":"Conversion: {creditsPerBalance} credits = 1 Sub2API balance."}}`
+const defaultCreditsShellConfig = `{"zh":{"labels":{"eyebrow":"余额","title":"余额","description":"前端和后端统一使用余额口径；后端 balance 字段仍是唯一账本字段。","purchase":"充值余额","orders":"订单记录","credits":"余额","sub2apiBalance":"账本余额","conversion":"统一口径：1 余额单位 = 1 balance 账本单位。","balanceLabel":"账本余额：{balance}","actionsTitle":"余额操作","actionsDescription":"充值、订单、退款等流程均进入 Sub2API 统一支付体系，最终写入同一份 balance 账本。","recharge":"去充值","viewOrders":"查看订单"},"actions":{"title":"余额操作","description":"充值、订单、退款等流程均进入 Sub2API 统一支付体系，最终写入同一份 balance 账本。"},"buttons":{"recharge":"去充值","orders":"查看订单"},"conversion":"统一口径：1 余额单位 = 1 balance 账本单位。"},"en":{"labels":{"eyebrow":"Balance","title":"Balance","description":"The frontend and backend use the same balance terminology; the backend balance field remains the only ledger field.","purchase":"Recharge balance","orders":"Orders","credits":"Balance","sub2apiBalance":"Ledger balance","conversion":"Unified unit: 1 balance unit = 1 ledger unit.","balanceLabel":"Ledger balance: {balance}","actionsTitle":"Balance actions","actionsDescription":"Recharge, orders, and refunds go through the unified Sub2API payment flow and write to the same balance ledger.","recharge":"Recharge","viewOrders":"View orders"},"actions":{"title":"Balance actions","description":"Recharge, orders, and refunds go through the unified Sub2API payment flow and write to the same balance ledger."},"buttons":{"recharge":"Recharge","orders":"View orders"},"conversion":"Unified unit: 1 balance unit = 1 ledger unit."}}`
 
 func creditsShellConfigSetting(raw string) string {
 	value := strings.TrimSpace(raw)
@@ -1251,7 +1253,7 @@ func creditsShellConfigSetting(raw string) string {
 }
 
 const defaultHomeShellConfig = `{"zh":{"labels":{"viewDocs":"文档","dashboard":"控制台","login":"登录","primaryCta":"立即开始","secondaryCta":"浏览模型","heroBadge":"开发者首选","heroTitle":"AI 编码工作台","heroDescription":"无需管理多个订阅账号，一站式接入 Claude、GPT 等主流 AI 服务。","modelMatrixKicker":"模型矩阵","modelMatrixTitle":"一个工作台连接 Claude 与 GPT","modelMatrixDescription":"从后台目录读取模型族和能力标签，保持公开页面和实际售卖能力一致。","modelMatrixEmptyCard":"配置模型后会自动出现在这里。","modelMatrixEmptyPill":"即将上线","experienceKicker":"体验","experienceTitle":"更清晰的模型访问流程","experienceDescription":"把模型访问、支付、文档和案例目录统一在一个平台里。","whyChooseKicker":"为什么选择","whyChooseTitle":"面向日常 AI 工作","whyChooseDescription":"更克制的产品形态、更清晰的价格和更贴近日常编码的工作流。","footerDescription":"更简单的模型访问入口，提供清晰价格和日常 AI 辅助编码体验。","allRightsReserved":"保留所有权利。","termsLink":"服务条款","privacyLink":"隐私政策","navHome":"首页","navDocs":"文档","navModels":"模型","navExperience":"体验","footerProduct":"产品","footerCatalog":"目录","footerSupport":"支持","familyClaudeBadge":"Claude","familyGptBadge":"GPT","familyClaudeTagline":"偏重推理的编码模型","familyGptTagline":"快速迭代和智能体","familyClaudeDescription":"适合深度推理、架构设计和代码审查。","familyGptDescription":"适合功能开发、快速迭代和智能体工作流。","familyClaudeReasoning":"深度推理","familyClaudeArchitecture":"架构设计","familyClaudeReview":"代码审查","familyGptCoding":"代码生成","familyGptIteration":"快速迭代","familyGptAgents":"智能体"},"experienceCards":[{"key":"unified","icon":"server","iconClass":"bg-gradient-to-br from-sky-500 to-blue-600","title":"一个密钥统一接入","description":"统一域名和密钥格式，减少在不同模型和工具之间来回切换。"},{"key":"setup","icon":"key","iconClass":"bg-gradient-to-br from-indigo-500 to-violet-600","title":"配置更轻","description":"更贴近 CLI、IDE 与日常开发习惯，不把大量时间花在环境变量和接线细节上。"},{"key":"stability","icon":"sparkles","iconClass":"bg-gradient-to-br from-emerald-500 to-teal-600","title":"链路更稳","description":"通过账号池与路由能力降低单点限制带来的中断，让高频编码更连续。"},{"key":"billing","icon":"chart","iconClass":"bg-gradient-to-br from-fuchsia-500 to-purple-600","title":"计费更透明","description":"充值、订阅和后续用量都公开可见，个人和小团队更容易控成本。"}],"whyChooseCards":[{"key":"lowFriction","title":"少折腾配置","description":"把分散在多个模型入口和订阅账号里的接入复杂度压缩成统一体验。"},{"key":"transparent","title":"模型一眼看清","description":"首页直接展示主力模型家族，开发者在登录前就能判断是否适合自己的工作流。"},{"key":"routing","title":"更适合高频编码","description":"强调链路稳定性与编码工作流，而不是堆叠泛化功能。"},{"key":"team","title":"适配个人与小团队","description":"既适合独立开发者快速上手，也方便小团队统一入口和管理预算。"}]},"en":{"labels":{"viewDocs":"Docs","dashboard":"Dashboard","login":"Log in","primaryCta":"Start now","secondaryCta":"Browse models","heroBadge":"Developer First","heroTitle":"AI Coding Workspace","heroDescription":"Access Claude, GPT, and other core AI services in one place without managing multiple subscriptions.","modelMatrixKicker":"Model Matrix","modelMatrixTitle":"One workspace for Claude and GPT","modelMatrixDescription":"Browse configured model families and capabilities from the backend catalog.","modelMatrixEmptyCard":"Configured models will appear here automatically.","modelMatrixEmptyPill":"Coming soon","experienceKicker":"Experience","experienceTitle":"A cleaner model access flow","experienceDescription":"Keep model access, payments, docs, and catalog discovery in one platform.","whyChooseKicker":"Why choose us","whyChooseTitle":"Built for daily AI work","whyChooseDescription":"A more restrained product shape, clearer pricing, and workflows closer to day-to-day coding.","footerDescription":"A simpler entry point for model access, visible pricing, and day-to-day AI-assisted coding.","allRightsReserved":"All rights reserved.","termsLink":"Terms","privacyLink":"Privacy","navHome":"Home","navDocs":"Docs","navModels":"Models","navExperience":"Experience","footerProduct":"Product","footerCatalog":"Catalog","footerSupport":"Support","familyClaudeBadge":"Claude","familyGptBadge":"GPT","familyClaudeTagline":"Reasoning-first coding","familyGptTagline":"Fast iteration and agents","familyClaudeDescription":"Use Claude models for deep reasoning, architecture, and review-heavy work.","familyGptDescription":"Use GPT models for coding, iteration, and agentic workflows.","familyClaudeReasoning":"Deep reasoning","familyClaudeArchitecture":"Architecture","familyClaudeReview":"Code review","familyGptCoding":"Coding","familyGptIteration":"Iteration","familyGptAgents":"Agents"},"experienceCards":[{"key":"unified","icon":"server","iconClass":"bg-gradient-to-br from-sky-500 to-blue-600","title":"One key, unified access","description":"Use one consistent domain and key format instead of juggling multiple providers and setup flows."},{"key":"setup","icon":"key","iconClass":"bg-gradient-to-br from-indigo-500 to-violet-600","title":"Lower setup friction","description":"Designed to fit better with CLI tools, IDE plugins, and the development habits people already have."},{"key":"stability","icon":"sparkles","iconClass":"bg-gradient-to-br from-emerald-500 to-teal-600","title":"More stable routing","description":"Account-pool and routing capabilities help reduce interruptions caused by single-path limits."},{"key":"billing","icon":"chart","iconClass":"bg-gradient-to-br from-fuchsia-500 to-purple-600","title":"More transparent billing","description":"Recharge products, plans, and usage stay visible so developers can control spend."}],"whyChooseCards":[{"key":"lowFriction","title":"Less setup overhead","description":"Compress scattered model and provider setup into a more unified experience built for repeat coding use."},{"key":"transparent","title":"Models visible at a glance","description":"The homepage surfaces the core model families directly so developers can judge the fit before signing in."},{"key":"routing","title":"Focused on coding throughput","description":"The product emphasizes coding workflows and routing stability instead of loading the homepage with unrelated platform features."},{"key":"team","title":"Fits solo devs and small teams","description":"Simple enough for individual developers to adopt quickly, while still giving small teams a cleaner shared entry point."}]}}`
-const defaultHomeBusinessShellConfig = `{"zh":{"labels":{"viewDocs":"文档","dashboard":"控制台","login":"登录","primaryCta":"进入能力中台","secondaryCta":"查看图片提示词","heroBadge":"业务能力首页","heroTitle":"面向业务场景的 AI 能力工作台","heroDescription":"Sub2API 以后沉淀用户、订单、套餐、支付等中台能力；首页重点展示微信导出、热点、图片提示词和生图工作台等可直接理解的业务能力。","modelMatrixKicker":"业务能力","modelMatrixTitle":"把高频业务能力摆到首页","modelMatrixDescription":"围绕内容采集、提示词沉淀与图像生产流程，先把可落地的能力入口讲清楚，再由中台承接账户、订单和套餐等底层能力。","modelMatrixEmptyCard":"业务能力即将上线","modelMatrixEmptyPill":"建设中","experienceKicker":"中台定位","experienceTitle":"业务能力前台，平台能力落到中台","experienceDescription":"用户、订单、套餐、支付与账户治理逐步统一收口到 Sub2API 中台，让前台页面更多表达业务价值而不是底层接线细节。","whyChooseKicker":"能力组织方式","whyChooseTitle":"先讲用户能完成什么，再讲平台怎么支撑","whyChooseDescription":"首页围绕业务工作流编排；底层代理、模型路由和结算能力继续由中台承接。","footerDescription":"聚焦业务能力表达，由中台统一承接用户、订单、套餐和支付能力。","allRightsReserved":"保留所有权利。","termsLink":"服务条款","privacyLink":"隐私政策","navHome":"首页","navDocs":"文档","navModels":"提示词","navExperience":"能力","footerProduct":"首页入口","footerCatalog":"业务能力","footerSupport":"支持","familyClaudeBadge":"","familyGptBadge":"","familyClaudeTagline":"","familyGptTagline":"","familyClaudeDescription":"","familyGptDescription":"","familyClaudeReasoning":"","familyClaudeArchitecture":"","familyClaudeReview":"","familyGptCoding":"","familyGptIteration":"","familyGptAgents":""},"businessCards":[{"key":"wechat-export","badge":"Workflow","title":"微信导出","description":"沉淀公众号内容导出与整理能力，适合把文章资产回收到统一工作流里。","capabilityTags":["内容导出","素材整理","资产回收"]},{"key":"hot-topics","badge":"Signal","title":"热点追踪","description":"围绕热点发现、筛选和后续处理，把高频内容观察任务做成稳定入口。","capabilityTags":["热点收集","线索筛选","内容观察"]},{"key":"prompt-catalog","badge":"Library","title":"图片提示词","description":"把沉淀下来的图片提示词案例放到统一目录里，便于检索、复用和二次加工。","capabilityTags":["案例目录","检索复用","图像提示词"],"path":"/prompts","pathLabel":"进入提示词库"},{"key":"image-workspace","badge":"Workspace","title":"生图工作台","description":"以提示词工作流为中心组织图片生成前的整理、复制和后续生产衔接。","capabilityTags":["Prompt 工作流","生图准备","工作台"],"path":"/image-generator","pathLabel":"进入工作台"}],"experienceCards":[{"key":"platform","icon":"server","iconClass":"bg-gradient-to-br from-sky-500 to-blue-600","title":"中台统一承接用户与订单","description":"前台页面聚焦业务表达，用户、订单、支付和套餐配置逐步收口到统一能力中台。"},{"key":"catalog","icon":"key","iconClass":"bg-gradient-to-br from-indigo-500 to-violet-600","title":"内容能力先产品化","description":"优先把微信导出、热点、提示词和生图工作流做成稳定能力，再让底层平台持续支撑它们。"},{"key":"ops","icon":"sparkles","iconClass":"bg-gradient-to-br from-emerald-500 to-teal-600","title":"前后台职责更清晰","description":"首页讲业务价值，后台负责配置、数据和运行时控制，减少首页同时承担两种叙事。"}],"whyChooseCards":[{"key":"business-first","title":"先围绕业务入口组织","description":"把用户真正会点开的业务能力放在首页，而不是先暴露中台实现细节。"},{"key":"platform-backbone","title":"中台继续做能力骨架","description":"账户、订单、套餐与支付能力继续沉到 Sub2API 中台，不需要在首页重复解释。"},{"key":"reuse","title":"提示词与内容资产可复用","description":"把图片提示词、导出内容和热点线索组织成可持续复用的业务资产。"},{"key":"workflow","title":"形成工作流闭环","description":"从内容导出、热点发现到提示词沉淀、生图准备，首页直接表达完整业务链路。"}]},"en":{"labels":{"viewDocs":"Docs","dashboard":"Dashboard","login":"Log in","primaryCta":"Open the platform","secondaryCta":"Browse prompt cases","heroBadge":"Business capability home","heroTitle":"An AI workspace organized around business capabilities","heroDescription":"Sub2API will keep consolidating users, orders, plans, and payment into the capability platform while the homepage highlights concrete workflows such as WeChat export, hot-topic tracking, prompt cases, and the image workspace.","modelMatrixKicker":"Capabilities","modelMatrixTitle":"Put business workflows on the homepage","modelMatrixDescription":"Lead with content export, discovery, prompt reuse, and image production workflows while the platform layer continues to own accounts, plans, and billing.","modelMatrixEmptyCard":"Business capability coming soon","modelMatrixEmptyPill":"In progress","experienceKicker":"Platform direction","experienceTitle":"Business-facing home, platform-backed operations","experienceDescription":"Users, orders, plans, payments, and account management continue moving into the Sub2API platform so public pages can focus on user-facing workflows.","whyChooseKicker":"Information architecture","whyChooseTitle":"Explain what users can do before how the platform works","whyChooseDescription":"The homepage should foreground business workflows while the platform continues to power routing, account management, and settlement behind the scenes.","footerDescription":"Homepage messaging focused on business capabilities, backed by a unified platform for users, plans, orders, and payments.","allRightsReserved":"All rights reserved.","termsLink":"Terms","privacyLink":"Privacy","navHome":"Home","navDocs":"Docs","navModels":"Prompts","navExperience":"Capabilities","footerProduct":"Entry points","footerCatalog":"Workflows","footerSupport":"Support","familyClaudeBadge":"","familyGptBadge":"","familyClaudeTagline":"","familyGptTagline":"","familyClaudeDescription":"","familyGptDescription":"","familyClaudeReasoning":"","familyClaudeArchitecture":"","familyClaudeReview":"","familyGptCoding":"","familyGptIteration":"","familyGptAgents":""},"businessCards":[{"key":"wechat-export","badge":"Workflow","title":"WeChat Export","description":"Turn WeChat export and article recovery into a stable workflow entry instead of an ad hoc operation.","capabilityTags":["Content export","Asset recovery","Workflow"]},{"key":"hot-topics","badge":"Signal","title":"Hot Topic Tracking","description":"Package hot-topic discovery and follow-up processing into a clearer product surface.","capabilityTags":["Signal collection","Trend tracking","Content ops"]},{"key":"prompt-catalog","badge":"Library","title":"Image Prompt Cases","description":"Keep image prompt cases in a searchable catalog so teams can reuse and refine proven material.","capabilityTags":["Prompt library","Search","Reuse"],"path":"/prompts","pathLabel":"Open prompt catalog"},{"key":"image-workspace","badge":"Workspace","title":"Image Workspace","description":"Center the image workflow around prompt preparation and handoff instead of exposing only the platform plumbing.","capabilityTags":["Prompt workflow","Image prep","Workspace"],"path":"/image-generator","pathLabel":"Open workspace"}],"experienceCards":[{"key":"platform","icon":"server","iconClass":"bg-gradient-to-br from-sky-500 to-blue-600","title":"Platform-owned users and orders","description":"The public home can focus on business workflows while user, order, payment, and plan capabilities consolidate behind the platform."},{"key":"catalog","icon":"key","iconClass":"bg-gradient-to-br from-indigo-500 to-violet-600","title":"Productize content workflows first","description":"Lead with WeChat export, hot topics, prompt cases, and image preparation instead of putting infrastructure copy first."},{"key":"ops","icon":"sparkles","iconClass":"bg-gradient-to-br from-emerald-500 to-teal-600","title":"Clearer split between home and platform","description":"The homepage explains user-facing workflows; the platform continues to own runtime controls, routing, and settlement."}],"whyChooseCards":[{"key":"business-first","title":"Organize around workflows users recognize","description":"Put the workflows people actually want to enter from the homepage ahead of the supporting platform internals."},{"key":"platform-backbone","title":"Keep the platform as the backbone","description":"Users, orders, plans, and payment keep consolidating into Sub2API without forcing every homepage section to explain the machinery."},{"key":"reuse","title":"Make prompts and content reusable assets","description":"Turn prompt cases, exported content, and hot-topic findings into assets that can be searched, refined, and reused."},{"key":"workflow","title":"Show a complete workflow story","description":"Move from export and topic discovery into prompt curation and image preparation with a clearer end-to-end capability narrative."}]}}`
+const defaultHomeBusinessShellConfig = `{"zh":{"labels":{"viewDocs":"文档","dashboard":"控制台","login":"登录","primaryCta":"进入能力中台","secondaryCta":"查看图片提示词","heroBadge":"业务能力首页","heroTitle":"面向业务场景的 AI 能力工作台","heroDescription":"Sub2API 以后沉淀用户、订单、套餐、支付等中台能力；首页重点展示微信导出、热点、图片提示词和生图工作台等可直接理解的业务能力。","modelMatrixKicker":"业务能力","modelMatrixTitle":"把高频业务能力摆到首页","modelMatrixDescription":"围绕内容采集、提示词沉淀与图像生产流程，先把可落地的能力入口讲清楚，再由中台承接账户、订单和套餐等底层能力。","modelMatrixEmptyCard":"业务能力即将上线","modelMatrixEmptyPill":"建设中","experienceKicker":"中台定位","experienceTitle":"业务能力前台，平台能力落到中台","experienceDescription":"用户、订单、套餐、支付与账户治理逐步统一收口到 Sub2API 中台，让前台页面更多表达业务价值而不是底层接线细节。","whyChooseKicker":"能力组织方式","whyChooseTitle":"先讲用户能完成什么，再讲平台怎么支撑","whyChooseDescription":"首页围绕业务工作流编排；底层代理、模型路由和结算能力继续由中台承接。","footerDescription":"聚焦业务能力表达，由中台统一承接用户、订单、套餐和支付能力。","allRightsReserved":"保留所有权利。","termsLink":"服务条款","privacyLink":"隐私政策","navHome":"首页","navDocs":"文档","navModels":"提示词","navExperience":"能力","footerProduct":"首页入口","footerCatalog":"业务能力","footerSupport":"支持","familyClaudeBadge":"","familyGptBadge":"","familyClaudeTagline":"","familyGptTagline":"","familyClaudeDescription":"","familyGptDescription":"","familyClaudeReasoning":"","familyClaudeArchitecture":"","familyClaudeReview":"","familyGptCoding":"","familyGptIteration":"","familyGptAgents":""},"businessCards":[{"key":"wechat-export","badge":"Workflow","title":"微信导出","description":"沉淀公众号内容导出与整理能力，适合把文章资产回收到统一工作流里。","capabilityTags":["内容导出","素材整理","资产回收"],"path":"/wechat","pathLabel":"进入微信导出"},{"key":"hot-topics","badge":"Signal","title":"热点追踪","description":"围绕热点发现、筛选和后续处理，把高频内容观察任务做成稳定入口。当前真实页面仍在建设中。","capabilityTags":["热点收集","线索筛选","建设中"]},{"key":"prompt-catalog","badge":"Library","title":"图片提示词","description":"把沉淀下来的图片提示词案例放到统一目录里，便于检索、复用和二次加工。","capabilityTags":["案例目录","检索复用","图像提示词"],"path":"/prompts","pathLabel":"进入提示词库"},{"key":"image-workspace","badge":"Workspace","title":"生图工作台","description":"以提示词工作流为中心组织图片生成前的整理、复制和后续生产衔接。","capabilityTags":["Prompt 工作流","生图准备","工作台"],"path":"/image-generator","pathLabel":"进入工作台"}],"experienceCards":[{"key":"platform","icon":"server","iconClass":"bg-gradient-to-br from-sky-500 to-blue-600","title":"中台统一承接用户与订单","description":"前台页面聚焦业务表达，用户、订单、支付和套餐配置逐步收口到统一能力中台。"},{"key":"catalog","icon":"key","iconClass":"bg-gradient-to-br from-indigo-500 to-violet-600","title":"内容能力先产品化","description":"优先把微信导出、热点、提示词和生图工作流做成稳定能力，再让底层平台持续支撑它们。"},{"key":"ops","icon":"sparkles","iconClass":"bg-gradient-to-br from-emerald-500 to-teal-600","title":"前后台职责更清晰","description":"首页讲业务价值，后台负责配置、数据和运行时控制，减少首页同时承担两种叙事。"}],"whyChooseCards":[{"key":"business-first","title":"先围绕业务入口组织","description":"把用户真正会点开的业务能力放在首页，而不是先暴露中台实现细节。"},{"key":"platform-backbone","title":"中台继续做能力骨架","description":"账户、订单、套餐与支付能力继续沉到 Sub2API 中台，不需要在首页重复解释。"},{"key":"reuse","title":"提示词与内容资产可复用","description":"把图片提示词、导出内容和热点线索组织成可持续复用的业务资产。"},{"key":"workflow","title":"形成工作流闭环","description":"从内容导出、热点发现到提示词沉淀、生图准备，首页直接表达完整业务链路。"}]},"en":{"labels":{"viewDocs":"Docs","dashboard":"Dashboard","login":"Log in","primaryCta":"Open the platform","secondaryCta":"Browse prompt cases","heroBadge":"Business capability home","heroTitle":"An AI workspace organized around business capabilities","heroDescription":"Sub2API will keep consolidating users, orders, plans, and payment into the capability platform while the homepage highlights concrete workflows such as WeChat export, hot-topic tracking, prompt cases, and the image workspace.","modelMatrixKicker":"Capabilities","modelMatrixTitle":"Put business workflows on the homepage","modelMatrixDescription":"Lead with content export, discovery, prompt reuse, and image production workflows while the platform layer continues to own accounts, plans, and billing.","modelMatrixEmptyCard":"Business capability coming soon","modelMatrixEmptyPill":"In progress","experienceKicker":"Platform direction","experienceTitle":"Business-facing home, platform-backed operations","experienceDescription":"Users, orders, plans, payments, and account management continue moving into the Sub2API platform so public pages can focus on user-facing workflows.","whyChooseKicker":"Information architecture","whyChooseTitle":"Explain what users can do before how the platform works","whyChooseDescription":"The homepage should foreground business workflows while the platform continues to power routing, account management, and settlement behind the scenes.","footerDescription":"Homepage messaging focused on business capabilities, backed by a unified platform for users, plans, orders, and payments.","allRightsReserved":"All rights reserved.","termsLink":"Terms","privacyLink":"Privacy","navHome":"Home","navDocs":"Docs","navModels":"Prompts","navExperience":"Capabilities","footerProduct":"Entry points","footerCatalog":"Workflows","footerSupport":"Support","familyClaudeBadge":"","familyGptBadge":"","familyClaudeTagline":"","familyGptTagline":"","familyClaudeDescription":"","familyGptDescription":"","familyClaudeReasoning":"","familyClaudeArchitecture":"","familyClaudeReview":"","familyGptCoding":"","familyGptIteration":"","familyGptAgents":""},"businessCards":[{"key":"wechat-export","badge":"Workflow","title":"WeChat Export","description":"Turn WeChat export and article recovery into a stable workflow entry instead of an ad hoc operation.","capabilityTags":["Content export","Asset recovery","Workflow"],"path":"/wechat","pathLabel":"Open WeChat export"},{"key":"hot-topics","badge":"Signal","title":"Hot Topic Tracking","description":"Package hot-topic discovery and follow-up processing into a clearer product surface. The real page is still in progress.","capabilityTags":["Signal collection","Trend tracking","In progress"]},{"key":"prompt-catalog","badge":"Library","title":"Image Prompt Cases","description":"Keep image prompt cases in a searchable catalog so teams can reuse and refine proven material.","capabilityTags":["Prompt library","Search","Reuse"],"path":"/prompts","pathLabel":"Open prompt catalog"},{"key":"image-workspace","badge":"Workspace","title":"Image Workspace","description":"Center the image workflow around prompt preparation and handoff instead of exposing only the platform plumbing.","capabilityTags":["Prompt workflow","Image prep","Workspace"],"path":"/image-generator","pathLabel":"Open workspace"}],"experienceCards":[{"key":"platform","icon":"server","iconClass":"bg-gradient-to-br from-sky-500 to-blue-600","title":"Platform-owned users and orders","description":"The public home can focus on business workflows while user, order, payment, and plan capabilities consolidate behind the platform."},{"key":"catalog","icon":"key","iconClass":"bg-gradient-to-br from-indigo-500 to-violet-600","title":"Productize content workflows first","description":"Lead with WeChat export, hot topics, prompt cases, and image preparation instead of putting infrastructure copy first."},{"key":"ops","icon":"sparkles","iconClass":"bg-gradient-to-br from-emerald-500 to-teal-600","title":"Clearer split between home and platform","description":"The homepage explains user-facing workflows; the platform continues to own runtime controls, routing, and settlement."}],"whyChooseCards":[{"key":"business-first","title":"Organize around workflows users recognize","description":"Put the workflows people actually want to enter from the homepage ahead of the supporting platform internals."},{"key":"platform-backbone","title":"Keep the platform as the backbone","description":"Users, orders, plans, and payment keep consolidating into Sub2API without forcing every homepage section to explain the machinery."},{"key":"reuse","title":"Make prompts and content reusable assets","description":"Turn prompt cases, exported content, and hot-topic findings into assets that can be searched, refined, and reused."},{"key":"workflow","title":"Show a complete workflow story","description":"Move from export and topic discovery into prompt curation and image preparation with a clearer end-to-end capability narrative."}]}}`
 
 func homeShellConfigSetting(raw string) string {
 	value := strings.TrimSpace(raw)
@@ -1264,7 +1266,118 @@ func homeShellConfigSetting(raw string) string {
 func homeBusinessShellConfigSetting(raw string) string {
 	value := strings.TrimSpace(raw)
 	if value == "" {
-		return defaultHomeBusinessShellConfig
+		value = defaultHomeBusinessShellConfig
+	}
+	return normalizeHomeBusinessShellConfig(value)
+}
+
+func normalizeHomeBusinessShellConfig(raw string) string {
+	var root map[string]any
+	if err := json.Unmarshal([]byte(raw), &root); err != nil {
+		return raw
+	}
+
+	normalizeLocale := func(locale string, value any) {
+		localized, ok := value.(map[string]any)
+		if !ok {
+			return
+		}
+		cards, ok := localized["businessCards"].([]any)
+		if !ok {
+			return
+		}
+		for _, item := range cards {
+			card, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			key, _ := card["key"].(string)
+			status, hasStatus := card["status"].(string)
+			if !hasStatus || status == "" {
+				status = "available"
+				card["status"] = status
+			}
+			if _, ok := card["statusLabel"].(string); !ok {
+				card["statusLabel"] = homeBusinessStatusLabel(locale, status)
+			}
+			if _, ok := card["disabled"].(bool); !ok {
+				card["disabled"] = false
+			}
+			if _, ok := card["visible"].(bool); !ok {
+				card["visible"] = true
+			}
+			if key == "hot-topics" {
+				normalizeHotTopicsBusinessCard(locale, card, hasStatus)
+			}
+		}
+	}
+
+	for _, locale := range []string{"zh", "en"} {
+		if localized, ok := root[locale]; ok {
+			normalizeLocale(locale, localized)
+		}
+	}
+	if _, hasLocalized := root["zh"]; !hasLocalized {
+		normalizeLocale("zh", root)
+	}
+
+	normalized, err := json.Marshal(root)
+	if err != nil {
+		return raw
+	}
+	return string(normalized)
+}
+
+func normalizeHotTopicsBusinessCard(locale string, card map[string]any, hadExplicitStatus bool) {
+	if _, ok := card["path"].(string); !ok && !hadExplicitStatus {
+		card["path"] = "/hot"
+		card["pathLabel"] = localizedHomeBusinessText(locale, "进入热点追踪", "Open hot topics")
+	}
+	if description, ok := card["description"].(string); ok {
+		if strings.Contains(description, "建设中") || strings.Contains(description, "still in progress") {
+			card["description"] = localizedHomeBusinessText(locale,
+				"围绕热点发现、筛选和后续处理，把高频内容观察任务做成稳定入口。",
+				"Package hot-topic discovery and follow-up processing into a clearer product surface.",
+			)
+		}
+	}
+	if tags, ok := card["capabilityTags"].([]any); ok {
+		for i, tag := range tags {
+			text, _ := tag.(string)
+			if text == "建设中" {
+				tags[i] = "内容采集"
+			}
+			if text == "In progress" {
+				tags[i] = "Content collection"
+			}
+		}
+	}
+}
+
+func homeBusinessStatusLabel(locale, status string) string {
+	switch status {
+	case "in_progress":
+		return localizedHomeBusinessText(locale, "建设中", "In progress")
+	case "disabled":
+		return localizedHomeBusinessText(locale, "暂不可用", "Disabled")
+	case "hidden":
+		return ""
+	default:
+		return localizedHomeBusinessText(locale, "可用", "Available")
+	}
+}
+
+func localizedHomeBusinessText(locale, zh, en string) string {
+	if locale == "en" {
+		return en
+	}
+	return zh
+}
+
+func imageWorkspaceModelConfigSetting(raw string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" || !json.Valid([]byte(value)) {
+		return defaultImageWorkspaceModelConfig
 	}
 	return value
 }
@@ -2032,6 +2145,7 @@ type PublicSettingsInjectionPayload struct {
 	HomeShellConfig                  string                   `json:"home_shell_config"`
 	HomeBusinessShellConfig          string                   `json:"home_business_shell_config"`
 	ModelPlazaItems                  json.RawMessage          `json:"model_plaza_items"`
+	ImageWorkspaceModelConfig        string                   `json:"image_workspace_model_config"`
 	ModelPlazaShellConfig            string                   `json:"model_plaza_shell_config"`
 	DocsShellConfig                  string                   `json:"docs_shell_config"`
 	LegalDocumentShellConfig         string                   `json:"legal_document_shell_config"`
@@ -2090,6 +2204,7 @@ type PublicSettingsInjectionPayload struct {
 	PromptTemplatesDescription string `json:"prompt_templates_description"`
 	PromptCatalogShellConfig   string `json:"prompt_catalog_shell_config"`
 	WorkspaceShellConfig       string `json:"workspace_shell_config"`
+	ImagePromptFilterConfig    string `json:"image_prompt_filter_config"`
 	PricingTitle               string `json:"pricing_title"`
 	PricingDescription         string `json:"pricing_description"`
 	PricingShellConfig         string `json:"pricing_shell_config"`
@@ -2154,7 +2269,9 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		DocsContentBasePath:              settings.DocsContentBasePath,
 		HomeContent:                      settings.HomeContent,
 		HomeShellConfig:                  settings.HomeShellConfig,
+		HomeBusinessShellConfig:          settings.HomeBusinessShellConfig,
 		ModelPlazaItems:                  safeRawJSONArray(settings.ModelPlazaItems),
+		ImageWorkspaceModelConfig:        settings.ImageWorkspaceModelConfig,
 		ModelPlazaShellConfig:            settings.ModelPlazaShellConfig,
 		DocsShellConfig:                  settings.DocsShellConfig,
 		LegalDocumentShellConfig:         settings.LegalDocumentShellConfig,
@@ -2209,6 +2326,7 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		PromptTemplatesDescription:           settings.PromptTemplatesDescription,
 		PromptCatalogShellConfig:             settings.PromptCatalogShellConfig,
 		WorkspaceShellConfig:                 settings.WorkspaceShellConfig,
+		ImagePromptFilterConfig:              settings.ImagePromptFilterConfig,
 		PricingTitle:                         settings.PricingTitle,
 		PricingDescription:                   settings.PricingDescription,
 		PricingShellConfig:                   settings.PricingShellConfig,
@@ -2820,6 +2938,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyHomeShellConfig] = strings.TrimSpace(settings.HomeShellConfig)
 	updates[SettingKeyHomeBusinessShellConfig] = strings.TrimSpace(settings.HomeBusinessShellConfig)
 	updates[SettingKeyModelPlazaItems] = settings.ModelPlazaItems
+	updates[SettingKeyImageWorkspaceModelConfig] = strings.TrimSpace(settings.ImageWorkspaceModelConfig)
 	updates[SettingKeyModelPlazaShellConfig] = strings.TrimSpace(settings.ModelPlazaShellConfig)
 	updates[SettingKeyDocsShellConfig] = strings.TrimSpace(settings.DocsShellConfig)
 	updates[SettingKeyLegalDocumentShellConfig] = strings.TrimSpace(settings.LegalDocumentShellConfig)
@@ -2867,6 +2986,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyPromptTemplatesDescription] = strings.TrimSpace(settings.WebPromptTemplatesDescription)
 	updates[SettingKeyPromptCatalogShellConfig] = strings.TrimSpace(settings.PromptCatalogShellConfig)
 	updates[SettingKeyWorkspaceShellConfig] = strings.TrimSpace(settings.WebWorkspaceShellConfig)
+	updates[SettingKeyImagePromptFilterConfig] = strings.TrimSpace(settings.WebImagePromptFilterConfig)
 	updates[SettingKeyPricingTitle] = strings.TrimSpace(settings.WebPricingTitle)
 	updates[SettingKeyPricingDescription] = strings.TrimSpace(settings.WebPricingDescription)
 	updates[SettingKeyPricingShellConfig] = strings.TrimSpace(settings.WebPricingShellConfig)
@@ -3768,6 +3888,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyHomeShellConfig:                          defaultHomeShellConfig,
 		SettingKeyHomeBusinessShellConfig:                  defaultHomeBusinessShellConfig,
 		SettingKeyModelPlazaItems:                          "[]",
+		SettingKeyImageWorkspaceModelConfig:                defaultImageWorkspaceModelConfig,
 		SettingKeyModelPlazaShellConfig:                    defaultModelPlazaShellConfig,
 		SettingKeyDocsShellConfig:                          defaultDocsShellConfig,
 		SettingKeyLegalDocumentShellConfig:                 defaultLegalDocumentShellConfig,
@@ -3815,7 +3936,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyCreditsDescription:                       "",
 		SettingKeyCreditsPurchaseLabel:                     "",
 		SettingKeyCreditsBalanceLabel:                      "",
-		SettingKeyCreditsPerBalance:                        "10",
+		SettingKeyCreditsPerBalance:                        "1",
 		SettingKeyCreditsShellConfig:                       defaultCreditsShellConfig,
 		SettingKeyWebLocaleDetectEnabled:                   "false",
 		SettingKeyWebEmailAuthVisible:                      "true",
@@ -4032,6 +4153,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		HomeShellConfig:                  homeShellConfigSetting(settings[SettingKeyHomeShellConfig]),
 		HomeBusinessShellConfig:          homeBusinessShellConfigSetting(settings[SettingKeyHomeBusinessShellConfig]),
 		ModelPlazaItems:                  settings[SettingKeyModelPlazaItems],
+		ImageWorkspaceModelConfig:        imageWorkspaceModelConfigSetting(settings[SettingKeyImageWorkspaceModelConfig]),
 		ModelPlazaShellConfig:            modelPlazaShellConfigSetting(settings[SettingKeyModelPlazaShellConfig]),
 		DocsShellConfig:                  docsShellConfigSetting(settings[SettingKeyDocsShellConfig]),
 		LegalDocumentShellConfig:         legalDocumentShellConfigSetting(settings[SettingKeyLegalDocumentShellConfig]),
@@ -4069,6 +4191,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		WebPromptTemplatesDescription:    strings.TrimSpace(settings[SettingKeyPromptTemplatesDescription]),
 		PromptCatalogShellConfig:         promptCatalogShellConfigSetting(settings[SettingKeyPromptCatalogShellConfig]),
 		WebWorkspaceShellConfig:          workspaceShellConfigSetting(settings[SettingKeyWorkspaceShellConfig]),
+		ImagePromptFilterConfig:          strings.TrimSpace(settings[SettingKeyImagePromptFilterConfig]),
 		WebPricingTitle:                  strings.TrimSpace(settings[SettingKeyPricingTitle]),
 		WebPricingDescription:            strings.TrimSpace(settings[SettingKeyPricingDescription]),
 		WebPricingShellConfig:            pricingShellConfigSetting(settings[SettingKeyPricingShellConfig]),
@@ -5262,6 +5385,60 @@ func (s *SettingService) SetOverloadCooldownSettings(ctx context.Context, settin
 	return s.settingRepo.Set(ctx, SettingKeyOverloadCooldownSettings, string(data))
 }
 
+// GetImagePromptFilterConfig 获取图片提示词过滤配置
+func (s *SettingService) GetImagePromptFilterConfig(ctx context.Context) (*ImagePromptFilterConfig, error) {
+	value, err := s.settingRepo.GetValue(ctx, SettingKeyImagePromptFilterConfig)
+	if err != nil {
+		if errors.Is(err, ErrSettingNotFound) {
+			return DefaultImagePromptFilterConfig(), nil
+		}
+		return nil, fmt.Errorf("get image prompt filter config: %w", err)
+	}
+	if value == "" {
+		return DefaultImagePromptFilterConfig(), nil
+	}
+
+	var config ImagePromptFilterConfig
+	if err := json.Unmarshal([]byte(value), &config); err != nil {
+		return DefaultImagePromptFilterConfig(), nil
+	}
+
+	if config.ExplicitKeywords == nil {
+		config.ExplicitKeywords = DefaultImagePromptFilterConfig().ExplicitKeywords
+	}
+	if config.YouthContextKeywords == nil {
+		config.YouthContextKeywords = DefaultImagePromptFilterConfig().YouthContextKeywords
+	}
+	if config.WarningMessage == "" {
+		config.WarningMessage = DefaultImagePromptFilterConfig().WarningMessage
+	}
+	if config.YouthWarningMessage == "" {
+		config.YouthWarningMessage = DefaultImagePromptFilterConfig().YouthWarningMessage
+	}
+
+	return &config, nil
+}
+
+// SetImagePromptFilterConfig 设置图片提示词过滤配置
+func (s *SettingService) SetImagePromptFilterConfig(ctx context.Context, config *ImagePromptFilterConfig) error {
+	if config == nil {
+		return fmt.Errorf("config cannot be nil")
+	}
+	if config.ExplicitKeywords == nil {
+		config.ExplicitKeywords = []string{}
+	}
+	if config.YouthContextKeywords == nil {
+		config.YouthContextKeywords = []string{}
+	}
+
+	data, err := json.Marshal(config)
+	if err != nil {
+		return fmt.Errorf("marshal image prompt filter config: %w", err)
+	}
+
+	return s.settingRepo.Set(ctx, SettingKeyImagePromptFilterConfig, string(data))
+}
+
 // GetRateLimit429CooldownSettings 获取429默认回避配置
 func (s *SettingService) GetRateLimit429CooldownSettings(ctx context.Context) (*RateLimit429CooldownSettings, error) {
 	value, err := s.settingRepo.GetValue(ctx, SettingKeyRateLimit429CooldownSettings)
@@ -6090,4 +6267,19 @@ func mergePlatformQuotaDefaults(dst, src *DefaultPlatformQuotaSetting) {
 	if src.MonthlyLimitUSD != nil {
 		dst.MonthlyLimitUSD = src.MonthlyLimitUSD
 	}
+}
+
+// GetWeChatExportCostPerArticle 返回微信导出每篇文章的成本
+// 实现 CostPerArticleGetter 接口
+func (s *SettingService) GetWeChatExportCostPerArticle() float64 {
+	ctx := context.Background()
+	val, err := s.settingRepo.GetValue(ctx, "wechat_export_cost_per_article")
+	if err != nil || val == "" {
+		return 0 // 默认值为 0（不计费）
+	}
+	cost, err := strconv.ParseFloat(val, 64)
+	if err != nil {
+		return 0
+	}
+	return cost
 }

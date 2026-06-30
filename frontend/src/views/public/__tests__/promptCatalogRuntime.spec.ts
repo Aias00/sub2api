@@ -11,11 +11,12 @@ import {
   resolvePromptCatalogImportXAuto,
   resolvePromptCatalogPageDescription,
   resolvePromptCatalogPageTitle,
+  resolvePromptCatalogValueLabel,
   type PromptCatalogFilters,
 } from '../promptCatalogRuntime'
 
 describe('promptCatalogRuntime', () => {
-  it('resolves page title and description from source type', () => {
+  it('resolves page title and description', () => {
     const copy = {
       title: 'All',
       description: 'All desc',
@@ -25,30 +26,26 @@ describe('promptCatalogRuntime', () => {
       templateDescription: 'Templates desc',
     } as any
 
-    expect(resolvePromptCatalogPageTitle(copy, 'case')).toBe('Cases')
-    expect(resolvePromptCatalogPageTitle(copy, 'template')).toBe('Templates')
-    expect(resolvePromptCatalogPageDescription(copy, 'case')).toBe('Cases desc')
-    expect(resolvePromptCatalogPageDescription(copy, 'template')).toBe('Templates desc')
+    expect(resolvePromptCatalogPageTitle(copy, '')).toBe('Cases')
+    expect(resolvePromptCatalogPageTitle(copy, 'template')).toBe('Cases')
+    expect(resolvePromptCatalogPageDescription(copy, '')).toBe('Cases desc')
+    expect(resolvePromptCatalogPageDescription(copy, 'template')).toBe('Cases desc')
   })
 
   it('applies configured defaults and builds list params', () => {
     const filters: PromptCatalogFilters = {
       search: 'abc',
-      sourceType: '',
-      sourceProject: 'x',
       category: 'portrait',
       hasImage: false,
     }
 
     applyPromptCatalogDefaults(filters, {
-      sourceType: 'template',
       hasImage: true,
       pageSize: 12,
       sortBy: 'title',
       sortOrder: 'asc',
     })
 
-    expect(filters.sourceType).toBe('template')
     expect(filters.hasImage).toBe(true)
 
     expect(buildPromptCatalogListParams(filters, {
@@ -58,8 +55,6 @@ describe('promptCatalogRuntime', () => {
     }, 2)).toEqual({
       page: 2,
       page_size: 12,
-      source_type: 'template',
-      source_project: 'x',
       category: 'portrait',
       search: 'abc',
       has_image: true,
@@ -74,8 +69,23 @@ describe('promptCatalogRuntime', () => {
     expect(resolvePromptCatalogImportXAuto(undefined)).toBe(true)
     expect(resolvePromptCatalogImportXAuto({ importXAuto: false })).toBe(false)
     expect(resolvePromptCatalogFacetLabel({ display_label: 'API Source' } as any)).toBe('API Source')
+    expect(resolvePromptCatalogFacetLabel({ value: 'portrait', display_label: 'portrait' } as any, 'zh')).toBe('肖像')
+    expect(resolvePromptCatalogFacetLabel({ value: 'awesome_nano_banana_pro_prompts', display_label: 'awesome_nano_banana_pro_prompts' } as any, 'zh')).toBe('Nano Banana Pro 提示库')
+    expect(resolvePromptCatalogValueLabel('Photography & Realism', 'zh')).toBe('摄影与写实')
     expect(buildPromptCatalogImportSuccessMessage('Imported', 'Case A')).toBe('Imported: Case A')
     expect(formatPromptCatalogDate('2026-06-18T00:00:00Z', 'en')).toContain('2026')
     expect(formatPromptCatalogDate('', 'en')).toBe('')
+  })
+
+  it('does not return Chinese labels for English locale', () => {
+    // resolvePromptCatalogValueLabel should not consult the zh dictionary when locale is 'en'
+    expect(resolvePromptCatalogValueLabel('portrait', 'en')).toBe('portrait')
+    expect(resolvePromptCatalogValueLabel('Photography & Realism', 'en')).toBe('Photography & Realism')
+
+    // resolvePromptCatalogFacetLabel should fall through to display_label for English
+    expect(resolvePromptCatalogFacetLabel({ value: 'portrait', display_label: 'Portrait Cases' } as any, 'en')).toBe('Portrait Cases')
+    // When display_label matches value, return the raw value
+    expect(resolvePromptCatalogFacetLabel({ value: 'portrait', display_label: 'portrait' } as any, 'en')).toBe('portrait')
+    expect(resolvePromptCatalogFacetLabel({ value: 'Infographic / Edu Visual', display_label: '信息图与教育视觉' } as any, 'en')).toBe('Infographic / Edu Visual')
   })
 })

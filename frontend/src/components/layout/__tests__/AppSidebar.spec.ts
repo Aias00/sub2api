@@ -24,6 +24,12 @@ describe('AppSidebar header styles', () => {
     expect(componentSource).not.toContain('VersionBadge')
     expect(componentSource).not.toContain('siteVersion')
   })
+
+  it('links the sidebar brand back to the configured home path', () => {
+    expect(componentSource).toContain(':to="authRouteDefaults.homePath"')
+    expect(componentSource).toContain('class="sidebar-home-link"')
+    expect(componentSource).toContain('@click="closeMobile"')
+  })
 })
 
 describe('AppSidebar regular user navigation', () => {
@@ -61,6 +67,22 @@ describe('AppSidebar regular user navigation', () => {
     expect(componentSource).toContain('buildSidebarVisibleItemMap')
     expect(componentSource).toContain('buildSidebarSections')
     expect(componentSource).not.toContain('function applyFeatureFlags(')
+  })
+
+  it('exposes public creation and content tools in the dashboard sidebar', () => {
+    expect(componentSource).not.toContain('const businessNavItems = computed')
+    expect(componentSource).not.toContain("t('nav.businessCapabilities')")
+    expect(componentSource).toContain("promptCatalog: { path: '/prompts', label: t('nav.promptCatalog')")
+    expect(componentSource).toContain("imageGenerator: { path: '/image-generator', label: t('nav.imageGenerator')")
+    expect(componentSource).toContain("wechatExport: { path: '/wechat-export', label: t('nav.wechatExport')")
+    expect(componentSource).toContain("hotTopics: { path: '/hot', label: t('nav.hotTopics')")
+  })
+
+  it('keeps async tasks and tool entries in both self sidebar defaults', () => {
+    expect(componentSource).toContain("tasks: { path: '/tasks', label: t('nav.myTasks')")
+    expect(componentSource).toContain("'tasks',")
+    expect(componentSource).toContain("'dashboard',\n        'tasks',\n        'promptCatalog',\n        'imageGenerator',\n        'wechatExport',\n        'hotTopics',")
+    expect(componentSource).toContain("'admin-personal',\n      items: [\n        'tasks',\n        'promptCatalog',\n        'imageGenerator',\n        'wechatExport',\n        'hotTopics',")
   })
 })
 

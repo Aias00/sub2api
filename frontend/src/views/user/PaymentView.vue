@@ -491,7 +491,18 @@ const paymentVerifyRetryDefaults = computed(() =>
 )
 
 function paymentText(key: PaymentViewLabelKey, params?: Record<string, string | number>): string {
-  return renderPaymentViewText(paymentShellLabels.value, key, params)
+  return normalizeBalanceDisplayText(renderPaymentViewText(paymentShellLabels.value, key, params))
+}
+
+function normalizeBalanceDisplayText(value: string): string {
+  return value
+    .replace(/当前积分/g, '当前余额')
+    .replace(/到账积分/g, '到账余额')
+    .replace(/获得 \$\{amount\} 积分/g, '获得 ${amount} 余额')
+    .replace(/获得 \$\{amount\} 额度/g, '获得 ${amount} 余额')
+    .replace(/获得 \{amount\} 积分/g, '获得 {amount} 余额')
+    .replace(/获得 \{amount\} 额度/g, '获得 {amount} 余额')
+    .replace(/积分/g, '余额')
 }
 
 const rechargeProductCardLabels = computed(() => ({

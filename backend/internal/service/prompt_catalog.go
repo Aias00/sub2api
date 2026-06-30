@@ -16,6 +16,16 @@ const (
 	PromptCatalogStatusDraft     = "draft"
 )
 
+var promptCatalogValidStatuses = map[string]bool{
+	PromptCatalogStatusPublished: true,
+	PromptCatalogStatusDraft:     true,
+}
+
+var promptCatalogValidSourceTypes = map[string]bool{
+	"case":     true,
+	"template": true,
+}
+
 const twitterSnowflakeEpochMs int64 = 1288834974657
 
 var ErrPromptCatalogNotFound = infraerrors.NotFound("PROMPT_CATALOG_NOT_FOUND", "prompt catalog case not found")
@@ -153,6 +163,12 @@ func (s *PromptCatalogService) UpsertCase(ctx context.Context, item *PromptCatal
 	}
 	if item.Prompt == "" {
 		return ErrPromptCatalogBodyRequired
+	}
+	if item.Status != "" && !promptCatalogValidStatuses[item.Status] {
+		return ErrPromptCatalogInvalidInput
+	}
+	if item.SourceType != "" && !promptCatalogValidSourceTypes[item.SourceType] {
+		return ErrPromptCatalogInvalidInput
 	}
 	return s.repo.UpsertCase(ctx, item)
 }

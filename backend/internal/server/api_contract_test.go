@@ -1317,7 +1317,7 @@ func newContractDeps(t *testing.T) *contractDeps {
 		RunMode: config.RunModeStandard,
 	}
 
-	userService := service.NewUserService(userRepo, nil, nil, nil)
+	userService := service.NewUserService(userRepo, nil, nil, nil, nil, nil)
 	apiKeyService := service.NewAPIKeyService(apiKeyRepo, userRepo, groupRepo, userSubRepo, nil, apiKeyCache, cfg)
 
 	usageRepo := newStubUsageLogRepo()
@@ -2296,6 +2296,10 @@ func (r *stubApiKeyRepo) ResetRateLimitWindows(ctx context.Context, id int64) er
 }
 func (r *stubApiKeyRepo) GetRateLimitData(ctx context.Context, id int64) (*service.APIKeyRateLimitData, error) {
 	return nil, nil
+}
+
+func (r *stubApiKeyRepo) DisableAllActiveKeysByUserID(ctx context.Context, userID int64) (int64, error) {
+	return 0, nil
 }
 
 type stubUsageLogRepo struct {

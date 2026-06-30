@@ -27,6 +27,7 @@ const MaxValidityDays = 36500
 var (
 	ErrSubscriptionNotFound       = infraerrors.NotFound("SUBSCRIPTION_NOT_FOUND", "subscription not found")
 	ErrSubscriptionExpired        = infraerrors.Forbidden("SUBSCRIPTION_EXPIRED", "subscription has expired")
+	ErrSubscriptionNotActive      = infraerrors.Forbidden("SUBSCRIPTION_NOT_ACTIVE", "subscription is not active yet")
 	ErrSubscriptionSuspended      = infraerrors.Forbidden("SUBSCRIPTION_SUSPENDED", "subscription is suspended")
 	ErrSubscriptionAlreadyExists  = infraerrors.Conflict("SUBSCRIPTION_ALREADY_EXISTS", "subscription already exists for this user and group")
 	ErrSubscriptionAssignConflict = infraerrors.Conflict("SUBSCRIPTION_ASSIGN_CONFLICT", "subscription exists but request conflicts with existing assignment semantics")
@@ -865,6 +866,9 @@ func (s *SubscriptionService) ValidateAndCheckLimits(sub *UserSubscription, grou
 	}
 	if sub.IsExpired() {
 		return false, ErrSubscriptionExpired
+	}
+	if now := time.Now(); sub.StartsAt.After(now) {
+		return false, ErrSubscriptionNotActive
 	}
 
 	// 2. 内存中修正过期窗口的用量，确保 CheckUsageLimits 不会误拒绝用户

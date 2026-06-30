@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -134,13 +135,11 @@ func (h *WebHandler) Register(c *gin.Context) {
 		return
 	}
 
-	_, user, err := h.authService.RegisterWithVerificationSource(c.Request.Context(), req.Email, req.Password, "", "", "", "", webAuthSource)
+	username := firstNonEmptyString(req.Username, req.Name)
+	_, user, err := h.authService.RegisterWithVerificationSourceAndUsername(c.Request.Context(), req.Email, username, req.Password, "", "", "", "", webAuthSource)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
-	}
-	if username := strings.TrimSpace(firstNonEmptyString(req.Username, req.Name)); username != "" && user.Username == "" {
-		user.Username = username
 	}
 
 	if err := h.authHandler.ensureUserAcceptedCurrentLoginAgreement(c.Request.Context(), user, agreementAcceptanceInput{
@@ -187,6 +186,11 @@ func (h *WebHandler) OAuthSession(c *gin.Context) {
 		response.BadRequest(c, "accessToken is required")
 		return
 	}
+	refreshToken := strings.TrimSpace(req.RefreshToken)
+	if refreshToken == "" {
+		response.BadRequest(c, "refreshToken is required")
+		return
+	}
 	claims, err := h.authService.ValidateToken(accessToken)
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -205,8 +209,12 @@ func (h *WebHandler) OAuthSession(c *gin.Context) {
 		response.ErrorFrom(c, service.ErrUserNotActive)
 		return
 	}
+	if err := h.authService.ValidateRefreshTokenForUser(c.Request.Context(), refreshToken, user); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 
-	h.setWebSessionCookies(c, accessToken, req.RefreshToken, req.ExpiresIn)
+	h.setWebSessionCookies(c, accessToken, refreshToken, req.ExpiresIn)
 	response.Success(c, gin.H{
 		"user": h.webUserPayload(c.Request.Context(), user),
 	})
@@ -494,7 +502,7 @@ func webCheckoutPaymentSource(source string) string {
 
 func (h *WebHandler) setWebCookie(c *gin.Context, name, value string, maxAge int) {
 	sameSite := http.SameSiteLaxMode
-	if origin := strings.TrimSpace(c.GetHeader("Origin")); origin != "" {
+	if shouldUseSameSiteNoneForWebCookie(c) {
 		sameSite = http.SameSiteNoneMode
 	}
 	http.SetCookie(c.Writer, &http.Cookie{
@@ -506,6 +514,24 @@ func (h *WebHandler) setWebCookie(c *gin.Context, name, value string, maxAge int
 		Secure:   isRequestHTTPS(c) || sameSite == http.SameSiteNoneMode,
 		SameSite: sameSite,
 	})
+}
+
+func shouldUseSameSiteNoneForWebCookie(c *gin.Context) bool {
+	origin := strings.TrimSpace(c.GetHeader("Origin"))
+	if origin == "" {
+		return false
+	}
+	if !strings.EqualFold(strings.TrimSpace(c.Writer.Header().Get("Access-Control-Allow-Credentials")), "true") {
+		return false
+	}
+	if strings.TrimSpace(c.Writer.Header().Get("Access-Control-Allow-Origin")) != origin {
+		return false
+	}
+	originURL, err := url.Parse(origin)
+	if err != nil || originURL.Host == "" {
+		return false
+	}
+	return !strings.EqualFold(originURL.Host, c.Request.Host)
 }
 
 func firstNonEmptyString(values ...string) string {

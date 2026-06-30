@@ -36,10 +36,14 @@ describe('AppHeader regular user dropdown shortcuts', () => {
     expect(componentSource).toContain('<template v-if="showDropdownAccountLinks">')
   })
 
-  it('collapses the regular user dropdown when only logout remains', () => {
+  it('keeps the unified task list shortcut in the regular user dropdown', () => {
     expect(componentSource).toContain(
       'const showDropdownPrimaryActions = computed('
     )
+    expect(componentSource).toContain('<router-link to="/tasks" @click="closeDropdown" class="dropdown-item">')
+    expect(componentSource).toContain("{{ t('nav.myTasks') }}")
+    expect(componentSource).toContain('const showDropdownTaskLink = computed(() => true)')
+    expect(componentSource).toContain('showDropdownTaskLink.value || showDropdownAccountLinks.value || showGithubLink.value')
     expect(componentSource).toContain("from './appHeaderRuntime'")
     expect(componentSource).toContain('resolveCompactUserDropdown')
     expect(componentSource).toContain('<div v-if="showDropdownPrimaryActions" class="py-1">')
@@ -50,6 +54,7 @@ describe('AppHeader regular user dropdown shortcuts', () => {
   it('uses an icon-only docs shortcut and removes the desktop balance pill', () => {
     expect(componentSource).toContain(":aria-label=\"t('nav.docs')\"")
     expect(componentSource).toContain("group-hover:opacity-100")
+    expect(componentSource).toContain('whitespace-nowrap rounded-lg bg-gray-950')
     expect(componentSource).not.toContain("`${{ user.balance?.toFixed(2) || '0.00' }}`")
     expect(componentSource).not.toContain("class=\"hidden items-center gap-2 rounded-xl bg-primary-50 px-3 py-1.5 dark:bg-primary-900/20 sm:flex\"")
   })

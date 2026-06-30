@@ -1,3 +1,577 @@
+## 2026-06-30 Invalid residual Hot config audit
+
+### Done
+- Confirmed the running `sub2api`, `sub2api-wechat-export-worker`, `sub2api-image-workspace-worker`, and `sub2api-hot-rss-collector-worker` containers do not mount external project paths such as `/Users/aias/Work/github/hot`, `/Users/aias/Work/github/touch`, or `/app/hot`.
+- Removed the stale `HOT_IMPORT_RUNTIME_MOUNT` compose/env name in favor of `HOT_RUNTIME_MOUNT`.
+- Removed old `/home` Hot readiness fallbacks for `HOT_COLLECT_INTERVAL_MS` and `HOT_COLLECT_MAX_BACKOFF_MS`; readiness now follows the RSS worker env names only.
+- Recreated `sub2api-image-workspace-worker` without stale `HOT_SQLITE`, `HOT_IMPORT`, `HOT_COLLECT`, or other `HOT_*` env values.
+- Deleted the retired SQLite Hot import script and made `backend/cmd/hotimport` a read-only PostgreSQL inventory checker.
+
+### Validation
+- Static scan over `deploy`, `backend`, and `tools` found no remaining `HOT_IMPORT_RUNTIME_MOUNT`, `HOT_COLLECT_INTERVAL_MS`, `HOT_COLLECT_MAX_BACKOFF_MS`, `HOT_SQLITE_PATH`, `HOT_IMPORT_*`, `/app/hot`, or external Hot/Touch project path references.
+- `sub2api-image-workspace-worker` is healthy and has no `HOT_*` env values.
+- Running service mounts for the app and workers point only at current project paths under `/Users/aias/Work/github/sub2api`.
+- `go test ./cmd/hotimport`
+- `node --check tools/hot-rss-collector-worker.mjs tools/hot-collector-status-metrics.mjs`
+- `bash -n tools/hot-content-integrity.sh tools/hot-collector-production-preflight.sh`
+
+### Remaining Risk
+- `progress.md` still contains historical notes mentioning old external paths and retired Hot import behavior; those are audit history, not active configuration.
+
+## 2026-06-30 Hot legacy history retirement
+
+### Done
+- Enriched the live RSS-to-PostgreSQL collector so `hot_items` now receives display-ready `body`, `reason`, `source_name`, `source_handle`, `badge`, and `score` fields in addition to metrics JSON.
+- Removed the hidden/unreachable Hot legacy API surface for feed items, daily issues, and MP entries; `/hot` now exposes current sources/items plus run-events diagnostics only.
+- Removed frontend `/hot` script/API leftovers for daily issue, MP entry, feed item, and hidden run-event tabs.
+- Kept legacy Hot table structures from migration 155, but added migration 161 to clear their historical rows.
+- Added migration 162 to backfill current `hot_items` display fields from source metadata and existing metrics.
+- Retired the SQLite import path after the live RSS collector moved fully to PostgreSQL.
+- Removed old `hot_media_assets` dependency from object-storage validation.
+- Applied the cleanup to the current PostgreSQL database and rebuilt/restarted `sub2api` plus the Hot RSS worker.
+
+### Validation
+- Current database counts: `hot_items=691`, `hot_run_events=142210`; legacy tables `hot_item_media`, `hot_media_assets`, `hot_feed_items`, `hot_daily_issues`, `hot_daily_sections`, `hot_daily_stories`, and `hot_mp_entries` are all `0`.
+- Current `hot_items` enrichment counts: `reason=691`, `badge=691`, `score=691`.
+- API route check: `/api/v1/hot/sources` and `/api/v1/hot/items` return `200`; `/api/v1/hot/feed-items`, `/api/v1/hot/daily-issues`, and `/api/v1/hot/mp-entries` return `404`.
+- `sub2api` container is healthy on rebuilt `sub2api-local:latest`; it no longer has old `HOT_SQLITE`, `HOT_IMPORT`, or `HOT_COLLECT` envs and no longer mounts `/app/hot`.
+- `sub2api-hot-rss-collector-worker` is healthy on `sub2api-hot-rss-collector-worker:local`.
+- `node --check tools/hot-rss-collector-worker.mjs tools/hot-collector-status-metrics.mjs`
+- `bash -n tools/hot-content-integrity.sh tools/object-storage-integrity.sh tools/hot-collector-production-preflight.sh`
+- `go test -tags unit ./internal/service ./internal/handler ./internal/server/routes -run 'TestHotContent|TestHomeBusinessCapabilityHotContent'`
+- `go test ./cmd/objectstoragecheck ./cmd/hotimport`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/HotContentView.spec.ts`
+- `RUN_HOT_API_SMOKE=0 tools/hot-content-integrity.sh`
+- `git diff --check -- tools backend frontend deploy progress.md`
+
+### Remaining Risk
+- Historical table schemas remain by design for compatibility, but no current API or startup readiness path depends on their data.
+
+## 2026-06-30 Hot RSS direct PostgreSQL collector
+
+### Done
+- Compared the two Hot workers and confirmed `hot-collector-worker` only scheduled SQLite-to-PostgreSQL imports, while `hot-rss-collector-worker` owned RSS/Atom collection.
+- Changed `hot-rss-collector-worker` to read enabled RSS sources from `hot_sources` and upsert `hot_items`, `hot_runs`, `hot_checkpoints`, and `hot_run_events` directly into PostgreSQL.
+- Removed the constant SQLite sync worker script and compose service; the later residual-config audit retired the manual SQLite import utility as well.
+- Renamed the worker Dockerfile/image path to the RSS collector naming and removed the `/app/hot` mount from the Hot worker overlay.
+- Updated Hot readiness/config examples so `/home` reads the RSS collector status file and no longer requires `HOT_SQLITE_PATH`.
+- Recreated the running Hot worker as `sub2api-hot-rss-collector-worker` using `sub2api-hot-rss-collector-worker:local`; no `sub2api-hot-collector-worker` container remains.
+
+### Validation
+- Built `sub2api-hot-rss-collector-worker:local`.
+- Ran the RSS collector in Docker against the current PostgreSQL database; it collected 189 items and advanced `hot_items.max(updated_at)` to `2026-06-30 22:44:29 +08`.
+- Confirmed `sub2api-hot-rss-collector-worker` is healthy and `node hot-rss-collector-worker.mjs --healthcheck` passes in the container.
+- `node --check tools/hot-rss-collector-worker.mjs tools/hot-collector-status-metrics.mjs`
+- `bash -n tools/hot-collector-production-preflight.sh tools/hot-content-integrity.sh tools/object-storage-integrity.sh`
+- `go test ./internal/handler -run 'TestHomeBusinessCapabilityHotContent'`
+- `RUN_HOT_API_SMOKE=1 tools/hot-content-integrity.sh`
+- `docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.hot-worker.yml --profile hot-worker config`
+- `git diff --check -- tools deploy backend progress.md`
+
+### Remaining Risk
+- Historical legacy Hot surfaces (`hot_feed_items`, daily issue tables, MP entries, media assets) are still populated by one-time SQLite import/backfill, not by the live RSS collector.
+
+## 2026-06-30 WeChat sync timeout polling
+
+### Done
+- Changed `/wechat` account article sync so transient frontend timeout/network errors no longer immediately show `请求失败`.
+- Added a sync confirmation polling path that refreshes bound accounts and article pages every 3 seconds for up to 40 attempts.
+- Treats sync as confirmed when the account `last_synced_at` changes, total article count grows, or refreshed articles include the syncing fakeid.
+- Improved frontend error extraction so structured API/client error objects can show their `message` instead of falling through to the generic `请求失败`.
+- Kept real business errors, such as invalid session or upstream WeChat sync failures, on the normal error path.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/views/public/WeChatExportView.vue src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+
+## 2026-06-30 Public theme template switcher
+
+### Done
+- Added a shared public theme state composable with `light` and `dark` templates persisted in `localStorage`.
+- Initialized the public theme at app startup without forcing the global app theme back to light.
+- Added a sun/moon template switch button to `PublicDarkHeader`, so `/wechat`, `/hot`, `/prompts`, and `/image-generator` inherit the control through the shared public header.
+- Added scoped light-template overrides for the existing public dark-page shell, including page background, header, cards, borders, text, inputs, and placeholders.
+- Added regression coverage for theme persistence, header toggle behavior, and source-level theme wiring.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/main.ts src/composables/usePublicTheme.ts src/composables/__tests__/usePublicTheme.spec.ts src/components/layout/PublicDarkHeader.vue src/components/layout/__tests__/PublicDarkHeader.spec.ts src/utils/__tests__/homeBusinessVercelDesign.spec.ts`
+- `pnpm --dir frontend exec vitest run src/composables/__tests__/usePublicTheme.spec.ts src/components/layout/__tests__/PublicDarkHeader.spec.ts src/utils/__tests__/homeBusinessVercelDesign.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- Desktop Chrome visual inspection confirmed `/hot` renders the default dark template and shows the `Light` switch button in the shared header.
+
+### Notes
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
+- The currently active Chrome window was repeatedly pulled back to a user video tab, so the light-template visual pass is covered by component/source regressions rather than a second foreground screenshot.
+
+## 2026-06-30 Public tool dark theme restoration
+
+### Done
+- Added an explicit `public-dark-page` modifier to `/wechat`, `/hot`, `/prompts`, and `/image-generator`.
+- Restored a scoped dark template for those pages in `style.css`, including dark background gradients, dark `PublicDarkHeader`, readable header links, logo, avatar, and console/login button states.
+- Added regression coverage so the four public tool pages keep the explicit dark-page template.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/views/public/WeChatExportView.vue src/views/public/HotContentView.vue src/views/public/PromptCatalogView.vue src/views/public/ImageGeneratorView.vue src/utils/__tests__/homeBusinessVercelDesign.spec.ts`
+- `pnpm --dir frontend exec vitest run src/utils/__tests__/homeBusinessVercelDesign.spec.ts src/views/public/__tests__/WeChatExportView.spec.ts src/views/public/__tests__/HotContentView.spec.ts src/views/public/__tests__/PromptCatalogView.spec.ts src/views/public/__tests__/ImageGeneratorView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- Desktop Chrome visual inspection of `http://127.0.0.1:5174/wechat`, `/hot`, `/prompts`, and `/image-generator`.
+- Visual verdict stored at `.omx/state/public-tool-theme/ralph-progress.json` with score `94`, verdict `pass`.
+
+### Notes
+- Vite build still reports existing PostCSS `from` and dynamic-import/chunk-size warnings.
+- Playwright/Chrome DevTools MCP profiles were locked, so visual inspection used a new desktop Chrome tab instead.
+
+## 2026-06-30 Public tools quality gate and pagination fixes
+
+### Done
+- Removed the extra semicolon in `ImagePromptFilterConfigEditor.vue` that tripped `no-extra-semi`.
+- Made WeChat batch ZIP downloads count successes and failures separately, and surface failed task IDs/messages instead of reporting every ZIP as downloaded.
+- Added backend-mode allow-list coverage for `/prompts`, `/image-generator`, `/tasks`, `/hot`, `/wechat`, and `/wechat-export`.
+- Added load-more pagination for the public task list across WeChat export tasks and image generation tasks.
+- Changed WeChat article listing to request one backend page at a time and added a load-more article control on `/wechat`.
+- Replaced the riskiest `home-business-page` color/background/border class-substring overrides with explicit `home-*` token classes.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/components/admin/ImagePromptFilterConfigEditor.vue src/views/public/WeChatExportView.vue src/views/public/TaskListView.vue src/api/wechat-export.ts src/router/index.ts src/views/public/__tests__/WeChatExportView.spec.ts src/views/public/__tests__/TaskListView.spec.ts src/utils/__tests__/homeBusinessVercelDesign.spec.ts src/router/__tests__/task-list-route.spec.ts src/i18n/locales/zh.ts src/i18n/locales/en.ts`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/WeChatExportView.spec.ts src/views/public/__tests__/TaskListView.spec.ts src/router/__tests__/task-list-route.spec.ts src/utils/__tests__/homeBusinessVercelDesign.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `git diff --check -- frontend/src/components/admin/ImagePromptFilterConfigEditor.vue frontend/src/views/public/WeChatExportView.vue frontend/src/router/index.ts frontend/src/views/public/TaskListView.vue frontend/src/api/wechat-export.ts frontend/src/style.css frontend/src/views/public/__tests__/WeChatExportView.spec.ts frontend/src/views/public/__tests__/TaskListView.spec.ts frontend/src/utils/__tests__/homeBusinessVercelDesign.spec.ts frontend/src/i18n/locales/zh.ts frontend/src/i18n/locales/en.ts frontend/src/router/__tests__/task-list-route.spec.ts progress.md`
+
+### Notes
+- ESLint does not parse `style.css` in this project; the CSS change is covered by the `homeBusinessVercelDesign` source regression test instead.
+- Older `home-business-page` radius/shadow/button normalization still has class-substring selectors; this pass removes the high-risk color/background/border selectors called out in the review without mixing in a wider visual redesign.
+
+## 2026-06-30 External project dependency cleanup
+
+### Done
+- Removed retired Touch migration/cutover/audit Makefile targets and scripts.
+- Removed Prompt cache retirement verification tooling and its Makefile targets.
+- Removed old Touch prompt-cache mapping checks from object-storage validation.
+- Changed Hot SQLite tooling defaults from old backup paths to repo-local `deploy/hot/aihot.sqlite3`.
+- Kept Hot validation/import tooling because it is part of the current Hot runtime pipeline.
+
+### Verification
+- Scanned executable scripts/config for old external paths and found none:
+  - `/Users/aias/Work/github/`
+  - `/Users/aias/backups`
+  - `/home/aias/apps`
+  - `TOUCH_SOURCE_ROOT`
+  - `TOUCH_PROMPT_IMAGE_CACHE`
+  - `PROMPT_CACHE_RETIREMENT`
+- Remaining `touch-user` matches are test fixture usernames only.
+
+### Remaining Risk
+- Historical notes in `progress.md` and production runbook still mention old paths by design; they are not executable dependencies.
+
+## 2026-06-30 Hot collector source mount restored
+
+### Done
+- Confirmed `sub2api-hot-collector-worker` was running and healthy, but it was importing the stale `deploy/hot/aihot.sqlite3` snapshot from 2026-06-21.
+- Checked local and recorded production paths; the recorded GCE instance no longer exists, and no separate upstream hot collector process was running locally.
+- Ran the old Hot project's RSS collector once, updating `/Users/aias/Work/github/hot/.data/aihot.sqlite3` to 2026-06-30 21:45 CST.
+- Updated `deploy/.env` so `HOT_SQLITE_MOUNT` points at `/Users/aias/Work/github/hot/.data`.
+- Recreated `sub2api-hot-collector-worker` with the new `/app/hot` bind mount and kept the existing Postgres/runtime configuration.
+- Migrated the hot SQLite source back into this repository at `deploy/hot/aihot.sqlite3`.
+- Added a Sub2API-local RSS source collector worker in `tools/hot-rss-collector-worker.mjs`, using the existing SQLite `collector_sources` table instead of the old Hot project.
+- Updated the hot worker image and compose overlay so the RSS collector writes `deploy/hot/aihot.sqlite3` and the import worker reads the same file.
+- Recreated both local containers with only current-project mounts:
+  - `sub2api-hot-rss-collector-worker`: `deploy/hot` read/write, `deploy/runtime` read/write.
+  - `sub2api-hot-collector-worker`: `deploy/hot` read-only, `deploy/runtime` read/write.
+
+### Verification
+- Worker import completed with `COMMIT` and `import finished`.
+- Worker healthcheck passed with `status=ok`, `run_count=152`, `failure_count=0`.
+- Postgres hot content advanced to `hot_items=639`, `max(updated_at)=2026-06-30 21:45:17 +08`.
+- `GET /api/v1/hot/items?page_size=3` now returns updated hot items, including entries created at `2026-06-30 21:45 +08`.
+- `node --check tools/hot-rss-collector-worker.mjs && node --check tools/hot-collector-worker.mjs && node --check tools/hot-sqlite-import.mjs`.
+- RSS worker one-shot collection succeeded with `source_count=19`, `item_count=139`, `failed_source_count=0`.
+- Containerized RSS worker collection succeeded with `source_count=19`, `item_count=189`, `failed_source_count=0`.
+- Both hot containers report Docker `healthy`.
+- Postgres hot content advanced again to `hot_items=689`, `max(updated_at)=2026-06-30 21:55:30 +08`.
+
+### Remaining Risk
+- The RSS parser is intentionally lightweight and dependency-free; it handles the current RSS/Atom sources but is less complete than a dedicated feed parsing library.
+
+## 2026-06-30 Image policy violation retry suppression
+
+### Done
+- Added a shared backend classification for image workspace upstream policy/safety violation failures and blocked manual retry for those tasks.
+- Hid the `/image-generator` retry button for failed tasks whose error/result payload indicates upstream content policy or safety violation.
+- Added backend and frontend regression coverage so temporary failures remain retryable while policy violations do not.
+
+### Validation
+- `go test ./internal/service -run ImageWorkspace` from `backend/`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/ImageGeneratorView.spec.ts`
+- `pnpm --dir frontend exec eslint src/views/public/ImageGeneratorView.vue src/views/public/__tests__/ImageGeneratorView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+
+### Notes
+- `go test ./backend/internal/service -run ImageWorkspace` from the repository root failed because the Go module is rooted at `backend/`; reran from `backend/` successfully.
+
+## 2026-06-30 WeChat worker status contrast
+
+### Done
+- Replaced the `/wechat` worker waiting/attention status banners with dedicated readable status-message styles.
+- Updated the compact worker health label colors from pale dark-theme text to readable light-shell tones.
+- Added regression coverage to prevent the low-contrast amber worker banner from returning.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/views/public/WeChatExportView.vue src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/public/WeChatExportView.vue frontend/src/views/public/__tests__/WeChatExportView.spec.ts progress.md`
+
+### Notes
+- Local `/wechat` did not currently render a worker status banner, so browser computed-style verification for the real node was not available.
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
+
+## 2026-06-30 HomeView capability anchor type fix
+
+### Done
+- Restored the homepage secondary CTA anchor for the business home hero.
+- Added the missing `capabilityAnchor` computed used by the template.
+- Updated HomeView regressions so business-home hero copy and the capability anchor remain covered.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/views/HomeView.vue src/views/__tests__/HomeView.spec.ts`
+- `pnpm --dir frontend exec vitest run src/views/__tests__/HomeView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+
+### Notes
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
+
+## 2026-06-30 WeChat sync progress count
+
+### Done
+- Kept the sync progress counter visible while a WeChat article sync request is still in flight, showing the completed article count even before the backend returns a total.
+- Preserved the previously known total across automatic multi-batch continuation so progress such as `140/141` does not disappear during the next request.
+- Added regression coverage for the pending-sync counter and known-total preservation.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec eslint src/views/public/WeChatExportView.vue src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+
+## 2026-06-30 Image generator console and avatar actions
+
+### Done
+- Added a top-right console action to `/image-generator`, using the configured dashboard path for authenticated users and the login path otherwise.
+- Added an avatar action beside the header controls, rendering the current user's avatar URL when available and a display-name initial fallback otherwise.
+- Added locale copy and source-level regression coverage for the new header actions.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/ImageGeneratorView.spec.ts src/i18n/__tests__/localeCoverage.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec eslint src/views/public/ImageGeneratorView.vue src/views/public/__tests__/ImageGeneratorView.spec.ts src/i18n/locales/zh.ts src/i18n/locales/en.ts`
+- `git diff --check -- frontend/src/views/public/ImageGeneratorView.vue frontend/src/views/public/__tests__/ImageGeneratorView.spec.ts frontend/src/i18n/locales/zh.ts frontend/src/i18n/locales/en.ts progress.md`
+- `pnpm --dir frontend exec vite build` passed; Vite still reports existing PostCSS `from` and chunk-size/dynamic-import warnings.
+
+## 2026-06-30 Prompt catalog avatar action
+
+### Done
+- Added a top-right avatar action to `/prompts` beside the existing dashboard/login action.
+- Reused the current user's `avatar_url` when available and a display-name initial fallback otherwise.
+- Added source-level coverage for the prompt catalog header avatar entry.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/PromptCatalogView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec eslint src/views/public/PromptCatalogView.vue src/views/public/__tests__/PromptCatalogView.spec.ts`
+- `git diff --check -- frontend/src/views/public/PromptCatalogView.vue frontend/src/views/public/__tests__/PromptCatalogView.spec.ts progress.md`
+- `pnpm --dir frontend exec vite build`
+
+### Notes
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
+
+## 2026-06-30 WeChat task toolbar disabled contrast
+
+### Done
+- Replaced the `/wechat` task monitor batch-action button color utilities with dedicated `wechat-task-action` variants.
+- Added a shared disabled state for the batch toolbar so unavailable actions render as readable slate text on a pale surface.
+- Added regression coverage to keep the cancel batch action from returning to low-contrast amber text.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/views/public/WeChatExportView.vue src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- Playwright checked `/wechat`: disabled task actions, including `取消 0`, render `color: rgb(100, 116, 139)`, `background-color: rgb(248, 250, 252)`, `border-color: rgb(226, 232, 240)`, and `opacity: 1`.
+
+### Notes
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
+
+## 2026-06-30 Hot page console and avatar actions
+
+### Done
+- Added a top-right console action to `/hot`, using the configured dashboard path for authenticated users and the login path otherwise.
+- Added an avatar action beside the console button, rendering the current user's avatar URL when available and a display-name initial fallback otherwise.
+- Added locale copy and source-level regression coverage for the new header actions.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/HotContentView.spec.ts src/i18n/__tests__/localeCoverage.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec eslint src/views/public/HotContentView.vue src/views/public/__tests__/HotContentView.spec.ts src/i18n/locales/zh.ts src/i18n/locales/en.ts`
+- `git diff --check -- frontend/src/views/public/HotContentView.vue frontend/src/views/public/__tests__/HotContentView.spec.ts frontend/src/i18n/locales/zh.ts frontend/src/i18n/locales/en.ts progress.md`
+- `pnpm --dir frontend exec vite build`
+
+### Notes
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
+- The current `/hot` template is the simplified main hot stream; stale source-level tests for removed daily/mp tab pagination were updated to match the current page.
+
+## 2026-06-30 Prompt catalog page-level scrolling
+
+### Done
+- Removed the local scroll containers from the `/prompts` category filter and result grid.
+- Let the full prompt catalog page handle vertical scrolling so long category/filter content is reachable with the page scroll.
+- Moved infinite loading from the result panel scroll listener to a window scroll listener with cleanup on unmount.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/PromptCatalogView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec eslint src/views/public/PromptCatalogView.vue src/views/public/__tests__/PromptCatalogView.spec.ts`
+- `git diff --check -- frontend/src/views/public/PromptCatalogView.vue frontend/src/views/public/__tests__/PromptCatalogView.spec.ts progress.md`
+- `pnpm --dir frontend exec vite build`
+- Source scan confirmed the old `scrollContainer`/`handleScroll`, `max-h-[44vh]`, result-panel `max-h-[72vh] overflow-y-auto`, and `lg:sticky lg:top-6` implementations are no longer present.
+
+### Notes
+- Browser MCP visual verification was unavailable because both Playwright and Chrome DevTools profiles were locked by existing browser sessions.
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
+
+## 2026-06-30 Dashboard menu tool entries
+
+### Done
+- Added prompt catalog, image generator, WeChat export, and hot topics entries to the dashboard self sidebar defaults.
+- Allowed those entries in runtime-configured user/admin-personal sidebar sections.
+- Updated runtime settings help text and coverage for the new sidebar item keys.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/components/layout/__tests__/AppSidebar.spec.ts src/utils/__tests__/adminSidebarSchema.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec eslint src/components/layout/AppSidebar.vue src/components/layout/__tests__/AppSidebar.spec.ts src/utils/adminSidebarSchema.ts src/utils/__tests__/adminSidebarSchema.spec.ts src/i18n/locales/zh.ts src/i18n/locales/en.ts`
+- `pnpm --dir frontend exec vitest run src/i18n/__tests__/localeCoverage.spec.ts`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/components/layout/AppSidebar.vue frontend/src/components/layout/__tests__/AppSidebar.spec.ts frontend/src/utils/adminSidebarSchema.ts frontend/src/utils/__tests__/adminSidebarSchema.spec.ts frontend/src/i18n/locales/zh.ts frontend/src/i18n/locales/en.ts progress.md`
+
+### Notes
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
+
+## 2026-06-30 WeChat export requires ready login session
+
+### Done
+- Added a ready-session gate to the WeChat export workspace so公众号搜索、绑定、同步、文章导入、导出创建、任务取消/重试/下载等操作必须先完成微信扫码登录。
+- Kept refresh/session creation available so users can recover from expired or pending sessions.
+- Added runtime guards in action handlers so disabled UI cannot be bypassed by stale events.
+- Added regression coverage for expired sessions blocking account/export actions.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec eslint src/views/public/WeChatExportView.vue src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/public/WeChatExportView.vue frontend/src/views/public/__tests__/WeChatExportView.spec.ts progress.md`
+
+### Notes
+- Existing article/task lists can still be refreshed for visibility; mutating/export actions are gated on `session.status === "ready"`.
+- Vite build still reports the existing dynamic-import/chunk-size warnings.
+
+## 2026-06-30 Rebuild and restart after Cloudbase recovery
+
+### Done
+- Rebuilt `sub2api-local:latest` with `docker build --no-cache -t sub2api-local:latest -f deploy/Dockerfile .`.
+- Recreated only the `sub2api` application container with the existing environment, `deploy/data`, `deploy/hot`, and `deploy/runtime` mounts, the existing `deploy_sub2api-network`, and `127.0.0.1:8080` binding.
+- Kept `sub2api-postgres`, `sub2api-redis`, all worker containers, and `cloudbase-cloudflared` running; no database or data directory reset was performed.
+
+### Validation
+- New image `sub2api-local:latest` was created at `2026-06-30T16:45:59.461779458+08:00`.
+- `curl -fsS http://127.0.0.1:8080/health` returned `{"env":"production","status":"ok"}`.
+- `docker ps --filter name=sub2api --filter name=cloudbase-cloudflared` showed `sub2api` healthy, `cloudbase-cloudflared` up, and dependent database/worker containers healthy.
+- `curl --max-time 20 -fsS https://cloudbase.eu.org/health` returned `{"env":"production","status":"ok"}`.
+- `curl --max-time 20 -fsSI https://cloudbase.eu.org/` returned `HTTP/2 200`.
+
+## 2026-06-30 Rebuild and restart local service
+
+### Done
+- Fixed `deploy/Dockerfile` to pin Corepack to `pnpm@10.33.0`, matching the project package manager and allowing frozen lockfile installs during clean Docker builds.
+- Rebuilt the local Docker image `sub2api-local:latest` with `deploy/Dockerfile` using `--no-cache`.
+- Recreated the running `sub2api` container with the existing `deploy/data`, `deploy/hot`, and `deploy/runtime` mounts, the existing `deploy_sub2api-network`, and the same local `127.0.0.1:8080` port binding.
+
+### Validation
+- `docker build --no-cache -t sub2api-local:latest -f deploy/Dockerfile .`
+- Image `sub2api-local:latest` was created at `2026-06-30T16:00:22.166202539+08:00`.
+- `curl -fsS http://127.0.0.1:8080/health` returned `{"env":"production","status":"ok"}`.
+- `docker ps --filter name=sub2api` showed `sub2api`, `sub2api-postgres`, `sub2api-redis`, `sub2api-wechat-export-worker`, `sub2api-image-workspace-worker`, and `sub2api-hot-collector-worker` running healthy.
+- `curl -fsSI http://127.0.0.1:8080/` returned `HTTP/1.1 200 OK`.
+
+## 2026-06-30 Cloudbase tunnel restored
+
+### Done
+- Diagnosed `https://cloudbase.eu.org/health` returning Cloudflare `530` / error `1033`, meaning the Cloudflare Tunnel route was not connected to a usable origin.
+- Confirmed the old GCE production instance in `deploy/PRODUCTION_SERVER_RUNBOOK.md` no longer exists in the recorded project.
+- Started a persistent Docker-managed Cloudflare Tunnel container `cloudbase-cloudflared` using the existing `sub2api-local` tunnel credentials.
+- Routed `cloudbase.eu.org` and `www.cloudbase.eu.org` DNS to the `sub2api-local` tunnel and configured tunnel ingress to forward both hostnames to the local `sub2api:8080` container on `deploy_sub2api-network`.
+
+### Validation
+- `docker logs cloudbase-cloudflared` showed registered tunnel connections for tunnel `87a71d6c-365f-410c-8121-66c6c6e90c5f`.
+- `curl --max-time 20 -fsS https://cloudbase.eu.org/health` returned `{"env":"production","status":"ok"}`.
+- `curl --max-time 20 -fsSI https://cloudbase.eu.org/` returned `HTTP/2 200`.
+- `curl --max-time 20 -fsS https://www.cloudbase.eu.org/health` returned `{"env":"production","status":"ok"}`.
+- `docker ps --filter name=cloudbase-cloudflared --filter name=sub2api` showed `cloudbase-cloudflared` up and `sub2api` healthy.
+
+### Notes
+- The old production runbook still points at a deleted GCE instance and should be updated before the next production operation.
+- This recovery currently makes Cloudbase depend on the local Docker `sub2api` container plus the `cloudbase-cloudflared` sidecar.
+
+## 2026-06-30 WeChat export image hotlink diagnosis and inline fix
+
+### Done
+- Located the latest WeChat export task image issue in task `22`: exported HTML kept remote WeChat CDN image URLs, and browser rendering received 140x140 WeChat unauthorized placeholder images instead of the original images.
+- Confirmed the generated task HTML/Markdown contained 23 image tags and the remote image bytes were available outside browser rendering.
+- Updated the WeChat worker export path to inline remote article images as `data:image/...` before writing HTML/Markdown artifacts, keeping `data-original-src` for traceability.
+- Added fidelity coverage that verifies remote images are inlined into HTML artifacts.
+
+### Validation
+- Browser inspection of `deploy/data/wechat-export/22/美团_LongCat_开源_VitaBench_2.0：长期动态智能体基准新标杆.html`
+- Node image response and dimension checks for task `22`
+- `npm --prefix tools/wechat-worker run typecheck`
+- `npm --prefix tools/wechat-worker run fidelity-check`
+- Task 22 inline smoke: generated check artifact had remote image `src` count `0`
+- Rebuilt `sub2api-wechat-export-worker:local` and restarted `sub2api-wechat-export-worker`.
+- Re-applied database migrations after compose recreated an empty local Postgres container; `/api/v1/settings/public` returned `200`, worker claim returned success with no queued task, and `sub2api`, `sub2api-postgres`, `sub2api-redis`, `sub2api-wechat-export-worker` were running/healthy.
+
+### Notes
+- Existing task `22` artifacts are already generated and will not update automatically; retrying or recreating the export task is needed to get newly inlined artifacts.
+- During worker restart, compose recreated `sub2api-postgres` against `deploy/postgres_data`; no previous Docker volume containing `wechat_export_tasks` was found. The current local DB schema is restored but data tables are empty (`users=0`, `wechat_export_tasks=0`), while generated files under `deploy/data/wechat-export` remain on disk.
+
+## 2026-06-30 WeChat sync progress hides unknown totals
+
+### Done
+- Formatted public-account article sync progress through a dedicated display helper.
+- Treated unknown article totals as unknown instead of rendering `0/0`.
+- Kept the sync progress visible immediately after binding even when the bound-account list has not refreshed yet.
+- Added regression coverage for pending sync with an unknown total.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/public/WeChatExportView.vue frontend/src/views/public/__tests__/WeChatExportView.spec.ts progress.md`
+
+### Notes
+- Vite build still reports pre-existing chunk/dynamic-import warnings unrelated to the sync progress fix.
+
+## 2026-06-30 Balance terminology replaces credits wording
+
+### Done
+- Replaced user-facing Chinese "积分" wording with "余额" across frontend locale copy, WeChat export balance prompts, image workspace labels, runtime settings hints, profile/payment/redeem labels, and account status text.
+- Replaced visible English "Credits/Credit" balance terminology with "Balance" where it referred to the user wallet/balance surface.
+- Reverted backend default shell normalizers that were converting balance labels into credits labels.
+- Kept compatibility field names and routes such as `credits_shell_config`, `credits_per_balance`, and `/settings/credits` unchanged to avoid API/route churn.
+- Updated related frontend and backend tests to assert the balance wording.
+
+### Validation
+- `rg -n "积分|余额余额|estimated_余额|Current Credits|Credit Balance|Credited Credits|Purchase credits|Buy credits|Credits Page|Credits Shell|Credits After|Insufficient credits|Credit Snapshot|Credit Protection|Estimated credit cost|Credit actions|should say credits|1 credit =|Recharge rate: 1 CNY = \\{usd\\} credits|Credits Added|New Credits|Account Credits|Configured credits" frontend/src backend/internal --glob '!backend/internal/service/antigravity_credits_overages_test.go'`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vitest run src/i18n/__tests__/localeCoverage.spec.ts src/views/public/__tests__/WeChatExportView.spec.ts src/views/public/__tests__/ImageGeneratorView.spec.ts src/views/user/__tests__/CreditsView.spec.ts src/views/admin/__tests__/RuntimeSettingsView.spec.ts src/components/user/profile/__tests__/ProfileInfoCard.spec.ts`
+- `go test ./internal/service ./internal/handler -count=1`
+- `pnpm --dir frontend exec vite build`
+
+### Notes
+- The Antigravity upstream field/product name `AICredits` remains in code comments and upstream error-recognition tests because it is an external API concept, not Sub2API user-facing balance wording.
+- Vite build still reports pre-existing chunk/dynamic-import warnings unrelated to the terminology change.
+
+## 2026-06-30 Image workspace balance and template panels removed
+
+### Done
+- Removed the right-side credit protection card from the Image Generator workspace.
+- Removed the save-template panel and template list from the Image Generator workspace.
+- Kept hidden balance validation in place so users still cannot create a task when the selected model cost exceeds their balance.
+- Cleaned unused template API calls/state from the workspace and updated focused tests.
+- Removed "save template" wording from login copy and cleaned stale workspace descriptions so old runtime config no longer displays parameter-template or balance-preauthorization concepts.
+
+### Validation
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/ImageGeneratorView.spec.ts src/i18n/__tests__/localeCoverage.spec.ts`
+- `go test ./internal/service -run 'Test.*Setting|Test.*Public|Test.*Workspace' -count=1`
+- `pnpm --dir frontend exec vite build`
+- Visual check: `/tmp/sub2api-image-workspace-no-balance-template-final.png` shows the balance/template cards removed and the right-side description cleaned.
+
+### Notes
+- Vite build still reports pre-existing chunk/dynamic-import warnings unrelated to this UI removal.
+
+## 2026-06-30 Prompt catalog category filter expanded
+
+### Done
+- Replaced the prompt catalog category dropdown with an expanded category button list.
+- Kept category selection behavior wired to the existing catalog reload path.
+- Changed the bottom filter-panel action from image-only toggle to a search button.
+- Constrained the expanded category list to an internal scroll area so the search button remains visible.
+
+### Validation
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/PromptCatalogView.spec.ts`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/public/PromptCatalogView.vue frontend/src/views/public/__tests__/PromptCatalogView.spec.ts progress.md`
+- Visual check: `/tmp/sub2api-prompt-catalog-expanded-categories-search.png` shows expanded categories and the bottom search button.
+
+### Notes
+- Vite build still reports pre-existing chunk/dynamic-import warnings unrelated to this filter UI change.
+
+## 2026-06-30 Image generator history emphasizes generated images
+
+### Done
+- Changed the Image Generator history from horizontal text-heavy task rows into a multi-column masonry-style gallery.
+- Moved generated images to the top of each card and kept artifact cards sized by their intrinsic aspect ratio.
+- Reduced prompt display in the list to a compact two-line caption under image metadata/actions.
+- Kept cancel/retry/download/lightbox behavior in place.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/ImageGeneratorView.spec.ts`
+- `pnpm --dir frontend exec eslint src/views/public/ImageGeneratorView.vue src/views/public/__tests__/ImageGeneratorView.spec.ts`
+- `pnpm run frontend:typecheck`
+- `git diff --check -- frontend/src/views/public/ImageGeneratorView.vue`
+
+### Notes
+- Browser screenshot verification was not available because the existing MCP browser profile is locked and the repo does not include a Playwright/Puppeteer dependency.
+
+## 2026-06-30 WeChat account search message scoped to account panel
+
+### Done
+- Moved the "found N official accounts" search feedback out of the global WeChat export message slot.
+- Added a dedicated account-search message state rendered directly below the public account search field.
+- Kept task/export success messages in the existing export-operation message area.
+
+### Validation
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/public/WeChatExportView.vue progress.md`
+
+### Notes
+- Vite build still reports pre-existing chunk/dynamic-import warnings unrelated to this message placement fix.
+
+## 2026-06-30 WeChat manual fakeid bind controls removed
+
+### Done
+- Removed the manual fakeid/name/bind input row from the WeChat export page's public account management panel.
+- Kept public account search, binding from search results, existing bound-account list, and sync controls intact.
+- Updated WeChat export tests to protect the remaining search-result bind and auto-sync contract.
+
+### Validation
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/public/WeChatExportView.vue frontend/src/views/public/__tests__/WeChatExportView.spec.ts progress.md`
+- Visual check: `/tmp/sub2api-wechat-export-no-manual-bind.png` shows only the public account search field and find button in that panel.
+
+### Notes
+- Search-result binding still depends on the WeChat session/API returning searchable public accounts; manual fakeid entry is intentionally no longer exposed.
+- Vite build still reports pre-existing chunk/dynamic-import warnings unrelated to this UI removal.
+
 ## 2026-06-26 WeChat export closed-loop restoration
 ### Done
 - Restored the first usable WeChat export loop on the integrated Sub2API surface.
@@ -863,7 +1437,15 @@
 - Removed Touch runtime env docs and reduced `touch:test` to typecheck plus lint.
 
 ### Validation
-- Pending.
+- `pnpm --dir frontend exec eslint src/views/public/WeChatExportView.vue src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/WeChatExportView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/public/WeChatExportView.vue frontend/src/views/public/__tests__/WeChatExportView.spec.ts progress.md`
+- Playwright checked `/wechat`: `.wechat-export-warning` renders `color: rgb(120, 53, 15)`, `background-color: rgba(255, 251, 235, 0.96)`, and `border-color: rgba(217, 119, 6, 0.24)`.
+
+### Notes
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
 
 ### Notes
 - Touch still exists as a minimal Next build shell until scripts/deployment no longer reference it.
@@ -12199,3 +12781,727 @@ Next:
 ### Lower-priority/expected leftovers
 - `touch_*` strings remain in migrations, compatibility tests, and docs guardrails by design.
 - `signup_source = touch` separation remains active in backend auth/service/repository code by design and is still required by the chosen identity model.
+
+## 2026-06-30 WeChat export global content dedup
+
+### Done
+- Added migration `160_wechat_export_global_content.sql` with global WeChat account/article tables plus user binding tables.
+- Refactored WeChat export repository account and article reads/writes to use global rows and user bindings while preserving existing API response shapes.
+- Tightened worker engagement fetches to include `user_id`, so global article IDs are still resolved through the task user's article binding before using a WeChat session.
+- Updated repository SQL mock coverage for the new global/binding query paths.
+
+### Failures
+- `go test ./internal/...` currently fails in unrelated `internal/handler/dto` schema drift: `image_prompt_filter_config` missing from `PublicSettingsInjectionPayload`.
+- Focused frontend WeChatExportView spec currently fails because its existing search-result setup returns no remote results; this was not caused by the backend repository change, but still needs follow-up before claiming full frontend verification.
+
+### Validation
+- `go test ./internal/repository`
+- `go test ./internal/repository ./internal/service ./internal/handler ./internal/server/routes`
+- `npm --prefix tools/wechat-worker run typecheck`
+- `git diff --check -- backend/migrations/160_wechat_export_global_content.sql backend/internal/repository/wechat_export_repo.go backend/internal/repository/wechat_export_repo_test.go backend/internal/service/wechat_export.go backend/internal/handler/wechat_export_handler.go tools/wechat-worker/src/bin/worker.ts progress.md`
+
+### Next
+- Decide whether to fix or quarantine the pre-existing frontend spec setup issue as part of this task.
+
+## 2026-06-30 Image workspace import notice hidden
+
+### Done
+- Removed the imported-draft notice block from `ImageGeneratorView.vue`, so the workspace no longer displays the "已导入..." title/description panel after importing a prompt.
+- Updated the image workspace source-guard test to assert the removed import-notice template is not embedded in the view.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/ImageGeneratorView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `git diff --check -- frontend/src/views/public/ImageGeneratorView.vue frontend/src/views/public/__tests__/ImageGeneratorView.spec.ts`
+
+### Notes
+- The imported prompt still fills the textarea as before; only the extra notice content above the form is hidden.
+
+## 2026-06-30 Image task list responsive artifact sizing
+
+### Done
+- Replaced the image workspace task-list artifact layout from CSS columns with a responsive grid, so task cards recalculate columns when the viewport narrows.
+- Added explicit `width: 100%` and `max-width: 100%` to artifact aspect-ratio containers, preventing generated images from keeping an oversized column width when DevTools reduces available page width.
+- Extended the image workspace view test to assert the responsive grid layout and artifact width constraints.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/ImageGeneratorView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `git diff --check -- frontend/src/views/public/ImageGeneratorView.vue frontend/src/views/public/__tests__/ImageGeneratorView.spec.ts`
+
+### Notes
+- Browser automation could not attach because the existing Playwright/Chrome DevTools profiles were already locked by another running browser instance; verification relied on the focused Vue test and typecheck.
+
+## 2026-06-30 Prompt catalog stacked category chips
+
+### Done
+- Changed the prompt catalog category filter from full-width evenly stacked rows to a wrapped chip cloud.
+- Added varied chip width and slight vertical offsets through `categoryChipClass`, giving the category list a looser stacked feel while keeping the same click-to-filter behavior.
+- Updated the PromptCatalog view source guard to protect the wrapped chip layout.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/PromptCatalogView.spec.ts`
+- `npm --prefix frontend run typecheck`
+## 2026-06-30 P0 frontend test gate restored
+
+### Done
+- Fixed admin dashboard and group distribution cost/token formatters so missing or null numeric fields render as zero instead of throwing `toFixed` runtime errors.
+- Updated the route prefetch unit-test router fixture to include the existing `/gateway-guide` and `/gateway-test` routes used by the adjacency map.
+- Restored risk-control locale copy to the tested pre-block record task wording.
+
+### Validation
+- `pnpm --dir frontend exec vitest run src/composables/__tests__/useRoutePrefetch.spec.ts src/i18n/__tests__/riskControlLocales.spec.ts src/components/charts/__tests__/GroupDistributionChart.spec.ts src/views/admin/__tests__/DashboardView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vitest run`
+- `git diff --check -- frontend/src/components/charts/GroupDistributionChart.vue frontend/src/views/admin/DashboardView.vue frontend/src/composables/__tests__/useRoutePrefetch.spec.ts frontend/src/i18n/locales/zh.ts frontend/src/i18n/locales/en.ts`
+
+## 2026-06-30 P0 release boundary triage
+
+### Done
+- Added ignore rules for local-only artifacts: root `runtime/`, `.superpowers/`, root visual QA screenshots, `backend/hotimport`, and `tmp-auto-sync-plan.md`.
+- Reduced untracked files from 117 to 99 without deleting any files.
+- Confirmed remaining untracked files are mostly release-relevant code or deployment assets: backend handlers/repositories/services, migrations 151-160, worker compose files, frontend task/hot/image APIs/views, and production preflight/smoke tools.
+
+### Validation
+- `git status --short | awk '{print $1}' | sort | uniq -c`
+- `git ls-files -o --exclude-standard`
+- `git diff --check -- .gitignore progress.md frontend/src/components/charts/GroupDistributionChart.vue frontend/src/views/admin/DashboardView.vue frontend/src/composables/__tests__/useRoutePrefetch.spec.ts frontend/src/i18n/locales/zh.ts frontend/src/i18n/locales/en.ts`
+
+### Next
+- Split the release candidate into feature groups before staging/review: core billing/auth/config changes, WeChat export, image workspace, hot content, prompt catalog/home UI, runtime/preflight tooling, and generated dependency lock changes.
+
+## 2026-06-30 P0 production config hardening
+
+### Done
+- Changed production env examples to enable URL allowlist by default and disallow insecure HTTP/private hosts unless explicitly configured.
+- Added explicit env knobs for `SERVER_FRONTEND_URL`, `SERVER_TRUSTED_PROXIES`, `CORS_ALLOWED_ORIGINS`, `CORS_ALLOW_CREDENTIALS`, and URL allowlist pricing/CRS hosts.
+- Wired the new server/CORS/security env vars into production, local, and standalone compose files.
+- Updated `deploy/config.example.yaml` so URL allowlist defaults match the production example and reverse-proxy trust is called out explicitly.
+
+### Validation
+- `POSTGRES_PASSWORD=dummy docker compose -f deploy/docker-compose.yml config --quiet`
+- `POSTGRES_PASSWORD=dummy docker compose -f deploy/docker-compose.local.yml config --quiet`
+- `DATABASE_HOST=postgres DATABASE_PASSWORD=dummy REDIS_HOST=redis docker compose -f deploy/docker-compose.standalone.yml config --quiet`
+- `cd backend && go test ./internal/config -count=1`
+- `git diff --check -- .gitignore progress.md deploy/.env.example deploy/docker-compose.yml deploy/docker-compose.local.yml deploy/docker-compose.standalone.yml deploy/config.example.yaml frontend/src/components/charts/GroupDistributionChart.vue frontend/src/views/admin/DashboardView.vue frontend/src/composables/__tests__/useRoutePrefetch.spec.ts frontend/src/i18n/locales/zh.ts frontend/src/i18n/locales/en.ts`
+
+### Notes
+- `SERVER_TRUSTED_PROXIES` and `CORS_ALLOWED_ORIGINS` still require real deployment values; they should not be guessed in source.
+
+## 2026-06-30 P0 backend and worker test gate restored
+
+### Done
+- Ran backend full test suite and found one contract drift: `dto.PublicSettings` exposed `image_prompt_filter_config`, but `service.PublicSettingsInjectionPayload` did not inject it.
+- Added `ImagePromptFilterConfig` to the public settings injection payload and populated it from `GetPublicSettingsForInjection`.
+- Added deploy ignore coverage for local `postgres_data.backup-*` directories so backup artifacts do not enter the release boundary.
+
+### Validation
+- `cd backend && go test ./internal/handler/dto -count=1`
+- `cd backend && go test ./... -count=1`
+- `npm --prefix tools/wechat-worker run typecheck && npm --prefix tools/wechat-worker run fidelity-check && node --check tools/image-workspace-worker/src/worker.mjs && node --check tools/hot-collector-worker.mjs`
+- `git diff --check -- backend/internal/service/setting_service.go deploy/.gitignore progress.md`
+
+### Notes
+- Current untracked files are now code/config/tooling rather than local runtime artifacts; they still need release grouping and review before staging.
+
+## 2026-06-30 Release boundary grouping
+
+### Groups Identified
+- Core platform/config/billing/auth: backend config, settings, billing/payment, auth, user service, middleware tests, `deploy/.env.example`, compose files.
+- WeChat export: backend wechat export handler/repository/service/routes/migrations, Node worker, worker Dockerfile, smoke/acceptance/preflight scripts, alerts example.
+- Image workspace: backend image workspace handler/repository/service/routes/migrations, frontend image generator/API/task UI, image worker, smoke/acceptance/preflight scripts, alerts example.
+- Hot content/home capability: backend hot content and home business capability APIs, frontend hot content/home prompt catalog surfaces, hot collector worker/import scripts, alerts example.
+- Unified task list and balance wording: frontend task list route/view/API, sidebar/header entries, balance ledger view/API, wording changes from credits to balance.
+- Prompt catalog/runtime shell: prompt catalog repo/service/API/front-end shell changes, import/preflight/integrity scripts.
+- Release tooling and generated files: dbmigrate/objectstoragecheck commands, object-storage integrity scripts, lockfiles, generated wire files.
+
+### Notes
+- These groups are still interleaved in one working tree. They should be staged/reviewed by group before any release tag.
+- The untracked set is now intentional-looking source/tooling, not local logs/screenshots/DB artifacts.
+
+## 2026-06-30 P1 smoke and preflight status
+
+### Done
+- Confirmed local containers are healthy: app, Postgres, Redis, WeChat worker, Image Workspace worker, and Hot collector worker.
+- Ran no-side-effect WeChat smoke with worker token from the running container; browser routes, service health, and worker health passed.
+- Ran no-side-effect Image Workspace smoke with worker token from the running container; browser route, service health, worker health, and worker status passed.
+- Checked local DB task/artifact consistency: migrations=196, users=3, WeChat tasks=19/artifacts=48/usage=13, Image tasks=23/artifacts=11/usage=20, user balance ledger=1, orphan artifacts=0 for both task families.
+- Ran production preflights for WeChat export, Image Workspace, and Hot collector.
+- Ran frontend production build after the fixes.
+
+### Validation
+- `docker ps --filter name='sub2api' --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'`
+- `WECHAT_EXPORT_WORKER_TOKEN="$(docker exec sub2api printenv WECHAT_EXPORT_WORKER_TOKEN 2>/dev/null || true)" BASE_URL=http://127.0.0.1:8080 RUN_WORKER_ONCE=0 RUN_QR_SIDE_EFFECTS=0 tools/wechat-export-smoke.sh`
+- `IMAGE_WORKSPACE_WORKER_TOKEN="$(docker exec sub2api printenv IMAGE_WORKSPACE_WORKER_TOKEN 2>/dev/null || true)" BASE_URL=http://127.0.0.1:8080 RUN_IMAGE_STORAGE_CHECK=0 RUN_IMAGE_WORKER_ONCE=0 RUN_IMAGE_TASK_SIDE_EFFECTS=0 tools/image-workspace-smoke.sh`
+- DB consistency query against `sub2api-postgres`
+- `tools/wechat-export-production-preflight.sh`
+- `tools/image-workspace-production-preflight.sh`
+- `tools/hot-collector-production-preflight.sh`
+- `pnpm --dir frontend exec vite build`
+
+### Remaining Risks
+- Image Workspace production preflight is not ready without real upstream API credentials and public artifact storage/public URL configuration.
+- Hot collector production preflight is not ready until `RUN_HOT_COLLECTOR_APPLY_CHECK=1` proves the PostgreSQL apply path.
+- Real authenticated E2E remains unproven for WeChat export and Image Workspace because no browser auth token/test user flow was supplied during this run.
+- Frontend build still warns about dynamic/static import overlap and chunks over 500 KB; this is a P2 performance cleanup item.
+
+- `git diff --check -- frontend/src/views/public/PromptCatalogView.vue frontend/src/views/public/__tests__/PromptCatalogView.spec.ts`
+
+## 2026-06-30 Purchase page balance wording
+
+### Done
+- Normalized purchase-page display copy so legacy configured labels containing “积分” or “额度” render as “余额”.
+- Updated the built-in Chinese recharge product line from “获得 ${amount} 额度” to “获得 ${amount} 余额”.
+- Added a PaymentView source guard covering the balance wording normalization path.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/user/__tests__/PaymentView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `git diff --check -- frontend/src/views/user/PaymentView.vue frontend/src/views/user/__tests__/PaymentView.spec.ts frontend/src/i18n/locales/zh.ts`
+
+## 2026-06-30 Prompt catalog stat card removed
+
+### Done
+- Removed the top prompt catalog stat card that showed total/source/case/template counts.
+- Simplified the prompt catalog hero section back to a single-column title and description area.
+- Added a PromptCatalog source guard to prevent the removed stat layout from returning.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/PromptCatalogView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `git diff --check -- frontend/src/views/public/PromptCatalogView.vue frontend/src/views/public/__tests__/PromptCatalogView.spec.ts`
+
+## 2026-06-30 Tasks sidebar entry documented
+
+### Done
+- Updated the runtime auth shell config examples so user and admin-personal sidebar sections include the `/tasks` entry.
+- Updated the auth shell config hints to list `tasks` as a supported user/personal sidebar item.
+- Strengthened the AppSidebar source guard to assert `tasks` is present in the default user and admin-personal navigation sections.
+
+### Validation
+- `npm --prefix frontend test -- --run src/components/layout/__tests__/AppSidebar.spec.ts src/router/__tests__/task-list-route.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `git diff --check -- frontend/src/i18n/locales/zh.ts frontend/src/i18n/locales/en.ts frontend/src/components/layout/__tests__/AppSidebar.spec.ts`
+
+## 2026-06-30 Tasks avatar menu shortcut
+
+### Done
+- Added a "My Tasks" shortcut to the user avatar dropdown, linking directly to `/tasks`.
+- Kept profile/API key shortcuts disabled in the dropdown to avoid duplicating sidebar entries.
+- Updated the AppHeader source guard to protect the avatar menu task shortcut.
+
+### Validation
+- `npm --prefix frontend test -- --run src/components/layout/__tests__/AppHeader.spec.ts src/router/__tests__/task-list-route.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `git diff --check -- frontend/src/components/layout/AppHeader.vue frontend/src/components/layout/__tests__/AppHeader.spec.ts`
+
+## 2026-06-30 Prompt catalog category chips stay visible
+
+### Done
+- Added a cached full-category list for the prompt catalog filter sidebar.
+- Kept all category chips visible after selecting one category, even when the filtered API response only returns the selected category facet.
+- Added a PromptCatalog regression test for selecting one category while keeping the other category chips visible.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/PromptCatalogView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `git diff --check -- frontend/src/views/public/PromptCatalogView.vue frontend/src/views/public/__tests__/PromptCatalogView.spec.ts`
+
+## 2026-06-30 Prompt catalog i18n cleanup
+
+### Done
+- Fixed prompt catalog facet label resolution so English locale does not display Chinese API `display_label` values.
+- Removed the hardcoded English `title: 'My Tasks'` fallback from the `/tasks` route, leaving the localized `titleKey`.
+- Added regression tests for English prompt category labels and the localized task route title.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/promptCatalogRuntime.spec.ts src/views/public/__tests__/PromptCatalogView.spec.ts src/i18n/__tests__/localeCoverage.spec.ts src/router/__tests__/task-list-route.spec.ts src/components/layout/__tests__/AppHeader.spec.ts`
+- `npm --prefix frontend run typecheck`
+
+## 2026-06-30 Image workspace upstream failure diagnostics
+
+### Done
+- Confirmed task #30 only stored `error_message = "upstream returned no images"` and had no artifact rows or raw upstream response persisted.
+- Added optional image workspace worker failure `result_json` propagation through handler, service, and repository failure paths.
+- Updated the image workspace worker to persist a sanitized upstream response diagnostic snapshot on generation failures, including status, content type, request id, upstream host/path, body shape, and a redacted/truncated body preview.
+- Added service and repository test assertions that failure diagnostics are preserved in task `result_json`.
+
+### Validation
+- `node --check tools/image-workspace-worker/src/worker.mjs`
+- `go test -tags unit ./internal/service ./internal/repository ./internal/handler -run 'TestImageWorkspace|TestHomeBusiness'`
+- `node tools/image-workspace-worker-api-mock-check.mjs`
+- Inline Node failure mock: upstream returned `data: []`; worker posted `/fail` with `result_json.failure.upstream_response`, including status/request-id/body-shape and redacted body preview.
+
+### Notes
+- Existing task #30 cannot be backfilled because the original upstream body was not stored at failure time. New failures will carry the diagnostic snapshot in `result_json.failure.upstream_response`.
+
+## 2026-06-30 Task list Vercel route polish
+
+### Done
+- Reworked `/tasks` route classes toward the Vercel DESIGN.md style: near-white page canvas, black primary CTA, white secondary CTA, hairline borders, mono breadcrumb/table labels, compact pill filters, and tighter table columns.
+- Updated task summary cards, empty/login states, task rows, action buttons, and status badges to use Vercel-like neutral surfaces with only small semantic color accents.
+- Fixed black CTA text visibility by extending the shared `.home-business-page` Vercel CTA override to `bg-[#171717]` classes.
+- Added route-level source assertions in `TaskListView.spec.ts` for the Vercel-inspired `/tasks` chrome.
+- Captured current `/tasks` visual sanity screenshot from port 3000:
+  - `artifacts/tasks-vercel-skin-v2.png`
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/TaskListView.spec.ts src/utils/__tests__/homeBusinessVercelDesign.spec.ts`
+- `npm --prefix frontend run typecheck`
+- Chrome DevTools screenshot against `http://127.0.0.1:3000/tasks`; current session shows the not-logged-in state, so the authenticated table state is verified by source/tests rather than screenshot.
+
+## 2026-06-30 Vercel DESIGN.md frontend skin
+
+### Done
+- Read `.codex-artifacts/awesome-design-md/design-md/vercel/DESIGN.md` and adapted its tokens to the existing frontend constraints.
+- Updated the shared `.home-business-page` styling to use Vercel-inspired ink/canvas/hairline/link tokens, near-white canvas, subtle multi-stop mesh background, small-radius cards, black primary CTAs, mono technical labels, and stacked subtle shadows.
+- Kept letter spacing at `0` to comply with the repo's frontend instruction, rather than copying Vercel's negative display tracking.
+- Added `frontend/src/utils/__tests__/homeBusinessVercelDesign.spec.ts` to lock the key design-token adaptation.
+- Captured screenshots for visual sanity checks:
+  - `artifacts/home-vercel-skin.png`
+  - `artifacts/models-vercel-skin.png`
+
+### Validation
+- `npm --prefix frontend test -- --run src/utils/__tests__/homeBusinessVercelDesign.spec.ts src/views/public/__tests__/TaskListView.spec.ts src/views/public/__tests__/ImageGeneratorView.spec.ts src/views/__tests__/HomeView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `npm --prefix frontend run build`
+
+## 2026-06-30 Awesome DESIGN.md install
+
+### Done
+- Shallow-cloned `https://github.com/voltagent/awesome-design-md` into `.codex-artifacts/awesome-design-md`.
+- Confirmed the repository is a curated DESIGN.md collection, not an npm package or runtime dependency.
+- Added `docs/design-md/awesome-design-md.md` with the source commit, local install path, usage note, and available template list.
+- Did not create or overwrite project-root `DESIGN.md` because no specific visual template was requested.
+
+### Validation
+- `git ls-remote https://github.com/voltagent/awesome-design-md.git HEAD`
+- `find .codex-artifacts/awesome-design-md/design-md -name DESIGN.md | wc -l`
+
+## 2026-06-30 Task list header layout
+
+### Done
+- Reworked the task list page header into a compact two-row layout: breadcrumb on the first row, then title/subtitle and task creation actions aligned on the second row.
+- Widened the task list page container to `max-w-[88rem]` so the task table and header breathe better on wide screens.
+- Made the creation buttons stable across breakpoints: full-width stacked on narrow screens, fixed-width inline actions on desktop.
+- Added localized breadcrumb aria labels and a source-level regression test for the header alignment classes.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/TaskListView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- Attempted browser check at `http://127.0.0.1:5174/tasks`; local auth guard redirected to `/home`, so authenticated visual verification still needs an existing login state or backend session.
+
+## 2026-06-30 Image workspace download responsiveness
+
+### Done
+- Changed image generator task refreshes to start local artifact blob preview loading in the background instead of awaiting every image download before clearing the loading state.
+- Reused an existing local artifact blob URL when downloading an image, avoiding a duplicate `/image-workspace/artifacts/:id/download` request after preview preload has already completed.
+- Changed image workspace artifact download handling so local files still use `FileAttachment`, allowed object-storage/public artifact URLs redirect with HTTP 302, and upstream remote artifacts keep the proxy fallback.
+- Added structured download timing logs for local file, remote redirect, and remote proxy paths.
+- Added handler tests for image workspace storage path restrictions, remote host allowlisting, public-storage redirect behavior, and upstream no-redirect behavior.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/ImageGeneratorView.spec.ts src/views/public/__tests__/TaskListView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `go test ./internal/handler -run 'TestImageWorkspace|TestResolveImageWorkspace'`
+
+## 2026-06-30 Image workspace download pending state
+
+### Done
+- Added per-artifact download pending state on the image generator task cards and lightbox download button.
+- Disabled duplicate download clicks while the blob request is pending and switched the button UI to a spinner / `准备中...` label.
+- Updated the unified task list download action to show `准备中...` while its existing busy state is active.
+- Added Chinese and English i18n copy for the new download pending labels.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/ImageGeneratorView.spec.ts src/views/public/__tests__/TaskListView.spec.ts`
+- `npm --prefix frontend run typecheck`
+
+## 2026-06-30 Image workspace status block removed
+
+### Done
+- Removed the standalone image workspace status/info block from the generator page.
+- Moved the login, success, and error notices into the prompt form area below the generation controls.
+- Stopped using `workspaceDescription` as a hero fallback, so stale status-block copy no longer appears elsewhere after the block is removed.
+- Removed status-block fields from the admin workspace shell placeholder JSON.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/ImageGeneratorView.spec.ts`
+- `npm --prefix frontend run typecheck`
+
+## 2026-06-30 Prompt catalog import placement
+
+### Done
+- Moved the admin "import from link" controls from a standalone full-width block into the right side of the prompt catalog title area.
+- Kept import success/error and warning messages directly under the title/import row.
+- Added a source-level regression assertion for the new title-side import layout and against the old standalone bar class.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/PromptCatalogView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `cd frontend && ./node_modules/.bin/eslint src/views/public/PromptCatalogView.vue src/views/public/__tests__/PromptCatalogView.spec.ts --ext .vue,.ts`
+
+## 2026-06-30 Cloudbase logo asset replacement
+
+### Done
+- Replaced the bundled `/logo.png` placeholder with the provided cloudbase logo image.
+- Replaced `/favicon.svg` with an SVG wrapper that embeds the same cloudbase logo image, keeping the existing favicon path compatible.
+- Scanned public resources for the removed purple/blue placeholder favicon markers.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/__tests__/siteLogoFallback.spec.ts src/stores/__tests__/app.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `rg -n "touchFaviconGradient|8B91FF|1D4ED8|F59E0B" frontend/public && exit 1 || exit 0`
+- `shasum -a 256 /var/folders/sv/cn8h71pj0vd8750qqdkn2kmm0000gn/T/codex-clipboard-mFpNJ0.png frontend/public/logo.png`
+
+## 2026-06-30 WeChat account sync session readiness fix
+
+### Done
+- Traced the failed `POST /api/v1/wechat/accounts/MzIyMzA5NjEyMA==/sync` request to `400` caused by `WECHAT_SESSION_NOT_READY`.
+- Confirmed the bound account exists, but the latest WeChat backend session was `pending` and the previous `ready` session had been marked `expired` when a new QR login was created.
+- Changed QR login creation to expire only pending/scan-confirmed login attempts instead of invalidating an existing ready session.
+- Changed active session lookup to prefer a ready session over a newer pending session.
+- Rebuilt `sub2api-local:latest` and recreated the running `sub2api` container with the new backend.
+
+### Validation
+- `go test ./internal/repository -run 'TestWeChatExportRepository(GetActiveSessionPrefersReadyOverPending|ExpireLoginAttemptSessionsPreservesReady)' -count=1`
+- `go test ./internal/service ./internal/repository ./internal/handler -run 'TestWeChatExport|TestHomeBusiness' -count=1`
+- `go test ./internal/service ./internal/repository ./internal/handler ./internal/server/routes -run 'TestWeChat|TestHomeBusiness|^$' -count=1`
+- `docker build -t sub2api-local:latest -f deploy/Dockerfile .`
+- `curl -fsS http://127.0.0.1:8080/health`
+
+### Notes
+- Existing session `7` was already marked expired before the fix; the user must complete a fresh WeChat backend login before syncing again.
+
+## 2026-06-30 Admin worker runtime status panel
+
+### Done
+- Added an admin-protected `/api/v1/admin/runtime/workers` endpoint that aggregates Image Workspace, WeChat Export, and Hot Collector worker status.
+- Added a Worker 运行状态 panel to `/admin/runtime-settings` with health badges, queue/running/failed/succeeded/stale counters, last update time, and attention reasons.
+- Rebuilt `sub2api-local:latest` and restarted the local `sub2api` container with the current project `deploy/data`, `deploy/hot`, and `deploy/runtime` mounts.
+
+### Validation
+- `cd backend && go test ./internal/handler ./internal/server/routes`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vitest run src/views/admin/__tests__/RuntimeSettingsView.spec.ts`
+- `docker build -t sub2api-local:latest -f deploy/Dockerfile .`
+- `/health` returned `{"env":"production","status":"ok"}` and `/admin/runtime-settings` returned `200`.
+
+### Notes
+- `/api/v1/admin/runtime/workers` correctly returns `401` without admin auth.
+- Local DB currently has no `admin_api_key` setting and the env admin password did not authenticate against the existing DB user, so authenticated JSON payload verification was not performed without changing credentials.
+
+## 2026-06-30 Frontend theme unified with homepage
+
+### Done
+- Rebased the frontend Tailwind `primary` and `accent` palettes from the old purple/sage theme to the homepage sky/blue/slate direction.
+- Updated global body, card, sidebar, glass, page hero, surface, metric, and text-gradient tokens so dashboard and authenticated business pages inherit the homepage visual system.
+- Added a shared `home-business-page` shell for the public business pages that had hard-coded dark themes: models plaza, image generator, WeChat export, pricing, and hot content.
+- Adjusted the user/admin dashboard metric accents, docs theme color, and profile overview panel away from the old purple/warm palette.
+- Simplified the fix by centralizing most color changes in theme tokens and one page shell instead of rewriting every card in every page.
+
+### Validation
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec eslint src/components/layout/AppLayout.vue src/components/user/dashboard/UserDashboardStats.vue src/views/admin/DashboardView.vue src/views/public/PricingView.vue src/views/public/ModelsPlazaView.vue src/views/public/ImageGeneratorView.vue src/views/public/WeChatExportView.vue src/views/public/HotContentView.vue src/views/public/DocsView.vue src/components/user/profile/ProfileInfoCard.vue`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/tailwind.config.js frontend/src/style.css frontend/src/components/layout/AppLayout.vue frontend/src/components/user/dashboard/UserDashboardStats.vue frontend/src/views/admin/DashboardView.vue frontend/src/views/public/PricingView.vue frontend/src/views/public/ModelsPlazaView.vue frontend/src/views/public/ImageGeneratorView.vue frontend/src/views/public/WeChatExportView.vue frontend/src/views/public/HotContentView.vue frontend/src/views/public/DocsView.vue frontend/src/components/user/profile/ProfileInfoCard.vue`
+- `pnpm --dir frontend exec vitest run src/views/user/__tests__/dashboardNoHero.spec.ts src/views/user/__tests__/dashboardRuntime.spec.ts src/views/admin/__tests__/DashboardView.spec.ts src/views/public/__tests__/ModelsPlazaView.spec.ts src/views/public/__tests__/ImageGeneratorView.spec.ts src/views/public/__tests__/PricingView.spec.ts src/views/public/__tests__/WeChatExportView.spec.ts src/views/public/__tests__/HotContentView.spec.ts src/views/public/__tests__/DocsView.spec.ts src/components/user/profile/__tests__/ProfileInfoCard.spec.ts`
+- Playwright visual/style check against `/home`, `/models`, `/image-generator`, `/wechat`, `/pricing`, and `/hot` on `http://127.0.0.1:5173/`.
+
+### Notes
+- Vite build still reports the existing dynamic-import/chunk-size warnings.
+- Several platform/status-specific purple/violet badges remain where they encode provider/status meaning rather than the page-level visual theme.
+
+## 2026-06-30 Task list theme unified with homepage
+
+### Done
+- Added the shared `home-business-page` shell to `/tasks`.
+- Reworked the task list page from its standalone dark slate theme to the same homepage-aligned white/slate/sky visual language.
+- Updated task list header, breadcrumbs, filter bar, summary cards, empty state, table rows, action buttons, and status badges for light theme readability.
+- Extended the shared public-business-page CSS override to include legacy `bg-slate-950` task-page surfaces.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/views/public/TaskListView.vue`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/TaskListView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/public/TaskListView.vue frontend/src/style.css progress.md`
+- Playwright style check against `/tasks` on `http://127.0.0.1:5173/`.
+
+### Notes
+- Vite build still reports the existing dynamic-import/chunk-size warnings.
+
+## 2026-06-30 Homepage nav typography aligned
+
+### Done
+- Unified the homepage top navigation typography across brand name, center nav links, locale switcher, docs button, and dashboard/login button.
+- Removed the center nav's smaller `text-xs` treatment and extra tracking so it matches the rest of the header.
+- Reduced the locale switcher visible label and dropdown rows from `text-base` to the same `text-sm` scale used by the homepage nav.
+- Standardized top-right control height at `h-10` for the locale, docs, and dashboard/login controls.
+- Added stable `data-home-nav-text` markers for visual regression checks of homepage nav text sizing.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/views/HomeView.vue src/components/common/LocaleSwitcher.vue src/components/common/__tests__/LocaleSwitcher.spec.ts`
+- `pnpm --dir frontend exec vitest run src/views/__tests__/HomeView.spec.ts src/components/common/__tests__/LocaleSwitcher.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/HomeView.vue frontend/src/components/common/LocaleSwitcher.vue frontend/src/components/common/__tests__/LocaleSwitcher.spec.ts progress.md`
+- Playwright computed-style check on `/home`: top nav marked text elements all resolve to `font-size: 14px`, `font-weight: 600`, `line-height: 14px`.
+
+### Notes
+- Vite build still reports the existing dynamic-import/chunk-size warnings.
+
+## 2026-06-30 Brand logos link back home
+
+### Done
+- Wrapped the homepage header brand, authenticated sidebar brand, and auth-layout brand block in home-path router links.
+- Changed the Hot Content public header brand from a hardcoded `/home` link to `authRouteDefaults.homePath`, matching the other public business pages.
+- Added source-level regressions so the brand links keep using the configured home path and do not fall back to literal `to="/home"`.
+- Kept the change small by reusing `useAuthRouteDefaults` and existing brand markup instead of adding a new shared component.
+
+### Validation
+- `rg -n "to=\"/home\"|href=\"/home\"|RouterLink to=\"/home\"|router-link to=\"/home\"" frontend/src -S` now only matches test assertions.
+- `pnpm --dir frontend exec eslint src/views/HomeView.vue src/components/layout/AppSidebar.vue src/components/layout/AuthLayout.vue src/views/public/HotContentView.vue src/views/__tests__/HomeView.spec.ts src/components/layout/__tests__/AppSidebar.spec.ts src/components/layout/__tests__/AuthLayout.spec.ts src/views/public/__tests__/HotContentView.spec.ts`
+- `pnpm --dir frontend exec vitest run src/views/__tests__/HomeView.spec.ts src/components/layout/__tests__/AppSidebar.spec.ts src/components/layout/__tests__/AuthLayout.spec.ts src/views/public/__tests__/HotContentView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/HomeView.vue frontend/src/components/layout/AppSidebar.vue frontend/src/components/layout/AuthLayout.vue frontend/src/views/public/HotContentView.vue frontend/src/views/__tests__/HomeView.spec.ts frontend/src/components/layout/__tests__/AppSidebar.spec.ts frontend/src/components/layout/__tests__/AuthLayout.spec.ts frontend/src/views/public/__tests__/HotContentView.spec.ts`
+- Playwright checked `/home`, `/hot`, and `/login`: the visible brand link resolves to `<a href="/home">`.
+
+### Notes
+- Vite build still reports the existing dynamic-import/chunk-size warnings.
+- Dashboard/sidebar clickability is covered by source regression because the local browser session is not authenticated.
+
+## 2026-06-30 Homepage prompt links target prompt catalog
+
+### Done
+- Added `promptsPath` to the homepage shell link defaults and defaulted it to `/prompts`.
+- Changed homepage prompt-facing links in the hero CTA, top navigation, and footer from `modelsPath` to `promptsPath`.
+- Updated the business-home default navigation label from model wording to prompt wording.
+- Updated admin setting placeholder JSON examples so future homepage configs include `promptsPath: "/prompts"`.
+- Added regressions proving homepage prompt links render `/prompts` and not `/models`.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/utils/homeShell.ts src/views/HomeView.vue src/utils/__tests__/homeShell.spec.ts src/views/__tests__/HomeView.spec.ts src/i18n/locales/zh.ts src/i18n/locales/en.ts`
+- `pnpm --dir frontend exec vitest run src/utils/__tests__/homeShell.spec.ts src/views/__tests__/HomeView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/utils/homeShell.ts frontend/src/views/HomeView.vue frontend/src/utils/__tests__/homeShell.spec.ts frontend/src/views/__tests__/HomeView.spec.ts frontend/src/i18n/locales/zh.ts frontend/src/i18n/locales/en.ts`
+- Playwright checked `/home`: prompt-related links resolve to `/prompts`, with no `/models` prompt link found.
+
+### Notes
+- Vite build still reports the existing dynamic-import/chunk-size warnings.
+
+## 2026-06-30 Locale switcher dropdown colors
+
+### Done
+- Reworked the language switcher dropdown from a hardcoded dark panel to a homepage-aligned light floating menu.
+- Kept dark-mode support with a separate `dark:bg-slate-900/95` treatment.
+- Updated selected and hover rows to use light slate colors on light pages and white-tinted colors in dark mode.
+- Added regression coverage to prevent the old `bg-[#343434]` menu from returning.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/components/common/LocaleSwitcher.vue src/components/common/__tests__/LocaleSwitcher.spec.ts`
+- `pnpm --dir frontend exec vitest run src/components/common/__tests__/LocaleSwitcher.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/components/common/LocaleSwitcher.vue frontend/src/components/common/__tests__/LocaleSwitcher.spec.ts`
+- Playwright checked `/home` language dropdown: menu background is `rgba(255, 255, 255, 0.95)` and selected row is `rgb(241, 245, 249)`.
+
+### Notes
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
+
+## 2026-06-30 Homepage primary action contrast
+
+### Done
+- Added a dedicated `data-home-primary-action` marker to the homepage login/dashboard pill.
+- Restored white text for that primary action in light mode so the dark pill remains readable.
+- Added the dark-mode inverse color for the same marker so the white pill remains readable in dark mode.
+- Added a source regression assertion for the primary-action marker.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/views/HomeView.vue src/views/__tests__/HomeView.spec.ts`
+- `pnpm --dir frontend exec vitest run src/views/__tests__/HomeView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/HomeView.vue frontend/src/style.css frontend/src/views/__tests__/HomeView.spec.ts`
+- Playwright checked `/home`: primary action text is `rgb(255, 255, 255)` on `rgb(15, 23, 42)`.
+
+### Notes
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
+
+## 2026-06-30 Hot content hero summary removed
+
+### Done
+- Removed the `/hot` hero stat cards for source/hot counts.
+- Removed the right-side capability status panel from the `/hot` hero area.
+- Simplified the hero layout from a two-column hero/sidebar grid to a single text block above the hot stream.
+- Removed the now-unused `stats` computed from `HotContentView`.
+- Added regression coverage so the stats loop and capability status panel do not return.
+
+### Validation
+- `pnpm --dir frontend exec eslint src/views/public/HotContentView.vue src/views/public/__tests__/HotContentView.spec.ts`
+- `pnpm --dir frontend exec vitest run src/views/public/__tests__/HotContentView.spec.ts`
+- `pnpm --dir frontend exec vue-tsc -b`
+- `pnpm --dir frontend exec vite build`
+- `git diff --check -- frontend/src/views/public/HotContentView.vue frontend/src/views/public/__tests__/HotContentView.spec.ts`
+- Playwright checked `/hot`: removed terms such as `能力状态`, `热点主线`, `采集源`, and `已接入` are absent from the page text.
+
+### Notes
+- Vite build still reports the existing PostCSS `from` option warning plus dynamic-import/chunk-size warnings.
+
+## 2026-06-30 Task breadcrumb selected background
+
+### Done
+- Removed the selected breadcrumb pill styling on `/tasks` so the current "我的任务" item renders as plain selected text instead of a filled chip.
+
+### Next
+- Done.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/TaskListView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- Chrome DevTools computed-style check on `/tasks`: current breadcrumb `backgroundColor` is `rgba(0, 0, 0, 0)`.
+- Captured `artifacts/tasks-breadcrumb-transparent.png`.
+
+## 2026-06-30 Vercel template across routes
+
+### Done
+- Added Vercel shell entry classes to the authenticated app layout, auth layout, setup, 404, auth popup/callback, payment result, and stripe popup routes.
+- Added `home-business-page` to public routes that were still outside the shared Vercel treatment: home, docs, legal document, prompt catalog, and key usage.
+- Added shared Vercel-style CSS tokens and overrides for layout chrome, cards, inputs, tables, dropdowns, modals, buttons, sidebar links, and auth/setup surfaces.
+
+### Next
+- Done.
+
+### Validation
+- `npm --prefix frontend test -- --run src/utils/__tests__/homeBusinessVercelDesign.spec.ts src/views/public/__tests__/TaskListView.spec.ts src/views/__tests__/HomeView.spec.ts src/components/layout/__tests__/AuthLayout.spec.ts src/components/layout/__tests__/AppSidebar.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `npm --prefix frontend run build`
+- `git diff --check -- frontend/src/style.css frontend/src/components/layout/AppLayout.vue frontend/src/components/layout/AuthLayout.vue frontend/src/views/NotFoundView.vue frontend/src/views/setup/SetupWizardView.vue frontend/src/views/HomeView.vue frontend/src/views/public/DocsView.vue frontend/src/views/public/LegalDocumentView.vue frontend/src/views/public/PromptCatalogView.vue frontend/src/views/KeyUsageView.vue frontend/src/views/auth/AuthPopupView.vue frontend/src/views/auth/OAuthCallbackView.vue frontend/src/views/auth/WechatPaymentCallbackView.vue frontend/src/views/user/PaymentResultView.vue frontend/src/views/user/StripePopupView.vue progress.md`
+- Chrome DevTools spot checks confirmed Vercel shell/background on `/home`, `/login`, `/tasks`, `/docs`, and `/key-usage`.
+- Captured `artifacts/vercel-all-routes-home.png`, `artifacts/vercel-all-routes-login.png`, `artifacts/vercel-all-routes-tasks.png`, `artifacts/vercel-all-routes-docs.png`, and `artifacts/vercel-all-routes-key-usage.png`.
+
+### Notes
+- Build still reports existing Vite dynamic-import/chunk-size warnings and a PostCSS plugin `from` warning.
+
+## 2026-06-30 Task page prompt-catalog layout alignment
+
+### Done
+- Reworked `/tasks` to follow the `/prompts` public page structure: top brand navigation, language switcher, account action, hero split layout, action panel, sticky filter/sidebar, and right-side task list.
+- Kept task API loading, retry, cancel, and download behavior unchanged.
+- Fixed the unauthenticated notice color so it stays readable on the Vercel warning surface.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/TaskListView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- `git diff --check -- frontend/src/views/public/TaskListView.vue frontend/src/views/public/__tests__/TaskListView.spec.ts progress.md`
+- Chrome DevTools checked `/tasks`: top nav renders `cloudbase / 中文 / 登录`, and unauthenticated notice uses `rgb(171, 87, 10)` on `rgb(255, 248, 232)`.
+- Captured `artifacts/tasks-prompts-layout-nav-v2.png`.
+
+## 2026-06-30 Hot page stream-only layout
+
+### Done
+- Removed the `/hot` left-side tab navigation from the visible page.
+- Kept only the hot stream search, item list, and item pagination in the main content.
+- Removed daily, public account ranking, and run-event copy from the visible page while retaining translation keys for compatibility.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/public/__tests__/HotContentView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- Chrome DevTools checked `/hot`: no visible `日报`, `公众号榜`, or `运行事件` text; no old left-tab grid; buttons are search plus pagination.
+- Captured `artifacts/hot-stream-only-v2.png`.
+
+## 2026-06-30 Home capability entry cleanup
+
+### Done
+- Reworked `/home` so capability entry points are concentrated in a single `#capabilities` card grid.
+- Changed the hero to keep only the platform action plus one anchor into the capability grid.
+- Collapsed the lower experience and why-choose blocks into one support section so capability navigation is no longer split across multiple marketing sections.
+- Added the prompt catalog to the default business capability cards so prompt access lives with the other capability entries.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/__tests__/HomeView.spec.ts src/utils/__tests__/homeShell.spec.ts`
+- `npm --prefix frontend run typecheck`
+- Chrome DevTools checked `/home`: capability grid exists, no `/models` section on business home, and feature links are concentrated under `[data-home-capability-grid]`.
+- Captured `artifacts/home-before-entry-cleanup.png` and `artifacts/home-capability-entry-cleanup.png`.
+
+## 2026-06-30 Home marked-section removal
+
+### Done
+- Removed the business-home hero badge, title, description, and CTA block from `/home`.
+- Removed the right-side business capability summary card from `/home`.
+- Removed the lower platform-positioning and capability-organization explanation section from `/home`.
+- Kept the concentrated capability card grid as the first main homepage content.
+
+### Validation
+- `npm --prefix frontend test -- --run src/views/__tests__/HomeView.spec.ts src/utils/__tests__/homeShell.spec.ts`
+- `npm --prefix frontend run typecheck`
+- Chrome DevTools checked `/home`: no visible marked hero/summary/platform-section text, no `[data-home-hero]`, and `[data-home-capability-grid]` remains.
+- Captured `artifacts/home-remove-marked-sections.png`.
+
+## 2026-06-30 Public dark header unification
+
+### Done
+- Added shared `PublicDarkHeader` for dark public/business pages.
+- Moved brand, language switcher, account action, avatar entry, and optional extra actions into the shared header.
+- Switched `/wechat`, `/tasks`, `/prompts`, `/hot`, `/image-generator`, `/models`, and `/pricing` to the shared header.
+- Added the missing avatar entry on `/wechat` and `/tasks`.
+
+### Validation
+- `npm --prefix frontend test -- --run src/components/layout/__tests__/PublicDarkHeader.spec.ts src/views/public/__tests__/WeChatExportView.spec.ts src/views/public/__tests__/TaskListView.spec.ts src/views/public/__tests__/PromptCatalogView.spec.ts src/views/public/__tests__/HotContentView.spec.ts src/views/public/__tests__/ImageGeneratorView.spec.ts src/views/public/__tests__/ModelsPlazaView.spec.ts src/views/public/__tests__/PricingView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- Chrome DevTools checked `/wechat`, `/tasks`, `/prompts`, and `/image-generator`: same header class and avatar entry present.
+- Captured `artifacts/wechat-unified-public-header.png`.
+
+## 2026-06-30 WeChat export warning contrast
+
+### Done
+- Replaced low-contrast amber utility text on `/wechat` warning surfaces with a dedicated `wechat-export-warning` style.
+- Set explicit readable light-shell colors for the session warning, login-required warning, and ready-session-required warning.
+- Added regression coverage so these warning blocks do not return to `text-amber-50` or `text-amber-100/85`.
+
+### Validation
+- Pending.
+
+## 2026-06-30 Public header style refinement
+
+### Done
+- Refined `PublicDarkHeader` so the shared public/business header matches the existing Vercel-style light shell instead of reading as a dark pasted-in bar.
+- Moved optional page actions before the account action to keep the right-side command group stable.
+- Hid the fallback avatar in anonymous state; the avatar entry now appears only for authenticated users, avoiding a duplicate `登录` plus initial circle on public pages.
+- Added scoped header styles for brand, account action, page action links, and avatar so global `home-business-page` overrides do not drift the component.
+
+### Validation
+- `npm --prefix frontend test -- --run src/components/layout/__tests__/PublicDarkHeader.spec.ts src/views/public/__tests__/WeChatExportView.spec.ts src/views/public/__tests__/TaskListView.spec.ts src/views/public/__tests__/PromptCatalogView.spec.ts src/views/public/__tests__/HotContentView.spec.ts src/views/public/__tests__/ImageGeneratorView.spec.ts src/views/public/__tests__/ModelsPlazaView.spec.ts src/views/public/__tests__/PricingView.spec.ts`
+- `npm --prefix frontend run typecheck`
+- Chrome DevTools checked `/wechat`, `/tasks`, and `/prompts`: shared header renders consistently, anonymous state has no extra avatar placeholder, and account action remains visible.
+- Captured `artifacts/wechat-public-header-refined.png`.
+
+## 2026-06-30 Public header home alignment
+
+### Done
+- Aligned `PublicDarkHeader` with the homepage header layout by switching the public/business nav container from `max-w-7xl` to the homepage `max-w-5xl` width.
+- Matched the homepage primary account action style with the dark rounded button treatment.
+- Kept anonymous pages free of the avatar placeholder while preserving the authenticated avatar entry required on `/wechat`.
+
+### Validation
+- `npm --prefix frontend test -- --run src/components/layout/__tests__/PublicDarkHeader.spec.ts`
+- `npm --prefix frontend run typecheck`
+- Chrome DevTools compared `/wechat` and `/home`: both headers render `navWidth=1024` with matching left/right page gutters, and the account action uses the dark primary button.
+- Captured `artifacts/wechat-header-home-aligned.png`.
+
+## 2026-06-30 WeChat verify-page import guard
+
+### Done
+- Removed the polluted direct-link WeChat account/article records produced from a `secitptpage/verify.html` response.
+- Deleted the related false-success export tasks and local artifact directories.
+- Refunded the user balance for those failed exports and wrote a correction ledger entry.
+- Added backend direct-import probing so a WeChat verification page returns `微信返回验证页，请通过公众号同步导入` before any article/account row is written.
+- Added worker-side verification-page detection so fetched verify HTML marks the article/task failed instead of generating artifacts.
+
+### Validation
+- `go test ./internal/service -run 'TestWeChatExportService(ImportLink|RejectsNonWeChatArticleURL)|TestIsWeChatVerifyPageHTML'`
+- `go test ./internal/service`
+- `npm --prefix tools/wechat-worker run typecheck`
+- `npm --prefix tools/wechat-worker run fidelity-check`

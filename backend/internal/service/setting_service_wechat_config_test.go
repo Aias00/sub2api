@@ -55,6 +55,8 @@ func TestSettingService_GetWeChatConnectOAuthConfig_UsesDatabaseOverrides(t *tes
 	repo := &settingWeChatRepoStub{
 		values: map[string]string{
 			SettingKeyWeChatConnectEnabled:             "true",
+			SettingKeyWeChatConnectOpenAppID:           "wx-open-app",
+			SettingKeyWeChatConnectOpenAppSecret:       "wx-open-secret",
 			SettingKeyWeChatConnectMPAppID:             "wx-db-app",
 			SettingKeyWeChatConnectMPAppSecret:         "wx-db-secret",
 			SettingKeyWeChatConnectMode:                "mp",

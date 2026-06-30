@@ -1,26 +1,16 @@
 <template>
-  <div class="min-h-screen bg-[#101114] text-white">
-    <header class="border-b border-white/10 bg-[#15171d] px-6 py-5">
-      <nav class="mx-auto flex max-w-7xl items-center justify-between gap-4">
-        <RouterLink :to="authRouteDefaults.homePath" class="flex min-w-0 items-center gap-3">
-          <div v-if="siteLogo" class="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5">
-            <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
-          </div>
-          <span class="truncate text-sm font-semibold text-white">{{ siteName }}</span>
+  <div class="home-business-page min-h-screen bg-[#101114] text-white">
+    <PublicDarkHeader>
+      <template #actions>
+        <RouterLink
+          v-if="promptsPath"
+          :to="promptsPath"
+          class="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/[0.06] hover:text-white"
+        >
+          {{ copy.prompts }}
         </RouterLink>
-
-        <div class="flex items-center gap-3">
-          <LocaleSwitcher />
-          <RouterLink
-            v-if="promptsPath"
-            :to="promptsPath"
-            class="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/[0.06] hover:text-white"
-          >
-            {{ copy.prompts }}
-          </RouterLink>
-        </div>
-      </nav>
-    </header>
+      </template>
+    </PublicDarkHeader>
 
     <main class="px-6 py-10 sm:py-14">
       <div class="mx-auto max-w-7xl">
@@ -94,7 +84,7 @@
               <article
                 v-for="product in rechargeProducts"
                 :key="product.id"
-                class="flex min-h-72 flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-emerald-200/35 hover:bg-white/[0.06]"
+                class="flex min-h-72 flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.24)] transition hover:border-emerald-200/35 hover:bg-white/[0.06]"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div>
@@ -145,7 +135,7 @@
               <article
                 v-for="plan in subscriptionPlans"
                 :key="plan.id"
-                class="flex min-h-80 flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-5 transition hover:border-cyan-200/35 hover:bg-white/[0.06]"
+                class="flex min-h-80 flex-col rounded-2xl border border-white/10 bg-white/[0.04] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.24)] transition hover:border-cyan-200/35 hover:bg-white/[0.06]"
               >
                 <div class="flex items-start justify-between gap-3">
                   <div>
@@ -204,10 +194,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { RouterLink } from 'vue-router'
-import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
+import PublicDarkHeader from '@/components/layout/PublicDarkHeader.vue'
 import { paymentAPI } from '@/api/payment'
 import { getLocale } from '@/i18n'
-import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import { useAppStore } from '@/stores'
 import { resolvePricingShellConfig, type PricingCopy } from '@/utils/pricingShell'
 import { resolveRuntimeLanguage } from '@/utils/runtimeLocale'
@@ -232,15 +221,12 @@ const emptyCatalog: HomeCatalogResponse = {
 }
 
 const appStore = useAppStore()
-const { authRouteDefaults } = useAuthRouteDefaults()
 const activeTab = ref<'recharge' | 'subscription'>('recharge')
 const catalog = ref<HomeCatalogResponse>(emptyCatalog)
 const loading = ref(false)
 const loadError = ref(false)
 
 const locale = computed<'zh' | 'en'>(() => resolveRuntimeLanguage(getLocale()))
-const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName)
-const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const shellConfig = computed(() =>
   resolvePricingShellConfig(
     appStore.cachedPublicSettings?.pricing_shell_config,

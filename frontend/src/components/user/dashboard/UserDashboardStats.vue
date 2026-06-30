@@ -48,18 +48,18 @@
     <!-- Today Cost -->
     <div class="card p-4">
       <div class="flex items-center gap-3">
-        <div class="rounded-lg bg-purple-100 p-2 dark:bg-purple-900/30">
-          <Icon name="dollar" size="md" class="text-purple-600 dark:text-purple-400" :stroke-width="2" />
+        <div class="rounded-lg bg-sky-100 p-2 dark:bg-sky-900/30">
+          <Icon name="dollar" size="md" class="text-sky-600 dark:text-sky-400" :stroke-width="2" />
         </div>
         <div>
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ dashboardText('todayCost') }}</p>
           <p class="text-xl font-bold text-gray-900 dark:text-white">
-            <span class="text-purple-600 dark:text-purple-400" :title="dashboardText('actual')">{{ formatMoney(stats?.today_actual_cost, 4) }}</span>
+            <span class="text-sky-600 dark:text-sky-400" :title="dashboardText('actual')">{{ formatMoney(stats?.today_actual_cost, 4) }}</span>
             <span class="text-sm font-normal text-gray-400 dark:text-gray-500" :title="dashboardText('standard')"> / {{ formatMoney(stats?.today_cost, 4) }}</span>
           </p>
           <p class="text-xs">
             <span class="text-gray-500 dark:text-gray-400">{{ dashboardText('total') }}: </span>
-            <span class="text-purple-600 dark:text-purple-400" :title="dashboardText('actual')">{{ formatMoney(stats?.total_actual_cost, 4) }}</span>
+            <span class="text-sky-600 dark:text-sky-400" :title="dashboardText('actual')">{{ formatMoney(stats?.total_actual_cost, 4) }}</span>
             <span class="text-gray-400 dark:text-gray-500" :title="dashboardText('standard')"> / {{ formatMoney(stats?.total_cost, 4) }}</span>
           </p>
         </div>
@@ -89,8 +89,8 @@
     <!-- Total Tokens -->
     <div class="card p-4">
       <div class="flex items-center gap-3">
-        <div class="rounded-lg bg-indigo-100 p-2 dark:bg-indigo-900/30">
-          <Icon name="database" size="md" class="text-indigo-600 dark:text-indigo-400" :stroke-width="2" />
+        <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30">
+          <Icon name="database" size="md" class="text-blue-600 dark:text-blue-400" :stroke-width="2" />
         </div>
         <div>
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ dashboardText('totalTokens') }}</p>
@@ -106,8 +106,8 @@
     <!-- Performance (RPM/TPM) -->
     <div class="card p-4">
       <div class="flex items-center gap-3">
-        <div class="rounded-lg bg-violet-100 p-2 dark:bg-violet-900/30">
-          <Icon name="bolt" size="md" class="text-violet-600 dark:text-violet-400" :stroke-width="2" />
+        <div class="rounded-lg bg-sky-100 p-2 dark:bg-sky-900/30">
+          <Icon name="bolt" size="md" class="text-sky-600 dark:text-sky-400" :stroke-width="2" />
         </div>
         <div class="flex-1">
           <p class="text-xs font-medium text-gray-500 dark:text-gray-400">{{ dashboardText('performance') }}</p>
@@ -116,7 +116,7 @@
             <span class="text-xs text-gray-500 dark:text-gray-400">RPM</span>
           </div>
           <div class="flex items-baseline gap-2">
-            <p class="text-sm font-semibold text-violet-600 dark:text-violet-400">{{ formatTokens(stats?.tpm || 0) }}</p>
+            <p class="text-sm font-semibold text-sky-600 dark:text-sky-400">{{ formatTokens(stats?.tpm || 0) }}</p>
             <span class="text-xs text-gray-500 dark:text-gray-400">TPM</span>
           </div>
         </div>
@@ -161,7 +161,7 @@
           <span class="text-sm font-semibold text-gray-900 dark:text-white">
             {{ item.isOther ? dashboardText('platformOther') : platformLabel(item.platform) }}
           </span>
-          <span class="font-mono text-sm text-purple-600 dark:text-purple-400" :title="dashboardText('actual')">
+          <span class="font-mono text-sm text-sky-600 dark:text-sky-400" :title="dashboardText('actual')">
             {{ formatMoney(item.total_actual_cost, 4) }}
           </span>
         </div>

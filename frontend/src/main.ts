@@ -4,15 +4,16 @@ import App from './App.vue'
 import router from './router'
 import i18n, { initI18n } from './i18n'
 import { useAppStore } from '@/stores/app'
+import { initPublicTheme } from '@/composables/usePublicTheme'
 import './style.css'
 
 function initThemeClass() {
-  localStorage.setItem('theme', 'light')
-  document.documentElement.classList.remove('dark')
+  const theme = localStorage.getItem('theme')
+  document.documentElement.classList.toggle('dark', theme === 'dark')
+  initPublicTheme()
 }
 
 async function bootstrap() {
-  // The product uses one fixed light theme; do not follow OS or cached dark-mode preference.
   initThemeClass()
 
   const app = createApp(App)

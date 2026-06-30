@@ -105,10 +105,18 @@ func TestSettingService_GetPublicSettings_ExposesPasswordMinLength(t *testing.T)
 	require.Equal(t, 12, settings.PasswordMinLength)
 }
 
+func TestCreditsPerBalanceSettingRetiresLegacyTenValue(t *testing.T) {
+	require.Equal(t, "1", creditsPerBalanceSetting(""))
+	require.Equal(t, "1", creditsPerBalanceSetting("10"))
+	require.Equal(t, "2.5", creditsPerBalanceSetting(" 2.5 "))
+}
+
 func TestSettingService_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *testing.T) {
 	svc := NewSettingService(&settingPublicRepoStub{
 		values: map[string]string{
 			SettingKeyWeChatConnectEnabled:             "true",
+			SettingKeyWeChatConnectOpenAppID:           "wx-open-app",
+			SettingKeyWeChatConnectOpenAppSecret:       "wx-open-secret",
 			SettingKeyWeChatConnectMPAppID:             "wx-mp-app",
 			SettingKeyWeChatConnectMPAppSecret:         "wx-mp-secret",
 			SettingKeyWeChatConnectMode:                "mp",
@@ -177,8 +185,15 @@ func TestSettingService_GetPublicSettings_DefaultsWorkspaceShellConfig(t *testin
 
 	var payload map[string]map[string]string
 	require.NoError(t, json.Unmarshal([]byte(settings.WorkspaceShellConfig), &payload))
-	require.Equal(t, "AI 生图工作区", payload["zh"]["title"])
+	require.Equal(t, "AI 生图工作台", payload["zh"]["title"])
+	require.Equal(t, "任务与产物状态", payload["zh"]["workspaceTitle"])
+	require.Contains(t, payload["zh"]["workspaceStatus"], "真实生图任务")
+	require.NotContains(t, payload["zh"]["workspaceStatus"], "不会直接发起模型调用")
 	require.Equal(t, "AI Image Workspace", payload["en"]["title"])
+	require.Equal(t, "Task and artifact status", payload["en"]["workspaceTitle"])
+	require.Contains(t, payload["en"]["workspaceStatus"], "real image tasks")
+	require.NotContains(t, payload["en"]["workspaceStatus"], "does not call a model directly")
+	require.NotContains(t, payload["en"]["workspaceStatus"], "future Sub2API")
 	require.Equal(t, "Copy prompt", payload["en"]["copyPromptLabel"])
 }
 
@@ -345,11 +360,11 @@ func TestSettingService_GetPublicSettings_DefaultsCreditsShellConfig(t *testing.
 		} `json:"buttons"`
 	}
 	require.NoError(t, json.Unmarshal([]byte(settings.CreditsShellConfig), &payload))
-	require.Equal(t, "积分", payload["zh"].Labels["eyebrow"])
-	require.Equal(t, "积分余额", payload["zh"].Labels["title"])
-	require.Equal(t, "Credits", payload["en"].Labels["eyebrow"])
-	require.Equal(t, "Credit Balance", payload["en"].Labels["title"])
-	require.Equal(t, "Conversion: {creditsPerBalance} credits = 1 Sub2API balance.", payload["en"].Conversion)
+	require.Equal(t, "余额", payload["zh"].Labels["eyebrow"])
+	require.Equal(t, "余额", payload["zh"].Labels["title"])
+	require.Equal(t, "Balance", payload["en"].Labels["eyebrow"])
+	require.Equal(t, "Balance", payload["en"].Labels["title"])
+	require.Equal(t, "Unified unit: 1 balance unit = 1 ledger unit.", payload["en"].Conversion)
 	require.Equal(t, "Balance actions", payload["en"].Actions.Title)
 	require.Equal(t, "Recharge", payload["en"].Buttons.Recharge)
 	require.Equal(t, "View orders", payload["en"].Buttons.Orders)
@@ -398,10 +413,17 @@ func TestSettingService_GetPublicSettings_DefaultsHomeBusinessShellConfig(t *tes
 	require.True(t, json.Valid([]byte(settings.HomeBusinessShellConfig)))
 
 	var payload map[string]struct {
-		Labels map[string]string `json:"labels"`
+		Labels        map[string]string `json:"labels"`
 		BusinessCards []struct {
-			Key   string `json:"key"`
-			Title string `json:"title"`
+			Key            string   `json:"key"`
+			Title          string   `json:"title"`
+			Path           string   `json:"path"`
+			PathLabel      string   `json:"pathLabel"`
+			Status         string   `json:"status"`
+			StatusLabel    string   `json:"statusLabel"`
+			Disabled       bool     `json:"disabled"`
+			Visible        bool     `json:"visible"`
+			CapabilityTags []string `json:"capabilityTags"`
 		} `json:"businessCards"`
 	}
 	require.NoError(t, json.Unmarshal([]byte(settings.HomeBusinessShellConfig), &payload))
@@ -412,6 +434,53 @@ func TestSettingService_GetPublicSettings_DefaultsHomeBusinessShellConfig(t *tes
 	require.Len(t, payload["zh"].BusinessCards, 4)
 	require.Equal(t, "wechat-export", payload["zh"].BusinessCards[0].Key)
 	require.Equal(t, "微信导出", payload["zh"].BusinessCards[0].Title)
+	require.Equal(t, "/wechat", payload["zh"].BusinessCards[0].Path)
+	require.Equal(t, "进入微信导出", payload["zh"].BusinessCards[0].PathLabel)
+	require.Equal(t, "available", payload["zh"].BusinessCards[0].Status)
+	require.Equal(t, "可用", payload["zh"].BusinessCards[0].StatusLabel)
+	require.False(t, payload["zh"].BusinessCards[0].Disabled)
+	require.True(t, payload["zh"].BusinessCards[0].Visible)
+	require.Equal(t, "hot-topics", payload["zh"].BusinessCards[1].Key)
+	require.Equal(t, "/hot", payload["zh"].BusinessCards[1].Path)
+	require.Equal(t, "进入热点追踪", payload["zh"].BusinessCards[1].PathLabel)
+	require.Equal(t, "available", payload["zh"].BusinessCards[1].Status)
+	require.Equal(t, "可用", payload["zh"].BusinessCards[1].StatusLabel)
+	require.Contains(t, payload["zh"].BusinessCards[1].CapabilityTags, "内容采集")
+	require.Equal(t, "/wechat", payload["en"].BusinessCards[0].Path)
+	require.Equal(t, "/hot", payload["en"].BusinessCards[1].Path)
+	require.Equal(t, "Open hot topics", payload["en"].BusinessCards[1].PathLabel)
+	require.Equal(t, "Available", payload["en"].BusinessCards[1].StatusLabel)
+}
+
+func TestSettingService_GetPublicSettings_HomeBusinessShellConfigPreservesExplicitStatus(t *testing.T) {
+	repo := &settingPublicRepoStub{
+		values: map[string]string{
+			SettingKeyHomeBusinessShellConfig: `{"zh":{"businessCards":[{"key":"hot-topics","title":"热点追踪","status":"in_progress","statusLabel":"排队建设","visible":true,"disabled":true}]}}`,
+		},
+	}
+	svc := NewSettingService(repo, &config.Config{})
+
+	settings, err := svc.GetPublicSettings(context.Background())
+	require.NoError(t, err)
+
+	var payload map[string]struct {
+		BusinessCards []struct {
+			Key         string `json:"key"`
+			Path        string `json:"path"`
+			Status      string `json:"status"`
+			StatusLabel string `json:"statusLabel"`
+			Disabled    bool   `json:"disabled"`
+			Visible     bool   `json:"visible"`
+		} `json:"businessCards"`
+	}
+	require.NoError(t, json.Unmarshal([]byte(settings.HomeBusinessShellConfig), &payload))
+	require.Len(t, payload["zh"].BusinessCards, 1)
+	require.Equal(t, "hot-topics", payload["zh"].BusinessCards[0].Key)
+	require.Empty(t, payload["zh"].BusinessCards[0].Path)
+	require.Equal(t, "in_progress", payload["zh"].BusinessCards[0].Status)
+	require.Equal(t, "排队建设", payload["zh"].BusinessCards[0].StatusLabel)
+	require.True(t, payload["zh"].BusinessCards[0].Disabled)
+	require.True(t, payload["zh"].BusinessCards[0].Visible)
 }
 
 func TestSettingService_GetPublicSettings_DefaultsModelPlazaShellConfig(t *testing.T) {
@@ -998,9 +1067,9 @@ func TestSettingService_GetPublicSettings_ExposesWebRuntimeSettings(t *testing.T
 			SettingKeyPricingShellConfig:           `{"zh":{"button":{"title":"选择"}}}`,
 			SettingKeyPaymentShellConfig:           `{"zh":{"labels":{"createOrder":"下单"}}}`,
 			SettingKeyPricingCurrencySymbol:        "$",
-			SettingKeyCreditsTitle:                 "Credits title",
-			SettingKeyCreditsDescription:           "Credits description",
-			SettingKeyCreditsPurchaseLabel:         "Buy credits",
+			SettingKeyCreditsTitle:                 "Balance title",
+			SettingKeyCreditsDescription:           "Balance description",
+			SettingKeyCreditsPurchaseLabel:         "Buy balance",
 			SettingKeyCreditsBalanceLabel:          "Balance: {balance}",
 			SettingKeyCreditsPerBalance:            "12",
 			SettingKeyCreditsShellConfig:           `{"en":{"actions":{"title":"Balance actions"}}}`,
@@ -1040,9 +1109,9 @@ func TestSettingService_GetPublicSettings_ExposesWebRuntimeSettings(t *testing.T
 	require.Equal(t, `{"zh":{"button":{"title":"选择"}}}`, settings.PricingShellConfig)
 	require.Equal(t, `{"zh":{"labels":{"createOrder":"下单"}}}`, settings.PaymentShellConfig)
 	require.Equal(t, "$", settings.PricingCurrencySymbol)
-	require.Equal(t, "Credits title", settings.CreditsTitle)
-	require.Equal(t, "Credits description", settings.CreditsDescription)
-	require.Equal(t, "Buy credits", settings.CreditsPurchaseLabel)
+	require.Equal(t, "Balance title", settings.CreditsTitle)
+	require.Equal(t, "Balance description", settings.CreditsDescription)
+	require.Equal(t, "Buy balance", settings.CreditsPurchaseLabel)
 	require.Equal(t, "Balance: {balance}", settings.CreditsBalanceLabel)
 	require.Equal(t, "12", settings.CreditsPerBalance)
 	require.Equal(t, `{"en":{"actions":{"title":"Balance actions"}}}`, settings.CreditsShellConfig)
@@ -1060,9 +1129,9 @@ func TestSettingService_GetPublicSettings_ExposesWebRuntimeSettings(t *testing.T
 	require.Equal(t, "Pricing description", settings.WebPricingDescription)
 	require.Equal(t, `{"zh":{"button":{"title":"选择"}}}`, settings.WebPricingShellConfig)
 	require.Equal(t, `{"zh":{"labels":{"createOrder":"下单"}}}`, settings.WebPaymentShellConfig)
-	require.Equal(t, "Credits title", settings.WebCreditsTitle)
-	require.Equal(t, "Credits description", settings.WebCreditsDescription)
-	require.Equal(t, "Buy credits", settings.WebCreditsPurchaseLabel)
+	require.Equal(t, "Balance title", settings.WebCreditsTitle)
+	require.Equal(t, "Balance description", settings.WebCreditsDescription)
+	require.Equal(t, "Buy balance", settings.WebCreditsPurchaseLabel)
 	require.Equal(t, "Balance: {balance}", settings.WebCreditsBalanceLabel)
 	require.True(t, settings.WebLocaleDetectEnabled)
 	require.False(t, settings.WebPublicIntegrationsEnabled)

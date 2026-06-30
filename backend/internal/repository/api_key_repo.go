@@ -304,6 +304,25 @@ func (r *apiKeyRepository) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
+// DisableAllActiveKeysByUserID disables all active (non-soft-deleted) API keys
+// for the given user by setting their status to "disabled". Returns the number
+// of keys disabled.
+func (r *apiKeyRepository) DisableAllActiveKeysByUserID(ctx context.Context, userID int64) (int64, error) {
+	affected, err := r.client.APIKey.Update().
+		Where(
+			apikey.UserIDEQ(userID),
+			apikey.StatusEQ(service.StatusAPIKeyActive),
+			apikey.DeletedAtIsNil(),
+		).
+		SetStatus(service.StatusAPIKeyDisabled).
+		SetUpdatedAt(time.Now()).
+		Save(ctx)
+	if err != nil {
+		return 0, fmt.Errorf("disable all active keys for user %d: %w", userID, err)
+	}
+	return int64(affected), nil
+}
+
 func (r *apiKeyRepository) ListByUserID(ctx context.Context, userID int64, params pagination.PaginationParams, filters service.APIKeyListFilters) ([]service.APIKey, *pagination.PaginationResult, error) {
 	q := r.activeQuery().Where(apikey.UserIDEQ(userID))
 

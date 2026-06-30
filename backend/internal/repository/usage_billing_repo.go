@@ -5,9 +5,11 @@ import (
 	"database/sql"
 	"errors"
 	"strings"
+	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 )
 
@@ -146,20 +148,93 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 }
 
 func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscriptionID int64, costUSD float64) error {
+	// 1. 锁行读取订阅状态 + 分组限额
+	const selectSQL = `
+		SELECT us.daily_usage_usd, us.weekly_usage_usd, us.monthly_usage_usd,
+		       us.daily_window_start, us.weekly_window_start, us.monthly_window_start,
+		       us.starts_at, us.expires_at,
+		       g.daily_limit_usd, g.weekly_limit_usd, g.monthly_limit_usd
+		FROM user_subscriptions us
+		JOIN groups g ON us.group_id = g.id
+		WHERE us.id = $1 AND us.deleted_at IS NULL AND g.deleted_at IS NULL
+		FOR UPDATE OF us`
+
+	var s subscriptionWindowState
+	err := tx.QueryRowContext(ctx, selectSQL, subscriptionID).Scan(
+		&s.DailyUsageUSD, &s.WeeklyUsageUSD, &s.MonthlyUsageUSD,
+		&s.DailyWindowStart, &s.WeeklyWindowStart, &s.MonthlyWindowStart,
+		&s.StartsAt, &s.ExpiresAt,
+		&s.DailyLimitUSD, &s.WeeklyLimitUSD, &s.MonthlyLimitUSD,
+	)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return service.ErrSubscriptionNotFound
+		}
+		return err
+	}
+
+	// 1b. 检查订阅是否已过期
+	now := time.Now()
+	if s.ExpiresAt.Before(now) {
+		return service.ErrSubscriptionExpired
+	}
+	if s.StartsAt.After(now) {
+		return service.ErrSubscriptionNotActive
+	}
+
+	// 2. 计算窗口重置后的新用量
+	oneTimeDailyQuota := isOneTimeDailyQuota(s.StartsAt, s.ExpiresAt)
+
+	newDaily, newDailyWindow := computeWindowedUsage(
+		s.DailyUsageUSD, s.DailyWindowStart,
+		now, 24*time.Hour,
+		!oneTimeDailyQuota, // 一次性日配额不重置
+		timezone.StartOfDay(now),
+		costUSD,
+	)
+	newWeekly, newWeeklyWindow := computeWindowedUsage(
+		s.WeeklyUsageUSD, s.WeeklyWindowStart,
+		now, 7*24*time.Hour,
+		true,
+		timezone.StartOfWeek(now),
+		costUSD,
+	)
+	newMonthly, newMonthlyWindow := computeWindowedUsage(
+		s.MonthlyUsageUSD, s.MonthlyWindowStart,
+		now, 30*24*time.Hour,
+		true,
+		timezone.StartOfDay(now),
+		costUSD,
+	)
+
+	// 3. 校验限额
+	if s.DailyLimitUSD != nil && *s.DailyLimitUSD > 0 && newDaily > *s.DailyLimitUSD {
+		return service.ErrDailyLimitExceeded
+	}
+	if s.WeeklyLimitUSD != nil && *s.WeeklyLimitUSD > 0 && newWeekly > *s.WeeklyLimitUSD {
+		return service.ErrWeeklyLimitExceeded
+	}
+	if s.MonthlyLimitUSD != nil && *s.MonthlyLimitUSD > 0 && newMonthly > *s.MonthlyLimitUSD {
+		return service.ErrMonthlyLimitExceeded
+	}
+
+	// 4. 写入计算后的新值
 	const updateSQL = `
-		UPDATE user_subscriptions us
-		SET
-			daily_usage_usd = us.daily_usage_usd + $1,
-			weekly_usage_usd = us.weekly_usage_usd + $1,
-			monthly_usage_usd = us.monthly_usage_usd + $1,
-			updated_at = NOW()
-		FROM groups g
-		WHERE us.id = $2
-			AND us.deleted_at IS NULL
-			AND us.group_id = g.id
-			AND g.deleted_at IS NULL
-	`
-	res, err := tx.ExecContext(ctx, updateSQL, costUSD, subscriptionID)
+		UPDATE user_subscriptions
+		SET daily_usage_usd = $1,
+		    weekly_usage_usd = $2,
+		    monthly_usage_usd = $3,
+		    daily_window_start = $4,
+		    weekly_window_start = $5,
+		    monthly_window_start = $6,
+		    updated_at = NOW()
+		WHERE id = $7 AND deleted_at IS NULL`
+
+	res, err := tx.ExecContext(ctx, updateSQL,
+		newDaily, newWeekly, newMonthly,
+		newDailyWindow, newWeeklyWindow, newMonthlyWindow,
+		subscriptionID,
+	)
 	if err != nil {
 		return err
 	}
@@ -167,10 +242,55 @@ func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscrip
 	if err != nil {
 		return err
 	}
-	if affected > 0 {
-		return nil
+	if affected == 0 {
+		return service.ErrSubscriptionNotFound
 	}
-	return service.ErrSubscriptionNotFound
+	return nil
+}
+
+// subscriptionWindowState 保存 SELECT FOR UPDATE 读取的订阅窗口状态和分组限额。
+type subscriptionWindowState struct {
+	DailyUsageUSD   float64
+	WeeklyUsageUSD  float64
+	MonthlyUsageUSD float64
+
+	DailyWindowStart   *time.Time
+	WeeklyWindowStart  *time.Time
+	MonthlyWindowStart *time.Time
+
+	StartsAt  time.Time
+	ExpiresAt time.Time
+
+	DailyLimitUSD   *float64
+	WeeklyLimitUSD  *float64
+	MonthlyLimitUSD *float64
+}
+
+// computeWindowedUsage 判断窗口是否过期并计算新用量。
+// 若 needsReset=true 且窗口已过期，用量重置为 costUSD 并更新窗口起始；
+// 否则在当前用量上累加 costUSD。
+func computeWindowedUsage(
+	currentUsage float64, windowStart *time.Time,
+	now time.Time, windowDuration time.Duration,
+	needsReset bool, resetTarget time.Time,
+	costUSD float64,
+) (float64, *time.Time) {
+	if windowStart == nil {
+		// 窗口从未激活，从当前时刻开始
+		return costUSD, &resetTarget
+	}
+	if needsReset && now.Sub(*windowStart) >= windowDuration {
+		// 窗口已过期，重置用量并开始新窗口
+		return costUSD, &resetTarget
+	}
+	// 窗口仍在有效期内，累加用量
+	return currentUsage + costUSD, windowStart
+}
+
+// isOneTimeDailyQuota 判断订阅是否为一次性日配额（有效期 ≤ 24h），
+// 此类订阅的日窗口不应重置。
+func isOneTimeDailyQuota(startsAt, expiresAt time.Time) bool {
+	return !expiresAt.After(startsAt.AddDate(0, 0, 1))
 }
 
 func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, error) {
@@ -179,16 +299,28 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 		UPDATE users
 		SET balance = balance - $1,
 			updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
+		WHERE id = $2 AND deleted_at IS NULL AND balance >= $1
 		RETURNING balance
 	`, amount, userID).Scan(&newBalance)
-	if errors.Is(err, sql.ErrNoRows) {
-		return 0, service.ErrUserNotFound
+	if err == nil {
+		return newBalance, nil
 	}
-	if err != nil {
+	if !errors.Is(err, sql.ErrNoRows) {
 		return 0, err
 	}
-	return newBalance, nil
+
+	// RETURNING 为空行：区分余额不足与用户不存在
+	var exists bool
+	if err := tx.QueryRowContext(ctx,
+		`SELECT EXISTS(SELECT 1 FROM users WHERE id = $1 AND deleted_at IS NULL)`,
+		userID,
+	).Scan(&exists); err != nil {
+		return 0, err
+	}
+	if exists {
+		return 0, service.ErrInsufficientBalance
+	}
+	return 0, service.ErrUserNotFound
 }
 
 func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID int64, amount float64) (bool, error) {

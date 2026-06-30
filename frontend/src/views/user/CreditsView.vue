@@ -4,7 +4,7 @@
       <section class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-dark-700 dark:bg-dark-900 sm:p-8">
         <div class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.18em] text-primary-600 dark:text-primary-300">
+            <p class="text-sm font-semibold uppercase tracking-[0.2em] text-primary-600 dark:text-primary-300">
               {{ copy.eyebrow }}
             </p>
             <h1 class="mt-3 text-3xl font-black text-gray-950 dark:text-white sm:text-4xl">
@@ -32,7 +32,7 @@
             {{ copy.credits }}
           </p>
           <p class="mt-3 text-5xl font-black text-gray-950 dark:text-white">
-            {{ credits }}
+            {{ formattedCredits }}
           </p>
           <p class="mt-3 text-sm text-gray-500 dark:text-dark-300">
             {{ balanceLabel }}
@@ -66,6 +66,9 @@
             <RouterLink v-if="rechargeRoute" :to="rechargeRoute" class="btn btn-primary">
               {{ rechargeLabel }}
             </RouterLink>
+            <RouterLink to="/settings/credits/ledger" class="btn btn-secondary">
+              {{ t('credits.ledger.title') }}
+            </RouterLink>
             <RouterLink v-if="ordersPath" :to="ordersPath" class="btn btn-secondary">
               {{ ordersLabel }}
             </RouterLink>
@@ -81,6 +84,7 @@ import { computed, onMounted } from 'vue'
 import { RouterLink } from 'vue-router'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import { getLocale } from '@/i18n'
+import { useI18n } from 'vue-i18n'
 import { useAppStore, useAuthStore } from '@/stores'
 import { resolveCreditsShellConfig, type CreditsCopy } from '@/utils/creditsShell'
 import { formatPublicMoneyAmount } from '@/utils/paymentCurrency'
@@ -100,15 +104,16 @@ import {
 
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const { t } = useI18n()
 
 const locale = computed<'zh' | 'en'>(() => resolveRuntimeLanguage(getLocale()))
 const user = computed(() => authStore.user)
 const balance = computed(() => Number(user.value?.balance || 0))
 const formattedBalance = computed(() => balance.value.toFixed(2))
+const formattedCredits = computed(() => formattedBalance.value)
 const currencyPrefix = computed(() => appStore.cachedPublicSettings?.pricing_currency_symbol || '')
 const formattedBalanceAmount = computed(() => formatPublicMoneyAmount(balance.value, currencyPrefix.value))
 const creditsPerBalance = computed(() => parseCreditsPerBalance(appStore.cachedPublicSettings?.credits_per_balance))
-const credits = computed(() => Math.round(balance.value * creditsPerBalance.value))
 const shellConfig = computed(() =>
   resolveCreditsShellConfig(
     appStore.cachedPublicSettings?.credits_shell_config,

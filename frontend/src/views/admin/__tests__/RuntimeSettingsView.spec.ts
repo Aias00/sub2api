@@ -48,6 +48,7 @@ vi.mock('vue-i18n', async () => {
     ...actual,
     useI18n: () => ({
       t: (key: string) => key,
+      tm: (key: string) => key,
     }),
   }
 })
@@ -76,6 +77,52 @@ const ToggleStub = defineComponent({
   },
 })
 
+// Stub LocaleEnvelopeEditor since CodeMirror won't work in jsdom
+const LocaleEnvelopeEditorStub = defineComponent({
+  props: {
+    modelValue: { type: String, default: '' },
+    label: { type: String, default: '' },
+    hint: { type: String, default: '' },
+    error: { type: String, default: '' },
+    height: { type: String, default: '300px' },
+    disabled: { type: Boolean, default: false },
+    localeKeys: { type: Array, default: () => ['en', 'zh'] },
+  },
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    return () =>
+      h('div', { 'data-locale-envelope-editor': '', 'data-label': props.label }, [
+        h('textarea', {
+          value: props.modelValue,
+          'data-testid': 'locale-envelope-editor',
+          onInput: (e: Event) => emit('update:modelValue', (e.target as HTMLTextAreaElement).value),
+        }),
+      ])
+  },
+})
+
+// Stub ImagePromptFilterConfigEditor since it uses child components that may need stubbing
+const ImagePromptFilterConfigEditorStub = defineComponent({
+  props: {
+    modelValue: { type: String, default: '' },
+    label: { type: String, default: '' },
+    hint: { type: String, default: '' },
+    error: { type: String, default: '' },
+    disabled: { type: Boolean, default: false },
+  },
+  emits: ['update:modelValue'],
+  setup(props, { emit }) {
+    return () =>
+      h('div', { 'data-image-prompt-filter-editor': '', 'data-label': props.label }, [
+        h('textarea', {
+          value: props.modelValue,
+          'data-testid': 'image-prompt-filter-editor',
+          onInput: (e: Event) => emit('update:modelValue', (e.target as HTMLTextAreaElement).value),
+        }),
+      ])
+  },
+})
+
 function mountView() {
   return mount(RuntimeSettingsView, {
     global: {
@@ -83,6 +130,8 @@ function mountView() {
         AppLayout: { template: '<div><slot /></div>' },
         Icon: IconStub,
         Toggle: ToggleStub,
+        LocaleEnvelopeEditor: LocaleEnvelopeEditorStub,
+        ImagePromptFilterConfigEditor: ImagePromptFilterConfigEditorStub,
       },
     },
   })
@@ -178,6 +227,30 @@ describe('RuntimeSettingsView', () => {
 
   it('exposes the business home runtime config field in the runtime settings form', () => {
     expect(runtimeSettingsViewSource).toContain('form.home_business_shell_config')
+  })
+
+  it('renders shell config fields using LocaleEnvelopeEditor instead of raw textarea', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    // Shell config fields should be rendered by LocaleEnvelopeEditor stub
+    const editors = wrapper.findAll('[data-locale-envelope-editor]')
+    expect(editors.length).toBeGreaterThan(0)
+
+    // The image_prompt_filter_config should use ImagePromptFilterConfigEditor
+    const filterEditor = wrapper.find('[data-image-prompt-filter-editor]')
+    expect(filterEditor.exists()).toBe(true)
+
+    // Raw textareas with shell config placeholders should no longer exist
+    expect(wrapper.find('textarea[placeholder*="welcomeBack"]').exists()).toBe(false)
+  })
+
+  it('renders a format JSON button', async () => {
+    const wrapper = mountView()
+    await flushPromises()
+
+    const formatButton = wrapper.findAll('button').find((b) => b.text().includes('formatAllJson'))
+    expect(formatButton).toBeTruthy()
   })
 
   it('does not expose standalone prompt catalog heading fields in the runtime settings form', () => {

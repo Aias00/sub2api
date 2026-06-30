@@ -543,6 +543,9 @@ type adminServiceImpl struct {
 	userSubRepo          UserSubscriptionRepository
 	privacyClientFactory PrivacyClientFactory
 	runtimeBlocker       AccountRuntimeBlocker
+	tokenRevoker         TokenRevoker
+	keyDisabler          UserKeyDisabler
+	ledgerService        *UserBalanceLedgerService
 }
 
 type userGroupRateBatchReader interface {
@@ -569,6 +572,9 @@ func NewAdminService(
 	userSubRepo UserSubscriptionRepository,
 	privacyClientFactory PrivacyClientFactory,
 	runtimeBlocker AccountRuntimeBlocker,
+	tokenRevoker TokenRevoker,
+	keyDisabler UserKeyDisabler,
+	ledgerService *UserBalanceLedgerService,
 ) AdminService {
 	return &adminServiceImpl{
 		userRepo:             userRepo,
@@ -589,6 +595,9 @@ func NewAdminService(
 		userSubRepo:          userSubRepo,
 		privacyClientFactory: privacyClientFactory,
 		runtimeBlocker:       runtimeBlocker,
+		tokenRevoker:         tokenRevoker,
+		keyDisabler:          keyDisabler,
+		ledgerService:        ledgerService,
 	}
 }
 
@@ -848,12 +857,27 @@ func (s *adminServiceImpl) DeleteUser(ctx context.Context, id int64) error {
 	if user.Role == "admin" {
 		return errors.New("cannot delete admin user")
 	}
+
+	// 1. Revoke all tokens (JWT TokenVersion bump + refresh token cleanup)
+	if s.tokenRevoker != nil {
+		if err := s.tokenRevoker.RevokeAllUserTokens(ctx, id); err != nil {
+			logger.LegacyPrintf("service.admin", "revoke all tokens for user %d during deletion: %v", id, err)
+		}
+	}
+
+	// 2. Disable all active API keys and invalidate auth cache
+	if s.keyDisabler != nil {
+		if err := s.keyDisabler.DisableAllUserKeys(ctx, id); err != nil {
+			logger.LegacyPrintf("service.admin", "disable all keys for user %d during deletion: %v", id, err)
+		}
+	} else if s.authCacheInvalidator != nil {
+		s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, id)
+	}
+
+	// 3. Soft-delete the user
 	if err := s.userRepo.Delete(ctx, id); err != nil {
 		logger.LegacyPrintf("service.admin", "delete user failed: user_id=%d err=%v", id, err)
 		return err
-	}
-	if s.authCacheInvalidator != nil {
-		s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, id)
 	}
 	return nil
 }
@@ -950,6 +974,26 @@ func (s *adminServiceImpl) UpdateUserBalance(ctx context.Context, userID int64, 
 
 		if err := s.redeemCodeRepo.Create(ctx, adjustmentRecord); err != nil {
 			logger.LegacyPrintf("service.admin", "failed to create balance adjustment redeem code: %v", err)
+		}
+
+		// 写入余额流水
+		if s.ledgerService != nil {
+			if err := s.ledgerService.WriteLedger(
+				ctx,
+				userID,
+				EntryTypeAdminAdjustment,
+				balanceDiff,
+				&oldBalance,
+				SourceTypeAdminAction,
+				nil,
+				notes,
+				map[string]interface{}{
+					"operation": operation,
+					"adjustment_code": code,
+				},
+			); err != nil {
+				logger.LegacyPrintf("service.admin", "failed to write balance ledger: %v", err)
+			}
 		}
 	}
 

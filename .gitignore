@@ -139,10 +139,20 @@ aicodex
 output/
 # Runtime artifacts for local gateway/session
 *.pid
+runtime/
+.superpowers/
 deploy/__pycache__/
 deploy/gemini_gateway_session/
 tools/gemini-command-gateway/__pycache__/
 tools/gemini-command-gateway/session/
+backend/hotimport
+tmp-auto-sync-plan.md
+
+# Local visual QA screenshots
+dragoncode-*.png
+local-*.png
+prod-*.png
+wechat-export-task-*-render.png
 
 # Touch Next 子应用源码纳入统一仓库；继续排除本地密钥、依赖和构建产物。
 !apps/

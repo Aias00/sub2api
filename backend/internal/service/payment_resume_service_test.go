@@ -360,6 +360,27 @@ func TestPaymentServiceParseWeChatPaymentResumeTokenUsesExplicitSigningKey(t *te
 	}
 }
 
+func TestPaymentResumeServiceFromEnvVerifiesLegacyKeyFallback(t *testing.T) {
+	t.Setenv("PAYMENT_RESUME_SIGNING_KEY", "current-payment-resume-signing-key")
+	t.Setenv("PAYMENT_RESUME_LEGACY_SIGNING_KEY", "legacy-payment-resume-signing-key")
+
+	token, err := NewPaymentResumeService([]byte("legacy-payment-resume-signing-key")).CreateWeChatPaymentResumeToken(WeChatPaymentResumeClaims{
+		OpenID:      "openid-legacy-key",
+		PaymentType: payment.TypeWxpay,
+	})
+	if err != nil {
+		t.Fatalf("CreateWeChatPaymentResumeToken returned error: %v", err)
+	}
+
+	claims, err := NewPaymentResumeServiceFromEnv().ParseWeChatPaymentResumeToken(token)
+	if err != nil {
+		t.Fatalf("ParseWeChatPaymentResumeToken returned error: %v", err)
+	}
+	if claims.OpenID != "openid-legacy-key" {
+		t.Fatalf("openid = %q, want %q", claims.OpenID, "openid-legacy-key")
+	}
+}
+
 func TestNormalizeVisibleMethodSource(t *testing.T) {
 	t.Parallel()
 

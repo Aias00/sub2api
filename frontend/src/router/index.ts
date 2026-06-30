@@ -61,15 +61,6 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/prompts',
-    name: 'PromptCatalog',
-    component: () => import('@/views/public/PromptCatalogView.vue'),
-    meta: {
-      requiresAuth: false,
-      title: 'Prompt Catalog'
-    }
-  },
-  {
     path: '/image-generator',
     name: 'ImageGenerator',
     component: () => import('@/views/public/ImageGeneratorView.vue'),
@@ -79,8 +70,37 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
-    path: '/wechat-export',
+    path: '/tasks',
+    name: 'TaskList',
+    component: () => import('@/views/public/TaskListView.vue'),
+    meta: {
+      requiresAuth: false,
+      titleKey: 'nav.myTasks'
+    }
+  },
+  {
+    path: '/hot',
+    name: 'HotContent',
+    component: () => import('@/views/public/HotContentView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Hot Topics'
+    }
+  },
+  {
+    path: '/prompts',
+    name: 'PromptCatalog',
+    component: () => import('@/views/public/PromptCatalogView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'Prompt Catalog',
+      titleKey: 'nav.promptCatalog'
+    }
+  },
+  {
+    path: '/wechat',
     name: 'WeChatExport',
+    alias: ['/wechat-export'],
     component: () => import('@/views/public/WeChatExportView.vue'),
     meta: {
       requiresAuth: false,
@@ -393,6 +413,16 @@ const routes: RouteRecordRaw[] = [
       requiresAuth: true,
       requiresAdmin: false,
       title: 'Credits'
+    }
+  },
+  {
+    path: '/settings/credits/ledger',
+    name: 'CreditsLedger',
+    component: () => import('@/views/user/CreditsLedgerView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Balance Ledger'
     }
   },
   {
@@ -842,7 +872,20 @@ let authInitialized = false
 const navigationLoading = useNavigationLoadingState()
 // 延迟初始化预加载，传入 router 实例
 let routePrefetch: ReturnType<typeof useRoutePrefetch> | null = null
-const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/setup', '/payment/result', '/payment/airwallex', '/legal']
+const BACKEND_MODE_ALLOWED_PATHS = [
+  '/login',
+  '/key-usage',
+  '/setup',
+  '/payment/result',
+  '/payment/airwallex',
+  '/legal',
+  '/prompts',
+  '/image-generator',
+  '/tasks',
+  '/hot',
+  '/wechat',
+  '/wechat-export',
+]
 const BACKEND_MODE_CALLBACK_PATHS = [
   '/auth/callback',
   '/auth-callback',

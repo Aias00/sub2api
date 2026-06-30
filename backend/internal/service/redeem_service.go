@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 	"time"
 
@@ -139,6 +140,7 @@ type RedeemService struct {
 	entClient            *dbent.Client
 	authCacheInvalidator APIKeyAuthCacheInvalidator
 	affiliateService     *AffiliateService
+	ledgerService        *UserBalanceLedgerService
 }
 
 // NewRedeemService 创建兑换码服务实例
@@ -151,6 +153,7 @@ func NewRedeemService(
 	entClient *dbent.Client,
 	authCacheInvalidator APIKeyAuthCacheInvalidator,
 	affiliateService *AffiliateService,
+	ledgerService *UserBalanceLedgerService,
 ) *RedeemService {
 	return &RedeemService{
 		redeemRepo:           redeemRepo,
@@ -161,6 +164,7 @@ func NewRedeemService(
 		entClient:            entClient,
 		authCacheInvalidator: authCacheInvalidator,
 		affiliateService:     affiliateService,
+		ledgerService:        ledgerService,
 	}
 }
 
@@ -428,12 +432,41 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 	switch redeemCode.Type {
 	case RedeemTypeBalance:
 		amount := redeemCode.Value
+		balanceBefore := user.Balance
 		// 负数为退款扣减，余额最低为 0
 		if amount < 0 && user.Balance+amount < 0 {
 			amount = -user.Balance
 		}
 		if err := s.userRepo.UpdateBalance(txCtx, userID, amount); err != nil {
 			return nil, fmt.Errorf("update user balance: %w", err)
+		}
+		balanceAfter := balanceBefore + amount
+
+		// 写入余额流水
+		if s.ledgerService != nil {
+			entryType := EntryTypeRedeem
+			if redeemCode.Notes != "" && strings.HasPrefix(redeemCode.Notes, "admin:") {
+				entryType = EntryTypeAdminAdjustment
+			}
+			if err := s.ledgerService.WriteLedgerTx(
+				txCtx,
+				tx.Client(),
+				userID,
+				entryType,
+				amount,
+				balanceBefore,
+				balanceAfter,
+				SourceTypeRedeemCode,
+				&redeemCode.ID,
+				fmt.Sprintf("兑换码 %s", substringCode(redeemCode.Code, 8)),
+				map[string]interface{}{
+					"code": redeemCode.Code,
+					"type": redeemCode.Type,
+					"notes": redeemCode.Notes,
+				},
+			); err != nil {
+				slog.Warn("write balance ledger failed", "user_id", userID, "code_id", redeemCode.ID, "error", err)
+			}
 		}
 
 	case RedeemTypeConcurrency:
@@ -692,4 +725,12 @@ func (s *RedeemService) reduceOrCancelSubscription(ctx context.Context, userID, 
 	s.subscriptionService.InvalidateSubCache(userID, groupID)
 
 	return nil
+}
+
+// substringCode 截取兑换码的前 N 个字符
+func substringCode(code string, n int) string {
+	if len(code) <= n {
+		return code
+	}
+	return code[:n]
 }

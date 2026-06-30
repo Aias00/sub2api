@@ -175,6 +175,10 @@ func (s *AuthService) RegisterWithVerification(ctx context.Context, email, passw
 	return s.RegisterWithVerificationSource(ctx, email, password, verifyCode, promoCode, invitationCode, affiliateCode, authSignupSourceEmail)
 }
 
+func (s *AuthService) RegisterWithVerificationSource(ctx context.Context, email, password, verifyCode, promoCode, invitationCode, affiliateCode, signupSource string) (string, *User, error) {
+	return s.RegisterWithVerificationSourceAndUsername(ctx, email, "", password, verifyCode, promoCode, invitationCode, affiliateCode, signupSource)
+}
+
 func normalizeEmailAuthSignupSource(source string) string {
 	switch strings.ToLower(strings.TrimSpace(source)) {
 	case authSignupSourceTouch:
@@ -206,8 +210,20 @@ func (s *AuthService) getUserByEmailForSignupSource(ctx context.Context, email s
 	return s.userRepo.GetByEmail(ctx, email)
 }
 
-func (s *AuthService) RegisterWithVerificationSource(ctx context.Context, email, password, verifyCode, promoCode, invitationCode, affiliateCode, signupSource string) (string, *User, error) {
+func (s *AuthService) getOAuthUserByEmailForSignupSource(ctx context.Context, email string, signupSource string) (*User, error) {
+	signupSource = normalizeOAuthSignupSource(signupSource)
+	if repo, ok := s.userRepo.(sourceAwareEmailUserRepository); ok {
+		return repo.GetByEmailAndSignupSource(ctx, email, signupSource)
+	}
+	return s.userRepo.GetByEmail(ctx, email)
+}
+
+func (s *AuthService) RegisterWithVerificationSourceAndUsername(ctx context.Context, email, username, password, verifyCode, promoCode, invitationCode, affiliateCode, signupSource string) (string, *User, error) {
 	signupSource = normalizeEmailAuthSignupSource(signupSource)
+	username = strings.TrimSpace(username)
+	if len([]rune(username)) > 100 {
+		username = string([]rune(username)[:100])
+	}
 	// 检查是否开放注册（默认关闭：settingService 未配置时不允许注册）
 	if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
 		return "", nil, ErrRegDisabled
@@ -282,6 +298,7 @@ func (s *AuthService) RegisterWithVerificationSource(ctx context.Context, email,
 	// 创建用户
 	user := &User{
 		Email:        email,
+		Username:     username,
 		PasswordHash: hashedPassword,
 		Role:         RoleUser,
 		Balance:      grantPlan.Balance,
@@ -577,7 +594,8 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 		username = string([]rune(username)[:100])
 	}
 
-	user, err := s.userRepo.GetByEmail(ctx, email)
+	signupSource := inferLegacySignupSource(email)
+	user, err := s.getOAuthUserByEmailForSignupSource(ctx, email, signupSource)
 	created := false
 	createdSignupSource := ""
 	if err != nil {
@@ -597,7 +615,6 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 				return "", nil, fmt.Errorf("hash password: %w", err)
 			}
 
-			signupSource := inferLegacySignupSource(email)
 			grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
 			var defaultRPMLimit int
 			if s.settingService != nil {
@@ -619,7 +636,7 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 			if err := s.userRepo.Create(ctx, newUser); err != nil {
 				if errors.Is(err, ErrEmailExists) {
 					// 并发场景：GetByEmail 与 Create 之间用户被创建。
-					user, err = s.userRepo.GetByEmail(ctx, email)
+					user, err = s.getOAuthUserByEmailForSignupSource(ctx, email, signupSource)
 					if err != nil {
 						logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
 						return "", nil, ErrServiceUnavailable
@@ -702,7 +719,11 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 		username = string([]rune(username)[:100])
 	}
 
-	user, err := s.userRepo.GetByEmail(ctx, email)
+	signupSource = normalizeOAuthSignupSource(signupSource)
+	if signupSource == authSignupSourceEmail {
+		signupSource = inferLegacySignupSource(email)
+	}
+	user, err := s.getOAuthUserByEmailForSignupSource(ctx, email, signupSource)
 	created := false
 	createdSignupSource := ""
 	if err != nil {
@@ -736,11 +757,6 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 				return nil, nil, fmt.Errorf("hash password: %w", err)
 			}
 
-			// 优先用 caller 显式传入的 signupSource（如 "dingtalk" / "linuxdo" / "oidc" / "wechat"），
-			// 否则才按邮箱后缀推断——避免有真实邮箱的 OAuth 用户被推断为 "email" 渠道，导致渠道授权错读。
-			if strings.TrimSpace(signupSource) == "" {
-				signupSource = inferLegacySignupSource(email)
-			}
 			grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
 			var defaultRPMLimit int
 			if s.settingService != nil {
@@ -770,7 +786,7 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 
 				if err := s.userRepo.Create(txCtx, newUser); err != nil {
 					if errors.Is(err, ErrEmailExists) {
-						user, err = s.userRepo.GetByEmail(ctx, email)
+						user, err = s.getOAuthUserByEmailForSignupSource(ctx, email, signupSource)
 						if err != nil {
 							logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
 							return nil, nil, ErrServiceUnavailable
@@ -797,7 +813,7 @@ func (s *AuthService) LoginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 			} else {
 				if err := s.userRepo.Create(ctx, newUser); err != nil {
 					if errors.Is(err, ErrEmailExists) {
-						user, err = s.userRepo.GetByEmail(ctx, email)
+						user, err = s.getOAuthUserByEmailForSignupSource(ctx, email, signupSource)
 						if err != nil {
 							logger.LegacyPrintf("service.auth", "[Auth] Database error getting user after conflict: %v", err)
 							return nil, nil, ErrServiceUnavailable
@@ -1658,9 +1674,15 @@ func (s *AuthService) RefreshTokenPair(ctx context.Context, refreshToken string)
 
 	// Token轮转：立即使旧Token失效
 	if err := s.refreshTokenCache.DeleteRefreshToken(ctx, tokenHash); err != nil {
-		logger.LegacyPrintf("service.auth", "[Auth] Failed to delete old refresh token: %v", err)
-		// 继续处理，不影响主流程
+		// 删除旧Token失败意味着旧Token可能仍然有效，存在重放风险。
+		// 安全起见，撤销整个Token家族，要求用户重新登录。
+		logger.LegacyPrintf("service.auth", "[Auth] CRITICAL: failed to delete old refresh token during rotation, revoking family %s: %v", data.FamilyID, err)
+		_ = s.refreshTokenCache.DeleteTokenFamily(ctx, data.FamilyID)
+		return nil, ErrTokenRevoked
 	}
+	// 清理用户和家族Token集合中的过期引用，避免集合无限膨胀
+	_ = s.refreshTokenCache.RemoveFromUserTokenSet(ctx, data.UserID, tokenHash)
+	_ = s.refreshTokenCache.RemoveFromFamilyTokenSet(ctx, data.FamilyID, tokenHash)
 
 	// 生成新的Token对，保持同一个家族ID
 	pair, err := s.GenerateTokenPair(ctx, user, data.FamilyID)
@@ -1671,6 +1693,35 @@ func (s *AuthService) RefreshTokenPair(ctx context.Context, refreshToken string)
 		TokenPair: *pair,
 		UserRole:  user.Role,
 	}, nil
+}
+
+func (s *AuthService) ValidateRefreshTokenForUser(ctx context.Context, refreshToken string, user *User) error {
+	if s.refreshTokenCache == nil || user == nil || user.ID <= 0 {
+		return ErrRefreshTokenInvalid
+	}
+	if !strings.HasPrefix(refreshToken, refreshTokenPrefix) {
+		return ErrRefreshTokenInvalid
+	}
+	tokenHash := hashToken(refreshToken)
+	data, err := s.refreshTokenCache.GetRefreshToken(ctx, tokenHash)
+	if err != nil {
+		if errors.Is(err, ErrRefreshTokenNotFound) {
+			return ErrRefreshTokenInvalid
+		}
+		logger.LegacyPrintf("service.auth", "[Auth] Error validating refresh token ownership: %v", err)
+		return ErrServiceUnavailable
+	}
+	if time.Now().After(data.ExpiresAt) {
+		_ = s.refreshTokenCache.DeleteRefreshToken(ctx, tokenHash)
+		return ErrRefreshTokenExpired
+	}
+	if data.UserID != user.ID {
+		return ErrRefreshTokenInvalid
+	}
+	if data.TokenVersion != resolvedTokenVersion(user) {
+		return ErrTokenRevoked
+	}
+	return nil
 }
 
 // RevokeRefreshToken 撤销单个Refresh Token

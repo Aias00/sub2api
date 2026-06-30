@@ -1,8 +1,9 @@
 import type { CreditsCopy, CreditsShellConfig } from '@/utils/creditsShell'
 
-export function parseCreditsPerBalance(value: unknown): number {
-  const parsed = Number(typeof value === 'string' ? value.trim() : value)
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0
+export function parseCreditsPerBalance(_value: unknown): number {
+  // Credits are a display name for the backend balance ledger. Keep the legacy
+  // setting accepted for compatibility, but normalize it to the single 1:1 unit.
+  return 1
 }
 
 export function formatCreditsRatio(value: number): string {

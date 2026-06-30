@@ -8,7 +8,6 @@ import (
 	"io"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -37,6 +36,7 @@ const (
 	wechatOAuthDefaultRedirectTo  = "/dashboard"
 	wechatOAuthDefaultFrontendCB  = "/auth/wechat/callback"
 	wechatOAuthProviderKey        = "wechat-main"
+	wechatOAuthLegacyProviderKey  = "wechat"
 	wechatPaymentOAuthCookiePath  = "/api/v1/auth/oauth/wechat/payment"
 	wechatPaymentOAuthStateName   = "wechat_payment_oauth_state"
 	wechatPaymentOAuthRedirect    = "wechat_payment_oauth_redirect"
@@ -278,6 +278,32 @@ func (h *AuthHandler) WeChatOAuthCallback(c *gin.Context) {
 		redirectOAuthError(c, frontendCallback, "session_error", infraerrors.Reason(err), infraerrors.Message(err))
 		return
 	}
+	if existingIdentityUser == nil {
+		legacyIdentityRef := identityRef
+		legacyIdentityRef.ProviderKey = wechatOAuthLegacyProviderKey
+		existingIdentityUser, err = h.findOAuthIdentityUser(c.Request.Context(), legacyIdentityRef)
+		if err != nil {
+			redirectOAuthError(c, frontendCallback, "session_error", infraerrors.Reason(err), infraerrors.Message(err))
+			return
+		}
+	}
+	if existingIdentityUser == nil && openid != "" && openid != providerSubject {
+		openIDIdentityRef := identityRef
+		openIDIdentityRef.ProviderSubject = openid
+		existingIdentityUser, err = h.findOAuthIdentityUser(c.Request.Context(), openIDIdentityRef)
+		if err != nil {
+			redirectOAuthError(c, frontendCallback, "session_error", infraerrors.Reason(err), infraerrors.Message(err))
+			return
+		}
+		if existingIdentityUser == nil {
+			openIDIdentityRef.ProviderKey = wechatOAuthLegacyProviderKey
+			existingIdentityUser, err = h.findOAuthIdentityUser(c.Request.Context(), openIDIdentityRef)
+			if err != nil {
+				redirectOAuthError(c, frontendCallback, "session_error", infraerrors.Reason(err), infraerrors.Message(err))
+				return
+			}
+		}
+	}
 	if existingIdentityUser != nil {
 		if err := h.ensureWeChatRuntimeIdentityBinding(c.Request.Context(), existingIdentityUser.ID, identityRef, upstreamClaims); err != nil {
 			redirectOAuthError(c, frontendCallback, "session_error", infraerrors.Reason(err), infraerrors.Message(err))
@@ -475,7 +501,9 @@ func (h *AuthHandler) WeChatPaymentOAuthCallback(c *gin.Context) {
 }
 
 func (h *AuthHandler) wechatPaymentResumeService() *service.PaymentResumeService {
-	return service.NewPaymentResumeService(service.ParsePaymentResumeSigningKey(os.Getenv("PAYMENT_RESUME_SIGNING_KEY")))
+	return service.NewPaymentResumeServiceFromEnvWithLegacyKeys(
+		service.ParsePaymentResumeSigningKey(h.cfg.Totp.EncryptionKey),
+	)
 }
 
 type completeWeChatOAuthRequest struct {
@@ -677,14 +705,14 @@ func (h *AuthHandler) createWeChatChoicePendingSession(
 	}
 
 	completionResponse := map[string]any{
-		"step":                      oauthPendingChoiceStep,
-		"adoption_required":         true,
-		"redirect":                  strings.TrimSpace(redirectTo),
-		"email":                     suggestionEmail,
-		"resolved_email":            canonicalEmail,
-		"existing_account_email":    "",
-		"create_account_allowed":    true,
-		"force_email_on_signup":     forceEmailOnSignup,
+		"step":                   oauthPendingChoiceStep,
+		"adoption_required":      true,
+		"redirect":               strings.TrimSpace(redirectTo),
+		"email":                  suggestionEmail,
+		"resolved_email":         canonicalEmail,
+		"existing_account_email": "",
+		"create_account_allowed": true,
+		"force_email_on_signup":  forceEmailOnSignup,
 	}
 	if strings.TrimSpace(compatEmail) != "" {
 		completionResponse["compat_email"] = strings.TrimSpace(compatEmail)
@@ -774,7 +802,7 @@ func (h *AuthHandler) ensureWeChatBindOwnership(
 	identities, err := client.AuthIdentity.Query().
 		Where(
 			authidentity.ProviderTypeEQ("wechat"),
-			authidentity.ProviderKeyEQ(wechatOAuthProviderKey),
+			authidentity.ProviderKeyIn(wechatOAuthProviderKey, wechatOAuthLegacyProviderKey),
 			authidentity.ProviderSubjectEQ(strings.TrimSpace(providerSubject)),
 		).
 		All(ctx)

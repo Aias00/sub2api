@@ -138,6 +138,7 @@ type SystemSettings struct {
 	HomeShellConfig              string
 	HomeBusinessShellConfig      string
 	ModelPlazaItems              string // JSON array of model plaza items
+	ImageWorkspaceModelConfig    string
 	ModelPlazaShellConfig        string
 	DocsShellConfig              string
 	LegalDocumentShellConfig     string
@@ -178,6 +179,8 @@ type SystemSettings struct {
 	WebPromptTemplatesDescription string
 	PromptCatalogShellConfig      string
 	WebWorkspaceShellConfig       string
+	WebImagePromptFilterConfig    string
+	ImagePromptFilterConfig       string
 	WebPricingTitle               string
 	WebPricingDescription         string
 	WebPricingShellConfig         string
@@ -335,6 +338,7 @@ type PublicSettings struct {
 	HomeShellConfig                  string
 	HomeBusinessShellConfig          string
 	ModelPlazaItems                  string // JSON array of model plaza items
+	ImageWorkspaceModelConfig        string
 	ModelPlazaShellConfig            string
 	DocsShellConfig                  string
 	LegalDocumentShellConfig         string
@@ -413,6 +417,8 @@ type PublicSettings struct {
 	PromptTemplatesDescription    string
 	PromptCatalogShellConfig      string
 	WorkspaceShellConfig          string
+	WebImagePromptFilterConfig    string
+	ImagePromptFilterConfig       string
 	PricingTitle                  string
 	PricingDescription            string
 	PricingShellConfig            string
@@ -722,5 +728,36 @@ type OpenAIFastPolicySettings struct {
 func DefaultOpenAIFastPolicySettings() *OpenAIFastPolicySettings {
 	return &OpenAIFastPolicySettings{
 		Rules: []OpenAIFastPolicyRule{},
+	}
+}
+
+// ImagePromptFilterConfig 图片生成提示词过滤配置
+type ImagePromptFilterConfig struct {
+	// Enabled 是否启用提示词过滤
+	Enabled bool `json:"enabled"`
+	// ExplicitKeywords 露骨关键词列表
+	ExplicitKeywords []string `json:"explicit_keywords"`
+	// YouthContextKeywords 青年/校园语境关键词列表
+	YouthContextKeywords []string `json:"youth_context_keywords"`
+	// WarningMessage 露骨+青年语境同时触发时的警告信息
+	WarningMessage string `json:"warning_message"`
+	// YouthWarningMessage 露骨+young关键词触发时的警告信息
+	YouthWarningMessage string `json:"youth_warning_message"`
+}
+
+// DefaultImagePromptFilterConfig 返回默认的图片提示词过滤配置
+func DefaultImagePromptFilterConfig() *ImagePromptFilterConfig {
+	return &ImagePromptFilterConfig{
+		Enabled: true,
+		ExplicitKeywords: []string{
+			"panty", "panties", "underwear", "lingerie", "crotch",
+			"legs spread", "provocative", "seductive", "bra", "nude", "sex",
+		},
+		YouthContextKeywords: []string{
+			"school uniform", "student", "teen", "teenager", "teenage",
+			"young girl", "underage", "minor",
+		},
+		WarningMessage:      "提示词包含露骨性内容或校园/未成年语境的性化描写，无法创建生图任务。请改为非露骨、非性化的创意描述。",
+		YouthWarningMessage: "提示词包含年轻人物的露骨性化描写，无法创建生图任务。请移除内衣展示、挑逗姿势或露骨身体部位描述。",
 	}
 }

@@ -1,0 +1,246 @@
+<template>
+  <div class="home-business-page public-dark-page min-h-screen bg-[#101114] text-white">
+    <PublicDarkHeader :account-label="t('hotContent.goConsole')" />
+
+    <main class="px-6 py-10 sm:py-14">
+      <section class="mx-auto max-w-7xl">
+        <div class="max-w-4xl">
+          <div>
+            <p class="text-sm font-black uppercase tracking-[0.24em] text-cyan-200/70">{{ t('hotContent.signalDesk') }}</p>
+            <h1 class="mt-4 max-w-3xl text-5xl font-black leading-tight sm:text-6xl">
+              {{ t('hotContent.title') }}
+            </h1>
+            <p class="mt-5 max-w-2xl text-base leading-8 text-white/60">
+              {{ t('hotContent.subtitle') }}
+            </p>
+          </div>
+        </div>
+
+        <!-- Hot stream -->
+        <div class="mt-10">
+          <div class="min-w-0">
+            <div class="flex flex-col gap-3 sm:flex-row">
+              <input
+                v-model="query"
+                class="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-300/45"
+                :placeholder="searchPlaceholder"
+                @keyup.enter="searchAndRefresh"
+              />
+              <button type="button" :disabled="loading" class="rounded-2xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 disabled:opacity-50" @click="searchAndRefresh">
+                {{ t('hotContent.search') }}
+              </button>
+            </div>
+
+            <div v-if="errorMessage" class="mt-6 rounded-2xl border border-red-400/30 bg-red-900/20 p-4 text-sm text-red-300">
+              {{ errorMessage }}
+            </div>
+
+            <div v-if="loading" class="mt-6 flex items-center justify-center gap-3 py-12 text-sm text-white/40">
+              <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
+              {{ t('hotContent.loading') }}
+            </div>
+
+            <section v-if="!loading" class="mt-6 grid gap-4">
+              <article
+                v-for="item in items"
+                :key="item.id"
+                class="rounded-[1.75rem] border border-white/10 bg-[#17181d] p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/20"
+              >
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div class="min-w-0">
+                    <div class="flex flex-wrap gap-2 text-xs font-bold text-cyan-100/70">
+                      <span>{{ hotItemSourceLabel(item) }}</span>
+                      <span v-if="item.badge">· {{ item.badge }}</span>
+                      <span v-if="item.score">· {{ item.score }}</span>
+                      <span v-if="item.published_at">· {{ formatDate(item.published_at) }}</span>
+                    </div>
+                    <h2 class="mt-2 text-2xl font-black leading-snug">
+                      <a v-if="item.canonical_url" :href="item.canonical_url" target="_blank" rel="noreferrer" class="hover:text-cyan-100">
+                        {{ item.title }}
+                      </a>
+                      <span v-else>{{ item.title }}</span>
+                    </h2>
+                    <p class="mt-3 text-sm leading-7 text-white/58">{{ item.summary || item.reason || item.body }}</p>
+                  </div>
+                  <span class="shrink-0 rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black uppercase text-white/45">
+                    {{ item.content_type }}
+                  </span>
+                </div>
+              </article>
+              <EmptyState v-if="items.length === 0" :text="t('hotContent.emptyItems')" />
+              <div v-if="itemTotalPages > 1" class="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
+                <p class="text-xs text-white/45">
+                  {{ t('hotContent.paginationInfo', { page: itemPage, totalPages: itemTotalPages, total: itemTotal }) }}
+                </p>
+                <nav class="flex items-center gap-1">
+                  <button
+                    type="button"
+                    class="inline-flex h-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-2 text-sm text-white/60 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                    :disabled="itemPage <= 1 || loading"
+                    @click="goToItemPage(itemPage - 1)"
+                  >
+                    ‹
+                  </button>
+                  <template v-for="(pageNum, idx) in getVisiblePages(itemPage, itemTotalPages)" :key="`${pageNum}-${idx}`">
+                    <span v-if="typeof pageNum === 'string'" class="inline-flex h-8 w-8 items-center justify-center text-xs text-white/35">...</span>
+                    <button
+                      v-else
+                      type="button"
+                      class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium transition"
+                      :class="pageNum === itemPage ? 'border border-cyan-200/40 bg-cyan-200/15 text-cyan-50' : 'border border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white'"
+                      :disabled="loading"
+                      @click="goToItemPage(pageNum)"
+                    >
+                      {{ pageNum }}
+                    </button>
+                  </template>
+                  <button
+                    type="button"
+                    class="inline-flex h-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-2 text-sm text-white/60 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                    :disabled="itemPage >= itemTotalPages || loading"
+                    @click="goToItemPage(itemPage + 1)"
+                  >
+                    ›
+                  </button>
+                </nav>
+              </div>
+            </section>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { computed, defineComponent, h, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import PublicDarkHeader from '@/components/layout/PublicDarkHeader.vue'
+import { useAppStore } from '@/stores'
+import {
+  listHotItems,
+  listHotSources,
+  type HotItem,
+  type HotSource,
+} from '@/api/hot-content'
+
+const EmptyState = defineComponent({
+  props: {
+    text: {
+      type: String,
+      required: true,
+    },
+    theme: {
+      type: String as () => 'dark' | 'light',
+      default: 'dark',
+    },
+  },
+  setup(props) {
+    return () => h('p', {
+      class: props.theme === 'light'
+        ? 'rounded-[1.75rem] border border-black/10 bg-black/[0.035] p-8 text-center text-sm text-black/45'
+        : 'rounded-[1.75rem] border border-white/10 bg-white/[0.035] p-8 text-center text-sm text-white/45',
+    }, props.text)
+  },
+})
+
+const { t } = useI18n()
+const appStore = useAppStore()
+const sources = ref<HotSource[]>([])
+const items = ref<HotItem[]>([])
+const itemTotal = ref(0)
+const itemPage = ref(1)
+const itemPageSize = 30
+const query = ref('')
+const loading = ref(false)
+const errorMessage = ref('')
+
+const searchPlaceholder = computed(() => t('hotContent.searchItems'))
+const itemTotalPages = computed(() => Math.ceil(itemTotal.value / itemPageSize))
+
+async function withLoading(task: () => Promise<void>) {
+  loading.value = true
+  errorMessage.value = ''
+  try {
+    await task()
+  } catch (error) {
+    errorMessage.value = error instanceof Error ? error.message : t('hotContent.loadFailed')
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadItems() {
+  const result = await listHotItems({
+    page: itemPage.value,
+    page_size: itemPageSize,
+    q: query.value.trim(),
+  })
+  items.value = result.items
+  itemTotal.value = result.total
+}
+
+async function refreshActiveTab() {
+  await withLoading(loadItems)
+}
+
+async function searchAndRefresh() {
+  itemPage.value = 1
+  await refreshActiveTab()
+}
+
+async function loadSources() {
+  try {
+    sources.value = await listHotSources()
+  } catch {
+    sources.value = []
+  }
+}
+
+function formatDate(value: string) {
+  const date = new Date(value)
+  if (Number.isNaN(date.getTime())) return value
+  const y = date.getFullYear()
+  const m = String(date.getMonth() + 1).padStart(2, '0')
+  const d = String(date.getDate()).padStart(2, '0')
+  const h = String(date.getHours()).padStart(2, '0')
+  const min = String(date.getMinutes()).padStart(2, '0')
+  return `${y}-${m}-${d} ${h}:${min}`
+}
+
+function hotItemSourceLabel(item: HotItem): string {
+  const label = item.source_name || item.source_id
+  return label.toLowerCase().includes('rss') ? t('hotContent.sourceAggregated') : label
+}
+
+function getVisiblePages(current: number, total: number): (number | string)[] {
+  const pages: (number | string)[] = []
+  const maxVisible = 5
+  if (total <= maxVisible) {
+    for (let i = 1; i <= total; i++) pages.push(i)
+  } else {
+    pages.push(1)
+    const start = Math.max(2, current - 1)
+    const end = Math.min(total - 1, current + 1)
+    if (start > 2) pages.push('...')
+    for (let i = start; i <= end; i++) pages.push(i)
+    if (end < total - 1) pages.push('...')
+    pages.push(total)
+  }
+  return pages
+}
+
+function goToItemPage(page: number) {
+  if (page >= 1 && page <= itemTotalPages.value && page !== itemPage.value) {
+    itemPage.value = page
+    void withLoading(loadItems)
+  }
+}
+
+onMounted(async () => {
+  if (!appStore.publicSettingsLoaded) {
+    await appStore.fetchPublicSettings()
+  }
+  await Promise.all([loadSources(), refreshActiveTab()])
+})
+</script>

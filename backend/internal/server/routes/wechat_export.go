@@ -24,6 +24,7 @@ func RegisterWeChatExportRoutes(
 		authenticated.GET("/session", h.WeChatExport.GetSession)
 		authenticated.POST("/session/qrcode", h.WeChatExport.CreateQRCodeSession)
 		authenticated.GET("/session/poll/:sessionID", h.WeChatExport.PollSession)
+		authenticated.POST("/session/validate", h.WeChatExport.ValidateSession)
 		authenticated.POST("/session/logout", h.WeChatExport.LogoutSession)
 
 		authenticated.GET("/accounts/search", h.WeChatExport.SearchAccounts)
@@ -36,14 +37,23 @@ func RegisterWeChatExportRoutes(
 		authenticated.POST("/tasks/quote", h.WeChatExport.QuoteTask)
 		authenticated.POST("/tasks", h.WeChatExport.CreateTask)
 		authenticated.GET("/tasks", h.WeChatExport.ListTasks)
+		authenticated.GET("/worker/status", h.WeChatExport.GetWorkerStatus)
 		authenticated.GET("/tasks/:taskID", h.WeChatExport.GetTask)
+		authenticated.POST("/tasks/:taskID/cancel", h.WeChatExport.CancelTask)
+		authenticated.POST("/tasks/:taskID/retry", h.WeChatExport.RetryTask)
+		authenticated.GET("/tasks/:taskID/logs", h.WeChatExport.ListTaskLogs)
 		authenticated.GET("/tasks/:taskID/artifacts", h.WeChatExport.ListArtifacts)
+		authenticated.GET("/tasks/:taskID/artifacts.zip", h.WeChatExport.DownloadTaskArtifactsZip)
 		authenticated.GET("/artifacts/:artifactID/download", h.WeChatExport.DownloadArtifact)
 	}
 
 	worker := v1.Group("/wechat/worker")
 	{
+		worker.GET("/health", h.WeChatExport.WorkerHealth)
 		worker.POST("/tasks/claim", h.WeChatExport.WorkerClaimTask)
+		worker.POST("/articles/:articleID/enrich", h.WeChatExport.WorkerEnrichArticle)
+		worker.POST("/articles/:articleID/engagement", h.WeChatExport.WorkerFetchArticleEngagement)
+		worker.POST("/tasks/:taskID/logs", h.WeChatExport.WorkerAddTaskLog)
 		worker.POST("/tasks/:taskID/complete", h.WeChatExport.WorkerCompleteTask)
 		worker.POST("/tasks/:taskID/fail", h.WeChatExport.WorkerFailTask)
 	}

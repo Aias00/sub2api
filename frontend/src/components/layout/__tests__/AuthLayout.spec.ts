@@ -19,4 +19,11 @@ describe('AuthLayout brand block', () => {
     expect(source).not.toContain('function authText(key: string')
     expect(source).not.toContain('All rights reserved.')
   })
+
+  it('links the brand block back to the configured home path', () => {
+    expect(source).toContain('useAuthRouteDefaults')
+    expect(source).toContain('const { authRouteDefaults } = useAuthRouteDefaults()')
+    expect(source).toContain(':to="authRouteDefaults.homePath"')
+    expect(source).not.toContain('to="/home"')
+  })
 })

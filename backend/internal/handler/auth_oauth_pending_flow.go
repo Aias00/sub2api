@@ -777,13 +777,18 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 	channelAppID := strings.TrimSpace(pendingSessionStringValue(session.UpstreamIdentityClaims, "channel_app_id"))
 	channelSubject := strings.TrimSpace(pendingSessionStringValue(session.UpstreamIdentityClaims, "channel_subject"))
 	metadata := cloneOAuthMetadata(session.UpstreamIdentityClaims)
+	providerSubjects := []string{providerSubject}
+	if channelSubject != "" && channelSubject != providerSubject {
+		providerSubjects = append(providerSubjects, channelSubject)
+	}
 
 	identityRecords, err := client.AuthIdentity.Query().
 		Where(
 			authidentity.ProviderTypeEQ(providerType),
-			authidentity.ProviderKeyEQ(providerKey),
-			authidentity.ProviderSubjectEQ(providerSubject),
+			authidentity.ProviderKeyIn(wechatOAuthIdentityProviderKeys(providerKey)...),
+			authidentity.ProviderSubjectIn(providerSubjects...),
 		).
+		Order(dbent.Asc(authidentity.FieldID)).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -796,9 +801,13 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 	switch {
 	case identity != nil:
 		update := client.AuthIdentity.UpdateOneID(identity.ID).
+			SetProviderKey(providerKey).
 			SetMetadata(mergeOAuthMetadata(identity.Metadata, metadata))
 		if identity.UserID != userID {
 			update = update.SetUserID(userID)
+		}
+		if strings.TrimSpace(identity.ProviderSubject) != providerSubject {
+			update = update.SetProviderSubject(providerSubject)
 		}
 		if issuer := oauthIdentityIssuer(session); issuer != nil {
 			update = update.SetIssuer(strings.TrimSpace(*issuer))
@@ -830,7 +839,7 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 	channelRecords, err := client.AuthIdentityChannel.Query().
 		Where(
 			authidentitychannel.ProviderTypeEQ(providerType),
-			authidentitychannel.ProviderKeyEQ(providerKey),
+			authidentitychannel.ProviderKeyIn(wechatOAuthIdentityProviderKeys(providerKey)...),
 			authidentitychannel.ChannelEQ(channel),
 			authidentitychannel.ChannelAppIDEQ(channelAppID),
 			authidentitychannel.ChannelSubjectEQ(channelSubject),
@@ -863,6 +872,7 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 
 	updateChannel := client.AuthIdentityChannel.UpdateOneID(channelRecord.ID).
 		SetIdentityID(identity.ID).
+		SetProviderKey(providerKey).
 		SetMetadata(channelMetadata)
 	_, err = updateChannel.Save(ctx)
 	if err != nil {
@@ -871,26 +881,35 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 	return identity, nil
 }
 
+func wechatOAuthIdentityProviderKeys(providerKey string) []string {
+	providerKey = strings.TrimSpace(providerKey)
+	if providerKey == wechatOAuthProviderKey {
+		return []string{wechatOAuthProviderKey, wechatOAuthLegacyProviderKey}
+	}
+	return []string{providerKey}
+}
+
 func chooseWeChatIdentityForUser(ctx context.Context, client *dbent.Client, records []*dbent.AuthIdentity, userID int64) (*dbent.AuthIdentity, error) {
-	var resolved *dbent.AuthIdentity
+	var fallback *dbent.AuthIdentity
 	for _, record := range records {
 		if record == nil {
 			continue
 		}
-		if record.UserID != userID {
-			activeOwner, err := findActiveUserByID(ctx, client, record.UserID)
-			if err != nil {
-				return nil, err
-			}
-			if activeOwner != nil {
-				return nil, infraerrors.Conflict("AUTH_IDENTITY_OWNERSHIP_CONFLICT", "auth identity already belongs to another user")
-			}
+		if record.UserID == userID {
+			return record, nil
 		}
-		if resolved == nil {
-			resolved = record
+		activeOwner, err := findActiveUserByID(ctx, client, record.UserID)
+		if err != nil {
+			return nil, err
+		}
+		if activeOwner != nil {
+			return nil, infraerrors.Conflict("AUTH_IDENTITY_OWNERSHIP_CONFLICT", "auth identity already belongs to another user")
+		}
+		if fallback == nil {
+			fallback = record
 		}
 	}
-	return resolved, nil
+	return fallback, nil
 }
 
 func chooseWeChatChannelForUser(ctx context.Context, client *dbent.Client, records []*dbent.AuthIdentityChannel, userID int64) (*dbent.AuthIdentityChannel, error) {

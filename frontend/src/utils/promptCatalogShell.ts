@@ -44,6 +44,7 @@ export type PromptCatalogCopy = {
   importSuccess: string
   importWarnings: string
   loadError: string
+  noMoreResults: string
 }
 
 export type PromptCatalogShellConfig = {
@@ -108,6 +109,7 @@ export const promptCatalogCopyKeys: Array<keyof PromptCatalogCopy> = [
   'importSuccess',
   'importWarnings',
   'loadError',
+  'noMoreResults',
 ]
 
 export function resolvePromptCatalogShellConfig(
@@ -143,7 +145,7 @@ function readPromptCatalogDefaults(value: Record<string, unknown>): PromptCatalo
   const defaults: PromptCatalogDefaults = {}
   const sourceType = readPromptCatalogSourceType(value.sourceType)
   const hasImage = readBoolean(value.hasImage)
-  const pageSize = readPositiveInteger(value.pageSize)
+  const pageSize = readPositiveInteger(value.pageSize, 100)
   const sortBy = readPromptCatalogSortBy(value.sortBy)
   const sortOrder = readPromptCatalogSortOrder(value.sortOrder)
   const generatorPath = readInternalPath(value.generatorPath)
@@ -194,8 +196,11 @@ function readBoolean(value: unknown): boolean | undefined {
   return typeof value === 'boolean' ? value : undefined
 }
 
-function readPositiveInteger(value: unknown): number | undefined {
+function readPositiveInteger(value: unknown, max?: number): number | undefined {
   if (typeof value !== 'number' || !Number.isInteger(value) || value < 1) {
+    return undefined
+  }
+  if (max !== undefined && value > max) {
     return undefined
   }
   return value

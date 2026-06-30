@@ -86,4 +86,19 @@ describe('resolvePromptCatalogShellConfig', () => {
   it('returns an empty config for invalid JSON', () => {
     expect(resolvePromptCatalogShellConfig('{bad json', 'en')).toEqual({})
   })
+
+  it('rejects pageSize values exceeding the maximum allowed', () => {
+    const config = resolvePromptCatalogShellConfig(
+      JSON.stringify({
+        en: {
+          defaults: {
+            pageSize: 1000000,
+          },
+        },
+      }),
+      'en',
+    )
+
+    expect(config.defaults?.pageSize).toBeUndefined()
+  })
 })

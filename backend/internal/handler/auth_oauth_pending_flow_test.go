@@ -2241,7 +2241,7 @@ CREATE TABLE IF NOT EXISTS user_affiliates (
 		affiliateService,
 		nil,
 	)
-	userSvc := service.NewUserService(userRepo, nil, nil, nil)
+	userSvc := service.NewUserService(userRepo, nil, nil, nil, nil, nil)
 	var totpSvc *service.TotpService
 	if options.totpCache != nil || options.totpEncryptor != nil {
 		totpCache := options.totpCache
@@ -2432,6 +2432,14 @@ func (s *oauthPendingFlowRefreshTokenCacheStub) GetFamilyTokenHashes(context.Con
 
 func (s *oauthPendingFlowRefreshTokenCacheStub) IsTokenInFamily(context.Context, string, string) (bool, error) {
 	return false, nil
+}
+
+func (s *oauthPendingFlowRefreshTokenCacheStub) RemoveFromUserTokenSet(context.Context, int64, string) error {
+	return nil
+}
+
+func (s *oauthPendingFlowRefreshTokenCacheStub) RemoveFromFamilyTokenSet(context.Context, string, string) error {
+	return nil
 }
 
 type oauthPendingFlowRedeemCodeRepo struct {

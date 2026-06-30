@@ -506,6 +506,7 @@ describe('PaymentView WeChat JSAPI flow', () => {
 
 describe('PaymentView configurable recharge catalog', () => {
   beforeEach(() => {
+    vi.useRealTimers()
     routeState.path = '/purchase'
     routeState.query = {}
     routerReplace.mockReset().mockResolvedValue(undefined)
@@ -589,5 +590,13 @@ describe('PaymentView configurable recharge catalog', () => {
   it('shows a select-amount prompt instead of a fake zero-yuan submit label before recharge selection', async () => {
     expect(paymentViewSource).toContain('rechargeButtonLabel')
     expect(paymentViewSource).toContain("paymentText('selectAmountFirst')")
+  })
+
+  it('normalizes legacy credit copy to balance copy on the purchase page', async () => {
+    expect(paymentViewSource).toContain('normalizeBalanceDisplayText(renderPaymentViewText')
+    expect(paymentViewSource).toContain(".replace(/当前积分/g, '当前余额')")
+    expect(paymentViewSource).toContain(".replace(/到账积分/g, '到账余额')")
+    expect(paymentViewSource).toContain(".replace(/积分/g, '余额')")
+    expect(paymentViewSource).toContain("creditLine: paymentText('rechargeProductCreditLine', { amount: '{amount}' })")
   })
 })

@@ -5,9 +5,19 @@ import HomeView from '../HomeView.vue'
 
 const homeViewSource = readFileSync('src/views/HomeView.vue', 'utf8')
 const paymentCatalog = vi.hoisted(() => vi.fn())
+const probeBusinessCapabilities = vi.hoisted(() => vi.fn())
 const currentRoute = vi.hoisted(() => ({
   path: '/sub',
   name: 'SubHome',
+}))
+const currentRouter = vi.hoisted(() => ({
+  getRoutes: vi.fn(() => [
+    { path: '/sub' },
+    { path: '/home' },
+    { path: '/wechat' },
+    { path: '/image-generator' },
+    { path: '/hot' },
+  ]),
 }))
 
 vi.mock('vue-i18n', async () => {
@@ -31,6 +41,7 @@ vi.mock('vue-router', async () => {
   return {
     ...actual,
     useRoute: () => currentRoute,
+    useRouter: () => currentRouter,
   }
 })
 
@@ -38,6 +49,15 @@ vi.mock('@/api/payment', () => ({
   paymentAPI: {
     getPublicCatalog: paymentCatalog,
   },
+}))
+
+vi.mock('@/api/home-business-capabilities', () => ({
+  HOME_BUSINESS_CAPABILITY_STATUS_UNAVAILABLE: {
+    'wechat-export': { status: 'in_progress' },
+    'image-workspace': { status: 'in_progress' },
+    'hot-topics': { status: 'in_progress' },
+  },
+  probeHomeBusinessCapabilities: probeBusinessCapabilities,
 }))
 
 const authStoreState = vi.hoisted(() => ({
@@ -140,6 +160,35 @@ describe('HomeView', () => {
     authStoreState.user = null
     authStoreState.checkAuth.mockReset()
     appStoreState.fetchPublicSettings.mockReset()
+    probeBusinessCapabilities.mockReset().mockResolvedValue({})
+    currentRouter.getRoutes.mockReturnValue([
+      { path: '/sub' },
+      { path: '/home' },
+      { path: '/wechat' },
+      { path: '/image-generator' },
+      { path: '/hot' },
+    ])
+    appStoreState.cachedPublicSettings.home_business_shell_config = JSON.stringify({
+      en: {
+        labels: {
+          heroBadge: 'Configured business badge',
+          heroTitle: 'Configured business hero',
+          heroDescription: 'Configured business description',
+          primaryCta: 'Configured business primary',
+          secondaryCta: 'Configured business secondary',
+        },
+        businessCards: [
+          {
+            key: 'wechat-export',
+            title: 'Configured WeChat Export',
+            description: 'Configured business card description',
+            capabilityTags: ['Configured capability'],
+            path: '/wechat',
+            pathLabel: 'Configured card CTA',
+          },
+        ],
+      },
+    })
     paymentCatalog.mockReset().mockResolvedValue({
       data: {
         recharge_products: [
@@ -211,10 +260,8 @@ describe('HomeView', () => {
     expect(wrapper.text()).toContain('Configured home')
     expect(wrapper.text()).toContain('Configured docs')
     expect(wrapper.text()).toContain('Configured login')
-    expect(wrapper.text()).toContain('Configured badge')
     expect(wrapper.text()).toContain('Configured hero')
     expect(wrapper.text()).toContain('Configured hero description')
-    expect(wrapper.text()).toContain('Configured models')
     expect(wrapper.text()).toContain('Configured matrix')
     expect(wrapper.text()).toContain('Configured reasoning')
     expect(wrapper.text()).toContain('Configured agents')
@@ -224,7 +271,11 @@ describe('HomeView', () => {
     expect(wrapper.text()).toContain('Configured unified card')
     expect(wrapper.text()).toContain('Configured unified description')
     expect(wrapper.text()).toContain('Configured low friction')
+    expect(wrapper.text()).not.toContain('Configured badge')
+    expect(wrapper.text()).not.toContain('Configured models')
     expect(wrapper.text()).toContain('Configured low friction description')
+    expect(wrapper.find('a[href="/prompts"]').exists()).toBe(true)
+    expect(wrapper.find('a[href="/models"]').exists()).toBe(false)
     expect(wrapper.text()).not.toContain('Claude Opus 4.6')
     expect(wrapper.text()).not.toContain('GPT-5.4')
     expect(wrapper.text()).not.toContain('Starter Pack')
@@ -255,23 +306,212 @@ describe('HomeView', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain('Configured business badge')
     expect(wrapper.text()).toContain('Configured business hero')
     expect(wrapper.text()).toContain('Configured business description')
-    expect(wrapper.text()).toContain('Configured business primary')
-    expect(wrapper.text()).toContain('Configured business secondary')
     expect(wrapper.text()).toContain('Configured WeChat Export')
     expect(wrapper.text()).toContain('Configured business card description')
     expect(wrapper.text()).toContain('Configured capability')
     expect(wrapper.text()).toContain('Configured card CTA')
+    expect(wrapper.text()).not.toContain('Configured business badge')
+    expect(wrapper.text()).not.toContain('Configured business secondary')
     expect(wrapper.text()).not.toContain('Configured hero')
+    expect(wrapper.text()).not.toContain('Configured experience')
+    expect(wrapper.text()).not.toContain('Configured why')
+    expect(wrapper.find('[data-home-capability-grid]').exists()).toBe(true)
+    expect(wrapper.find('a[href="/models"]').exists()).toBe(false)
     expect(paymentCatalog).not.toHaveBeenCalled()
+    expect(probeBusinessCapabilities).toHaveBeenCalledTimes(1)
+  })
+
+  it('downgrades configured business cards when their routes are not available', async () => {
+    currentRoute.path = '/home'
+    currentRoute.name = 'Home'
+    currentRouter.getRoutes.mockReturnValue([{ path: '/home' }, { path: '/wechat' }])
+    appStoreState.cachedPublicSettings.home_business_shell_config = JSON.stringify({
+      en: {
+        labels: {
+          heroTitle: 'Runtime capability home',
+        },
+        businessCards: [
+          {
+            key: 'wechat-export',
+            title: 'WeChat Export',
+            path: '/wechat',
+            pathLabel: 'Open WeChat',
+          },
+          {
+            key: 'future-hot',
+            title: 'Future hot page',
+            path: '/future-hot',
+            pathLabel: 'Open future hot',
+          },
+          {
+            key: 'hidden-card',
+            title: 'Hidden card',
+            path: '/hidden',
+            status: 'hidden',
+            visible: false,
+          },
+        ],
+      },
+    })
+
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
+          },
+          DocsLink: { template: '<a><slot /></a>' },
+          LocaleSwitcher: { template: '<div>locale</div>' },
+          Icon: { template: '<i />' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('Runtime capability home')
+    expect(wrapper.text()).toContain('WeChat Export')
+    expect(wrapper.text()).toContain('Open WeChat')
+    expect(wrapper.text()).toContain('Future hot page')
+    expect(wrapper.text()).toContain('In progress')
+    expect(wrapper.text()).toContain('Open future hot')
+    expect(wrapper.text()).not.toContain('Hidden card')
+    expect(wrapper.find('a[href="/wechat"]').exists()).toBe(true)
+    expect(wrapper.find('a[href="/future-hot"]').exists()).toBe(false)
+  })
+
+  it('uses runtime capability probes to downgrade available business cards', async () => {
+    currentRoute.path = '/home'
+    currentRoute.name = 'Home'
+    probeBusinessCapabilities.mockResolvedValue({
+      'wechat-export': {
+        status: 'in_progress',
+        message: 'WeChat Export service is not reachable.',
+      },
+      'hot-topics': {
+        status: 'available',
+        count: 541,
+        statusLabel: 'Live',
+      },
+      'manual-disabled': {
+        status: 'available',
+      },
+    })
+    appStoreState.cachedPublicSettings.home_business_shell_config = JSON.stringify({
+      en: {
+        businessCards: [
+          {
+            key: 'wechat-export',
+            title: 'WeChat Export',
+            path: '/wechat',
+            pathLabel: 'Open WeChat',
+          },
+          {
+            key: 'hot-topics',
+            title: 'Hot topics',
+            path: '/hot',
+            pathLabel: 'Open hot',
+          },
+          {
+            key: 'manual-disabled',
+            title: 'Manual disabled',
+            path: '/wechat',
+            pathLabel: 'Open disabled',
+            status: 'disabled',
+          },
+        ],
+      },
+    })
+
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
+          },
+          DocsLink: { template: '<a><slot /></a>' },
+          LocaleSwitcher: { template: '<div>locale</div>' },
+          Icon: { template: '<i />' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('WeChat Export')
+    expect(wrapper.text()).toContain('In progress')
+    expect(wrapper.text()).toContain('WeChat Export service is not reachable.')
+    expect(wrapper.find('a[href="/wechat"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Hot topics')
+    expect(wrapper.text()).toContain('Live')
+    expect(wrapper.text()).toContain('541')
+    expect(wrapper.find('a[href="/hot"]').exists()).toBe(true)
+    expect(wrapper.text()).toContain('Manual disabled')
+  })
+
+  it('fails closed when business capability status cannot be loaded', async () => {
+    currentRoute.path = '/home'
+    currentRoute.name = 'Home'
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    probeBusinessCapabilities.mockRejectedValue(new Error('status unavailable'))
+    appStoreState.cachedPublicSettings.home_business_shell_config = JSON.stringify({
+      en: {
+        businessCards: [
+          {
+            key: 'wechat-export',
+            title: 'WeChat Export',
+            path: '/wechat',
+            pathLabel: 'Open WeChat',
+          },
+          {
+            key: 'manual-disabled',
+            title: 'Manual disabled',
+            path: '/image-generator',
+            pathLabel: 'Open disabled',
+            status: 'disabled',
+          },
+        ],
+      },
+    })
+
+    const wrapper = mount(HomeView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
+          },
+          DocsLink: { template: '<a><slot /></a>' },
+          LocaleSwitcher: { template: '<div>locale</div>' },
+          Icon: { template: '<i />' },
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('WeChat Export')
+    expect(wrapper.text()).toContain('In progress')
+    expect(wrapper.find('a[href="/wechat"]').exists()).toBe(false)
+    expect(wrapper.text()).toContain('Manual disabled')
+    expect(wrapper.find('a[href="/image-generator"]').exists()).toBe(false)
+    consoleError.mockRestore()
   })
 
   it('does not embed default home shell copy in the Vue view', () => {
     expect(homeViewSource).toContain('resolveBusinessHomeShellConfig')
     expect(homeViewSource).toContain("route.path === '/sub'")
     expect(homeViewSource).toContain('useAuthRouteDefaults')
+    expect(homeViewSource).toContain(':to="authRouteDefaults.homePath"')
+    expect(homeViewSource).toContain('data-home-primary-action')
+    expect(homeViewSource).toContain('data-home-capability-grid')
+    expect(homeViewSource).toContain("isBusinessHome ? 'capabilities' : 'models'")
+    expect(homeViewSource).toContain('<div data-home-hero>')
+    expect(homeViewSource).not.toContain(':href="capabilityAnchor"')
     expect(homeViewSource).not.toContain("isAuthenticated ? dashboardPath : '/login'")
     expect(homeViewSource).not.toContain("isAdmin.value ? '/admin/dashboard' : '/dashboard'")
     expect(homeViewSource).not.toContain('const EMPTY_HOME_COPY')
@@ -284,13 +524,16 @@ describe('HomeView', () => {
     expect(homeViewSource).not.toContain('mergeHomeExperienceCards')
     expect(homeViewSource).not.toContain('mergeHomeWhyChooseCards')
     expect(homeViewSource).not.toContain('defaultExperienceIcons')
-    expect(homeViewSource).toContain('homeLinks.value.modelsPath')
+    expect(homeViewSource).not.toContain('const capabilityAnchor = computed')
     expect(homeViewSource).toContain('homeLinks.value.docsPath')
     expect(homeViewSource).toContain('homeLinks.value.termsPath')
     expect(homeViewSource).toContain('homeLinks.value.privacyPath')
     expect(homeViewSource).not.toContain('to="/models"')
+    expect(homeViewSource).not.toContain(':to="homeLinks.modelsPath"')
+    expect(homeViewSource).not.toContain('homeLinks.value.modelsPath')
     expect(homeViewSource).not.toContain("href: '/models'")
     expect(homeViewSource).not.toContain("href: '/docs'")
+    expect(homeViewSource).not.toContain('to="/home"')
     expect(homeViewSource).not.toContain('href="/legal/terms"')
     expect(homeViewSource).not.toContain('href="/legal/privacy-policy"')
     expect(homeViewSource).not.toContain("href: '/legal/terms'")

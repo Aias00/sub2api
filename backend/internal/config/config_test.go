@@ -294,6 +294,27 @@ func TestLoadWeChatConnectConfigDoesNotApplyLegacyEnvFallbacks(t *testing.T) {
 	require.Equal(t, "/auth/wechat/callback", cfg.WeChat.FrontendRedirectURL)
 }
 
+func TestNormalizeWeChatConnectConfigAppliesLegacyGlobalAppCredentials(t *testing.T) {
+	cfg := WeChatConnectConfig{
+		Enabled:     true,
+		Mode:        "open",
+		AppID:       "wx-legacy-app",
+		AppSecret:   "wx-legacy-secret",
+		MPAppID:     "wx-mp-specific",
+		MPEnabled:   true,
+		OpenEnabled: true,
+	}
+
+	normalizeWeChatConnectConfig(&cfg)
+
+	require.Equal(t, "wx-legacy-app", cfg.OpenAppID)
+	require.Equal(t, "wx-legacy-secret", cfg.OpenAppSecret)
+	require.Equal(t, "wx-mp-specific", cfg.MPAppID)
+	require.Equal(t, "wx-legacy-secret", cfg.MPAppSecret)
+	require.Equal(t, "wx-legacy-app", cfg.MobileAppID)
+	require.Equal(t, "wx-legacy-secret", cfg.MobileAppSecret)
+}
+
 func TestLoadDefaultOIDCSecurityDefaults(t *testing.T) {
 	resetViperWithJWTSecret(t)
 

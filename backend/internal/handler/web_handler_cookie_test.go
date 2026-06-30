@@ -23,6 +23,41 @@ func TestWebSessionCookiesUseGenericNames(t *testing.T) {
 	require.Equal(t, "refresh-token", findCookieValue(cookies, webRefreshTokenCookie))
 }
 
+func TestWebSessionCookieKeepsLaxForUntrustedOrigin(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/web/auth/login", nil)
+	c.Request.Host = "api.example.com"
+	c.Request.Header.Set("Origin", "https://evil.example.com")
+
+	handler := &WebHandler{}
+	handler.setWebSessionCookies(c, "access-token", "refresh-token", 120)
+
+	cookie := findCookie(rec.Result().Cookies(), webAccessTokenCookie)
+	require.NotNil(t, cookie)
+	require.Equal(t, http.SameSiteLaxMode, cookie.SameSite)
+}
+
+func TestWebSessionCookieUsesNoneForAllowedCredentialedCrossSiteOrigin(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/web/auth/login", nil)
+	c.Request.Host = "api.example.com"
+	c.Request.Header.Set("Origin", "https://app.example.com")
+	c.Writer.Header().Set("Access-Control-Allow-Origin", "https://app.example.com")
+	c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
+
+	handler := &WebHandler{}
+	handler.setWebSessionCookies(c, "access-token", "refresh-token", 120)
+
+	cookie := findCookie(rec.Result().Cookies(), webAccessTokenCookie)
+	require.NotNil(t, cookie)
+	require.Equal(t, http.SameSiteNoneMode, cookie.SameSite)
+	require.True(t, cookie.Secure)
+}
+
 func TestReadWebSessionCookieIgnoresLegacyName(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	rec := httptest.NewRecorder()
@@ -57,10 +92,8 @@ func TestWebCheckoutPaymentSourceDefaultsToGenericWebSource(t *testing.T) {
 }
 
 func findCookieValue(cookies []*http.Cookie, name string) string {
-	for _, cookie := range cookies {
-		if cookie.Name == name {
-			return cookie.Value
-		}
+	if cookie := findCookie(cookies, name); cookie != nil {
+		return cookie.Value
 	}
 	return ""
 }

@@ -41,7 +41,7 @@ func TestClassifyAntigravity429(t *testing.T) {
 }
 
 func TestIsCreditsExhausted_UsesAICreditsKey(t *testing.T) {
-	t.Run("无 AICredits key 则积分可用", func(t *testing.T) {
+	t.Run("无 AICredits key 则余额可用", func(t *testing.T) {
 		account := &Account{
 			ID:       1,
 			Platform: PlatformAntigravity,
@@ -52,7 +52,7 @@ func TestIsCreditsExhausted_UsesAICreditsKey(t *testing.T) {
 		require.False(t, account.isCreditsExhausted())
 	})
 
-	t.Run("AICredits key 生效则积分耗尽", func(t *testing.T) {
+	t.Run("AICredits key 生效则余额耗尽", func(t *testing.T) {
 		account := &Account{
 			ID:       2,
 			Platform: PlatformAntigravity,
@@ -69,7 +69,7 @@ func TestIsCreditsExhausted_UsesAICreditsKey(t *testing.T) {
 		require.True(t, account.isCreditsExhausted())
 	})
 
-	t.Run("AICredits key 过期则积分可用", func(t *testing.T) {
+	t.Run("AICredits key 过期则余额可用", func(t *testing.T) {
 		account := &Account{
 			ID:       3,
 			Platform: PlatformAntigravity,
@@ -228,7 +228,7 @@ func TestAntigravityRetryLoop_ModelRateLimited_InjectsCredits(t *testing.T) {
 		},
 		errors: []error{nil},
 	}
-	// 模型已限流 + overages 启用 + 无 AICredits key → 应直接注入积分
+	// 模型已限流 + overages 启用 + 无 AICredits key → 应直接注入余额
 	account := &Account{
 		ID:          103,
 		Name:        "acc-103",
@@ -279,7 +279,7 @@ func TestAntigravityRetryLoop_CreditsExhausted_DoesNotInject(t *testing.T) {
 	antigravity.BaseURLs = []string{"https://ag-1.test"}
 	antigravity.DefaultURLAvailability = antigravity.NewURLAvailability(time.Minute)
 
-	// 模型限流 + overages 启用 + AICredits key 生效 → 不应注入积分，应切号
+	// 模型限流 + overages 启用 + AICredits key 生效 → 不应注入余额，应切号
 	account := &Account{
 		ID:          104,
 		Name:        "acc-104",
@@ -316,7 +316,7 @@ func TestAntigravityRetryLoop_CreditsExhausted_DoesNotInject(t *testing.T) {
 		},
 	})
 
-	// 模型限流 + 积分耗尽 → 应触发切号错误
+	// 模型限流 + 余额耗尽 → 应触发切号错误
 	require.Error(t, err)
 	var switchErr *AntigravityAccountSwitchError
 	require.ErrorAs(t, err, &switchErr)
@@ -344,7 +344,7 @@ func TestAntigravityRetryLoop_CreditErrorMarksExhausted(t *testing.T) {
 		},
 		errors: []error{nil},
 	}
-	// 模型限流 + overages 启用 + 积分可用 → 注入积分但上游返回积分不足
+	// 模型限流 + overages 启用 + 余额可用 → 注入余额但上游返回余额不足
 	account := &Account{
 		ID:          105,
 		Name:        "acc-105",
@@ -406,7 +406,7 @@ func TestShouldMarkCreditsExhausted(t *testing.T) {
 		require.False(t, shouldMarkCreditsExhausted(resp, []byte(`{"error":"Insufficient credits"}`), nil))
 	})
 
-	t.Run("Resource has been exhausted 应标记为积分耗尽", func(t *testing.T) {
+	t.Run("Resource has been exhausted 应标记为余额耗尽", func(t *testing.T) {
 		resp := &http.Response{StatusCode: http.StatusTooManyRequests}
 		body := []byte(`{"error":{"message":"Resource has been exhausted"}}`)
 		require.True(t, shouldMarkCreditsExhausted(resp, body, nil))

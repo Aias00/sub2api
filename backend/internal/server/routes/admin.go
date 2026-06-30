@@ -65,6 +65,9 @@ func RegisterAdminRoutes(
 		// 系统管理
 		registerSystemRoutes(admin, h)
 
+		// Runtime workers
+		registerRuntimeWorkerRoutes(admin, h)
+
 		// 订阅管理
 		registerSubscriptionRoutes(admin, h)
 
@@ -97,6 +100,16 @@ func RegisterAdminRoutes(
 
 		// 邀请返利（专属用户管理）
 		registerAffiliateRoutes(admin, h)
+	}
+}
+
+func registerRuntimeWorkerRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	if h == nil || h.HomeBusiness == nil {
+		return
+	}
+	runtime := admin.Group("/runtime")
+	{
+		runtime.GET("/workers", h.HomeBusiness.GetAdminWorkerRuntimeStatuses)
 	}
 }
 
@@ -435,6 +448,9 @@ func registerSettingsRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		// 529过载冷却配置
 		adminSettings.GET("/overload-cooldown", h.Admin.Setting.GetOverloadCooldownSettings)
 		adminSettings.PUT("/overload-cooldown", h.Admin.Setting.UpdateOverloadCooldownSettings)
+		// 图片提示词过滤配置
+		adminSettings.GET("/image-prompt-filter", h.Admin.Setting.GetImagePromptFilterConfig)
+		adminSettings.PUT("/image-prompt-filter", h.Admin.Setting.UpdateImagePromptFilterConfig)
 		// 429默认回避配置
 		adminSettings.GET("/rate-limit-429-cooldown", h.Admin.Setting.GetRateLimit429CooldownSettings)
 		adminSettings.PUT("/rate-limit-429-cooldown", h.Admin.Setting.UpdateRateLimit429CooldownSettings)

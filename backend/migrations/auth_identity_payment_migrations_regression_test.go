@@ -155,3 +155,16 @@ func TestMigration135AllowsGitHubAndGoogleAuthProviders(t *testing.T) {
 	require.Contains(t, sql, "'github'")
 	require.Contains(t, sql, "'google'")
 }
+
+func TestMigration154AddsImageWorkspaceUsageAuditTable(t *testing.T) {
+	content, err := FS.ReadFile("154_image_workspace_usage_records.sql")
+	require.NoError(t, err)
+
+	sql := string(content)
+	require.Contains(t, sql, "CREATE TABLE IF NOT EXISTS image_workspace_usage_records")
+	require.Contains(t, sql, "task_id BIGINT NOT NULL REFERENCES image_workspace_tasks(id) ON DELETE CASCADE")
+	require.Contains(t, sql, "reserved_cost NUMERIC(20,8) NOT NULL DEFAULT 0")
+	require.Contains(t, sql, "actual_cost NUMERIC(20,8) NOT NULL DEFAULT 0")
+	require.Contains(t, sql, "CREATE UNIQUE INDEX IF NOT EXISTS idx_image_workspace_usage_records_task_id")
+	require.Contains(t, sql, "CREATE INDEX IF NOT EXISTS idx_image_workspace_usage_records_user_id_created")
+}

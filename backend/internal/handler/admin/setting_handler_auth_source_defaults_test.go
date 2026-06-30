@@ -206,6 +206,80 @@ func TestSettingHandler_UpdateSettings_PreservesOmittedAuthSourceDefaults(t *tes
 	require.Equal(t, true, data["force_email_on_third_party_signup"])
 }
 
+func TestSettingHandler_UpdateSettings_PreservesOmittedSecuritySettings(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	repo := &settingHandlerRepoStub{
+		values: map[string]string{
+			service.SettingKeyRegistrationEnabled:         "true",
+			service.SettingKeyEmailVerifyEnabled:          "true",
+			service.SettingKeyPromoCodeEnabled:            "true",
+			service.SettingKeyInvitationCodeEnabled:       "true",
+			service.SettingKeyPasswordResetEnabled:        "true",
+			service.SettingKeyPasswordMinLength:           "12",
+			service.SettingKeyTotpEnabled:                 "true",
+			service.SettingKeyTurnstileEnabled:            "true",
+			service.SettingKeyTurnstileSiteKey:            "site-key",
+			service.SettingKeyTurnstileSecretKey:          "secret-key",
+			service.SettingKeyWeChatConnectEnabled:        "true",
+			service.SettingKeyWeChatConnectOpenEnabled:    "true",
+			service.SettingKeyWeChatConnectOpenAppID:      "wx-open-app",
+			service.SettingKeyWeChatConnectOpenAppSecret:  "wx-open-secret",
+			service.SettingKeyWeChatConnectMode:           "open",
+			service.SettingKeyWeChatConnectScopes:         "snsapi_login",
+			service.SettingKeyWeChatConnectRedirectURL:    "https://api.example.com/wechat/callback",
+			service.SettingKeyGitHubOAuthEnabled:          "true",
+			service.SettingKeyGitHubOAuthClientID:         "github-client",
+			service.SettingKeyGitHubOAuthClientSecret:     "github-secret",
+			service.SettingKeyDefaultConcurrency:          "7",
+			service.SettingKeyDefaultBalance:              "18.25000000",
+			service.SettingKeyDefaultUserRPMLimit:         "90",
+			service.SettingKeyDefaultSubscriptions:        `[{"group_id":31,"validity_days":15}]`,
+			service.SettingKeyEnableModelFallback:         "true",
+			service.SettingKeyFallbackModelOpenAI:         "gpt-4.1",
+			service.SettingKeyAllowUngroupedKeyScheduling: "true",
+			service.SettingKeyBackendModeEnabled:          "true",
+		},
+	}
+	svc := service.NewSettingService(repo, &config.Config{Default: config.DefaultConfig{UserConcurrency: 5}})
+	handler := NewSettingHandler(svc, nil, nil, nil, nil, nil, nil)
+
+	body := map[string]any{
+		"payment_recharge_products": []map[string]any{
+			{"id": "credits-100", "name": "100 credits", "amount": 10},
+		},
+	}
+	rawBody, err := json.Marshal(body)
+	require.NoError(t, err)
+
+	rec := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(rec)
+	c.Request = httptest.NewRequest(http.MethodPut, "/api/v1/admin/settings", bytes.NewReader(rawBody))
+	c.Request.Header.Set("Content-Type", "application/json")
+
+	handler.UpdateSettings(c)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, "true", repo.values[service.SettingKeyRegistrationEnabled])
+	require.Equal(t, "true", repo.values[service.SettingKeyEmailVerifyEnabled])
+	require.Equal(t, "true", repo.values[service.SettingKeyTurnstileEnabled])
+	require.Equal(t, "site-key", repo.values[service.SettingKeyTurnstileSiteKey])
+	require.Equal(t, "secret-key", repo.values[service.SettingKeyTurnstileSecretKey])
+	require.Equal(t, "true", repo.values[service.SettingKeyWeChatConnectEnabled])
+	require.Equal(t, "wx-open-app", repo.values[service.SettingKeyWeChatConnectOpenAppID])
+	require.Equal(t, "wx-open-secret", repo.values[service.SettingKeyWeChatConnectOpenAppSecret])
+	require.Equal(t, "true", repo.values[service.SettingKeyGitHubOAuthEnabled])
+	require.Equal(t, "github-client", repo.values[service.SettingKeyGitHubOAuthClientID])
+	require.Equal(t, "github-secret", repo.values[service.SettingKeyGitHubOAuthClientSecret])
+	require.Equal(t, "7", repo.values[service.SettingKeyDefaultConcurrency])
+	require.Equal(t, "18.25000000", repo.values[service.SettingKeyDefaultBalance])
+	require.Equal(t, "90", repo.values[service.SettingKeyDefaultUserRPMLimit])
+	require.Equal(t, `[{"group_id":31,"validity_days":15}]`, repo.values[service.SettingKeyDefaultSubscriptions])
+	require.Equal(t, "true", repo.values[service.SettingKeyEnableModelFallback])
+	require.Equal(t, "gpt-4.1", repo.values[service.SettingKeyFallbackModelOpenAI])
+	require.Equal(t, "true", repo.values[service.SettingKeyAllowUngroupedKeyScheduling])
+	require.Equal(t, "true", repo.values[service.SettingKeyBackendModeEnabled])
+}
+
 func TestSettingHandler_UpdateSettings_AcceptsGenericRuntimeAliases(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	repo := &settingHandlerRepoStub{

@@ -303,10 +303,10 @@ func (s *TwitterImportService) fetchXAutoPython(ctx context.Context, tweetID str
 	if pythonPath == "" {
 		return nil, fmt.Errorf("vendored x_atuo python path not found")
 	}
-	configPath := firstNonEmpty(os.Getenv("X_ATUO_CONFIG_PATH"), os.Getenv("X_AUTO_CONFIG_PATH"), defaultXAutoConfigPath())
-	pythonBin := firstNonEmpty(os.Getenv("X_ATUO_PYTHON_BIN"), os.Getenv("PYTHON"), "python3")
+	configPath := firstNonEmpty(os.Getenv("X_AUTO_CONFIG_PATH"), os.Getenv("X_ATUO_CONFIG_PATH"), defaultXAutoConfigPath())
+	pythonBin := firstNonEmpty(os.Getenv("X_AUTO_PYTHON_BIN"), os.Getenv("X_ATUO_PYTHON_BIN"), os.Getenv("PYTHON"), "python3")
 	timeout := 120 * time.Second
-	if raw := strings.TrimSpace(os.Getenv("X_ATUO_TIMEOUT_SECONDS")); raw != "" {
+	if raw := strings.TrimSpace(firstNonEmpty(os.Getenv("X_AUTO_TIMEOUT_SECONDS"), os.Getenv("X_ATUO_TIMEOUT_SECONDS"))); raw != "" {
 		if parsed, err := time.ParseDuration(raw + "s"); err == nil && parsed > 0 {
 			timeout = parsed
 		}
@@ -343,9 +343,9 @@ def normalize(value):
 
 client = TwitterClient.from_config(
     config_path,
-    proxy=os.environ.get("X_ATUO_PROXY_URL") or os.environ.get("X_AUTO_PROXY_URL") or None,
-    twitter_bin=os.environ.get("X_ATUO_TWITTER_BIN") or os.environ.get("X_AUTO_TWITTER_BIN") or "twitter",
-    timeout=int(os.environ.get("X_ATUO_TIMEOUT_SECONDS") or "120"),
+    proxy=os.environ.get("X_AUTO_PROXY_URL") or os.environ.get("X_ATUO_PROXY_URL") or None,
+    twitter_bin=os.environ.get("X_AUTO_TWITTER_BIN") or os.environ.get("X_ATUO_TWITTER_BIN") or "twitter",
+    timeout=int(os.environ.get("X_AUTO_TIMEOUT_SECONDS") or os.environ.get("X_ATUO_TIMEOUT_SECONDS") or "120"),
 )
 print(json.dumps(normalize(client.fetch_tweet(tweet_id)), ensure_ascii=False, default=str))
 `
@@ -370,7 +370,7 @@ print(json.dumps(normalize(client.fetch_tweet(tweet_id)), ensure_ascii=False, de
 }
 
 func xAutoPythonPath() string {
-	if explicit := strings.TrimSpace(os.Getenv("X_ATUO_PYTHON_PATH")); explicit != "" {
+	if explicit := strings.TrimSpace(firstNonEmpty(os.Getenv("X_AUTO_PYTHON_PATH"), os.Getenv("X_ATUO_PYTHON_PATH"))); explicit != "" {
 		return explicit
 	}
 	candidates := []string{

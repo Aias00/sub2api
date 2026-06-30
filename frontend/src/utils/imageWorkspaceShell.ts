@@ -23,7 +23,7 @@ export interface WorkspaceShellDefaults {
   maxPromptLength: number
 }
 
-export const DEFAULT_WORKSPACE_CATALOG_PATH = '/prompts'
+export const DEFAULT_WORKSPACE_CATALOG_PATH = ''
 export const DEFAULT_WORKSPACE_MAX_PROMPT_LENGTH = 2000
 
 const workspaceShellKeys: Array<keyof WorkspaceShellCopy> = [
