@@ -147,6 +147,7 @@ tools/gemini-command-gateway/__pycache__/
 tools/gemini-command-gateway/session/
 backend/hotimport
 tmp-auto-sync-plan.md
+progress.md
 
 # Local visual QA screenshots
 artifacts/
