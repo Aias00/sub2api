@@ -269,14 +269,24 @@ type SystemSettings struct {
 	BackendModeEnabled bool `json:"backend_mode_enabled"`
 
 	// Gateway forwarding behavior
-	EnableFingerprintUnification       bool   `json:"enable_fingerprint_unification"`
-	EnableMetadataPassthrough          bool   `json:"enable_metadata_passthrough"`
-	EnableCCHSigning                   bool   `json:"enable_cch_signing"`
-	EnableAnthropicCacheTTL1hInjection bool   `json:"enable_anthropic_cache_ttl_1h_injection"`
-	RewriteMessageCacheControl         bool   `json:"rewrite_message_cache_control"`
-	AntigravityUserAgentVersion        string `json:"antigravity_user_agent_version"`
-	OpenAICodexUserAgent               string `json:"openai_codex_user_agent"`
-	OpenAIAllowClaudeCodeCodexPlugin   bool   `json:"openai_allow_claude_code_codex_plugin"`
+	EnableFingerprintUnification           bool   `json:"enable_fingerprint_unification"`
+	EnableMetadataPassthrough              bool   `json:"enable_metadata_passthrough"`
+	EnableCCHSigning                       bool   `json:"enable_cch_signing"`
+	EnableClaudeOAuthSystemPromptInjection bool   `json:"enable_claude_oauth_system_prompt_injection"`
+	ClaudeOAuthSystemPrompt                string `json:"claude_oauth_system_prompt"`
+	ClaudeOAuthSystemPromptBlocks          string `json:"claude_oauth_system_prompt_blocks"`
+	EnableAnthropicCacheTTL1hInjection     bool   `json:"enable_anthropic_cache_ttl_1h_injection"`
+	RewriteMessageCacheControl             bool   `json:"rewrite_message_cache_control"`
+	AntigravityUserAgentVersion            string `json:"antigravity_user_agent_version"`
+	OpenAICodexUserAgent                   string `json:"openai_codex_user_agent"`
+
+	// codex_cli_only 加固
+	MinCodexVersion                      string `json:"min_codex_version"`
+	MaxCodexVersion                      string `json:"max_codex_version"`
+	CodexCLIOnlyBlacklist                string `json:"codex_cli_only_blacklist"`
+	CodexCLIOnlyWhitelist                string `json:"codex_cli_only_whitelist"`
+	CodexCLIOnlyAllowAppServerClients    bool   `json:"codex_cli_only_allow_app_server_clients"`
+	CodexCLIOnlyEngineFingerprintSignals string `json:"codex_cli_only_engine_fingerprint_signals"`
 
 	// Web Search Emulation
 	WebSearchEmulationEnabled bool `json:"web_search_emulation_enabled"`
@@ -342,6 +352,10 @@ type SystemSettings struct {
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
 
+	// cyber 会话屏蔽开关 + TTL
+	CyberSessionBlockEnabled    bool `json:"cyber_session_block_enabled"`
+	CyberSessionBlockTTLSeconds int  `json:"cyber_session_block_ttl_seconds"`
+
 	// Affiliate (邀请返利) feature switch
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
@@ -350,6 +364,9 @@ type SystemSettings struct {
 
 	// 系统全局默认平台配额（key = platform，nil/缺省 = 不限制）
 	DefaultPlatformQuotas map[string]*service.DefaultPlatformQuotaSetting `json:"default_platform_quotas,omitempty"`
+
+	// 允许终端用户在用量页查看自己的失败请求
+	AllowUserViewErrorRequests bool `json:"allow_user_view_error_requests"`
 }
 
 type DefaultSubscriptionSetting struct {
@@ -467,42 +484,7 @@ type PublicSettings struct {
 
 	RiskControlEnabled bool `json:"risk_control_enabled"`
 
-	PromptCasesTitle           string `json:"prompt_cases_title"`
-	PromptCasesDescription     string `json:"prompt_cases_description"`
-	PromptTemplatesTitle       string `json:"prompt_templates_title"`
-	PromptTemplatesDescription string `json:"prompt_templates_description"`
-	PromptCatalogShellConfig   string `json:"prompt_catalog_shell_config"`
-	WorkspaceShellConfig       string `json:"workspace_shell_config"`
-	ImagePromptFilterConfig   string `json:"image_prompt_filter_config"`
-	PricingTitle               string `json:"pricing_title"`
-	PricingDescription         string `json:"pricing_description"`
-	PricingShellConfig         string `json:"pricing_shell_config"`
-	PaymentShellConfig         string `json:"payment_shell_config"`
-	PricingCurrencySymbol      string `json:"pricing_currency_symbol"`
-	CreditsTitle               string `json:"credits_title"`
-	CreditsDescription         string `json:"credits_description"`
-	CreditsPurchaseLabel       string `json:"credits_purchase_label"`
-	CreditsBalanceLabel        string `json:"credits_balance_label"`
-	CreditsPerBalance          string `json:"credits_per_balance"`
-	CreditsShellConfig         string `json:"credits_shell_config"`
-	GoogleAnalyticsID          string `json:"google_analytics_id"`
-	ClarityID                  string `json:"clarity_id"`
-	PlausibleDomain            string `json:"plausible_domain"`
-	PlausibleSrc               string `json:"plausible_src"`
-	OpenPanelClientID          string `json:"openpanel_client_id"`
-	PublicIntegrationsEnabled  bool   `json:"public_integrations_enabled"`
-	VercelAnalyticsEnabled     bool   `json:"vercel_analytics_enabled"`
-	AdsenseCode                string `json:"adsense_code"`
-	AffonsoEnabled             bool   `json:"affonso_enabled"`
-	AffonsoID                  string `json:"affonso_id"`
-	AffonsoCookieDuration      string `json:"affonso_cookie_duration"`
-	PromoteKitEnabled          bool   `json:"promotekit_enabled"`
-	PromoteKitID               string `json:"promotekit_id"`
-	CrispEnabled               bool   `json:"crisp_enabled"`
-	CrispWebsiteID             string `json:"crisp_website_id"`
-	TawkEnabled                bool   `json:"tawk_enabled"`
-	TawkPropertyID             string `json:"tawk_property_id"`
-	TawkWidgetID               string `json:"tawk_widget_id"`
+	AllowUserViewErrorRequests bool `json:"allow_user_view_error_requests"`
 }
 
 type LoginAgreementDocument struct {

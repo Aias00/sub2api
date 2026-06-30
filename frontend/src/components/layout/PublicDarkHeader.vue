@@ -1,6 +1,6 @@
 <template>
   <header class="public-dark-header relative z-20 px-6 py-5">
-    <nav class="mx-auto flex max-w-5xl items-center justify-between">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between">
       <RouterLink
         :to="authRouteDefaults.homePath"
         class="public-dark-header__brand flex min-w-0 items-center gap-3 rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-400"
@@ -81,8 +81,8 @@ const displayName = computed(() => {
 })
 const userInitial = computed(() => displayName.value.charAt(0).toUpperCase() || 'U')
 const resolvedAccountLabel = computed(() => props.accountLabel || (isAuthenticated.value ? t('nav.dashboard') : t('common.login')))
-const themeToggleText = computed(() => (isDarkTheme.value ? 'Light' : 'Dark'))
-const themeToggleLabel = computed(() => (isDarkTheme.value ? 'Switch to light theme' : 'Switch to dark theme'))
+const themeToggleText = computed(() => (isDarkTheme.value ? t('nav.lightMode') : t('nav.darkMode')))
+const themeToggleLabel = computed(() => themeToggleText.value)
 </script>
 
 <style scoped>

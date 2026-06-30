@@ -1,31 +1,31 @@
 <template>
-  <div class="home-business-page public-dark-page min-h-screen bg-[#101114] text-white">
+  <div class="home-business-page public-template-page min-h-screen">
     <PublicDarkHeader :account-label="isAuthenticated ? t('nav.dashboard') : t('common.login')" />
 
-    <main class="px-6 py-10 sm:py-14">
-      <div class="mx-auto max-w-6xl">
+    <main class="public-template-main">
+      <div class="public-template-container">
         <section class="mb-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
           <div>
-            <p class="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200/70">
+            <p class="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--public-muted)]">
               {{ t('wechatExport.pageTitle') }}
             </p>
-            <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-white sm:text-5xl">
+            <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-[var(--public-ink)] sm:text-5xl">
               {{ t('wechatExport.pageTitle') }}
             </h1>
-            <p class="mt-4 max-w-3xl text-base leading-8 text-white/60">
+            <p class="mt-4 max-w-3xl text-base leading-8 text-[var(--public-body)]">
               {{ t('wechatExport.pageHint') }}
             </p>
           </div>
 
-          <aside class="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.055] p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
+          <aside class="public-template-panel" p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
             <div class="flex items-center justify-between gap-3">
               <div>
-                <p class="text-xs font-black uppercase tracking-[0.18em] text-cyan-100/55">WeChat Session</p>
+                <p class="text-xs font-black uppercase tracking-[0.18em] text-[var(--public-accent-strong)]">WeChat Session</p>
                 <div class="mt-2 flex items-center gap-2">
-                  <span class="text-sm font-bold text-white/80">扫码登录</span>
+                  <span class="text-sm font-bold text-[var(--public-ink)]">扫码登录</span>
                   <span
-                    class="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-xs font-semibold"
-                    :class="session?.status === 'ready' ? 'text-emerald-100' : 'text-white/50'"
+                    class="rounded-full border public-template-input px-2.5 py-1 text-xs font-semibold"
+                    :class="session?.status === 'ready' ? 'text-[var(--public-success)]' : 'text-[var(--public-muted)]'"
                   >
                     {{ sessionStatusLabel }}
                   </span>
@@ -41,7 +41,7 @@
               <button
                 v-if="session?.status !== 'ready'"
                 type="button"
-                class="rounded-xl bg-cyan-300 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-cyan-200 disabled:opacity-45"
+                class="public-template-button-primary disabled:opacity-45"
                 :disabled="!isAuthenticated || sessionLoading"
                 @click="handleCreateSession"
               >
@@ -50,7 +50,7 @@
               <button
                 v-if="session?.status === 'ready'"
                 type="button"
-                class="rounded-xl border border-emerald-200/20 px-3 py-1.5 text-sm font-semibold text-emerald-100 transition hover:bg-emerald-300/10 disabled:opacity-45"
+                class="rounded-xl border border-emerald-200/20 px-3 py-1.5 text-sm font-semibold text-[var(--public-success)] transition hover:bg-emerald-300/10 disabled:opacity-45"
                 :disabled="sessionValidating"
                 @click="handleValidateSession"
               >
@@ -59,7 +59,7 @@
               <button
                 v-if="session?.id"
                 type="button"
-                class="rounded-xl border border-white/10 px-3 py-1.5 text-sm font-semibold text-white/70 transition hover:bg-white/[0.06]"
+                class="rounded-xl border border-[var(--public-border)] px-3 py-1.5 text-sm font-semibold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)]"
                 :disabled="!isAuthenticated"
                 @click="handleLogoutSession"
               >
@@ -67,11 +67,11 @@
               </button>
             </div>
 
-            <div v-if="qrcodeUrl && session?.status !== 'ready'" class="mt-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-black/20 p-3">
+            <div v-if="qrcodeUrl && session?.status !== 'ready'" class="mt-4 flex items-center gap-3 rounded-2xl border border-[var(--public-border)] bg-[var(--public-panel-muted)] p-3">
               <img v-if="isQRCodeImage" :src="qrcodeUrl" alt="二维码" class="h-24 w-24 rounded-xl bg-white p-1" />
               <div class="min-w-0">
-                <p class="text-sm font-bold text-white/80">微信扫码确认</p>
-                <p class="mt-1 text-xs leading-5 text-white/45">登录后可同步公众号文章并创建导出任务。</p>
+                <p class="text-sm font-bold text-[var(--public-ink)]">微信扫码确认</p>
+                <p class="mt-1 text-xs leading-5 text-[var(--public-muted)]">登录后可同步公众号文章并创建导出任务。</p>
               </div>
             </div>
           </aside>
@@ -91,28 +91,28 @@
         </div>
 
         <!-- 公众号管理 -->
-        <section class="mb-6 rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+        <section class="mb-6 rounded-2xl public-template-panel-muted p-5">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-xl font-black text-white">公众号管理</span>
-                <span class="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1 text-xs font-semibold text-white/50">
+                <span class="text-xl font-black text-[var(--public-ink)]">公众号管理</span>
+                <span class="rounded-full border public-template-input px-2.5 py-1 text-xs font-semibold text-[var(--public-muted)]">
                   {{ accounts.length }} 个已绑定
                 </span>
               </div>
-              <p class="mt-2 text-sm leading-6 text-white/45">搜索并绑定公众号，或对已绑定公众号执行文章同步。</p>
+              <p class="mt-2 text-sm leading-6 text-[var(--public-muted)]">搜索并绑定公众号，或对已绑定公众号执行文章同步。</p>
             </div>
             <div class="flex w-full flex-wrap gap-2 lg:w-[520px]">
               <input
                 v-model="accountSearchQuery"
                 type="text"
                 placeholder="搜索公众号"
-                class="min-w-0 flex-1 rounded-xl border border-white/10 bg-[#101114] px-3 py-2 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-[#111318]"
+                class="min-w-0 flex-1 rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none placeholder:text-[var(--public-faint)] focus:border-cyan-300/40 focus:bg-[var(--public-panel-muted)]"
                 :disabled="wechatActionDisabled || accountSearching"
               />
               <button
                 type="button"
-                class="rounded-xl border border-cyan-300/30 px-4 py-2 text-sm font-bold text-cyan-100 hover:bg-cyan-300/10 disabled:opacity-45"
+                class="rounded-xl border border-cyan-300/30 px-4 py-2 text-sm font-bold text-[var(--public-accent-strong)] hover:bg-cyan-300/10 disabled:opacity-45"
                 :disabled="wechatActionDisabled || accountSearching || !accountSearchQuery.trim()"
                 @click="handleSearchRemoteAccounts"
               >
@@ -120,22 +120,22 @@
               </button>
             </div>
           </div>
-          <p v-if="accountSearchMessage" class="mt-4 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-xs text-cyan-50">
+          <p v-if="accountSearchMessage" class="mt-4 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.06] px-3 py-2 text-xs text-[var(--public-accent-strong)]">
             {{ accountSearchMessage }}
           </p>
 
           <!-- 搜索结果（如果有） -->
-          <div v-if="accountSearchResults.length > 0" class="mt-3 border-t border-white/10 pt-3">
-            <div class="text-sm font-bold text-white/75 mb-2">搜索结果</div>
+          <div v-if="accountSearchResults.length > 0" class="mt-3 border-t border-[var(--public-border)] pt-3">
+            <div class="text-sm font-bold text-[var(--public-body)] mb-2">搜索结果</div>
             <div class="grid gap-2 sm:grid-cols-2">
               <div v-for="account in accountSearchResults" :key="`remote-${account.fakeid}`" class="flex items-center justify-between gap-2 rounded-xl border border-cyan-300/15 bg-cyan-300/[0.04] px-3 py-2">
                 <div class="min-w-0">
-                  <p class="truncate text-sm font-bold text-white">{{ account.nickname || account.fakeid }}</p>
-                  <p class="truncate text-xs text-white/45">{{ account.fakeid }}</p>
+                  <p class="truncate text-sm font-bold text-[var(--public-ink)]">{{ account.nickname || account.fakeid }}</p>
+                  <p class="truncate text-xs text-[var(--public-muted)]">{{ account.fakeid }}</p>
                 </div>
                 <button
                   type="button"
-                  class="rounded-xl bg-white px-3 py-1.5 text-sm font-bold text-slate-950 hover:bg-white/90"
+                  class="public-template-button-primary px-3 py-1.5 text-sm font-bold"
                   :disabled="wechatActionDisabled || accountLoading"
                   @click="handleBindSearchResult(account)"
                 >
@@ -146,15 +146,15 @@
           </div>
 
           <!-- 已绑定公众号列表 -->
-          <div v-if="accounts.length > 0" class="mt-3 border-t border-white/10 pt-3">
-            <div class="text-sm font-bold text-white/75 mb-2">已绑定公众号</div>
+          <div v-if="accounts.length > 0" class="mt-3 border-t border-[var(--public-border)] pt-3">
+            <div class="text-sm font-bold text-[var(--public-body)] mb-2">已绑定公众号</div>
             <div class="grid gap-2 sm:grid-cols-2">
-              <div v-for="account in accounts" :key="account.id" class="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-[#101114] px-3 py-2">
+              <div v-for="account in accounts" :key="account.id" class="flex items-center justify-between gap-2 rounded-xl public-template-panel-muted px-3 py-2">
                 <div class="min-w-0">
-                  <p class="truncate text-sm font-bold text-white">{{ account.nickname || account.fakeid }}</p>
-                  <p class="truncate text-xs text-white/45">{{ account.fakeid }}</p>
+                  <p class="truncate text-sm font-bold text-[var(--public-ink)]">{{ account.nickname || account.fakeid }}</p>
+                  <p class="truncate text-xs text-[var(--public-muted)]">{{ account.fakeid }}</p>
                 </div>
-                <button type="button" class="rounded-xl border border-cyan-200/30 bg-cyan-200/10 px-2.5 py-1 text-sm font-semibold text-cyan-100 hover:bg-cyan-200/20 disabled:opacity-45" :disabled="wechatActionDisabled || syncingFakeid === account.fakeid" @click="handleSyncAccount(account.fakeid)">
+                <button type="button" class="rounded-xl border border-cyan-200/30 bg-cyan-200/10 px-2.5 py-1 text-sm font-semibold text-[var(--public-accent-strong)] hover:bg-cyan-200/20 disabled:opacity-45" :disabled="wechatActionDisabled || syncingFakeid === account.fakeid" @click="handleSyncAccount(account.fakeid)">
                   {{ syncingFakeid === account.fakeid ? '同步中' : '同步' }}
                 </button>
               </div>
@@ -162,12 +162,12 @@
           </div>
 
           <!-- 同步进度和继续同步按钮 -->
-          <div v-if="syncingProgress && syncingProgress.fakeid" class="mt-2 text-xs text-cyan-100/80">
+          <div v-if="syncingProgress && syncingProgress.fakeid" class="mt-2 text-xs text-[var(--public-accent-strong)]">
             {{ syncProgressText(syncingProgress) }}
             <button
               v-if="syncingProgress.hasMore"
               type="button"
-              class="ml-2 rounded bg-cyan-200/20 px-2 py-0.5 text-xs font-semibold text-cyan-100 hover:bg-cyan-200/30"
+              class="ml-2 rounded bg-cyan-200/20 px-2 py-0.5 text-xs font-semibold text-[var(--public-accent-strong)] hover:bg-cyan-200/30"
               :disabled="wechatActionDisabled"
               @click="handleContinueSync(syncingProgress.fakeid, syncingProgress.synced)"
             >
@@ -178,12 +178,12 @@
 
         <!-- 主内容区：文章列表 -->
         <div class="mb-6">
-          <section class="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+          <section class="rounded-2xl public-template-panel-muted p-5">
             <div class="flex items-center justify-between mb-3">
-              <h2 class="text-xl font-black text-white">文章列表</h2>
+              <h2 class="text-xl font-black text-[var(--public-ink)]">文章列表</h2>
               <button
                 type="button"
-                class="rounded-xl border border-white/10 px-3 py-1.5 text-sm font-semibold text-white/70 hover:bg-white/[0.06] disabled:opacity-45"
+                class="rounded-xl border border-[var(--public-border)] px-3 py-1.5 text-sm font-semibold text-[var(--public-body)] hover:bg-[var(--public-panel-soft)] disabled:opacity-45"
                 :disabled="!isAuthenticated || loading"
                 @click="refreshAll"
               >
@@ -198,12 +198,12 @@
                   v-model="articleLink"
                   type="url"
                   placeholder="粘贴文章链接 mp.weixin.qq.com/s/..."
-                  class="min-h-10 flex-1 rounded-xl border border-white/10 bg-[#101114] px-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-300/40"
+                  class="min-h-10 flex-1 rounded-xl public-template-panel-muted px-3 text-sm text-[var(--public-ink)] outline-none placeholder:text-[var(--public-faint)] focus:border-cyan-300/40"
                   :disabled="wechatActionDisabled || importing"
                 />
                 <button
                   type="submit"
-                  class="min-h-10 rounded-xl bg-cyan-300 px-4 text-sm font-bold text-slate-950 hover:bg-cyan-200 disabled:opacity-45"
+                  class="public-template-button-primary min-h-10 px-4 text-sm font-bold disabled:opacity-45"
                   :disabled="wechatActionDisabled || importing || !articleLink.trim()"
                 >
                   {{ importing ? '导入' : '导入' }}
@@ -217,11 +217,11 @@
                 v-model="articleSearchQuery"
                 type="search"
                 placeholder="搜索文章"
-                class="min-h-9 rounded-xl border border-white/10 bg-[#101114] px-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-300/40"
+                class="min-h-9 rounded-xl public-template-panel-muted px-3 text-sm text-[var(--public-ink)] outline-none placeholder:text-[var(--public-faint)] focus:border-cyan-300/40"
               />
               <select
                 v-model="articleAccountFilter"
-                class="min-h-9 rounded-xl border border-white/10 bg-[#101114] px-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                class="min-h-9 rounded-xl public-template-panel-muted px-3 text-sm text-[var(--public-ink)] outline-none focus:border-cyan-300/40"
               >
                 <option value="all">全部公众号</option>
                 <option v-for="account in accounts" :key="account.fakeid" :value="account.fakeid">
@@ -230,7 +230,7 @@
               </select>
               <select
                 v-model="articleStatusFilter"
-                class="min-h-9 rounded-xl border border-white/10 bg-[#101114] px-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                class="min-h-9 rounded-xl public-template-panel-muted px-3 text-sm text-[var(--public-ink)] outline-none focus:border-cyan-300/40"
               >
                 <option value="all">全部状态</option>
                 <option value="pending">待抓取</option>
@@ -243,73 +243,73 @@
             <div class="mb-3 flex items-center gap-2">
               <button
                 type="button"
-                class="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/20 disabled:opacity-45"
+                class="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 text-sm font-semibold text-[var(--public-accent-strong)] hover:bg-cyan-300/20 disabled:opacity-45"
                 :disabled="wechatActionDisabled"
                 @click="selectFilteredArticles"
               >
                 全选 ({{ filteredArticles.length }})
               </button>              <button
                 type="button"
-                class="rounded-xl border border-white/10 px-3 py-1.5 text-sm font-semibold text-white/65 hover:bg-white/[0.06] disabled:opacity-45"
+                class="rounded-xl border border-[var(--public-border)] px-3 py-1.5 text-sm font-semibold text-[var(--public-body)] hover:bg-[var(--public-panel-soft)] disabled:opacity-45"
                 :disabled="wechatActionDisabled"
                 @click="clearSelectedArticles"
               >
                 清空
               </button>
-              <span class="text-xs text-white/40">已选 {{ selectedArticleIds.length }} 篇</span>
+              <span class="text-xs text-[var(--public-muted)]">已选 {{ selectedArticleIds.length }} 篇</span>
             </div>
 
             <!-- 导出操作 -->
-            <div class="mb-3 rounded-xl border border-white/10 bg-[#101114] px-3 py-3">
+            <div class="mb-3 rounded-xl public-template-panel-muted px-3 py-3">
               <div class="flex flex-wrap items-center gap-2">
-                <span class="mr-1 text-sm font-bold text-white/75">导出操作</span>
+                <span class="mr-1 text-sm font-bold text-[var(--public-body)]">导出操作</span>
                 <label
                   v-for="format in availableFormats"
                   :key="format"
-                  class="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-3 text-sm font-semibold uppercase text-white/75 hover:bg-white/[0.06]"
+                  class="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-xl public-template-panel-muted px-3 text-sm font-semibold uppercase text-[var(--public-body)] hover:bg-[var(--public-panel-soft)]"
                 >
                   <input v-model="formats" type="checkbox" class="h-4 w-4 accent-cyan-200" :value="format" :disabled="wechatActionDisabled" />
                   {{ format }}
                 </label>
-                <label class="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-xl border border-white/10 bg-white/[0.035] px-3 text-sm font-semibold text-white/75 hover:bg-white/[0.06]">
+                <label class="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-xl public-template-panel-muted px-3 text-sm font-semibold text-[var(--public-body)] hover:bg-[var(--public-panel-soft)]">
                   <input v-model="includeEngagement" type="checkbox" class="h-4 w-4 accent-cyan-200" :disabled="wechatActionDisabled" />
                   互动数据
                 </label>
-                <div v-if="isAuthenticated && estimatedCredits !== null" class="flex min-h-9 items-center gap-3 rounded-xl border border-white/10 bg-white/[0.035] px-3 text-xs text-white/55">
+                <div v-if="isAuthenticated && estimatedCredits !== null" class="flex min-h-9 items-center gap-3 rounded-xl public-template-panel-muted px-3 text-xs text-[var(--public-body)]">
                   <span>预计 {{ estimatedCredits.toFixed(2) }} 余额</span>
-                  <span :class="insufficientBalance ? 'text-red-200' : 'text-emerald-200'">余额 {{ userBalance.toFixed(2) }}</span>
+                  <span :class="insufficientBalance ? 'text-[var(--public-danger)]' : 'text-[var(--public-success)]'">余额 {{ userBalance.toFixed(2) }}</span>
                 </div>
                 <button
                   type="button"
-                  class="min-h-9 rounded-xl bg-white px-4 text-sm font-black text-slate-950 hover:bg-white/90 disabled:opacity-45"
+                  class="public-template-button-primary min-h-9 px-4 text-sm font-black disabled:opacity-45"
                   :disabled="wechatActionDisabled || creating || selectedArticleIds.length === 0 || formats.length === 0 || insufficientBalance"
                   @click="handleCreateTask"
                 >
                   {{ creating ? '创建中' : `导出 ${selectedArticleIds.length} 篇` }}
                 </button>
               </div>
-              <p v-if="insufficientBalance" class="mt-2 text-xs font-semibold text-red-100/80">
+              <p v-if="insufficientBalance" class="mt-2 text-xs font-semibold text-[var(--public-danger)]">
                 余额不足，请充值后再创建任务
               </p>
-              <div v-if="message" class="mt-2 rounded-xl border border-emerald-200/20 bg-emerald-300/10 px-3 py-2 text-sm text-emerald-50">
+              <div v-if="message" class="mt-2 rounded-xl border px-3 py-2 text-sm public-template-success-message" px-3 py-2 text-sm text-[var(--public-success)]">
                 {{ message }}
               </div>
-              <div v-if="errorMessage" class="mt-2 rounded-xl border border-red-300/20 bg-red-300/10 px-3 py-2 text-sm text-red-100">
+              <div v-if="errorMessage" class="mt-2 rounded-xl border border-red-300/20 bg-red-300/10 px-3 py-2 text-sm text-[var(--public-danger)]">
                 {{ errorMessage }}
               </div>
             </div>
 
             <!-- 文章列表 -->
             <div v-if="articles.length > 0">
-              <div class="rounded-xl border border-white/10 bg-[#101114]">
-                <div v-if="filteredArticles.length === 0" class="px-4 py-6 text-center text-xs text-white/45">
+              <div class="rounded-xl public-template-panel-muted">
+                <div v-if="filteredArticles.length === 0" class="px-4 py-6 text-center text-xs text-[var(--public-muted)]">
                   没有符合条件的文章
                 </div>
                 <div v-else>
                   <label
                     v-for="article in paginatedArticles"
                     :key="article.id"
-                    class="grid cursor-pointer grid-cols-[40px_1fr] gap-2 border-b border-white/10 px-3 py-2 last:border-b-0 hover:bg-white/[0.03]"
+                    class="grid cursor-pointer grid-cols-[40px_1fr] gap-2 border-b border-[var(--public-border)] px-3 py-2 last:border-b-0 hover:bg-[var(--public-panel-muted)]"
                   >
                     <input
                       v-model="selectedArticleIds"
@@ -319,9 +319,9 @@
                       :disabled="wechatActionDisabled"
                     />
                     <div class="min-w-0">
-                      <p class="truncate text-sm font-semibold text-white">{{ article.title || article.link }}</p>
-                      <p class="mt-0.5 truncate text-xs text-white/45">{{ article.link }}</p>
-                      <p class="mt-0.5 text-xs text-white/30">
+                      <p class="truncate text-sm font-semibold text-[var(--public-ink)]">{{ article.title || article.link }}</p>
+                      <p class="mt-0.5 truncate text-xs text-[var(--public-muted)]">{{ article.link }}</p>
+                      <p class="mt-0.5 text-xs text-[var(--public-faint)]">
                         {{ article.content_status || 'pending' }}
                         <span v-if="article.account_fakeid"> · {{ article.account_fakeid }}</span>
                         <span v-if="article.publish_at"> · {{ article.publish_at }}</span>
@@ -331,28 +331,28 @@
                 </div>
               </div>
               <!-- 分页 -->
-              <div v-if="articleTotalPages > 1" class="mt-2 flex items-center justify-between text-xs text-white/50">
+              <div v-if="articleTotalPages > 1" class="mt-2 flex items-center justify-between text-xs text-[var(--public-muted)]">
                 <span>第 {{ articleCurrentPage }} / {{ articleTotalPages }} 页，共 {{ filteredArticles.length }} 篇</span>
                 <div class="flex items-center gap-1">
                   <button
                     type="button"
-                    class="rounded-lg border border-white/10 px-2 py-1 hover:bg-white/[0.06] disabled:opacity-30"
+                    class="rounded-lg border border-[var(--public-border)] px-2 py-1 hover:bg-[var(--public-panel-soft)] disabled:opacity-30"
                     :disabled="articleCurrentPage <= 1"
                     @click="articleCurrentPage--"
                   >上一页</button>
                   <template v-for="p in articleVisiblePageRange" :key="p">
-                    <span v-if="p < 0" class="px-1 text-white/30">…</span>
+                    <span v-if="p < 0" class="px-1 text-[var(--public-faint)]">…</span>
                     <button
                       v-else
                       type="button"
                       class="min-w-[28px] rounded-lg border px-2 py-1"
-                      :class="p === articleCurrentPage ? 'border-cyan-300/40 bg-cyan-300/15 text-cyan-100' : 'border-white/10 hover:bg-white/[0.06]'"
+                      :class="p === articleCurrentPage ? 'border-cyan-300/40 bg-cyan-300/15 text-[var(--public-accent-strong)]' : 'border-[var(--public-border)] hover:bg-[var(--public-panel-soft)]'"
                       @click="articleCurrentPage = p"
                     >{{ p }}</button>
                   </template>
                   <button
                     type="button"
-                    class="rounded-lg border border-white/10 px-2 py-1 hover:bg-white/[0.06] disabled:opacity-30"
+                    class="rounded-lg border border-[var(--public-border)] px-2 py-1 hover:bg-[var(--public-panel-soft)] disabled:opacity-30"
                     :disabled="articleCurrentPage >= articleTotalPages"
                     @click="articleCurrentPage++"
                   >下一页</button>
@@ -361,7 +361,7 @@
               <div v-if="hasMoreRemoteArticles" class="mt-3 flex justify-center">
                 <button
                   type="button"
-                  class="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-cyan-100 hover:bg-cyan-300/20 disabled:opacity-45"
+                  class="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-[var(--public-accent-strong)] hover:bg-cyan-300/20 disabled:opacity-45"
                   :disabled="articleLoadingMore"
                   @click="loadMoreWeChatArticles"
                 >
@@ -373,9 +373,9 @@
         </div>
 
         <!-- 任务监控（紧凑） -->
-        <section class="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+        <section class="rounded-2xl public-template-panel-muted p-5">
           <div class="flex items-center justify-between mb-3">
-            <h2 class="text-xl font-black text-white">任务监控</h2>
+            <h2 class="text-xl font-black text-[var(--public-ink)]">任务监控</h2>
             <div class="flex items-center gap-3">
               <div class="text-xs font-semibold" :class="workerStatusTone">{{ workerStatusLabel }}</div>
               <div class="flex gap-1">
@@ -396,7 +396,7 @@
           <div class="flex flex-wrap items-center gap-2 mb-3">
             <select
               v-model="taskStatusFilter"
-              class="min-h-9 rounded-xl border border-white/10 bg-[#101114] px-3 text-sm text-white outline-none focus:border-cyan-300/40"
+              class="min-h-9 rounded-xl public-template-panel-muted px-3 text-sm text-[var(--public-ink)] outline-none focus:border-cyan-300/40"
             >
               <option value="all">全部任务</option>
               <option value="queued">排队中</option>
@@ -444,16 +444,16 @@
             >
               {{ batchTaskAction === 'download' ? '准备中' : '下载产物' }}
             </button>
-            <span class="text-xs text-white/40">已选 {{ selectedTaskIds.length }} 个</span>
+            <span class="text-xs text-[var(--public-muted)]">已选 {{ selectedTaskIds.length }} 个</span>
           </div>
 
           <!-- 任务列表 -->
           <div v-if="tasks.length > 0" class="max-h-[300px] overflow-auto">
-            <div v-if="filteredTasks.length === 0" class="px-4 py-6 text-center text-xs text-white/45">
+            <div v-if="filteredTasks.length === 0" class="px-4 py-6 text-center text-xs text-[var(--public-muted)]">
               没有符合条件的任务
             </div>
             <div v-else class="space-y-2">
-              <article v-for="task in filteredTasks" :key="task.id" class="rounded-xl border border-white/10 bg-[#101114] p-4">
+              <article v-for="task in filteredTasks" :key="task.id" class="rounded-xl public-template-panel-muted p-4">
                 <div class="flex items-start justify-between gap-2">
                   <div class="flex gap-2">
                     <input
@@ -465,21 +465,21 @@
                     />
                     <div>
                       <div class="flex items-center gap-2">
-                        <span class="text-xs font-black text-white">{{ getTaskTitle(task) }}</span>
-                        <span class="rounded-xl bg-white/10 px-2 py-0.5 text-xs font-semibold uppercase text-white/60">{{ task.status }}</span>
+                        <span class="text-xs font-black text-[var(--public-ink)]">{{ getTaskTitle(task) }}</span>
+                        <span class="rounded-xl bg-white/10 px-2 py-0.5 text-xs font-semibold uppercase text-[var(--public-body)]">{{ task.status }}</span>
                       </div>
 	                      <div class="mt-1 flex items-center gap-2">
 	                        <div class="h-1.5 w-32 overflow-hidden rounded-full bg-white/10">
 	                          <div class="h-full rounded-full bg-cyan-200" :style="{ width: `${taskProgress(task)}%` }"></div>
 	                        </div>
-	                        <span class="text-xs text-white/45">{{ task.successful_article_count }}/{{ task.selected_article_count }}</span>
+	                        <span class="text-xs text-[var(--public-muted)]">{{ task.successful_article_count }}/{{ task.selected_article_count }}</span>
 	                      </div>
-	                      <p v-if="taskLeaseState(task)" class="mt-1 text-xs text-cyan-100/70">{{ taskLeaseState(task) }}</p>
-	                      <details v-if="task.failed_article_count > 0 || taskFailureSummary(task)" class="mt-2 text-xs text-red-100">
+	                      <p v-if="taskLeaseState(task)" class="mt-1 text-xs text-[var(--public-accent-strong)]">{{ taskLeaseState(task) }}</p>
+	                      <details v-if="task.failed_article_count > 0 || taskFailureSummary(task)" class="mt-2 text-xs text-[var(--public-danger)]">
 	                        <summary class="cursor-pointer font-semibold">失败详情</summary>
 	                        <pre class="mt-2 max-h-32 overflow-auto whitespace-pre-wrap rounded-xl bg-red-950/30 p-2">{{ taskFailureSummary(task) || task.error_message }}</pre>
 	                      </details>
-	                      <details v-if="taskEngagementSummary(task)" class="mt-2 text-xs text-amber-100">
+	                      <details v-if="taskEngagementSummary(task)" class="mt-2 text-xs text-[var(--public-warning)]">
 	                        <summary class="cursor-pointer font-semibold">互动数据提示</summary>
 	                        <pre class="mt-2 max-h-32 overflow-auto whitespace-pre-wrap rounded-xl bg-amber-950/20 p-2">{{ taskEngagementSummary(task) }}</pre>
 	                      </details>
@@ -487,7 +487,7 @@
 	                        <span
 	                          v-for="event in taskTimeline(task).slice(0, 4)"
 	                          :key="event.key"
-	                          class="inline-flex items-center gap-1 rounded-full bg-white/5 px-2 py-0.5 text-xs text-white/45"
+	                          class="inline-flex items-center gap-1 rounded-full bg-[var(--public-panel-soft)] px-2 py-0.5 text-xs text-[var(--public-muted)]"
 	                        >
 	                          <span class="h-1.5 w-1.5 rounded-full" :class="event.tone"></span>
 	                          {{ event.label }}
@@ -496,7 +496,7 @@
 	                    </div>
 	                  </div>
                   <div class="flex flex-wrap gap-1">
-                    <span v-for="format in task.formats" :key="format" class="rounded-xl bg-white/10 px-2 py-0.5 text-xs font-semibold uppercase text-white/60">
+                    <span v-for="format in task.formats" :key="format" class="rounded-xl bg-white/10 px-2 py-0.5 text-xs font-semibold uppercase text-[var(--public-body)]">
                       {{ format }}
                     </span>
                   </div>
@@ -505,7 +505,7 @@
                   <button
                     v-if="(artifactsByTask[task.id] || []).length > 0"
                     type="button"
-                    class="rounded-xl border border-emerald-200/30 bg-emerald-200/10 px-3 py-1.5 text-sm font-semibold text-emerald-100 hover:bg-emerald-200/20 disabled:opacity-45"
+                    class="rounded-xl border border-emerald-200/30 bg-emerald-200/10 px-3 py-1.5 text-sm font-semibold text-[var(--public-success)] hover:bg-emerald-200/20 disabled:opacity-45"
                     :disabled="wechatActionDisabled || taskActionId === task.id"
                     @click="handleDownloadTaskZip(task)"
                   >
@@ -533,7 +533,7 @@
                     v-for="artifact in artifactsByTask[task.id] || []"
                     :key="artifact.id"
                     type="button"
-                    class="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 text-sm font-semibold text-cyan-100 hover:bg-cyan-300/20 disabled:opacity-45"
+                    class="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 text-sm font-semibold text-[var(--public-accent-strong)] hover:bg-cyan-300/20 disabled:opacity-45"
                     :disabled="wechatActionDisabled || taskActionId === task.id"
                     @click="handleDownloadArtifact(artifact)"
                   >

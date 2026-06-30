@@ -59,17 +59,17 @@ function createStreamResponse(lines: string[]) {
   } as Response
 }
 
-function mountModal() {
+function mountModal(account: Record<string, unknown> = {
+  id: 42,
+  name: 'Gemini Image Test',
+  platform: 'gemini',
+  type: 'apikey',
+  status: 'active'
+}) {
   return mount(AccountTestModal, {
     props: {
       show: false,
-      account: {
-        id: 42,
-        name: 'Gemini Image Test',
-        platform: 'gemini',
-        type: 'apikey',
-        status: 'active'
-      }
+      account
     } as any,
     global: {
       stubs: {
@@ -146,158 +146,41 @@ describe('AccountTestModal', () => {
     expect(preview.attributes('src')).toBe('data:image/png;base64,QUJD')
   })
 
-  it('复制按钮只复制响应正文而不是完整日志', async () => {
-    global.fetch = vi.fn().mockResolvedValue(
-      createStreamResponse([
-        'data: {"type":"test_start","model":"claude-opus-4-7"}\n',
-        'data: {"type":"content","text":"Hey! "}\n',
-        'data: {"type":"content","text":"What are you working on?"}\n',
-        'data: {"type":"test_complete","success":true}\n'
-      ])
-    ) as any
-
-    const wrapper = mountModal()
-    await wrapper.setProps({ show: true })
-    await flushPromises()
-
-    const buttons = wrapper.findAll('button')
-    const startButton = buttons.find((button) => button.text().includes('admin.accounts.startTest'))
-    expect(startButton).toBeTruthy()
-
-    await startButton!.trigger('click')
-    await flushPromises()
-    await flushPromises()
-
-    const copyButton = wrapper.find('button[title="admin.accounts.copyOutput"]')
-    expect(copyButton.exists()).toBe(true)
-
-    await copyButton.trigger('click')
-
-    expect(copyToClipboard).toHaveBeenCalledWith(
-      'Hey! What are you working on?',
-      'admin.accounts.outputCopied'
-    )
-  })
-
-  it('测试失败时复制按钮会复制错误响应详情', async () => {
-    global.fetch = vi.fn().mockResolvedValue(
-      createStreamResponse([
-        'data: {"type":"test_start","model":"claude-opus-4-7"}\n',
-        'data: {"type":"error","error":"API returned 403: {\\\"error\\\":{\\\"message\\\":\\\"tampered\\\"}}"}\n'
-      ])
-    ) as any
-
-    const wrapper = mountModal()
-    await wrapper.setProps({ show: true })
-    await flushPromises()
-
-    const buttons = wrapper.findAll('button')
-    const startButton = buttons.find((button) => button.text().includes('admin.accounts.startTest'))
-    expect(startButton).toBeTruthy()
-
-    await startButton!.trigger('click')
-    await flushPromises()
-    await flushPromises()
-
-    const copyButton = wrapper.find('button[title="admin.accounts.copyOutput"]')
-    expect(copyButton.exists()).toBe(true)
-
-    await copyButton.trigger('click')
-
-    expect(copyToClipboard).toHaveBeenCalledWith(
-      'API returned 403: {"error":{"message":"tampered"}}',
-      'admin.accounts.outputCopied'
-    )
-  })
-
-  it('Claude 兼容账号会把原生 Claude Code 测试模式和自定义内容传给后端', async () => {
-    getAvailableModels.mockResolvedValueOnce([
-      { id: 'claude-opus-4-7', display_name: 'Claude Opus 4.7' }
+  it('grok 账号测试默认选择 Grok 模型', async () => {
+    getAvailableModels.mockResolvedValue([
+      { id: 'grok-4.3', display_name: 'Grok 4.3' },
+      { id: 'grok-build-0.1', display_name: 'Grok Build 0.1' }
     ])
     global.fetch = vi.fn().mockResolvedValue(
       createStreamResponse([
-        'data: {"type":"test_start","model":"claude-opus-4-7"}\n',
+        'data: {"type":"test_start","model":"grok-4.3"}\n',
+        'data: {"type":"content","text":"ok"}\n',
         'data: {"type":"test_complete","success":true}\n'
       ])
     ) as any
 
-    const wrapper = mount(AccountTestModal, {
-      props: {
-        show: false,
-        account: {
-          id: 77,
-          name: 'Claude Native',
-          platform: 'anthropic',
-          type: 'apikey',
-          status: 'active'
-        }
-      } as any,
-      global: {
-        stubs: {
-          BaseDialog: { template: '<div><slot /><slot name="footer" /></div>' },
-          Select: { template: '<div class="select-stub"></div>' },
-          TextArea: {
-            props: ['modelValue'],
-            emits: ['update:modelValue'],
-            template: '<textarea class="textarea-stub" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)" />'
-          },
-          Icon: true
-        }
-      }
+    const wrapper = mountModal({
+      id: 13,
+      name: 'Grok Account',
+      platform: 'grok',
+      type: 'oauth',
+      status: 'active'
     })
-
     await wrapper.setProps({ show: true })
     await flushPromises()
-
-    const promptInput = wrapper.find('textarea.textarea-stub')
-    expect(promptInput.exists()).toBe(true)
-    await promptInput.setValue('summarize the latest request')
-
-    ;(wrapper.vm as any).selectedModelId = 'claude-opus-4-7'
-    ;(wrapper.vm as any).testMode = 'claude_code'
 
     const buttons = wrapper.findAll('button')
     const startButton = buttons.find((button) => button.text().includes('admin.accounts.startTest'))
     expect(startButton).toBeTruthy()
+
     await startButton!.trigger('click')
-    await flushPromises()
     await flushPromises()
 
     expect(global.fetch).toHaveBeenCalledTimes(1)
     const [, request] = (global.fetch as any).mock.calls[0]
     expect(JSON.parse(request.body)).toEqual({
-      model_id: 'claude-opus-4-7',
-      prompt: 'summarize the latest request',
-      mode: 'claude_code'
+      model_id: 'grok-4.3',
+      prompt: ''
     })
-  })
-
-  it('展示脱敏后的上游请求和响应调试详情', async () => {
-    global.fetch = vi.fn().mockResolvedValue(
-      createStreamResponse([
-        'data: {"type":"request_debug","text":"[Upstream Request]\\nPOST https://example.com/v1/messages\\nHeaders:\\nAuthorization: <redacted>\\nBody:\\n{\\\"model\\\":\\\"claude-opus-4-7\\\"}"}\n',
-        'data: {"type":"response_debug","text":"[Upstream Response]\\nStatus: 200\\nHeaders:\\nContent-Type: text/event-stream\\nBody:\\n[streamed response body shown below]"}\n',
-        'data: {"type":"test_start","model":"claude-opus-4-7"}\n',
-        'data: {"type":"test_complete","success":true}\n'
-      ])
-    ) as any
-
-    const wrapper = mountModal()
-    await wrapper.setProps({ show: true })
-    await flushPromises()
-
-    const buttons = wrapper.findAll('button')
-    const startButton = buttons.find((button) => button.text().includes('admin.accounts.startTest'))
-    expect(startButton).toBeTruthy()
-
-    await startButton!.trigger('click')
-    await flushPromises()
-    await flushPromises()
-
-    expect(wrapper.text()).toContain('admin.accounts.rawUpstreamRequest')
-    expect(wrapper.text()).toContain('POST https://example.com/v1/messages')
-    expect(wrapper.text()).toContain('Authorization: <redacted>')
-    expect(wrapper.text()).toContain('admin.accounts.rawUpstreamResponse')
-    expect(wrapper.text()).toContain('[streamed response body shown below]')
   })
 })

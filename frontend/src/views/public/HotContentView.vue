@@ -1,16 +1,16 @@
 <template>
-  <div class="home-business-page public-dark-page min-h-screen bg-[#101114] text-white">
+  <div class="home-business-page public-template-page min-h-screen">
     <PublicDarkHeader :account-label="t('hotContent.goConsole')" />
 
-    <main class="px-6 py-10 sm:py-14">
-      <section class="mx-auto max-w-7xl">
+    <main class="public-template-main">
+      <section class="public-template-container-wide">
         <div class="max-w-4xl">
           <div>
-            <p class="text-sm font-black uppercase tracking-[0.24em] text-cyan-200/70">{{ t('hotContent.signalDesk') }}</p>
+            <p class="text-sm font-black uppercase tracking-[0.24em] text-[var(--public-muted)]">{{ t('hotContent.signalDesk') }}</p>
             <h1 class="mt-4 max-w-3xl text-5xl font-black leading-tight sm:text-6xl">
               {{ t('hotContent.title') }}
             </h1>
-            <p class="mt-5 max-w-2xl text-base leading-8 text-white/60">
+            <p class="mt-5 max-w-2xl text-base leading-8 text-[var(--public-body)]">
               {{ t('hotContent.subtitle') }}
             </p>
           </div>
@@ -22,20 +22,20 @@
             <div class="flex flex-col gap-3 sm:flex-row">
               <input
                 v-model="query"
-                class="min-w-0 flex-1 rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-sm text-white outline-none placeholder:text-white/30 focus:border-cyan-300/45"
+                class="min-w-0 flex-1 rounded-2xl border public-template-input px-4 py-3 text-sm text-[var(--public-ink)] outline-none placeholder:text-[var(--public-faint)] focus:border-cyan-300/45"
                 :placeholder="searchPlaceholder"
                 @keyup.enter="searchAndRefresh"
               />
-              <button type="button" :disabled="loading" class="rounded-2xl bg-cyan-300 px-6 py-3 text-sm font-black text-slate-950 disabled:opacity-50" @click="searchAndRefresh">
+              <button type="button" :disabled="loading" class="public-template-button-primary rounded-xl px-6 py-3 text-sm font-black disabled:opacity-50" @click="searchAndRefresh">
                 {{ t('hotContent.search') }}
               </button>
             </div>
 
-            <div v-if="errorMessage" class="mt-6 rounded-2xl border border-red-400/30 bg-red-900/20 p-4 text-sm text-red-300">
+            <div v-if="errorMessage" class="mt-6 public-template-error p-4 text-sm">
               {{ errorMessage }}
             </div>
 
-            <div v-if="loading" class="mt-6 flex items-center justify-center gap-3 py-12 text-sm text-white/40">
+            <div v-if="loading" class="mt-6 flex items-center justify-center gap-3 py-12 text-sm text-[var(--public-muted)]">
               <svg class="h-5 w-5 animate-spin" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4" /><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" /></svg>
               {{ t('hotContent.loading') }}
             </div>
@@ -44,50 +44,50 @@
               <article
                 v-for="item in items"
                 :key="item.id"
-                class="rounded-[1.75rem] border border-white/10 bg-[#17181d] p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/20"
+                class="rounded-[1.75rem] public-template-panel p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-xl hover:shadow-black/20"
               >
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div class="min-w-0">
-                    <div class="flex flex-wrap gap-2 text-xs font-bold text-cyan-100/70">
+                    <div class="flex flex-wrap gap-2 text-xs font-bold text-[var(--public-accent-strong)]">
                       <span>{{ hotItemSourceLabel(item) }}</span>
                       <span v-if="item.badge">· {{ item.badge }}</span>
                       <span v-if="item.score">· {{ item.score }}</span>
                       <span v-if="item.published_at">· {{ formatDate(item.published_at) }}</span>
                     </div>
                     <h2 class="mt-2 text-2xl font-black leading-snug">
-                      <a v-if="item.canonical_url" :href="item.canonical_url" target="_blank" rel="noreferrer" class="hover:text-cyan-100">
+                      <a v-if="item.canonical_url" :href="item.canonical_url" target="_blank" rel="noreferrer" class="hover:text-[var(--public-accent-strong)]">
                         {{ item.title }}
                       </a>
                       <span v-else>{{ item.title }}</span>
                     </h2>
-                    <p class="mt-3 text-sm leading-7 text-white/58">{{ item.summary || item.reason || item.body }}</p>
+                    <p class="mt-3 text-sm leading-7 text-[var(--public-body)]">{{ item.summary || item.reason || item.body }}</p>
                   </div>
-                  <span class="shrink-0 rounded-full bg-white/[0.06] px-3 py-1 text-xs font-black uppercase text-white/45">
+                  <span class="shrink-0 rounded-full bg-[var(--public-panel-soft)] px-3 py-1 text-xs font-black uppercase text-[var(--public-muted)]">
                     {{ item.content_type }}
                   </span>
                 </div>
               </article>
               <EmptyState v-if="items.length === 0" :text="t('hotContent.emptyItems')" />
               <div v-if="itemTotalPages > 1" class="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-between">
-                <p class="text-xs text-white/45">
+                <p class="text-xs text-[var(--public-muted)]">
                   {{ t('hotContent.paginationInfo', { page: itemPage, totalPages: itemTotalPages, total: itemTotal }) }}
                 </p>
                 <nav class="flex items-center gap-1">
                   <button
                     type="button"
-                    class="inline-flex h-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-2 text-sm text-white/60 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                    class="inline-flex h-8 items-center justify-center rounded-lg public-template-panel-muted px-2 text-sm text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] hover:text-[var(--public-ink)] disabled:cursor-not-allowed disabled:opacity-30"
                     :disabled="itemPage <= 1 || loading"
                     @click="goToItemPage(itemPage - 1)"
                   >
                     ‹
                   </button>
                   <template v-for="(pageNum, idx) in getVisiblePages(itemPage, itemTotalPages)" :key="`${pageNum}-${idx}`">
-                    <span v-if="typeof pageNum === 'string'" class="inline-flex h-8 w-8 items-center justify-center text-xs text-white/35">...</span>
+                    <span v-if="typeof pageNum === 'string'" class="inline-flex h-8 w-8 items-center justify-center text-xs text-[var(--public-faint)]">...</span>
                     <button
                       v-else
                       type="button"
                       class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium transition"
-                      :class="pageNum === itemPage ? 'border border-cyan-200/40 bg-cyan-200/15 text-cyan-50' : 'border border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white'"
+                      :class="pageNum === itemPage ? 'border border-cyan-200/40 bg-cyan-200/15 text-[var(--public-accent-strong)]' : 'public-template-panel-muted text-[var(--public-body)] hover:bg-[var(--public-panel-soft)] hover:text-[var(--public-ink)]'"
                       :disabled="loading"
                       @click="goToItemPage(pageNum)"
                     >
@@ -96,7 +96,7 @@
                   </template>
                   <button
                     type="button"
-                    class="inline-flex h-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-2 text-sm text-white/60 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                    class="inline-flex h-8 items-center justify-center rounded-lg public-template-panel-muted px-2 text-sm text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] hover:text-[var(--public-ink)] disabled:cursor-not-allowed disabled:opacity-30"
                     :disabled="itemPage >= itemTotalPages || loading"
                     @click="goToItemPage(itemPage + 1)"
                   >
@@ -139,7 +139,7 @@ const EmptyState = defineComponent({
     return () => h('p', {
       class: props.theme === 'light'
         ? 'rounded-[1.75rem] border border-black/10 bg-black/[0.035] p-8 text-center text-sm text-black/45'
-        : 'rounded-[1.75rem] border border-white/10 bg-white/[0.035] p-8 text-center text-sm text-white/45',
+        : 'rounded-[1.75rem] public-template-panel-muted p-8 text-center text-sm text-[var(--public-muted)]',
     }, props.text)
   },
 })

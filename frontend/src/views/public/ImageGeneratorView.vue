@@ -1,92 +1,92 @@
 <template>
-  <div class="home-business-page public-dark-page min-h-screen bg-[#101114] text-white">
+  <div class="home-business-page public-template-page min-h-screen">
     <PublicDarkHeader :account-label="t('imageWorkspace.goConsole')">
       <template #actions>
         <RouterLink
           v-if="catalogPath"
           :to="catalogPath"
-          class="rounded-full border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/[0.06] hover:text-white"
+          class="rounded-full border border-[var(--public-border)] px-4 py-2 text-sm font-semibold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] hover:text-[var(--public-ink)]"
         >
           {{ workspaceShell.catalogLabel }}
         </RouterLink>
       </template>
     </PublicDarkHeader>
 
-    <main class="px-6 py-10 sm:py-14">
-      <div class="mx-auto max-w-6xl">
-        <section class="rounded-2xl border border-white/10 bg-white/[0.035] p-6 sm:p-8">
-          <p class="text-sm font-semibold uppercase tracking-[0.22em] text-violet-200/75">
+    <main class="public-template-main">
+      <div class="public-template-container">
+        <section class="rounded-2xl public-template-panel-muted p-6 sm:p-8">
+          <p class="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--public-muted)]">
             {{ workspaceShell.eyebrow }}
           </p>
-          <h1 class="mt-4 text-4xl font-black leading-tight text-white sm:text-5xl">
+          <h1 class="mt-4 text-4xl font-black leading-tight text-[var(--public-ink)] sm:text-5xl">
             {{ workspaceShell.title }}
           </h1>
-          <p v-if="workspaceShell.heroDescription" class="mt-4 max-w-3xl text-base leading-8 text-white/60">
+          <p v-if="workspaceShell.heroDescription" class="mt-4 max-w-3xl text-base leading-8 text-[var(--public-body)]">
             {{ workspaceShell.heroDescription }}
           </p>
         </section>
 
         <section class="mt-8">
-          <div class="rounded-2xl border border-white/10 bg-[#17181d] p-5 sm:p-6">
+          <div class="rounded-2xl public-template-panel p-5 sm:p-6">
             <label class="block">
-              <span class="text-sm font-bold text-white/75">{{ workspaceShell.promptLabel }}</span>
+              <span class="text-sm font-bold text-[var(--public-body)]">{{ workspaceShell.promptLabel }}</span>
               <textarea
                 v-model="prompt"
-                class="mt-3 min-h-72 w-full resize-y rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-4 text-sm leading-7 text-white outline-none transition placeholder:text-white/30 focus:border-violet-300/45 focus:bg-white/[0.065]"
+                class="mt-3 min-h-72 w-full resize-y rounded-2xl border public-template-input px-4 py-4 text-sm leading-7 text-[var(--public-ink)] outline-none transition placeholder:text-[var(--public-faint)] focus:border-violet-300/45 focus:bg-[var(--public-panel-soft)]"
                 :placeholder="workspaceShell.promptPlaceholder"
               />
             </label>
 
             <label class="mt-5 block">
-              <span class="text-sm font-bold text-white/75">{{ t('imageWorkspace.negativePrompt') }}</span>
+              <span class="text-sm font-bold text-[var(--public-body)]">{{ t('imageWorkspace.negativePrompt') }}</span>
               <textarea
                 v-model="negativePrompt"
-                class="mt-3 min-h-24 w-full resize-y rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 text-sm leading-7 text-white outline-none transition placeholder:text-white/30 focus:border-violet-300/45 focus:bg-white/[0.055]"
+                class="mt-3 min-h-24 w-full resize-y rounded-2xl public-template-panel-muted px-4 py-3 text-sm leading-7 text-[var(--public-ink)] outline-none transition placeholder:text-[var(--public-faint)] focus:border-violet-300/45 focus:bg-[var(--public-panel-soft)]"
                 :placeholder="t('imageWorkspace.negativePromptPlaceholder')"
               />
             </label>
 
             <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
               <label class="block">
-                <span class="text-xs font-bold uppercase tracking-[0.14em] text-white/45">{{ t('imageWorkspace.model') }}</span>
-                <select v-model="model" class="mt-2 w-full rounded-xl border border-white/10 bg-[#101114] px-3 py-2 text-sm text-white outline-none">
+                <span class="text-xs font-bold uppercase tracking-[0.14em] text-[var(--public-muted)]">{{ t('imageWorkspace.model') }}</span>
+                <select v-model="model" class="mt-2 w-full rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none">
                   <option v-for="item in enabledModelConfigs" :key="item.id" :value="item.id">
                     {{ item.label || item.id }}
                   </option>
                 </select>
-                <p v-if="selectedModelConfig?.cost_hint" class="mt-1 text-[11px] text-white/35">
+                <p v-if="selectedModelConfig?.cost_hint" class="mt-1 text-[11px] text-[var(--public-faint)]">
                   {{ selectedModelConfig.cost_hint }}
                 </p>
               </label>
               <label class="block">
-                <span class="text-xs font-bold uppercase tracking-[0.14em] text-white/45">{{ t('imageWorkspace.size') }}</span>
-                <select v-model="size" class="mt-2 w-full rounded-xl border border-white/10 bg-[#101114] px-3 py-2 text-sm text-white outline-none">
+                <span class="text-xs font-bold uppercase tracking-[0.14em] text-[var(--public-muted)]">{{ t('imageWorkspace.size') }}</span>
+                <select v-model="size" class="mt-2 w-full rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none">
                   <option v-for="item in selectedSizeOptions" :key="item" :value="item">{{ item }}</option>
                 </select>
               </label>
               <label class="block">
-                <span class="text-xs font-bold uppercase tracking-[0.14em] text-white/45">{{ t('imageWorkspace.quality') }}</span>
-                <select v-model="quality" class="mt-2 w-full rounded-xl border border-white/10 bg-[#101114] px-3 py-2 text-sm text-white outline-none">
+                <span class="text-xs font-bold uppercase tracking-[0.14em] text-[var(--public-muted)]">{{ t('imageWorkspace.quality') }}</span>
+                <select v-model="quality" class="mt-2 w-full rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none">
                   <option v-for="item in selectedQualityOptions" :key="item" :value="item">{{ item }}</option>
                 </select>
               </label>
               <label class="block">
-                <span class="text-xs font-bold uppercase tracking-[0.14em] text-white/45">{{ t('imageWorkspace.batchSize') }}</span>
-                <input v-model.number="batchSize" type="number" min="1" max="4" class="mt-2 w-full rounded-xl border border-white/10 bg-[#101114] px-3 py-2 text-sm text-white outline-none" />
+                <span class="text-xs font-bold uppercase tracking-[0.14em] text-[var(--public-muted)]">{{ t('imageWorkspace.batchSize') }}</span>
+                <input v-model.number="batchSize" type="number" min="1" max="4" class="mt-2 w-full rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none" />
               </label>
             </div>
 
             <label class="mt-5 block">
-              <span class="text-xs font-bold uppercase tracking-[0.14em] text-white/45">{{ t('imageWorkspace.style') }}</span>
-              <input v-model="style" class="mt-2 w-full rounded-xl border border-white/10 bg-white/[0.035] px-3 py-2 text-sm text-white outline-none" :placeholder="t('imageWorkspace.stylePlaceholder')" />
+              <span class="text-xs font-bold uppercase tracking-[0.14em] text-[var(--public-muted)]">{{ t('imageWorkspace.style') }}</span>
+              <input v-model="style" class="mt-2 w-full rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none" :placeholder="t('imageWorkspace.stylePlaceholder')" />
             </label>
 
-            <div v-if="promptSafetyWarning" class="mt-4 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm leading-6 text-amber-50">
+            <div v-if="promptSafetyWarning" class="mt-4 public-template-warning px-4 py-3 text-sm leading-6">
               {{ promptSafetyWarning }}
             </div>
 
             <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-              <div class="text-xs" :class="isPromptTooLong ? 'text-red-200' : 'text-white/40'">
+              <div class="text-xs" :class="isPromptTooLong ? 'text-[var(--public-danger)]' : 'text-[var(--public-muted)]'">
                 {{ promptLength }} / {{ maxPromptLength }}
                 <span v-if="isPromptTooLong" class="ml-2">
                   {{ workspaceShell.promptTooLong }}
@@ -95,7 +95,7 @@
               <div class="flex gap-2">
                 <button
                   type="button"
-                  class="rounded-xl border border-white/10 px-4 py-2 text-sm font-semibold text-white/70 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-40"
+                  class="rounded-xl border border-[var(--public-border)] px-4 py-2 text-sm font-semibold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] disabled:cursor-not-allowed disabled:opacity-40"
                   :disabled="!trimmedPrompt"
                   @click="clearPrompt"
                 >
@@ -103,7 +103,7 @@
                 </button>
                 <button
                   type="button"
-                  class="rounded-xl bg-violet-500 px-5 py-2 text-sm font-black text-white transition hover:bg-violet-400 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="public-template-button px-5 py-2 text-sm font-black"
                   :disabled="!trimmedPrompt || isPromptTooLong"
                   @click="copyPrompt"
                 >
@@ -111,7 +111,7 @@
                 </button>
                 <button
                   type="button"
-                  class="rounded-xl bg-cyan-300 px-5 py-2 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="public-template-button-primary px-5 py-2 text-sm font-black"
                   :disabled="!canGenerate"
                   @click="createGenerationTask"
                 >
@@ -120,19 +120,19 @@
               </div>
             </div>
 
-            <div v-if="!isAuthenticated" class="mt-4 rounded-2xl border border-amber-200/20 bg-amber-300/10 p-4 text-sm leading-7 text-amber-50">
+            <div v-if="!isAuthenticated" class="mt-4 public-template-warning p-4 text-sm leading-7">
               {{ t('imageWorkspace.loginRequired') }}
             </div>
-            <div v-if="message" class="mt-4 rounded-2xl border border-emerald-200/20 bg-emerald-300/10 p-4 text-sm text-emerald-50">
+            <div v-if="message" class="mt-4 rounded-2xl border p-4 text-sm public-template-success-message">
               {{ message }}
             </div>
-            <div v-if="errorMessage" class="mt-4 rounded-2xl border border-red-200/20 bg-red-300/10 p-4 text-sm text-red-50">
+            <div v-if="errorMessage" class="mt-4 rounded-2xl border border-red-200/20 bg-red-300/10 p-4 text-sm text-[var(--public-danger)]">
               {{ errorMessage }}
             </div>
             <RouterLink
               v-if="catalogPath"
               :to="catalogPath"
-              class="mt-5 inline-flex items-center justify-center rounded-xl border border-white/10 px-4 py-3 text-sm font-bold text-white/70 transition hover:bg-white/[0.06]"
+              class="mt-5 inline-flex items-center justify-center rounded-xl border border-[var(--public-border)] px-4 py-3 text-sm font-bold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)]"
             >
               {{ workspaceShell.backToCatalogLabel }}
             </RouterLink>
@@ -142,16 +142,16 @@
         <section ref="taskListSection" class="mt-8">
           <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p class="text-sm font-semibold uppercase tracking-[0.18em] text-cyan-200/70">{{ t('imageWorkspace.generationHistory') }}</p>
-              <h2 class="mt-2 text-2xl font-black text-white">{{ t('imageWorkspace.imageTasks') }}</h2>
+              <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--public-muted)]">{{ t('imageWorkspace.generationHistory') }}</p>
+              <h2 class="mt-2 text-2xl font-black text-[var(--public-ink)]">{{ t('imageWorkspace.imageTasks') }}</h2>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <p class="mr-2 text-sm text-white/45">
+              <p class="mr-2 text-sm text-[var(--public-muted)]">
                 {{ t('imageWorkspace.estimatedCost') }}：{{ estimatedCost.toFixed(2) }}
               </p>
               <button
                 type="button"
-                class="rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-white/70 transition hover:bg-white/[0.06] disabled:opacity-40"
+                class="rounded-xl border border-[var(--public-border)] px-4 py-2 text-sm font-bold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] disabled:opacity-40"
                 :disabled="!isAuthenticated || loadingTasks"
                 @click="refreshWorkspaceData"
               >
@@ -166,12 +166,12 @@
               :key="filter.value"
               type="button"
               class="rounded-full border px-3 py-1.5 text-xs font-black transition"
-              :class="taskStatusFilter === filter.value ? 'border-cyan-200/40 bg-cyan-200/15 text-cyan-50' : 'border-white/10 text-white/45 hover:bg-white/[0.06] hover:text-white/75'"
+              :class="taskStatusFilter === filter.value ? 'border-cyan-200/40 bg-cyan-200/15 text-[var(--public-accent-strong)]' : 'border-[var(--public-border)] text-[var(--public-muted)] hover:bg-[var(--public-panel-soft)] hover:text-[var(--public-body)]'"
               @click="setTaskStatusFilter(filter.value)"
             >
               {{ filter.label }}
             </button>
-            <span class="ml-2 text-xs text-white/35">{{ t('imageWorkspace.totalTasks', { count: taskTotal }) }}</span>
+            <span class="ml-2 text-xs text-[var(--public-faint)]">{{ t('imageWorkspace.totalTasks', { count: taskTotal }) }}</span>
           </div>
 
           <div class="mt-4 min-w-0">
@@ -179,14 +179,14 @@
                 <article
                   v-for="task in tasks"
                   :key="task.id"
-                  class="min-w-0 overflow-hidden rounded-3xl border bg-white/[0.035] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-200/30 hover:bg-white/[0.05]"
-                  :class="task.status === 'running' ? 'border-cyan-200/25 shadow-[0_0_32px_rgba(103,232,249,0.08)]' : 'border-white/10'"
+                  class="min-w-0 overflow-hidden rounded-3xl border bg-[var(--public-panel-soft)] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-200/30 hover:bg-[var(--public-panel-soft)]"
+                  :class="task.status === 'running' ? 'border-cyan-200/25 shadow-[0_0_32px_rgba(103,232,249,0.08)]' : 'border-[var(--public-border)]'"
                 >
                   <div v-if="task.artifacts?.length" class="space-y-2">
                         <div
                           v-for="artifact in task.artifacts"
                           :key="artifact.id"
-                          class="group relative w-full max-w-full overflow-hidden bg-[#0b0c10] shadow-black/20"
+                          class="group relative w-full max-w-full overflow-hidden bg-[var(--public-canvas)] shadow-black/20"
                           :style="artifactAspectStyle(artifact)"
                         >
                           <button
@@ -208,13 +208,13 @@
                               @load="markArtifactLoaded(artifact.id)"
                               @error="markArtifactFailed(artifact.id)"
                             />
-                            <div v-else class="flex h-full min-h-28 items-center justify-center text-xs font-bold text-white/35">
+                            <div v-else class="flex h-full min-h-28 items-center justify-center text-xs font-bold text-[var(--public-faint)]">
                               {{ t('imageWorkspace.imageLoadFailed') }}
                             </div>
                           </button>
                           <button
                             type="button"
-                            class="absolute bottom-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-white/15 bg-black/50 text-white/70 backdrop-blur transition hover:bg-black/70 hover:text-white disabled:cursor-wait disabled:opacity-75"
+                            class="absolute bottom-2 right-2 inline-flex h-8 w-8 items-center justify-center rounded-full border border-[var(--public-border)] bg-black/50 text-[var(--public-body)] backdrop-blur transition hover:bg-black/70 hover:text-[var(--public-ink)] disabled:cursor-wait disabled:opacity-75"
                             :title="isArtifactDownloading(artifact.id) ? t('imageWorkspace.downloading') : t('imageWorkspace.download')"
                             :aria-busy="isArtifactDownloading(artifact.id)"
                             :disabled="isArtifactDownloading(artifact.id)"
@@ -228,31 +228,31 @@
                           </button>
                         </div>
                   </div>
-                  <div v-else class="flex min-h-36 items-center justify-center bg-[#0b0c10] px-4 py-8 text-center text-xs font-bold text-white/35">
+                  <div v-else class="flex min-h-36 items-center justify-center bg-[var(--public-canvas)] px-4 py-8 text-center text-xs font-bold text-[var(--public-faint)]">
                     {{ task.status === 'running' ? t('imageWorkspace.workerGenerating') : formatTaskStatus(task.status) }}
                   </div>
                   <div class="space-y-2 p-4">
                     <div class="flex items-center justify-between gap-2">
-                      <p class="min-w-0 truncate text-sm font-black text-white">
+                      <p class="min-w-0 truncate text-sm font-black text-[var(--public-ink)]">
                         {{ t('imageWorkspace.taskId', { id: task.id }) }}
-                        <span class="ml-1 text-xs font-medium text-white/35">{{ formatRelativeTime(task.created_at) }}</span>
+                        <span class="ml-1 text-xs font-medium text-[var(--public-faint)]">{{ formatRelativeTime(task.created_at) }}</span>
                       </p>
                       <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold uppercase" :class="taskStatusClass(task.status)">{{ formatTaskStatus(task.status) }}</span>
                     </div>
-                    <p class="truncate text-xs text-white/40">{{ task.model }} · {{ task.size }} · {{ task.quality }} · {{ t('imageWorkspace.batchLabel') }} {{ task.batch_size }}</p>
-                    <p class="line-clamp-2 text-sm leading-6 text-white/60">{{ task.prompt }}</p>
-                    <p v-if="task.cost_estimate" class="text-xs text-emerald-100/70">{{ t('imageWorkspace.cost') }} {{ task.cost_estimate.toFixed(2) }} · {{ t('imageWorkspace.balanceSnapshot') }} {{ task.balance_snapshot.toFixed(2) }}</p>
-                    <p v-if="task.error_message" class="text-xs text-red-100">{{ formatTaskError(task.error_message) }}</p>
-                    <p v-else-if="task.status === 'running'" class="inline-flex items-center gap-2 text-xs text-cyan-100/70">
+                    <p class="truncate text-xs text-[var(--public-muted)]">{{ task.model }} · {{ task.size }} · {{ task.quality }} · {{ t('imageWorkspace.batchLabel') }} {{ task.batch_size }}</p>
+                    <p class="line-clamp-2 text-sm leading-6 text-[var(--public-body)]">{{ task.prompt }}</p>
+                    <p v-if="task.cost_estimate" class="text-xs text-[var(--public-success)]">{{ t('imageWorkspace.cost') }} {{ task.cost_estimate.toFixed(2) }} · {{ t('imageWorkspace.balanceSnapshot') }} {{ task.balance_snapshot.toFixed(2) }}</p>
+                    <p v-if="task.error_message" class="text-xs text-[var(--public-danger)]">{{ formatTaskError(task.error_message) }}</p>
+                    <p v-else-if="task.status === 'running'" class="inline-flex items-center gap-2 text-xs text-[var(--public-accent-strong)]">
                       <span class="h-3 w-3 animate-spin rounded-full border-2 border-cyan-200/30 border-t-cyan-100"></span>
                       {{ t('imageWorkspace.workerGenerating') }}
                     </p>
-                    <p v-else-if="task.worker_lease_until" class="text-xs text-cyan-100/70">{{ t('imageWorkspace.workerLeaseUntil') }} {{ formatTaskTime(task.worker_lease_until) }}</p>
+                    <p v-else-if="task.worker_lease_until" class="text-xs text-[var(--public-accent-strong)]">{{ t('imageWorkspace.workerLeaseUntil') }} {{ formatTaskTime(task.worker_lease_until) }}</p>
                     <div class="flex flex-wrap items-center gap-2 pt-1">
                       <button
                         v-if="task.status === 'queued'"
                         type="button"
-                        class="rounded-xl border border-red-200/20 bg-red-300/10 px-3 py-1 text-xs font-bold text-red-100 transition hover:bg-red-300/20 disabled:opacity-40"
+                        class="rounded-xl border border-red-200/20 bg-red-300/10 px-3 py-1 text-xs font-bold text-[var(--public-danger)] transition hover:bg-red-300/20 disabled:opacity-40"
                         :disabled="cancellingTaskId === task.id"
                         @click="cancelTask(task.id)"
                       >
@@ -261,7 +261,7 @@
                       <button
                         v-if="canRetryTask(task)"
                         type="button"
-                        class="rounded-xl border border-amber-200/20 bg-amber-300/10 px-3 py-1 text-xs font-bold text-amber-100 transition hover:bg-amber-300/20 disabled:opacity-40"
+                        class="rounded-xl border border-amber-200/20 bg-amber-300/10 px-3 py-1 text-xs font-bold text-[var(--public-warning)] transition hover:bg-amber-300/20 disabled:opacity-40"
                         :disabled="retryingTaskId === task.id"
                         @click="retryTask(task.id)"
                       >
@@ -270,7 +270,7 @@
                     </div>
                   </div>
                 </article>
-                <p v-if="isAuthenticated && tasks.length === 0" class="rounded-2xl border border-white/10 bg-white/[0.035] p-5 text-sm text-white/45">
+                <p v-if="isAuthenticated && tasks.length === 0" class="rounded-2xl public-template-panel-muted p-5 text-sm text-[var(--public-muted)]">
                   {{ t('imageWorkspace.noTasks') }}
                 </p>
               </div>
@@ -280,13 +280,13 @@
                 v-if="taskTotalPages > 1"
                 class="mt-6 flex flex-col items-center gap-3 sm:flex-row sm:justify-between"
               >
-                <p class="text-xs text-white/45">
+                <p class="text-xs text-[var(--public-muted)]">
                   {{ t('imageWorkspace.totalTasks', { count: taskTotal }) }} · {{ t('imageWorkspace.pageInfo', { current: taskPage, total: taskTotalPages }) }}
                 </p>
                 <nav class="flex items-center gap-1" :aria-label="t('imageWorkspace.paginationAriaLabel')">
                   <button
                     type="button"
-                    class="inline-flex h-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-2 text-sm text-white/60 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                    class="inline-flex h-8 items-center justify-center rounded-lg public-template-panel-muted px-2 text-sm text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] hover:text-[var(--public-ink)] disabled:cursor-not-allowed disabled:opacity-30"
                     :disabled="taskPage <= 1 || loadingTasks"
                     @click="goToTaskPage(taskPage - 1)"
                     :aria-label="t('imageWorkspace.prevPage')"
@@ -296,7 +296,7 @@
                   <template v-for="(pageNum, index) in visiblePages" :key="`${pageNum}-${index}`">
                     <span
                       v-if="typeof pageNum === 'string'"
-                      class="inline-flex h-8 w-8 items-center justify-center text-xs text-white/35"
+                      class="inline-flex h-8 w-8 items-center justify-center text-xs text-[var(--public-faint)]"
                     >
                       ...
                     </span>
@@ -306,8 +306,8 @@
                       class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-sm font-medium transition"
                       :class="
                         pageNum === taskPage
-                          ? 'border border-cyan-200/40 bg-cyan-200/15 text-cyan-50'
-                          : 'border border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/[0.06] hover:text-white'
+                          ? 'border border-cyan-200/40 bg-cyan-200/15 text-[var(--public-accent-strong)]'
+                          : 'public-template-panel-muted text-[var(--public-body)] hover:bg-[var(--public-panel-soft)] hover:text-[var(--public-ink)]'
                       "
                       :disabled="loadingTasks"
                       @click="goToTaskPage(pageNum)"
@@ -317,7 +317,7 @@
                   </template>
                   <button
                     type="button"
-                    class="inline-flex h-8 items-center justify-center rounded-lg border border-white/10 bg-white/[0.03] px-2 text-sm text-white/60 transition hover:bg-white/[0.06] hover:text-white disabled:cursor-not-allowed disabled:opacity-30"
+                    class="inline-flex h-8 items-center justify-center rounded-lg public-template-panel-muted px-2 text-sm text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] hover:text-[var(--public-ink)] disabled:cursor-not-allowed disabled:opacity-30"
                     :disabled="taskPage >= taskTotalPages || loadingTasks"
                     @click="goToTaskPage(taskPage + 1)"
                     :aria-label="t('imageWorkspace.nextPage')"
@@ -340,7 +340,7 @@
     >
       <button
         type="button"
-        class="absolute right-4 top-4 rounded-full border border-white/10 bg-white/[0.06] px-4 py-2 text-sm font-black text-white/75 transition hover:bg-white/[0.12]"
+        class="absolute right-4 top-4 rounded-full border public-template-input px-4 py-2 text-sm font-black text-[var(--public-body)] transition hover:bg-white/[0.12]"
         @click="closeLightbox"
       >
         {{ t('imageWorkspace.close') }}
@@ -348,23 +348,23 @@
       <button
         v-if="canNavigateLightbox"
         type="button"
-        class="absolute left-4 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-3 text-2xl text-white/75 transition hover:bg-white/[0.12] sm:block"
+        class="absolute left-4 top-1/2 -translate-y-1/2 rounded-full border public-template-input px-4 py-3 text-2xl text-[var(--public-body)] transition hover:bg-white/[0.12] sm:block"
         @click="showPreviousArtifact"
       >
         ‹
       </button>
       <figure class="max-h-full w-full max-w-6xl">
-        <div class="flex max-h-[78vh] items-center justify-center overflow-hidden rounded-3xl border border-white/10 bg-[#08090c] shadow-2xl shadow-cyan-950/30">
+        <div class="flex max-h-[78vh] items-center justify-center overflow-hidden rounded-3xl border border-[var(--public-border)] bg-[var(--public-canvas)] shadow-2xl shadow-cyan-950/30">
           <img
             :src="artifactSrc(lightboxArtifact)"
             :alt="lightboxArtifact.prompt || lightboxTask?.prompt || 'image artifact'"
             class="max-h-[78vh] max-w-full object-contain"
           />
         </div>
-        <figcaption class="mt-4 flex flex-col gap-3 rounded-2xl border border-white/10 bg-white/[0.045] p-4 text-sm text-white/65 sm:flex-row sm:items-center sm:justify-between">
+        <figcaption class="mt-4 flex flex-col gap-3 rounded-2xl border public-template-input p-4 text-sm text-[var(--public-body)] sm:flex-row sm:items-center sm:justify-between">
           <div class="min-w-0">
-            <p class="font-black text-white">{{ t('imageWorkspace.taskId', { id: lightboxTask?.id }) }} · {{ t('imageWorkspace.imageId', { id: lightboxArtifact.id }) }}</p>
-            <p class="mt-1 truncate text-xs text-white/45">
+            <p class="font-black text-[var(--public-ink)]">{{ t('imageWorkspace.taskId', { id: lightboxTask?.id }) }} · {{ t('imageWorkspace.imageId', { id: lightboxArtifact.id }) }}</p>
+            <p class="mt-1 truncate text-xs text-[var(--public-muted)]">
               {{ lightboxArtifact.mime_type || 'image' }}
               <span v-if="lightboxArtifact.width && lightboxArtifact.height"> · {{ lightboxArtifact.width }}×{{ lightboxArtifact.height }}</span>
               <span v-if="lightboxArtifact.file_size"> · {{ formatFileSize(lightboxArtifact.file_size) }}</span>
@@ -372,7 +372,7 @@
           </div>
           <button
             type="button"
-            class="inline-flex min-w-28 items-center justify-center gap-2 rounded-xl bg-cyan-300 px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-wait disabled:opacity-75"
+            class="public-template-button-primary min-w-28 gap-2 px-4 py-2 text-sm font-black disabled:cursor-wait disabled:opacity-75"
             :aria-busy="isArtifactDownloading(lightboxArtifact.id)"
             :disabled="isArtifactDownloading(lightboxArtifact.id)"
             @click="downloadArtifact(lightboxArtifact!)"
@@ -388,7 +388,7 @@
       <button
         v-if="canNavigateLightbox"
         type="button"
-        class="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border border-white/10 bg-white/[0.06] px-4 py-3 text-2xl text-white/75 transition hover:bg-white/[0.12] sm:block"
+        class="absolute right-4 top-1/2 -translate-y-1/2 rounded-full border public-template-input px-4 py-3 text-2xl text-[var(--public-body)] transition hover:bg-white/[0.12] sm:block"
         @click="showNextArtifact"
       >
         ›
@@ -818,10 +818,10 @@ function ensureModelSelection() {
 }
 
 function taskStatusClass(status: string) {
-  if (status === 'succeeded') return 'bg-emerald-200/15 text-emerald-100'
-  if (status === 'failed') return 'bg-red-200/15 text-red-100'
-  if (status === 'running') return 'bg-cyan-200/15 text-cyan-100'
-  return 'bg-white/10 text-white/60'
+  if (status === 'succeeded') return 'bg-emerald-200/15 text-[var(--public-success)]'
+  if (status === 'failed') return 'bg-red-200/15 text-[var(--public-danger)]'
+  if (status === 'running') return 'bg-cyan-200/15 text-[var(--public-accent-strong)]'
+  return 'bg-white/10 text-[var(--public-body)]'
 }
 
 function formatTaskStatus(status: string) {

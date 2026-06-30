@@ -92,23 +92,17 @@ func TestSettingService_GetPublicSettings_ExposesForceEmailOnThirdPartySignup(t 
 	require.True(t, settings.ForceEmailOnThirdPartySignup)
 }
 
-func TestSettingService_GetPublicSettings_ExposesPasswordMinLength(t *testing.T) {
+func TestSettingService_GetPublicSettings_ExposesAllowUserViewErrorRequests(t *testing.T) {
 	repo := &settingPublicRepoStub{
 		values: map[string]string{
-			SettingKeyPasswordMinLength: "12",
+			SettingKeyAllowUserViewErrorRequests: "true",
 		},
 	}
 	svc := NewSettingService(repo, &config.Config{})
 
 	settings, err := svc.GetPublicSettings(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, 12, settings.PasswordMinLength)
-}
-
-func TestCreditsPerBalanceSettingRetiresLegacyTenValue(t *testing.T) {
-	require.Equal(t, "1", creditsPerBalanceSetting(""))
-	require.Equal(t, "1", creditsPerBalanceSetting("10"))
-	require.Equal(t, "2.5", creditsPerBalanceSetting(" 2.5 "))
+	require.True(t, settings.AllowUserViewErrorRequests)
 }
 
 func TestSettingService_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *testing.T) {

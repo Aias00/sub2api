@@ -25,84 +25,21 @@ describe('API Client', () => {
     vi.unstubAllEnvs()
   })
 
-  describe('API URL runtime settings', () => {
-    it('builds API URLs from explicit public settings before runtime defaults', async () => {
-      const { buildApiUrl, resolveApiBaseUrl } = await import('@/api/client')
-
-      expect(resolveApiBaseUrl({ api_base_url: 'https://runtime.example.com/api/v1/' })).toBe(
-        'https://runtime.example.com/api/v1'
-      )
-      expect(buildApiUrl('/auth/oauth/github/start', { api_base_url: 'https://runtime.example.com/api/v1/' })).toBe(
-        'https://runtime.example.com/api/v1/auth/oauth/github/start'
-      )
-    })
-
-    it('keeps bare public origins unchanged', async () => {
-      const { buildApiUrl, resolveApiBaseUrl } = await import('@/api/client')
-
-      expect(resolveApiBaseUrl({ api_base_url: 'https://cloudbase.eu.org/' })).toBe(
-        'https://cloudbase.eu.org'
-      )
-      expect(buildApiUrl('/hot/items', { api_base_url: 'https://cloudbase.eu.org/' })).toBe(
-        'https://cloudbase.eu.org/hot/items'
-      )
-    })
-
-    it('builds API URLs from injected runtime config before using the default', async () => {
-      const { buildApiUrl, resolveApiBaseUrl } = await import('@/api/client')
-
-      window.__APP_CONFIG__ = { api_base_url: 'https://injected.example.com/api/v1/' } as typeof window.__APP_CONFIG__
-
-      expect(resolveApiBaseUrl()).toBe('https://injected.example.com/api/v1')
-      expect(buildApiUrl('auth/oauth/google/start')).toBe(
-        'https://injected.example.com/api/v1/auth/oauth/google/start'
-      )
-    })
-
-    it('ignores build-time API env and falls back to the same-origin API path', async () => {
-      vi.stubEnv('VITE_API_BASE_URL', 'https://env.example.com/api/v1')
-      vi.resetModules()
-      const { buildApiUrl, resolveApiBaseUrl } = await import('@/api/client')
-
-      expect(resolveApiBaseUrl()).toBe('/api/v1')
-      expect(buildApiUrl('/auth/me')).toBe('/api/v1/auth/me')
-    })
-
-    it('resolves browser redirect routes from injected auth shell settings', async () => {
-      const { resolveClientAuthRouteDefaults } = await import('@/api/client')
-
-      window.__APP_CONFIG__ = {
-        auth_shell_config: JSON.stringify({
-          zh: {
-            defaults: {
-              loginPath: '/configured-login',
-              adminSettingsPath: '/configured-admin-settings',
-            },
-          },
-        }),
-      } as typeof window.__APP_CONFIG__
-
-      const defaults = resolveClientAuthRouteDefaults()
-
-      expect(defaults.loginPath).toBe('/configured-login')
-      expect(defaults.adminSettingsPath).toBe('/configured-admin-settings')
-    })
-
-    it('does not keep page-local browser redirect route literals in the client interceptor', () => {
-      const source = readFileSync('src/api/client.ts', 'utf8')
-
-      expect(source).toContain('resolveClientAuthRouteDefaults().loginPath')
-      expect(source).toContain('resolveClientAuthRouteDefaults().adminSettingsPath')
-      expect(source).not.toContain("window.location.href = '/login'")
-      expect(source).not.toContain('window.location.href = "/login"')
-      expect(source).not.toContain("window.location.href = '/admin/settings'")
-      expect(source).not.toContain('window.location.href = "/admin/settings"')
-    })
-  })
-
   // --- 请求拦截器 ---
 
   describe('请求拦截器', () => {
+    it('规范化相对 API base，避免在回调页拼出相对 v1 路径', async () => {
+      vi.resetModules()
+      vi.stubEnv('VITE_API_BASE_URL', 'api/v1')
+
+      const mod = await import('@/api/client')
+
+      expect(mod.apiClient.defaults.baseURL).toBe('/api/v1')
+      expect(mod.buildApiUrl('/auth/oauth/github/callback?code=abc')).toBe(
+        '/api/v1/auth/oauth/github/callback?code=abc'
+      )
+    })
+
     it('自动附加 Authorization 头', async () => {
       localStorage.setItem('auth_token', 'my-jwt-token')
 
@@ -220,6 +157,53 @@ describe('API Client', () => {
           message: '参数错误',
         })
       )
+    })
+
+    it('部署与运营合规未确认时广播事件且保留登录态', async () => {
+      localStorage.setItem('auth_token', 'admin-token')
+      const listener = vi.fn()
+      window.addEventListener('admin-compliance-required', listener)
+
+      const adapter = vi.fn().mockRejectedValue({
+        response: {
+          status: 423,
+          data: {
+            code: 'ADMIN_COMPLIANCE_ACK_REQUIRED',
+            message: 'administrator compliance acknowledgement is required',
+            metadata: {
+              version: 'v2026.06.10',
+              document_path_zh: 'docs/legal/admin-compliance.zh.md',
+              document_path_en: 'docs/legal/admin-compliance.en.md',
+            },
+          },
+        },
+        config: {
+          url: '/admin/users',
+          headers: { Authorization: 'Bearer admin-token' },
+        },
+        code: 'ERR_BAD_REQUEST',
+      })
+      apiClient.defaults.adapter = adapter
+
+      await expect(apiClient.get('/admin/users')).rejects.toEqual(
+        expect.objectContaining({
+          status: 423,
+          code: 'ADMIN_COMPLIANCE_ACK_REQUIRED',
+          metadata: expect.objectContaining({
+            version: 'v2026.06.10',
+          }),
+        })
+      )
+
+      expect(listener).toHaveBeenCalledTimes(1)
+      expect((listener.mock.calls[0][0] as CustomEvent).detail).toEqual(
+        expect.objectContaining({
+          version: 'v2026.06.10',
+        })
+      )
+      expect(localStorage.getItem('auth_token')).toBe('admin-token')
+
+      window.removeEventListener('admin-compliance-required', listener)
     })
   })
 

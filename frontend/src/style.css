@@ -203,558 +203,340 @@
     box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
+  .home-business-page,
+  .vercel-app-shell,
+  .vercel-auth-shell {
+    --vercel-ink: #171717;
+    --vercel-body: #4d4d4d;
+    --vercel-muted: #888888;
+    --vercel-hairline: #ebebeb;
+    --vercel-canvas: #ffffff;
+    --vercel-canvas-soft: #fafafa;
+    --vercel-canvas-soft-2: #f5f5f5;
+    --vercel-link: #0070f3;
+    font-family: Geist, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
   .home-business-page {
-    @apply relative overflow-x-hidden bg-white text-slate-950 dark:bg-dark-950 dark:text-white;
-    --vercel-ink: #171717;
-    --vercel-body: #4d4d4d;
-    --vercel-muted: #888888;
-    --vercel-hairline: #ebebeb;
-    --vercel-canvas: #ffffff;
-    --vercel-canvas-soft: #fafafa;
-    --vercel-canvas-soft-2: #f5f5f5;
-    --vercel-link: #0070f3;
-    --vercel-cyan: #50e3c2;
-    --vercel-violet: #7928ca;
-    --vercel-pink: #ff0080;
-    --vercel-ship: #ff4d4d;
-    --vercel-amber: #f9cb28;
-    background-color: var(--vercel-canvas-soft) !important;
-    color: var(--vercel-ink) !important;
-    font-family: Geist, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    @apply relative overflow-x-hidden;
+    background: var(--vercel-canvas-soft);
+    color: var(--vercel-ink);
   }
 
-  .dark .home-business-page {
-    background-color: #050505 !important;
-    color: var(--vercel-canvas) !important;
-  }
-
-  .home-business-page.public-dark-page {
-    --vercel-ink: #f8fafc;
-    --vercel-body: rgba(255, 255, 255, 0.68);
-    --vercel-muted: rgba(255, 255, 255, 0.46);
-    --vercel-hairline: rgba(255, 255, 255, 0.12);
-    --vercel-canvas: #101114;
-    --vercel-canvas-soft: #15171d;
-    --vercel-canvas-soft-2: #17181d;
-    --vercel-link: #67e8f9;
-    background:
-      radial-gradient(circle at 24% 0%, rgba(34, 211, 238, 0.14), transparent 28rem),
-      radial-gradient(circle at 84% 6%, rgba(139, 92, 246, 0.14), transparent 24rem),
-      linear-gradient(180deg, #101114 0%, #0b0c10 58%, #08090c 100%) !important;
-    color: rgb(255, 255, 255) !important;
-  }
-
-  .home-business-page.public-dark-page::before {
-    background:
-      radial-gradient(circle at 26% 4%, rgba(0, 124, 240, 0.18), transparent 24%),
-      radial-gradient(circle at 54% 0%, rgba(121, 40, 202, 0.16), transparent 20%),
-      radial-gradient(circle at 74% 3%, rgba(255, 0, 128, 0.13), transparent 18%),
-      linear-gradient(180deg, rgba(10, 10, 10, 0.22), rgba(5, 5, 5, 0.08) 54%);
-  }
-
-  .home-business-page.public-dark-page .public-dark-header {
-    background: rgba(16, 17, 20, 0.82) !important;
-    border-bottom-color: rgba(255, 255, 255, 0.1) !important;
-    box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.04) !important;
-  }
-
-  .home-business-page.public-dark-page .public-dark-header__site {
-    color: rgb(255, 255, 255) !important;
-  }
-
-  .home-business-page.public-dark-page .public-dark-header__logo {
-    background: rgba(255, 255, 255, 0.06) !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-  }
-
-  .home-business-page.public-dark-page .public-dark-header__actions a,
-  .home-business-page.public-dark-page .public-dark-header__theme-toggle,
-  .home-business-page.public-dark-page .public-dark-header__avatar {
-    border-color: rgba(255, 255, 255, 0.12) !important;
-    background: rgba(255, 255, 255, 0.06) !important;
-    color: rgb(255, 255, 255) !important;
-  }
-
-  .home-business-page.public-dark-page .public-dark-header__actions a:hover,
-  .home-business-page.public-dark-page .public-dark-header__theme-toggle:hover,
-  .home-business-page.public-dark-page .public-dark-header__avatar:hover {
-    border-color: rgba(255, 255, 255, 0.18) !important;
-    background: rgba(255, 255, 255, 0.1) !important;
-  }
-
-  .home-business-page.public-dark-page .public-dark-header__actions .public-dark-header__account {
-    border-color: rgb(255, 255, 255) !important;
-    background: rgb(255, 255, 255) !important;
-    color: rgb(15, 23, 42) !important;
-  }
-
-  .home-business-page.public-dark-page .public-dark-header__actions .public-dark-header__account:hover {
-    background: rgb(241, 245, 249) !important;
-    color: rgb(15, 23, 42) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page {
-    --vercel-ink: #171717;
-    --vercel-body: #4d4d4d;
-    --vercel-muted: #888888;
-    --vercel-hairline: #ebebeb;
-    --vercel-canvas: #ffffff;
-    --vercel-canvas-soft: #fafafa;
-    --vercel-canvas-soft-2: #f5f5f5;
-    --vercel-link: #0070f3;
-    background:
-      radial-gradient(circle at 22% 2%, rgba(14, 165, 233, 0.16), transparent 28rem),
-      radial-gradient(circle at 82% 0%, rgba(99, 102, 241, 0.12), transparent 24rem),
-      linear-gradient(180deg, #fbfdff 0%, #ffffff 46%, #f8fafc 100%) !important;
-    color: var(--vercel-ink) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page::before {
-    background:
-      radial-gradient(circle at 26% 4%, rgba(0, 124, 240, 0.14), transparent 24%),
-      radial-gradient(circle at 54% 0%, rgba(121, 40, 202, 0.09), transparent 20%),
-      radial-gradient(circle at 74% 3%, rgba(255, 0, 128, 0.08), transparent 18%),
-      linear-gradient(180deg, rgba(250, 250, 250, 0.94), rgba(255, 255, 255, 0.98) 52%);
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page .public-dark-header {
-    background: rgba(255, 255, 255, 0.88) !important;
-    border-bottom-color: rgba(15, 23, 42, 0.08) !important;
-    box-shadow: inset 0 -1px 0 rgba(15, 23, 42, 0.04) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page .public-dark-header__site {
-    color: var(--vercel-ink) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page .public-dark-header__logo {
-    background: #050505 !important;
-    border-color: rgba(0, 0, 0, 0.08) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page .public-dark-header__actions a,
-  html[data-public-theme='light'] .home-business-page.public-dark-page .public-dark-header__theme-toggle,
-  html[data-public-theme='light'] .home-business-page.public-dark-page .public-dark-header__avatar {
-    border-color: #e5e7eb !important;
-    background: rgba(255, 255, 255, 0.78) !important;
-    color: #4b5563 !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page .public-dark-header__actions a:hover,
-  html[data-public-theme='light'] .home-business-page.public-dark-page .public-dark-header__theme-toggle:hover,
-  html[data-public-theme='light'] .home-business-page.public-dark-page .public-dark-header__avatar:hover {
-    border-color: #d4d4d4 !important;
-    background: #fff !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page .public-dark-header__actions .public-dark-header__account {
-    border-color: #111827 !important;
-    background: #111827 !important;
-    color: #fff !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page .public-dark-header__actions .public-dark-header__account:hover {
-    border-color: #1f2937 !important;
-    background: #1f2937 !important;
-    color: #fff !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-[#101114]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-[#111318]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-[#15171d]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-[#17181d]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-[#0b0c10]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-[#08090c]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-white/[0.03]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-white/[0.035]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-white/[0.04]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-white/[0.045]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-white/[0.05]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-white/[0.06]'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-black/15'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='bg-black/20'] {
-    background-color: var(--vercel-canvas) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='border-white/10'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='border-white/15'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='border-white/20'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='border-cyan-300/15'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='border-cyan-300/20'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='border-cyan-300/30'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='border-violet-300/20'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='border-emerald-200/20'] {
-    border-color: var(--vercel-hairline) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='text-white'] {
-    color: var(--vercel-ink) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='text-white/'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='placeholder:text-white/']::placeholder {
-    color: var(--vercel-body) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='text-cyan-'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='text-violet-'],
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='text-emerald-'] {
-    color: var(--vercel-link) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page [class*='text-amber-'] {
-    color: rgb(180, 83, 9) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page input,
-  html[data-public-theme='light'] .home-business-page.public-dark-page textarea,
-  html[data-public-theme='light'] .home-business-page.public-dark-page select {
-    background-color: var(--vercel-canvas) !important;
-    border-color: var(--vercel-hairline) !important;
-    color: var(--vercel-ink) !important;
-  }
-
-  html[data-public-theme='light'] .home-business-page.public-dark-page input::placeholder,
-  html[data-public-theme='light'] .home-business-page.public-dark-page textarea::placeholder {
-    color: #94a3b8 !important;
-  }
-
-  .home-business-page::before {
-    content: '';
-    @apply pointer-events-none fixed inset-0;
-    background:
-      radial-gradient(circle at 26% 4%, rgba(0, 124, 240, 0.16), transparent 24%),
-      radial-gradient(circle at 54% 0%, rgba(121, 40, 202, 0.12), transparent 20%),
-      radial-gradient(circle at 74% 3%, rgba(255, 0, 128, 0.1), transparent 18%),
-      radial-gradient(circle at 88% 8%, rgba(249, 203, 40, 0.12), transparent 18%),
-      linear-gradient(180deg, rgba(250, 250, 250, 0.96), rgba(255, 255, 255, 0.98) 42%, rgba(250, 250, 250, 1));
-  }
-
-  .dark .home-business-page::before {
-    background:
-      radial-gradient(circle at 26% 4%, rgba(0, 124, 240, 0.18), transparent 24%),
-      radial-gradient(circle at 54% 0%, rgba(121, 40, 202, 0.16), transparent 20%),
-      radial-gradient(circle at 74% 3%, rgba(255, 0, 128, 0.13), transparent 18%),
-      linear-gradient(180deg, rgba(10, 10, 10, 0.96), rgba(5, 5, 5, 1) 54%);
-  }
-
-  .home-business-page > * {
-    @apply relative z-10;
-  }
-
-  .home-business-page header {
-    @apply backdrop-blur-xl;
-    background-color: rgba(255, 255, 255, 0.9) !important;
-    border-color: var(--vercel-hairline) !important;
-    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.04);
-  }
-
-  .dark .home-business-page header {
-    background-color: rgba(5, 5, 5, 0.9) !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-  }
-
-  .home-business-page .home-surface {
-    background-color: var(--vercel-canvas) !important;
-  }
-
-  .dark .home-business-page .home-surface {
-    background-color: rgba(23, 23, 23, 0.92) !important;
-  }
-
-  .home-business-page .home-border {
-    border-color: var(--vercel-hairline) !important;
-  }
-
-  .dark .home-business-page .home-border {
-    border-color: rgba(255, 255, 255, 0.12) !important;
-  }
-
-  .home-business-page .home-ink {
-    color: var(--vercel-ink) !important;
-  }
-
-  .dark .home-business-page .home-ink {
-    color: rgb(255, 255, 255) !important;
-  }
-
-  .home-business-page [data-home-primary-action] {
-    color: rgb(255, 255, 255) !important;
-  }
-
-  .dark .home-business-page [data-home-primary-action] {
-    color: rgb(15, 23, 42) !important;
-  }
-
-  .home-business-page .home-accent {
-    color: var(--vercel-link) !important;
-  }
-
-  .dark .home-business-page .home-accent {
-    color: rgb(125, 211, 252) !important;
-  }
-
-  .home-business-page input,
-  .home-business-page textarea,
-  .home-business-page select {
-    @apply text-slate-950 placeholder:text-slate-400 dark:bg-dark-900/80 dark:text-white dark:placeholder:text-dark-500;
-    background-color: var(--vercel-canvas) !important;
-    border-color: var(--vercel-hairline) !important;
-    border-radius: 8px !important;
-  }
-
-  .home-business-page h1,
-  .home-business-page h2,
-  .home-business-page h3 {
-    font-weight: 600 !important;
-    letter-spacing: 0 !important;
-  }
-
-  .home-business-page p,
-  .home-business-page span,
-  .home-business-page td,
-  .home-business-page th {
-    letter-spacing: 0 !important;
-  }
-
-  .home-business-page [class*='tracking-'] {
-    font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    letter-spacing: 0 !important;
-  }
-
-  .home-business-page [class*='rounded-2xl'],
-  .home-business-page [class*='rounded-3xl'],
-  .home-business-page [class*='rounded-[1.75rem]'],
-  .home-business-page [class*='rounded-[2rem]'],
-  .home-business-page [class*='rounded-[28px]'],
-  .home-business-page [class*='rounded-[32px]'] {
-    border-radius: 12px !important;
-  }
-
-  .home-business-page [class*='shadow-'],
-  .home-business-page [class*='shadow-['] {
-    box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.04),
-      0 1px 1px rgba(0, 0, 0, 0.02),
-      0 8px 16px -12px rgba(0, 0, 0, 0.16) !important;
-  }
-
-  .home-business-page a[class*='bg-sky-500'],
-  .home-business-page button[class*='bg-sky-500'],
-  .home-business-page a[class*='bg-cyan-300'],
-  .home-business-page button[class*='bg-cyan-300'],
-  .home-business-page a[class*='bg-[#171717]'],
-  .home-business-page button[class*='bg-[#171717]'] {
-    background-color: var(--vercel-ink) !important;
-    border-color: var(--vercel-ink) !important;
-    color: var(--vercel-canvas) !important;
-  }
-
-  .home-business-page a[class*='bg-sky-500']:hover,
-  .home-business-page button[class*='bg-sky-500']:hover,
-  .home-business-page a[class*='bg-cyan-300']:hover,
-  .home-business-page button[class*='bg-cyan-300']:hover,
-  .home-business-page a[class*='bg-[#171717]']:hover,
-  .home-business-page button[class*='bg-[#171717]']:hover {
-    background-color: #000 !important;
-  }
-
-  .home-business-page a[class*='rounded-full'],
-  .home-business-page button[class*='rounded-full'] {
-    border-radius: 9999px !important;
-  }
-
-  .home-business-page table,
-  .home-business-page article,
-  .home-business-page section {
-    border-color: var(--vercel-hairline);
-  }
-
-  :where(.home-business-page, .vercel-app-shell, .vercel-auth-shell) {
-    --vercel-ink: #171717;
-    --vercel-body: #4d4d4d;
-    --vercel-muted: #888888;
-    --vercel-hairline: #ebebeb;
-    --vercel-hairline-strong: #a1a1a1;
-    --vercel-canvas: #ffffff;
-    --vercel-canvas-soft: #fafafa;
-    --vercel-canvas-soft-2: #f5f5f5;
-    --vercel-link: #0070f3;
-    --vercel-warning-soft: #ffefcf;
-    --vercel-warning-deep: #ab570a;
-    --vercel-error-soft: #f7d4d6;
-    --vercel-error-deep: #c50000;
-    background-color: var(--vercel-canvas-soft) !important;
-    color: var(--vercel-ink) !important;
-    font-family: Geist, Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  }
-
-  :where(.vercel-app-shell, .vercel-auth-shell)::before {
+  .home-business-page::before,
+  .vercel-app-shell::before,
+  .vercel-auth-shell::before {
     content: '';
     pointer-events: none;
     position: fixed;
     inset: 0;
     z-index: 0;
     background:
-      radial-gradient(circle at 22% 0%, rgba(0, 124, 240, 0.12), transparent 26%),
-      radial-gradient(circle at 58% -2%, rgba(121, 40, 202, 0.08), transparent 22%),
-      radial-gradient(circle at 84% 3%, rgba(255, 0, 128, 0.07), transparent 18%),
-      linear-gradient(180deg, rgba(250, 250, 250, 0.98), rgba(255, 255, 255, 0.98) 44%, rgba(250, 250, 250, 1));
+      radial-gradient(circle at 24% 0%, rgba(14, 165, 233, 0.12), transparent 26rem),
+      radial-gradient(circle at 82% 0%, rgba(99, 102, 241, 0.08), transparent 24rem),
+      linear-gradient(180deg, rgba(250, 250, 250, 0.96), rgba(255, 255, 255, 0.98) 44%, rgba(250, 250, 250, 1));
   }
 
-  :where(.vercel-app-shell, .vercel-auth-shell) > * {
+  .dark .home-business-page,
+  .dark .vercel-app-shell,
+  .dark .vercel-auth-shell {
+    --vercel-ink: #fafafa;
+    --vercel-body: #d4d4d4;
+    --vercel-muted: #a1a1a1;
+    --vercel-hairline: rgba(255, 255, 255, 0.12);
+    --vercel-canvas: #171717;
+    --vercel-canvas-soft: #050505;
+    --vercel-canvas-soft-2: #262626;
+    --vercel-link: #7dd3fc;
+    background: #050505;
+    color: var(--vercel-ink);
+  }
+
+  .dark .home-business-page::before,
+  .dark .vercel-app-shell::before,
+  .dark .vercel-auth-shell::before {
+    background:
+      radial-gradient(circle at 24% 0%, rgba(14, 165, 233, 0.14), transparent 26rem),
+      radial-gradient(circle at 82% 0%, rgba(99, 102, 241, 0.1), transparent 24rem),
+      linear-gradient(180deg, rgba(10, 10, 10, 0.96), rgba(5, 5, 5, 1) 54%);
+  }
+
+  .home-business-page > *,
+  .vercel-app-shell > *,
+  .vercel-auth-shell > * {
     position: relative;
     z-index: 1;
   }
 
-  .dark :where(.home-business-page, .vercel-app-shell, .vercel-auth-shell) {
-    background-color: #050505 !important;
-    color: var(--vercel-canvas) !important;
+  .public-template-page {
+    --public-ink: #f8fafc;
+    --public-body: rgba(255, 255, 255, 0.66);
+    --public-muted: rgba(255, 255, 255, 0.44);
+    --public-faint: rgba(255, 255, 255, 0.34);
+    --public-border: rgba(255, 255, 255, 0.12);
+    --public-border-strong: rgba(255, 255, 255, 0.2);
+    --public-canvas: #101114;
+    --public-panel: #17181d;
+    --public-panel-soft: rgba(255, 255, 255, 0.045);
+    --public-panel-muted: rgba(255, 255, 255, 0.03);
+    --public-accent: #67e8f9;
+    --public-accent-strong: #a5f3fc;
+    --public-accent-soft: rgba(103, 232, 249, 0.12);
+    --public-danger: #fca5a5;
+    --public-danger-soft: rgba(248, 113, 113, 0.13);
+    --public-warning: #fde68a;
+    --public-warning-soft: rgba(251, 191, 36, 0.13);
+    --public-success: #a7f3d0;
+    --public-success-soft: rgba(52, 211, 153, 0.13);
+    background:
+      radial-gradient(circle at 24% 0%, rgba(34, 211, 238, 0.14), transparent 28rem),
+      radial-gradient(circle at 84% 6%, rgba(139, 92, 246, 0.12), transparent 24rem),
+      linear-gradient(180deg, #101114 0%, #0b0c10 58%, #08090c 100%);
+    color: var(--public-ink);
   }
 
-  .dark :where(.vercel-app-shell, .vercel-auth-shell)::before {
+  html[data-public-theme='light'] .public-template-page {
+    --public-ink: #171717;
+    --public-body: #4d4d4d;
+    --public-muted: #737373;
+    --public-faint: #a3a3a3;
+    --public-border: #e5e7eb;
+    --public-border-strong: #d4d4d4;
+    --public-canvas: #ffffff;
+    --public-panel: #ffffff;
+    --public-panel-soft: rgba(255, 255, 255, 0.84);
+    --public-panel-muted: #f5f5f5;
+    --public-accent: #0070f3;
+    --public-accent-strong: #0059c8;
+    --public-accent-soft: #eef6ff;
+    --public-danger: #c50000;
+    --public-danger-soft: #fff5f5;
+    --public-warning: #ab570a;
+    --public-warning-soft: #fff8e8;
+    --public-success: #047857;
+    --public-success-soft: #ecfdf5;
     background:
-      radial-gradient(circle at 22% 0%, rgba(0, 124, 240, 0.16), transparent 26%),
-      radial-gradient(circle at 58% -2%, rgba(121, 40, 202, 0.14), transparent 22%),
-      radial-gradient(circle at 84% 3%, rgba(255, 0, 128, 0.1), transparent 18%),
-      linear-gradient(180deg, rgba(10, 10, 10, 0.98), rgba(5, 5, 5, 1) 54%);
+      radial-gradient(circle at 22% 2%, rgba(14, 165, 233, 0.14), transparent 28rem),
+      radial-gradient(circle at 82% 0%, rgba(99, 102, 241, 0.09), transparent 24rem),
+      linear-gradient(180deg, #fbfdff 0%, #ffffff 46%, #f8fafc 100%);
+  }
+
+  .public-template-main {
+    @apply px-4 py-8 sm:px-6 sm:py-10;
+  }
+
+  .public-template-container {
+    @apply mx-auto w-full max-w-6xl;
+  }
+
+  .public-template-container-wide {
+    @apply mx-auto w-full max-w-7xl;
+  }
+
+  .public-template-toolbar {
+    @apply mb-6 grid gap-4 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-end;
+  }
+
+  .public-template-eyebrow {
+    @apply text-xs font-semibold uppercase;
+    color: var(--public-muted);
+    font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    letter-spacing: 0;
+  }
+
+  .public-template-title {
+    @apply mt-3 max-w-4xl text-3xl font-semibold leading-tight sm:text-4xl;
+    color: var(--public-ink);
+    letter-spacing: 0;
+  }
+
+  .public-template-description {
+    @apply mt-3 max-w-3xl text-sm leading-7 sm:text-base;
+    color: var(--public-body);
+  }
+
+  .public-template-panel,
+  .public-template-panel-muted,
+  .public-template-table {
+    border: 1px solid var(--public-border);
+    background: var(--public-panel);
+    color: var(--public-ink);
+    border-radius: 12px;
+    box-shadow:
+      0 0 0 1px rgba(0, 0, 0, 0.03),
+      0 8px 16px -14px rgba(0, 0, 0, 0.22);
+  }
+
+  .public-template-panel {
+    @apply p-5;
+  }
+
+  .public-template-panel-muted {
+    background: var(--public-panel-muted);
+  }
+
+  .public-template-chip {
+    @apply inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold;
+    border-color: var(--public-border);
+    background: var(--public-panel-soft);
+    color: var(--public-body);
+  }
+
+  .public-template-chip-active {
+    border-color: var(--public-accent);
+    background: var(--public-accent-soft);
+    color: var(--public-accent-strong);
+  }
+
+  .public-template-input {
+    border: 1px solid var(--public-border);
+    background: var(--public-panel-soft);
+    color: var(--public-ink);
+    border-radius: 8px;
+    box-shadow: none;
+  }
+
+  .public-template-input::placeholder {
+    color: var(--public-faint);
+  }
+
+  .public-template-input:focus {
+    border-color: var(--public-accent);
+    outline: none;
+  }
+
+  .public-template-button,
+  .public-template-button-primary,
+  .public-template-button-danger {
+    @apply inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50;
+    border: 1px solid var(--public-border);
+  }
+
+  .public-template-button {
+    background: var(--public-panel-soft);
+    color: var(--public-body);
+  }
+
+  .public-template-button:hover {
+    border-color: var(--public-border-strong);
+    color: var(--public-ink);
+  }
+
+  .public-template-button-primary {
+    border-color: var(--public-accent);
+    background: var(--public-accent);
+    color: #061018;
+  }
+
+  html[data-public-theme='light'] .public-template-button-primary {
+    color: #ffffff;
+  }
+
+  .public-template-button-danger {
+    border-color: var(--public-danger);
+    background: var(--public-danger-soft);
+    color: var(--public-danger);
+  }
+
+  .public-template-muted {
+    color: var(--public-muted);
+  }
+
+  .public-template-ink {
+    color: var(--public-ink);
+  }
+
+  .public-template-body {
+    color: var(--public-body);
+  }
+
+  .public-template-faint {
+    color: var(--public-faint);
+  }
+
+  .public-template-accent {
+    color: var(--public-accent-strong);
+  }
+
+  .public-template-success {
+    color: var(--public-success);
+  }
+
+  .public-template-warning {
+    border-color: var(--public-warning);
+    background: var(--public-warning-soft);
+    color: var(--public-warning);
+  }
+
+  .public-template-success-message {
+    border-color: var(--public-success);
+    background: var(--public-success-soft);
+    color: var(--public-success);
+  }
+
+  .public-template-error {
+    border-color: var(--public-danger);
+    background: var(--public-danger-soft);
+    color: var(--public-danger);
+  }
+
+  .home-surface {
+    background: var(--vercel-canvas);
+  }
+
+  .home-border {
+    border-color: var(--vercel-hairline);
+  }
+
+  .home-ink {
+    color: var(--vercel-ink);
+  }
+
+  .home-accent {
+    color: var(--vercel-link);
+  }
+
+  .vercel-app-shell,
+  .vercel-auth-shell {
+    background: var(--vercel-canvas-soft);
+    color: var(--vercel-ink);
   }
 
   .vercel-app-shell .sidebar,
   .vercel-app-shell .glass,
   .vercel-app-shell header.glass {
-    background-color: rgba(255, 255, 255, 0.92) !important;
-    border-color: var(--vercel-hairline) !important;
+    background-color: rgba(255, 255, 255, 0.92);
+    border-color: var(--vercel-hairline);
     box-shadow: inset -1px 0 0 rgba(0, 0, 0, 0.03);
-  }
-
-  .vercel-app-shell header.glass {
-    box-shadow: inset 0 -1px 0 rgba(0, 0, 0, 0.04);
   }
 
   .dark .vercel-app-shell .sidebar,
   .dark .vercel-app-shell .glass,
   .dark .vercel-app-shell header.glass {
-    background-color: rgba(5, 5, 5, 0.92) !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
+    background-color: rgba(5, 5, 5, 0.92);
+    border-color: rgba(255, 255, 255, 0.12);
   }
 
   .vercel-app-shell .sidebar-link {
-    border-radius: 8px !important;
-    color: var(--vercel-body) !important;
+    border-radius: 8px;
+    color: var(--vercel-body);
   }
 
   .vercel-app-shell .sidebar-link:hover {
-    background-color: var(--vercel-canvas-soft-2) !important;
-    color: var(--vercel-ink) !important;
+    background-color: var(--vercel-canvas-soft-2);
+    color: var(--vercel-ink);
   }
 
   .vercel-app-shell .sidebar-link-active {
-    background-color: var(--vercel-ink) !important;
-    color: var(--vercel-canvas) !important;
-    box-shadow: none !important;
-    --tw-ring-color: transparent !important;
+    background-color: var(--vercel-ink);
+    color: var(--vercel-canvas);
+    box-shadow: none;
   }
 
   .vercel-app-shell .sidebar-section-title {
-    color: var(--vercel-muted) !important;
+    color: var(--vercel-muted);
     font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    letter-spacing: 0 !important;
-  }
-
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(.card, .card-glass, .glass-card, .surface-panel, .surface-panel-strong, .surface-panel-muted, .metric-panel, .stat-card, .modal-content, .dropdown, .table-container),
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(section, article)[class*='border'],
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(div)[class*='rounded-'][class*='bg-white'] {
-    background-color: var(--vercel-canvas) !important;
-    border-color: var(--vercel-hairline) !important;
-    border-radius: 12px !important;
-    box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.03),
-      0 1px 1px rgba(0, 0, 0, 0.02),
-      0 8px 16px -12px rgba(0, 0, 0, 0.16) !important;
-  }
-
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(.btn, button, a)[class*='rounded-2xl'],
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(.btn, button, a)[class*='rounded-xl'] {
-    border-radius: 8px !important;
-  }
-
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(.btn-primary, .btn-success, .btn-warning, .btn-stripe, .btn-airwallex, .btn-alipay, .btn-wxpay),
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(button, a)[class*='bg-primary-'],
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(button, a)[class*='bg-slate-950'],
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(button, a)[class*='bg-sky-500'],
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(button, a)[class*='bg-blue-500'] {
-    background: var(--vercel-ink) !important;
-    border-color: var(--vercel-ink) !important;
-    color: var(--vercel-canvas) !important;
-    box-shadow: none !important;
-  }
-
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(.btn-secondary, .btn-ghost),
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(button, a)[class*='bg-gray-100'],
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(button, a)[class*='bg-slate-50'] {
-    background: var(--vercel-canvas) !important;
-    border-color: var(--vercel-hairline) !important;
-    color: var(--vercel-ink) !important;
-    box-shadow: none !important;
-  }
-
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(input, textarea, select, .input) {
-    background-color: var(--vercel-canvas) !important;
-    border-color: var(--vercel-hairline) !important;
-    border-radius: 8px !important;
-    color: var(--vercel-ink) !important;
-    box-shadow: none !important;
-  }
-
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(.input-label, label, th, .stat-label, .page-description) {
-    color: var(--vercel-muted) !important;
-    letter-spacing: 0 !important;
-  }
-
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(.page-title, .modal-title, h1, h2, h3, .stat-value) {
-    color: var(--vercel-ink) !important;
-    font-weight: 600 !important;
-    letter-spacing: 0 !important;
-  }
-
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(.table th, thead) {
-    background-color: var(--vercel-canvas-soft) !important;
-    color: var(--vercel-muted) !important;
-    font-family: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    letter-spacing: 0 !important;
-  }
-
-  :where(.vercel-app-shell, .vercel-auth-shell) :where(.table td, .table th, .card-header, .card-footer, .modal-header, .modal-footer) {
-    border-color: var(--vercel-hairline) !important;
-  }
-
-  .vercel-auth-shell > .absolute,
-  .vercel-auth-shell > .pointer-events-none {
-    background: transparent !important;
-  }
-
-  .vercel-auth-shell [class*='shadow-xl'],
-  .vercel-auth-shell [class*='shadow-lg'] {
-    box-shadow:
-      0 0 0 1px rgba(0, 0, 0, 0.04),
-      0 1px 1px rgba(0, 0, 0, 0.02),
-      0 16px 32px -24px rgba(0, 0, 0, 0.24) !important;
-  }
-
-  .dark :where(.vercel-app-shell, .vercel-auth-shell) :where(.card, .card-glass, .glass-card, .surface-panel, .surface-panel-strong, .surface-panel-muted, .metric-panel, .stat-card, .modal-content, .dropdown, .table-container),
-  .dark :where(.vercel-app-shell, .vercel-auth-shell) :where(section, article)[class*='border'],
-  .dark :where(.vercel-app-shell, .vercel-auth-shell) :where(div)[class*='rounded-'][class*='bg-white'] {
-    background-color: rgba(23, 23, 23, 0.92) !important;
-    border-color: rgba(255, 255, 255, 0.12) !important;
-  }
-
-  .dark :where(.vercel-app-shell, .vercel-auth-shell) :where(.page-title, .modal-title, h1, h2, h3, .stat-value) {
-    color: var(--vercel-canvas) !important;
-  }
-
-  .dark :where(.vercel-app-shell, .vercel-auth-shell) :where(.input-label, label, th, .stat-label, .page-description) {
-    color: #a1a1a1 !important;
+    letter-spacing: 0;
   }
 
   .btn-ghost {

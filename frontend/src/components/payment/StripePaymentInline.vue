@@ -22,12 +22,12 @@
                 <span class="font-medium text-gray-900 dark:text-white">#{{ orderId }}</span>
               </div>
               <div v-if="amount > 0" class="flex justify-between">
-                <span class="text-gray-500 dark:text-gray-400">{{ paymentText('amount') }}</span>
-                <span class="font-medium text-gray-900 dark:text-white">{{ orderType === 'balance' ? '$' + amount.toFixed(2) : formatGatewayAmount(amount) }}</span>
+                <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.amount') }}</span>
+                <span class="font-medium text-gray-900 dark:text-white">{{ creditedAmountSymbol }}{{ amount.toFixed(2) }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-500 dark:text-gray-400">{{ paymentText('payAmount') }}</span>
-                <span class="font-medium text-gray-900 dark:text-white">{{ formatGatewayAmount(payAmount) }}</span>
+                <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</span>
+                <span class="font-medium text-gray-900 dark:text-white">{{ paymentAmountSymbol }}{{ payAmount.toFixed(2) }}</span>
               </div>
             </div>
           </div>
@@ -39,8 +39,8 @@
       <!-- Amount -->
       <div class="card overflow-hidden">
         <div class="bg-gradient-to-br from-[#635bff] to-[#4f46e5] px-6 py-5 text-center">
-          <p class="text-sm font-medium text-indigo-200">{{ paymentText('actualPay') }}</p>
-          <p class="mt-1 text-3xl font-bold text-white">{{ formatGatewayAmount(payAmount) }}</p>
+          <p class="text-sm font-medium text-indigo-200">{{ t('payment.actualPay') }}</p>
+          <p class="mt-1 text-3xl font-bold text-white">{{ paymentAmountSymbol }}{{ payAmount.toFixed(2) }}</p>
         </div>
       </div>
       <!-- Stripe Payment Element -->
@@ -72,8 +72,7 @@ import { paymentAPI } from '@/api/payment'
 import { useAppStore } from '@/stores'
 import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import { getPaymentPopupFeatures } from '@/components/payment/providerConfig'
-import { renderStripeInlineText, type StripeInlineLabelKey, type StripeInlineLabels } from '@/utils/paymentShell'
-import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
+import { currencySymbol } from '@/components/payment/currency'
 import type { Stripe, StripeElements } from '@stripe/stripe-js'
 import Icon from '@/components/icons/Icon.vue'
 
@@ -88,7 +87,6 @@ const props = defineProps<{
   publishableKey: string
   payAmount: number
   currency?: string
-  labels?: StripeInlineLabels
 }>()
 
 const emit = defineEmits<{ success: []; done: []; back: []; redirect: [orderId: number, payUrl: string] }>()
@@ -112,6 +110,8 @@ const cancelling = ref(false)
 const success = ref(false)
 const ready = ref(false)
 const selectedType = ref('')
+const creditedAmountSymbol = currencySymbol('USD')
+const paymentAmountSymbol = computed(() => currencySymbol(props.currency))
 
 let stripeInstance: Stripe | null = null
 let elementsInstance: StripeElements | null = null

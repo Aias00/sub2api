@@ -14,12 +14,12 @@
     </template>
     <template #cell-pay_amount="{ value, row }">
       <div class="text-sm">
-        <span class="font-medium text-gray-900 dark:text-white">{{ formatOrderPaymentAmount(value, row) }}</span>
-        <span v-if="row.fee_rate > 0" class="ml-1 text-xs text-gray-400" :title="orderText('fee') + ': ' + row.fee_rate + '%'">
-          ({{ orderText('fee') }} {{ row.fee_rate }}%)
+        <span class="font-medium text-gray-900 dark:text-white">{{ paymentAmountSymbol(row) }}{{ value.toFixed(2) }}</span>
+        <span v-if="row.fee_rate > 0" class="ml-1 text-xs text-gray-400" :title="t('payment.orders.fee') + ': ' + row.fee_rate + '%'">
+          ({{ t('payment.orders.fee') }} {{ row.fee_rate }}%)
         </span>
         <div v-if="row.amount !== row.pay_amount" class="text-xs text-gray-500">
-          {{ orderText('creditedAmount') }}: {{ formatOrderCreditedAmount(row) }}
+          {{ t('payment.orders.creditedAmount') }}: {{ creditedAmountSymbol }}{{ row.amount.toFixed(2) }}
         </div>
       </div>
     </template>
@@ -45,6 +45,7 @@ import type { PaymentOrder } from '@/types/payment'
 import type { Column } from '@/components/common/types'
 import DataTable from '@/components/common/DataTable.vue'
 import OrderStatusBadge from '@/components/payment/OrderStatusBadge.vue'
+import { currencySymbol } from '@/components/payment/currency'
 
 import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import { formatOrderCreditedAmount } from '@/utils/paymentCurrency'
@@ -65,40 +66,11 @@ function orderText(key: OrderTableLabelKey): string {
 
 function formatDate(dateStr: string) { return new Date(dateStr).toLocaleString() }
 
-function formatOrderPaymentAmount(value: number, order: PaymentOrder): string {
-  return formatPaymentAmount(value, normalizePaymentCurrency(order.currency), locale.value)
-}
+const creditedAmountSymbol = currencySymbol('USD')
 
-function cleanString(value: unknown): string {
-  return typeof value === 'string' ? value.trim() : ''
+function paymentAmountSymbol(order: PaymentOrder): string {
+  return currencySymbol(order.currency)
 }
-
-function userDisplayName(row: PaymentOrder & { user_name?: string }, value: unknown): string {
-  return cleanString(value) || cleanString(row.user_name)
-}
-
-function paymentMethodLabel(type: string): string {
-  if (type.includes('alipay')) return orderText('methodAlipay')
-  if (type.includes('wxpay')) return orderText('methodWxpay')
-  if (type === 'stripe') return orderText('methodStripe')
-  if (type === 'airwallex') return orderText('methodAirwallex')
-  return type
-}
-
-const statusBadgeLabels = computed(() => ({
-  PENDING: orderText('statusPending'),
-  PAID: orderText('statusPaid'),
-  RECHARGING: orderText('statusRecharging'),
-  COMPLETED: orderText('statusCompleted'),
-  EXPIRED: orderText('statusExpired'),
-  CANCELLED: orderText('statusCancelled'),
-  FAILED: orderText('statusFailed'),
-  REFUND_REQUESTED: orderText('statusRefundRequested'),
-  REFUNDING: orderText('statusRefunding'),
-  REFUNDED: orderText('statusRefunded'),
-  PARTIALLY_REFUNDED: orderText('statusPartiallyRefunded'),
-  REFUND_FAILED: orderText('statusRefundFailed'),
-}))
 
 const columns = computed((): Column[] => {
   const cols: Column[] = [

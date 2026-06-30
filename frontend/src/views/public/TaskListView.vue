@@ -1,33 +1,33 @@
 <template>
-  <div class="home-business-page min-h-screen bg-[#101114] text-white">
+  <div class="home-business-page public-template-page min-h-screen">
     <PublicDarkHeader :account-label="isAuthenticated ? t('nav.dashboard') : t('common.login')" />
 
-    <main class="px-6 py-10 sm:py-14">
-      <div class="mx-auto max-w-7xl">
+    <main class="public-template-main">
+      <div class="public-template-container-wide">
         <section>
           <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] lg:items-end">
             <div>
-              <p class="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200/70">
+              <p class="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--public-muted)]">
                 {{ t('taskList.breadcrumb') }}
               </p>
-              <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-white sm:text-5xl">
+              <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-[var(--public-ink)] sm:text-5xl">
                 {{ t('taskList.title') }}
               </h1>
-              <p class="mt-4 max-w-3xl text-base leading-8 text-white/60">
+              <p class="mt-4 max-w-3xl text-base leading-8 text-[var(--public-body)]">
                 {{ t('taskList.subtitle') }}
               </p>
             </div>
 
-            <div class="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.055] p-3 sm:p-4">
+            <div class="public-template-panel p-3 sm:p-4">
               <div class="mb-3 flex items-center justify-between gap-3">
-                <p class="shrink-0 text-sm font-bold text-cyan-100">{{ t('taskList.actions') }}</p>
-                <p class="hidden truncate text-xs text-white/45 xl:block">{{ t('taskList.subtitle') }}</p>
+                <p class="shrink-0 text-sm font-bold text-[var(--public-accent-strong)]">{{ t('taskList.actions') }}</p>
+                <p class="hidden truncate text-xs text-[var(--public-muted)] xl:block">{{ t('taskList.subtitle') }}</p>
               </div>
               <div class="grid gap-2 sm:grid-cols-2">
-                <router-link to="/wechat" class="inline-flex h-12 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] px-4 text-sm font-bold text-white/80 transition hover:bg-white/[0.07]">
+                <router-link to="/wechat" class="inline-flex h-12 items-center justify-center rounded-xl border public-template-input px-4 text-sm font-bold text-[var(--public-ink)] transition hover:bg-[var(--public-panel-muted)]">
                   {{ t('taskList.newWechatTask') }}
                 </router-link>
-                <router-link to="/image-generator" class="inline-flex h-12 items-center justify-center rounded-xl bg-cyan-300 px-4 text-sm font-black text-slate-950 transition hover:bg-cyan-200">
+                <router-link to="/image-generator" class="public-template-button-primary h-12 px-4 text-sm font-black">
                   {{ t('taskList.newImageTask') }}
                 </router-link>
               </div>
@@ -40,17 +40,17 @@
         </section>
 
         <section v-else class="mt-8 grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
-          <aside class="rounded-2xl border border-white/10 bg-[#17181d] p-4 sm:p-5 lg:sticky lg:top-6">
+          <aside class="rounded-2xl public-template-panel p-4 sm:p-5 lg:sticky lg:top-6">
             <div class="space-y-5">
               <div>
-                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/38">{{ t('taskList.filters') }}</span>
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[var(--public-muted)]">{{ t('taskList.filters') }}</span>
                 <div class="flex flex-wrap gap-2" role="tablist" :aria-label="t('taskList.filters')">
                   <button
                     v-for="option in filterOptions"
                     :key="option.value"
                     type="button"
                     class="inline-flex min-h-10 max-w-full items-center rounded-2xl border px-3 py-2 text-left text-sm font-semibold transition"
-                    :class="filter === option.value ? 'border-cyan-300/35 bg-cyan-300/10 text-cyan-50' : 'border-white/10 bg-white/[0.035] text-white/68 hover:bg-white/[0.06]'"
+                    :class="filter === option.value ? 'border-cyan-300/35 bg-cyan-300/10 text-[var(--public-accent-strong)]' : 'border-[var(--public-border)] bg-[var(--public-panel-soft)] text-[var(--public-body)] hover:bg-[var(--public-panel-soft)]'"
                     @click="filter = option.value"
                   >
                     {{ option.label }}
@@ -59,15 +59,15 @@
               </div>
 
               <div class="grid grid-cols-2 gap-2">
-                <div v-for="summary in summaries" :key="summary.key" class="rounded-2xl border border-white/10 bg-white/[0.035] p-3">
-                  <p class="font-mono text-xs text-white/38">{{ summary.label }}</p>
-                  <p class="mt-2 text-2xl font-black text-white">{{ summary.value }}</p>
+                <div v-for="summary in summaries" :key="summary.key" class="rounded-2xl public-template-panel-muted p-3">
+                  <p class="font-mono text-xs text-[var(--public-muted)]">{{ summary.label }}</p>
+                  <p class="mt-2 text-2xl font-black text-[var(--public-ink)]">{{ summary.value }}</p>
                 </div>
               </div>
 
               <button
                 type="button"
-                class="inline-flex h-12 w-full items-center justify-center rounded-xl bg-cyan-300 px-4 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+                class="public-template-button-primary h-12 w-full text-sm font-black"
                 :disabled="loading"
                 @click="loadTasks"
               >
@@ -77,21 +77,21 @@
           </aside>
 
           <div class="min-w-0">
-            <div v-if="errorMessage" class="mb-5 rounded-2xl border border-red-300/20 bg-red-300/10 px-5 py-4 text-sm text-red-100">
+            <div v-if="errorMessage" class="mb-5 rounded-2xl border border-red-300/20 bg-red-300/10 px-5 py-4 text-sm text-[var(--public-danger)]">
               {{ errorMessage }}
             </div>
 
             <div v-if="loading && tasks.length === 0" class="grid gap-3">
-              <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-2xl border border-white/10 bg-white/[0.035]"></div>
+              <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-2xl public-template-panel-muted"></div>
             </div>
 
-            <div v-else-if="visibleTasks.length === 0" class="rounded-2xl border border-white/10 bg-white/[0.03] px-8 py-16 text-center">
-              <p class="text-2xl font-bold text-white">{{ t('taskList.emptyTitle') }}</p>
-              <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-white/55">{{ t('taskList.emptyDescription') }}</p>
+            <div v-else-if="visibleTasks.length === 0" class="rounded-2xl public-template-panel-muted px-8 py-16 text-center">
+              <p class="text-2xl font-bold text-[var(--public-ink)]">{{ t('taskList.emptyTitle') }}</p>
+              <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--public-body)]">{{ t('taskList.emptyDescription') }}</p>
             </div>
 
-            <div v-else class="overflow-hidden rounded-2xl border border-white/10 bg-[#17181d] shadow-[0_20px_60px_rgba(0,0,0,0.24)]">
-              <div class="hidden grid-cols-[minmax(0,1fr)_140px_140px_170px_190px] gap-4 border-b border-white/10 bg-white/[0.035] px-5 py-3 font-mono text-xs text-white/38 lg:grid">
+            <div v-else class="overflow-hidden rounded-2xl public-template-panel shadow-[0_20px_60px_rgba(0,0,0,0.24)]">
+              <div class="hidden grid-cols-[minmax(0,1fr)_140px_140px_170px_190px] gap-4 border-b border-[var(--public-border)] bg-[var(--public-panel-soft)] px-5 py-3 font-mono text-xs text-[var(--public-muted)] lg:grid">
                 <span>{{ t('taskList.task') }}</span>
                 <span>{{ t('taskList.type') }}</span>
                 <span>{{ t('taskList.status') }}</span>
@@ -101,26 +101,26 @@
               <article
                 v-for="task in visibleTasks"
                 :key="task.key"
-                class="grid gap-4 border-b border-white/10 bg-[#17181d] px-5 py-5 last:border-b-0 hover:bg-white/[0.035] lg:grid-cols-[minmax(0,1fr)_140px_140px_170px_190px] lg:items-center"
+                class="grid gap-4 border-b border-[var(--public-border)] bg-[var(--public-panel)] px-5 py-5 last:border-b-0 hover:bg-[var(--public-panel-soft)] lg:grid-cols-[minmax(0,1fr)_140px_140px_170px_190px] lg:items-center"
               >
                 <div class="min-w-0">
                   <div class="flex min-w-0 items-center gap-3">
-                    <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.045] font-mono text-xs text-white/70">
+                    <span class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl border public-template-input font-mono text-xs text-[var(--public-body)]">
                       {{ task.type === 'wechat' ? 'WX' : 'AI' }}
                     </span>
                     <div class="min-w-0">
-                      <h2 class="truncate text-sm font-semibold text-white">{{ task.title }}</h2>
-                      <p class="mt-1 truncate text-xs text-white/50">{{ task.description }}</p>
+                      <h2 class="truncate text-sm font-semibold text-[var(--public-ink)]">{{ task.title }}</h2>
+                      <p class="mt-1 truncate text-xs text-[var(--public-muted)]">{{ task.description }}</p>
                     </div>
                   </div>
-                  <div class="mt-3 flex flex-wrap gap-2 font-mono text-xs text-white/40">
-                    <span class="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1">{{ t('taskList.created') }} {{ formatTime(task.createdAt) }}</span>
-                    <span v-if="task.costLabel" class="rounded-full border border-white/10 bg-white/[0.045] px-2.5 py-1">{{ task.costLabel }}</span>
-                    <span v-if="task.errorMessage" class="max-w-full truncate rounded-full border border-red-300/20 bg-red-300/10 px-2.5 py-1 text-red-100">{{ task.errorMessage }}</span>
+                  <div class="mt-3 flex flex-wrap gap-2 font-mono text-xs text-[var(--public-muted)]">
+                    <span class="rounded-full border public-template-input px-2.5 py-1">{{ t('taskList.created') }} {{ formatTime(task.createdAt) }}</span>
+                    <span v-if="task.costLabel" class="rounded-full border public-template-input px-2.5 py-1">{{ task.costLabel }}</span>
+                    <span v-if="task.errorMessage" class="max-w-full truncate rounded-full border border-red-300/20 bg-red-300/10 px-2.5 py-1 text-[var(--public-danger)]">{{ task.errorMessage }}</span>
                   </div>
                 </div>
 
-                <div class="text-sm text-white/62">
+                <div class="text-sm text-[var(--public-body)]">
                   <span class="lg:hidden">{{ t('taskList.type') }}: </span>{{ task.typeLabel }}
                 </div>
                 <div>
@@ -128,17 +128,17 @@
                     {{ statusLabel(task.canonicalStatus) }}
                   </span>
                 </div>
-                <div class="font-mono text-xs text-white/50">
+                <div class="font-mono text-xs text-[var(--public-muted)]">
                   <span class="lg:hidden">{{ t('taskList.updated') }}: </span>{{ formatTime(task.updatedAt) }}
                 </div>
                 <div class="flex flex-wrap justify-start gap-2 lg:justify-end">
-                  <router-link :to="task.detailPath" class="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/[0.06]">
+                  <router-link :to="task.detailPath" class="rounded-xl border border-[var(--public-border)] px-3 py-2 text-xs font-semibold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)]">
                     {{ t('taskList.open') }}
                   </router-link>
                   <button
                     v-if="task.canDownload"
                     type="button"
-                    class="rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    class="rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-[var(--public-accent-strong)] transition hover:bg-cyan-300/20 disabled:cursor-not-allowed disabled:opacity-50"
                     :disabled="busyTaskKey === task.key"
                     @click="downloadTask(task)"
                   >
@@ -147,7 +147,7 @@
                   <button
                     v-if="task.canRetry"
                     type="button"
-                    class="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50"
+                    class="rounded-xl border border-[var(--public-border)] px-3 py-2 text-xs font-semibold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] disabled:cursor-not-allowed disabled:opacity-50"
                     :disabled="busyTaskKey === task.key"
                     @click="retryTask(task)"
                   >
@@ -156,7 +156,7 @@
                   <button
                     v-if="task.canCancel"
                     type="button"
-                    class="rounded-xl border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-semibold text-red-100 transition hover:bg-red-300/20 disabled:cursor-not-allowed disabled:opacity-50"
+                    class="rounded-xl border border-red-300/20 bg-red-300/10 px-3 py-2 text-xs font-semibold text-[var(--public-danger)] transition hover:bg-red-300/20 disabled:cursor-not-allowed disabled:opacity-50"
                     :disabled="busyTaskKey === task.key"
                     @click="cancelTask(task)"
                   >
@@ -169,7 +169,7 @@
               <button
                 v-if="wechatPage < wechatPages"
                 type="button"
-                class="rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-white/70 transition hover:bg-white/[0.06] disabled:opacity-45"
+                class="rounded-xl border border-[var(--public-border)] px-4 py-2 text-sm font-bold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] disabled:opacity-45"
                 :disabled="loadingMoreType === 'wechat'"
                 @click="loadMoreTasks('wechat')"
               >
@@ -178,7 +178,7 @@
               <button
                 v-if="imagePage < imagePages"
                 type="button"
-                class="rounded-xl border border-white/10 px-4 py-2 text-sm font-bold text-white/70 transition hover:bg-white/[0.06] disabled:opacity-45"
+                class="rounded-xl border border-[var(--public-border)] px-4 py-2 text-sm font-bold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] disabled:opacity-45"
                 :disabled="loadingMoreType === 'image'"
                 @click="loadMoreTasks('image')"
               >

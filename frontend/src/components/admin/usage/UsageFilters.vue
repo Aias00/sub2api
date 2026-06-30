@@ -231,9 +231,10 @@ const groupOptions = ref<SelectOption[]>([{ value: null, label: t('admin.usage.a
 
 const requestTypeOptions = ref<SelectOption[]>([
   { value: null, label: t('admin.usage.allTypes') },
-  { value: 'ws_v2', label: t('common.requestType.ws') },
-  { value: 'stream', label: t('common.requestType.stream') },
-  { value: 'sync', label: t('common.requestType.sync') }
+  { value: 'ws_v2', label: t('usage.ws') },
+  { value: 'stream', label: t('usage.stream') },
+  { value: 'sync', label: t('usage.sync') },
+  { value: 'cyber', label: t('usage.cyber') }
 ])
 
 const billingTypeOptions = ref<SelectOption[]>([

@@ -1,35 +1,35 @@
 <template>
-  <div class="home-business-page public-dark-page min-h-screen bg-[#101114] text-white">
+  <div class="home-business-page public-template-page min-h-screen">
     <PublicDarkHeader :account-label="copy.accountAction" />
 
-    <main class="px-6 py-10 sm:py-14">
-      <div class="mx-auto max-w-7xl">
+    <main class="public-template-main">
+      <div class="public-template-container-wide">
         <section>
           <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(420px,620px)] lg:items-end">
             <div>
-              <p class="text-sm font-semibold uppercase tracking-[0.22em] text-cyan-200/70">
+              <p class="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--public-muted)]">
                 {{ copy.eyebrow }}
               </p>
-              <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-white sm:text-5xl">
+              <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-[var(--public-ink)] sm:text-5xl">
                 {{ pageTitle }}
               </h1>
-              <p class="mt-4 max-w-3xl text-base leading-8 text-white/60">
+              <p class="mt-4 max-w-3xl text-base leading-8 text-[var(--public-body)]">
                 {{ pageDescription }}
               </p>
             </div>
 
             <div
               v-if="isAdmin"
-              class="rounded-2xl border border-cyan-300/20 bg-cyan-300/[0.055] p-3 sm:p-4"
+              class="public-template-panel" p-3 sm:p-4"
             >
               <div class="mb-3 flex items-center justify-between gap-3">
-                <p class="shrink-0 text-sm font-bold text-cyan-100">{{ copy.importTitle }}</p>
-                <p class="hidden truncate text-xs text-white/45 xl:block">{{ copy.importDescription }}</p>
+                <p class="shrink-0 text-sm font-bold text-[var(--public-accent-strong)]">{{ copy.importTitle }}</p>
+                <p class="hidden truncate text-xs text-[var(--public-muted)] xl:block">{{ copy.importDescription }}</p>
               </div>
               <form class="grid gap-2 sm:grid-cols-[140px_minmax(220px,1fr)_auto]" @submit.prevent="importFromSource">
                 <select
                   v-model="importForm.provider"
-                  class="h-12 rounded-xl border border-white/10 bg-[#111318] px-3 text-sm text-white outline-none focus:border-cyan-300/40"
+                  class="h-12 rounded-xl border border-[var(--public-border)] bg-[var(--public-panel-muted)] px-3 text-sm text-[var(--public-ink)] outline-none focus:border-cyan-300/40"
                   :disabled="importing"
                 >
                   <option value="x">{{ copy.importProviderX }}</option>
@@ -37,14 +37,14 @@
                 <input
                   v-model.trim="importForm.url"
                   type="url"
-                  class="h-12 rounded-xl border border-white/10 bg-white/[0.045] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.065]"
+                  class="h-12 rounded-xl border public-template-input px-4 text-sm text-[var(--public-ink)] outline-none transition placeholder:text-[var(--public-faint)] focus:border-cyan-300/40 focus:bg-[var(--public-panel-soft)]"
                   :placeholder="copy.importPlaceholder"
                   :disabled="importing"
                   required
                 />
                 <button
                   type="submit"
-                  class="inline-flex h-12 items-center justify-center rounded-xl bg-cyan-300 px-5 text-sm font-black text-slate-950 transition hover:bg-cyan-200 disabled:cursor-not-allowed disabled:opacity-50"
+                  class="public-template-button-primary h-12 px-5 text-sm font-black"
                   :disabled="importing || !importForm.url"
                 >
                   {{ importing ? copy.importing : copy.importAction }}
@@ -56,14 +56,14 @@
           <div
             v-if="importMessage"
             class="mt-4 rounded-2xl border px-4 py-3 text-sm"
-            :class="importError ? 'border-red-300/20 bg-red-300/10 text-red-100' : 'border-cyan-300/20 bg-cyan-300/10 text-cyan-50'"
+            :class="importError ? 'border-red-300/20 bg-red-300/10 text-[var(--public-danger)]' : 'border-cyan-300/20 bg-cyan-300/10 text-[var(--public-accent-strong)]'"
           >
             {{ importMessage }}
           </div>
 
           <div
             v-if="importWarnings.length > 0"
-            class="mt-3 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-amber-50"
+            class="mt-3 rounded-2xl border border-amber-300/20 bg-amber-300/10 px-4 py-3 text-sm text-[var(--public-warning)]"
           >
             <p class="font-bold">{{ copy.importWarnings }}</p>
             <ul class="mt-2 list-disc space-y-1 pl-5">
@@ -73,41 +73,41 @@
         </section>
 
         <div class="mt-8 grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
-          <aside class="rounded-2xl border border-white/10 bg-[#17181d] p-4 sm:p-5">
+          <aside class="rounded-2xl public-template-panel p-4 sm:p-5">
             <div class="space-y-4">
               <label class="block">
-                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/38">{{ copy.search }}</span>
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[var(--public-muted)]">{{ copy.search }}</span>
                 <input
                   v-model.trim="draftSearch"
                   type="search"
-                  class="h-12 w-full rounded-xl border border-white/10 bg-white/[0.045] px-4 text-sm text-white outline-none transition placeholder:text-white/30 focus:border-cyan-300/40 focus:bg-white/[0.065]"
+                  class="h-12 w-full rounded-xl border public-template-input px-4 text-sm text-[var(--public-ink)] outline-none transition placeholder:text-[var(--public-faint)] focus:border-cyan-300/40 focus:bg-[var(--public-panel-soft)]"
                   :placeholder="copy.searchPlaceholder"
                   @keyup.enter="applySearch"
                 />
               </label>
 
               <div>
-                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-white/38">{{ copy.allCategories }}</span>
+                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[var(--public-muted)]">{{ copy.allCategories }}</span>
                 <div class="flex flex-wrap items-start gap-2">
                   <button
                     type="button"
                     class="inline-flex min-h-10 max-w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-sm font-semibold transition"
-                    :class="!filters.category ? 'border-cyan-300/35 bg-cyan-300/10 text-cyan-50' : 'border-white/10 bg-white/[0.035] text-white/68 hover:bg-white/[0.06]'"
+                    :class="!filters.category ? 'border-cyan-300/35 bg-cyan-300/10 text-[var(--public-accent-strong)]' : 'border-[var(--public-border)] bg-[var(--public-panel-soft)] text-[var(--public-body)] hover:bg-[var(--public-panel-soft)]'"
                     @click="setCategoryFilter('')"
                   >
                     <span>{{ copy.allCategories }}</span>
-                    <span class="text-xs text-white/35">{{ summary.total }}</span>
+                    <span class="text-xs text-[var(--public-faint)]">{{ summary.total }}</span>
                   </button>
                   <button
                     v-for="(category, index) in categoryOptions"
                     :key="category.value"
                     type="button"
                     class="inline-flex min-h-10 max-w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-sm font-semibold transition"
-                    :class="[categoryChipClass(index), filters.category === category.value ? 'border-cyan-300/35 bg-cyan-300/10 text-cyan-50' : 'border-white/10 bg-white/[0.035] text-white/68 hover:bg-white/[0.06]']"
+                    :class="[categoryChipClass(index), filters.category === category.value ? 'border-cyan-300/35 bg-cyan-300/10 text-[var(--public-accent-strong)]' : 'border-[var(--public-border)] bg-[var(--public-panel-soft)] text-[var(--public-body)] hover:bg-[var(--public-panel-soft)]']"
                     @click="setCategoryFilter(category.value)"
                   >
                     <span class="min-w-0 truncate">{{ facetLabel(category) }}</span>
-                    <span class="shrink-0 text-xs text-white/35">{{ category.count }}</span>
+                    <span class="shrink-0 text-xs text-[var(--public-faint)]">{{ category.count }}</span>
                   </button>
                 </div>
               </div>
@@ -124,33 +124,33 @@
 
           <div class="min-w-0">
             <div v-if="loading && items.length === 0" class="flex justify-center py-20">
-              <div class="h-10 w-10 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+              <div class="h-10 w-10 animate-spin rounded-full border-2 border-[var(--public-border-strong)] border-t-white"></div>
             </div>
 
             <div
               v-else-if="errorMessage"
-              class="rounded-2xl border border-red-300/20 bg-red-300/10 px-5 py-4 text-sm text-red-100"
+              class="public-template-error" px-5 py-4 text-sm text-[var(--public-danger)]"
             >
               {{ errorMessage }}
             </div>
 
             <div
               v-else-if="items.length === 0"
-              class="rounded-2xl border border-white/10 bg-white/[0.03] px-8 py-16 text-center"
+              class="rounded-2xl public-template-panel-muted px-8 py-16 text-center"
             >
-              <h2 class="text-2xl font-bold text-white">{{ copy.emptyTitle }}</h2>
-              <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-white/55">{{ copy.emptyDescription }}</p>
+              <h2 class="text-2xl font-bold text-[var(--public-ink)]">{{ copy.emptyTitle }}</h2>
+              <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--public-body)]">{{ copy.emptyDescription }}</p>
             </div>
 
             <section
               v-else
-              class="rounded-2xl border border-white/10"
+              class="rounded-2xl border border-[var(--public-border)]"
             >
               <div class="grid gap-5 p-1 xl:grid-cols-2 2xl:grid-cols-3">
                 <article
                   v-for="item in items"
                   :key="item.id"
-                  class="flex min-h-[420px] flex-col overflow-hidden rounded-2xl border border-white/10 bg-[#17181d] shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
+                  class="flex min-h-[420px] flex-col overflow-hidden rounded-2xl public-template-panel shadow-[0_20px_60px_rgba(0,0,0,0.24)]"
                 >
                   <button
                     type="button"
@@ -164,7 +164,7 @@
                       loading="lazy"
                       class="h-full w-full object-contain transition duration-300 group-hover/image:scale-[1.02]"
                     />
-                    <div v-else class="flex h-full items-center justify-center px-6 text-center text-sm text-white/35">
+                    <div v-else class="flex h-full items-center justify-center px-6 text-center text-sm text-[var(--public-faint)]">
                       {{ copy.noImage }}
                     </div>
                   </button>
@@ -173,22 +173,22 @@
                     <div class="flex flex-wrap gap-2">
                       <span
                         v-if="item.source_display_label"
-                        class="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-xs font-semibold text-white/60"
+                        class="rounded-full border public-template-input px-3 py-1 text-xs font-semibold text-[var(--public-body)]"
                       >
                         {{ item.source_display_label }}
                       </span>
                       <span
                         v-if="item.category"
-                        class="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-100"
+                        class="rounded-full border border-cyan-300/20 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-[var(--public-accent-strong)]"
                       >
                         {{ categoryLabel(item.category) }}
                       </span>
                     </div>
 
-                    <h2 class="mt-4 line-clamp-2 text-xl font-black leading-tight text-white">
+                    <h2 class="mt-4 line-clamp-2 text-xl font-black leading-tight text-[var(--public-ink)]">
                       {{ item.title }}
                     </h2>
-                    <p class="mt-3 line-clamp-4 text-sm leading-7 text-white/58">
+                    <p class="mt-3 line-clamp-4 text-sm leading-7 text-[var(--public-body)]">
                       {{ item.prompt_preview || item.prompt }}
                     </p>
 
@@ -196,32 +196,32 @@
                       <span
                         v-for="tag in item.visible_tags"
                         :key="tag"
-                        class="rounded-full bg-white/[0.045] px-2.5 py-1 text-xs text-white/50"
+                        class="rounded-full bg-[var(--public-panel-soft)] px-2.5 py-1 text-xs text-[var(--public-muted)]"
                       >
                         {{ tag }}
                       </span>
                     </div>
 
                     <div class="mt-auto flex items-center justify-between gap-3 pt-5">
-                      <p class="text-xs text-white/35">{{ formattedDate(item.imported_at || item.created_at) }}</p>
+                      <p class="text-xs text-[var(--public-faint)]">{{ formattedDate(item.imported_at || item.created_at) }}</p>
                       <div class="flex shrink-0 flex-wrap justify-end gap-2">
                         <button
                           type="button"
-                          class="rounded-xl border border-white/10 px-3 py-2 text-xs font-semibold text-white/70 transition hover:bg-white/[0.06]"
+                          class="rounded-xl border border-[var(--public-border)] px-3 py-2 text-xs font-semibold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)]"
                           @click="openDetails(item)"
                         >
                           {{ copy.details }}
                         </button>
                         <button
                           type="button"
-                          class="rounded-xl border border-violet-300/20 bg-violet-300/10 px-3 py-2 text-xs font-semibold text-violet-100 transition hover:bg-violet-300/20"
+                          class="rounded-xl border border-violet-300/20 bg-violet-300/10 px-3 py-2 text-xs font-semibold text-[var(--public-accent-strong)] transition hover:bg-violet-300/20"
                           @click="openGenerator(item)"
                         >
                           {{ copy.generate }}
                         </button>
                         <button
                           type="button"
-                          class="rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-cyan-100 transition hover:bg-cyan-300/20"
+                          class="rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-[var(--public-accent-strong)] transition hover:bg-cyan-300/20"
                           @click="copyPrompt(item)"
                         >
                           {{ copy.copyPrompt }}
@@ -233,12 +233,12 @@
               </div>
 
               <div v-if="loadingMore" class="flex justify-center py-6">
-                <div class="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white"></div>
+                <div class="h-8 w-8 animate-spin rounded-full border-2 border-[var(--public-border-strong)] border-t-white"></div>
               </div>
 
               <div
                 v-if="!loadingMore && page >= pages && items.length > 0"
-                class="py-4 text-center text-xs text-white/30"
+                class="py-4 text-center text-xs text-[var(--public-faint)]"
               >
                 {{ copy.noMoreResults || '· · ·' }}
               </div>
@@ -256,16 +256,16 @@
       :z-index="80"
       @close="closeDetails"
     >
-      <div v-if="selectedPrompt" class="grid max-h-[72vh] gap-6 overflow-y-auto pr-1 text-slate-900 dark:text-white lg:grid-cols-[minmax(0,1fr)_420px]">
+      <div v-if="selectedPrompt" class="grid max-h-[72vh] gap-6 overflow-y-auto pr-1 text-slate-900 dark:text-[var(--public-ink)] lg:grid-cols-[minmax(0,1fr)_420px]">
         <section class="min-w-0">
-          <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 dark:border-white/10">
+          <div class="overflow-hidden rounded-2xl border border-slate-200 bg-slate-950 dark:border-[var(--public-border)]">
             <img
               v-if="selectedPrompt.primary_image_url"
               :src="selectedPrompt.primary_image_url"
               :alt="selectedPrompt.title"
               class="max-h-[62vh] w-full object-contain"
             />
-            <div v-else class="flex min-h-[320px] items-center justify-center px-6 text-sm text-white/45">
+            <div v-else class="flex min-h-[320px] items-center justify-center px-6 text-sm text-[var(--public-muted)]">
               {{ copy.noImage }}
             </div>
           </div>
@@ -276,7 +276,7 @@
               :key="image"
               :src="image"
               :alt="selectedPrompt.title"
-              class="h-20 w-20 shrink-0 rounded-xl border border-slate-200 object-cover dark:border-white/10"
+              class="h-20 w-20 shrink-0 rounded-xl border border-slate-200 object-cover dark:border-[var(--public-border)]"
             />
           </div>
         </section>
@@ -285,31 +285,31 @@
           <div class="flex flex-wrap gap-2">
             <span
               v-if="selectedPrompt.source_display_label"
-              class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-white/60"
+              class="rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-600 dark:border-[var(--public-border)] dark:bg-[var(--public-panel-soft)] dark:text-[var(--public-body)]"
             >
               {{ selectedPrompt.source_display_label }}
             </span>
             <span
               v-if="selectedPrompt.category"
-              class="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-cyan-700 dark:text-cyan-100"
+              class="rounded-full border border-cyan-300/30 bg-cyan-300/10 px-3 py-1 text-xs font-semibold text-[var(--public-accent-strong)]"
             >
               {{ categoryLabel(selectedPrompt.category) }}
             </span>
           </div>
 
-          <div class="rounded-2xl border border-slate-200 bg-slate-50 dark:border-white/10 dark:bg-white/[0.035]">
-            <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-white/10">
-              <h3 class="text-sm font-bold text-slate-700 dark:text-white/75">{{ copy.prompt }}</h3>
+          <div class="rounded-2xl border border-slate-200 bg-slate-50 dark:border-[var(--public-border)] dark:bg-[var(--public-panel-soft)]">
+            <div class="flex items-center justify-between border-b border-slate-200 px-4 py-3 dark:border-[var(--public-border)]">
+              <h3 class="text-sm font-bold text-slate-700 dark:text-[var(--public-body)]">{{ copy.prompt }}</h3>
               <span class="text-xs text-slate-400">{{ selectedPrompt.prompt_char_count }} {{ copy.charUnit }}</span>
             </div>
-            <pre class="whitespace-pre-wrap break-words p-4 text-sm leading-7 text-slate-700 dark:text-white/70">{{ selectedPrompt.prompt }}</pre>
+            <pre class="whitespace-pre-wrap break-words p-4 text-sm leading-7 text-slate-700 dark:text-[var(--public-body)]">{{ selectedPrompt.prompt }}</pre>
           </div>
 
           <div class="flex flex-wrap gap-2">
             <span
               v-for="tag in selectedPrompt.all_tags"
               :key="tag"
-              class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-500 dark:bg-white/[0.045] dark:text-white/50"
+              class="rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-500 dark:bg-[var(--public-panel-soft)] dark:text-[var(--public-muted)]"
             >
               {{ tag }}
             </span>
@@ -318,14 +318,14 @@
           <div class="flex flex-wrap gap-3">
             <button
               type="button"
-              class="rounded-xl bg-cyan-300 px-4 py-2 text-sm font-bold text-slate-950 transition hover:bg-cyan-200"
+              class="public-template-button-primary px-4 py-2 text-sm font-bold"
               @click="copyPrompt(selectedPrompt)"
             >
               {{ copy.copyPrompt }}
             </button>
             <button
               type="button"
-              class="rounded-xl bg-violet-500 px-4 py-2 text-sm font-bold text-white transition hover:bg-violet-400"
+              class="public-template-button px-4 py-2 text-sm font-bold"
               @click="openGenerator(selectedPrompt)"
             >
               {{ copy.generate }}
@@ -335,7 +335,7 @@
               :href="selectedPrompt.source_url"
               target="_blank"
               rel="noreferrer"
-              class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 dark:border-white/10 dark:text-white/70 dark:hover:bg-white/[0.06]"
+              class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 dark:border-[var(--public-border)] dark:text-[var(--public-body)] dark:hover:bg-[var(--public-panel-soft)]"
             >
               {{ copy.source }}
             </a>

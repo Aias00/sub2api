@@ -173,7 +173,8 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import { useClipboard } from '@/composables/useClipboard'
 import { useAppStore, useAuthStore } from '@/stores'
-import { apiClient, buildApiUrl } from '@/api/client'
+import { apiClient } from '@/api/client'
+import { buildApiUrl } from '@/api/url'
 import {
   exchangePendingOAuthCompletion,
   type OAuthTokenResponse
@@ -294,7 +295,7 @@ function redirectProviderCallbackToBackend(provider: EmailOAuthProvider): void {
     }
   }
   const suffix = params.toString() ? `?${params.toString()}` : ''
-  window.location.href = buildApiUrl(`/auth/oauth/${provider}/callback${suffix}`, appStore.cachedPublicSettings)
+  window.location.href = buildApiUrl(`/auth/oauth/${provider}/callback${suffix}`)
 }
 
 async function finalizeTokenResponse(tokenResponse: OAuthTokenResponse, redirect: string) {

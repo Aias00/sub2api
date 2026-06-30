@@ -45,6 +45,7 @@ func (r *channelMonitorRepository) Create(ctx context.Context, m *service.Channe
 		SetGroupName(m.GroupName).
 		SetEnabled(m.Enabled).
 		SetIntervalSeconds(m.IntervalSeconds).
+		SetJitterSeconds(m.JitterSeconds).
 		SetCreatedBy(m.CreatedBy).
 		SetExtraHeaders(emptyHeadersIfNilRepo(m.ExtraHeaders)).
 		SetBodyOverrideMode(defaultBodyModeRepo(m.BodyOverrideMode))
@@ -88,6 +89,7 @@ func (r *channelMonitorRepository) Update(ctx context.Context, m *service.Channe
 		SetGroupName(m.GroupName).
 		SetEnabled(m.Enabled).
 		SetIntervalSeconds(m.IntervalSeconds).
+		SetJitterSeconds(m.JitterSeconds).
 		SetExtraHeaders(emptyHeadersIfNilRepo(m.ExtraHeaders)).
 		SetBodyOverrideMode(defaultBodyModeRepo(m.BodyOverrideMode))
 	if m.TemplateID != nil {
@@ -740,28 +742,25 @@ func entToServiceMonitor(row *dbent.ChannelMonitor) *service.ChannelMonitor {
 		headers = map[string]string{}
 	}
 	out := &service.ChannelMonitor{
-		ID:                 row.ID,
-		Name:               row.Name,
-		Provider:           string(row.Provider),
-		Endpoint:           row.Endpoint,
-		APIKey:             row.APIKeyEncrypted, // 仍为密文，service 层负责解密
-		PrimaryModel:       row.PrimaryModel,
-		ExtraModels:        extras,
-		GroupName:          row.GroupName,
-		Enabled:            row.Enabled,
-		IntervalSeconds:    row.IntervalSeconds,
-		LastCheckedAt:      row.LastCheckedAt,
-		CreatedBy:          row.CreatedBy,
-		CreatedAt:          row.CreatedAt,
-		UpdatedAt:          row.UpdatedAt,
-		AutoDisabled:       row.AutoDisabled,
-		AutoDisabledAt:     row.AutoDisabledAt,
-		AutoDisabledReason: row.AutoDisabledReason,
-		AutoRecoveredAt:    row.AutoRecoveredAt,
-		LastHealthStatus:   row.LastHealthStatus,
-		ExtraHeaders:       headers,
-		BodyOverrideMode:   row.BodyOverrideMode,
-		BodyOverride:       row.BodyOverride,
+		ID:               row.ID,
+		Name:             row.Name,
+		Provider:         string(row.Provider),
+		APIMode:          defaultAPIModeRepo(row.APIMode),
+		Endpoint:         row.Endpoint,
+		APIKey:           row.APIKeyEncrypted, // 仍为密文，service 层负责解密
+		PrimaryModel:     row.PrimaryModel,
+		ExtraModels:      extras,
+		GroupName:        row.GroupName,
+		Enabled:          row.Enabled,
+		IntervalSeconds:  row.IntervalSeconds,
+		JitterSeconds:    row.JitterSeconds,
+		LastCheckedAt:    row.LastCheckedAt,
+		CreatedBy:        row.CreatedBy,
+		CreatedAt:        row.CreatedAt,
+		UpdatedAt:        row.UpdatedAt,
+		ExtraHeaders:     headers,
+		BodyOverrideMode: row.BodyOverrideMode,
+		BodyOverride:     row.BodyOverride,
 	}
 	if row.TemplateID != nil {
 		id := *row.TemplateID

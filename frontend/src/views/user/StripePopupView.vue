@@ -61,18 +61,7 @@ import { useAppStore } from '@/stores'
 import { extractI18nErrorMessage } from '@/utils/apiError'
 import { getStripePaymentMethodColor } from '@/components/payment/paymentMethod'
 import { isMobileDevice } from '@/utils/device'
-import {
-  renderStripePopupText,
-  resolveStripePopupLabels,
-  resolveStripePaymentRuntimeDefaults,
-  type StripePopupLabelKey,
-} from '@/utils/paymentShell'
-import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
-import {
-  buildStripePopupPaymentResultReturnUrl,
-  formatStripePopupDisplayAmount,
-  resolveStripePopupRouteState,
-} from './stripePopupRuntime'
+import { buildApiUrl } from '@/api/client'
 
 interface StripeWithWechatPay {
   confirmWechatPayPayment(clientSecret: string, options: Record<string, unknown>): Promise<{ error?: { message?: string }; paymentIntent?: { status: string } }>
@@ -186,7 +175,7 @@ function startPolling() {
     try {
       const token = document.cookie.split('; ').find(c => c.startsWith('token='))?.split('=')[1]
         || localStorage.getItem('token') || ''
-      const res = await fetch('/api/v1/payment/orders/' + orderId, {
+      const res = await fetch(buildApiUrl(`/payment/orders/${orderId}`), {
         headers: token ? { Authorization: 'Bearer ' + token } : {},
         credentials: 'include',
       })

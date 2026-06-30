@@ -1,25 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  formatPaymentAmount,
-  normalizePaymentCountryCode,
-  normalizePaymentCurrency,
-} from '../currency'
-
-describe('payment currency normalization', () => {
-  it('normalizes only explicit payment currency data from Sub2API', () => {
-    expect(normalizePaymentCurrency(' usd ')).toBe('USD')
-    expect(normalizePaymentCurrency('')).toBe('')
-    expect(normalizePaymentCurrency(null)).toBe('')
-    expect(normalizePaymentCurrency('invalid')).toBe('')
-  })
-
-  it('normalizes only explicit payment country data from Sub2API', () => {
-    expect(normalizePaymentCountryCode(' hk ')).toBe('HK')
-    expect(normalizePaymentCountryCode('')).toBe('')
-    expect(normalizePaymentCountryCode(null)).toBe('')
-    expect(normalizePaymentCountryCode('invalid')).toBe('')
-  })
-})
+import { currencySymbol, formatPaymentAmount } from '../currency'
 
 describe('formatPaymentAmount', () => {
   it('does not synthesize a currency prefix when currency data is missing', () => {
@@ -32,5 +12,15 @@ describe('formatPaymentAmount', () => {
     expect(formatPaymentAmount(100, 'JPY', 'en-US')).not.toContain('.00')
     expect(formatPaymentAmount(100, 'KRW', 'en-US')).not.toContain('.00')
     expect(formatPaymentAmount(100, 'HKD', 'en-US')).toContain('.00')
+  })
+})
+
+describe('currencySymbol', () => {
+  it('maps common payment currencies and falls back safely', () => {
+    expect(currencySymbol('USD')).toBe('$')
+    expect(currencySymbol('cny')).toBe('¥')
+    expect(currencySymbol('EUR')).toBe('€')
+    expect(currencySymbol('')).toBe('¥')
+    expect(currencySymbol('XYZ')).toBe('XYZ')
   })
 })
