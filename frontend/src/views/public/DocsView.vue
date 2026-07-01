@@ -1,53 +1,28 @@
 <template>
-  <div class="docs-page home-business-page relative min-h-screen overflow-x-hidden bg-white text-slate-900 dark:bg-dark-950 dark:text-white">
-    <div class="pointer-events-none absolute inset-0 overflow-hidden">
-      <div class="absolute inset-x-0 top-0 h-[28rem] bg-[radial-gradient(circle_at_18%_16%,rgba(125,211,252,0.22),transparent_24%),radial-gradient(circle_at_86%_0%,rgba(191,219,254,0.2),transparent_26%),linear-gradient(180deg,rgba(248,250,252,0.95),rgba(255,255,255,0))] dark:bg-[radial-gradient(circle_at_18%_16%,rgba(56,189,248,0.12),transparent_24%),radial-gradient(circle_at_86%_0%,rgba(59,130,246,0.1),transparent_26%),linear-gradient(180deg,rgba(15,23,42,0.9),rgba(2,6,23,0))]"></div>
-      <div class="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:72px_72px] opacity-30 dark:opacity-10"></div>
-    </div>
+  <div class="docs-page home-business-page public-template-page relative min-h-screen overflow-x-hidden">
+    <PublicDarkHeader
+      :account-label="isAuthenticated ? copy.dashboard : copy.login"
+      container-class="max-w-6xl"
+    />
 
-    <header class="sticky top-0 z-40 border-b border-slate-200/80 bg-white/92 backdrop-blur-xl dark:border-dark-700/80 dark:bg-dark-950/88">
-      <div class="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-3 md:px-6">
-        <RouterLink
-          :to="authRouteDefaults.homePath"
-          class="flex min-w-0 items-center gap-3"
-        >
-          <div v-if="siteLogo" class="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-slate-200 bg-white/80 dark:border-white/10 dark:bg-white/5">
-            <img :src="siteLogo" :alt="siteName" class="h-full w-full object-contain" />
+    <main class="public-template-main">
+      <div class="public-template-container">
+        <section class="mb-8">
+          <p class="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--public-muted)]">
+            {{ docsHeroEyebrow }}
+          </p>
+          <h1 class="mt-4 max-w-4xl text-4xl font-black leading-tight text-[var(--public-ink)] sm:text-5xl">
+            {{ copy.title }}
+          </h1>
+          <p class="mt-4 max-w-3xl text-base leading-8 text-[var(--public-body)]">
+            {{ docsHeroDescription }}
+          </p>
+        </section>
+
+        <div class="docs-template-shell overflow-hidden rounded-2xl border border-[var(--public-border)] bg-[var(--public-panel)] shadow-[0_18px_48px_rgba(0,0,0,0.08)]">
+          <div class="docsify-shell">
+            <div id="docsify-app" ref="docsifyRoot" class="min-h-[70vh]"></div>
           </div>
-          <span
-            v-else
-            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-200 bg-white/80 text-xs font-semibold tracking-[0.12em] text-slate-700 dark:border-white/10 dark:bg-white/5 dark:text-white"
-          >
-            {{ siteName.slice(0, 2).toUpperCase() }}
-          </span>
-          <span class="truncate text-sm font-semibold text-slate-950 dark:text-white">{{ siteName }}</span>
-        </RouterLink>
-
-        <div class="flex items-center gap-2">
-          <LocaleSwitcher />
-          <router-link
-            v-if="isAuthenticated"
-            :to="dashboardPath"
-            class="inline-flex items-center rounded-2xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:px-4 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
-          >
-            <span class="hidden sm:inline">{{ copy.dashboard }}</span>
-            <span class="sm:hidden">{{ copy.dashboard }}</span>
-          </router-link>
-          <router-link
-            v-else
-            :to="loginPath"
-            class="inline-flex items-center rounded-2xl bg-slate-950 px-3 py-2 text-sm font-semibold text-white transition hover:bg-slate-800 sm:px-4 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
-          >
-            {{ copy.login }}
-          </router-link>
-        </div>
-      </div>
-    </header>
-
-    <main class="relative z-10 mx-auto max-w-[1600px] px-4 py-4 md:px-6 md:py-6">
-      <div class="rounded-[36px] border border-slate-200/80 bg-white shadow-[0_28px_90px_-54px_rgba(15,23,42,0.22)] dark:border-dark-700 dark:bg-dark-950/72">
-        <div class="docsify-shell px-2 py-3 md:px-4 md:py-4">
-          <div id="docsify-app" ref="docsifyRoot" class="min-h-[70vh]"></div>
         </div>
       </div>
     </main>
@@ -56,12 +31,12 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { RouterLink, useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores'
 import { useAuthStore } from '@/stores/auth'
 import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
-import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
+import PublicDarkHeader from '@/components/layout/PublicDarkHeader.vue'
 import docsifyScriptUrl from 'docsify/lib/docsify.min.js?url'
 import docsifySearchPluginUrl from 'docsify/lib/plugins/search.min.js?url'
 import docsifyZoomImagePluginUrl from 'docsify/lib/plugins/zoom-image.min.js?url'
@@ -88,14 +63,11 @@ const router = useRouter()
 const { locale } = useI18n()
 const appStore = useAppStore()
 const authStore = useAuthStore()
-const { authRouteDefaults, resolveHomePath } = useAuthRouteDefaults()
+const { authRouteDefaults } = useAuthRouteDefaults()
 
 const docsifyRoot = ref<HTMLElement | null>(null)
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName)
-const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
 const isAuthenticated = computed(() => authStore.isAuthenticated)
-const dashboardPath = computed(() => resolveHomePath(authStore.isAdmin))
-const loginPath = computed(() => authRouteDefaults.value.loginPath)
 const docsLocale = computed<'zh' | 'en'>(() => resolveRuntimeLanguage(locale))
 const docsBasePath = computed(() =>
   resolveDocsContentBasePath(appStore.cachedPublicSettings?.docs_content_base_path, docsLocale.value),
@@ -104,6 +76,12 @@ const docsShellConfig = computed(() =>
   resolveDocsShellConfig(appStore.cachedPublicSettings?.docs_shell_config, docsLocale.value),
 )
 const copy = computed(() => docsShellConfig.value.labels)
+const docsHeroEyebrow = computed(() => (docsLocale.value === 'zh' ? 'Documentation' : 'Documentation'))
+const docsHeroDescription = computed(() =>
+  docsLocale.value === 'zh'
+    ? '查看部署、控制台、业务能力和模型接入指南，快速定位当前需要的配置与流程。'
+    : 'Browse deployment, console, business capability, and model integration guides in one place.',
+)
 const docsContentVersion = computed(() =>
   encodeURIComponent(appStore.cachedPublicSettings?.version || ''),
 )
@@ -333,6 +311,11 @@ onBeforeUnmount(() => {
   min-height: 100vh;
 }
 
+.docs-template-shell {
+  background: var(--public-panel);
+  color: var(--public-ink);
+}
+
 .docsify-shell :deep(section.cover) {
   display: none;
 }
@@ -348,22 +331,19 @@ onBeforeUnmount(() => {
 
 .docsify-shell :deep(.sidebar) {
   position: sticky !important;
-  top: 0 !important;
+  top: 1rem !important;
   left: auto !important;
   bottom: auto !important;
-  flex: 0 0 15.5rem;
-  width: 15.5rem !important;
-  height: calc(100vh - 12rem) !important;
-  border-right: 1px solid rgba(226, 232, 240, 0.96);
-  padding: 0.75rem 1rem 2rem !important;
+  flex: 0 0 17rem;
+  width: 17rem !important;
+  height: calc(100vh - 9rem) !important;
+  margin: 1rem 0 1rem 1rem;
+  border: 1px solid var(--public-border);
+  border-radius: 1rem;
+  padding: 0.85rem 0.9rem 1rem !important;
   overflow-y: auto;
-  background: linear-gradient(180deg, rgba(248, 250, 252, 0.96), rgba(255, 255, 255, 0.92));
+  background: var(--public-panel-soft);
   z-index: 1;
-}
-
-.dark .docsify-shell :deep(.sidebar) {
-  border-right-color: rgba(51, 65, 85, 0.82);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.76), rgba(2, 6, 23, 0.7));
 }
 
 .docsify-shell :deep(.sidebar .app-name) {
@@ -402,40 +382,56 @@ onBeforeUnmount(() => {
   margin-left: 0 !important;
   padding-top: 0 !important;
   width: auto !important;
+  background: transparent;
 }
 
 .docsify-shell :deep(.markdown-section) {
-  max-width: min(980px, 100%);
+  max-width: min(900px, 100%);
   min-height: 70vh;
   margin: 0;
-  padding: 1.5rem 2.5rem 3rem;
+  padding: 2rem 2.5rem 3rem;
+  color: var(--public-body);
 }
 
 .docsify-shell :deep(.markdown-section h1),
 .docsify-shell :deep(.markdown-section h2),
 .docsify-shell :deep(.markdown-section h3),
 .docsify-shell :deep(.markdown-section h4) {
-  color: #0f172a;
+  color: var(--public-ink);
   font-weight: 800;
+  letter-spacing: 0;
 }
 
-.dark .docsify-shell :deep(.markdown-section h1),
-.dark .docsify-shell :deep(.markdown-section h2),
-.dark .docsify-shell :deep(.markdown-section h3),
-.dark .docsify-shell :deep(.markdown-section h4) {
-  color: #f8fafc;
+.docsify-shell :deep(.markdown-section h1) {
+  margin-top: 0;
+  font-size: clamp(2rem, 3.2vw, 2.85rem);
+  line-height: 1.12;
+}
+
+.docsify-shell :deep(.markdown-section h2) {
+  margin-top: 2.25rem;
+  border-top: 1px solid var(--public-border);
+  padding-top: 1.5rem;
+  font-size: 1.5rem;
+}
+
+.docsify-shell :deep(.markdown-section h3) {
+  font-size: 1.125rem;
+}
+
+.docsify-shell :deep(.markdown-section p),
+.docsify-shell :deep(.markdown-section li) {
+  color: var(--public-body);
+  line-height: 1.8;
 }
 
 .docsify-shell :deep(.markdown-section a) {
-  color: #0369a1;
+  color: var(--public-accent-strong);
+  text-decoration: none;
 }
 
 .docsify-shell :deep(.markdown-section a:hover) {
-  color: #0f172a;
-}
-
-.dark .docsify-shell :deep(.markdown-section a:hover) {
-  color: #e2e8f0;
+  color: var(--public-ink);
 }
 
 .docsify-shell :deep(.app-name-link),
@@ -444,15 +440,34 @@ onBeforeUnmount(() => {
   color: inherit;
 }
 
+.docsify-shell :deep(.sidebar-nav) {
+  color: var(--public-body);
+}
+
+.docsify-shell :deep(.sidebar-nav > ul > li) {
+  margin-bottom: 0.75rem;
+}
+
+.docsify-shell :deep(.sidebar-nav > ul > li > p),
+.docsify-shell :deep(.sidebar-nav > ul > li > strong) {
+  margin: 0.8rem 0 0.35rem;
+  color: var(--public-muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
 .docsify-shell :deep(.sidebar-nav a) {
   display: flex;
   width: 100%;
-  min-height: 2.15rem;
+  min-height: 2rem;
   align-items: center;
   overflow: hidden;
   border: 1px solid transparent;
-  border-radius: 999px;
-  padding: 0.42rem 0.75rem !important;
+  border-radius: 0.75rem;
+  padding: 0.36rem 0.65rem !important;
+  color: var(--public-body) !important;
+  font-size: 0.9rem;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-decoration: none;
@@ -467,32 +482,20 @@ onBeforeUnmount(() => {
 }
 
 .docsify-shell :deep(.sidebar-nav li.active > a) {
-  border: 1px solid rgba(56, 189, 248, 0.35);
-  border-radius: 999px;
-  background: rgba(224, 242, 254, 0.88);
-  box-shadow: 0 8px 20px -18px rgba(14, 165, 233, 0.8);
-  color: #0f172a !important;
+  border: 1px solid var(--public-border-strong);
+  border-radius: 0.75rem;
+  background: var(--public-panel);
+  color: var(--public-ink) !important;
   font-weight: 800;
   line-height: 1.25;
   text-decoration: none;
-}
-
-.dark .docsify-shell :deep(.sidebar-nav li.active > a) {
-  border-color: rgba(56, 189, 248, 0.38);
-  background: rgba(14, 165, 233, 0.14);
-  box-shadow: none;
-  color: #e0f2fe !important;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
 }
 
 .docsify-shell :deep(.sidebar-nav a:hover) {
-  border-color: rgba(148, 163, 184, 0.28);
-  background: rgba(248, 250, 252, 0.96);
-  color: #0f172a !important;
-}
-
-.dark .docsify-shell :deep(.sidebar-nav a:hover) {
-  background: rgba(15, 23, 42, 0.72);
-  color: #e2e8f0 !important;
+  border-color: var(--public-border);
+  background: var(--public-panel-soft);
+  color: var(--public-ink) !important;
 }
 
 .docsify-shell :deep(.search) {
@@ -500,17 +503,15 @@ onBeforeUnmount(() => {
 }
 
 .docsify-shell :deep(.search input) {
-  border-radius: 999px;
-  border-color: rgba(203, 213, 225, 0.92);
-  background: rgba(255, 255, 255, 0.98);
-  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
-  color: #0f172a;
+  border-radius: 0.875rem;
+  border-color: var(--public-border);
+  background: var(--public-panel);
+  box-shadow: none;
+  color: var(--public-ink);
 }
 
-.dark .docsify-shell :deep(.search input) {
-  border-color: rgba(51, 65, 85, 0.9);
-  background: rgba(15, 23, 42, 0.78);
-  color: #f8fafc;
+.docsify-shell :deep(.search input::placeholder) {
+  color: var(--public-faint);
 }
 
 .docsify-shell :deep(.sidebar-toggle) {
@@ -518,7 +519,37 @@ onBeforeUnmount(() => {
 }
 
 .docsify-shell :deep(.markdown-section code) {
-  color: inherit;
+  border: 1px solid var(--public-border);
+  border-radius: 0.375rem;
+  background: var(--public-panel-muted);
+  color: var(--public-ink);
+}
+
+.docsify-shell :deep(.markdown-section pre) {
+  border: 1px solid var(--public-border);
+  border-radius: 0.875rem;
+  background: var(--public-panel-muted);
+}
+
+.docsify-shell :deep(.markdown-section blockquote) {
+  border-left: 3px solid var(--public-border-strong);
+  color: var(--public-body);
+}
+
+.docsify-shell :deep(.markdown-section table) {
+  overflow: hidden;
+  border: 1px solid var(--public-border);
+  border-radius: 0.875rem;
+}
+
+.docsify-shell :deep(.markdown-section th) {
+  background: var(--public-panel-muted);
+  color: var(--public-ink);
+}
+
+.docsify-shell :deep(.markdown-section td),
+.docsify-shell :deep(.markdown-section th) {
+  border-color: var(--public-border);
 }
 
 @media (max-width: 960px) {
@@ -528,13 +559,14 @@ onBeforeUnmount(() => {
 
   .docsify-shell :deep(.sidebar) {
     position: relative !important;
-    width: 100% !important;
-    max-height: 16rem !important;
+    width: calc(100% - 2rem) !important;
+    max-height: 12rem !important;
     height: auto !important;
+    margin: 1rem;
     flex-basis: auto;
-    border-right: 0;
-    border-bottom: 1px solid rgba(148, 163, 184, 0.18);
-    padding: 0.5rem 0.75rem 1rem !important;
+    border-right: 1px solid var(--public-border);
+    border-bottom: 1px solid var(--public-border);
+    padding: 0.65rem 0.75rem !important;
     overflow-y: auto;
   }
 
@@ -553,7 +585,11 @@ onBeforeUnmount(() => {
   }
 
   .docsify-shell :deep(.markdown-section) {
-    padding: 1rem 1.25rem 2rem;
+    padding: 1.25rem 1.25rem 2rem;
+  }
+
+  .docsify-shell :deep(.markdown-section h1) {
+    font-size: 2rem;
   }
 }
 </style>
@@ -569,6 +605,22 @@ body.docs-page-body #app {
 body.docs-page-body {
   position: static !important;
   top: auto !important;
+}
+
+body.docs-page-body .public-dark-header nav {
+  position: static !important;
+  inset: auto !important;
+  display: flex !important;
+  width: 100% !important;
+  max-width: 72rem !important;
+  height: auto !important;
+  margin: 0 auto !important;
+  padding: 0 !important;
+}
+
+body.docs-page-body .public-dark-header__brand {
+  margin: 0 !important;
+  padding: 0 !important;
 }
 
 body.docs-page-body.sticky .sidebar,

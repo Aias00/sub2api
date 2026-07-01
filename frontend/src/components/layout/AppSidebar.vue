@@ -724,11 +724,11 @@ const customMenuItemsForAdmin = computed(() => {
 function buildSelfNavItemMap(withDashboard: boolean): Partial<Record<SelfSidebarItemKey, NavItem>> {
   const navPaths = authRouteDefaults.value
   const itemMap: Partial<Record<SelfSidebarItemKey, NavItem>> = {
-    tasks: { path: '/tasks', label: t('nav.myTasks'), icon: OrderIcon },
-    promptCatalog: { path: '/prompts', label: t('nav.promptCatalog'), icon: PromptIcon },
-    imageGenerator: { path: '/image-generator', label: t('nav.imageGenerator'), icon: ImageIcon },
-    wechatExport: { path: '/wechat-export', label: t('nav.wechatExport'), icon: OrderListIcon },
-    hotTopics: { path: '/hot', label: t('nav.hotTopics'), icon: FlameIcon },
+    tasks: { path: '/app/tasks', label: t('nav.myTasks'), icon: OrderIcon },
+    promptCatalog: { path: '/app/prompts', label: t('nav.promptCatalog'), icon: PromptIcon },
+    imageGenerator: { path: '/app/image-generator', label: t('nav.imageGenerator'), icon: ImageIcon },
+    wechatExport: { path: '/app/wechat', label: t('nav.wechatExport'), icon: OrderListIcon },
+    hotTopics: { path: '/app/hot', label: t('nav.hotTopics'), icon: FlameIcon },
     apiKeys: { path: navPaths.apiKeysPath, label: t('nav.apiKeys'), icon: KeyIcon },
     usage: { path: navPaths.usagePath, label: t('nav.usage'), icon: ChartIcon, hideInSimpleMode: true },
     availableChannels: { path: navPaths.availableChannelsPath, label: t('nav.availableChannels'), icon: ChannelIcon, hideInSimpleMode: true, featureFlag: flagAvailableChannels },
@@ -895,6 +895,7 @@ const adminNavSections = computed((): NavSection[] => {
     },
     usage: { path: adminPaths.adminUsagePath, label: t('nav.usage'), icon: ChartIcon },
     apiKeys: { path: authRouteDefaults.value.apiKeysPath, label: t('nav.apiKeys'), icon: KeyIcon },
+    workers: { path: '/admin/workers', label: t('nav.workers'), icon: ServerIcon },
     runtimeSettings: { path: navPaths.adminRuntimeSettingsPath, label: t('nav.runtimeSettings'), icon: CogIcon },
     settings: { path: navPaths.adminSettingsPath, label: t('nav.settings'), icon: CogIcon },
   }
@@ -916,6 +917,7 @@ const adminNavSections = computed((): NavSection[] => {
             'proxies',
             'usage',
             'apiKeys',
+            'workers',
             'runtimeSettings',
             'settings',
           ],
@@ -944,7 +946,7 @@ const adminNavSections = computed((): NavSection[] => {
         },
         {
           id: 'admin-settings',
-          items: ['runtimeSettings', 'settings'],
+          items: ['workers', 'runtimeSettings', 'settings'],
         },
       ]
 

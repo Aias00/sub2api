@@ -249,7 +249,7 @@ describe('HomeView', () => {
             template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
           },
           DocsLink: { template: '<a><slot /></a>' },
-          LocaleSwitcher: { template: '<div>locale</div>' },
+          PublicDarkHeader: { props: ['accountLabel'], template: '<header data-public-dark-header>{{ accountLabel }}<slot name="actions" /></header>' },
           Icon: { template: '<i />' },
         },
       },
@@ -258,7 +258,6 @@ describe('HomeView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('Configured home')
-    expect(wrapper.text()).toContain('Configured docs')
     expect(wrapper.text()).toContain('Configured login')
     expect(wrapper.text()).toContain('Configured hero')
     expect(wrapper.text()).toContain('Configured hero description')
@@ -298,7 +297,7 @@ describe('HomeView', () => {
             template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
           },
           DocsLink: { template: '<a><slot /></a>' },
-          LocaleSwitcher: { template: '<div>locale</div>' },
+          PublicDarkHeader: { props: ['accountLabel'], template: '<header data-public-dark-header>{{ accountLabel }}<slot name="actions" /></header>' },
           Icon: { template: '<i />' },
         },
       },
@@ -364,7 +363,7 @@ describe('HomeView', () => {
             template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
           },
           DocsLink: { template: '<a><slot /></a>' },
-          LocaleSwitcher: { template: '<div>locale</div>' },
+          PublicDarkHeader: { props: ['accountLabel'], template: '<header data-public-dark-header>{{ accountLabel }}<slot name="actions" /></header>' },
           Icon: { template: '<i />' },
         },
       },
@@ -376,7 +375,7 @@ describe('HomeView', () => {
     expect(wrapper.text()).toContain('WeChat Export')
     expect(wrapper.text()).toContain('Open WeChat')
     expect(wrapper.text()).toContain('Future hot page')
-    expect(wrapper.text()).toContain('In progress')
+    expect(wrapper.text()).not.toContain('In progress')
     expect(wrapper.text()).toContain('Open future hot')
     expect(wrapper.text()).not.toContain('Hidden card')
     expect(wrapper.find('a[href="/wechat"]').exists()).toBe(true)
@@ -434,7 +433,7 @@ describe('HomeView', () => {
             template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
           },
           DocsLink: { template: '<a><slot /></a>' },
-          LocaleSwitcher: { template: '<div>locale</div>' },
+          PublicDarkHeader: { props: ['accountLabel'], template: '<header data-public-dark-header>{{ accountLabel }}<slot name="actions" /></header>' },
           Icon: { template: '<i />' },
         },
       },
@@ -443,12 +442,12 @@ describe('HomeView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('WeChat Export')
-    expect(wrapper.text()).toContain('In progress')
+    expect(wrapper.text()).not.toContain('In progress')
     expect(wrapper.text()).toContain('WeChat Export service is not reachable.')
     expect(wrapper.find('a[href="/wechat"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('Hot topics')
-    expect(wrapper.text()).toContain('Live')
-    expect(wrapper.text()).toContain('541')
+    expect(wrapper.text()).not.toContain('Live')
+    expect(wrapper.text()).not.toContain('541')
     expect(wrapper.find('a[href="/hot"]').exists()).toBe(true)
     expect(wrapper.text()).toContain('Manual disabled')
   })
@@ -486,7 +485,7 @@ describe('HomeView', () => {
             template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
           },
           DocsLink: { template: '<a><slot /></a>' },
-          LocaleSwitcher: { template: '<div>locale</div>' },
+          PublicDarkHeader: { props: ['accountLabel'], template: '<header data-public-dark-header>{{ accountLabel }}<slot name="actions" /></header>' },
           Icon: { template: '<i />' },
         },
       },
@@ -495,7 +494,7 @@ describe('HomeView', () => {
     await flushPromises()
 
     expect(wrapper.text()).toContain('WeChat Export')
-    expect(wrapper.text()).toContain('In progress')
+    expect(wrapper.text()).not.toContain('In progress')
     expect(wrapper.find('a[href="/wechat"]').exists()).toBe(false)
     expect(wrapper.text()).toContain('Manual disabled')
     expect(wrapper.find('a[href="/image-generator"]').exists()).toBe(false)
@@ -506,9 +505,20 @@ describe('HomeView', () => {
     expect(homeViewSource).toContain('resolveBusinessHomeShellConfig')
     expect(homeViewSource).toContain("route.path === '/sub'")
     expect(homeViewSource).toContain('useAuthRouteDefaults')
-    expect(homeViewSource).toContain(':to="authRouteDefaults.homePath"')
-    expect(homeViewSource).toContain('data-home-primary-action')
+    expect(homeViewSource).toContain('PublicDarkHeader')
+    expect(homeViewSource).toContain('container-class="max-w-6xl"')
+    expect(homeViewSource).not.toContain(':to="authRouteDefaults.homePath"')
+    expect(homeViewSource).not.toContain('<nav class="mx-auto flex max-w-6xl items-center justify-between">')
+    expect(homeViewSource).not.toContain('<nav class="mx-auto flex max-w-5xl items-center justify-between">')
+    expect(homeViewSource).not.toContain('data-home-primary-action')
+    expect(homeViewSource).not.toContain('data-home-nav-text')
     expect(homeViewSource).toContain('data-home-capability-grid')
+    expect(homeViewSource).not.toContain('const navItems')
+    expect(homeViewSource).not.toContain('v-for="item in navItems"')
+    expect(homeViewSource).not.toContain('businessCardStatusClass')
+    expect(homeViewSource).not.toContain('businessCardCountLabel')
+    expect(homeViewSource).not.toContain('card.statusLabel')
+    expect(homeViewSource).not.toContain('card.statusCount')
     expect(homeViewSource).toContain("isBusinessHome ? 'capabilities' : 'models'")
     expect(homeViewSource).toContain('<div data-home-hero>')
     expect(homeViewSource).not.toContain(':href="capabilityAnchor"')

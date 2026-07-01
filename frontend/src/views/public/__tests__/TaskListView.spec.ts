@@ -36,15 +36,31 @@ describe('TaskListView', () => {
   it('uses the prompt catalog style public navigation and hero layout', () => {
     expect(taskListViewSource).toContain('PublicDarkHeader')
     expect(taskListViewSource).toContain(':account-label="isAuthenticated ? t(\'nav.dashboard\') : t(\'common.login\')"')
-    expect(taskListViewSource).toContain('lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)]')
+    expect(taskListViewSource).toContain('xl:grid-cols-[minmax(0,1fr)_minmax(320px,460px)]')
   })
 
-  it('uses Vercel-inspired task page chrome', () => {
-    expect(taskListViewSource).toContain('home-business-page min-h-screen bg-[#101114] text-white')
-    expect(taskListViewSource).toContain('rounded-2xl border border-white/10 bg-[#17181d]')
-    expect(taskListViewSource).toContain('lg:grid-cols-[300px_minmax(0,1fr)]')
-    expect(taskListViewSource).toContain('font-mono text-xs text-white/38')
-    expect(taskListViewSource).toContain('grid-cols-[minmax(0,1fr)_140px_140px_170px_190px]')
+  it('keeps task controls compact above the task results', () => {
+    expect(taskListViewSource).toContain('mt-8 min-w-0 space-y-5')
+    expect(taskListViewSource).toContain('xl:grid-cols-[minmax(0,1fr)_auto]')
+    expect(taskListViewSource).toContain('mt-5 grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4')
+    expect(taskListViewSource).toContain('@click="setSummaryFilter(summary.key)"')
+    expect(taskListViewSource).not.toContain('lg:grid-cols-[300px_minmax(0,1fr)]')
+    expect(taskListViewSource).not.toContain('lg:sticky lg:top-6')
+  })
+
+  it('prevents wide task controls from creating horizontal page overflow', () => {
+    expect(taskListViewSource).toContain('public-template-container-wide overflow-x-hidden')
+    expect(taskListViewSource).toContain('public-template-panel min-w-0 overflow-hidden')
+    expect(taskListViewSource).toContain('grid min-w-0 gap-2 sm:grid-cols-2')
+    expect(taskListViewSource).toContain('class="public-template-button-primary h-11 w-full')
+  })
+
+  it('uses a full-width task table and useful empty-state actions', () => {
+    expect(taskListViewSource).toContain('grid-cols-[minmax(0,1.45fr)_120px_120px_160px_220px]')
+    expect(taskListViewSource).toContain(':to="wechatPath" class="inline-flex h-11')
+    expect(taskListViewSource).toContain(':to="imageGeneratorPath" class="public-template-button-primary h-11')
+    expect(taskListViewSource).toContain("const wechatPath = computed(() => props.appShell ? '/app/wechat' : '/wechat')")
+    expect(taskListViewSource).toContain("const imageGeneratorPath = computed(() => props.appShell ? '/app/image-generator' : '/image-generator')")
   })
 
   it('preserves the original WeChat task API default pagination', () => {

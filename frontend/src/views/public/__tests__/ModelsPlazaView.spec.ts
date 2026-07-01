@@ -198,6 +198,8 @@ describe('ModelsPlazaView', () => {
 
   it('does not keep locale-specific model plaza fallback copy in the view bootstrap layer', () => {
     expect(modelsPlazaViewSource).toContain('PublicDarkHeader')
+    expect(modelsPlazaViewSource).not.toContain('DocsLink')
+    expect(modelsPlazaViewSource).not.toContain('copy.viewDocs')
     expect(modelsPlazaViewSource).not.toContain('useAuthRouteDefaults')
     expect(modelsPlazaViewSource).not.toContain(':to="authRouteDefaults.homePath"')
     expect(modelsPlazaViewSource).not.toContain('to="/home"')

@@ -128,6 +128,16 @@ vi.mock('@/i18n', () => ({
   getLocale: () => currentLocale.value,
 }))
 
+vi.mock('vue-router', async () => {
+  const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
+  return {
+    ...actual,
+    useRouter: () => ({
+      push: vi.fn(),
+    }),
+  }
+})
+
 vi.mock('vue-i18n', () => {
   const zh: Record<string, string> = {
     'imageWorkspace.negativePrompt': '反向提示词',
@@ -142,7 +152,9 @@ vi.mock('vue-i18n', () => {
     'imageWorkspace.queuing': '排队中...',
     'imageWorkspace.loginRequired': '登录后可以创建生图任务',
     'imageWorkspace.estimatedCost': '预计消耗',
+    'imageWorkspace.currentBalance': '当前余额',
     'imageWorkspace.insufficientBalance': '余额低于本次任务预计消耗',
+    'imageWorkspace.topUp': '充值',
     'imageWorkspace.noTasks': '还没有生图任务。',
     'imageWorkspace.generationHistory': '生成历史',
     'imageWorkspace.imageTasks': '生图任务',
@@ -317,6 +329,10 @@ describe('ImageGeneratorView', () => {
 
     const generateButton = wrapper.findAll('button').find((button) => button.text() === '开始生图')
     expect(generateButton?.attributes('disabled')).toBeDefined()
+    expect(wrapper.text()).toContain('余额低于本次任务预计消耗')
+    expect(wrapper.text()).toContain('当前余额 0.25')
+    expect(wrapper.text()).toContain('预计消耗 0.50')
+    expect(wrapper.text()).toContain('充值')
   })
 
   it('renders image artifacts with preserved aspect ratio, download action, and lightbox preview', async () => {
@@ -570,10 +586,15 @@ describe('ImageGeneratorView', () => {
 
   it('does not embed default workspace shell copy in the Vue view', () => {
     expect(imageGeneratorViewSource).toContain('PublicDarkHeader')
+    expect(imageGeneratorViewSource).toContain('container-class="max-w-6xl"')
+    expect(imageGeneratorViewSource).toContain('public-template-container')
     expect(imageGeneratorViewSource).toContain("t('imageWorkspace.goConsole')")
-    expect(imageGeneratorViewSource).not.toContain('useAuthRouteDefaults')
+    expect(imageGeneratorViewSource).toContain('useAuthRouteDefaults')
+    expect(imageGeneratorViewSource).toContain('authRouteDefaults.value.purchasePath')
+    expect(imageGeneratorViewSource).toContain(':to="rechargeRoute"')
+    expect(imageGeneratorViewSource).toContain("query: { tab: 'recharge' }")
     expect(imageGeneratorViewSource).not.toContain(':to="authRouteDefaults.homePath"')
-    expect(imageGeneratorViewSource).not.toContain('const { authRouteDefaults, resolveHomePath } = useAuthRouteDefaults()')
+    expect(imageGeneratorViewSource).not.toContain('resolveHomePath')
     expect(imageGeneratorViewSource).not.toContain(':to="isAuthenticated ? dashboardPath : loginPath"')
     expect(imageGeneratorViewSource).not.toContain('const avatarUrl = computed(() => authStore.user?.avatar_url?.trim() || \'\')')
     expect(imageGeneratorViewSource).not.toContain(':aria-label="displayName"')
@@ -593,7 +614,10 @@ describe('ImageGeneratorView', () => {
     expect(imageGeneratorViewSource).not.toContain('DEFAULT_WORKSPACE_SHELL')
     expect(imageGeneratorViewSource).not.toContain('function formatTemplate')
     expect(imageGeneratorViewSource).not.toContain('formatWorkspaceShellTemplate')
-    expect(imageGeneratorViewSource).not.toContain('draftImportedDescription')
+    expect(imageGeneratorViewSource).toContain('defaultWorkspaceShellCopy')
+    expect(imageGeneratorViewSource).toContain("clearLabel: t('imageWorkspace.clearLabel')")
+    expect(imageGeneratorViewSource).toContain("copyPromptLabel: t('imageWorkspace.copyPromptLabel')")
+    expect(imageGeneratorViewSource).toContain('...defaultWorkspaceShellCopy()')
     expect(imageGeneratorViewSource).not.toMatch(/resolveWorkspaceShellConfig\([^\n]*,[^\n]*,[^\n]*\)/)
     expect(imageGeneratorViewSource).not.toContain("catalogLabel: '提示词案例'")
     expect(imageGeneratorViewSource).not.toContain("eyebrow: '提示词工作台'")

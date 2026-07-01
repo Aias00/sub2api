@@ -3,16 +3,7 @@
     <div class="relative overflow-hidden border-b border-[var(--public-border)]">
       <div class="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_30%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.16),transparent_26%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_45%)]"></div>
 
-      <PublicDarkHeader :account-label="isAuthenticated ? copy.dashboard : copy.login">
-        <template #actions>
-          <DocsLink
-            :doc-url="docUrl"
-            class="hidden rounded-full border border-[var(--public-border)] px-4 py-2 text-sm font-medium text-[var(--public-body)] transition hover:border-[var(--public-border-strong)] hover:text-[var(--public-ink)] sm:inline-flex"
-          >
-            {{ copy.viewDocs }}
-          </DocsLink>
-        </template>
-      </PublicDarkHeader>
+      <PublicDarkHeader :account-label="isAuthenticated ? copy.dashboard : copy.login" />
 
       <section class="relative z-10 px-6 pb-16 pt-10 sm:pb-20 sm:pt-14">
         <div class="mx-auto max-w-5xl text-center">
@@ -213,7 +204,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import DocsLink from '@/components/common/DocsLink.vue'
 import PublicDarkHeader from '@/components/layout/PublicDarkHeader.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAuthStore, useAppStore } from '@/stores'
@@ -242,7 +232,6 @@ const loading = ref(false)
 const searchQuery = ref('')
 const activeGroup = ref(MODEL_PLAZA_ALL_GROUP_KEY)
 
-const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 
 const copy = computed(() =>

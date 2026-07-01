@@ -44,11 +44,33 @@ describe('docs shell helpers', () => {
       'en-US',
     )
 
-    expect(config.defaults.appRouteLinks).toEqual(['#/home', '#/dashboard', '#/register'])
+    expect(config.defaults.appRouteLinks).toEqual([
+      '#/home',
+      '#/dashboard',
+      '#/admin/dashboard',
+      '#/register',
+      '#/purchase',
+      '#/wechat',
+      '#/hot',
+      '#/prompts',
+      '#/image-generator',
+      '#/tasks',
+    ])
   })
 
-  it('does not synthesize default app route links when docs shell config is absent', () => {
-    expect(resolveDocsShellConfig(undefined, 'en').defaults.appRouteLinks).toEqual([])
-    expect(resolveDocsShellConfig('{bad json', 'en').defaults.appRouteLinks).toEqual([])
+  it('keeps built-in app route links when docs shell config is absent', () => {
+    expect(resolveDocsShellConfig(undefined, 'en').defaults.appRouteLinks).toEqual([
+      '#/home',
+      '#/dashboard',
+      '#/admin/dashboard',
+      '#/register',
+      '#/purchase',
+      '#/wechat',
+      '#/hot',
+      '#/prompts',
+      '#/image-generator',
+      '#/tasks',
+    ])
+    expect(resolveDocsShellConfig('{bad json', 'en').defaults.appRouteLinks).toContain('#/wechat')
   })
 })

@@ -20,11 +20,11 @@
       :class="[sidebarCollapsed ? 'lg:ml-[72px]' : 'lg:ml-64']"
     >
       <!-- Header -->
-      <AppHeader />
+      <AppHeader :container-class="headerContainerClass" />
 
       <!-- Main Content -->
       <main id="app-main" class="relative p-4 md:p-6 lg:p-8 safe-bottom">
-        <div class="mx-auto w-full max-w-[1680px]">
+        <div class="mx-auto w-full" :class="contentContainerClass">
           <slot />
         </div>
       </main>
@@ -37,6 +37,14 @@ import { computed } from 'vue'
 import { useAppStore } from '@/stores'
 import AppSidebar from './AppSidebar.vue'
 import AppHeader from './AppHeader.vue'
+
+withDefaults(defineProps<{
+  contentContainerClass?: string
+  headerContainerClass?: string
+}>(), {
+  contentContainerClass: 'max-w-[1680px]',
+  headerContainerClass: 'max-w-[1680px]',
+})
 
 const appStore = useAppStore()
 const sidebarCollapsed = computed(() => appStore.sidebarCollapsed)

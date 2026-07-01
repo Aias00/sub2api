@@ -1,12 +1,12 @@
 <template>
-  <div class="home-business-page public-template-page min-h-screen">
-    <PublicDarkHeader :account-label="isAuthenticated ? t('nav.dashboard') : t('common.login')" />
+  <div class="home-business-page public-template-page" :class="props.appShell ? 'min-h-0' : 'min-h-screen'">
+    <PublicDarkHeader v-if="!props.appShell" :account-label="isAuthenticated ? t('nav.dashboard') : t('common.login')" />
 
-    <main class="public-template-main">
-      <div class="public-template-container-wide">
+    <main :class="props.appShell ? 'py-0' : 'public-template-main'">
+      <div class="public-template-container-wide overflow-x-hidden">
         <section>
-          <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(360px,520px)] lg:items-end">
-            <div>
+          <div class="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(320px,460px)] xl:items-end">
+            <div class="min-w-0">
               <p class="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--public-muted)]">
                 {{ t('taskList.breadcrumb') }}
               </p>
@@ -18,16 +18,16 @@
               </p>
             </div>
 
-            <div class="public-template-panel p-3 sm:p-4">
-              <div class="mb-3 flex items-center justify-between gap-3">
+            <div class="public-template-panel min-w-0 overflow-hidden p-3 sm:p-4 xl:justify-self-end">
+              <div class="mb-3 flex min-w-0 items-center justify-between gap-3">
                 <p class="shrink-0 text-sm font-bold text-[var(--public-accent-strong)]">{{ t('taskList.actions') }}</p>
                 <p class="hidden truncate text-xs text-[var(--public-muted)] xl:block">{{ t('taskList.subtitle') }}</p>
               </div>
-              <div class="grid gap-2 sm:grid-cols-2">
-                <router-link to="/wechat" class="inline-flex h-12 items-center justify-center rounded-xl border public-template-input px-4 text-sm font-bold text-[var(--public-ink)] transition hover:bg-[var(--public-panel-muted)]">
+              <div class="grid min-w-0 gap-2 sm:grid-cols-2">
+                <router-link :to="wechatPath" class="inline-flex h-12 min-w-0 items-center justify-center truncate rounded-xl border public-template-input px-4 text-sm font-bold text-[var(--public-ink)] transition hover:bg-[var(--public-panel-muted)]">
                   {{ t('taskList.newWechatTask') }}
                 </router-link>
-                <router-link to="/image-generator" class="public-template-button-primary h-12 px-4 text-sm font-black">
+                <router-link :to="imageGeneratorPath" class="public-template-button-primary h-12 min-w-0 truncate px-4 text-sm font-black">
                   {{ t('taskList.newImageTask') }}
                 </router-link>
               </div>
@@ -39,18 +39,18 @@
           {{ t('taskList.loginRequired') }}
         </section>
 
-        <section v-else class="mt-8 grid gap-6 lg:grid-cols-[300px_minmax(0,1fr)] lg:items-start">
-          <aside class="rounded-2xl public-template-panel p-4 sm:p-5 lg:sticky lg:top-6">
-            <div class="space-y-5">
-              <div>
-                <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[var(--public-muted)]">{{ t('taskList.filters') }}</span>
-                <div class="flex flex-wrap gap-2" role="tablist" :aria-label="t('taskList.filters')">
+        <section v-else class="mt-8 min-w-0 space-y-5">
+          <div class="min-w-0 overflow-hidden rounded-2xl public-template-panel p-4 sm:p-5">
+            <div class="grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_auto] xl:items-end">
+              <div class="min-w-0">
+                <span class="mb-3 block text-xs font-semibold uppercase tracking-[0.16em] text-[var(--public-muted)]">{{ t('taskList.filters') }}</span>
+                <div class="flex min-w-0 flex-wrap gap-2" role="tablist" :aria-label="t('taskList.filters')">
                   <button
                     v-for="option in filterOptions"
                     :key="option.value"
                     type="button"
-                    class="inline-flex min-h-10 max-w-full items-center rounded-2xl border px-3 py-2 text-left text-sm font-semibold transition"
-                    :class="filter === option.value ? 'border-cyan-300/35 bg-cyan-300/10 text-[var(--public-accent-strong)]' : 'border-[var(--public-border)] bg-[var(--public-panel-soft)] text-[var(--public-body)] hover:bg-[var(--public-panel-soft)]'"
+                    class="inline-flex h-10 max-w-full items-center rounded-xl border px-3.5 text-left text-sm font-bold transition"
+                    :class="filter === option.value ? 'border-cyan-300/45 bg-cyan-300/12 text-[var(--public-accent-strong)] shadow-sm' : 'border-[var(--public-border)] bg-[var(--public-panel-soft)] text-[var(--public-body)] hover:bg-[var(--public-panel-muted)]'"
                     @click="filter = option.value"
                   >
                     {{ option.label }}
@@ -58,23 +58,32 @@
                 </div>
               </div>
 
-              <div class="grid grid-cols-2 gap-2">
-                <div v-for="summary in summaries" :key="summary.key" class="rounded-2xl public-template-panel-muted p-3">
-                  <p class="font-mono text-xs text-[var(--public-muted)]">{{ summary.label }}</p>
-                  <p class="mt-2 text-2xl font-black text-[var(--public-ink)]">{{ summary.value }}</p>
-                </div>
-              </div>
-
               <button
                 type="button"
-                class="public-template-button-primary h-12 w-full text-sm font-black"
+                class="public-template-button-primary h-11 w-full px-5 text-sm font-black xl:w-[150px]"
                 :disabled="loading"
                 @click="loadTasks"
               >
                 {{ loading ? t('taskList.refreshing') : t('taskList.refresh') }}
               </button>
             </div>
-          </aside>
+
+            <div class="mt-5 grid min-w-0 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <button
+                v-for="summary in summaries"
+                :key="summary.key"
+                type="button"
+                class="group min-w-0 rounded-2xl border border-[var(--public-border)] bg-[var(--public-panel-soft)] p-4 text-left transition hover:-translate-y-0.5 hover:border-cyan-300/35 hover:bg-[var(--public-panel-muted)]"
+                @click="setSummaryFilter(summary.key)"
+              >
+                <div class="flex items-center justify-between gap-3">
+                  <p class="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--public-muted)]">{{ summary.label }}</p>
+                  <span class="h-2 w-2 rounded-full bg-cyan-300 opacity-0 transition group-hover:opacity-100"></span>
+                </div>
+                <p class="mt-2 text-3xl font-black tracking-tight text-[var(--public-ink)]">{{ summary.value }}</p>
+              </button>
+            </div>
+          </div>
 
           <div class="min-w-0">
             <div v-if="errorMessage" class="mb-5 rounded-2xl border border-red-300/20 bg-red-300/10 px-5 py-4 text-sm text-[var(--public-danger)]">
@@ -85,13 +94,21 @@
               <div v-for="i in 4" :key="i" class="h-28 animate-pulse rounded-2xl public-template-panel-muted"></div>
             </div>
 
-            <div v-else-if="visibleTasks.length === 0" class="rounded-2xl public-template-panel-muted px-8 py-16 text-center">
+            <div v-else-if="visibleTasks.length === 0" class="rounded-2xl border border-[var(--public-border)] bg-[var(--public-panel)] px-8 py-20 text-center shadow-[0_18px_50px_rgba(0,0,0,0.10)]">
               <p class="text-2xl font-bold text-[var(--public-ink)]">{{ t('taskList.emptyTitle') }}</p>
               <p class="mx-auto mt-3 max-w-xl text-sm leading-7 text-[var(--public-body)]">{{ t('taskList.emptyDescription') }}</p>
+              <div class="mt-6 flex flex-wrap justify-center gap-3">
+                <router-link :to="wechatPath" class="inline-flex h-11 items-center justify-center rounded-xl border public-template-input px-5 text-sm font-bold text-[var(--public-ink)] transition hover:bg-[var(--public-panel-muted)]">
+                  {{ t('taskList.newWechatTask') }}
+                </router-link>
+                <router-link :to="imageGeneratorPath" class="public-template-button-primary h-11 px-5 text-sm font-black">
+                  {{ t('taskList.newImageTask') }}
+                </router-link>
+              </div>
             </div>
 
-            <div v-else class="overflow-hidden rounded-2xl public-template-panel shadow-[0_20px_60px_rgba(0,0,0,0.24)]">
-              <div class="hidden grid-cols-[minmax(0,1fr)_140px_140px_170px_190px] gap-4 border-b border-[var(--public-border)] bg-[var(--public-panel-soft)] px-5 py-3 font-mono text-xs text-[var(--public-muted)] lg:grid">
+            <div v-else class="min-w-0 overflow-hidden rounded-2xl public-template-panel shadow-[0_20px_60px_rgba(0,0,0,0.14)]">
+              <div class="hidden grid-cols-[minmax(0,1.45fr)_120px_120px_160px_220px] gap-4 border-b border-[var(--public-border)] bg-[var(--public-panel-soft)] px-5 py-3 text-xs font-semibold uppercase tracking-[0.12em] text-[var(--public-muted)] lg:grid">
                 <span>{{ t('taskList.task') }}</span>
                 <span>{{ t('taskList.type') }}</span>
                 <span>{{ t('taskList.status') }}</span>
@@ -101,7 +118,7 @@
               <article
                 v-for="task in visibleTasks"
                 :key="task.key"
-                class="grid gap-4 border-b border-[var(--public-border)] bg-[var(--public-panel)] px-5 py-5 last:border-b-0 hover:bg-[var(--public-panel-soft)] lg:grid-cols-[minmax(0,1fr)_140px_140px_170px_190px] lg:items-center"
+                class="grid gap-4 border-b border-[var(--public-border)] bg-[var(--public-panel)] px-5 py-5 last:border-b-0 hover:bg-[var(--public-panel-soft)] lg:grid-cols-[minmax(0,1.45fr)_120px_120px_160px_220px] lg:items-center"
               >
                 <div class="min-w-0">
                   <div class="flex min-w-0 items-center gap-3">
@@ -213,6 +230,12 @@ import {
 import { useAuthStore } from '@/stores'
 import { formatCostFixed, formatDateTime } from '@/utils/format'
 
+const props = withDefaults(defineProps<{
+  appShell?: boolean
+}>(), {
+  appShell: false,
+})
+
 type TaskType = 'wechat' | 'image'
 type TaskFilter = 'all' | TaskType | 'active' | 'done' | 'attention'
 type CanonicalStatus = 'queued' | 'running' | 'succeeded' | 'partial' | 'failed' | 'cancelled'
@@ -258,6 +281,8 @@ const isAuthenticated = computed(() => authStore.isAuthenticated)
 const wechatLoaded = computed(() => tasks.value.filter((task) => task.type === 'wechat').length)
 const imageLoaded = computed(() => tasks.value.filter((task) => task.type === 'image').length)
 const hasMoreTasks = computed(() => wechatPage.value < wechatPages.value || imagePage.value < imagePages.value)
+const wechatPath = computed(() => props.appShell ? '/app/wechat' : '/wechat')
+const imageGeneratorPath = computed(() => props.appShell ? '/app/image-generator' : '/image-generator')
 
 const filterOptions = computed(() => [
   { value: 'all' as const, label: t('taskList.filterAll') },
@@ -283,6 +308,12 @@ const summaries = computed(() => [
   { key: 'done', label: t('taskList.summaryDone'), value: tasks.value.filter((task) => task.canonicalStatus === 'succeeded' || task.canonicalStatus === 'partial').length },
   { key: 'attention', label: t('taskList.summaryAttention'), value: tasks.value.filter((task) => task.canonicalStatus === 'failed' || task.canonicalStatus === 'cancelled' || task.canonicalStatus === 'partial').length },
 ])
+
+function setSummaryFilter(value: string) {
+  if (value === 'all' || value === 'active' || value === 'done' || value === 'attention') {
+    filter.value = value
+  }
+}
 
 onMounted(() => {
   if (authStore.isAuthenticated) {
@@ -367,7 +398,7 @@ function mapWeChatTask(task: WeChatExportTask): UnifiedTask {
     rawStatus: task.status,
     createdAt: task.created_at,
     updatedAt: task.updated_at,
-    detailPath: '/wechat',
+    detailPath: wechatPath.value,
     costLabel: '',
     errorMessage: task.error_message || '',
     canCancel: task.status === 'queued' || task.status === 'running',
@@ -394,7 +425,7 @@ function mapImageTask(task: ImageWorkspaceTask): UnifiedTask {
     rawStatus: task.status,
     createdAt: task.created_at,
     updatedAt: task.updated_at,
-    detailPath: '/image-generator',
+    detailPath: imageGeneratorPath.value,
     costLabel: task.cost_estimate > 0 ? t('taskList.cost', { cost: formatCostFixed(task.cost_estimate) }) : '',
     errorMessage: task.error_message || '',
     canCancel: task.status === 'queued' || (task.status === 'running' && isExpired(task.worker_lease_until)),

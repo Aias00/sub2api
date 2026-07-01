@@ -23,6 +23,19 @@ const docsShellCopyKeys = [
   'noData',
 ] as const satisfies readonly (keyof DocsShellCopy)[]
 
+const defaultAppRouteLinks = [
+  '/home',
+  '/dashboard',
+  '/admin/dashboard',
+  '/register',
+  '/purchase',
+  '/wechat',
+  '/hot',
+  '/prompts',
+  '/image-generator',
+  '/tasks',
+]
+
 export function resolveDocsShellCopy(raw: string | undefined, runtimeLocale: string): DocsShellCopy {
   return resolveDocsShellConfig(raw, runtimeLocale).labels
 }
@@ -39,10 +52,15 @@ export function resolveDocsShellConfig(raw: string | undefined, runtimeLocale: s
 function readAppRouteLinks(raw: string | undefined, runtimeLocale: string): string[] {
   const config = pickDocsConfig(raw, runtimeLocale)
   if (!config || !isRecord(config.defaults) || !Array.isArray(config.defaults.appRouteLinks)) {
-    return []
+    return defaultAppRouteLinks.map(normalizeAppRouteLink).filter(Boolean)
   }
 
-  return [...new Set(config.defaults.appRouteLinks.map(normalizeAppRouteLink).filter(Boolean))]
+  return [
+    ...new Set([
+      ...defaultAppRouteLinks,
+      ...config.defaults.appRouteLinks,
+    ].map(normalizeAppRouteLink).filter(Boolean)),
+  ]
 }
 
 function normalizeAppRouteLink(value: unknown): string {

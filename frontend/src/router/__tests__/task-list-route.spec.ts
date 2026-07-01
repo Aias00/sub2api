@@ -14,6 +14,15 @@ describe('task list route', () => {
     expect(routerSource).toContain("path: '/image-generator'")
   })
 
+  it('registers authenticated app-shell task and tool entries for sidebar navigation', () => {
+    expect(routerSource).toContain("path: '/app/tasks'")
+    expect(routerSource).toContain("name: 'UserTaskList'")
+    expect(routerSource).toContain("component: () => import('@/views/user/AppToolShellView.vue')")
+    expect(routerSource).toContain("toolView: 'tasks'")
+    expect(routerSource).toContain("path: '/app/wechat'")
+    expect(routerSource).toContain("path: '/app/image-generator'")
+  })
+
   it('allows public business routes in backend mode', () => {
     expect(routerSource).toContain("'/prompts'")
     expect(routerSource).toContain("'/image-generator'")

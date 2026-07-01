@@ -305,6 +305,18 @@ describe('paymentShell', () => {
     expect(labels).not.toHaveProperty('ignored')
   })
 
+  it('falls back to localized subscription labels when shell config is absent', () => {
+    const zhLabels = resolveSubscriptionLabels(undefined, 'zh-CN')
+    expect(renderSubscriptionText(zhLabels, 'subscriptionNoActive')).toBe('暂无有效订阅')
+    expect(renderSubscriptionText(zhLabels, 'subscriptionNoActiveDesc')).toContain('没有有效订阅')
+    expect(renderSubscriptionText(zhLabels, 'renewNow')).toBe('续费')
+    expect(renderSubscriptionText(zhLabels, 'subscriptionStatusActive')).toBe('有效')
+
+    const enLabels = resolveSubscriptionLabels(undefined, 'en-US')
+    expect(renderSubscriptionText(enLabels, 'subscriptionNoActive')).toBe('No Active Subscriptions')
+    expect(renderSubscriptionText(enLabels, 'renewNow')).toBe('Renew')
+  })
+
   it('resolves and renders Stripe payment labels through the payment shell contract', () => {
     const labels = resolveStripePaymentLabels(JSON.stringify({
       zh: {
@@ -331,6 +343,21 @@ describe('paymentShell', () => {
 
     expect(renderPaymentViewText(labels, 'amountTooLow', { min: 5 })).toBe('最低 5')
     expect(labels).not.toHaveProperty('ignored')
+  })
+
+  it('falls back to localized payment view labels when shell config is absent', () => {
+    const zhLabels = resolvePaymentViewLabels(undefined, 'zh-CN')
+    expect(renderPaymentViewText(zhLabels, 'tabTopUp')).toBe('充值')
+    expect(renderPaymentViewText(zhLabels, 'tabSubscribe')).toBe('订阅')
+    expect(renderPaymentViewText(zhLabels, 'rechargeAccount')).toBe('充值账户')
+    expect(renderPaymentViewText(zhLabels, 'currentBalance')).toBe('当前余额')
+    expect(renderPaymentViewText(zhLabels, 'paymentMethod')).toBe('支付方式')
+    expect(renderPaymentViewText(zhLabels, 'methodStripe')).toBe('Stripe')
+    expect(renderPaymentViewText(zhLabels, 'rechargeProductCta')).toBe('立即充值')
+
+    const enLabels = resolvePaymentViewLabels(undefined, 'en-US')
+    expect(renderPaymentViewText(enLabels, 'tabTopUp')).toBe('Top Up')
+    expect(renderPaymentViewText(enLabels, 'paymentMethod')).toBe('Payment Method')
   })
 
   it('centralizes payment component label schemas', () => {

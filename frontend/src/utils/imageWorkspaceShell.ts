@@ -46,31 +46,20 @@ const workspaceShellKeys: Array<keyof WorkspaceShellCopy> = [
   'backToCatalogLabel',
 ]
 
-function createEmptyWorkspaceShellCopy(): WorkspaceShellCopy {
-  return workspaceShellKeys.reduce((copy, key) => {
-    copy[key] = ''
-    return copy
-  }, {} as WorkspaceShellCopy)
-}
-
 export function resolveWorkspaceShellConfig(
   raw: string | undefined,
   activeLocale: 'zh' | 'en',
-): WorkspaceShellCopy {
-  const emptyCopy = createEmptyWorkspaceShellCopy()
-  if (!raw?.trim()) return emptyCopy
+): Partial<WorkspaceShellCopy> {
+  if (!raw?.trim()) return {}
   try {
     const parsed = JSON.parse(raw) as unknown
-    if (!isRecord(parsed)) return emptyCopy
+    if (!isRecord(parsed)) return {}
     const scoped = parsed[activeLocale] || parsed.default || parsed
-    if (!isRecord(scoped)) return emptyCopy
+    if (!isRecord(scoped)) return {}
 
-    return {
-      ...emptyCopy,
-      ...readWorkspaceShellCopy(scoped),
-    }
+    return readWorkspaceShellCopy(scoped)
   } catch {
-    return emptyCopy
+    return {}
   }
 }
 

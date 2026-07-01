@@ -65,6 +65,7 @@ describe('promptCatalogRuntime', () => {
 
   it('resolves generator/import defaults and formatting helpers', () => {
     expect(resolvePromptCatalogGeneratorPath({ generatorPath: '/image-generator' })).toBe('/image-generator')
+    expect(resolvePromptCatalogGeneratorPath(undefined)).toBe('/image-generator')
     expect(resolvePromptCatalogGeneratorDraftSource({ generatorDraftSource: 'catalog' })).toBe('catalog')
     expect(resolvePromptCatalogImportXAuto(undefined)).toBe(true)
     expect(resolvePromptCatalogImportXAuto({ importXAuto: false })).toBe(false)

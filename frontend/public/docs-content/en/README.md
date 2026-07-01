@@ -1,4 +1,4 @@
-# cloudbase Guide
+# Introduction
 
 Welcome to **cloudbase**. It is a unified workspace for AI development tools such as Claude Code, Codex, Gemini CLI, Cherry Studio, and Claude Desktop.
 
@@ -22,6 +22,12 @@ If you currently switch between multiple clients, maintain scattered keys, or ne
 - **Integrators** who want one stable gateway instead of wiring every tool to separate upstreams
 
 ## Core capabilities
+
+### Business capability entries
+
+The homepage highlights product-facing workflows such as WeChat export, hot topic tracking, image prompts, and the image workspace. These pages cover content collection, topic discovery, prompt reuse, and image production.
+
+If you want to understand what each page does and how they connect into a workflow, start with the [Business Capabilities Guide](business-capabilities).
 
 ### Unified API keys
 
@@ -101,8 +107,13 @@ Use the selected key’s gateway instructions as the source of truth for client 
 - [Claude Desktop Third-party Provider](quickstart/claude-desktop)
 - [GPT-Image-2 Guide](quickstart/gpt-image-2)
 
+### 7. Use business capabilities
+
+If your goal is content collection, topic planning, prompt reuse, or image production instead of API integration, start with the [Business Capabilities Guide](business-capabilities).
+
 ## Console concepts worth learning first
 
+- [Business Capabilities](business-capabilities)
 - [API Keys](console/api-keys)
 - [Available Groups](console/available-groups)
 - [Model Plaza](console/models-plaza)

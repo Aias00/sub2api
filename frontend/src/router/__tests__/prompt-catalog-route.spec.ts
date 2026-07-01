@@ -57,6 +57,13 @@ describe('prompt catalog route registration', () => {
     expect(routerSource).toContain("titleKey: 'nav.promptCatalog'")
   })
 
+  it('registers an authenticated app-shell prompt catalog route for the sidebar', () => {
+    expect(routerSource).toContain("path: '/app/prompts'")
+    expect(routerSource).toContain("name: 'UserPromptCatalog'")
+    expect(routerSource).toContain("component: () => import('@/views/user/AppToolShellView.vue')")
+    expect(routerSource).toContain("toolView: 'prompts'")
+  })
+
   it('marks /prompts as public (requiresAuth: false)', () => {
     // Static analysis: the route block for /prompts must contain requiresAuth: false
     const promptsBlockStart = routerSource.indexOf("path: '/prompts'")

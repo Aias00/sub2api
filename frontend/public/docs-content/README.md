@@ -1,4 +1,4 @@
-# cloudbase 使用指南
+# 简介
 
 欢迎使用 **cloudbase**。它面向 Claude Code、Codex、Gemini CLI、Cherry Studio、Claude Desktop 等 AI 开发工具，提供统一的接入方式、计费入口与使用视图。
 
@@ -22,6 +22,12 @@ cloudbase 的核心目标不是“再包一层 API”，而是把开发者真正
 - **需要稳定调用入口的集成方**：希望把客户端接到统一网关，而不是直连多个上游。
 
 ## 核心功能
+
+### 业务能力入口
+
+首页会优先展示可直接使用的业务能力，例如微信导出、热点追踪、图片提示词和生图工作台。它们面向内容采集、选题、提示词沉淀和图片生产等高频流程。
+
+如果你希望先了解这些页面分别解决什么问题，以及如何串成完整工作流，请阅读 [业务能力使用指南](business-capabilities)。
 
 ### 统一 API Key
 
@@ -101,8 +107,13 @@ cloudbase 不是把“所有模型”平铺给所有用户，而是通过分组�
 - [Claude Desktop 第三方 Provider 配置指南](quickstart/claude-desktop)
 - [GPT-Image-2 使用指南](quickstart/gpt-image-2)
 
+### 7. 使用业务能力
+
+如果你的目标不是接 API，而是进行内容采集、热点选题、提示词沉淀或图片生产，可以从 [业务能力使用指南](business-capabilities) 开始。
+
 ## 建议先理解的控制台页面
 
+- [业务能力](business-capabilities)
 - [API 密钥](console/api-keys)
 - [可用分组](console/available-groups)
 - [模型广场](console/models-plaza)

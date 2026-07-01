@@ -35,7 +35,7 @@ export function resolvePromptCatalogSortOrder(defaults: PromptCatalogDefaults | 
 }
 
 export function resolvePromptCatalogGeneratorPath(defaults: PromptCatalogDefaults | undefined): string | undefined {
-  return defaults?.generatorPath
+  return defaults?.generatorPath || '/image-generator'
 }
 
 export function resolvePromptCatalogGeneratorDraftSource(

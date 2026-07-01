@@ -1,6 +1,6 @@
 <template>
-  <header class="glass sticky top-0 z-30 border-b border-gray-200/50 dark:border-dark-700/50">
-    <div class="flex h-16 items-center justify-between px-4 md:px-6">
+  <header class="glass sticky top-0 z-30 border-b border-gray-200/50 px-4 md:px-6 lg:px-8 dark:border-dark-700/50">
+    <div class="mx-auto flex h-16 w-full items-center justify-between" :class="containerClass">
       <!-- Left: Mobile Menu Toggle + Page Title -->
       <div class="flex items-center gap-4">
         <button
@@ -48,69 +48,41 @@
         <div v-if="user" class="relative" ref="dropdownRef">
           <button
             @click="toggleDropdown"
-            class="flex items-center gap-2 rounded-xl p-1.5 transition-colors hover:bg-gray-100 dark:hover:bg-dark-800"
-            aria-label="User Menu"
+            class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-white text-sm font-black text-gray-900 shadow-sm transition hover:border-gray-300 hover:bg-gray-50 dark:border-dark-700 dark:bg-dark-800 dark:text-white dark:hover:border-dark-600 dark:hover:bg-dark-700"
+            :aria-label="displayName"
+            :aria-expanded="dropdownOpen"
+            aria-haspopup="menu"
           >
-            <div class="flex h-8 w-8 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-br from-primary-500 to-primary-600 text-sm font-medium text-white shadow-sm">
-              <img
-                v-if="avatarUrl"
-                :src="avatarUrl"
-                :alt="displayName"
-                class="h-full w-full object-cover"
-              >
-              <span v-else>{{ userInitials }}</span>
-            </div>
-            <div class="hidden text-left md:block">
-              <div class="text-sm font-medium text-gray-900 dark:text-white">
-                {{ displayName }}
-              </div>
-              <div class="text-xs capitalize text-gray-500 dark:text-dark-400">
-                {{ user.role }}
-              </div>
-            </div>
-            <Icon name="chevronDown" size="sm" class="hidden text-gray-400 md:block" />
+            <img
+              v-if="avatarUrl"
+              :src="avatarUrl"
+              :alt="displayName"
+              class="h-full w-full object-cover"
+            >
+            <span v-else>{{ userInitials }}</span>
           </button>
 
           <!-- Dropdown Menu -->
           <transition name="dropdown">
-            <div v-if="dropdownOpen" class="dropdown right-0 mt-2 w-56">
-              <!-- User Info -->
-              <div
-                :class="
-                  compactUserDropdown
-                    ? 'px-4 py-3'
-                    : 'border-b border-gray-100 px-4 py-3 dark:border-dark-700'
-                "
-              >
-                <div class="text-sm font-medium text-gray-900 dark:text-white">
-                  {{ displayName }}
-                </div>
-                <div class="text-xs text-gray-500 dark:text-dark-400">{{ user.email }}</div>
-              </div>
+            <div v-if="dropdownOpen" class="app-header-user-dropdown" role="menu">
+              <div v-if="showDropdownPrimaryActions" class="app-header-user-dropdown-group">
+                <router-link :to="authRouteDefaults.userRedirectPath" @click="closeDropdown" class="app-header-user-dropdown-item" role="menuitem">
+                  <Icon name="grid" size="sm" />
+                  {{ t('nav.dashboard') }}
+                </router-link>
 
-              <!-- Balance (mobile only) -->
-              <div class="border-b border-gray-100 px-4 py-2 dark:border-dark-700 sm:hidden">
-                <div class="text-xs text-gray-500 dark:text-dark-400">
-                  {{ t('common.balance') }}
-                </div>
-                <div class="text-sm font-semibold text-primary-600 dark:text-primary-400">
-                  {{ formatHeaderBalance(user.balance) }}
-                </div>
-              </div>
-
-              <div v-if="showDropdownPrimaryActions" class="py-1">
-                <router-link to="/tasks" @click="closeDropdown" class="dropdown-item">
+                <router-link to="/app/tasks" @click="closeDropdown" class="app-header-user-dropdown-item" role="menuitem">
                   <Icon name="clipboard" size="sm" />
                   {{ t('nav.myTasks') }}
                 </router-link>
 
                 <template v-if="showDropdownAccountLinks">
-                  <router-link :to="authRouteDefaults.profilePath" @click="closeDropdown" class="dropdown-item">
+                  <router-link :to="authRouteDefaults.profilePath" @click="closeDropdown" class="app-header-user-dropdown-item" role="menuitem">
                     <Icon name="user" size="sm" />
                     {{ t('nav.profile') }}
                   </router-link>
 
-                  <router-link :to="authRouteDefaults.apiKeysPath" @click="closeDropdown" class="dropdown-item">
+                  <router-link :to="authRouteDefaults.apiKeysPath" @click="closeDropdown" class="app-header-user-dropdown-item" role="menuitem">
                     <Icon name="key" size="sm" />
                     {{ t('nav.apiKeys') }}
                   </router-link>
@@ -122,7 +94,8 @@
                   target="_blank"
                   rel="noopener noreferrer"
                   @click="closeDropdown"
-                  class="dropdown-item"
+                  class="app-header-user-dropdown-item"
+                  role="menuitem"
                 >
                   <svg class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
                     <path
@@ -136,42 +109,11 @@
 
               </div>
 
-              <!-- Contact Support (only show if configured) -->
-              <div
-                v-if="showDropdownContactSupport"
-                class="border-t border-gray-100 px-4 py-2.5 dark:border-dark-700"
-              >
-                <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-                  <svg
-                    class="h-3.5 w-3.5 flex-shrink-0"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    stroke-width="1.5"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193-.34.027-.68.052-1.02.072v3.091l-3-3c-1.354 0-2.694-.055-4.02-.163a2.115 2.115 0 01-.825-.242m9.345-8.334a2.126 2.126 0 00-.476-.095 48.64 48.64 0 00-8.048 0c-1.131.094-1.976 1.057-1.976 2.192v4.286c0 .837.46 1.58 1.155 1.951m9.345-8.334V6.637c0-1.621-1.152-3.026-2.76-3.235A48.455 48.455 0 0011.25 3c-2.115 0-4.198.137-6.24.402-1.608.209-2.76 1.614-2.76 3.235v6.226c0 1.621 1.152 3.026 2.76 3.235.577.075 1.157.14 1.74.194V21l4.155-4.155"
-                    />
-                  </svg>
-                  <span>{{ t('common.contactSupport') }}:</span>
-                  <span class="font-medium text-gray-700 dark:text-gray-300">{{
-                    contactInfo
-                  }}</span>
-                </div>
-              </div>
-
-              <div
-                :class="
-                  compactUserDropdown
-                    ? 'py-1'
-                    : 'border-t border-gray-100 py-1 dark:border-dark-700'
-                "
-              >
+              <div class="app-header-user-dropdown-group app-header-user-dropdown-group-danger">
                 <button
                   @click="handleLogout"
-                  class="dropdown-item w-full text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20"
+                  class="app-header-user-dropdown-item app-header-user-dropdown-item-danger w-full"
+                  role="menuitem"
                 >
                   <svg
                     class="h-4 w-4"
@@ -209,13 +151,17 @@ import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
 import DocsLink from '@/components/common/DocsLink.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
-import { formatPublicMoneyAmount } from '@/utils/paymentCurrency'
 import {
-  resolveCompactUserDropdown,
   resolveHeaderDisplayName,
   resolveHeaderPageTitle,
   resolveHeaderUserInitials,
 } from './appHeaderRuntime'
+
+withDefaults(defineProps<{
+  containerClass?: string
+}>(), {
+  containerClass: '',
+})
 
 const router = useRouter()
 const route = useRoute()
@@ -226,13 +172,8 @@ const adminSettingsStore = useAdminSettingsStore()
 const { authRouteDefaults } = useAuthRouteDefaults()
 
 const user = computed(() => authStore.user)
-const currencyPrefix = computed(() => appStore.cachedPublicSettings?.pricing_currency_symbol || '')
-const formatHeaderBalance = (value: number | null | undefined) =>
-  formatPublicMoneyAmount(value, currencyPrefix.value)
-const isAdmin = computed(() => user.value?.role === 'admin')
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
-const contactInfo = computed(() => appStore.contactInfo)
 const docUrl = computed(() => appStore.docUrl)
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
 const showDropdownTaskLink = computed(() => true)
@@ -240,13 +181,6 @@ const showDropdownAccountLinks = computed(() => false)
 const showGithubLink = computed(() => false)
 const showDropdownPrimaryActions = computed(
   () => showDropdownTaskLink.value || showDropdownAccountLinks.value || showGithubLink.value
-)
-const showDropdownContactSupport = computed(
-  () => !isAdmin.value && Boolean(contactInfo.value)
-)
-
-const compactUserDropdown = computed(() =>
-  resolveCompactUserDropdown(showDropdownPrimaryActions.value, showDropdownContactSupport.value),
 )
 
 const userInitials = computed(() => resolveHeaderUserInitials(user.value))
@@ -305,6 +239,94 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.app-header-user-dropdown {
+  position: absolute;
+  right: 0;
+  z-index: 50;
+  margin-top: 0.75rem;
+  width: 13rem;
+  overflow: hidden;
+  border: 1px solid rgba(229, 231, 235, 0.96);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.96);
+  padding: 0.375rem;
+  color: #374151;
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.06),
+    0 24px 60px rgba(15, 23, 42, 0.14);
+  backdrop-filter: blur(18px);
+  transform-origin: top right;
+}
+
+.app-header-user-dropdown-group {
+  display: grid;
+  gap: 0.125rem;
+}
+
+.app-header-user-dropdown-group + .app-header-user-dropdown-group {
+  margin-top: 0.375rem;
+  border-top: 1px solid rgba(229, 231, 235, 0.72);
+  padding-top: 0.375rem;
+}
+
+.app-header-user-dropdown-item {
+  display: flex;
+  min-height: 2.5rem;
+  align-items: center;
+  gap: 0.625rem;
+  border-radius: 0.875rem;
+  padding: 0 0.75rem;
+  color: inherit;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1;
+  text-align: left;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.app-header-user-dropdown-item:hover {
+  background: rgba(17, 24, 39, 0.045);
+  color: #111827;
+}
+
+.app-header-user-dropdown-item-danger {
+  color: #dc2626;
+}
+
+.app-header-user-dropdown-item-danger:hover {
+  background: rgba(220, 38, 38, 0.07);
+  color: #dc2626;
+}
+
+.dark .app-header-user-dropdown {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(24, 24, 27, 0.96);
+  color: #e5e7eb;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 24px 60px rgba(0, 0, 0, 0.32);
+}
+
+.dark .app-header-user-dropdown-group + .app-header-user-dropdown-group {
+  border-top-color: rgba(255, 255, 255, 0.1);
+}
+
+.dark .app-header-user-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.dark .app-header-user-dropdown-item-danger {
+  color: #f87171;
+}
+
+.dark .app-header-user-dropdown-item-danger:hover {
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+}
+
 .dropdown-enter-active,
 .dropdown-leave-active {
   transition: all 0.2s ease;

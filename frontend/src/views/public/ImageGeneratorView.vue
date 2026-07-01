@@ -1,20 +1,20 @@
 <template>
-  <div class="home-business-page public-template-page min-h-screen">
-    <PublicDarkHeader :account-label="t('imageWorkspace.goConsole')">
+  <div class="home-business-page public-template-page" :class="props.appShell ? 'min-h-0' : 'min-h-screen'">
+    <PublicDarkHeader v-if="!props.appShell" :account-label="t('imageWorkspace.goConsole')" container-class="max-w-6xl">
       <template #actions>
         <RouterLink
           v-if="catalogPath"
           :to="catalogPath"
-          class="rounded-full border border-[var(--public-border)] px-4 py-2 text-sm font-semibold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] hover:text-[var(--public-ink)]"
+          class="image-workspace-button image-workspace-button-secondary"
         >
           {{ workspaceShell.catalogLabel }}
         </RouterLink>
       </template>
     </PublicDarkHeader>
 
-    <main class="public-template-main">
+    <main :class="props.appShell ? 'py-0' : 'public-template-main'">
       <div class="public-template-container">
-        <section class="rounded-2xl public-template-panel-muted p-6 sm:p-8">
+        <section class="image-workspace-hero">
           <p class="text-sm font-semibold uppercase tracking-[0.22em] text-[var(--public-muted)]">
             {{ workspaceShell.eyebrow }}
           </p>
@@ -27,29 +27,37 @@
         </section>
 
         <section class="mt-8">
-          <div class="rounded-2xl public-template-panel p-5 sm:p-6">
+          <div class="image-workspace-card">
+            <div class="image-workspace-card-header">
+              <div>
+                <h2 class="image-workspace-section-title">{{ workspaceShell.promptLabel }}</h2>
+              </div>
+              <div class="image-workspace-cost-pill">
+                {{ t('imageWorkspace.estimatedCost') }} {{ estimatedCost.toFixed(2) }}
+              </div>
+            </div>
+
             <label class="block">
-              <span class="text-sm font-bold text-[var(--public-body)]">{{ workspaceShell.promptLabel }}</span>
               <textarea
                 v-model="prompt"
-                class="mt-3 min-h-72 w-full resize-y rounded-2xl border public-template-input px-4 py-4 text-sm leading-7 text-[var(--public-ink)] outline-none transition placeholder:text-[var(--public-faint)] focus:border-violet-300/45 focus:bg-[var(--public-panel-soft)]"
+                class="image-workspace-textarea mt-4 min-h-72"
                 :placeholder="workspaceShell.promptPlaceholder"
               />
             </label>
 
             <label class="mt-5 block">
-              <span class="text-sm font-bold text-[var(--public-body)]">{{ t('imageWorkspace.negativePrompt') }}</span>
+              <span class="image-workspace-field-label">{{ t('imageWorkspace.negativePrompt') }}</span>
               <textarea
                 v-model="negativePrompt"
-                class="mt-3 min-h-24 w-full resize-y rounded-2xl public-template-panel-muted px-4 py-3 text-sm leading-7 text-[var(--public-ink)] outline-none transition placeholder:text-[var(--public-faint)] focus:border-violet-300/45 focus:bg-[var(--public-panel-soft)]"
+                class="image-workspace-textarea mt-2 min-h-24"
                 :placeholder="t('imageWorkspace.negativePromptPlaceholder')"
               />
             </label>
 
-            <div class="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+            <div class="image-workspace-param-grid mt-5">
               <label class="block">
-                <span class="text-xs font-bold uppercase tracking-[0.14em] text-[var(--public-muted)]">{{ t('imageWorkspace.model') }}</span>
-                <select v-model="model" class="mt-2 w-full rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none">
+                <span class="image-workspace-field-label">{{ t('imageWorkspace.model') }}</span>
+                <select v-model="model" class="image-workspace-field mt-2">
                   <option v-for="item in enabledModelConfigs" :key="item.id" :value="item.id">
                     {{ item.label || item.id }}
                   </option>
@@ -59,43 +67,55 @@
                 </p>
               </label>
               <label class="block">
-                <span class="text-xs font-bold uppercase tracking-[0.14em] text-[var(--public-muted)]">{{ t('imageWorkspace.size') }}</span>
-                <select v-model="size" class="mt-2 w-full rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none">
+                <span class="image-workspace-field-label">{{ t('imageWorkspace.size') }}</span>
+                <select v-model="size" class="image-workspace-field mt-2">
                   <option v-for="item in selectedSizeOptions" :key="item" :value="item">{{ item }}</option>
                 </select>
               </label>
               <label class="block">
-                <span class="text-xs font-bold uppercase tracking-[0.14em] text-[var(--public-muted)]">{{ t('imageWorkspace.quality') }}</span>
-                <select v-model="quality" class="mt-2 w-full rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none">
+                <span class="image-workspace-field-label">{{ t('imageWorkspace.quality') }}</span>
+                <select v-model="quality" class="image-workspace-field mt-2">
                   <option v-for="item in selectedQualityOptions" :key="item" :value="item">{{ item }}</option>
                 </select>
               </label>
               <label class="block">
-                <span class="text-xs font-bold uppercase tracking-[0.14em] text-[var(--public-muted)]">{{ t('imageWorkspace.batchSize') }}</span>
-                <input v-model.number="batchSize" type="number" min="1" max="4" class="mt-2 w-full rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none" />
+                <span class="image-workspace-field-label">{{ t('imageWorkspace.batchSize') }}</span>
+                <input v-model.number="batchSize" type="number" min="1" max="4" class="image-workspace-field mt-2" />
               </label>
             </div>
 
             <label class="mt-5 block">
-              <span class="text-xs font-bold uppercase tracking-[0.14em] text-[var(--public-muted)]">{{ t('imageWorkspace.style') }}</span>
-              <input v-model="style" class="mt-2 w-full rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none" :placeholder="t('imageWorkspace.stylePlaceholder')" />
+              <span class="image-workspace-field-label">{{ t('imageWorkspace.style') }}</span>
+              <input v-model="style" class="image-workspace-field mt-2" :placeholder="t('imageWorkspace.stylePlaceholder')" />
             </label>
 
             <div v-if="promptSafetyWarning" class="mt-4 public-template-warning px-4 py-3 text-sm leading-6">
               {{ promptSafetyWarning }}
             </div>
+            <div v-if="hasInsufficientBalance" class="mt-4 public-template-warning px-4 py-3 text-sm leading-6">
+              {{ t('imageWorkspace.insufficientBalance') }}
+              <span class="ml-1">
+                {{ t('imageWorkspace.currentBalance') }} {{ currentBalance.toFixed(2) }} · {{ t('imageWorkspace.estimatedCost') }} {{ estimatedCost.toFixed(2) }}
+              </span>
+              <RouterLink
+                :to="rechargeRoute"
+                class="ml-3 inline-flex font-black text-[var(--public-accent-strong)] underline underline-offset-4 hover:text-[var(--public-ink)]"
+              >
+                {{ t('imageWorkspace.topUp') }}
+              </RouterLink>
+            </div>
 
-            <div class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div class="image-workspace-action-bar mt-5">
               <div class="text-xs" :class="isPromptTooLong ? 'text-[var(--public-danger)]' : 'text-[var(--public-muted)]'">
                 {{ promptLength }} / {{ maxPromptLength }}
                 <span v-if="isPromptTooLong" class="ml-2">
                   {{ workspaceShell.promptTooLong }}
                 </span>
               </div>
-              <div class="flex gap-2">
+              <div class="image-workspace-actions">
                 <button
                   type="button"
-                  class="rounded-xl border border-[var(--public-border)] px-4 py-2 text-sm font-semibold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] disabled:cursor-not-allowed disabled:opacity-40"
+                  class="image-workspace-button image-workspace-button-subtle"
                   :disabled="!trimmedPrompt"
                   @click="clearPrompt"
                 >
@@ -103,7 +123,7 @@
                 </button>
                 <button
                   type="button"
-                  class="public-template-button px-5 py-2 text-sm font-black"
+                  class="image-workspace-button image-workspace-button-secondary"
                   :disabled="!trimmedPrompt || isPromptTooLong"
                   @click="copyPrompt"
                 >
@@ -111,7 +131,7 @@
                 </button>
                 <button
                   type="button"
-                  class="public-template-button-primary px-5 py-2 text-sm font-black"
+                  class="image-workspace-button image-workspace-button-primary"
                   :disabled="!canGenerate"
                   @click="createGenerationTask"
                 >
@@ -132,26 +152,26 @@
             <RouterLink
               v-if="catalogPath"
               :to="catalogPath"
-              class="mt-5 inline-flex items-center justify-center rounded-xl border border-[var(--public-border)] px-4 py-3 text-sm font-bold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)]"
+              class="image-workspace-button image-workspace-button-secondary mt-5"
             >
               {{ workspaceShell.backToCatalogLabel }}
             </RouterLink>
           </div>
         </section>
 
-        <section ref="taskListSection" class="mt-8">
-          <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+        <section ref="taskListSection" class="image-workspace-card mt-8">
+          <div class="image-workspace-card-header mb-4">
             <div>
               <p class="text-sm font-semibold uppercase tracking-[0.18em] text-[var(--public-muted)]">{{ t('imageWorkspace.generationHistory') }}</p>
-              <h2 class="mt-2 text-2xl font-black text-[var(--public-ink)]">{{ t('imageWorkspace.imageTasks') }}</h2>
+              <h2 class="image-workspace-section-title mt-2">{{ t('imageWorkspace.imageTasks') }}</h2>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <p class="mr-2 text-sm text-[var(--public-muted)]">
+              <p class="image-workspace-cost-pill">
                 {{ t('imageWorkspace.estimatedCost') }}：{{ estimatedCost.toFixed(2) }}
               </p>
               <button
                 type="button"
-                class="rounded-xl border border-[var(--public-border)] px-4 py-2 text-sm font-bold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)] disabled:opacity-40"
+                class="image-workspace-button image-workspace-button-secondary"
                 :disabled="!isAuthenticated || loadingTasks"
                 @click="refreshWorkspaceData"
               >
@@ -160,13 +180,13 @@
             </div>
           </div>
 
-          <div class="flex flex-wrap items-center gap-2">
+          <div class="image-workspace-filter-row">
             <button
               v-for="filter in taskStatusFilters"
               :key="filter.value"
               type="button"
-              class="rounded-full border px-3 py-1.5 text-xs font-black transition"
-              :class="taskStatusFilter === filter.value ? 'border-cyan-200/40 bg-cyan-200/15 text-[var(--public-accent-strong)]' : 'border-[var(--public-border)] text-[var(--public-muted)] hover:bg-[var(--public-panel-soft)] hover:text-[var(--public-body)]'"
+              class="image-workspace-filter-pill"
+              :class="{ 'image-workspace-filter-pill-active': taskStatusFilter === filter.value }"
               @click="setTaskStatusFilter(filter.value)"
             >
               {{ filter.label }}
@@ -179,7 +199,7 @@
                 <article
                   v-for="task in tasks"
                   :key="task.id"
-                  class="min-w-0 overflow-hidden rounded-3xl border bg-[var(--public-panel-soft)] transition duration-300 hover:-translate-y-0.5 hover:border-cyan-200/30 hover:bg-[var(--public-panel-soft)]"
+                  class="image-task-card min-w-0"
                   :class="task.status === 'running' ? 'border-cyan-200/25 shadow-[0_0_32px_rgba(103,232,249,0.08)]' : 'border-[var(--public-border)]'"
                 >
                   <div v-if="task.artifacts?.length" class="space-y-2">
@@ -425,10 +445,18 @@ import {
   type WorkspaceShellCopy,
 } from '@/utils/imageWorkspaceShell'
 import { resolveRuntimeLanguage } from '@/utils/runtimeLocale'
+import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import { applyImageGeneratorDraft, resolveImageGeneratorCatalogPath } from './imageGeneratorRuntime'
+
+const props = withDefaults(defineProps<{
+  appShell?: boolean
+}>(), {
+  appShell: false,
+})
 
 const appStore = useAppStore()
 const authStore = useAuthStore()
+const { authRouteDefaults } = useAuthRouteDefaults()
 const { t } = useI18n()
 const { copyToClipboard } = useClipboard()
 
@@ -578,22 +606,54 @@ const canGenerate = computed(() =>
   !hasInsufficientBalance.value,
 )
 
-const workspaceShell = computed<WorkspaceShellCopy>(() =>
-  cleanWorkspaceShellCopy(
-    resolveWorkspaceShellConfig(
-      appStore.cachedPublicSettings?.workspace_shell_config,
-      resolveRuntimeLanguage(getLocale()),
-    ),
-  ),
-)
+const workspaceShell = computed<WorkspaceShellCopy>(() => {
+  const configuredCopy = resolveWorkspaceShellConfig(
+    appStore.cachedPublicSettings?.workspace_shell_config,
+    resolveRuntimeLanguage(getLocale()),
+  )
+  return cleanWorkspaceShellCopy({
+    ...defaultWorkspaceShellCopy(),
+    ...configuredCopy,
+  })
+})
 const workspaceShellDefaults = computed(() =>
   resolveWorkspaceShellDefaults(
     appStore.cachedPublicSettings?.workspace_shell_config,
     resolveRuntimeLanguage(getLocale()),
   ),
 )
-const catalogPath = computed(() => resolveImageGeneratorCatalogPath(workspaceShellDefaults.value.catalogPath))
+const catalogPath = computed(() => {
+  const path = resolveImageGeneratorCatalogPath(workspaceShellDefaults.value.catalogPath)
+  if (props.appShell && path === '/prompts') return '/app/prompts'
+  return path
+})
+const rechargeRoute = computed(() => ({
+  path: authRouteDefaults.value.purchasePath,
+  query: { tab: 'recharge' },
+}))
 const maxPromptLength = computed(() => workspaceShellDefaults.value.maxPromptLength)
+
+function defaultWorkspaceShellCopy(): WorkspaceShellCopy {
+  return {
+    catalogLabel: t('imageWorkspace.catalogLabel'),
+    eyebrow: t('imageWorkspace.eyebrow'),
+    title: t('imageWorkspace.title'),
+    heroDescription: t('imageWorkspace.heroDescription'),
+    draftImported: t('imageWorkspace.draftImported'),
+    draftImportedDescription: t('imageWorkspace.draftImportedDescription'),
+    promptLabel: t('imageWorkspace.promptLabel'),
+    promptPlaceholder: t('imageWorkspace.promptPlaceholder'),
+    promptTooLong: t('imageWorkspace.promptTooLong'),
+    clearLabel: t('imageWorkspace.clearLabel'),
+    copyPromptLabel: t('imageWorkspace.copyPromptLabel'),
+    copySuccessMessage: t('imageWorkspace.copySuccessMessage'),
+    copyEmptyError: t('imageWorkspace.copyEmptyError'),
+    workspaceTitle: t('imageWorkspace.workspaceTitle'),
+    workspaceDescription: t('imageWorkspace.workspaceDescription'),
+    workspaceStatus: t('imageWorkspace.workspaceStatus'),
+    backToCatalogLabel: t('imageWorkspace.backToCatalogLabel'),
+  }
+}
 
 function cleanWorkspaceShellCopy(copy: WorkspaceShellCopy): WorkspaceShellCopy {
   return {
@@ -1118,3 +1178,305 @@ onBeforeUnmount(() => {
   }
 })
 </script>
+
+<style scoped>
+.image-workspace-hero,
+.image-workspace-card {
+  overflow: hidden;
+  border: 1px solid var(--public-border);
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.9));
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 18px 54px rgba(15, 23, 42, 0.08);
+}
+
+.image-workspace-hero {
+  padding: 1.75rem;
+}
+
+.image-workspace-card {
+  padding: 1.25rem;
+}
+
+.dark .image-workspace-hero,
+.dark .image-workspace-card {
+  background:
+    linear-gradient(180deg, rgba(24, 24, 27, 0.94), rgba(9, 9, 11, 0.9));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 18px 54px rgba(0, 0, 0, 0.24);
+}
+
+.image-workspace-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.image-workspace-section-title {
+  color: var(--public-ink);
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.image-workspace-section-copy {
+  max-width: 48rem;
+  color: var(--public-muted);
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.image-workspace-field-label {
+  color: var(--public-muted);
+  font-size: 0.75rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.image-workspace-field,
+.image-workspace-textarea {
+  width: 100%;
+  border: 1px solid var(--public-border);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--public-ink);
+  font-size: 0.875rem;
+  outline: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) inset;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.image-workspace-field {
+  min-height: 2.75rem;
+  padding: 0 0.875rem;
+}
+
+.image-workspace-textarea {
+  resize: vertical;
+  padding: 1rem;
+  line-height: 1.75;
+}
+
+.image-workspace-field::placeholder,
+.image-workspace-textarea::placeholder {
+  color: var(--public-faint);
+}
+
+.image-workspace-field:focus,
+.image-workspace-textarea:focus {
+  border-color: rgba(37, 99, 235, 0.34);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.08),
+    0 1px 2px rgba(15, 23, 42, 0.03) inset;
+}
+
+.dark .image-workspace-field,
+.dark .image-workspace-textarea {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
+.dark .image-workspace-field:focus,
+.dark .image-workspace-textarea:focus {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.image-workspace-param-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.image-workspace-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  border: 1px solid var(--public-border);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.66);
+  padding: 0.75rem;
+}
+
+.dark .image-workspace-action-bar {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.image-workspace-actions,
+.image-workspace-filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.image-workspace-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.image-workspace-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.image-workspace-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+.image-workspace-button-primary {
+  border-color: rgba(37, 99, 235, 0.2);
+  background: #111827;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.image-workspace-button-primary:hover:not(:disabled) {
+  background: #020617;
+}
+
+.image-workspace-button-secondary {
+  border-color: var(--public-border);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--public-ink);
+}
+
+.image-workspace-button-secondary:hover:not(:disabled) {
+  border-color: rgba(37, 99, 235, 0.24);
+  background: rgba(37, 99, 235, 0.06);
+  color: var(--public-accent-strong);
+}
+
+.image-workspace-button-subtle {
+  border-color: var(--public-border);
+  background: transparent;
+  color: var(--public-body);
+}
+
+.image-workspace-button-subtle:hover:not(:disabled) {
+  background: var(--public-panel-soft);
+}
+
+.dark .image-workspace-button-primary {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: #fff;
+  color: #09090b;
+}
+
+.dark .image-workspace-button-primary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.dark .image-workspace-button-secondary {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.image-workspace-cost-pill {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--public-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+  padding: 0 0.75rem;
+  color: var(--public-muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.dark .image-workspace-cost-pill {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.image-workspace-filter-pill {
+  min-height: 2.25rem;
+  border: 1px solid var(--public-border);
+  border-radius: 999px;
+  padding: 0 0.875rem;
+  color: var(--public-muted);
+  font-size: 0.75rem;
+  font-weight: 850;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.image-workspace-filter-pill:hover,
+.image-workspace-filter-pill-active {
+  border-color: rgba(37, 99, 235, 0.24);
+  background: rgba(37, 99, 235, 0.06);
+  color: var(--public-accent-strong);
+}
+
+.image-task-card {
+  overflow: hidden;
+  border: 1px solid var(--public-border);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.66);
+  transition:
+    transform 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease;
+}
+
+.image-task-card:hover {
+  transform: translateY(-1px);
+  border-color: rgba(37, 99, 235, 0.18);
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.08);
+}
+
+.dark .image-task-card {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+@media (max-width: 900px) {
+  .image-workspace-card-header,
+  .image-workspace-action-bar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .image-workspace-param-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .image-workspace-actions,
+  .image-workspace-filter-row {
+    align-items: stretch;
+  }
+
+  .image-workspace-button,
+  .image-workspace-cost-pill,
+  .image-workspace-filter-pill {
+    width: 100%;
+  }
+}
+</style>

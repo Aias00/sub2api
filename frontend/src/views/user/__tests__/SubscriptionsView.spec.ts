@@ -157,6 +157,28 @@ describe('SubscriptionsView', () => {
     expect(wrapper.text()).toContain('配置暂无订阅说明')
   })
 
+  it('空状态在未配置 payment shell 时使用中文默认文案', async () => {
+    appStoreState.cachedPublicSettings = {
+      auth_shell_config: JSON.stringify({
+        zh: {
+          defaults: {
+            purchasePath: '/configured-purchase',
+          },
+        },
+      }),
+      pricing_currency_symbol: '€',
+    }
+    getMySubscriptions.mockResolvedValue([])
+
+    const wrapper = mountView()
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('暂无有效订阅')
+    expect(wrapper.text()).toContain('没有有效订阅')
+    expect(wrapper.text()).not.toContain('subscriptionNoActive')
+    expect(wrapper.text()).not.toContain('subscriptionNoActiveDesc')
+  })
+
   it('订阅卡片优先使用 public settings 中的订阅页文案', async () => {
     getMySubscriptions.mockResolvedValue([
       subscriptionFactory({

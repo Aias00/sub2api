@@ -29,12 +29,14 @@ describe('resolvePromptCatalogShellConfig', () => {
       'en',
     )
 
-    expect(config.labels).toEqual({
+    expect(config.labels).toMatchObject({
       title: 'Prompt Library',
       caseTitle: 'Prompt Cases',
       templateTitle: 'Prompt Templates',
       details: 'Open case',
       importProviderX: 'X source',
+      importPlaceholder: 'Paste an X/Twitter post URL',
+      importAction: 'Import',
     })
     expect(config.defaults).toEqual({
       sourceType: 'template',
@@ -68,6 +70,8 @@ describe('resolvePromptCatalogShellConfig', () => {
     )
 
     expect(config.defaults).toBeUndefined()
+    expect(config.labels?.importProviderX).toBe('Twitter import')
+    expect(config.labels?.importAction).toBe('Import')
   })
 
   it('falls back to root labels when the selected locale is missing', () => {
@@ -81,10 +85,11 @@ describe('resolvePromptCatalogShellConfig', () => {
     )
 
     expect(config.labels?.searchPlaceholder).toBe('Search all prompts')
+    expect(config.labels?.importProviderX).toBe('Twitter 导入')
   })
 
   it('returns an empty config for invalid JSON', () => {
-    expect(resolvePromptCatalogShellConfig('{bad json', 'en')).toEqual({})
+    expect(resolvePromptCatalogShellConfig('{bad json', 'en').labels?.importAction).toBe('Import')
   })
 
   it('rejects pageSize values exceeding the maximum allowed', () => {
@@ -100,5 +105,26 @@ describe('resolvePromptCatalogShellConfig', () => {
     )
 
     expect(config.defaults?.pageSize).toBeUndefined()
+  })
+
+  it('fills missing localized labels from defaults so admin import controls are never blank', () => {
+    const config = resolvePromptCatalogShellConfig(
+      JSON.stringify({
+        zh: {
+          labels: {
+            title: '配置标题',
+            copyPrompt: '配置复制',
+          },
+        },
+      }),
+      'zh',
+    )
+
+    expect(config.labels?.title).toBe('配置标题')
+    expect(config.labels?.copyPrompt).toBe('配置复制')
+    expect(config.labels?.importProviderX).toBe('Twitter 导入')
+    expect(config.labels?.importPlaceholder).toBe('粘贴 X/Twitter 帖子链接')
+    expect(config.labels?.importAction).toBe('导入')
+    expect(config.labels?.search).toBe('搜索')
   })
 })

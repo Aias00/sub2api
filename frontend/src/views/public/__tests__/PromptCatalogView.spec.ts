@@ -209,6 +209,10 @@ describe('PromptCatalogView', () => {
     expect(wrapper.text()).toContain('characters')
     expect(wrapper.text()).toContain('42 characters')
     expect(wrapper.text()).toContain('editorial')
+    const dialogCopyButton = wrapper.findAll('button').find((button) => button.text() === 'Configured copy')
+    expect(dialogCopyButton).toBeTruthy()
+    expect(dialogCopyButton!.classes()).toContain('text-cyan-700')
+    expect(dialogCopyButton!.classes()).not.toContain('public-template-button-primary')
     expect(listCases).toHaveBeenCalledWith(expect.objectContaining({
       has_image: true,
       page_size: 12,
@@ -395,6 +399,9 @@ describe('PromptCatalogView', () => {
   it('does not embed default prompt catalog shell copy in the Vue view', () => {
     expect(promptCatalogViewSource).toContain('PublicDarkHeader')
     expect(promptCatalogViewSource).toContain(':account-label="copy.accountAction"')
+    expect(promptCatalogViewSource).toContain('container-class="max-w-6xl"')
+    expect(promptCatalogViewSource).toContain('public-template-container')
+    expect(promptCatalogViewSource).not.toContain('public-template-container-wide')
     expect(promptCatalogViewSource).not.toContain('useAuthRouteDefaults')
     expect(promptCatalogViewSource).not.toContain(':to="authRouteDefaults.homePath"')
     expect(promptCatalogViewSource).not.toContain('const avatarUrl = computed(() => authStore.user?.avatar_url?.trim() || \'\')')
@@ -405,8 +412,10 @@ describe('PromptCatalogView', () => {
     expect(promptCatalogViewSource).toContain('lg:grid-cols-[300px_minmax(0,1fr)]')
     expect(promptCatalogViewSource).not.toContain('lg:sticky lg:top-6')
     expect(promptCatalogViewSource).toContain('@click="setCategoryFilter(category.value)"')
-    expect(promptCatalogViewSource).toContain('categoryChipClass(index)')
-    expect(promptCatalogViewSource).toContain('flex flex-wrap items-start gap-2')
+    expect(promptCatalogViewSource).not.toContain('categoryChipClass(index)')
+    expect(promptCatalogViewSource).not.toContain('basis-[58%]')
+    expect(promptCatalogViewSource).toContain('gap-1.5')
+    expect(promptCatalogViewSource).not.toContain('flex flex-wrap items-start gap-2')
     expect(promptCatalogViewSource).not.toContain('max-h-[44vh]')
     expect(promptCatalogViewSource).not.toContain('max-h-[72vh] overflow-y-auto rounded-2xl border border-white/10')
     expect(promptCatalogViewSource).toContain("window.addEventListener('scroll', handlePageScroll, { passive: true })")

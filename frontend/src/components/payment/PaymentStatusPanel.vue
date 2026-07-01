@@ -21,12 +21,12 @@
                 <span class="font-medium text-gray-900 dark:text-white">{{ paidOrder.out_trade_no }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.amount') }}</span>
-                <span class="font-medium text-gray-900 dark:text-white">{{ creditedAmountSymbol }}{{ paidOrder.amount.toFixed(2) }}</span>
+                <span class="text-gray-500 dark:text-gray-400">{{ panelText('amount') }}</span>
+                <span class="font-medium text-gray-900 dark:text-white">{{ formatOrderCreditedAmount(paidOrder) }}</span>
               </div>
               <div class="flex justify-between">
-                <span class="text-gray-500 dark:text-gray-400">{{ t('payment.orders.payAmount') }}</span>
-                <span class="font-medium text-gray-900 dark:text-white">{{ formatGatewayAmount(paidOrder.pay_amount, paidOrder.currency) }}</span>
+                <span class="text-gray-500 dark:text-gray-400">{{ panelText('payAmount') }}</span>
+                <span class="font-medium text-gray-900 dark:text-white">{{ formatGatewayAmount(paidOrder.pay_amount) }}</span>
               </div>
             </div>
           </div>
@@ -129,7 +129,16 @@ import { useAppStore } from '@/stores'
 import { paymentAPI } from '@/api/payment'
 import { extractI18nErrorMessage } from '@/utils/apiError'
 import { getPaymentPopupFeatures } from '@/components/payment/providerConfig'
-import { currencySymbol, formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
+import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
+import { formatOrderCreditedAmount } from '@/utils/paymentCurrency'
+import {
+  DEFAULT_PAYMENT_STATUS_POLL_INTERVAL_MS,
+  DEFAULT_PAYMENT_VERIFY_RETRY_INTERVAL_MS,
+  DEFAULT_PAYMENT_VERIFY_RETRY_MAX_ATTEMPTS,
+  renderPaymentStatusPanelText,
+  type PaymentStatusPanelLabelKey,
+  type PaymentStatusPanelLabels,
+} from '@/utils/paymentShell'
 import type { PaymentOrder } from '@/types/payment'
 import Icon from '@/components/icons/Icon.vue'
 import QRCode from 'qrcode'
@@ -165,7 +174,6 @@ const remainingSeconds = ref(0)
 const cancelling = ref(false)
 const paidOrder = ref<PaymentOrder | null>(null)
 const paymentCurrency = computed(() => normalizePaymentCurrency(props.currency))
-const creditedAmountSymbol = currencySymbol('USD')
 const localeCode = computed(() => {
   const raw = i18n.locale as unknown
   if (typeof raw === 'string') return raw
@@ -220,8 +228,8 @@ const countdownDisplay = computed(() => {
   return m.toString().padStart(2, '0') + ':' + s.toString().padStart(2, '0')
 })
 
-function formatGatewayAmount(value: number, currency?: string | null): string {
-  return formatPaymentAmount(value, currency || paymentCurrency.value, localeCode.value)
+function formatGatewayAmount(value: number): string {
+  return formatPaymentAmount(value, paymentCurrency.value, localeCode.value)
 }
 
 function isSuccessStatus(status: string | null | undefined): boolean {

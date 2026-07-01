@@ -7,6 +7,7 @@ import { describe, expect, it } from 'vitest'
 const testsDir = dirname(fileURLToPath(import.meta.url))
 const componentPath = resolve(testsDir, '../AppHeader.vue')
 const componentSource = readFileSync(componentPath, 'utf8')
+const appLayoutComponentSource = readFileSync(resolve(testsDir, '../AppLayout.vue'), 'utf8')
 const distAssetsDir = resolve(testsDir, '../../../../../backend/internal/web/dist/assets')
 const appLayoutChunk = readdirSync(distAssetsDir).find((name) =>
   name.startsWith('AppLayout.vue_vue_type_script_setup_true_lang-') && name.endsWith('.js')
@@ -40,15 +41,28 @@ describe('AppHeader regular user dropdown shortcuts', () => {
     expect(componentSource).toContain(
       'const showDropdownPrimaryActions = computed('
     )
-    expect(componentSource).toContain('<router-link to="/tasks" @click="closeDropdown" class="dropdown-item">')
+    expect(componentSource).toContain('<router-link :to="authRouteDefaults.userRedirectPath" @click="closeDropdown" class="app-header-user-dropdown-item" role="menuitem">')
+    expect(componentSource).toContain("{{ t('nav.dashboard') }}")
+    expect(componentSource).toContain('<router-link to="/app/tasks" @click="closeDropdown" class="app-header-user-dropdown-item" role="menuitem">')
     expect(componentSource).toContain("{{ t('nav.myTasks') }}")
     expect(componentSource).toContain('const showDropdownTaskLink = computed(() => true)')
     expect(componentSource).toContain('showDropdownTaskLink.value || showDropdownAccountLinks.value || showGithubLink.value')
     expect(componentSource).toContain("from './appHeaderRuntime'")
-    expect(componentSource).toContain('resolveCompactUserDropdown')
-    expect(componentSource).toContain('<div v-if="showDropdownPrimaryActions" class="py-1">')
-    expect(componentSource).toContain("compactUserDropdown\n                    ? 'px-4 py-3'")
-    expect(componentSource).toContain("compactUserDropdown\n                    ? 'py-1'")
+    expect(componentSource).not.toContain('resolveCompactUserDropdown')
+    expect(componentSource).toContain('<div v-if="showDropdownPrimaryActions" class="app-header-user-dropdown-group">')
+    expect(componentSource).toContain('class="app-header-user-dropdown-item app-header-user-dropdown-item-danger w-full"')
+  })
+
+  it('uses the public-page avatar dropdown visual treatment', () => {
+    expect(componentSource).toContain('class="app-header-user-dropdown" role="menu"')
+    expect(componentSource).toContain('width: 13rem;')
+    expect(componentSource).toContain('min-height: 2.5rem;')
+    expect(componentSource).toContain('border-radius: 1.25rem;')
+    expect(componentSource).toContain('backdrop-filter: blur(18px);')
+    expect(componentSource).toContain('.app-header-user-dropdown-item-danger')
+    expect(componentSource).not.toContain('class="dropdown right-0 mt-2 w-56"')
+    expect(componentSource).not.toContain('{{ user.email }}')
+    expect(componentSource).not.toContain('formatHeaderBalance(user.balance)')
   })
 
   it('uses an icon-only docs shortcut and removes the desktop balance pill', () => {
@@ -59,9 +73,25 @@ describe('AppHeader regular user dropdown shortcuts', () => {
     expect(componentSource).not.toContain("class=\"hidden items-center gap-2 rounded-xl bg-primary-50 px-3 py-1.5 dark:bg-primary-900/20 sm:flex\"")
   })
 
+  it('uses the same compact circular avatar trigger as public pages', () => {
+    expect(componentSource).toContain('class="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full border')
+    expect(componentSource).toContain(':aria-label="displayName"')
+    expect(componentSource).toContain(':aria-expanded="dropdownOpen"')
+    expect(componentSource).not.toContain("{{ user.role }}")
+    expect(componentSource).not.toContain('<Icon name="chevronDown" size="sm" class="hidden text-gray-400 md:block" />')
+  })
+
   it('does not render a secondary page description line under the title', () => {
     expect(componentSource).not.toContain('pageDescription')
     expect(componentSource).not.toContain("class=\"text-xs text-gray-500 dark:text-slate-300/90\"")
+  })
+
+  it('uses the same outer padding rail as AppLayout main content', () => {
+    expect(componentSource).toContain('px-4 md:px-6 lg:px-8')
+    expect(componentSource).toContain('class="mx-auto flex h-16 w-full items-center justify-between" :class="containerClass"')
+    expect(componentSource).not.toContain('justify-between px-4 md:px-6" :class="containerClass"')
+    expect(appLayoutComponentSource).toContain("contentContainerClass: 'max-w-[1680px]'")
+    expect(appLayoutComponentSource).toContain("headerContainerClass: 'max-w-[1680px]'")
   })
 
   it('delegates header display-name and title shaping to shared runtime helpers', () => {

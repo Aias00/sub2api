@@ -8,26 +8,6 @@ import {
   type WorkspaceShellCopy,
 } from '../imageWorkspaceShell'
 
-const emptyShell: WorkspaceShellCopy = {
-  catalogLabel: '',
-  eyebrow: '',
-  title: '',
-  heroDescription: '',
-  draftImported: '',
-  draftImportedDescription: '',
-  promptLabel: '',
-  promptPlaceholder: '',
-  promptTooLong: '',
-  clearLabel: '',
-  copyPromptLabel: '',
-  copySuccessMessage: '',
-  copyEmptyError: '',
-  workspaceTitle: '',
-  workspaceDescription: '',
-  workspaceStatus: '',
-  backToCatalogLabel: '',
-}
-
 const configuredShell: WorkspaceShellCopy = {
   catalogLabel: 'Prompt catalog',
   eyebrow: 'Prompt Workspace',
@@ -63,7 +43,7 @@ describe('resolveWorkspaceShellConfig', () => {
 
     expect(shell.title).toBe('Configured workspace')
     expect(shell.copyPromptLabel).toBe('Configured copy')
-    expect(shell.promptLabel).toBe('')
+    expect(shell.promptLabel).toBeUndefined()
   })
 
   it('falls back to default scope when locale scope is missing', () => {
@@ -79,16 +59,18 @@ describe('resolveWorkspaceShellConfig', () => {
     expect(shell.promptPlaceholder).toBe('Default placeholder')
   })
 
-  it('returns empty copy for missing or invalid public settings config', () => {
-    expect(resolveWorkspaceShellConfig(undefined, 'en')).toEqual(emptyShell)
-    expect(resolveWorkspaceShellConfig('{bad json', 'en')).toEqual(emptyShell)
+  it('returns empty partial copy for missing or invalid public settings config', () => {
+    expect(resolveWorkspaceShellConfig(undefined, 'en')).toEqual({})
+    expect(resolveWorkspaceShellConfig('{bad json', 'en')).toEqual({})
   })
 
-  it('ignores caller-side default copy', () => {
+  it('does not synthesize blank labels that override caller defaults', () => {
     const shell = resolveWorkspaceShellConfig(JSON.stringify({ en: { title: configuredShell.title } }), 'en')
 
     expect(shell.title).toBe(configuredShell.title)
-    expect(shell.catalogLabel).toBe('')
+    expect(shell.catalogLabel).toBeUndefined()
+    expect(shell.clearLabel).toBeUndefined()
+    expect(shell.copyPromptLabel).toBeUndefined()
   })
 
   it('formats shell templates without page-local interpolation helpers', () => {

@@ -29,6 +29,7 @@ export function getStoredPublicTheme(): PublicTheme {
 export function applyPublicTheme(theme: PublicTheme) {
   if (canUseDocument()) {
     document.documentElement.dataset.publicTheme = theme
+    document.documentElement.classList.toggle('dark', theme === 'dark')
   }
   if (canUseLocalStorage()) {
     try {

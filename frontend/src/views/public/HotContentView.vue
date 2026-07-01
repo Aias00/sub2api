@@ -1,9 +1,9 @@
 <template>
-  <div class="home-business-page public-template-page min-h-screen">
-    <PublicDarkHeader :account-label="t('hotContent.goConsole')" />
+  <div class="home-business-page public-template-page" :class="props.appShell ? 'min-h-0' : 'min-h-screen'">
+    <PublicDarkHeader v-if="!props.appShell" :account-label="t('hotContent.goConsole')" container-class="max-w-6xl" />
 
-    <main class="public-template-main">
-      <section class="public-template-container-wide">
+    <main :class="props.appShell ? 'py-0' : 'public-template-main'">
+      <section class="public-template-container">
         <div class="max-w-4xl">
           <div>
             <p class="text-sm font-black uppercase tracking-[0.24em] text-[var(--public-muted)]">{{ t('hotContent.signalDesk') }}</p>
@@ -123,6 +123,12 @@ import {
   type HotItem,
   type HotSource,
 } from '@/api/hot-content'
+
+const props = withDefaults(defineProps<{
+  appShell?: boolean
+}>(), {
+  appShell: false,
+})
 
 const EmptyState = defineComponent({
   props: {

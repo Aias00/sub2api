@@ -120,9 +120,9 @@
                 <!-- Price -->
                 <div class="flex items-baseline gap-2">
                   <span v-if="selectedPlan.original_price" class="text-sm text-gray-400 line-through dark:text-gray-500">
-                    {{ formatSelectedSubscriptionPaymentAmount(selectedPlan.original_price) }}
+                    {{ formatSelectedPaymentAmount(selectedPlan.original_price) }}
                   </span>
-                  <span :class="['text-3xl font-bold', planTextClass]">{{ formatSelectedSubscriptionPaymentAmount(selectedPlan.price) }}</span>
+                  <span :class="['text-3xl font-bold', planTextClass]">{{ formatSelectedPaymentAmount(selectedPlan.price) }}</span>
                   <span class="text-sm text-gray-500 dark:text-gray-400">/ {{ planValiditySuffix }}</span>
                 </div>
                 <!-- Description -->
@@ -168,7 +168,7 @@
               <div v-if="feeRate > 0 && selectedPlan.price > 0" class="card p-6">
                 <div class="space-y-2 text-sm">
                   <div class="flex justify-between">
-                    <span class="text-gray-500 dark:text-gray-400">{{ t('payment.amountLabel') }}</span>
+                    <span class="text-gray-500 dark:text-gray-400">{{ paymentText('amountLabel') }}</span>
                     <span class="text-gray-900 dark:text-white">{{ formatSelectedPaymentAmount(subPaymentAmount) }}</span>
                   </div>
                   <div class="flex justify-between">
@@ -186,7 +186,7 @@
                   <span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                   {{ paymentText('processing') }}
                 </span>
-                <span v-else>{{ t('payment.createOrder') }} {{ formatSelectedPaymentAmount(subTotalAmount) }}</span>
+                <span v-else>{{ paymentText('createOrder') }} {{ formatSelectedPaymentAmount(feeRate > 0 ? subTotalAmount : selectedPlan.price) }}</span>
               </button>
               <button class="btn btn-secondary w-full" @click="selectedPlan = null">{{ paymentText('cancel') }}</button>
             </template>
@@ -570,7 +570,7 @@ const enabledMethods = computed(() => Object.keys(visibleMethods.value))
 const validAmount = computed(() => amount.value ?? 0)
 const balanceRechargeMultiplier = computed(() => {
   const multiplier = checkout.value.balance_recharge_multiplier
-  return Number.isFinite(multiplier) && multiplier > 0 ? multiplier : 1
+  return multiplier > 0 ? multiplier : 1
 })
 const rechargeProducts = computed(() => checkout.value.recharge_products || [])
 const rechargeSelectionAmount = computed(() => selectedRechargeProduct.value?.amount ?? validAmount.value)
@@ -608,6 +608,10 @@ const localeCode = computed(() => {
   return undefined
 })
 
+function formatSelectedPaymentAmount(value: number): string {
+  return formatPaymentAmount(value, selectedCurrency.value, localeCode.value)
+}
+
 function currencyFractionDigits(currency: string): number {
   try {
     return new Intl.NumberFormat(undefined, {
@@ -631,12 +635,8 @@ function ceilPaymentAmount(value: number, currency: string): number {
   return Math.ceil(value * factor) / factor
 }
 
-function formatSelectedPaymentAmount(value: number): string {
-  return formatPaymentAmount(value, selectedCurrency.value, localeCode.value)
-}
-
-function formatSelectedSubscriptionPaymentAmount(value: number): string {
-  return formatSelectedPaymentAmount(roundPaymentAmount(value, selectedCurrency.value))
+function formatUsdLimit(value: number): string {
+  return formatPaymentAmount(value, 'USD', localeCode.value)
 }
 
 const methodOptions = computed<PaymentMethodOption[]>(() =>
@@ -705,14 +705,34 @@ const rechargeButtonLabel = computed(() =>
     : paymentText('selectAmountFirst')
 )
 
-const subPaymentAmount = computed(() => {
-  const price = selectedPlan.value?.price ?? 0
-  return roundPaymentAmount(price, selectedCurrency.value)
+// Subscription-specific: method options are based on the gateway pay amount.
+const subMethodOptions = computed<PaymentMethodOption[]>(() => {
+  const planPrice = selectedPlan.value?.price ?? 0
+  return enabledMethods.value.map((type) => {
+    const ml = visibleMethods.value[type]
+    const currency = normalizePaymentCurrency(ml?.currency)
+    return {
+      type,
+      fee_rate: ml?.fee_rate ?? 0,
+      available:
+        ml?.available !== false
+        && amountFitsMethod(subscriptionTotalAmountForCurrency(planPrice, currency), type)
+        && supportsPaymentMethodSelection(type, {
+          orderType: 'subscription',
+          subscriptionPlan: selectedPlan.value,
+        }),
+    }
+  })
 })
 
 const subFeeAmount = computed(() => {
   if (feeRate.value <= 0 || subPaymentAmount.value <= 0) return 0
   return ceilPaymentAmount((subPaymentAmount.value * feeRate.value) / 100, selectedCurrency.value)
+})
+
+const subPaymentAmount = computed(() => {
+  const price = selectedPlan.value?.price ?? 0
+  return roundPaymentAmount(price, selectedCurrency.value)
 })
 
 const subTotalAmount = computed(() => {
@@ -727,23 +747,13 @@ function subscriptionTotalAmountForCurrency(value: number, currency: string): nu
   return roundPaymentAmount(paymentAmount + fee, currency)
 }
 
-// Subscription-specific: method options based on gateway pay amount
-const subMethodOptions = computed<PaymentMethodOption[]>(() => {
-  const price = selectedPlan.value?.price ?? 0
-  return enabledMethods.value.map((type) => {
-    const ml = visibleMethods.value[type]
-    const currency = normalizePaymentCurrency(ml?.currency)
-    return {
-      type,
-      fee_rate: ml?.fee_rate ?? 0,
-      available: ml?.available !== false && amountFitsMethod(subscriptionTotalAmountForCurrency(price, currency), type),
-    }
-  })
-})
-
 const canSubmitSubscription = computed(() =>
   selectedPlan.value !== null
     && amountFitsMethod(subTotalAmount.value, selectedMethod.value)
+    && supportsPaymentMethodSelection(selectedMethod.value, {
+      orderType: 'subscription',
+      subscriptionPlan: selectedPlan.value,
+    })
     && selectedLimit.value?.available !== false
 )
 
@@ -1159,10 +1169,11 @@ onMounted(async () => {
   try {
     const res = await paymentAPI.getCheckoutInfo()
     checkout.value = res.data
-    if (checkout.value.recharge_products.length > 0) {
+    const products = checkout.value.recharge_products || []
+    if (products.length > 0) {
       selectedRechargeProduct.value =
-        checkout.value.recharge_products.find((product) => product.recommended)
-        ?? checkout.value.recharge_products[0]
+        products.find((product) => product.recommended)
+        ?? products[0]
         ?? null
       if (selectedRechargeProduct.value) {
         amount.value = selectedRechargeProduct.value.amount

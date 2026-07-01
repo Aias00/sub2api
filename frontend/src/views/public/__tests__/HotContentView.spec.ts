@@ -38,6 +38,9 @@ describe('HotContentView brand navigation', () => {
   it('links the header brand to the configured home path', () => {
     expect(hotContentViewSource).toContain('PublicDarkHeader')
     expect(hotContentViewSource).toContain(':account-label="t(\'hotContent.goConsole\')"')
+    expect(hotContentViewSource).toContain('container-class="max-w-6xl"')
+    expect(hotContentViewSource).toContain('public-template-container')
+    expect(hotContentViewSource).not.toContain('public-template-container-wide')
     expect(hotContentViewSource).not.toContain('useAuthRouteDefaults')
     expect(hotContentViewSource).not.toContain(':to="authRouteDefaults.homePath"')
     expect(hotContentViewSource).not.toContain('to="/home"')

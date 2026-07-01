@@ -414,7 +414,10 @@ export type SubscriptionLabelKey = typeof subscriptionLabelKeys[number]
 export type SubscriptionLabels = Partial<Record<SubscriptionLabelKey, string>>
 
 export function resolveSubscriptionLabels(raw: string | undefined, runtimeLocale: string): SubscriptionLabels {
-  return resolvePaymentShellLabels(raw, runtimeLocale, subscriptionLabelKeys)
+  return {
+    ...defaultSubscriptionLabels(runtimeLocale),
+    ...resolvePaymentShellLabels(raw, runtimeLocale, subscriptionLabelKeys),
+  }
 }
 
 export function renderSubscriptionText(
@@ -424,6 +427,56 @@ export function renderSubscriptionText(
 ): string {
   const label = labels?.[key] || key
   return interpolatePaymentShellLabel(label, params)
+}
+
+function defaultSubscriptionLabels(runtimeLocale: string): SubscriptionLabels {
+  if (runtimeLocale.toLowerCase().startsWith('zh')) {
+    return {
+      renewNow: '续费',
+      subscriptionNoActive: '暂无有效订阅',
+      subscriptionNoActiveDesc: '您当前没有有效订阅，可前往充值/订阅页面购买套餐。',
+      subscriptionExpires: '到期时间',
+      subscriptionNoExpiration: '无到期时间',
+      subscriptionStatusActive: '有效',
+      subscriptionStatusExpired: '已过期',
+      subscriptionStatusRevoked: '已撤销',
+      subscriptionDaily: '每日',
+      subscriptionWeekly: '每周',
+      subscriptionMonthly: '每月',
+      subscriptionUnlimited: '无限制',
+      subscriptionUnlimitedDesc: '该订阅无用量限制',
+      subscriptionDaysRemaining: '剩余 {days} 天',
+      subscriptionResetIn: '{time} 后重置',
+      subscriptionQuotaEndsIn: '额度将在 {time} 后重置',
+      subscriptionWindowNotActive: '等待首次使用',
+      subscriptionToday: '今天',
+      subscriptionTomorrow: '明天',
+      subscriptionFailedToLoad: '加载订阅失败',
+    }
+  }
+
+  return {
+    renewNow: 'Renew',
+    subscriptionNoActive: 'No Active Subscriptions',
+    subscriptionNoActiveDesc: 'You do not have an active subscription. Go to Recharge / Subscription to purchase a plan.',
+    subscriptionExpires: 'Expires',
+    subscriptionNoExpiration: 'No expiration',
+    subscriptionStatusActive: 'Active',
+    subscriptionStatusExpired: 'Expired',
+    subscriptionStatusRevoked: 'Revoked',
+    subscriptionDaily: 'Daily',
+    subscriptionWeekly: 'Weekly',
+    subscriptionMonthly: 'Monthly',
+    subscriptionUnlimited: 'Unlimited',
+    subscriptionUnlimitedDesc: 'No usage limits on this subscription',
+    subscriptionDaysRemaining: '{days} days remaining',
+    subscriptionResetIn: 'Resets in {time}',
+    subscriptionQuotaEndsIn: 'Quota resets in {time}',
+    subscriptionWindowNotActive: 'Awaiting first use',
+    subscriptionToday: 'Today',
+    subscriptionTomorrow: 'Tomorrow',
+    subscriptionFailedToLoad: 'Failed to load subscriptions',
+  }
 }
 
 export const stripePaymentLabelKeys = [
@@ -587,7 +640,10 @@ export type PaymentViewLabelKey = typeof paymentViewLabelKeys[number]
 export type PaymentViewLabels = Partial<Record<PaymentViewLabelKey, string>>
 
 export function resolvePaymentViewLabels(raw: string | undefined, runtimeLocale: string): PaymentViewLabels {
-  return resolvePaymentShellLabels(raw, runtimeLocale, paymentViewLabelKeys)
+  return {
+    ...defaultPaymentViewLabels(runtimeLocale),
+    ...resolvePaymentShellLabels(raw, runtimeLocale, paymentViewLabelKeys),
+  }
 }
 
 export function renderPaymentViewText(
@@ -611,6 +667,160 @@ function pickPaymentShellLabels<K extends string>(
     }
   }
   return result
+}
+
+function defaultPaymentViewLabels(runtimeLocale: string): PaymentViewLabels {
+  if (runtimeLocale.toLowerCase().startsWith('zh')) {
+    return {
+      tabTopUp: '充值',
+      tabSubscribe: '订阅',
+      rechargeAccount: '充值账户',
+      currentBalance: '当前余额',
+      notAvailable: '支付暂不可用',
+      noRechargeProducts: '暂无可用充值商品',
+      rechargeProductRecommended: '推荐',
+      rechargeProductCreditLine: '获得 ${amount} 余额',
+      rechargeProductCta: '立即充值',
+      paymentMethod: '支付方式',
+      methodAlipay: '支付宝',
+      methodWxpay: '微信支付',
+      methodStripe: 'Stripe',
+      methodAirwallex: 'Airwallex',
+      success: '支付成功',
+      subscriptionSuccess: '订阅成功',
+      orderId: '订单 ID',
+      orderNo: '订单号',
+      amount: '金额',
+      payAmount: '支付金额',
+      confirm: '确认',
+      cancelled: '已取消',
+      cancelledDesc: '您已取消本次支付',
+      expired: '订单已过期',
+      expiredDesc: '订单已超时，请重新创建订单',
+      scanAlipay: '支付宝扫码支付',
+      scanAlipayHint: '请使用手机打开支付宝，扫描二维码完成支付',
+      scanWxpay: '微信扫码支付',
+      scanWxpayHint: '请使用手机打开微信，扫描二维码完成支付',
+      scanToPay: '请扫码支付',
+      openPayWindow: '重新打开支付页面',
+      expiresIn: '剩余支付时间',
+      waitingPayment: '等待支付...',
+      cancelOrder: '取消订单',
+      payInNewWindowHint: '支付页面已在新窗口打开，请在新窗口中完成支付后返回此页面',
+      paymentAmount: '支付金额',
+      fee: '手续费',
+      actualPay: '实付金额',
+      creditedBalance: '到账余额',
+      rechargeRatePreview: '当前倍率：1 CNY = {usd} USD',
+      processing: '处理中...',
+      createOrder: '创建订单',
+      cancel: '取消',
+      selectAmountFirst: '请选择充值商品',
+      amountNoMethod: '请选择支付方式',
+      amountTooLow: '最低 {min}',
+      amountTooHigh: '最高 {max}',
+      amountLabel: '金额',
+      noPlans: '暂无可用订阅套餐',
+      activeSubscription: '当前订阅',
+      selectPlan: '选择套餐',
+      groupFallback: '分组 #{id}',
+      daysRemaining: '剩余 {days} 天',
+      noExpiration: '永不过期',
+      activeStatus: '生效中',
+      rate: '倍率',
+      dailyLimit: '每日额度',
+      weeklyLimit: '每周额度',
+      monthlyLimit: '每月额度',
+      quota: '额度',
+      unlimited: '不限量',
+      models: '模型',
+      subscribeNow: '立即开通',
+      renewNow: '续费',
+      perMonth: '月',
+      perYear: '年',
+      days: '天',
+      failed: '支付失败',
+      errorFallback: '支付请求失败，请稍后重试',
+      tooManyPending: '待支付订单过多，请先完成或取消已有订单',
+      cancelRateLimited: '取消过于频繁，请稍后再试',
+      mobilePaymentFallbackToQr: '当前环境无法直接拉起支付，已切换为扫码支付。',
+    }
+  }
+
+  return {
+    tabTopUp: 'Top Up',
+    tabSubscribe: 'Subscribe',
+    rechargeAccount: 'Recharge Account',
+    currentBalance: 'Current Balance',
+    notAvailable: 'Payment is not available',
+    noRechargeProducts: 'No recharge products available',
+    rechargeProductRecommended: 'Recommended',
+    rechargeProductCreditLine: 'Get ${amount} balance',
+    rechargeProductCta: 'Top up now',
+    paymentMethod: 'Payment Method',
+    methodAlipay: 'Alipay',
+    methodWxpay: 'WeChat Pay',
+    methodStripe: 'Stripe',
+    methodAirwallex: 'Airwallex',
+    success: 'Payment Successful',
+    subscriptionSuccess: 'Subscription Successful',
+    orderId: 'Order ID',
+    orderNo: 'Order No.',
+    amount: 'Amount',
+    payAmount: 'Payment Amount',
+    confirm: 'Confirm',
+    cancelled: 'Cancelled',
+    cancelledDesc: 'You cancelled this payment.',
+    expired: 'Order Expired',
+    expiredDesc: 'This order has expired. Please create a new one.',
+    scanAlipay: 'Alipay QR Payment',
+    scanAlipayHint: 'Open Alipay on your phone and scan the QR code to pay',
+    scanWxpay: 'WeChat QR Payment',
+    scanWxpayHint: 'Open WeChat on your phone and scan the QR code to pay',
+    scanToPay: 'Scan to Pay',
+    openPayWindow: 'Reopen Payment Page',
+    expiresIn: 'Expires in',
+    waitingPayment: 'Waiting for payment...',
+    cancelOrder: 'Cancel Order',
+    payInNewWindowHint: 'The payment page has opened in a new window. Please complete the payment there and return to this page.',
+    paymentAmount: 'Payment Amount',
+    fee: 'Fee',
+    actualPay: 'Actual Pay',
+    creditedBalance: 'Credited Balance',
+    rechargeRatePreview: 'Current rate: 1 CNY = {usd} USD',
+    processing: 'Processing...',
+    createOrder: 'Create Order',
+    cancel: 'Cancel',
+    selectAmountFirst: 'Select a recharge product',
+    amountNoMethod: 'Select a payment method',
+    amountTooLow: 'Minimum {min}',
+    amountTooHigh: 'Maximum {max}',
+    amountLabel: 'Amount',
+    noPlans: 'No subscription plans available',
+    activeSubscription: 'Active Subscription',
+    selectPlan: 'Select Plan',
+    groupFallback: 'Group #{id}',
+    daysRemaining: '{days} days remaining',
+    noExpiration: 'No expiration',
+    activeStatus: 'Active',
+    rate: 'Rate',
+    dailyLimit: 'Daily Limit',
+    weeklyLimit: 'Weekly Limit',
+    monthlyLimit: 'Monthly Limit',
+    quota: 'Quota',
+    unlimited: 'Unlimited',
+    models: 'Models',
+    subscribeNow: 'Subscribe Now',
+    renewNow: 'Renew',
+    perMonth: 'month',
+    perYear: 'year',
+    days: 'days',
+    failed: 'Payment Failed',
+    errorFallback: 'Payment request failed. Please try again later.',
+    tooManyPending: 'Too many pending orders. Please complete or cancel an existing order first.',
+    cancelRateLimited: 'Cancellation is too frequent. Please try again later.',
+    mobilePaymentFallbackToQr: 'Direct payment is unavailable in this environment. QR payment is shown instead.',
+  }
 }
 
 function pickPaymentShellDefaults(raw: string | undefined, runtimeLocale: string): Record<string, unknown> | null {

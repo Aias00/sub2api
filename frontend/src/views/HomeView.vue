@@ -20,67 +20,7 @@
       <div class="absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:72px_72px] opacity-40 dark:opacity-10"></div>
     </div>
 
-    <header class="relative z-20 px-6 py-5">
-      <nav class="mx-auto flex max-w-5xl items-center justify-between">
-        <router-link
-          :to="authRouteDefaults.homePath"
-          class="flex min-w-0 items-center gap-3 rounded-full transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sky-400"
-          :aria-label="siteName"
-        >
-          <div v-if="siteLogo" class="h-9 w-9 shrink-0 overflow-hidden rounded-xl border border-white/10 bg-white/5">
-            <img :src="siteLogo" alt="Logo" class="h-full w-full object-contain" />
-          </div>
-          <div class="flex items-center gap-2">
-            <span data-home-nav-text class="truncate text-sm font-semibold leading-none text-slate-900 dark:text-white">{{ siteName }}</span>
-          </div>
-        </router-link>
-
-        <div data-home-nav-text class="hidden items-center gap-8 text-sm font-semibold leading-none text-slate-500 lg:flex">
-          <template v-for="item in navItems" :key="item.label">
-            <DocsLink
-              v-if="item.doc"
-              :doc-url="docUrl"
-              class="transition-colors hover:text-slate-900 dark:hover:text-white"
-            >
-              {{ item.label }}
-            </DocsLink>
-            <router-link
-              v-else-if="item.to"
-              :to="item.to"
-              class="transition-colors hover:text-slate-900 dark:hover:text-white"
-            >
-              {{ item.label }}
-            </router-link>
-            <a
-              v-else
-              :href="item.href"
-              class="transition-colors hover:text-slate-900 dark:hover:text-white"
-            >
-              {{ item.label }}
-            </a>
-          </template>
-        </div>
-
-        <div class="flex items-center gap-3">
-          <LocaleSwitcher />
-          <DocsLink
-            :doc-url="docUrl"
-            data-home-nav-text
-            class="hidden h-10 items-center rounded-full border border-slate-200 px-5 text-sm font-semibold leading-none text-slate-600 transition hover:border-slate-300 hover:text-slate-900 dark:border-dark-700 dark:text-dark-200 dark:hover:border-dark-500 dark:hover:text-white sm:inline-flex"
-          >
-            {{ copy.viewDocs }}
-          </DocsLink>
-          <router-link
-            :to="isAuthenticated ? dashboardPath : loginPath"
-            data-home-nav-text
-            data-home-primary-action
-            class="inline-flex h-10 items-center rounded-full border border-slate-900 bg-slate-900 px-5 text-sm font-semibold leading-none text-white transition hover:bg-slate-800 dark:border-white dark:bg-white dark:text-slate-900 dark:hover:bg-slate-100"
-          >
-            {{ isAuthenticated ? copy.dashboard : copy.login }}
-          </router-link>
-        </div>
-      </nav>
-    </header>
+    <PublicDarkHeader :account-label="isAuthenticated ? copy.dashboard : copy.login" container-class="max-w-6xl" />
 
     <main class="relative z-10">
       <section id="top" class="px-6 pb-8 pt-8 sm:pb-10 sm:pt-10">
@@ -139,22 +79,9 @@
                   {{ card.title[0] }}
                 </div>
               </div>
-              <span
-                v-if="card.statusLabel"
-                class="mt-4 inline-flex rounded-full border px-3 py-1 text-xs font-bold"
-                :class="businessCardStatusClass(card)"
-              >
-                {{ card.statusLabel }}
-              </span>
-              <span
-                v-if="businessCardCountLabel(card)"
-                class="ml-2 mt-4 inline-flex rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-500 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-300"
-              >
-                {{ businessCardCountLabel(card) }}
-              </span>
               <p
                 v-if="card.statusMessage"
-                class="mt-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100"
+                class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs leading-6 text-amber-800 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100"
               >
                 {{ card.statusMessage }}
               </p>
@@ -349,8 +276,7 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { useAuthStore, useAppStore } from '@/stores'
-import DocsLink from '@/components/common/DocsLink.vue'
-import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
+import PublicDarkHeader from '@/components/layout/PublicDarkHeader.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import {
@@ -418,21 +344,6 @@ const isAdmin = computed(() => authStore.isAdmin)
 const dashboardPath = computed(() => resolveHomePath(isAdmin.value))
 const loginPath = computed(() => authRouteDefaults.value.loginPath)
 const currentYear = computed(() => new Date().getFullYear())
-
-const navItems = computed(() => {
-  if (isBusinessHome.value) {
-    return [
-      { href: homeLinks.value.homeAnchor, label: copy.value.navHome },
-      { doc: true, label: copy.value.navDocs },
-    ]
-  }
-  return [
-    { href: homeLinks.value.homeAnchor, label: copy.value.navHome },
-    { doc: true, label: copy.value.navDocs },
-    { to: homeLinks.value.promptsPath, label: copy.value.navModels },
-    { href: homeLinks.value.experienceAnchor, label: copy.value.navExperience },
-  ]
-})
 
 const publicCatalog = ref<HomeCatalogResponse>(emptyCatalog)
 const catalogLoading = ref(false)
@@ -520,23 +431,6 @@ function familyDescription(key: string): string {
 
 function businessCardDisabled(card: HomeBusinessCard) {
   return card.disabled || card.status === 'disabled' || card.status === 'in_progress' || !card.path
-}
-
-function businessCardStatusClass(card: HomeBusinessCard) {
-  if (card.status === 'available' && !businessCardDisabled(card)) {
-    return 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-400/10 dark:text-emerald-100'
-  }
-  if (card.status === 'in_progress') {
-    return 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-400/20 dark:bg-amber-400/10 dark:text-amber-100'
-  }
-  return 'border-slate-200 bg-slate-50 text-slate-500 dark:border-dark-700 dark:bg-dark-800 dark:text-dark-300'
-}
-
-function businessCardCountLabel(card: HomeBusinessCard) {
-  if (!Number.isFinite(card.statusCount) || card.statusCount === undefined || card.statusCount <= 0) {
-    return ''
-  }
-  return new Intl.NumberFormat(homeLocale.value).format(card.statusCount)
 }
 
 function familyCapabilities(key: string): string[] {

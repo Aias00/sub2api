@@ -1,9 +1,9 @@
 <template>
-  <div class="home-business-page public-template-page min-h-screen">
-    <PublicDarkHeader :account-label="copy.accountAction" />
+  <div class="home-business-page public-template-page" :class="props.appShell ? 'min-h-0' : 'min-h-screen'">
+    <PublicDarkHeader v-if="!props.appShell" :account-label="copy.accountAction" container-class="max-w-6xl" />
 
-    <main class="public-template-main">
-      <div class="public-template-container-wide">
+    <main :class="props.appShell ? 'py-0' : 'public-template-main'">
+      <div class="public-template-container">
         <section>
           <div class="grid gap-5 lg:grid-cols-[minmax(0,1fr)_minmax(420px,620px)] lg:items-end">
             <div>
@@ -20,7 +20,7 @@
 
             <div
               v-if="isAdmin"
-              class="public-template-panel" p-3 sm:p-4"
+              class="public-template-panel p-3 sm:p-4"
             >
               <div class="mb-3 flex items-center justify-between gap-3">
                 <p class="shrink-0 text-sm font-bold text-[var(--public-accent-strong)]">{{ copy.importTitle }}</p>
@@ -88,10 +88,10 @@
 
               <div>
                 <span class="mb-2 block text-xs font-semibold uppercase tracking-[0.16em] text-[var(--public-muted)]">{{ copy.allCategories }}</span>
-                <div class="flex flex-wrap items-start gap-2">
+                <div class="flex flex-wrap items-start gap-1.5">
                   <button
                     type="button"
-                    class="inline-flex min-h-10 max-w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-sm font-semibold transition"
+                    class="inline-flex max-w-full items-center justify-between gap-2 rounded-xl border px-2.5 py-1.5 text-left text-xs font-semibold leading-5 transition"
                     :class="!filters.category ? 'border-cyan-300/35 bg-cyan-300/10 text-[var(--public-accent-strong)]' : 'border-[var(--public-border)] bg-[var(--public-panel-soft)] text-[var(--public-body)] hover:bg-[var(--public-panel-soft)]'"
                     @click="setCategoryFilter('')"
                   >
@@ -99,11 +99,11 @@
                     <span class="text-xs text-[var(--public-faint)]">{{ summary.total }}</span>
                   </button>
                   <button
-                    v-for="(category, index) in categoryOptions"
+                    v-for="category in categoryOptions"
                     :key="category.value"
                     type="button"
-                    class="inline-flex min-h-10 max-w-full items-center justify-between gap-3 rounded-2xl border px-3 py-2 text-left text-sm font-semibold transition"
-                    :class="[categoryChipClass(index), filters.category === category.value ? 'border-cyan-300/35 bg-cyan-300/10 text-[var(--public-accent-strong)]' : 'border-[var(--public-border)] bg-[var(--public-panel-soft)] text-[var(--public-body)] hover:bg-[var(--public-panel-soft)]']"
+                    class="inline-flex max-w-full items-center justify-between gap-2 rounded-xl border px-2.5 py-1.5 text-left text-xs font-semibold leading-5 transition"
+                    :class="filters.category === category.value ? 'border-cyan-300/35 bg-cyan-300/10 text-[var(--public-accent-strong)]' : 'border-[var(--public-border)] bg-[var(--public-panel-soft)] text-[var(--public-body)] hover:bg-[var(--public-panel-soft)]'"
                     @click="setCategoryFilter(category.value)"
                   >
                     <span class="min-w-0 truncate">{{ facetLabel(category) }}</span>
@@ -129,7 +129,7 @@
 
             <div
               v-else-if="errorMessage"
-              class="public-template-error" px-5 py-4 text-sm text-[var(--public-danger)]"
+              class="public-template-error px-5 py-4 text-sm text-[var(--public-danger)]"
             >
               {{ errorMessage }}
             </div>
@@ -204,24 +204,24 @@
 
                     <div class="mt-auto flex items-center justify-between gap-3 pt-5">
                       <p class="text-xs text-[var(--public-faint)]">{{ formattedDate(item.imported_at || item.created_at) }}</p>
-                      <div class="flex shrink-0 flex-wrap justify-end gap-2">
+                      <div class="grid shrink-0 grid-cols-3 gap-2">
                         <button
                           type="button"
-                          class="rounded-xl border border-[var(--public-border)] px-3 py-2 text-xs font-semibold text-[var(--public-body)] transition hover:bg-[var(--public-panel-soft)]"
+                          class="inline-flex h-10 min-w-0 items-center justify-center rounded-xl border border-[var(--public-border)] bg-white px-3 text-xs font-bold text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
                           @click="openDetails(item)"
                         >
                           {{ copy.details }}
                         </button>
                         <button
                           type="button"
-                          class="rounded-xl border border-violet-300/20 bg-violet-300/10 px-3 py-2 text-xs font-semibold text-[var(--public-accent-strong)] transition hover:bg-violet-300/20"
+                          class="inline-flex h-10 min-w-0 items-center justify-center rounded-xl bg-slate-950 px-3 text-xs font-bold text-white shadow-sm transition hover:bg-slate-800"
                           @click="openGenerator(item)"
                         >
                           {{ copy.generate }}
                         </button>
                         <button
                           type="button"
-                          class="rounded-xl border border-cyan-300/20 bg-cyan-300/10 px-3 py-2 text-xs font-semibold text-[var(--public-accent-strong)] transition hover:bg-cyan-300/20"
+                          class="inline-flex h-10 min-w-0 items-center justify-center rounded-xl border border-cyan-200 bg-cyan-50 px-3 text-xs font-bold text-cyan-700 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-100"
                           @click="copyPrompt(item)"
                         >
                           {{ copy.copyPrompt }}
@@ -315,17 +315,17 @@
             </span>
           </div>
 
-          <div class="flex flex-wrap gap-3">
+          <div class="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
             <button
               type="button"
-              class="public-template-button-primary px-4 py-2 text-sm font-bold"
+              class="inline-flex h-12 min-w-0 items-center justify-center rounded-xl border border-cyan-200 bg-cyan-50 px-4 text-sm font-black text-cyan-700 shadow-sm transition hover:border-cyan-300 hover:bg-cyan-100"
               @click="copyPrompt(selectedPrompt)"
             >
               {{ copy.copyPrompt }}
             </button>
             <button
               type="button"
-              class="public-template-button px-4 py-2 text-sm font-bold"
+              class="inline-flex h-12 min-w-0 items-center justify-center rounded-xl bg-slate-950 px-5 text-sm font-black text-white shadow-sm transition hover:bg-slate-800"
               @click="openGenerator(selectedPrompt)"
             >
               {{ copy.generate }}
@@ -335,7 +335,7 @@
               :href="selectedPrompt.source_url"
               target="_blank"
               rel="noreferrer"
-              class="rounded-xl border border-slate-200 px-4 py-2 text-sm font-bold text-slate-600 transition hover:bg-slate-50 dark:border-[var(--public-border)] dark:text-[var(--public-body)] dark:hover:bg-[var(--public-panel-soft)]"
+              class="inline-flex h-12 min-w-0 items-center justify-center rounded-xl border border-slate-200 bg-white px-5 text-sm font-black text-slate-700 shadow-sm transition hover:border-slate-300 hover:bg-slate-50"
             >
               {{ copy.source }}
             </a>
@@ -370,6 +370,12 @@ import {
   resolvePromptCatalogPageDescription,
   resolvePromptCatalogPageTitle,
 } from './promptCatalogRuntime'
+
+const props = withDefaults(defineProps<{
+  appShell?: boolean
+}>(), {
+  appShell: false,
+})
 
 const authStore = useAuthStore()
 const appStore = useAppStore()
@@ -500,18 +506,6 @@ function setCategoryFilter(category: string) {
   reloadFromFirstPage()
 }
 
-function categoryChipClass(index: number): string {
-  const variants = [
-    'basis-[58%] -translate-y-0.5',
-    'basis-[38%] translate-y-1',
-    'basis-[48%]',
-    'basis-[44%] -translate-y-1',
-    'basis-[64%] translate-y-0.5',
-    'basis-[34%]',
-  ]
-  return variants[index % variants.length]
-}
-
 function handlePageScroll() {
   if (loading.value || loadingMore.value || page.value >= pages.value) return
   const threshold = 200
@@ -548,7 +542,7 @@ function copyPrompt(item: PromptCatalogItem) {
 }
 
 function openGenerator(item: PromptCatalogItem) {
-  const path = resolvePromptCatalogGeneratorPath(catalogDefaults.value)
+  const path = resolveAppShellPath(resolvePromptCatalogGeneratorPath(catalogDefaults.value))
   if (!path) return
 
   try {
@@ -563,6 +557,12 @@ function openGenerator(item: PromptCatalogItem) {
   }
 
   window.location.assign(path)
+}
+
+function resolveAppShellPath(path: string | undefined): string | undefined {
+  if (!props.appShell) return path
+  if (path === '/image-generator') return '/app/image-generator'
+  return path
 }
 
 async function importFromSource() {

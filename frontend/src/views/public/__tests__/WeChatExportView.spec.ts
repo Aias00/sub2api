@@ -105,6 +105,11 @@ describe('WeChatExportView', () => {
     expect(wrapper.findAll('input[type="checkbox"]').length).toBeGreaterThanOrEqual(3)
   })
 
+  it('aligns the shared header with the main content grid', () => {
+    expect(weChatExportViewSource).toContain('container-class="max-w-6xl"')
+    expect(weChatExportViewSource).toContain('public-template-container')
+  })
+
   it('prompts anonymous visitors to log in', () => {
     authStoreState.isAuthenticated = false
     const wrapper = mount(WeChatExportView, {
@@ -137,6 +142,15 @@ describe('WeChatExportView', () => {
     expect(weChatExportViewSource).not.toContain('border border-amber-200/20 px-3 py-1.5 text-sm font-semibold text-amber-100')
   })
 
+  it('links insufficient export balance warnings to the configured recharge page', () => {
+    expect(weChatExportViewSource).toContain('useAuthRouteDefaults')
+    expect(weChatExportViewSource).toContain('authRouteDefaults.value.purchasePath')
+    expect(weChatExportViewSource).toContain(':to="rechargeRoute"')
+    expect(weChatExportViewSource).toContain("query: { tab: 'recharge' }")
+    expect(weChatExportViewSource).toContain('余额不足，请充值后再创建任务')
+    expect(weChatExportViewSource).toContain('去充值')
+  })
+
   it('keeps worker status messages readable on the light business shell', () => {
     expect(weChatExportViewSource).toContain('wechat-worker-status-message')
     expect(weChatExportViewSource).toContain('color: rgb(154, 52, 18) !important;')
@@ -152,10 +166,13 @@ describe('WeChatExportView', () => {
     expect(weChatExportViewSource).not.toContain('已下载 ${downloadableTaskIds.length} 个任务 ZIP。')
   })
 
-  it('loads WeChat articles page by page instead of all pages at once', () => {
+  it('loads the first WeChat article page and keeps remote pagination reachable', () => {
     expect(weChatExportViewSource).toContain('listWeChatArticles({ page: 1, page_size: articleRemotePageSize })')
+    expect(weChatExportViewSource).toContain('const articleRemotePage = ref(1)')
+    expect(weChatExportViewSource).toContain('const articleRemotePages = ref(0)')
+    expect(weChatExportViewSource).toContain('const hasMoreRemoteArticles = computed')
     expect(weChatExportViewSource).toContain('async function loadMoreWeChatArticles()')
-    expect(weChatExportViewSource).toContain('hasMoreRemoteArticles')
+    expect(weChatExportViewSource).toContain('listWeChatArticles({ page: nextPage, page_size: articleRemotePageSize })')
     expect(weChatExportViewSource).toContain('加载更多文章')
   })
 

@@ -112,21 +112,126 @@ export const promptCatalogCopyKeys: Array<keyof PromptCatalogCopy> = [
   'noMoreResults',
 ]
 
+const defaultPromptCatalogCopyByLocale: Record<'zh' | 'en', PromptCatalogCopy> = {
+  zh: {
+    accountAction: '',
+    accountActionAuthenticated: '仪表盘',
+    accountActionAnonymous: '登录',
+    eyebrow: '提示词案例',
+    title: '图片提示词案例库',
+    description: '浏览可复用的图片提示词案例，复制提示词或直接带入生图工作台。',
+    caseTitle: '图片提示词案例库',
+    caseDescription: '从真实案例中查找图片提示词、参考图和标签。',
+    templateTitle: '提示词模板',
+    templateDescription: '沉淀可复用的提示词模板。',
+    total: '总数',
+    sources: '来源',
+    cases: '案例',
+    templates: '模板',
+    search: '搜索',
+    searchPlaceholder: '搜索标题、提示词或标签',
+    caseOnly: '仅案例',
+    templateOnly: '仅模板',
+    allTypes: '全部类型',
+    allSources: '全部来源',
+    allCategories: '全部分类',
+    hasImage: '只看有图',
+    resultPrefix: '结果',
+    page: '页',
+    previous: '上一页',
+    next: '下一页',
+    emptyTitle: '暂无提示词案例',
+    emptyDescription: '当前筛选条件下没有可展示的提示词案例。',
+    noImage: '暂无图片',
+    source: '来源',
+    details: '详情',
+    prompt: '提示词',
+    charUnit: '字符',
+    copyPrompt: '复制提示词',
+    promptCopied: '提示词已复制',
+    generate: '去生图',
+    importTitle: '导入提示词',
+    importDescription: '从 X/Twitter 链接导入图片提示词案例。',
+    importProviderX: 'Twitter 导入',
+    importPlaceholder: '粘贴 X/Twitter 帖子链接',
+    importAction: '导入',
+    importing: '导入中',
+    importSuccess: '导入成功',
+    importWarnings: '导入提示',
+    loadError: '加载提示词案例失败',
+    noMoreResults: '没有更多结果',
+  },
+  en: {
+    accountAction: '',
+    accountActionAuthenticated: 'Dashboard',
+    accountActionAnonymous: 'Log in',
+    eyebrow: 'Prompt Cases',
+    title: 'Image Prompt Catalog',
+    description: 'Browse reusable image prompt cases, copy prompts, or send them into the image workspace.',
+    caseTitle: 'Image Prompt Catalog',
+    caseDescription: 'Find image prompts, references, and tags from real cases.',
+    templateTitle: 'Prompt Templates',
+    templateDescription: 'Reusable prompt templates for image workflows.',
+    total: 'Total',
+    sources: 'Sources',
+    cases: 'Cases',
+    templates: 'Templates',
+    search: 'Search',
+    searchPlaceholder: 'Search titles, prompts, or tags',
+    caseOnly: 'Cases only',
+    templateOnly: 'Templates only',
+    allTypes: 'All types',
+    allSources: 'All sources',
+    allCategories: 'All categories',
+    hasImage: 'With image only',
+    resultPrefix: 'Results',
+    page: 'Page',
+    previous: 'Previous',
+    next: 'Next',
+    emptyTitle: 'No prompt cases',
+    emptyDescription: 'No prompt cases match the current filters.',
+    noImage: 'No image',
+    source: 'Source',
+    details: 'Details',
+    prompt: 'Prompt',
+    charUnit: 'chars',
+    copyPrompt: 'Copy prompt',
+    promptCopied: 'Prompt copied',
+    generate: 'Generate',
+    importTitle: 'Import prompt',
+    importDescription: 'Import an image prompt case from an X/Twitter link.',
+    importProviderX: 'Twitter import',
+    importPlaceholder: 'Paste an X/Twitter post URL',
+    importAction: 'Import',
+    importing: 'Importing',
+    importSuccess: 'Imported',
+    importWarnings: 'Import warnings',
+    loadError: 'Failed to load prompt cases',
+    noMoreResults: 'No more results',
+  },
+}
+
+function defaultPromptCatalogCopy(selectedLocale: 'zh' | 'en'): PromptCatalogCopy {
+  return { ...defaultPromptCatalogCopyByLocale[selectedLocale] }
+}
+
 export function resolvePromptCatalogShellConfig(
   raw: string | undefined,
   selectedLocale: 'zh' | 'en',
 ): PromptCatalogShellConfig {
-  if (!raw?.trim()) return {}
+  const defaultLabels = defaultPromptCatalogCopy(selectedLocale)
+  if (!raw?.trim()) return { labels: defaultLabels }
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>
     const scoped = selectedLocale === 'zh' ? parsed.zh : parsed.en
     const value = isRecord(scoped) ? scoped : parsed
+    const labels = isRecord(value.labels) ? readPromptCatalogLabels(value.labels) : undefined
     return {
-      labels: isRecord(value.labels) ? readPromptCatalogLabels(value.labels) : undefined,
+      labels: { ...defaultLabels, ...(labels || {}) },
       defaults: isRecord(value.defaults) ? readPromptCatalogDefaults(value.defaults) : undefined,
     }
   } catch {
-    return {}
+    return { labels: defaultLabels }
   }
 }
 

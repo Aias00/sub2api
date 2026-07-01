@@ -1,8 +1,12 @@
 <template>
-  <div class="home-business-page public-template-page min-h-screen">
-    <PublicDarkHeader :account-label="isAuthenticated ? t('nav.dashboard') : t('common.login')" />
+  <div class="home-business-page public-template-page" :class="props.appShell ? 'min-h-0' : 'min-h-screen'">
+    <PublicDarkHeader
+      v-if="!props.appShell"
+      :account-label="isAuthenticated ? t('nav.dashboard') : t('common.login')"
+      container-class="max-w-6xl"
+    />
 
-    <main class="public-template-main">
+    <main :class="props.appShell ? 'py-0' : 'public-template-main'">
       <div class="public-template-container">
         <section class="mb-10 grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px] lg:items-start">
           <div>
@@ -17,7 +21,7 @@
             </p>
           </div>
 
-          <aside class="public-template-panel" p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
+          <aside class="public-template-panel p-5 shadow-[0_20px_60px_rgba(0,0,0,0.22)]">
             <div class="flex items-center justify-between gap-3">
               <div>
                 <p class="text-xs font-black uppercase tracking-[0.18em] text-[var(--public-accent-strong)]">WeChat Session</p>
@@ -91,28 +95,28 @@
         </div>
 
         <!-- 公众号管理 -->
-        <section class="mb-6 rounded-2xl public-template-panel-muted p-5">
+        <section class="wechat-work-card mb-6">
           <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <div class="flex items-center gap-2">
-                <span class="text-xl font-black text-[var(--public-ink)]">公众号管理</span>
-                <span class="rounded-full border public-template-input px-2.5 py-1 text-xs font-semibold text-[var(--public-muted)]">
+                <span class="wechat-section-title">公众号管理</span>
+                <span class="wechat-count-pill">
                   {{ accounts.length }} 个已绑定
                 </span>
               </div>
-              <p class="mt-2 text-sm leading-6 text-[var(--public-muted)]">搜索并绑定公众号，或对已绑定公众号执行文章同步。</p>
+              <p class="wechat-section-copy mt-2">搜索并绑定公众号，或对已绑定公众号执行文章同步。</p>
             </div>
-            <div class="flex w-full flex-wrap gap-2 lg:w-[520px]">
+            <div class="wechat-inline-search w-full lg:w-[560px]">
               <input
                 v-model="accountSearchQuery"
                 type="text"
                 placeholder="搜索公众号"
-                class="min-w-0 flex-1 rounded-xl public-template-panel-muted px-3 py-2 text-sm text-[var(--public-ink)] outline-none placeholder:text-[var(--public-faint)] focus:border-cyan-300/40 focus:bg-[var(--public-panel-muted)]"
+                class="wechat-field min-w-0 flex-1"
                 :disabled="wechatActionDisabled || accountSearching"
               />
               <button
                 type="button"
-                class="rounded-xl border border-cyan-300/30 px-4 py-2 text-sm font-bold text-[var(--public-accent-strong)] hover:bg-cyan-300/10 disabled:opacity-45"
+                class="wechat-button wechat-button-secondary"
                 :disabled="wechatActionDisabled || accountSearching || !accountSearchQuery.trim()"
                 @click="handleSearchRemoteAccounts"
               >
@@ -146,15 +150,15 @@
           </div>
 
           <!-- 已绑定公众号列表 -->
-          <div v-if="accounts.length > 0" class="mt-3 border-t border-[var(--public-border)] pt-3">
+          <div v-if="accounts.length > 0" class="mt-4 border-t border-[var(--public-border)] pt-4">
             <div class="text-sm font-bold text-[var(--public-body)] mb-2">已绑定公众号</div>
             <div class="grid gap-2 sm:grid-cols-2">
-              <div v-for="account in accounts" :key="account.id" class="flex items-center justify-between gap-2 rounded-xl public-template-panel-muted px-3 py-2">
+              <div v-for="account in accounts" :key="account.id" class="wechat-list-item">
                 <div class="min-w-0">
                   <p class="truncate text-sm font-bold text-[var(--public-ink)]">{{ account.nickname || account.fakeid }}</p>
                   <p class="truncate text-xs text-[var(--public-muted)]">{{ account.fakeid }}</p>
                 </div>
-                <button type="button" class="rounded-xl border border-cyan-200/30 bg-cyan-200/10 px-2.5 py-1 text-sm font-semibold text-[var(--public-accent-strong)] hover:bg-cyan-200/20 disabled:opacity-45" :disabled="wechatActionDisabled || syncingFakeid === account.fakeid" @click="handleSyncAccount(account.fakeid)">
+                <button type="button" class="wechat-button wechat-button-compact wechat-button-secondary" :disabled="wechatActionDisabled || syncingFakeid === account.fakeid" @click="handleSyncAccount(account.fakeid)">
                   {{ syncingFakeid === account.fakeid ? '同步中' : '同步' }}
                 </button>
               </div>
@@ -178,12 +182,15 @@
 
         <!-- 主内容区：文章列表 -->
         <div class="mb-6">
-          <section class="rounded-2xl public-template-panel-muted p-5">
-            <div class="flex items-center justify-between mb-3">
-              <h2 class="text-xl font-black text-[var(--public-ink)]">文章列表</h2>
+          <section class="wechat-work-card">
+            <div class="wechat-work-header">
+              <div>
+                <h2 class="wechat-section-title">文章列表</h2>
+                <p class="wechat-section-copy mt-1">导入、筛选并批量选择要导出的公众号文章。</p>
+              </div>
               <button
                 type="button"
-                class="rounded-xl border border-[var(--public-border)] px-3 py-1.5 text-sm font-semibold text-[var(--public-body)] hover:bg-[var(--public-panel-soft)] disabled:opacity-45"
+                class="wechat-button wechat-button-secondary"
                 :disabled="!isAuthenticated || loading"
                 @click="refreshAll"
               >
@@ -192,109 +199,116 @@
             </div>
 
             <!-- 导入链接 -->
-            <div class="mb-3">
-              <form class="flex gap-2" @submit.prevent="handleImport">
+            <div class="wechat-tool-stack">
+              <form class="wechat-import-row" @submit.prevent="handleImport">
                 <input
                   v-model="articleLink"
                   type="url"
                   placeholder="粘贴文章链接 mp.weixin.qq.com/s/..."
-                  class="min-h-10 flex-1 rounded-xl public-template-panel-muted px-3 text-sm text-[var(--public-ink)] outline-none placeholder:text-[var(--public-faint)] focus:border-cyan-300/40"
+                  class="wechat-field min-w-0 flex-1"
                   :disabled="wechatActionDisabled || importing"
                 />
                 <button
                   type="submit"
-                  class="public-template-button-primary min-h-10 px-4 text-sm font-bold disabled:opacity-45"
+                  class="wechat-button wechat-button-primary"
                   :disabled="wechatActionDisabled || importing || !articleLink.trim()"
                 >
                   {{ importing ? '导入' : '导入' }}
                 </button>
               </form>
-            </div>
 
-            <!-- 筛选器 -->
-            <div class="mb-3 grid gap-2 grid-cols-[1fr_1fr_1fr]">
-              <input
-                v-model="articleSearchQuery"
-                type="search"
-                placeholder="搜索文章"
-                class="min-h-9 rounded-xl public-template-panel-muted px-3 text-sm text-[var(--public-ink)] outline-none placeholder:text-[var(--public-faint)] focus:border-cyan-300/40"
-              />
-              <select
-                v-model="articleAccountFilter"
-                class="min-h-9 rounded-xl public-template-panel-muted px-3 text-sm text-[var(--public-ink)] outline-none focus:border-cyan-300/40"
-              >
-                <option value="all">全部公众号</option>
-                <option v-for="account in accounts" :key="account.fakeid" :value="account.fakeid">
-                  {{ account.nickname || account.fakeid }}
-                </option>
-              </select>
-              <select
-                v-model="articleStatusFilter"
-                class="min-h-9 rounded-xl public-template-panel-muted px-3 text-sm text-[var(--public-ink)] outline-none focus:border-cyan-300/40"
-              >
-                <option value="all">全部状态</option>
-                <option value="pending">待抓取</option>
-                <option value="fetched">已抓取</option>
-                <option value="normal">正常</option>
-              </select>
-            </div>
+              <!-- 筛选器 -->
+              <div class="wechat-filter-row">
+                <input
+                  v-model="articleSearchQuery"
+                  type="search"
+                  placeholder="搜索文章"
+                  class="wechat-field"
+                />
+                <select
+                  v-model="articleAccountFilter"
+                  class="wechat-field"
+                >
+                  <option value="all">全部公众号</option>
+                  <option v-for="account in accounts" :key="account.fakeid" :value="account.fakeid">
+                    {{ account.nickname || account.fakeid }}
+                  </option>
+                </select>
+                <select
+                  v-model="articleStatusFilter"
+                  class="wechat-field"
+                >
+                  <option value="all">全部状态</option>
+                  <option value="pending">待抓取</option>
+                  <option value="fetched">已抓取</option>
+                  <option value="normal">正常</option>
+                </select>
+              </div>
 
-            <!-- 选择操作 -->
-            <div class="mb-3 flex items-center gap-2">
-              <button
-                type="button"
-                class="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-3 py-1.5 text-sm font-semibold text-[var(--public-accent-strong)] hover:bg-cyan-300/20 disabled:opacity-45"
-                :disabled="wechatActionDisabled"
-                @click="selectFilteredArticles"
-              >
-                全选 ({{ filteredArticles.length }})
-              </button>              <button
-                type="button"
-                class="rounded-xl border border-[var(--public-border)] px-3 py-1.5 text-sm font-semibold text-[var(--public-body)] hover:bg-[var(--public-panel-soft)] disabled:opacity-45"
-                :disabled="wechatActionDisabled"
-                @click="clearSelectedArticles"
-              >
-                清空
-              </button>
-              <span class="text-xs text-[var(--public-muted)]">已选 {{ selectedArticleIds.length }} 篇</span>
+              <!-- 选择操作 -->
+              <div class="wechat-selection-row">
+                <button
+                  type="button"
+                  class="wechat-button wechat-button-secondary"
+                  :disabled="wechatActionDisabled"
+                  @click="selectFilteredArticles"
+                >
+                  全选 ({{ filteredArticles.length }})
+                </button>
+                <button
+                  type="button"
+                  class="wechat-button wechat-button-subtle"
+                  :disabled="wechatActionDisabled"
+                  @click="clearSelectedArticles"
+                >
+                  清空
+                </button>
+                <span class="text-xs text-[var(--public-muted)]">已选 {{ selectedArticleIds.length }} 篇</span>
+              </div>
             </div>
 
             <!-- 导出操作 -->
-            <div class="mb-3 rounded-xl public-template-panel-muted px-3 py-3">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="mr-1 text-sm font-bold text-[var(--public-body)]">导出操作</span>
+            <div class="wechat-export-bar">
+              <div class="wechat-export-controls">
+                <span class="wechat-export-label">导出操作</span>
                 <label
                   v-for="format in availableFormats"
                   :key="format"
-                  class="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-xl public-template-panel-muted px-3 text-sm font-semibold uppercase text-[var(--public-body)] hover:bg-[var(--public-panel-soft)]"
+                  class="wechat-check-pill uppercase"
                 >
                   <input v-model="formats" type="checkbox" class="h-4 w-4 accent-cyan-200" :value="format" :disabled="wechatActionDisabled" />
                   {{ format }}
                 </label>
-                <label class="inline-flex min-h-9 cursor-pointer items-center gap-2 rounded-xl public-template-panel-muted px-3 text-sm font-semibold text-[var(--public-body)] hover:bg-[var(--public-panel-soft)]">
+                <label class="wechat-check-pill">
                   <input v-model="includeEngagement" type="checkbox" class="h-4 w-4 accent-cyan-200" :disabled="wechatActionDisabled" />
                   互动数据
                 </label>
-                <div v-if="isAuthenticated && estimatedCredits !== null" class="flex min-h-9 items-center gap-3 rounded-xl public-template-panel-muted px-3 text-xs text-[var(--public-body)]">
+                <div v-if="isAuthenticated && estimatedCredits !== null" class="wechat-credit-pill">
                   <span>预计 {{ estimatedCredits.toFixed(2) }} 余额</span>
                   <span :class="insufficientBalance ? 'text-[var(--public-danger)]' : 'text-[var(--public-success)]'">余额 {{ userBalance.toFixed(2) }}</span>
                 </div>
                 <button
                   type="button"
-                  class="public-template-button-primary min-h-9 px-4 text-sm font-black disabled:opacity-45"
+                  class="wechat-button wechat-button-primary ml-auto"
                   :disabled="wechatActionDisabled || creating || selectedArticleIds.length === 0 || formats.length === 0 || insufficientBalance"
                   @click="handleCreateTask"
                 >
                   {{ creating ? '创建中' : `导出 ${selectedArticleIds.length} 篇` }}
                 </button>
               </div>
-              <p v-if="insufficientBalance" class="mt-2 text-xs font-semibold text-[var(--public-danger)]">
-                余额不足，请充值后再创建任务
-              </p>
-              <div v-if="message" class="mt-2 rounded-xl border px-3 py-2 text-sm public-template-success-message" px-3 py-2 text-sm text-[var(--public-success)]">
+              <div v-if="insufficientBalance" class="mt-2 flex flex-wrap items-center gap-3 text-xs font-semibold text-[var(--public-danger)]">
+                <span>余额不足，请充值后再创建任务</span>
+                <RouterLink
+                  :to="rechargeRoute"
+                  class="wechat-button wechat-button-secondary px-3 py-1 text-xs"
+                >
+                  去充值
+                </RouterLink>
+              </div>
+              <div v-if="message" class="mt-3 rounded-xl border px-3 py-2 text-sm public-template-success-message text-[var(--public-success)]">
                 {{ message }}
               </div>
-              <div v-if="errorMessage" class="mt-2 rounded-xl border border-red-300/20 bg-red-300/10 px-3 py-2 text-sm text-[var(--public-danger)]">
+              <div v-if="errorMessage" class="mt-3 rounded-xl border border-red-300/20 bg-red-300/10 px-3 py-2 text-sm text-[var(--public-danger)]">
                 {{ errorMessage }}
               </div>
             </div>
@@ -350,38 +364,38 @@
                       @click="articleCurrentPage = p"
                     >{{ p }}</button>
                   </template>
-                  <button
-                    type="button"
-                    class="rounded-lg border border-[var(--public-border)] px-2 py-1 hover:bg-[var(--public-panel-soft)] disabled:opacity-30"
-                    :disabled="articleCurrentPage >= articleTotalPages"
-                    @click="articleCurrentPage++"
-                  >下一页</button>
-                </div>
-              </div>
-              <div v-if="hasMoreRemoteArticles" class="mt-3 flex justify-center">
                 <button
                   type="button"
-                  class="rounded-xl border border-cyan-300/30 bg-cyan-300/10 px-4 py-2 text-sm font-bold text-[var(--public-accent-strong)] hover:bg-cyan-300/20 disabled:opacity-45"
-                  :disabled="articleLoadingMore"
-                  @click="loadMoreWeChatArticles"
-                >
-                  {{ articleLoadingMore ? '加载中' : `加载更多文章（${articles.length}/${articleRemoteTotal}）` }}
-                </button>
+                  class="rounded-lg border border-[var(--public-border)] px-2 py-1 hover:bg-[var(--public-panel-soft)] disabled:opacity-30"
+                  :disabled="articleCurrentPage >= articleTotalPages"
+                  @click="articleCurrentPage++"
+                >下一页</button>
               </div>
             </div>
-          </section>
+            <div v-if="hasMoreRemoteArticles" class="mt-3 flex justify-center">
+              <button
+                type="button"
+                class="wechat-button wechat-button-secondary"
+                :disabled="articleLoadingMore"
+                @click="loadMoreWeChatArticles"
+              >
+                {{ articleLoadingMore ? '加载中' : `加载更多文章（${articles.length}/${articleRemoteTotal}）` }}
+              </button>
+            </div>
+          </div>
+        </section>
         </div>
 
         <!-- 任务监控（紧凑） -->
-        <section class="rounded-2xl public-template-panel-muted p-5">
-          <div class="flex items-center justify-between mb-3">
-            <h2 class="text-xl font-black text-[var(--public-ink)]">任务监控</h2>
-            <div class="flex items-center gap-3">
+        <section class="wechat-work-card">
+          <div class="wechat-work-header mb-4">
+            <h2 class="wechat-section-title">任务监控</h2>
+            <div class="flex flex-wrap items-center gap-3">
               <div class="text-xs font-semibold" :class="workerStatusTone">{{ workerStatusLabel }}</div>
               <div class="flex gap-1">
-                <span class="rounded-xl bg-white/10 px-2.5 py-1 text-xs font-semibold">{{ workerStatus?.queued_count ?? 0 }} 排队</span>
-                <span class="rounded-xl bg-white/10 px-2.5 py-1 text-xs font-semibold">{{ workerStatus?.running_count ?? 0 }} 运行</span>
-                <span class="rounded-xl bg-white/10 px-2.5 py-1 text-xs font-semibold">{{ workerStatus?.completed_count ?? 0 }} 完成</span>
+                <span class="wechat-status-pill">{{ workerStatus?.queued_count ?? 0 }} 排队</span>
+                <span class="wechat-status-pill">{{ workerStatus?.running_count ?? 0 }} 运行</span>
+                <span class="wechat-status-pill">{{ workerStatus?.completed_count ?? 0 }} 完成</span>
               </div>
             </div>
           </div>
@@ -552,7 +566,9 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { RouterLink } from 'vue-router'
 import PublicDarkHeader from '@/components/layout/PublicDarkHeader.vue'
+import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import {
   bindWeChatAccount,
   cancelWeChatExportTask,
@@ -585,8 +601,15 @@ import {
 } from '@/api/wechat-export'
 import { useAuthStore } from '@/stores'
 
+const props = withDefaults(defineProps<{
+  appShell?: boolean
+}>(), {
+  appShell: false,
+})
+
 const { t } = useI18n()
 const authStore = useAuthStore()
+const { authRouteDefaults } = useAuthRouteDefaults()
 
 const availableFormats: WeChatExportFormat[] = ['html', 'markdown']
 
@@ -647,6 +670,10 @@ const insufficientBalance = computed(() => {
   if (estimatedCredits.value === null) return false
   return userBalance.value < estimatedCredits.value
 })
+const rechargeRoute = computed(() => ({
+  path: authRouteDefaults.value.purchasePath,
+  query: { tab: 'recharge' },
+}))
 const sessionStatusLabel = computed(() => {
   if (!session.value) return t('wechatExport.session.statusNotConnected')
   if (session.value.status === 'ready') {
@@ -1674,6 +1701,276 @@ onBeforeUnmount(() => {
 </script>
 
 <style scoped>
+.wechat-work-card {
+  overflow: hidden;
+  border: 1px solid var(--public-border);
+  border-radius: 1.5rem;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.9));
+  box-shadow:
+    0 1px 2px rgba(15, 23, 42, 0.04),
+    0 18px 54px rgba(15, 23, 42, 0.08);
+  padding: 1.25rem;
+}
+
+.dark .wechat-work-card {
+  background:
+    linear-gradient(180deg, rgba(24, 24, 27, 0.94), rgba(9, 9, 11, 0.9));
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.03) inset,
+    0 18px 54px rgba(0, 0, 0, 0.24);
+}
+
+.wechat-work-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.wechat-section-title {
+  color: var(--public-ink);
+  font-size: 1.25rem;
+  font-weight: 900;
+  line-height: 1.2;
+}
+
+.wechat-section-copy {
+  color: var(--public-muted);
+  font-size: 0.875rem;
+  line-height: 1.7;
+}
+
+.wechat-count-pill,
+.wechat-status-pill,
+.wechat-credit-pill {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--public-border);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.74);
+  padding: 0 0.75rem;
+  color: var(--public-muted);
+  font-size: 0.75rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.dark .wechat-count-pill,
+.dark .wechat-status-pill,
+.dark .wechat-credit-pill {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.wechat-inline-search,
+.wechat-import-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.wechat-field {
+  min-height: 2.75rem;
+  border: 1px solid var(--public-border);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 0 0.875rem;
+  color: var(--public-ink);
+  font-size: 0.875rem;
+  outline: none;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03) inset;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.wechat-field::placeholder {
+  color: var(--public-faint);
+}
+
+.wechat-field:focus {
+  border-color: rgba(37, 99, 235, 0.34);
+  background: rgba(255, 255, 255, 0.98);
+  box-shadow:
+    0 0 0 3px rgba(37, 99, 235, 0.08),
+    0 1px 2px rgba(15, 23, 42, 0.03) inset;
+}
+
+.dark .wechat-field {
+  background: rgba(255, 255, 255, 0.05);
+  box-shadow: none;
+}
+
+.dark .wechat-field:focus {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.wechat-button {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 1rem;
+  padding: 0 1rem;
+  font-size: 0.875rem;
+  font-weight: 800;
+  line-height: 1;
+  white-space: nowrap;
+  transition:
+    transform 160ms ease,
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.wechat-button:hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+.wechat-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+  transform: none;
+}
+
+.wechat-button-primary {
+  border-color: rgba(37, 99, 235, 0.2);
+  background: #111827;
+  color: #fff;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.12);
+}
+
+.wechat-button-primary:hover:not(:disabled) {
+  background: #020617;
+}
+
+.wechat-button-secondary {
+  border-color: var(--public-border);
+  background: rgba(255, 255, 255, 0.82);
+  color: var(--public-ink);
+}
+
+.wechat-button-secondary:hover:not(:disabled) {
+  border-color: rgba(37, 99, 235, 0.24);
+  background: rgba(37, 99, 235, 0.06);
+  color: var(--public-accent-strong);
+}
+
+.wechat-button-subtle {
+  border-color: var(--public-border);
+  background: transparent;
+  color: var(--public-body);
+}
+
+.wechat-button-subtle:hover:not(:disabled) {
+  background: var(--public-panel-soft);
+}
+
+.wechat-button-compact {
+  min-height: 2.25rem;
+  border-radius: 0.875rem;
+  padding: 0 0.75rem;
+}
+
+.dark .wechat-button-primary {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: #fff;
+  color: #09090b;
+}
+
+.dark .wechat-button-primary:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.dark .wechat-button-secondary {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.wechat-list-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border: 1px solid var(--public-border);
+  border-radius: 1rem;
+  background: rgba(255, 255, 255, 0.62);
+  padding: 0.75rem 0.875rem;
+}
+
+.dark .wechat-list-item {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.wechat-tool-stack {
+  margin-top: 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.wechat-filter-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 0.8fr) minmax(160px, 0.7fr);
+  gap: 0.625rem;
+}
+
+.wechat-selection-row {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.wechat-export-bar {
+  margin-top: 1rem;
+  border: 1px solid var(--public-border);
+  border-radius: 1.25rem;
+  background: rgba(255, 255, 255, 0.66);
+  padding: 0.75rem;
+}
+
+.dark .wechat-export-bar {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.wechat-export-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.wechat-export-label {
+  margin-right: 0.25rem;
+  color: var(--public-muted);
+  font-size: 0.75rem;
+  font-weight: 850;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.wechat-check-pill {
+  display: inline-flex;
+  min-height: 2.5rem;
+  cursor: pointer;
+  align-items: center;
+  gap: 0.5rem;
+  border: 1px solid var(--public-border);
+  border-radius: 0.875rem;
+  background: rgba(255, 255, 255, 0.76);
+  padding: 0 0.75rem;
+  color: var(--public-body);
+  font-size: 0.875rem;
+  font-weight: 750;
+}
+
+.dark .wechat-check-pill {
+  background: rgba(255, 255, 255, 0.05);
+}
+
 .wechat-export-warning {
   border-color: rgba(217, 119, 6, 0.24) !important;
   background-color: rgba(255, 251, 235, 0.96) !important;
@@ -1765,5 +2062,29 @@ onBeforeUnmount(() => {
   border-color: rgba(248, 113, 113, 0.3) !important;
   background-color: rgba(127, 29, 29, 0.28) !important;
   color: rgb(254, 202, 202) !important;
+}
+
+@media (max-width: 900px) {
+  .wechat-work-header,
+  .wechat-inline-search,
+  .wechat-import-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .wechat-filter-row {
+    grid-template-columns: 1fr;
+  }
+
+  .wechat-selection-row,
+  .wechat-export-controls {
+    align-items: stretch;
+  }
+
+  .wechat-button,
+  .wechat-check-pill,
+  .wechat-credit-pill {
+    width: 100%;
+  }
 }
 </style>
