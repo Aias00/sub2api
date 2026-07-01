@@ -156,6 +156,8 @@ dragoncode-*.png
 local-*.png
 prod-*.png
 wechat-export-task-*-render.png
+image-generator-style-after*.png
+wechat-style-after*.png
 
 # Touch Next 子应用源码纳入统一仓库；继续排除本地密钥、依赖和构建产物。
 !apps/
