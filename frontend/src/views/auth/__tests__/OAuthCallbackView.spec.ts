@@ -66,8 +66,12 @@ vi.mock('@/api/client', () => ({
   apiClient: {
     post: (...args: any[]) => apiPostMock(...args),
   },
-  buildApiUrl: (path: string, settings?: { api_base_url?: string | null } | null) =>
-    `${settings?.api_base_url?.replace(/\/+$/, '') || '/api/v1'}${path.startsWith('/') ? path : `/${path}`}`,
+  buildApiUrl: (path: string, settings?: { api_base_url?: string | null } | null) => {
+    const configured = settings?.api_base_url
+      || window.__APP_CONFIG__?.api_base_url
+      || '/api/v1'
+    return `${configured.replace(/\/+$/, '')}${path.startsWith('/') ? path : `/${path}`}`
+  },
 }))
 
 vi.mock('@/api/auth', async () => {
@@ -140,6 +144,7 @@ describe('OAuthCallbackView', () => {
     })
     apiPostMock.mockReset()
     window.sessionStorage.clear()
+    delete window.__APP_CONFIG__
   })
 
   it('renders localized callback copy actions', async () => {
@@ -194,12 +199,15 @@ describe('OAuthCallbackView', () => {
       state: 'provider-state',
     }
     window.sessionStorage.setItem('email_oauth_pending_provider', 'google')
+    window.__APP_CONFIG__ = {
+      api_base_url: 'https://api.example.com/api/v1/',
+    }
 
     mount(OAuthCallbackView)
     await vi.dynamicImportSettled()
 
     expect(locationState.current.href).toBe(
-      '/api/v1/auth/oauth/google/callback?code=provider-code&state=provider-state'
+      'https://api.example.com/api/v1/auth/oauth/google/callback?code=provider-code&state=provider-state'
     )
     expect(exchangePendingOAuthCompletionMock).not.toHaveBeenCalled()
   })

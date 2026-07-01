@@ -87,6 +87,23 @@ export default defineConfig(({ mode }) => {
               return 'vendor-ui'
             }
 
+            if (id.includes('/@codemirror/')) {
+              return 'vendor-codemirror'
+            }
+
+            if (id.includes('/@stripe/') || id.includes('/@airwallex/')) {
+              return 'vendor-payment'
+            }
+
+            if (
+              id.includes('/@lobehub/') ||
+              id.includes('/driver.js/') ||
+              id.includes('/vue-draggable-plus/') ||
+              id.includes('/@tanstack/')
+            ) {
+              return 'vendor-widgets'
+            }
+
             // 图表库
             if (id.includes('/chart.js/') || id.includes('/vue-chartjs/')) {
               return 'vendor-chart'

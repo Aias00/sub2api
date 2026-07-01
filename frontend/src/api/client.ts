@@ -6,13 +6,54 @@
 import axios, { AxiosInstance, AxiosError, InternalAxiosRequestConfig, AxiosResponse } from 'axios'
 import type { ApiResponse } from '@/types'
 import { getLocale } from '@/i18n'
-import { getAPIBaseURL } from './url'
-export { buildApiUrl, buildGatewayUrl } from './url'
+import { resolveAuthRouteDefaults } from '@/router/setupRedirect'
 
 // ==================== Axios Instance Configuration ====================
 
+const DEFAULT_API_BASE_URL = '/api/v1'
+
+export function resolveApiBaseUrl(settings?: { api_base_url?: string | null } | null): string {
+  const configured = settings?.api_base_url?.trim()
+    || (typeof window !== 'undefined' ? window.__APP_CONFIG__?.api_base_url?.trim() : '')
+    || DEFAULT_API_BASE_URL
+
+  return normalizeApiBaseUrl(configured)
+}
+
+function normalizeApiBaseUrl(value: string): string {
+  const normalized = value.replace(/\/+$/, '') || DEFAULT_API_BASE_URL
+  if (normalized === DEFAULT_API_BASE_URL || normalized.endsWith(DEFAULT_API_BASE_URL)) {
+    return normalized
+  }
+  if (normalized === '') {
+    return DEFAULT_API_BASE_URL
+  }
+  if (normalized === '/') {
+    return DEFAULT_API_BASE_URL
+  }
+  return normalized
+}
+
+export function buildApiUrl(path: string, settings?: { api_base_url?: string | null } | null): string {
+  const normalizedPath = path.startsWith('/') ? path : `/${path}`
+  return `${resolveApiBaseUrl(settings)}${normalizedPath}`
+}
+
+export function resolveClientAuthRouteDefaults(settings?: { auth_shell_config?: string | null } | null) {
+  const rawAuthShellConfig = settings?.auth_shell_config
+    || (typeof window !== 'undefined' ? window.__APP_CONFIG__?.auth_shell_config : undefined)
+    || undefined
+  return resolveAuthRouteDefaults(rawAuthShellConfig, getLocale())
+}
+
+function isCurrentPath(path: string): boolean {
+  if (typeof window === 'undefined') return false
+  const currentPath = window.location.pathname
+  return currentPath === path || (path !== '/' && currentPath.startsWith(`${path}/`))
+}
+
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: getAPIBaseURL(),
+  baseURL: resolveApiBaseUrl(),
   withCredentials: true,
   timeout: 30000,
   headers: {
@@ -122,6 +163,23 @@ apiClient.interceptors.response.use(
       // Validate `data` shape to avoid HTML error pages breaking our error handling.
       const apiData = (typeof data === 'object' && data !== null ? data : {}) as Record<string, any>
 
+      if (status === 423 && apiData.code === 'ADMIN_COMPLIANCE_ACK_REQUIRED') {
+        try {
+          window.dispatchEvent(new CustomEvent('admin-compliance-required', {
+            detail: apiData.metadata || {}
+          }))
+        } catch {
+          // ignore event failures
+        }
+
+        return Promise.reject({
+          status,
+          code: apiData.code,
+          message: apiData.message || error.message,
+          metadata: apiData.metadata,
+        })
+      }
+
       // Ops monitoring disabled: treat as feature-flagged 404, and proactively redirect away
       // from ops pages to avoid broken UI states.
       if (status === 404 && apiData.message === 'Ops monitoring is disabled') {
@@ -145,23 +203,6 @@ apiClient.interceptors.response.use(
           code: 'OPS_DISABLED',
           message: apiData.message || error.message,
           url
-        })
-      }
-
-      if (status === 423 && apiData.code === 'ADMIN_COMPLIANCE_ACK_REQUIRED') {
-        try {
-          window.dispatchEvent(new CustomEvent('admin-compliance-required', {
-            detail: apiData.metadata || {}
-          }))
-        } catch {
-          // ignore event failures
-        }
-
-        return Promise.reject({
-          status,
-          code: apiData.code,
-          message: apiData.message || error.message,
-          metadata: apiData.metadata,
         })
       }
 
@@ -203,7 +244,7 @@ apiClient.interceptors.response.use(
           try {
             // Call refresh endpoint directly to avoid circular dependency
             const refreshResponse = await axios.post(
-              `${getAPIBaseURL()}/auth/refresh`,
+              `${resolveApiBaseUrl()}/auth/refresh`,
               { refresh_token: refreshToken },
               { headers: { 'Content-Type': 'application/json' } }
             )

@@ -17,6 +17,7 @@ export const adminSidebarItemKeys = [
   'orders',
   'usage',
   'apiKeys',
+  'workers',
   'runtimeSettings',
   'settings',
 ] as const

@@ -105,6 +105,53 @@
         </div>
       </section>
 
+      <section v-if="!loading" class="settings-card">
+        <div class="flex flex-col gap-3 border-b border-gray-100 pb-4 dark:border-dark-700">
+          <div>
+            <p class="text-sm font-bold text-gray-950 dark:text-white">Worker 配置</p>
+            <p class="mt-1 text-xs leading-5 text-gray-500 dark:text-dark-300">
+              只管理非密钥运行参数。Token、API Key、数据库密码和本地路径继续保留在部署配置文件。
+            </p>
+          </div>
+        </div>
+        <div class="mt-4 grid gap-5 xl:grid-cols-2">
+          <div class="space-y-4">
+            <SectionHeader title="微信导出" />
+            <div class="grid gap-4 md:grid-cols-2">
+              <NumberField v-model="form.wechat_export_worker_concurrency" label="并发数" :min="1" :max="8" />
+              <NumberField v-model="form.wechat_export_worker_interval_ms" label="轮询间隔 ms" :min="1000" :max="300000" />
+              <NumberField v-model="form.wechat_export_worker_max_backoff_ms" label="最大退避 ms" :min="1000" :max="300000" />
+              <NumberField v-model="form.wechat_export_worker_lease_seconds" label="任务租约秒" :min="60" :max="3600" />
+              <NumberField v-model="form.wechat_export_fetch_retries" label="抓取重试次数" :min="0" :max="5" />
+              <NumberField v-model="form.wechat_export_fetch_timeout_ms" label="抓取超时 ms" :min="1000" :max="120000" />
+            </div>
+          </div>
+          <div class="space-y-4">
+            <SectionHeader title="生图工作台" />
+            <div class="grid gap-4 md:grid-cols-2">
+              <TextField v-model="form.image_workspace_upstream_url" label="上游生成端点" class="md:col-span-2" />
+              <NumberField v-model="form.image_workspace_generation_timeout_ms" label="生成超时 ms" :min="1000" :max="900000" />
+              <TextField v-model="form.image_workspace_completion_cost" label="默认完成成本" />
+              <TextAreaField v-model="form.image_workspace_completion_cost_map_json" label="完成成本 Map JSON" class="md:col-span-2" placeholder="{&quot;gpt-image-2:1024x1024:standard&quot;: 0.01, &quot;default&quot;: 0}" />
+              <SwitchField v-model="form.image_workspace_prompt_safety_enabled" label="Prompt 安全检查" />
+              <SwitchField v-model="form.image_workspace_assume_worker_ready" label="假定 Worker 就绪" />
+            </div>
+          </div>
+          <div class="space-y-4 xl:col-span-2">
+            <SectionHeader title="对象存储与 CDN" />
+            <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <SwitchField v-model="form.image_workspace_object_storage_enabled" label="启用对象存储" />
+              <TextField v-model="form.image_workspace_object_storage_provider" label="Provider" placeholder="r2" />
+              <TextField v-model="form.image_workspace_object_storage_bucket" label="Bucket" />
+              <TextField v-model="form.image_workspace_object_storage_region" label="Region" placeholder="auto" />
+              <TextField v-model="form.image_workspace_object_storage_prefix" label="Key Prefix" placeholder="image-workspace" />
+              <TextField v-model="form.image_workspace_object_storage_public_base_url" label="Public Base URL" />
+              <TextField v-model="form.media_cdn_base_url" label="媒体 CDN Base URL" class="xl:col-span-3" />
+            </div>
+          </div>
+        </div>
+      </section>
+
       <div v-if="!loading" class="grid gap-5 xl:grid-cols-[1fr_1fr]">
         <section class="settings-card">
           <SectionHeader :title="t('admin.settings.runtime.brandSection')" />
@@ -274,6 +321,7 @@ const jsonFields = [
   'prompt_catalog_shell_config',
   'workspace_shell_config',
   'image_prompt_filter_config',
+  'image_workspace_completion_cost_map_json',
   'pricing_shell_config',
   'payment_shell_config',
   'credits_shell_config',
@@ -339,6 +387,25 @@ type RuntimeSettingsForm = Required<Pick<SystemSettings,
   | 'tawk_enabled'
   | 'tawk_property_id'
   | 'tawk_widget_id'
+  | 'wechat_export_fetch_retries'
+  | 'wechat_export_fetch_timeout_ms'
+  | 'wechat_export_worker_concurrency'
+  | 'wechat_export_worker_interval_ms'
+  | 'wechat_export_worker_lease_seconds'
+  | 'wechat_export_worker_max_backoff_ms'
+  | 'image_workspace_upstream_url'
+  | 'image_workspace_generation_timeout_ms'
+  | 'image_workspace_completion_cost'
+  | 'image_workspace_completion_cost_map_json'
+  | 'image_workspace_prompt_safety_enabled'
+  | 'image_workspace_assume_worker_ready'
+  | 'image_workspace_object_storage_enabled'
+  | 'image_workspace_object_storage_provider'
+  | 'image_workspace_object_storage_bucket'
+  | 'image_workspace_object_storage_region'
+  | 'image_workspace_object_storage_prefix'
+  | 'image_workspace_object_storage_public_base_url'
+  | 'media_cdn_base_url'
 >>
 
 const stringFields = [
@@ -391,6 +458,15 @@ const stringFields = [
   'crisp_website_id',
   'tawk_property_id',
   'tawk_widget_id',
+  'image_workspace_upstream_url',
+  'image_workspace_completion_cost',
+  'image_workspace_completion_cost_map_json',
+  'image_workspace_object_storage_provider',
+  'image_workspace_object_storage_bucket',
+  'image_workspace_object_storage_region',
+  'image_workspace_object_storage_prefix',
+  'image_workspace_object_storage_public_base_url',
+  'media_cdn_base_url',
 ] as const
 
 const booleanFields = [
@@ -404,6 +480,19 @@ const booleanFields = [
   'promotekit_enabled',
   'crisp_enabled',
   'tawk_enabled',
+  'image_workspace_prompt_safety_enabled',
+  'image_workspace_assume_worker_ready',
+  'image_workspace_object_storage_enabled',
+] as const
+
+const numberFields = [
+  'wechat_export_fetch_retries',
+  'wechat_export_fetch_timeout_ms',
+  'wechat_export_worker_concurrency',
+  'wechat_export_worker_interval_ms',
+  'wechat_export_worker_lease_seconds',
+  'wechat_export_worker_max_backoff_ms',
+  'image_workspace_generation_timeout_ms',
 ] as const
 
 const form = reactive<RuntimeSettingsForm>({
@@ -466,6 +555,25 @@ const form = reactive<RuntimeSettingsForm>({
   tawk_enabled: false,
   tawk_property_id: '',
   tawk_widget_id: '',
+  wechat_export_fetch_retries: 2,
+  wechat_export_fetch_timeout_ms: 20000,
+  wechat_export_worker_concurrency: 1,
+  wechat_export_worker_interval_ms: 5000,
+  wechat_export_worker_lease_seconds: 300,
+  wechat_export_worker_max_backoff_ms: 60000,
+  image_workspace_upstream_url: 'https://api.openai.com/v1/images/generations',
+  image_workspace_generation_timeout_ms: 420000,
+  image_workspace_completion_cost: '0',
+  image_workspace_completion_cost_map_json: '{}',
+  image_workspace_prompt_safety_enabled: true,
+  image_workspace_assume_worker_ready: false,
+  image_workspace_object_storage_enabled: false,
+  image_workspace_object_storage_provider: 'r2',
+  image_workspace_object_storage_bucket: '',
+  image_workspace_object_storage_region: 'auto',
+  image_workspace_object_storage_prefix: 'image-workspace',
+  image_workspace_object_storage_public_base_url: '',
+  media_cdn_base_url: '',
 })
 
 const { t: translate, tm } = useI18n()
@@ -500,6 +608,12 @@ function applySettings(settings: Partial<SystemSettings>) {
     const value = settings[field]
     form[field] = typeof value === 'boolean' ? value : false
   }
+  for (const field of numberFields) {
+    const value = settings[field]
+    if (typeof value === 'number' && Number.isFinite(value)) {
+      form[field] = value
+    }
+  }
 }
 
 function buildPayload(): UpdateSettingsRequest {
@@ -508,6 +622,9 @@ function buildPayload(): UpdateSettingsRequest {
     payload[field] = form[field]
   }
   for (const field of booleanFields) {
+    payload[field] = form[field]
+  }
+  for (const field of numberFields) {
     payload[field] = form[field]
   }
   return payload
@@ -692,6 +809,35 @@ const TextField = defineComponent({
         placeholder: props.placeholder,
         class: 'input',
         onInput: (event: Event) => emit('update:modelValue', (event.target as HTMLInputElement).value),
+      }),
+      props.hint ? h('p', { class: 'text-xs leading-5 text-gray-500 dark:text-dark-300' }, props.hint) : null,
+    ])
+  },
+})
+
+const NumberField = defineComponent({
+  props: {
+    modelValue: { type: Number, required: true },
+    label: { type: String, required: true },
+    min: { type: Number, default: undefined },
+    max: { type: Number, default: undefined },
+    hint: { type: String, default: '' },
+  },
+  emits: ['update:modelValue'],
+  setup(props, { emit, attrs }) {
+    const inputClass = computed(() => ['space-y-1.5', attrs.class])
+    return () => h('label', { class: inputClass.value }, [
+      h('span', { class: 'block text-sm font-medium text-gray-700 dark:text-dark-200' }, props.label),
+      h('input', {
+        value: props.modelValue,
+        type: 'number',
+        min: props.min,
+        max: props.max,
+        class: 'input',
+        onInput: (event: Event) => {
+          const parsed = Number((event.target as HTMLInputElement).value)
+          emit('update:modelValue', Number.isFinite(parsed) ? parsed : 0)
+        },
       }),
       props.hint ? h('p', { class: 'text-xs leading-5 text-gray-500 dark:text-dark-300' }, props.hint) : null,
     ])

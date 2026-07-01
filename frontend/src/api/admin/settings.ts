@@ -518,6 +518,25 @@ export interface SystemSettings {
   tawk_enabled?: boolean;
   tawk_property_id?: string;
   tawk_widget_id?: string;
+  wechat_export_fetch_retries?: number;
+  wechat_export_fetch_timeout_ms?: number;
+  wechat_export_worker_concurrency?: number;
+  wechat_export_worker_interval_ms?: number;
+  wechat_export_worker_lease_seconds?: number;
+  wechat_export_worker_max_backoff_ms?: number;
+  image_workspace_upstream_url?: string;
+  image_workspace_generation_timeout_ms?: number;
+  image_workspace_completion_cost?: string;
+  image_workspace_completion_cost_map_json?: string;
+  image_workspace_prompt_safety_enabled?: boolean;
+  image_workspace_assume_worker_ready?: boolean;
+  image_workspace_object_storage_enabled?: boolean;
+  image_workspace_object_storage_provider?: string;
+  image_workspace_object_storage_bucket?: string;
+  image_workspace_object_storage_region?: string;
+  image_workspace_object_storage_prefix?: string;
+  image_workspace_object_storage_public_base_url?: string;
+  media_cdn_base_url?: string;
   // SMTP settings
   smtp_host: string;
   smtp_port: number;
@@ -643,6 +662,7 @@ export interface SystemSettings {
   rewrite_message_cache_control: boolean;
   antigravity_user_agent_version: string;
   openai_codex_user_agent: string;
+  openai_allow_claude_code_codex_plugin: boolean;
   // codex_cli_only 加固
   min_codex_version: string;
   max_codex_version: string;
@@ -856,6 +876,25 @@ export interface UpdateSettingsRequest {
   tawk_enabled?: boolean;
   tawk_property_id?: string;
   tawk_widget_id?: string;
+  wechat_export_fetch_retries?: number;
+  wechat_export_fetch_timeout_ms?: number;
+  wechat_export_worker_concurrency?: number;
+  wechat_export_worker_interval_ms?: number;
+  wechat_export_worker_lease_seconds?: number;
+  wechat_export_worker_max_backoff_ms?: number;
+  image_workspace_upstream_url?: string;
+  image_workspace_generation_timeout_ms?: number;
+  image_workspace_completion_cost?: string;
+  image_workspace_completion_cost_map_json?: string;
+  image_workspace_prompt_safety_enabled?: boolean;
+  image_workspace_assume_worker_ready?: boolean;
+  image_workspace_object_storage_enabled?: boolean;
+  image_workspace_object_storage_provider?: string;
+  image_workspace_object_storage_bucket?: string;
+  image_workspace_object_storage_region?: string;
+  image_workspace_object_storage_prefix?: string;
+  image_workspace_object_storage_public_base_url?: string;
+  media_cdn_base_url?: string;
   smtp_host?: string;
   smtp_port?: number;
   smtp_username?: string;
@@ -959,6 +998,7 @@ export interface UpdateSettingsRequest {
   rewrite_message_cache_control?: boolean;
   antigravity_user_agent_version?: string;
   openai_codex_user_agent?: string;
+  openai_allow_claude_code_codex_plugin?: boolean;
   // codex_cli_only 加固
   min_codex_version?: string;
   max_codex_version?: string;
@@ -1055,6 +1095,9 @@ export async function updateSettings(
 export interface RuntimeWorkerStatus {
   id: string;
   name: string;
+  node_id?: string;
+  container_name?: string;
+  container_state?: string;
   health: string;
   message?: string;
   queue?: number;
@@ -1069,14 +1112,45 @@ export interface RuntimeWorkerStatus {
   attention_reasons?: string[];
   configured: boolean;
   status_path?: string;
+  manageable?: boolean;
+  management_reason?: string;
+  deploy_command?: string;
+  actions?: string[];
 }
 
 export interface RuntimeWorkersResponse {
   workers: RuntimeWorkerStatus[];
+  management?: {
+    enabled: boolean;
+    reason?: string;
+    socket?: string;
+  };
 }
 
 export async function getRuntimeWorkers(): Promise<RuntimeWorkersResponse> {
   const { data } = await apiClient.get<RuntimeWorkersResponse>("/admin/runtime/workers");
+  return data;
+}
+
+export type RuntimeWorkerAction = "deploy" | "restart" | "start" | "stop";
+
+export interface RuntimeWorkerActionResponse {
+  ok: boolean;
+  action: RuntimeWorkerAction;
+  worker_id: string;
+  container_name?: string;
+  message?: string;
+  deploy_command?: string;
+  management_note?: string;
+}
+
+export async function manageRuntimeWorker(
+  workerID: string,
+  action: RuntimeWorkerAction,
+): Promise<RuntimeWorkerActionResponse> {
+  const { data } = await apiClient.post<RuntimeWorkerActionResponse>(
+    `/admin/runtime/workers/${encodeURIComponent(workerID)}/actions/${action}`,
+  );
   return data;
 }
 
@@ -1569,6 +1643,7 @@ export const settingsAPI = {
   getSettings,
   updateSettings,
   getRuntimeWorkers,
+  manageRuntimeWorker,
   testSmtpConnection,
   sendTestEmail,
   getEmailTemplates,
