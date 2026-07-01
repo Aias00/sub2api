@@ -68,6 +68,24 @@ func isWebAuthSource(source string) bool {
 	return strings.EqualFold(strings.TrimSpace(source), webAuthSource)
 }
 
+func (h *AuthHandler) signupGrantRiskContext(c *gin.Context, providerType, providerSubject string) context.Context {
+	ctx := context.Background()
+	if c != nil && c.Request != nil {
+		ctx = c.Request.Context()
+	}
+	input := service.SignupGrantRiskInput{
+		ProviderType:    providerType,
+		ProviderSubject: providerSubject,
+	}
+	if c != nil {
+		input.RemoteIP = ip.GetClientIP(c)
+		if c.Request != nil {
+			input.UserAgent = c.Request.UserAgent()
+		}
+	}
+	return service.WithSignupGrantRiskInput(ctx, input)
+}
+
 func (h *AuthHandler) ensureWebAuthSourceAllowed(c *gin.Context, source string, expectedProvider ...string) error {
 	if !isWebAuthSource(source) {
 		return nil
@@ -279,8 +297,9 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	riskCtx := h.signupGrantRiskContext(c, "", "")
 	_, user, err := h.authService.RegisterWithVerificationSourceAndUsername(
-		c.Request.Context(),
+		riskCtx,
 		req.Email,
 		req.Username,
 		req.Password,
@@ -294,7 +313,7 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	if err := h.recordLoginAgreementAcceptance(c.Request.Context(), user, currentAgreementRevision); err != nil {
+	if err := h.recordLoginAgreementAcceptance(riskCtx, user, currentAgreementRevision); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}

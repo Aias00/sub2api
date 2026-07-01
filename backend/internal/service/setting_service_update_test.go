@@ -129,6 +129,23 @@ func TestSettingService_UpdateSettings_DefaultSubscriptions_ValidGroup(t *testin
 	}, got)
 }
 
+func TestSettingService_UpdateSettings_SignupGrantRiskControl(t *testing.T) {
+	repo := &settingUpdateRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+
+	err := svc.UpdateSettings(context.Background(), &SystemSettings{
+		SignupGrantRiskControlEnabled:     true,
+		SignupGrantRiskControlEmailLimit:  1,
+		SignupGrantRiskControlIPLimit:     3,
+		SignupGrantRiskControlDomainLimit: 10,
+	})
+	require.NoError(t, err)
+	require.Equal(t, "true", repo.updates[SettingKeySignupGrantRiskControlEnabled])
+	require.Equal(t, "1", repo.updates[SettingKeySignupGrantRiskControlEmailLimit])
+	require.Equal(t, "3", repo.updates[SettingKeySignupGrantRiskControlIPLimit])
+	require.Equal(t, "10", repo.updates[SettingKeySignupGrantRiskControlDomainLimit])
+}
+
 func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsNonSubscriptionGroup(t *testing.T) {
 	repo := &settingUpdateRepoStub{}
 	groupReader := &defaultSubGroupReaderStub{

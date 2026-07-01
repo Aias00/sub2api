@@ -162,6 +162,7 @@ func (s *AuthService) RegisterOAuthEmailAccount(
 
 	signupSource = normalizeOAuthSignupSource(signupSource)
 	grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
+	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(ctx, email, signupSource, grantPlan)
 
 	user := &User{
 		Email:        email,
@@ -180,6 +181,7 @@ func (s *AuthService) RegisterOAuthEmailAccount(
 		slog.Error("oauth email register: userRepo.Create failed", "email", email, "signup_source", signupSource, "error", err.Error())
 		return nil, nil, ErrServiceUnavailable
 	}
+	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
 
 	tokenPair, err := s.GenerateTokenPair(ctx, user, "")
 	if err != nil {
@@ -246,6 +248,7 @@ func (s *AuthService) RegisterVerifiedOAuthEmailAccount(
 	}
 
 	grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
+	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(ctx, email, signupSource, grantPlan)
 	var defaultRPMLimit int
 	if s.settingService != nil {
 		defaultRPMLimit = s.settingService.GetDefaultUserRPMLimit(ctx)
@@ -267,6 +270,7 @@ func (s *AuthService) RegisterVerifiedOAuthEmailAccount(
 		}
 		return nil, nil, ErrServiceUnavailable
 	}
+	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
 
 	tokenPair, err := s.GenerateTokenPair(ctx, user, "")
 	if err != nil {
@@ -301,9 +305,10 @@ func (s *AuthService) FinalizeOAuthEmailAccount(
 	}
 
 	s.updateOAuthSignupSource(ctx, user.ID, signupSource)
-	grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
+	grantPlan, signupGrantClaim := s.resolveSignupGrantPlanForFinalizedUser(ctx, user.ID, user.Email, signupSource)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
+	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
 	s.bindOAuthAffiliate(ctx, user.ID, effectiveAffiliateCode)
 	s.notifyUserRegistered(ctx, user, signupSource)
 	s.sendWelcomeEmailForNewUser(ctx, user, signupSource)

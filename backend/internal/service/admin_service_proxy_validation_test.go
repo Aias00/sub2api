@@ -5,6 +5,7 @@ package service
 import (
 	"context"
 	"testing"
+	"time"
 
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -107,6 +108,10 @@ func (s *proxyRepoValidationStub) ListActiveWithAccountCount(ctx context.Context
 	panic("unexpected ListActiveWithAccountCount call")
 }
 
+func (s *proxyRepoValidationStub) ListAllForFallback(context.Context) ([]Proxy, error) {
+	return nil, nil
+}
+
 func (s *proxyRepoValidationStub) ExistsByHostPortAuth(ctx context.Context, host string, port int, username, password string) (bool, error) {
 	panic("unexpected ExistsByHostPortAuth call")
 }
@@ -115,8 +120,20 @@ func (s *proxyRepoValidationStub) CountAccountsByProxyID(ctx context.Context, pr
 	panic("unexpected CountAccountsByProxyID call")
 }
 
+func (s *proxyRepoValidationStub) CountExpired(context.Context) (int64, error) {
+	return 0, nil
+}
+
+func (s *proxyRepoValidationStub) CountExpiringSoon(context.Context, time.Time) (int64, error) {
+	return 0, nil
+}
+
 func (s *proxyRepoValidationStub) ListAccountSummariesByProxyID(ctx context.Context, proxyID int64) ([]ProxyAccountSummary, error) {
 	panic("unexpected ListAccountSummariesByProxyID call")
+}
+
+func (s *proxyRepoValidationStub) SweepExpiredProxies(context.Context, time.Time) (int64, error) {
+	return 0, nil
 }
 
 func TestAdminServiceProxyCreateNormalizesAndChecksDuplicate(t *testing.T) {

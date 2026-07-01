@@ -288,6 +288,7 @@ func (s *AuthService) RegisterWithVerificationSourceAndUsername(ctx context.Cont
 	}
 
 	grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
+	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(ctx, email, signupSource, grantPlan)
 
 	// 新用户默认 RPM（0 = 不限制）。注册时写入，后续作为用户级兜底。
 	var defaultRPMLimit int
@@ -316,6 +317,7 @@ func (s *AuthService) RegisterWithVerificationSourceAndUsername(ctx context.Cont
 		logger.LegacyPrintf("service.auth", "[Auth] Database error creating user: %v", err)
 		return "", nil, ErrServiceUnavailable
 	}
+	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
 	s.postAuthUserBootstrap(ctx, user, signupSource, signupSource == authSignupSourceEmail)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	// snapshot user × platform quota（fail-open）
@@ -730,7 +732,8 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 		username = string([]rune(username)[:100])
 	}
 
-	user, err := s.userRepo.GetByEmail(ctx, email)
+	signupSource = normalizeOAuthSignupSource(signupSource)
+	user, err := s.getOAuthUserByEmailForSignupSource(ctx, email, signupSource)
 	created := false
 	createdSignupSource := signupSource
 	if err != nil {

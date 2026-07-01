@@ -235,18 +235,22 @@ type SystemSettings struct {
 	ImageWorkspaceObjectStoragePublicBaseURL string
 	MediaCDNBaseURL                          string
 
-	DefaultConcurrency           int
-	DefaultBalance               float64
-	RiskControlEnabled           bool
-	CyberSessionBlockEnabled     bool
-	CyberSessionBlockTTLSeconds  int
-	AffiliateEnabled             bool
-	AffiliateRebateRate          float64
-	AffiliateRebateFreezeHours   int
-	AffiliateRebateDurationDays  int
-	AffiliateRebatePerInviteeCap float64
-	DefaultUserRPMLimit          int
-	DefaultSubscriptions         []DefaultSubscriptionSetting
+	DefaultConcurrency                int
+	DefaultBalance                    float64
+	RiskControlEnabled                bool
+	SignupGrantRiskControlEnabled     bool
+	SignupGrantRiskControlEmailLimit  int
+	SignupGrantRiskControlIPLimit     int
+	SignupGrantRiskControlDomainLimit int
+	CyberSessionBlockEnabled          bool
+	CyberSessionBlockTTLSeconds       int
+	AffiliateEnabled                  bool
+	AffiliateRebateRate               float64
+	AffiliateRebateFreezeHours        int
+	AffiliateRebateDurationDays       int
+	AffiliateRebatePerInviteeCap      float64
+	DefaultUserRPMLimit               int
+	DefaultSubscriptions              []DefaultSubscriptionSetting
 
 	// Model fallback configuration
 	EnableModelFallback      bool   `json:"enable_model_fallback"`
@@ -372,22 +376,36 @@ type PublicSettings struct {
 	WebTheme                         string
 	WebAppearance                    string
 	WebDefaultLocale                 string
+	PromptCasesTitle                 string
 	WebPromptCasesTitle              string
+	PromptCasesDescription           string
 	WebPromptCasesDescription        string
+	PromptTemplatesTitle             string
 	WebPromptTemplatesTitle          string
+	PromptTemplatesDescription       string
 	WebPromptTemplatesDescription    string
 	PromptCatalogShellConfig         string
+	WorkspaceShellConfig             string
 	WebWorkspaceShellConfig          string
 	WebImagePromptFilterConfig       string
 	ImagePromptFilterConfig          string
+	PricingTitle                     string
 	WebPricingTitle                  string
+	PricingDescription               string
 	WebPricingDescription            string
+	PricingShellConfig               string
 	WebPricingShellConfig            string
+	PaymentShellConfig               string
 	WebPaymentShellConfig            string
+	PricingCurrencySymbol            string
 	WebPricingCurrencySymbol         string
+	CreditsTitle                     string
 	WebCreditsTitle                  string
+	CreditsDescription               string
 	WebCreditsDescription            string
+	CreditsPurchaseLabel             string
 	WebCreditsPurchaseLabel          string
+	CreditsBalanceLabel              string
 	WebCreditsBalanceLabel           string
 	WebCreditsPerBalance             string
 	CreditsPerBalance                string
@@ -396,20 +414,29 @@ type PublicSettings struct {
 	WebEmailAuthVisible              bool
 	WebGoogleAuthVisible             bool
 	WebGitHubAuthVisible             bool
+	GoogleAnalyticsID                string
 	WebGoogleAnalyticsID             string
 	WebClarityID                     string
 	WebPlausibleDomain               string
 	WebPlausibleSrc                  string
 	WebOpenPanelClientID             string
+	PublicIntegrationsEnabled        bool
 	WebPublicIntegrationsEnabled     bool
 	WebVercelAnalyticsEnabled        bool
 	WebAdsenseCode                   string
+	AffonsoEnabled                   bool
 	WebAffonsoEnabled                bool
+	AffonsoID                        string
 	WebAffonsoID                     string
+	AffonsoCookieDuration            string
 	WebAffonsoCookieDuration         string
+	PromoteKitEnabled                bool
 	WebPromoteKitEnabled             bool
+	PromoteKitID                     string
 	WebPromoteKitID                  string
+	CrispEnabled                     bool
 	WebCrispEnabled                  bool
+	CrispWebsiteID                   string
 	WebCrispWebsiteID                string
 	WebTawkEnabled                   bool
 	WebTawkPropertyID                string

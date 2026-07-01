@@ -587,6 +587,39 @@ func TestAuthService_Register_Success(t *testing.T) {
 	require.True(t, user.CheckPassword("password"))
 }
 
+func TestAuthService_Register_SignupGrantRiskDisabledKeepsDefaultGrant(t *testing.T) {
+	repo := &userRepoStub{nextID: 6}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:                 "true",
+		SettingKeySignupGrantRiskControlEnabled:       "false",
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "false",
+	}, nil, nil)
+
+	_, user, err := service.Register(context.Background(), "risk-disabled@test.com", "password")
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.Equal(t, 3.5, user.Balance)
+	require.Equal(t, 2, user.Concurrency)
+}
+
+func TestAuthService_Register_SignupGrantRiskEnabledWithoutStoreStripsGrant(t *testing.T) {
+	repo := &userRepoStub{nextID: 7}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:                 "true",
+		SettingKeySignupGrantRiskControlEnabled:       "true",
+		SettingKeySignupGrantRiskControlEmailLimit:    "1",
+		SettingKeySignupGrantRiskControlIPLimit:       "3",
+		SettingKeySignupGrantRiskControlDomainLimit:   "10",
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "false",
+	}, nil, nil)
+
+	_, user, err := service.Register(context.Background(), "risk-enabled@test.com", "password")
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.Equal(t, 0.0, user.Balance)
+	require.Equal(t, 2, user.Concurrency)
+}
+
 func TestAuthService_RegisterWithUsernamePersistsUsername(t *testing.T) {
 	repo := &userRepoStub{nextID: 9}
 	service := newAuthService(repo, map[string]string{

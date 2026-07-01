@@ -135,12 +135,24 @@ func (r *paymentFulfillmentAffiliateRepoStub) ListAffiliateRebateRecords(context
 	panic("unexpected ListAffiliateRebateRecords call")
 }
 
+func (r *paymentFulfillmentAffiliateRepoStub) ListUserRebateRecords(context.Context, int64, AffiliateRecordFilter) ([]AffiliateRebateRecord, int64, error) {
+	panic("unexpected ListUserRebateRecords call")
+}
+
 func (r *paymentFulfillmentAffiliateRepoStub) ListAffiliateTransferRecords(context.Context, AffiliateRecordFilter) ([]AffiliateTransferRecord, int64, error) {
 	panic("unexpected ListAffiliateTransferRecords call")
 }
 
+func (r *paymentFulfillmentAffiliateRepoStub) ListUserTransferRecords(context.Context, int64, AffiliateRecordFilter) ([]AffiliateTransferRecord, int64, error) {
+	panic("unexpected ListUserTransferRecords call")
+}
+
 func (r *paymentFulfillmentAffiliateRepoStub) GetAffiliateUserOverview(context.Context, int64) (*AffiliateUserOverview, error) {
 	panic("unexpected GetAffiliateUserOverview call")
+}
+
+func (r *paymentFulfillmentAffiliateRepoStub) GetAffiliateOverview(context.Context) (*AffiliateAdminOverview, error) {
+	panic("unexpected GetAffiliateOverview call")
 }
 
 type paymentFulfillmentSettingRepoStub struct {

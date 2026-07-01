@@ -28,6 +28,8 @@ type EmailOAuthIdentityInput struct {
 
 type emailOAuthRegistrationOptions struct {
 	SkipInvitationGate bool
+	ProviderType       string
+	ProviderSubject    string
 }
 
 func (s *AuthService) LoginOrRegisterVerifiedEmailOAuth(ctx context.Context, input EmailOAuthIdentityInput) (*TokenPair, *User, error) {
@@ -110,6 +112,8 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	created := false
 	options := emailOAuthRegistrationOptions{
 		SkipInvitationGate: userSignupSource == authSignupSourceTouch,
+		ProviderType:       providerType,
+		ProviderSubject:    providerSubject,
 	}
 	if user == nil {
 		if userSignupSource == authSignupSourceTouch {
@@ -201,6 +205,11 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 		return nil, fmt.Errorf("hash password: %w", err)
 	}
 	grantPlan := s.resolveSignupGrantPlan(ctx, providerType)
+	riskCtx := WithSignupGrantRiskInput(ctx, mergeSignupGrantRiskInput(signupGrantRiskInputFromContext(ctx), SignupGrantRiskInput{
+		ProviderType:    options.ProviderType,
+		ProviderSubject: options.ProviderSubject,
+	}))
+	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(riskCtx, email, providerType, grantPlan)
 	var defaultRPMLimit int
 	if s.settingService != nil {
 		defaultRPMLimit = s.settingService.GetDefaultUserRPMLimit(ctx)
@@ -232,6 +241,7 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 		}
 		return nil, ErrServiceUnavailable
 	}
+	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
 	s.postAuthUserBootstrap(ctx, user, providerType, false)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)

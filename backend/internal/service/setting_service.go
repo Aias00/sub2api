@@ -967,6 +967,18 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 	weChatEnabled, weChatOpenEnabled, weChatMPEnabled, weChatMobileEnabled := s.weChatOAuthCapabilitiesFromSettings(settings)
 	siteName := s.getStringOrDefault(settings, SettingKeySiteName, "Sub2API")
 	siteSubtitle := s.getStringOrDefault(settings, SettingKeySiteSubtitle, "Subscription to API Conversion Platform")
+	webAppName := strings.TrimSpace(settings[SettingKeyWebAppName])
+	if webAppName == "" {
+		webAppName = siteName
+	}
+	webAppDescription := strings.TrimSpace(settings[SettingKeyWebAppDescription])
+	if webAppDescription == "" {
+		webAppDescription = siteSubtitle
+	}
+	webAppLogo := strings.TrimSpace(settings[SettingKeyWebAppLogo])
+	if webAppLogo == "" {
+		webAppLogo = strings.TrimSpace(settings[SettingKeySiteLogo])
+	}
 	webEmailVisible := parseBoolSettingWithDefault(settings[SettingKeyWebEmailAuthVisible], settings[SettingKeyRegistrationEnabled] != "false")
 	webGoogleVisible := parseBoolSettingWithDefault(settings[SettingKeyWebGoogleAuthVisible], googleEnabled)
 	webGitHubVisible := parseBoolSettingWithDefault(settings[SettingKeyWebGitHubAuthVisible], gitHubEnabled)
@@ -1013,30 +1025,44 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SiteLogo:                         settings[SettingKeySiteLogo],
 		SiteSubtitle:                     siteSubtitle,
 		WebAppURL:                        strings.TrimSpace(settings[SettingKeyWebAppURL]),
-		WebAppName:                       strings.TrimSpace(settings[SettingKeyWebAppName]),
-		WebAppDescription:                strings.TrimSpace(settings[SettingKeyWebAppDescription]),
-		WebAppLogo:                       strings.TrimSpace(settings[SettingKeyWebAppLogo]),
+		WebAppName:                       webAppName,
+		WebAppDescription:                webAppDescription,
+		WebAppLogo:                       webAppLogo,
 		WebAppFavicon:                    strings.TrimSpace(settings[SettingKeyWebAppFavicon]),
 		WebAppPreviewImage:               strings.TrimSpace(settings[SettingKeyWebAppPreviewImage]),
 		WebTheme:                         strings.TrimSpace(settings[SettingKeyWebTheme]),
 		WebAppearance:                    strings.TrimSpace(settings[SettingKeyWebAppearance]),
 		WebDefaultLocale:                 strings.TrimSpace(settings[SettingKeyWebDefaultLocale]),
+		PromptCasesTitle:                 strings.TrimSpace(settings[SettingKeyPromptCasesTitle]),
 		WebPromptCasesTitle:              strings.TrimSpace(settings[SettingKeyPromptCasesTitle]),
+		PromptCasesDescription:           strings.TrimSpace(settings[SettingKeyPromptCasesDescription]),
 		WebPromptCasesDescription:        strings.TrimSpace(settings[SettingKeyPromptCasesDescription]),
+		PromptTemplatesTitle:             strings.TrimSpace(settings[SettingKeyPromptTemplatesTitle]),
 		WebPromptTemplatesTitle:          strings.TrimSpace(settings[SettingKeyPromptTemplatesTitle]),
+		PromptTemplatesDescription:       strings.TrimSpace(settings[SettingKeyPromptTemplatesDescription]),
 		WebPromptTemplatesDescription:    strings.TrimSpace(settings[SettingKeyPromptTemplatesDescription]),
 		PromptCatalogShellConfig:         promptCatalogShellConfigSetting(settings[SettingKeyPromptCatalogShellConfig]),
+		WorkspaceShellConfig:             workspaceShellConfigSetting(settings[SettingKeyWorkspaceShellConfig]),
 		WebWorkspaceShellConfig:          workspaceShellConfigSetting(settings[SettingKeyWorkspaceShellConfig]),
 		ImagePromptFilterConfig:          strings.TrimSpace(settings[SettingKeyImagePromptFilterConfig]),
 		WebImagePromptFilterConfig:       strings.TrimSpace(settings[SettingKeyImagePromptFilterConfig]),
+		PricingTitle:                     strings.TrimSpace(settings[SettingKeyPricingTitle]),
 		WebPricingTitle:                  strings.TrimSpace(settings[SettingKeyPricingTitle]),
+		PricingDescription:               strings.TrimSpace(settings[SettingKeyPricingDescription]),
 		WebPricingDescription:            strings.TrimSpace(settings[SettingKeyPricingDescription]),
+		PricingShellConfig:               pricingShellConfigSetting(settings[SettingKeyPricingShellConfig]),
 		WebPricingShellConfig:            pricingShellConfigSetting(settings[SettingKeyPricingShellConfig]),
+		PaymentShellConfig:               paymentShellConfigSetting(settings[SettingKeyPaymentShellConfig]),
 		WebPaymentShellConfig:            paymentShellConfigSetting(settings[SettingKeyPaymentShellConfig]),
+		PricingCurrencySymbol:            pricingCurrencySymbolSetting(settings[SettingKeyPricingCurrencySymbol]),
 		WebPricingCurrencySymbol:         pricingCurrencySymbolSetting(settings[SettingKeyPricingCurrencySymbol]),
+		CreditsTitle:                     strings.TrimSpace(settings[SettingKeyCreditsTitle]),
 		WebCreditsTitle:                  strings.TrimSpace(settings[SettingKeyCreditsTitle]),
+		CreditsDescription:               strings.TrimSpace(settings[SettingKeyCreditsDescription]),
 		WebCreditsDescription:            strings.TrimSpace(settings[SettingKeyCreditsDescription]),
+		CreditsPurchaseLabel:             strings.TrimSpace(settings[SettingKeyCreditsPurchaseLabel]),
 		WebCreditsPurchaseLabel:          strings.TrimSpace(settings[SettingKeyCreditsPurchaseLabel]),
+		CreditsBalanceLabel:              strings.TrimSpace(settings[SettingKeyCreditsBalanceLabel]),
 		WebCreditsBalanceLabel:           strings.TrimSpace(settings[SettingKeyCreditsBalanceLabel]),
 		WebCreditsPerBalance:             creditsPerBalanceSetting(settings[SettingKeyCreditsPerBalance]),
 		CreditsPerBalance:                creditsPerBalanceSetting(settings[SettingKeyCreditsPerBalance]),
@@ -1045,20 +1071,29 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		WebEmailAuthVisible:              webEmailVisible,
 		WebGoogleAuthVisible:             webGoogleVisible,
 		WebGitHubAuthVisible:             webGitHubVisible,
+		GoogleAnalyticsID:                strings.TrimSpace(settings[SettingKeyWebGoogleAnalyticsID]),
 		WebGoogleAnalyticsID:             strings.TrimSpace(settings[SettingKeyWebGoogleAnalyticsID]),
 		WebClarityID:                     strings.TrimSpace(settings[SettingKeyWebClarityID]),
 		WebPlausibleDomain:               strings.TrimSpace(settings[SettingKeyWebPlausibleDomain]),
 		WebPlausibleSrc:                  strings.TrimSpace(settings[SettingKeyWebPlausibleSrc]),
 		WebOpenPanelClientID:             strings.TrimSpace(settings[SettingKeyWebOpenPanelClientID]),
+		PublicIntegrationsEnabled:        !isFalseSettingValue(settings[SettingKeyWebPublicIntegrationsEnabled]),
 		WebPublicIntegrationsEnabled:     !isFalseSettingValue(settings[SettingKeyWebPublicIntegrationsEnabled]),
 		WebVercelAnalyticsEnabled:        settings[SettingKeyWebVercelAnalyticsEnabled] == "true",
 		WebAdsenseCode:                   strings.TrimSpace(settings[SettingKeyWebAdsenseCode]),
+		AffonsoEnabled:                   settings[SettingKeyWebAffonsoEnabled] == "true",
 		WebAffonsoEnabled:                settings[SettingKeyWebAffonsoEnabled] == "true",
+		AffonsoID:                        strings.TrimSpace(settings[SettingKeyWebAffonsoID]),
 		WebAffonsoID:                     strings.TrimSpace(settings[SettingKeyWebAffonsoID]),
+		AffonsoCookieDuration:            webAffonsoCookieDurationSetting(settings[SettingKeyWebAffonsoCookieDuration]),
 		WebAffonsoCookieDuration:         webAffonsoCookieDurationSetting(settings[SettingKeyWebAffonsoCookieDuration]),
+		PromoteKitEnabled:                settings[SettingKeyWebPromoteKitEnabled] == "true",
 		WebPromoteKitEnabled:             settings[SettingKeyWebPromoteKitEnabled] == "true",
+		PromoteKitID:                     strings.TrimSpace(settings[SettingKeyWebPromoteKitID]),
 		WebPromoteKitID:                  strings.TrimSpace(settings[SettingKeyWebPromoteKitID]),
+		CrispEnabled:                     settings[SettingKeyWebCrispEnabled] == "true",
 		WebCrispEnabled:                  settings[SettingKeyWebCrispEnabled] == "true",
+		CrispWebsiteID:                   strings.TrimSpace(settings[SettingKeyWebCrispWebsiteID]),
 		WebCrispWebsiteID:                strings.TrimSpace(settings[SettingKeyWebCrispWebsiteID]),
 		WebTawkEnabled:                   settings[SettingKeyWebTawkEnabled] == "true",
 		WebTawkPropertyID:                strings.TrimSpace(settings[SettingKeyWebTawkPropertyID]),
@@ -3317,6 +3352,10 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 
 	// 风控中心功能开关
 	updates[SettingKeyRiskControlEnabled] = strconv.FormatBool(settings.RiskControlEnabled)
+	updates[SettingKeySignupGrantRiskControlEnabled] = strconv.FormatBool(settings.SignupGrantRiskControlEnabled)
+	updates[SettingKeySignupGrantRiskControlEmailLimit] = strconv.Itoa(nonNegativeInt(settings.SignupGrantRiskControlEmailLimit))
+	updates[SettingKeySignupGrantRiskControlIPLimit] = strconv.Itoa(nonNegativeInt(settings.SignupGrantRiskControlIPLimit))
+	updates[SettingKeySignupGrantRiskControlDomainLimit] = strconv.Itoa(nonNegativeInt(settings.SignupGrantRiskControlDomainLimit))
 
 	// cyber 会话屏蔽开关 + TTL
 	updates[SettingKeyCyberSessionBlockEnabled] = strconv.FormatBool(settings.CyberSessionBlockEnabled)
@@ -4380,7 +4419,11 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyAffiliateEnabled: "false",
 
 		// 风控中心功能（默认关闭，显式启用）
-		SettingKeyRiskControlEnabled: "false",
+		SettingKeyRiskControlEnabled:                "false",
+		SettingKeySignupGrantRiskControlEnabled:     "false",
+		SettingKeySignupGrantRiskControlEmailLimit:  "1",
+		SettingKeySignupGrantRiskControlIPLimit:     "3",
+		SettingKeySignupGrantRiskControlDomainLimit: "10",
 
 		// cyber 会话屏蔽（默认关闭，TTL 默认 3600s）
 		SettingKeyCyberSessionBlockEnabled:    "false",
@@ -4992,6 +5035,10 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 
 	// 风控中心功能（默认关闭，严格 true 才启用）
 	result.RiskControlEnabled = settings[SettingKeyRiskControlEnabled] == "true"
+	result.SignupGrantRiskControlEnabled = settings[SettingKeySignupGrantRiskControlEnabled] == "true"
+	result.SignupGrantRiskControlEmailLimit = parseNonNegativeIntSetting(settings[SettingKeySignupGrantRiskControlEmailLimit], 1)
+	result.SignupGrantRiskControlIPLimit = parseNonNegativeIntSetting(settings[SettingKeySignupGrantRiskControlIPLimit], 3)
+	result.SignupGrantRiskControlDomainLimit = parseNonNegativeIntSetting(settings[SettingKeySignupGrantRiskControlDomainLimit], 10)
 
 	// cyber 会话屏蔽（默认关闭，TTL 默认 3600s）
 	result.CyberSessionBlockEnabled = settings[SettingKeyCyberSessionBlockEnabled] == "true"

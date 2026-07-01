@@ -136,13 +136,14 @@ func (h *WebHandler) Register(c *gin.Context) {
 	}
 
 	username := firstNonEmptyString(req.Username, req.Name)
-	_, user, err := h.authService.RegisterWithVerificationSourceAndUsername(c.Request.Context(), req.Email, username, req.Password, "", "", "", "", webAuthSource)
+	riskCtx := h.authHandler.signupGrantRiskContext(c, "", "")
+	_, user, err := h.authService.RegisterWithVerificationSourceAndUsername(riskCtx, req.Email, username, req.Password, "", "", "", "", webAuthSource)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 
-	if err := h.authHandler.ensureUserAcceptedCurrentLoginAgreement(c.Request.Context(), user, agreementAcceptanceInput{
+	if err := h.authHandler.ensureUserAcceptedCurrentLoginAgreement(riskCtx, user, agreementAcceptanceInput{
 		Accepted: true,
 	}); err != nil {
 		response.ErrorFrom(c, err)

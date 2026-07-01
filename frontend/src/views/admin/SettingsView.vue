@@ -5195,6 +5195,57 @@
               </div>
               <Toggle v-model="form.risk_control_enabled" />
             </div>
+            <div class="rounded-xl border border-gray-200 bg-gray-50 p-4 dark:border-dark-700 dark:bg-dark-900">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.features.riskControl.signupGrantEnabled') }}
+                  </label>
+                  <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.settings.features.riskControl.signupGrantEnabledHint') }}
+                  </p>
+                </div>
+                <Toggle v-model="form.signup_grant_risk_control_enabled" />
+              </div>
+              <div class="mt-4 grid gap-4 md:grid-cols-3">
+                <div>
+                  <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.features.riskControl.signupGrantEmailLimit') }}
+                  </label>
+                  <input
+                    v-model.number="form.signup_grant_risk_control_email_limit"
+                    type="number"
+                    min="0"
+                    class="input"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.features.riskControl.signupGrantIPLimit') }}
+                  </label>
+                  <input
+                    v-model.number="form.signup_grant_risk_control_ip_daily_limit"
+                    type="number"
+                    min="0"
+                    class="input"
+                  />
+                </div>
+                <div>
+                  <label class="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.features.riskControl.signupGrantDomainLimit') }}
+                  </label>
+                  <input
+                    v-model.number="form.signup_grant_risk_control_domain_daily_limit"
+                    type="number"
+                    min="0"
+                    class="input"
+                  />
+                </div>
+              </div>
+              <p class="mt-3 text-xs text-gray-500 dark:text-gray-400">
+                {{ t('admin.settings.features.riskControl.signupGrantLimitHint') }}
+              </p>
+            </div>
           </div>
         </div>
 
@@ -7148,6 +7199,10 @@ const form = reactive<SettingsForm>({
   hide_ccs_import_button: false,
   payment_enabled: false,
   risk_control_enabled: false,
+  signup_grant_risk_control_enabled: false,
+  signup_grant_risk_control_email_limit: 1,
+  signup_grant_risk_control_ip_daily_limit: 3,
+  signup_grant_risk_control_domain_daily_limit: 10,
   payment_min_amount: 0,
   payment_max_amount: 0,
   payment_daily_limit: 0,
@@ -8611,6 +8666,10 @@ async function saveSettings() {
       enable_cch_signing: form.enable_cch_signing,
       enable_anthropic_cache_ttl_1h_injection:
         form.enable_anthropic_cache_ttl_1h_injection,
+      enable_claude_oauth_system_prompt_injection:
+        form.enable_claude_oauth_system_prompt_injection,
+      claude_oauth_system_prompt: form.claude_oauth_system_prompt,
+      claude_oauth_system_prompt_blocks: form.claude_oauth_system_prompt_blocks,
       rewrite_message_cache_control: form.rewrite_message_cache_control,
       antigravity_user_agent_version:
         form.antigravity_user_agent_version?.trim() || "",
@@ -8620,6 +8679,14 @@ async function saveSettings() {
       // Payment configuration
       payment_enabled: form.payment_enabled,
       risk_control_enabled: form.risk_control_enabled,
+      signup_grant_risk_control_enabled:
+        form.signup_grant_risk_control_enabled,
+      signup_grant_risk_control_email_limit:
+        Number(form.signup_grant_risk_control_email_limit) || 0,
+      signup_grant_risk_control_ip_daily_limit:
+        Number(form.signup_grant_risk_control_ip_daily_limit) || 0,
+      signup_grant_risk_control_domain_daily_limit:
+        Number(form.signup_grant_risk_control_domain_daily_limit) || 0,
       payment_min_amount: Number(form.payment_min_amount) || 0,
       payment_max_amount: Number(form.payment_max_amount) || 0,
       payment_daily_limit: Number(form.payment_daily_limit) || 0,
@@ -9457,7 +9524,10 @@ async function loadProviders() {
   providersLoading.value = true;
   try {
     const res = await adminAPI.payment.getProviders();
-    providers.value = res.data || [];
+    providers.value = (res.data || []).map((provider) => ({
+      ...provider,
+      supported_types: Array.isArray(provider.supported_types) ? provider.supported_types : [],
+    }));
   } catch (err: unknown) {
     appStore.showError(extractI18nErrorMessage(err, t, "payment.errors", t("common.error")));
   } finally {

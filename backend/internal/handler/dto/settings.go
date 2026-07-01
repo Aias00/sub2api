@@ -372,6 +372,11 @@ type SystemSettings struct {
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
 
+	SignupGrantRiskControlEnabled     bool `json:"signup_grant_risk_control_enabled"`
+	SignupGrantRiskControlEmailLimit  int  `json:"signup_grant_risk_control_email_limit"`
+	SignupGrantRiskControlIPLimit     int  `json:"signup_grant_risk_control_ip_daily_limit"`
+	SignupGrantRiskControlDomainLimit int  `json:"signup_grant_risk_control_domain_daily_limit"`
+
 	// cyber 会话屏蔽开关 + TTL
 	CyberSessionBlockEnabled    bool `json:"cyber_session_block_enabled"`
 	CyberSessionBlockTTLSeconds int  `json:"cyber_session_block_ttl_seconds"`

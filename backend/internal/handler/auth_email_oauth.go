@@ -235,7 +235,7 @@ func (h *AuthHandler) emailOAuthCallbackWithProfile(
 	}
 
 	tokenPair, user, err := h.authService.LoginOrRegisterVerifiedEmailOAuthWithSignupCodes(
-		c.Request.Context(),
+		h.signupGrantRiskContext(c, input.ProviderType, input.ProviderSubject),
 		input,
 		"",
 		affiliateCode,

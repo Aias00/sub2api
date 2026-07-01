@@ -675,6 +675,10 @@ export interface SystemSettings {
   // Payment configuration
   payment_enabled: boolean;
   risk_control_enabled: boolean;
+  signup_grant_risk_control_enabled: boolean;
+  signup_grant_risk_control_email_limit: number;
+  signup_grant_risk_control_ip_daily_limit: number;
+  signup_grant_risk_control_domain_daily_limit: number;
 
   // Cyber session block
   cyber_session_block_enabled: boolean;
@@ -1009,6 +1013,10 @@ export interface UpdateSettingsRequest {
   // Payment configuration
   payment_enabled?: boolean;
   risk_control_enabled?: boolean;
+  signup_grant_risk_control_enabled?: boolean;
+  signup_grant_risk_control_email_limit?: number;
+  signup_grant_risk_control_ip_daily_limit?: number;
+  signup_grant_risk_control_domain_daily_limit?: number;
 
   // Cyber session block
   cyber_session_block_enabled?: boolean;

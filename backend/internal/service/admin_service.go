@@ -1081,7 +1081,7 @@ func (s *adminServiceImpl) UpdateUserBalance(ctx context.Context, userID int64, 
 				nil,
 				notes,
 				map[string]interface{}{
-					"operation": operation,
+					"operation":       operation,
 					"adjustment_code": code,
 				},
 			); err != nil {
@@ -3211,14 +3211,30 @@ func (s *adminServiceImpl) CreateProxy(ctx context.Context, input *CreateProxyIn
 	if input.ExpiryWarnDays < 0 {
 		return nil, infraerrors.BadRequest("PROXY_WARN_DAYS_INVALID", "expiry_warn_days must be >= 0")
 	}
+	if err := validateProxyPort(input.Port); err != nil {
+		return nil, err
+	}
+
+	name := strings.TrimSpace(input.Name)
+	protocol, host, username, password := normalizeProxyIdentity(
+		input.Protocol,
+		input.Host,
+		input.Username,
+		input.Password,
+	)
+	if _, exists, err := s.findDuplicateProxyID(ctx, 0, protocol, host, input.Port, username, password); err != nil {
+		return nil, err
+	} else if exists {
+		return nil, ErrProxyDuplicate
+	}
 
 	proxy := &Proxy{
-		Name:           input.Name,
-		Protocol:       input.Protocol,
-		Host:           input.Host,
+		Name:           name,
+		Protocol:       protocol,
+		Host:           host,
 		Port:           input.Port,
-		Username:       input.Username,
-		Password:       input.Password,
+		Username:       username,
+		Password:       password,
 		Status:         StatusActive,
 		ExpiresAt:      input.ExpiresAt,
 		FallbackMode:   mode,

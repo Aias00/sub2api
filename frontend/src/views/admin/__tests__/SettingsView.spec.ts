@@ -486,16 +486,6 @@ async function openUsersTab(wrapper: ReturnType<typeof mountView>) {
   await flushPromises();
 }
 
-async function openEmailTab(wrapper: ReturnType<typeof mountView>) {
-  const emailTabButton = wrapper
-    .findAll("button")
-    .find((node) => node.text().includes("admin.settings.tabs.email"));
-
-  expect(emailTabButton).toBeDefined();
-  await emailTabButton?.trigger("click");
-  await flushPromises();
-}
-
 describe("admin SettingsView payment visible method controls", () => {
   beforeEach(() => {
     getSettings.mockReset();
@@ -790,25 +780,12 @@ describe("admin SettingsView payment visible method controls", () => {
     await flushPromises();
 
     expect(updateSettings).toHaveBeenCalledTimes(1);
-    expect(updateSettings).toHaveBeenCalledWith(
-      expect.objectContaining({
-        enable_claude_oauth_system_prompt_injection: false,
-      }),
-    );
     const payload = updateSettings.mock.calls[0][0] as {
+      enable_claude_oauth_system_prompt_injection: boolean;
       claude_oauth_system_prompt_blocks: string;
     };
-    expect(JSON.parse(payload.claude_oauth_system_prompt_blocks)).toEqual([
-      {
-        enabled: true,
-        type: "text",
-        text: "custom block",
-        cache_control: {
-          type: "ephemeral",
-          ttl: "5m",
-        },
-      },
-    ]);
+    expect(payload.enable_claude_oauth_system_prompt_injection).toBe(false);
+    expect(payload.claude_oauth_system_prompt_blocks).toBe(blocks);
   });
 
   it("submits Antigravity user agent version gateway setting", async () => {
