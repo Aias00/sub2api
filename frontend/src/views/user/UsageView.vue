@@ -634,6 +634,29 @@ function formatUsageTokenPricePerMillion(
   return formatted === '-' ? formatted : `${usageCurrencyPrefix.value}${formatted}`
 }
 
+const ALWAYS_VISIBLE = ['created_at']
+const DEFAULT_HIDDEN_COLUMNS = ['user_agent']
+const HIDDEN_COLUMNS_KEY = 'user-usage-hidden-columns'
+
+function resolveHiddenUsageColumns(): string[] {
+  if (typeof window === 'undefined') {
+    return DEFAULT_HIDDEN_COLUMNS
+  }
+
+  try {
+    const raw = window.localStorage.getItem(HIDDEN_COLUMNS_KEY)
+    if (!raw) {
+      return DEFAULT_HIDDEN_COLUMNS
+    }
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((key): key is string => typeof key === 'string') : DEFAULT_HIDDEN_COLUMNS
+  } catch {
+    return DEFAULT_HIDDEN_COLUMNS
+  }
+}
+
+const hiddenUsageColumns = ref<string[]>(resolveHiddenUsageColumns())
+
 const columns = computed<Column[]>(() => [
   { key: 'api_key', label: usageText('apiKeyFilter'), sortable: false },
   { key: 'model', label: usageText('model'), sortable: true },
@@ -647,7 +670,7 @@ const columns = computed<Column[]>(() => [
   { key: 'duration', label: usageText('duration'), sortable: false },
   { key: 'created_at', label: usageText('time'), sortable: true },
   { key: 'user_agent', label: usageText('userAgent'), sortable: false }
-])
+].filter((column) => ALWAYS_VISIBLE.includes(column.key) || !hiddenUsageColumns.value.includes(column.key)))
 
 const usageLogs = ref<UsageLog[]>([])
 const apiKeys = ref<ApiKey[]>([])

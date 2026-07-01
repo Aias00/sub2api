@@ -267,10 +267,11 @@ describe('RegisterView auth shell', () => {
     expect(pushMock).toHaveBeenCalledWith('/configured-email-verify')
   })
 
-  it('does not keep a frontend-local OIDC provider name default', () => {
+  it('does not keep unsupported OIDC login state', () => {
     expect(registerViewSource).not.toContain("ref<string>('OIDC')")
     expect(registerViewSource).not.toContain("|| 'OIDC'")
-    expect(registerViewSource).toContain("const oidcOAuthProviderName = ref<string>('')")
+    expect(registerViewSource).not.toContain('oidcOAuthProviderName')
+    expect(registerViewSource).not.toContain('OidcOAuthSection')
   })
 
   it('keeps registration auth shell labels on the shared typed schema', () => {

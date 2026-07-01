@@ -151,37 +151,6 @@
           :shell-labels="authShellLabels"
         />
 
-          <LinuxDoOAuthSection
-            v-if="linuxdoOAuthEnabled"
-            :disabled="oauthActionDisabled"
-            :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
-            :turnstile-token="turnstileToken"
-            :show-divider="false"
-            :shell-labels="authShellLabels"
-          />
-          <DingTalkOAuthSection
-            v-if="dingtalkOAuthEnabled"
-            :disabled="authActionDisabled"
-            :show-divider="false"
-            :shell-labels="authShellLabels"
-          />
-          <WechatOAuthSection
-            v-if="wechatOAuthEnabled"
-            :disabled="oauthActionDisabled"
-            :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
-            :turnstile-token="turnstileToken"
-            :show-divider="false"
-            :shell-labels="authShellLabels"
-          />
-          <OidcOAuthSection
-            v-if="oidcOAuthEnabled"
-            :disabled="oauthActionDisabled"
-            :provider-name="oidcOAuthProviderName"
-            :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
-            :turnstile-token="turnstileToken"
-            :show-divider="false"
-            :shell-labels="authShellLabels"
-          />
         </div>
       </form>
     </div>
@@ -217,17 +186,13 @@ import { computed, ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { AuthLayout } from '@/components/layout'
-import LinuxDoOAuthSection from '@/components/auth/LinuxDoOAuthSection.vue'
-import DingTalkOAuthSection from '@/components/auth/DingTalkOAuthSection.vue'
-import OidcOAuthSection from '@/components/auth/OidcOAuthSection.vue'
-import WechatOAuthSection from '@/components/auth/WechatOAuthSection.vue'
 import EmailOAuthButtons from '@/components/auth/EmailOAuthButtons.vue'
 import LoginAgreementPrompt from '@/components/auth/LoginAgreementPrompt.vue'
 import TotpLoginModal from '@/components/auth/TotpLoginModal.vue'
 import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { useAuthStore, useAppStore } from '@/stores'
-import { getPublicSettings, isTotp2FARequired, isWeChatWebOAuthEnabled } from '@/api/auth'
+import { getPublicSettings, isTotp2FARequired } from '@/api/auth'
 import type { LoginAgreementDocument, TotpLoginResponse } from '@/types'
 import { extractI18nErrorMessage } from '@/utils/apiError'
 import { resolveRouteAuthRedirect } from '@/utils/authRedirect'
@@ -257,12 +222,7 @@ const showPassword = ref<boolean>(false)
 const publicSettingsLoaded = ref<boolean>(false)
 
 // Public settings
-const linuxdoOAuthEnabled = ref<boolean>(false)
-const dingtalkOAuthEnabled = ref<boolean>(false)
-const wechatOAuthEnabled = ref<boolean>(false)
 const backendModeEnabled = ref<boolean>(false)
-const oidcOAuthEnabled = ref<boolean>(false)
-const oidcOAuthProviderName = ref<string>('')
 const githubOAuthEnabled = ref<boolean>(false)
 const googleOAuthEnabled = ref<boolean>(false)
 const passwordResetEnabled = ref<boolean>(false)
@@ -309,6 +269,12 @@ const authActionDisabled = computed(
       loginAgreementMode.value === 'checkbox' &&
       !agreementAccepted.value)
 )
+const agreementGateActive = computed(
+  () =>
+    loginAgreementEnabled.value &&
+    loginAgreementMode.value === 'checkbox' &&
+    !agreementAccepted.value
+)
 const authFieldDisabled = computed(
   () => isLoading.value || !publicSettingsLoaded.value
 )
@@ -316,12 +282,7 @@ const authFieldDisabled = computed(
 const showOAuthLogin = computed(
   () =>
     !backendModeEnabled.value &&
-    (linuxdoOAuthEnabled.value ||
-      dingtalkOAuthEnabled.value ||
-      wechatOAuthEnabled.value ||
-      oidcOAuthEnabled.value ||
-      githubOAuthEnabled.value ||
-      googleOAuthEnabled.value)
+    (githubOAuthEnabled.value || googleOAuthEnabled.value)
 )
 const oauthActionDisabled = computed(
   () => authActionDisabled.value || (turnstileEnabled.value && !turnstileToken.value)
@@ -347,12 +308,7 @@ onMounted(async () => {
 
   try {
     const settings = await getPublicSettings()
-    linuxdoOAuthEnabled.value = settings.linuxdo_oauth_enabled
-    dingtalkOAuthEnabled.value = settings.dingtalk_oauth_enabled ?? false
-    wechatOAuthEnabled.value = isWeChatWebOAuthEnabled(settings)
     backendModeEnabled.value = settings.backend_mode_enabled
-    oidcOAuthEnabled.value = settings.oidc_oauth_enabled
-    oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || ''
     githubOAuthEnabled.value = settings.github_oauth_enabled
     googleOAuthEnabled.value = settings.google_oauth_enabled
     backendModeEnabled.value = settings.backend_mode_enabled
@@ -453,6 +409,14 @@ function validateForm(): boolean {
   errors.turnstile = ''
 
   let isValid = true
+
+  if (agreementGateActive.value) {
+    appStore.showWarning(t('auth.loginAgreementMustAcceptLogin'))
+    if (loginAgreementMode.value !== 'checkbox') {
+      showAgreementModal.value = true
+    }
+    return false
+  }
 
   // Email validation
   if (!formData.email.trim()) {

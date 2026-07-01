@@ -369,7 +369,24 @@ export default {
     updatedAt: '更新日期：{date}',
     empty: '暂无正文内容',
     loginAgreement: '登录条款',
-    adminCompliance: '部署与运营合规承诺'
+    adminCompliance: '部署与运营合规承诺',
+    loginAgreementPrompt: {
+      checkboxPrefix: '我已阅读并同意',
+      documentSeparator: '、',
+      noticeTitle: '继续登录前需要先同意最新条款。',
+      noticeDescription: '未同意前，账号密码输入和快捷登录会保持禁用。',
+      viewTerms: '查看条款',
+      dialogTitle: '条款更新通知',
+      dialogDescription: '我们的服务条款已于 {date} 更新。在继续使用服务之前，请仔细阅读并同意以下条款。',
+      recently: '近期',
+      relatedDocuments: '相关文档',
+      reject: '拒绝',
+      accept: '同意并继续',
+      loginRejectedWarning: '未同意最新条款前，无法输入账号密码或使用快捷登录。',
+      loginRequiredWarning: '请先阅读并同意最新条款后再登录。',
+      registerRejectedWarning: '未同意最新条款前，无法注册或使用快捷登录。',
+      registerRequiredWarning: '请先阅读并同意最新条款后再注册。'
+    }
   },
 
   // Navigation
@@ -518,7 +535,7 @@ export default {
       completeRegistrationFailed: '注册失败，请检查邀请码后重试。'
     },
     dingtalk: {
-      signIn: '钉钉登录',
+      signIn: '使用钉钉登录',
       callbackTitle: '正在完成钉钉登录',
       callbackProcessing: '正在验证钉钉登录信息，请稍候...',
       callbackHint: '如果页面未自动跳转，请返回登录页重试。',
@@ -593,6 +610,7 @@ export default {
     },
     linuxdoCallbackPageTitle: 'LinuxDo 登录回调',
     dingtalkCallbackPageTitle: '钉钉登录回调',
+    dingtalkProviderName: '钉钉',
     oidcCallbackPageTitle: 'OIDC 登录回调',
     oauthCallbackPageTitle: 'OAuth 回调',
     wechatProviderName: '微信',
@@ -613,6 +631,7 @@ export default {
       state: '状态',
       fullUrl: '完整URL'
     },
+    loginAgreementMustAcceptLogin: '请先同意最新条款后再登录。',
     // 忘记密码
     forgotPassword: '忘记密码？',
     forgotPasswordTitle: '重置密码',
@@ -1511,7 +1530,8 @@ export default {
       configureAiAccounts: '配置 AI 平台账号',
       systemSettings: '系统设置',
       configureSystem: '配置系统设置',
-      failedToLoad: '加载仪表盘数据失败'
+      failedToLoad: '加载仪表盘数据失败',
+      schedulable: '可调度'
     },
 
     backup: {
@@ -1903,7 +1923,7 @@ export default {
         groups: '分组',
         subscriptions: '订阅分组',
         balance: '余额',
-        balancePlatformQuota: '余额(平台配额)',
+        balancePlatformQuota: '余额 / 平台配额',
         usage: '用量',
         usageAnthropic: '用量 (Claude)',
         usageOpenAI: '用量 (OpenAI)',
@@ -2131,7 +2151,7 @@ export default {
       },
       platformQuota: {
         menuItem: '平台限额',
-        title: '平台限额',
+        title: '用户平台限额',
         subtitle: '为用户 {email} 配置各上游平台的日 / 周 / 月用量上限',
         columns: {
           platform: '平台',
@@ -2210,6 +2230,9 @@ export default {
       accountsRateLimited: '限流:',
       accountsTotal: '总量:',
       accountsUnit: '个账号',
+      directAccounts: {
+        mixedScheduling: '可用于 /v1/messages'
+      },
       form: {
         name: '名称',
         description: '描述',
@@ -2257,6 +2280,7 @@ export default {
         openai: 'OpenAI',
         gemini: 'Gemini',
         antigravity: 'Antigravity',
+        grok: 'Grok',
       },
       saving: '保存中...',
       noGroups: '暂无分组',
@@ -2275,6 +2299,15 @@ export default {
       public: '公开',
       rateAndAccounts: '{rate}x 费率 · {count} 个账号',
       accountsCount: '{count} 个账号',
+      rateLabel: '倍率',
+      accountFilters: {
+        title: '账号过滤控制',
+        oauthOnly: '仅允许 OAuth 账号',
+        oauthOnlyEnabled: '已启用 — 排除 API Key 类型账号',
+        privacySetOnly: '仅允许隐私保护已设置的账号',
+        privacySetOnlyEnabled: '已启用 — Privacy 未设置的账号将被排除',
+        disabled: '未启用'
+      },
       enterGroupName: '请输入分组名称',
       optionalDescription: '可选描述',
       platformHint: '选择此分组关联的平台',
@@ -2346,7 +2379,10 @@ export default {
         title: '自定义 /v1/models 模型列表',
         hint: '仅影响 /v1/models 展示结果，不影响白名单模型调用和账号调度。',
         loading: '正在加载模型列表...',
-        empty: '暂无可展示模型'
+        empty: '暂无可展示模型',
+        selectedSummary: '已选 {selected} / {total}',
+        selectAll: '全选',
+        invertSelection: '反选'
       },
       claudeCode: {
         title: 'Claude Code 客户端限制',
@@ -2484,6 +2520,7 @@ export default {
       groupsUnit: '个分组',
       pricingUnit: '条定价',
       noChannelsYet: '暂无渠道',
+      noGroupsSelected: '请先在平台标签页中至少选择一个分组',
       createFirstChannel: '创建第一个渠道来管理模型定价',
       loadError: '加载渠道列表失败',
       createSuccess: '渠道创建成功',
@@ -2493,9 +2530,25 @@ export default {
       updateError: '更新渠道失败',
       deleteError: '删除渠道失败',
       nameRequired: '请输入渠道名称',
+      emptyModelsInPricing: '请至少添加一个模型或模型模式',
       duplicateModels: '模型「{0}」在多个定价条目中重复',
       modelConflict: "模型模式 '{model1}' 和 '{model2}' 冲突：匹配范围重叠。模型名称按大小写不敏感匹配，已有条目已覆盖其所有大小写变体，无需重复添加。",
       mappingConflict: "模型映射源 '{model1}' 和 '{model2}' 冲突：匹配范围重叠。源模式按大小写不敏感匹配，已有条目已覆盖其所有大小写变体。",
+      intervalValidation: {
+        negativeMin: '区间 #{index}：最小 token 数（{value}）不能为负数',
+        maxPositive: '区间 #{index}：最大 token 数（{value}）必须大于 0',
+        maxGreaterThanMin: '区间 #{index}：最大 token 数（{max}）必须大于最小 token 数（{min}）',
+        negativePrice: '区间 #{index}：{field}不能为负数',
+        unboundedLast: '区间 #{index}：无上限区间（最大 token 数为空）必须放在最后',
+        overlap: '区间 #{previousIndex} 和 #{currentIndex} 重叠：前一个上界（{previousMax}）大于当前下界（{currentMin}）',
+        price: {
+          inputPrice: '输入价格',
+          outputPrice: '输出价格',
+          cacheWritePrice: '缓存写入价格',
+          cacheReadPrice: '缓存读取价格',
+          perRequestPrice: '单次价格'
+        }
+      },
       deleteConfirm: '确定要删除渠道「{name}」吗？此操作不可撤销。',
       columns: {
         name: '名称',
@@ -2530,10 +2583,15 @@ export default {
         outputPrice: '输出',
         cacheWritePrice: '缓存写入',
         cacheReadPrice: '缓存读取',
+        cacheWritePriceShort: '缓存写',
+        cacheReadPriceShort: '缓存读',
         imageTokenPrice: '图片输出',
         imageOutputPrice: '图片输出价格',
         pricePlaceholder: '默认',
         intervals: '上下文区间定价（可选）',
+        minTokens: '最小',
+        maxTokens: '最大',
+        inclusive: '（含）',
         addInterval: '添加区间',
         requestTiers: '按次计费层级',
         imageTiers: '图片计费层级（按次）',
@@ -2715,6 +2773,7 @@ export default {
       queueSize: '异步队列大小',
       blockStatus: '拦截 HTTP 状态码',
       blockMessage: '自定义拦截提示',
+      defaultBlockMessage: '内容审计命中风险规则，请调整输入后重试',
       emailOnHit: '命中后发送邮件',
       emailOnHitHint: '开启后每次达到阈值都会向用户发送风控提醒邮件；自动封禁通知始终发送。',
       autoBan: '自动封禁用户',
@@ -2924,13 +2983,16 @@ export default {
         selectKeyTitle: '选择我的 API Key',
         selectKeyHint: '仅显示当前账号下处于「启用」状态且未过期的 Key。',
         noActiveKey: '没有可用的启用状态 Key',
+        searchKeyPlaceholder: '搜索名称或密钥...',
         primaryModel: '主模型',
         primaryModelPlaceholder: 'gpt-4o-mini',
         extraModels: '附加模型',
         extraModelsPlaceholder: '回车添加附加模型',
         groupName: '分组名称',
+        groupColumn: '分组',
         groupNamePlaceholder: '可选，用于在用户视图中聚合显示',
         intervalSeconds: '检测间隔 (秒)',
+        keyColumn: 'API Key',
         intervalSecondsHint: '范围：15 - 3600 秒',
         jitterSeconds: '随机抖动 (± 秒)',
         jitterSecondsHint: '每次检测在间隔基础上正负随机偏移该秒数，0 表示固定间隔；需满足 间隔 - 抖动 ≥ 15 秒',
@@ -3115,6 +3177,7 @@ export default {
 
     // Accounts Management
     accounts: {
+
       account: '账号',
       accountCreated: '账号创建成功',
       accountCreatedSuccess: '账号添加成功',
@@ -3143,6 +3206,7 @@ export default {
       affinityToggle: '启用客户端亲和',
       affinityToggleHint: '新会话优先调度到该客户端之前使用过的账号',
       aiCreditsBalance: 'AI Balance',
+
       allGroups: '全部分组',
       ungroupedGroup: '未分配分组',
       oauthType: 'OAuth',
@@ -3461,6 +3525,7 @@ export default {
         resetTooltipReady: '消耗 1 次重置次数以立即恢复当前窗口',
         resetTooltipNeedQuery: '先点击「次数」加载剩余重置次数',
         resetTooltipNoCredits: '没有可用的重置次数',
+        resetTooltipShadow: 'Spark 影子账号不能重置次数;请在母账号上重置',
         noCreditsAvailable: '没有可用的重置次数',
         resetSuccess: '已重置 {windows} 个窗口',
         confirmTitle: '确认重置周限',
@@ -3516,6 +3581,10 @@ export default {
       revertProxy: '切回原代理',
       revertProxySuccess: '已成功切回原代理',
       revertProxyFailed: '切回原代理失败',
+      createSparkShadow: '创建 Spark 影子账号',
+      createSparkShadowConfirm: '为「{name}」创建链接型 Spark 影子账号?影子共享母账号凭据、仅服务 spark 模型。',
+      createSparkShadowSuccess: 'Spark 影子账号已创建',
+      createSparkShadowFailed: '创建 Spark 影子账号失败',
       resetStatus: '重置状态',
       statusReset: '账号状态已重置',
       failedToResetStatus: '重置账号状态失败',
@@ -3579,7 +3648,7 @@ export default {
         apiKeyResponsesWebsocketsV2Desc:
           '仅对 OpenAI API Key 生效。开启后该账号才允许使用 OpenAI WebSocket Mode 协议。',
         responsesWebsocketsV2PassthroughHint: '当前已开启自动透传：仅影响 HTTP 透传链路，不影响 WS mode。',
-        responsesMode: 'Responses API 支持',
+        responsesMode: '文本接口模式',
         responsesModeDesc:
           '仅对 OpenAI API Key 的文本转发链路生效。自动跟随探测结果，强制模式会覆盖自动探测。',
         responsesModeAuto: '自动',
@@ -3653,7 +3722,7 @@ export default {
       searchModels: '搜索模型...',
       noMatchingModels: '没有匹配的模型',
       fillRelatedModels: '同步最新支持模型',
-      syncUpstreamModels: '同步上游支持的模型',
+      syncUpstreamModels: '同步上游模型',
       syncUpstreamModelsLoading: '同步上游中...',
       syncUpstreamModelsSuccess: '已从上游同步 {count} 个新模型（上游共 {total} 个）',
       syncUpstreamModelsNoChanges: '上游 {count} 个模型均已在白名单中',
@@ -4025,13 +4094,19 @@ export default {
         modelPassthrough: 'Gemini 直接转发模型',
         modelPassthroughDesc: '所有模型请求将直接转发至 Gemini API，不进行模型限制或映射。',
         oauthType: {
+
+
           badges: {
             adminRequired: '需要管理员',
             highConcurrency: '高并发',
+            individuals: '推荐个人用户',
+            noGcp: '无需 GCP',
+            enterprise: '企业用户',
             noAdmin: '无需管理员配置',
             orgManaged: '组织管理',
             recommended: '推荐'
           },
+
           builtInDesc: '使用 Google 内置客户端 ID，无需管理员配置。',
           builtInRequirement: '需要 GCP 项目并填写 Project ID。',
           builtInTitle: '内置授权（Gemini CLI / Code Assist）',
@@ -4039,6 +4114,7 @@ export default {
           customRequirement: '需管理员配置 Client ID 并加入测试用户白名单。',
           customTitle: '自定义授权（AI Studio OAuth）',
           gcpProjectLink: '创建项目'
+
         },
         quotaPolicy: {
           columns: {
@@ -4435,6 +4511,7 @@ export default {
       workflowTitle: '接入流程'
     },
     ops: {
+      autoRefreshRemaining: '{seconds}s 后刷新',
       accountAvailability: {
         accountError: '异常',
         available: '可用',
@@ -5033,6 +5110,7 @@ export default {
         failed: '失败',
         healthRefresh: '刷新健康指标',
         heading: '系统日志',
+        keyId: 'Key ID',
         keyword: '关键词',
         keywordPlaceholder: '消息/request_id',
         level: '级别',
@@ -5368,6 +5446,8 @@ export default {
         auth: '认证',
         hostLabel: '主机',
         hostPlaceholder: '请输入主机地址',
+        createdAt: '创建时间',
+        expiry: '有效期',
         latency: '延迟',
         location: '地理位置',
         name: '名称',
@@ -5387,6 +5467,7 @@ export default {
         usernamePlaceholder: '请输入用户名'
       },
       copyProxyUrl: '复制代理 URL',
+      urlCopied: '代理 URL 已复制',
       createFirstProxy: '添加您的第一个代理以开始使用。',
       createProxy: '添加代理',
       creating: '创建中...',
@@ -5495,6 +5576,8 @@ export default {
       status: '状态',
       testConnection: '测试连接',
       testFailed: '失败',
+      updating: '更新中...',
+      username: '用户名（可选）',
       testProxy: '测试代理',
       testSuccess: '代理测试通过',
       neverExpires: '永不过期',
@@ -5637,8 +5720,10 @@ export default {
       unused: '未使用',
       used: '已使用',
       userPrefix: '用户 #{id}',
+
       validityDays: '有效天数',
       value: '面值'
+
     },
 
     // Settings
@@ -6162,6 +6247,8 @@ export default {
         cacheTTL1h: '1 小时',
         rewriteMessageCacheControl: '改写消息缓存断点',
         rewriteMessageCacheControlHint: '默认关闭，保留客户端在 messages 内容块中的 cache_control。开启后会清除客户端断点并注入代理断点，适合不自行管理缓存策略的客户端。',
+
+
         openaiCodexUserAgent: 'OpenAI Codex UA',
         openaiCodexUserAgentPlaceholder: 'codex-tui/0.125.0 (Ubuntu 22.4.0; x86_64) xterm-256color (codex-tui; 0.125.0)',
         openaiCodexUserAgentHint: '用于规避 OpenAI 上游 Cloudflare 对浏览器 UA 的访问质询。仅在检测到客户端 User-Agent 为浏览器（Mozilla/...）时生效，其他客户端原样透传。留空使用内置默认值。',
@@ -8013,6 +8100,8 @@ export default {
     expiresTomorrow: '明天到期',
     monthly: '每月',
     noSubscriptions: '暂无有效订阅',
+
+
     title: '我的订阅',
     unlimited: '无限制',
     viewAll: '查看全部订阅',

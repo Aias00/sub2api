@@ -222,10 +222,11 @@ describe('LoginView turnstile', () => {
     expect(wrapper.find('a[href="/configured-forgot-password"]').exists()).toBe(true)
   })
 
-  it('does not keep a frontend-local OIDC provider name default', () => {
+  it('does not keep unsupported OIDC login state', () => {
     expect(loginViewSource).not.toContain("ref<string>('OIDC')")
     expect(loginViewSource).not.toContain("|| 'OIDC'")
-    expect(loginViewSource).toContain("const oidcOAuthProviderName = ref<string>('')")
+    expect(loginViewSource).not.toContain('oidcOAuthProviderName')
+    expect(loginViewSource).not.toContain('OidcOAuthSection')
   })
 
   it('uses auth shell redirect defaults for password login', () => {

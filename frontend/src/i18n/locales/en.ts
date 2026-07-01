@@ -369,7 +369,24 @@ export default {
     updatedAt: 'Updated: {date}',
     empty: 'No content',
     loginAgreement: 'Login Agreement',
-    adminCompliance: 'Deployment and Operation Compliance Commitment'
+    adminCompliance: 'Deployment and Operation Compliance Commitment',
+    loginAgreementPrompt: {
+      checkboxPrefix: 'I have read and agree to ',
+      documentSeparator: ', ',
+      noticeTitle: 'Accept the latest terms before continuing.',
+      noticeDescription: 'Account/password login and quick sign-in stay disabled until you accept.',
+      viewTerms: 'View terms',
+      dialogTitle: 'Terms Update Notice',
+      dialogDescription: 'Our service terms were updated on {date}. Please read and accept the following terms before continuing.',
+      recently: 'recently',
+      relatedDocuments: 'Related documents',
+      reject: 'Reject',
+      accept: 'Accept and continue',
+      loginRejectedWarning: 'Account/password login and quick sign-in are disabled until you accept the latest terms.',
+      loginRequiredWarning: 'Please read and accept the latest terms before logging in.',
+      registerRejectedWarning: 'Registration and quick sign-in are disabled until you accept the latest terms.',
+      registerRequiredWarning: 'Please read and accept the latest terms before registering.'
+    }
   },
 
   // Navigation
@@ -595,6 +612,7 @@ export default {
     },
     linuxdoCallbackPageTitle: 'LinuxDo Sign-In Callback',
     dingtalkCallbackPageTitle: 'DingTalk Sign-In Callback',
+    dingtalkProviderName: 'DingTalk',
     oidcCallbackPageTitle: 'OIDC Sign-In Callback',
     oauthCallbackPageTitle: 'OAuth Callback',
     wechatProviderName: 'WeChat',
@@ -615,6 +633,7 @@ export default {
       state: 'State',
       fullUrl: 'Full URL'
     },
+    loginAgreementMustAcceptLogin: 'Please accept the latest agreement before signing in.',
     // Forgot password
     forgotPassword: 'Forgot password?',
     forgotPasswordTitle: 'Reset Your Password',
@@ -3395,7 +3414,7 @@ export default {
         groups: 'Groups',
         subscriptions: 'Subscriptions',
         balance: 'Balance',
-        balancePlatformQuota: 'Balance (Platform Quota)',
+        balancePlatformQuota: 'Balance / Platform Quota',
         usage: 'Usage',
         usageAnthropic: 'Usage (Claude)',
         usageOpenAI: 'Usage (OpenAI)',
@@ -3591,7 +3610,7 @@ export default {
       },
       platformQuota: {
         menuItem: 'Platform Quotas',
-        title: 'Platform Quotas',
+        title: 'User platform quotas',
         subtitle: 'Configure daily / weekly / monthly USD usage limits for each upstream platform for user {email}',
         columns: {
           actions: 'Actions',
@@ -3718,6 +3737,8 @@ export default {
       allGroups: 'All Groups',
       allPlatforms: 'All Platforms',
       allStatus: 'All Status',
+
+
       applyMultiplier: 'Apply',
       rateAdjusted: 'Rates adjusted successfully',
       rateSaved: 'Rate multipliers saved',
@@ -3766,7 +3787,10 @@ export default {
         title: 'Custom /v1/models Model List',
         hint: 'Only changes the /v1/models response. Whitelist model calls and account routing are unchanged.',
         loading: 'Loading model list...',
-        empty: 'No displayable models'
+        empty: 'No displayable models',
+        selectedSummary: 'Selected {selected} / {total}',
+        selectAll: 'Select all',
+        invertSelection: 'Invert'
       },
       claudeCode: {
         disabled: 'Allow All Clients',
@@ -3819,6 +3843,8 @@ export default {
         unitPerRequest: '/ request'
       }
     },
+
+
 
     riskControl: {
       title: 'Risk Control',
@@ -3939,6 +3965,7 @@ export default {
       queueSize: 'Async Queue Size',
       blockStatus: 'Block HTTP Status',
       blockMessage: 'Custom Block Message',
+      defaultBlockMessage: 'Content audit matched a risk rule. Please adjust your input and try again.',
       emailOnHit: 'Email on Hit',
       emailOnHitHint: 'When enabled, send a risk-control email on every hit; auto-ban notices are always sent.',
       autoBan: 'Auto Ban User',
@@ -4206,6 +4233,7 @@ export default {
         tip: 'Tip: Only groups with billing type "Subscription" and status "Active" appear in the group dropdown. If no options are available, create one in Group Management first.'
       }
     },
+
     promo: {
       allStatus: 'All Status',
       autoGenerate: 'auto-generate if empty',
@@ -4215,6 +4243,7 @@ export default {
       codeDeleted: 'Promo code deleted successfully',
       codePlaceholder: 'Enter promo code or leave empty',
       codeUpdated: 'Promo code updated successfully',
+
       columns: {
         actions: 'Actions',
         bonusAmount: 'Bonus Amount',
@@ -4226,6 +4255,7 @@ export default {
         usage: 'Usage',
         usedCount: 'Used'
       },
+
       copied: 'Copied!',
       copyRegisterLink: 'Copy register link',
       createCode: 'Create Promo Code',
@@ -4258,6 +4288,7 @@ export default {
       userPrefix: 'User #{id}',
       viewUsages: 'View Usages',
       zeroUnlimited: '0 = unlimited'
+
     },
     proxies: {
       ad: {
@@ -4566,8 +4597,10 @@ export default {
       unused: 'Unused',
       used: 'Used',
       userPrefix: 'User #{id}',
+
       validityDays: 'Validity Days',
       value: 'Value'
+
     },
 
     // Settings
@@ -4945,6 +4978,8 @@ export default {
         cacheTTL1h: '1 hour',
         rewriteMessageCacheControl: 'Rewrite Message Cache Breakpoints',
         rewriteMessageCacheControlHint: 'Default off: preserve client cache_control on message content blocks. When enabled, client breakpoints are stripped and proxy breakpoints are injected for clients that do not manage caching themselves.',
+
+
         openaiCodexUserAgent: 'OpenAI Codex UA',
         openaiCodexUserAgentPlaceholder: 'codex-tui/0.125.0 (Ubuntu 22.4.0; x86_64) xterm-256color (codex-tui; 0.125.0)',
         openaiCodexUserAgentHint: 'Used to bypass Cloudflare browser-UA challenges on the OpenAI upstream. Only applies when the client User-Agent is detected as a browser (Mozilla/...). Leave empty to use the built-in default.',
@@ -6874,6 +6909,8 @@ export default {
     expiresTomorrow: 'Expires tomorrow',
     monthly: 'Monthly',
     noSubscriptions: 'No active subscriptions',
+
+
     title: 'My Subscriptions',
     unlimited: 'Unlimited',
     viewAll: 'View all subscriptions',

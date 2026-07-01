@@ -147,6 +147,19 @@
             <Icon name="cloud" size="sm" />
             Antigravity
           </button>
+          <button
+            type="button"
+            @click="form.platform = 'grok'"
+            :class="[
+              'flex flex-1 items-center justify-center gap-2 rounded-md px-4 py-2.5 text-sm font-medium transition-all',
+              form.platform === 'grok'
+                ? 'bg-white text-zinc-900 shadow-sm dark:bg-dark-600 dark:text-zinc-100'
+                : 'text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200'
+            ]"
+          >
+            <PlatformIcon platform="grok" size="sm" />
+            Grok
+          </button>
         </div>
       </div>
 
@@ -337,6 +350,41 @@
           </button>
 
         </div>
+      </div>
+
+      <!-- Account Type Selection (Grok - OAuth only) -->
+      <div v-if="form.platform === 'grok'">
+        <label class="input-label">{{ t('admin.accounts.accountType') }}</label>
+        <div class="mt-2 grid grid-cols-1 gap-3 sm:grid-cols-2" data-tour="account-form-type">
+          <button
+            type="button"
+            @click="accountCategory = 'oauth-based'"
+            :class="[
+              'flex items-center gap-3 rounded-lg border-2 p-3 text-left transition-all',
+              accountCategory === 'oauth-based'
+                ? 'border-zinc-800 bg-zinc-50 dark:bg-zinc-900/30'
+                : 'border-gray-200 hover:border-zinc-400 dark:border-dark-600 dark:hover:border-zinc-600'
+            ]"
+          >
+            <div
+              :class="[
+                'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                accountCategory === 'oauth-based'
+                  ? 'bg-zinc-900 text-white'
+                  : 'bg-gray-100 text-gray-500 dark:bg-dark-600 dark:text-gray-400'
+              ]"
+            >
+              <PlatformIcon platform="grok" size="sm" />
+            </div>
+            <div>
+              <span class="block text-sm font-medium text-gray-900 dark:text-white">OAuth</span>
+              <span class="text-xs text-gray-500 dark:text-gray-400">{{ t('admin.accounts.types.grokOauth') }}</span>
+            </div>
+          </button>
+        </div>
+        <p class="mt-2 text-xs text-gray-500 dark:text-gray-400">
+          {{ t('admin.accounts.oauth.grok.oauthOnlyHint') }}
+        </p>
       </div>
 
       <!-- Account Type Selection (Gemini) -->
@@ -561,18 +609,18 @@
                   Google One
                 </span>
                 <span class="text-xs text-gray-500 dark:text-gray-400">
-                  个人账号，享受 Google One 订阅配额
+                  {{ t('admin.accounts.gemini.oauthType.googleOneDesc') }}
                 </span>
                 <div class="mt-2 flex flex-wrap gap-1">
                   <span
                     class="rounded bg-purple-100 px-2 py-0.5 text-[10px] font-semibold text-purple-700 dark:bg-purple-900/40 dark:text-purple-300"
                   >
-                    推荐个人用户
+                    {{ t('admin.accounts.gemini.oauthType.badges.individuals') }}
                   </span>
                   <span
                     class="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
                   >
-                    无需 GCP
+                    {{ t('admin.accounts.gemini.oauthType.badges.noGcp') }}
                   </span>
                 </div>
               </div>
@@ -604,10 +652,10 @@
                   GCP Code Assist
                 </span>
                 <span class="text-xs text-gray-500 dark:text-gray-400">
-                  企业级，需要 GCP 项目
+                  {{ t('admin.accounts.gemini.oauthType.codeAssistDesc') }}
                 </span>
                 <div class="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  需要激活 GCP 项目并绑定信用卡
+                  {{ t('admin.accounts.gemini.oauthType.codeAssistRequirement') }}
                   <a
                     :href="geminiHelpLinks.gcpProject"
                     class="ml-1 text-blue-600 hover:underline dark:text-blue-400"
@@ -621,12 +669,12 @@
                   <span
                     class="rounded bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
                   >
-                    企业用户
+                    {{ t('admin.accounts.gemini.oauthType.badges.enterprise') }}
                   </span>
                   <span
                     class="rounded bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300"
                   >
-                    高并发
+                    {{ t('admin.accounts.gemini.oauthType.badges.highConcurrency') }}
                   </span>
                 </div>
               </div>
@@ -649,7 +697,13 @@
               >
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" />
               </svg>
-              <span>{{ showAdvancedOAuth ? '隐藏' : '显示' }}高级选项（自建 OAuth Client）</span>
+              <span>
+                {{
+                  showAdvancedOAuth
+                    ? t('admin.accounts.gemini.oauthType.hideAdvanced')
+                    : t('admin.accounts.gemini.oauthType.showAdvanced')
+                }}
+              </span>
             </button>
           </div>
 
@@ -3161,7 +3215,7 @@
                 rel="noreferrer"
                 class="text-sm text-blue-600 hover:underline dark:text-blue-400"
               >
-                修改归属地
+                {{ t('admin.accounts.gemini.setupGuide.links.countryChange') }}
               </a>
               <span class="text-gray-400">·</span>
               <a
@@ -3385,6 +3439,7 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
+import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import ProxySelector from '@/components/common/ProxySelector.vue'
 import ProxyAdBanner from '@/components/common/ProxyAdBanner.vue'
 import GroupSelector from '@/components/common/GroupSelector.vue'

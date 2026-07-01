@@ -267,34 +267,6 @@
           :shell-labels="authShellLabels"
         />
 
-        <LinuxDoOAuthSection
-          v-if="linuxdoOAuthEnabled"
-          :disabled="oauthActionDisabled"
-          :aff-code="formData.aff_code"
-          :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
-          :turnstile-token="turnstileToken"
-          :show-divider="false"
-          :shell-labels="authShellLabels"
-        />
-        <WechatOAuthSection
-          v-if="wechatOAuthEnabled"
-          :disabled="oauthActionDisabled"
-          :aff-code="formData.aff_code"
-          :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
-          :turnstile-token="turnstileToken"
-          :show-divider="false"
-          :shell-labels="authShellLabels"
-        />
-        <OidcOAuthSection
-          v-if="oidcOAuthEnabled"
-          :disabled="oauthActionDisabled"
-          :provider-name="oidcOAuthProviderName"
-          :aff-code="formData.aff_code"
-          :agreement-revision="agreementAccepted ? loginAgreementRevision : ''"
-          :turnstile-token="turnstileToken"
-          :show-divider="false"
-          :shell-labels="authShellLabels"
-        />
       </div>
     </div>
 
@@ -318,9 +290,6 @@ import { computed, ref, reactive, onMounted, onUnmounted, watch } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { AuthLayout } from '@/components/layout'
-import LinuxDoOAuthSection from '@/components/auth/LinuxDoOAuthSection.vue'
-import OidcOAuthSection from '@/components/auth/OidcOAuthSection.vue'
-import WechatOAuthSection from '@/components/auth/WechatOAuthSection.vue'
 import EmailOAuthButtons from '@/components/auth/EmailOAuthButtons.vue'
 import LoginAgreementPrompt from '@/components/auth/LoginAgreementPrompt.vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -328,7 +297,6 @@ import TurnstileWidget from '@/components/TurnstileWidget.vue'
 import { useAuthStore, useAppStore } from '@/stores'
 import {
   getPublicSettings,
-  isWeChatWebOAuthEnabled,
   validatePromoCode,
   validateInvitationCode
 } from '@/api/auth'
@@ -381,10 +349,6 @@ const turnstileEnabled = ref<boolean>(false)
 const turnstileSiteKey = ref<string>('')
 const passwordMinLength = ref<number>(8)
 const siteName = ref<string>('')
-const linuxdoOAuthEnabled = ref<boolean>(false)
-const wechatOAuthEnabled = ref<boolean>(false)
-const oidcOAuthEnabled = ref<boolean>(false)
-const oidcOAuthProviderName = ref<string>('')
 const githubOAuthEnabled = ref<boolean>(false)
 const googleOAuthEnabled = ref<boolean>(false)
 const registrationEmailSuffixWhitelist = ref<string[]>([])
@@ -446,9 +410,6 @@ const validationToastMessage = computed(() =>
 
 const showOAuthLogin = computed(
   () =>
-    linuxdoOAuthEnabled.value ||
-    wechatOAuthEnabled.value ||
-    oidcOAuthEnabled.value ||
     githubOAuthEnabled.value ||
     googleOAuthEnabled.value
 )
@@ -506,10 +467,6 @@ onMounted(async () => {
     turnstileSiteKey.value = settings.turnstile_site_key || ''
     passwordMinLength.value = resolvePasswordMinLength(settings)
     siteName.value = settings.site_name || ''
-    linuxdoOAuthEnabled.value = settings.linuxdo_oauth_enabled
-    wechatOAuthEnabled.value = isWeChatWebOAuthEnabled(settings)
-    oidcOAuthEnabled.value = settings.oidc_oauth_enabled
-    oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || ''
     githubOAuthEnabled.value = settings.github_oauth_enabled
     googleOAuthEnabled.value = settings.google_oauth_enabled
     applyAuthShellConfig(settings.auth_shell_config)

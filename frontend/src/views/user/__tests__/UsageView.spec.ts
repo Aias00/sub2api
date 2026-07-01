@@ -1,11 +1,15 @@
+import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 
 import UsageView from '../UsageView.vue'
 
+const usageViewSource = readFileSync('src/views/user/UsageView.vue', 'utf8')
+
 const {
   query,
   getStats,
+  getStatsByDateRange,
   getDashboardModels,
   getDashboardSnapshotV2,
   list,
@@ -17,6 +21,7 @@ const {
 } = vi.hoisted(() => ({
   query: vi.fn(),
   getStats: vi.fn(),
+  getStatsByDateRange: vi.fn(),
   getDashboardModels: vi.fn(),
   getDashboardSnapshotV2: vi.fn(),
   list: vi.fn(),
@@ -27,7 +32,13 @@ const {
   showInfo: vi.fn(),
 }))
 
-const { showError, showWarning, showSuccess, showInfo } = appStoreState
+const appStoreState = {
+  showError,
+  showWarning,
+  showSuccess,
+  showInfo,
+  cachedPublicSettings: null as null | { usage_shell_config?: string; pricing_currency_symbol?: string },
+}
 
 const messages: Record<string, string> = {
   'admin.dashboard.timeRange': 'Time range',
@@ -121,6 +132,7 @@ vi.mock('@/api', () => ({
   usageAPI: {
     query,
     getStats,
+    getStatsByDateRange,
     getDashboardModels,
     getDashboardSnapshotV2,
   },
@@ -209,6 +221,7 @@ describe('user UsageView', () => {
   beforeEach(() => {
     query.mockReset()
     getStats.mockReset()
+    getStatsByDateRange.mockReset()
     getDashboardModels.mockReset()
     getDashboardSnapshotV2.mockReset()
     list.mockReset()
@@ -218,8 +231,27 @@ describe('user UsageView', () => {
     showSuccess.mockReset()
     showInfo.mockReset()
     appStoreState.cachedPublicSettings = null
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      matches: true,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }))
 
     query.mockResolvedValue({ items: [usageLog], total: 1, pages: 1 })
+    getStatsByDateRange.mockResolvedValue({
+      total_requests: 1,
+      total_tokens: 30,
+      total_input_tokens: 10,
+      total_output_tokens: 20,
+      total_cost: 0.01,
+      total_actual_cost: 0.008,
+      average_duration_ms: 250,
+    })
     getStats.mockResolvedValue({
       total_requests: 1,
       total_input_tokens: 10,
@@ -250,20 +282,13 @@ describe('user UsageView', () => {
     getAvailable.mockResolvedValue([{ id: 1, name: 'default' }])
   })
 
-  it('loads logs, stats, model stats, and snapshot on first render', async () => {
+  it('loads logs, date-range stats, and API key options on first render', async () => {
     mountUsageView()
     await flushPromises()
 
     expect(query).toHaveBeenCalled()
-    expect(getStats).toHaveBeenCalled()
-    expect(getDashboardModels).toHaveBeenCalled()
-    expect(getDashboardSnapshotV2).toHaveBeenCalledWith(expect.objectContaining({
-      include_trend: true,
-      include_model_stats: false,
-      include_group_stats: true,
-    }))
+    expect(getStatsByDateRange).toHaveBeenCalled()
     expect(list).toHaveBeenCalledWith(1, 100)
-    expect(getAvailable).toHaveBeenCalled()
   })
 
   it('exports csv with current filters and without admin-only fields', async () => {
@@ -296,8 +321,8 @@ describe('user UsageView', () => {
     }))
     expect(clickSpy).toHaveBeenCalled()
     expect(showSuccess).toHaveBeenCalled()
-    expect(csvContent).toContain('IP Address')
-    expect(csvContent).toContain('203.0.113.10')
+    expect(csvContent).not.toContain('IP Address')
+    expect(csvContent).not.toContain('203.0.113.10')
     expect(csvContent).toContain('Billed Cost')
     expect(csvContent).toContain('Original Cost')
     expect(csvContent).not.toContain('Upstream Endpoint')
