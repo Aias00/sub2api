@@ -62,20 +62,20 @@ echo "RUN_HOT_COLLECTOR_SCHEDULE_CHECK=${RUN_SCHEDULE_CHECK}"
 echo "database_url_configured=$(configured "$DATABASE_DSN")"
 echo "database_url_source=$([[ -n "${HOT_DATABASE_URL:-${DATABASE_URL:-}}" ]] && echo env || { [[ -n "$DATABASE_DSN" ]] && echo docker-container || echo missing; })"
 
-if [[ ! -f tools/hot-rss-collector-worker.mjs ]]; then
-  echo "ERROR: tools/hot-rss-collector-worker.mjs is missing" >&2
+if [[ ! -f tools/x-atuo/src/x_atuo/hot_rss_worker.py ]]; then
+  echo "ERROR: tools/x-atuo/src/x_atuo/hot_rss_worker.py is missing" >&2
   exit 2
 fi
 if [[ ! -f tools/hot-collector-status-metrics.mjs ]]; then
   echo "ERROR: tools/hot-collector-status-metrics.mjs is missing" >&2
   exit 2
 fi
-if [[ ! -f tools/hot-rss-collector-worker.Dockerfile ]]; then
-  echo "ERROR: tools/hot-rss-collector-worker.Dockerfile is missing" >&2
+if [[ ! -f tools/content-worker.Dockerfile ]]; then
+  echo "ERROR: tools/content-worker.Dockerfile is missing" >&2
   exit 2
 fi
-if [[ ! -f deploy/docker-compose.hot-worker.yml ]]; then
-  echo "ERROR: deploy/docker-compose.hot-worker.yml is missing" >&2
+if [[ ! -f deploy/docker-compose.content-worker.yml ]]; then
+  echo "ERROR: deploy/docker-compose.content-worker.yml is missing" >&2
   exit 2
 fi
 if [[ ! -f deploy/hot-collector-alerts.example.yml ]]; then
@@ -89,7 +89,7 @@ if ! command -v psql >/dev/null 2>&1; then
 fi
 
 section "Hot worker static checks"
-node --check tools/hot-rss-collector-worker.mjs
+python3 -m compileall -q tools/x-atuo/src/x_atuo/hot_rss_worker.py tools/x-atuo/src/x_atuo/content_worker.py
 node --check tools/hot-collector-status-metrics.mjs
 bash -n tools/hot-content-integrity.sh
 
@@ -123,11 +123,11 @@ if [[ "$RUN_ONCE_CHECK" == "1" ]]; then
   DATABASE_URL="$DATABASE_DSN" \
   HOT_WORKER_STATUS_PATH="$HOT_WORKER_STATUS_PATH" \
   HOT_RSS_WORKER_STATUS_PATH="$HOT_WORKER_STATUS_PATH" \
-  node tools/hot-rss-collector-worker.mjs --once
+  PYTHONPATH=tools/x-atuo/src python3 -m x_atuo.hot_rss_worker --once
   DATABASE_URL="$DATABASE_DSN" \
   HOT_WORKER_STATUS_PATH="$HOT_WORKER_STATUS_PATH" \
   HOT_RSS_WORKER_STATUS_PATH="$HOT_WORKER_STATUS_PATH" \
-  node tools/hot-rss-collector-worker.mjs --healthcheck
+  PYTHONPATH=tools/x-atuo/src python3 -m x_atuo.hot_rss_worker --healthcheck
   node - "$HOT_WORKER_STATUS_PATH" <<'NODE'
 const { readFileSync } = await import('node:fs')
 const status = JSON.parse(readFileSync(process.argv[2], 'utf8'))
@@ -183,13 +183,13 @@ if [[ "$RUN_SCHEDULE_CHECK" == "1" ]]; then
   HOT_RSS_COLLECT_MAX_BACKOFF_MS=1000 \
   HOT_RSS_COLLECT_ON_START=true \
   HOT_RSS_COLLECT_MAX_RUNS=2 \
-  node tools/hot-rss-collector-worker.mjs
+  PYTHONPATH=tools/x-atuo/src python3 -m x_atuo.hot_rss_worker
   DATABASE_URL="$DATABASE_DSN" \
   HOT_WORKER_STATUS_PATH="$schedule_status_path" \
   HOT_RSS_WORKER_STATUS_PATH="$schedule_status_path" \
   HOT_RSS_COLLECT_INTERVAL_MS=1000 \
   HOT_RSS_COLLECT_MAX_BACKOFF_MS=1000 \
-  node tools/hot-rss-collector-worker.mjs --healthcheck
+  PYTHONPATH=tools/x-atuo/src python3 -m x_atuo.hot_rss_worker --healthcheck
   echo "hot_rss_worker_schedule_check=ok"
 else
   if [[ "$REQUIRE_READY" == "1" ]]; then
@@ -203,13 +203,13 @@ fi
 section "Docker compose overlay"
 if command -v docker >/dev/null 2>&1; then
   if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" \
-    docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.hot-worker.yml --profile hot-worker config >/tmp/sub2api-hot-worker-compose.yml; then
-    echo "docker_compose_hot_worker_config=ok"
+    docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker config >/tmp/sub2api-content-worker-compose.yml; then
+    echo "docker_compose_content_worker_config=ok"
   else
-    warn_or_fail "docker compose hot-worker overlay did not render"
+    warn_or_fail "docker compose content-worker overlay did not render"
   fi
 else
-  warn_or_fail "docker command is unavailable; hot-worker compose overlay was not rendered"
+  warn_or_fail "docker command is unavailable; content-worker compose overlay was not rendered"
 fi
 
 section "Production readiness result"

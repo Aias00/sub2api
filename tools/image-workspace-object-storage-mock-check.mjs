@@ -13,6 +13,7 @@ const secretAccessKey = 'mock-r2-secret-key'
 const bucket = 'sub2api-image-workspace'
 const keyPrefix = 'image-workspace-e2e'
 const publicBaseURL = 'https://assets.example.test/image-workspace'
+const workerToken = 'mock-worker-token'
 const outputDir = mkdtempSync(join(tmpdir(), 'sub2api-image-object-storage-'))
 const keepOutput = process.env.KEEP_IMAGE_WORKSPACE_MOCK_OUTPUT === '1'
 const workerPath = resolve('tools/image-workspace-worker/src/worker.mjs')
@@ -99,6 +100,21 @@ function startObjectStorageServer() {
   return listen(server)
 }
 
+function startRuntimeConfigServer(runtimeConfig) {
+  const server = createServer((req, res) => {
+    if (req.headers['x-image-workspace-worker-token'] !== workerToken) {
+      json(res, 401, { code: 'IMAGE_WORKSPACE_WORKER_UNAUTHORIZED', message: 'invalid token' })
+      return
+    }
+    if (req.method === 'GET' && req.url === '/api/v1/image-workspace/worker/runtime-config') {
+      json(res, 200, { data: runtimeConfig })
+      return
+    }
+    json(res, 404, { code: 'NOT_FOUND', message: `${req.method} ${req.url}` })
+  })
+  return listen(server)
+}
+
 function listen(server) {
   return new Promise((resolveListen, reject) => {
     server.on('error', reject)
@@ -106,25 +122,20 @@ function listen(server) {
   })
 }
 
-function runWorker(upstreamURL, storageEndpoint) {
+function runWorker(baseURL, storageEndpoint) {
   return new Promise((resolveRun, reject) => {
     const child = spawn(process.execPath, [workerPath, '--upstream-check'], {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        IMAGE_WORKSPACE_UPSTREAM_URL: upstreamURL,
+        IMAGE_WORKSPACE_API_BASE_URL: baseURL,
+        IMAGE_WORKSPACE_WORKER_TOKEN: workerToken,
         IMAGE_WORKSPACE_UPSTREAM_API_KEY: apiKey,
         IMAGE_WORKSPACE_OUTPUT_DIR: outputDir,
         IMAGE_WORKSPACE_STORAGE_KEY_ROOT: outputDir,
-        IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED: 'true',
-        IMAGE_WORKSPACE_OBJECT_STORAGE_PROVIDER: 'r2',
         IMAGE_WORKSPACE_OBJECT_STORAGE_ENDPOINT: storageEndpoint,
         IMAGE_WORKSPACE_OBJECT_STORAGE_ACCESS_KEY_ID: accessKeyID,
         IMAGE_WORKSPACE_OBJECT_STORAGE_SECRET_ACCESS_KEY: secretAccessKey,
-        IMAGE_WORKSPACE_OBJECT_STORAGE_BUCKET: bucket,
-        IMAGE_WORKSPACE_OBJECT_STORAGE_REGION: 'auto',
-        IMAGE_WORKSPACE_OBJECT_STORAGE_PREFIX: keyPrefix,
-        IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL: publicBaseURL,
         IMAGE_WORKSPACE_OBJECT_STORAGE_CACHE_CONTROL: 'public, max-age=60',
         IMAGE_WORKSPACE_UPSTREAM_CHECK_PROMPT: 'Mock object storage prompt',
         IMAGE_WORKSPACE_UPSTREAM_CHECK_NEGATIVE_PROMPT: 'watermark',
@@ -165,15 +176,31 @@ function assert(condition, message) {
 
 let upstreamServer
 let storageServer
+let runtimeServer
 try {
   upstreamServer = await startUpstreamServer()
   storageServer = await startObjectStorageServer()
   const upstreamAddr = upstreamServer.address()
   const storageAddr = storageServer.address()
-  const run = await runWorker(
-    `http://127.0.0.1:${upstreamAddr.port}/v1/images/generations`,
-    `http://127.0.0.1:${storageAddr.port}`,
-  )
+  runtimeServer = await startRuntimeConfigServer({
+    upstream_url: `http://127.0.0.1:${upstreamAddr.port}/v1/images/generations`,
+    generation_timeout_ms: 120000,
+    completion_cost: '0',
+    completion_cost_map_json: '{}',
+    prompt_safety_enabled: true,
+    assume_worker_ready: false,
+    object_storage: {
+      enabled: true,
+      provider: 'r2',
+      bucket,
+      region: 'auto',
+      key_prefix: keyPrefix,
+      public_base_url: publicBaseURL,
+    },
+    media_cdn_base_url: '',
+  })
+  const runtimeAddr = runtimeServer.address()
+  const run = await runWorker(`http://127.0.0.1:${runtimeAddr.port}`, `http://127.0.0.1:${storageAddr.port}`)
   const result = parseWorkerJSON(run.stdout)
 
   assert(upstreamRequests.length === 1, `expected one upstream request, got ${upstreamRequests.length}`)
@@ -205,6 +232,9 @@ try {
   console.log('')
   console.log('Image Workspace object storage mock check complete.')
 } finally {
+  if (runtimeServer) {
+    await new Promise((resolveClose) => runtimeServer.close(resolveClose))
+  }
   if (upstreamServer) {
     await new Promise((resolveClose) => upstreamServer.close(resolveClose))
   }

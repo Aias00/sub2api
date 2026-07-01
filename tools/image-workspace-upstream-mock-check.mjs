@@ -7,6 +7,7 @@ import { spawn } from 'node:child_process'
 
 const png1x1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII='
 const apiKey = 'mock-image-workspace-key'
+const workerToken = 'mock-worker-token'
 const outputDir = mkdtempSync(join(tmpdir(), 'sub2api-image-workspace-upstream-'))
 const keepOutput = process.env.KEEP_IMAGE_WORKSPACE_MOCK_OUTPUT === '1'
 const workerPath = resolve('tools/image-workspace-worker/src/worker.mjs')
@@ -64,17 +65,39 @@ function startMockServer() {
   })
 }
 
+function startRuntimeConfigServer(runtimeConfig) {
+  const server = createServer((req, res) => {
+    if (req.headers['x-image-workspace-worker-token'] !== workerToken) {
+      res.writeHead(401, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ code: 'IMAGE_WORKSPACE_WORKER_UNAUTHORIZED', message: 'invalid token' }))
+      return
+    }
+    if (req.method === 'GET' && req.url === '/api/v1/image-workspace/worker/runtime-config') {
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end(JSON.stringify({ data: runtimeConfig }))
+      return
+    }
+    res.writeHead(404, { 'content-type': 'application/json' })
+    res.end(JSON.stringify({ code: 'NOT_FOUND', message: `${req.method} ${req.url}` }))
+  })
+
+  return new Promise((resolveServer, reject) => {
+    server.on('error', reject)
+    server.listen(0, '127.0.0.1', () => resolveServer(server))
+  })
+}
+
 function runWorker(upstreamURL) {
   return new Promise((resolveRun, reject) => {
     const child = spawn(process.execPath, [workerPath, '--upstream-check'], {
       cwd: process.cwd(),
       env: {
         ...process.env,
-        IMAGE_WORKSPACE_UPSTREAM_URL: upstreamURL,
+        IMAGE_WORKSPACE_API_BASE_URL: process.env.IMAGE_WORKSPACE_API_BASE_URL,
+        IMAGE_WORKSPACE_WORKER_TOKEN: workerToken,
         IMAGE_WORKSPACE_UPSTREAM_API_KEY: apiKey,
         IMAGE_WORKSPACE_OUTPUT_DIR: outputDir,
         IMAGE_WORKSPACE_STORAGE_KEY_ROOT: outputDir,
-        IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED: 'false',
         IMAGE_WORKSPACE_UPSTREAM_CHECK_PROMPT: 'Mock upstream smoke prompt',
         IMAGE_WORKSPACE_UPSTREAM_CHECK_NEGATIVE_PROMPT: 'low quality',
         IMAGE_WORKSPACE_UPSTREAM_CHECK_STYLE: 'flat vector',
@@ -115,10 +138,30 @@ function assert(condition, message) {
 }
 
 let server
+let runtimeServer
 try {
   server = await startMockServer()
   const address = server.address()
   const upstreamURL = `http://127.0.0.1:${address.port}/v1/images/generations`
+  runtimeServer = await startRuntimeConfigServer({
+    upstream_url: upstreamURL,
+    generation_timeout_ms: 120000,
+    completion_cost: '0',
+    completion_cost_map_json: '{}',
+    prompt_safety_enabled: true,
+    assume_worker_ready: false,
+    object_storage: {
+      enabled: false,
+      provider: 'r2',
+      bucket: '',
+      region: 'auto',
+      key_prefix: 'image-workspace',
+      public_base_url: '',
+    },
+    media_cdn_base_url: '',
+  })
+  const runtimeAddress = runtimeServer.address()
+  process.env.IMAGE_WORKSPACE_API_BASE_URL = `http://127.0.0.1:${runtimeAddress.port}`
   const run = await runWorker(upstreamURL)
   const result = parseWorkerJSON(run.stdout)
   assert(received.length === 1, `expected exactly one upstream request, got ${received.length}`)
@@ -150,6 +193,9 @@ try {
   console.log('')
   console.log('Image Workspace upstream mock check complete.')
 } finally {
+  if (runtimeServer) {
+    await new Promise((resolveClose) => runtimeServer.close(resolveClose))
+  }
   if (server) {
     await new Promise((resolveClose) => server.close(resolveClose))
   }

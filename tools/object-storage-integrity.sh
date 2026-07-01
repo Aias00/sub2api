@@ -90,15 +90,32 @@ csv_to_sql_array() {
   printf 'ARRAY[%s]::text[]' "$out"
 }
 
-section "Image Workspace object-storage env"
-echo "IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED=${IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED:-false}"
-echo "IMAGE_WORKSPACE_OBJECT_STORAGE_PROVIDER=${IMAGE_WORKSPACE_OBJECT_STORAGE_PROVIDER:-r2}"
+section "Image Workspace object-storage runtime config"
+runtime_config_url="${API_BASE%/}/image-workspace/worker/runtime-config"
+echo "runtime_config_url=${runtime_config_url}"
+if command -v curl >/dev/null 2>&1 && [[ -n "${IMAGE_WORKSPACE_WORKER_TOKEN:-}" ]]; then
+  if runtime_payload="$(curl -fsS -H "X-Image-Workspace-Worker-Token: ${IMAGE_WORKSPACE_WORKER_TOKEN}" "$runtime_config_url")"; then
+    node -e '
+const payload = JSON.parse(process.argv[1])
+const data = payload.data && typeof payload.data === "object" ? payload.data : payload
+const storage = data.object_storage && typeof data.object_storage === "object" ? data.object_storage : {}
+console.log(`runtime_object_storage_enabled=${storage.enabled === true ? "true" : "false"}`)
+console.log(`runtime_object_storage_provider=${storage.provider || ""}`)
+console.log(`runtime_object_storage_bucket_configured=${storage.bucket ? "yes" : "no"}`)
+console.log(`runtime_object_storage_public_base_url_configured=${storage.public_base_url ? "yes" : "no"}`)
+console.log(`runtime_object_storage_key_prefix=${storage.key_prefix || ""}`)
+' "$runtime_payload"
+  else
+    echo "WARN: Image Workspace runtime config endpoint is not reachable." >&2
+  fi
+else
+  echo "WARN: curl or IMAGE_WORKSPACE_WORKER_TOKEN is missing; backend-managed object-storage config cannot be checked." >&2
+fi
+section "Image Workspace object-storage secrets env"
 echo "endpoint_configured=$(configured IMAGE_WORKSPACE_OBJECT_STORAGE_ENDPOINT)"
 echo "r2_account_id_configured=$(configured IMAGE_WORKSPACE_R2_ACCOUNT_ID)"
 echo "access_key_configured=$([[ -n "${IMAGE_WORKSPACE_OBJECT_STORAGE_ACCESS_KEY_ID:-${IMAGE_WORKSPACE_R2_ACCESS_KEY_ID:-${IMAGE_WORKSPACE_R2_ACCESS_KEY:-}}}" ]] && echo yes || echo no)"
 echo "secret_key_configured=$([[ -n "${IMAGE_WORKSPACE_OBJECT_STORAGE_SECRET_ACCESS_KEY:-${IMAGE_WORKSPACE_R2_SECRET_ACCESS_KEY:-${IMAGE_WORKSPACE_R2_SECRET_KEY:-}}}" ]] && echo yes || echo no)"
-echo "bucket_configured=$([[ -n "${IMAGE_WORKSPACE_OBJECT_STORAGE_BUCKET:-${IMAGE_WORKSPACE_R2_BUCKET:-${IMAGE_WORKSPACE_R2_BUCKET_NAME:-}}}" ]] && echo yes || echo no)"
-echo "public_base_url_configured=$([[ -n "${IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL:-${IMAGE_WORKSPACE_R2_PUBLIC_BASE_URL:-${IMAGE_WORKSPACE_R2_DOMAIN:-}}}" ]] && echo yes || echo no)"
 
 section "Image Workspace worker storage check"
 if [[ -f tools/image-workspace-worker/package.json ]]; then

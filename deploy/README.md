@@ -23,7 +23,7 @@ This directory contains files for deploying Sub2API on Linux servers.
 | `sub2api.service` | Systemd service unit file |
 | `sub2api-datamanagementd.service` | datamanagementd systemd service unit file |
 | `DATAMANAGEMENTD_CN.md` | datamanagementd 部署与联动说明（中文） |
-| `config.example.yaml` | Example configuration file |
+| `config.example.yaml` | Optional config override example |
 
 ---
 
@@ -164,15 +164,22 @@ For the current `cloudbase.eu.org` VM production host, use the dedicated runbook
 deploy/PRODUCTION_SERVER_RUNBOOK.md
 ```
 
-For **manual VM process restarts** (non-Docker), use the tracked helper:
+For the current Docker deployment, start the main services plus the two merged
+worker containers through compose:
 
 ```bash
-deploy/restart-sub2api.sh
+docker compose \
+  -f deploy/docker-compose.yml \
+  -f deploy/docker-compose.business-worker.yml \
+  -f deploy/docker-compose.content-worker.yml \
+  --profile business-worker \
+  --profile content-worker \
+  up -d
 ```
 
-This helper explicitly forwards `DATA_DIR` into the launched process. That
-prevents the service from accidentally falling back to `/app/data/config.yaml`
-when a different repo-local `config.yaml` should be the active source of truth.
+The current runtime reads Docker environment from `deploy/.env`. A
+`deploy/data/config.yaml` file is optional and should only be added for
+settings that cannot be expressed cleanly as environment variables.
 
 For **local directory version** (docker-compose.local.yml):
 

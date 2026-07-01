@@ -8,6 +8,7 @@ import { resolve } from 'node:path'
 const realProviderMode = boolEnv('IMAGE_WORKSPACE_E2E_REAL_PROVIDER', false)
 let smokeUserForCleanup = null
 let localArtifactPathForCleanup = ''
+let runtimeSettingsSnapshotForCleanup = null
 
 const config = {
   baseURL: env('BASE_URL', 'http://127.0.0.1:8080').replace(/\/$/, ''),
@@ -23,13 +24,11 @@ const config = {
   initialBalance: Number.parseFloat(env('IMAGE_WORKSPACE_E2E_INITIAL_BALANCE', '50')),
   completionCost: Number.parseFloat(env('IMAGE_WORKSPACE_E2E_COMPLETION_COST', '0.25')),
   realProvider: realProviderMode,
-  upstreamURL: env('IMAGE_WORKSPACE_UPSTREAM_URL', 'https://api.openai.com/v1/images/generations'),
+  upstreamURL: env('IMAGE_WORKSPACE_E2E_UPSTREAM_URL', 'https://api.openai.com/v1/images/generations'),
   upstreamAPIKey: realProviderMode
     ? env('IMAGE_WORKSPACE_UPSTREAM_API_KEY', '')
     : 'mock-image-workspace-e2e-key',
-  useObjectStorage: realProviderMode
-    ? boolEnv('IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED', false)
-    : boolEnv('IMAGE_WORKSPACE_E2E_OBJECT_STORAGE', false),
+  useObjectStorage: boolEnv('IMAGE_WORKSPACE_E2E_OBJECT_STORAGE', false),
   objectStorageEndpoint: env('IMAGE_WORKSPACE_OBJECT_STORAGE_ENDPOINT', env('IMAGE_WORKSPACE_R2_ENDPOINT', '')),
   objectStorageAccessKeyID: realProviderMode
     ? env('IMAGE_WORKSPACE_OBJECT_STORAGE_ACCESS_KEY_ID', env('IMAGE_WORKSPACE_R2_ACCESS_KEY_ID', env('IMAGE_WORKSPACE_R2_ACCESS_KEY', '')))
@@ -37,15 +36,9 @@ const config = {
   objectStorageSecretAccessKey: realProviderMode
     ? env('IMAGE_WORKSPACE_OBJECT_STORAGE_SECRET_ACCESS_KEY', env('IMAGE_WORKSPACE_R2_SECRET_ACCESS_KEY', env('IMAGE_WORKSPACE_R2_SECRET_KEY', '')))
     : 'mock-r2-secret-key',
-  objectStorageBucket: realProviderMode
-    ? env('IMAGE_WORKSPACE_OBJECT_STORAGE_BUCKET', env('IMAGE_WORKSPACE_R2_BUCKET', env('IMAGE_WORKSPACE_R2_BUCKET_NAME', '')))
-    : 'sub2api-image-workspace',
-  objectStoragePrefix: realProviderMode
-    ? env('IMAGE_WORKSPACE_OBJECT_STORAGE_PREFIX', env('IMAGE_WORKSPACE_R2_UPLOAD_PATH', 'image-workspace-e2e'))
-    : 'image-workspace-e2e',
-  objectStoragePublicBaseURL: realProviderMode
-    ? env('IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL', env('IMAGE_WORKSPACE_R2_PUBLIC_BASE_URL', env('IMAGE_WORKSPACE_R2_DOMAIN', '')))
-    : 'https://assets.example.test/image-workspace',
+  objectStorageBucket: env('IMAGE_WORKSPACE_E2E_OBJECT_STORAGE_BUCKET', 'sub2api-image-workspace'),
+  objectStoragePrefix: env('IMAGE_WORKSPACE_E2E_OBJECT_STORAGE_PREFIX', 'image-workspace-e2e'),
+  objectStoragePublicBaseURL: env('IMAGE_WORKSPACE_E2E_OBJECT_STORAGE_PUBLIC_BASE_URL', 'https://assets.example.test/image-workspace'),
   cleanup: boolEnv('IMAGE_WORKSPACE_E2E_CLEANUP', !realProviderMode),
 }
 
@@ -96,8 +89,70 @@ function psql(sql) {
   ], { input: sql })
 }
 
+const runtimeSettingKeys = [
+  'image_workspace_upstream_url',
+  'image_workspace_generation_timeout_ms',
+  'image_workspace_completion_cost',
+  'image_workspace_completion_cost_map_json',
+  'image_workspace_object_storage_enabled',
+  'image_workspace_object_storage_provider',
+  'image_workspace_object_storage_bucket',
+  'image_workspace_object_storage_region',
+  'image_workspace_object_storage_prefix',
+  'image_workspace_object_storage_public_base_url',
+]
+
 function sqlString(value) {
   return `'${String(value).replaceAll("'", "''")}'`
+}
+
+function snapshotRuntimeSettings() {
+  const rows = psql(`
+SELECT key, value
+FROM settings
+WHERE key IN (${runtimeSettingKeys.map(sqlString).join(', ')})
+ORDER BY key;
+`)
+  const snapshot = new Map()
+  for (const row of rows.split('\n').filter(Boolean)) {
+    const [key, value] = parseTabRow(row)
+    snapshot.set(key, value)
+  }
+  return snapshot
+}
+
+function restoreRuntimeSettings(snapshot) {
+  if (!(snapshot instanceof Map)) return
+  psql(`
+DELETE FROM settings
+WHERE key IN (${runtimeSettingKeys.map(sqlString).join(', ')});
+${snapshot.size > 0 ? `INSERT INTO settings (key, value, updated_at)
+VALUES ${Array.from(snapshot.entries()).map(([key, value]) => `(${sqlString(key)}, ${sqlString(value)}, now())`).join(',\n')}
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();` : ''}
+`)
+}
+
+function setImageWorkspaceRuntimeSettings({ upstreamURL, objectStorageEndpoint = '' }) {
+  const values = {
+    image_workspace_upstream_url: upstreamURL,
+    image_workspace_generation_timeout_ms: '120000',
+    image_workspace_completion_cost: String(config.completionCost),
+    image_workspace_completion_cost_map_json: '{}',
+    image_workspace_object_storage_enabled: config.useObjectStorage ? 'true' : 'false',
+    image_workspace_object_storage_provider: 'r2',
+    image_workspace_object_storage_bucket: config.useObjectStorage ? config.objectStorageBucket : '',
+    image_workspace_object_storage_region: 'auto',
+    image_workspace_object_storage_prefix: config.objectStoragePrefix,
+    image_workspace_object_storage_public_base_url: config.useObjectStorage ? config.objectStoragePublicBaseURL : '',
+  }
+  psql(`
+INSERT INTO settings (key, value, updated_at)
+VALUES ${Object.entries(values).map(([key, value]) => `(${sqlString(key)}, ${sqlString(value)}, now())`).join(',\n')}
+ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = now();
+`)
+  if (config.useObjectStorage) {
+    assert(objectStorageEndpoint || config.objectStorageEndpoint, 'object storage endpoint must be available before worker run')
+  }
 }
 
 function parseTabRow(row) {
@@ -312,27 +367,19 @@ function startMockObjectStorage() {
   })
 }
 
-function runWorker({ upstreamURL, appDataMount, objectStorageEndpoint = '' }) {
+function runWorker({ appDataMount, objectStorageEndpoint = '' }) {
   return new Promise((resolveRun, reject) => {
     const child = spawn(process.execPath, [resolve('tools/image-workspace-worker/src/worker.mjs'), '--once'], {
       cwd: process.cwd(),
       env: {
         ...process.env,
         IMAGE_WORKSPACE_API_BASE_URL: config.baseURL,
-        IMAGE_WORKSPACE_UPSTREAM_URL: upstreamURL,
         IMAGE_WORKSPACE_UPSTREAM_API_KEY: config.upstreamAPIKey,
         IMAGE_WORKSPACE_OUTPUT_DIR: `${appDataMount}/image-workspace`,
         IMAGE_WORKSPACE_STORAGE_KEY_ROOT: '/app/data/image-workspace',
-        IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED: config.useObjectStorage ? 'true' : 'false',
-        IMAGE_WORKSPACE_OBJECT_STORAGE_PROVIDER: 'r2',
         IMAGE_WORKSPACE_OBJECT_STORAGE_ENDPOINT: objectStorageEndpoint,
         IMAGE_WORKSPACE_OBJECT_STORAGE_ACCESS_KEY_ID: config.objectStorageAccessKeyID,
         IMAGE_WORKSPACE_OBJECT_STORAGE_SECRET_ACCESS_KEY: config.objectStorageSecretAccessKey,
-        IMAGE_WORKSPACE_OBJECT_STORAGE_BUCKET: config.objectStorageBucket,
-        IMAGE_WORKSPACE_OBJECT_STORAGE_REGION: 'auto',
-        IMAGE_WORKSPACE_OBJECT_STORAGE_PREFIX: config.objectStoragePrefix,
-        IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL: config.objectStoragePublicBaseURL,
-        IMAGE_WORKSPACE_COMPLETION_COST: String(config.completionCost),
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     })
@@ -356,14 +403,16 @@ async function main() {
   assert(Number.isFinite(config.completionCost) && config.completionCost > 0, 'completion cost must be positive')
   if (config.realProvider) {
     assert(config.upstreamAPIKey, 'IMAGE_WORKSPACE_UPSTREAM_API_KEY is required when IMAGE_WORKSPACE_E2E_REAL_PROVIDER=1')
-    assert(config.useObjectStorage, 'IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED=true is required when IMAGE_WORKSPACE_E2E_REAL_PROVIDER=1')
+    assert(config.useObjectStorage, 'IMAGE_WORKSPACE_E2E_OBJECT_STORAGE=true is required when IMAGE_WORKSPACE_E2E_REAL_PROVIDER=1')
     assert(config.objectStorageEndpoint, 'IMAGE_WORKSPACE_OBJECT_STORAGE_ENDPOINT or IMAGE_WORKSPACE_R2_ENDPOINT is required when IMAGE_WORKSPACE_E2E_REAL_PROVIDER=1')
     assert(config.objectStorageAccessKeyID, 'IMAGE_WORKSPACE_OBJECT_STORAGE_ACCESS_KEY_ID or R2 alias is required when IMAGE_WORKSPACE_E2E_REAL_PROVIDER=1')
     assert(config.objectStorageSecretAccessKey, 'IMAGE_WORKSPACE_OBJECT_STORAGE_SECRET_ACCESS_KEY or R2 alias is required when IMAGE_WORKSPACE_E2E_REAL_PROVIDER=1')
-    assert(config.objectStorageBucket, 'IMAGE_WORKSPACE_OBJECT_STORAGE_BUCKET or R2 alias is required when IMAGE_WORKSPACE_E2E_REAL_PROVIDER=1')
-    assert(config.objectStoragePublicBaseURL, 'IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL or R2 alias is required when IMAGE_WORKSPACE_E2E_REAL_PROVIDER=1')
+    assert(config.objectStorageBucket, 'IMAGE_WORKSPACE_E2E_OBJECT_STORAGE_BUCKET is required when IMAGE_WORKSPACE_E2E_REAL_PROVIDER=1')
+    assert(config.objectStoragePublicBaseURL, 'IMAGE_WORKSPACE_E2E_OBJECT_STORAGE_PUBLIC_BASE_URL is required when IMAGE_WORKSPACE_E2E_REAL_PROVIDER=1')
   }
 
+  const runtimeSettingsSnapshot = snapshotRuntimeSettings()
+  runtimeSettingsSnapshotForCleanup = runtimeSettingsSnapshot
   cleanupAllSmokeUsers()
   const user = createSmokeUser()
   smokeUserForCleanup = user
@@ -443,7 +492,8 @@ async function main() {
     const upstreamURL = config.realProvider ? config.upstreamURL : `http://127.0.0.1:${address.port}/v1/images/generations`
     const storageAddress = objectStorage?.server?.address()
     const objectStorageEndpoint = config.realProvider ? config.objectStorageEndpoint : (storageAddress ? `http://127.0.0.1:${storageAddress.port}` : '')
-    const run = await runWorker({ upstreamURL, appDataMount, objectStorageEndpoint })
+    setImageWorkspaceRuntimeSettings({ upstreamURL, objectStorageEndpoint })
+    const run = await runWorker({ appDataMount, objectStorageEndpoint })
     assert(run.stdout.includes(`Completed image workspace task ${task.id}`), `worker did not complete task ${task.id}: ${run.stdout}${run.stderr}`)
     if (!config.realProvider) {
       assert(upstream.requests.length === 1, `expected one upstream request, got ${upstream.requests.length}`)
@@ -589,8 +639,10 @@ RETURNING balance_snapshot::text;
     try {
       failingUpstream = await startFailingMockUpstream()
       const failingAddress = failingUpstream.server.address()
-      const run = await runWorker({
+      setImageWorkspaceRuntimeSettings({
         upstreamURL: `http://127.0.0.1:${failingAddress.port}/v1/images/generations`,
+      })
+      const run = await runWorker({
         appDataMount,
       })
       assert(
@@ -663,6 +715,8 @@ SELECT
       rmSync(localArtifactPath, { force: true })
     }
   }
+  restoreRuntimeSettings(runtimeSettingsSnapshot)
+  runtimeSettingsSnapshotForCleanup = null
 }
 
 main().catch((error) => {
@@ -671,6 +725,7 @@ main().catch((error) => {
     if (localArtifactPathForCleanup) {
       rmSync(localArtifactPathForCleanup, { force: true })
     }
+    restoreRuntimeSettings(runtimeSettingsSnapshotForCleanup)
   } catch {
     // Best-effort cleanup only; keep the original failure visible.
   }

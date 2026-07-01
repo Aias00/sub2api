@@ -448,45 +448,28 @@ pnpm run frontend:build
 cd backend
 go build -tags embed -o sub2api ./cmd/server
 
-# 5. Create configuration file
-cp ../deploy/config.example.yaml ./config.yaml
+# 5. Configure runtime environment
+export DATABASE_HOST=localhost
+export DATABASE_PORT=5432
+export DATABASE_USER=postgres
+export DATABASE_PASSWORD=your_password
+export DATABASE_DBNAME=sub2api
+export DATABASE_SSLMODE=disable
+export REDIS_HOST=localhost
+export REDIS_PORT=6379
+export JWT_SECRET=change-this-to-a-secure-random-string
+export SERVER_HOST=0.0.0.0
+export SERVER_PORT=8080
+export SERVER_MODE=release
 
-# 6. Edit configuration
-nano config.yaml
+# Optional: copy deploy/config.example.yaml to config.yaml only for
+# settings that are not convenient to express as environment variables.
 ```
 
 > **Note:** The `-tags embed` flag embeds the frontend into the binary. Without this flag, the binary will not serve the frontend UI.
 
-**Key configuration in `config.yaml`:**
-
-```yaml
-server:
-  host: "0.0.0.0"
-  port: 8080
-  mode: "release"
-
-database:
-  host: "localhost"
-  port: 5432
-  user: "postgres"
-  password: "your_password"
-  dbname: "sub2api"
-
-redis:
-  host: "localhost"
-  port: 6379
-  password: ""
-
-jwt:
-  secret: "change-this-to-a-secure-random-string"
-  expire_hour: 24
-
-default:
-  user_concurrency: 5
-  user_balance: 0
-  api_key_prefix: "sk-"
-  rate_multiplier: 1.0
-```
+`config.yaml` is optional. Environment variables are the preferred runtime
+configuration surface for Docker and local binary deployments.
 
 ### Sora Status (Temporarily Unavailable)
 
@@ -494,7 +477,7 @@ default:
 > Please do not rely on Sora in production at this time.
 > Existing `gateway.sora_*` configuration keys are reserved and may not take effect until these issues are resolved.
 
-Additional security-related options are available in `config.yaml`:
+Additional security-related options can be set in `config.yaml` when needed:
 
 - `cors.allowed_origins` for CORS allowlist
 - `security.url_allowlist` for upstream/pricing/CRS host allowlists
@@ -707,7 +690,7 @@ sub2api/
 └── deploy/                   # Deployment files
     ├── docker-compose.yml    # Docker Compose configuration
     ├── .env.example          # Environment variables for Docker Compose
-    ├── config.example.yaml   # Full config file for binary deployment
+    ├── config.example.yaml   # Optional config override example
     └── install.sh            # One-click installation script
 ```
 

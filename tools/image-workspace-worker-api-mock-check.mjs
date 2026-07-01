@@ -15,6 +15,7 @@ const upstreamRequests = []
 const completedTasks = []
 const failedTasks = []
 let claimCount = 0
+let runtimeConfig = null
 
 function readBody(req) {
   return new Promise((resolveBody, reject) => {
@@ -53,6 +54,10 @@ function startBackendServer() {
   const server = createServer(async (req, res) => {
     if (req.headers['x-image-workspace-worker-token'] !== workerToken) {
       json(res, 401, { code: 'IMAGE_WORKSPACE_WORKER_UNAUTHORIZED', message: 'invalid token' })
+      return
+    }
+    if (req.method === 'GET' && req.url === '/api/v1/image-workspace/worker/runtime-config') {
+      json(res, 200, { data: runtimeConfig })
       return
     }
     if (req.method === 'POST' && req.url === '/api/v1/image-workspace/worker/tasks/claim') {
@@ -113,12 +118,9 @@ function runWorker(baseURL, upstreamURL) {
         ...process.env,
         IMAGE_WORKSPACE_API_BASE_URL: baseURL,
         IMAGE_WORKSPACE_WORKER_TOKEN: workerToken,
-        IMAGE_WORKSPACE_UPSTREAM_URL: upstreamURL,
         IMAGE_WORKSPACE_UPSTREAM_API_KEY: upstreamKey,
         IMAGE_WORKSPACE_OUTPUT_DIR: outputDir,
         IMAGE_WORKSPACE_STORAGE_KEY_ROOT: outputDir,
-        IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED: 'false',
-        IMAGE_WORKSPACE_COMPLETION_COST: '0.25',
       },
       stdio: ['ignore', 'pipe', 'pipe'],
     })
@@ -152,9 +154,26 @@ try {
   upstreamServer = await startUpstreamServer()
   const backendAddr = backendServer.address()
   const upstreamAddr = upstreamServer.address()
+  runtimeConfig = {
+    upstream_url: `http://127.0.0.1:${upstreamAddr.port}/v1/images/generations`,
+    generation_timeout_ms: 120000,
+    completion_cost: '0.25',
+    completion_cost_map_json: '{}',
+    prompt_safety_enabled: true,
+    assume_worker_ready: false,
+    object_storage: {
+      enabled: false,
+      provider: 'r2',
+      bucket: '',
+      region: 'auto',
+      key_prefix: 'image-workspace',
+      public_base_url: '',
+    },
+    media_cdn_base_url: '',
+  }
   await runWorker(
     `http://127.0.0.1:${backendAddr.port}`,
-    `http://127.0.0.1:${upstreamAddr.port}/v1/images/generations`,
+    runtimeConfig.upstream_url,
   )
 
   assert(claimCount === 1, `expected one claim request, got ${claimCount}`)

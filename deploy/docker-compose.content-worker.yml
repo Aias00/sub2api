@@ -1,0 +1,42 @@
+# Combined content worker: X Auto API + Hot RSS collector.
+
+services:
+  content-worker:
+    build:
+      context: ../tools
+      dockerfile: content-worker.Dockerfile
+    image: sub2api-content-worker:${CONTENT_WORKER_IMAGE_TAG:-local}
+    container_name: sub2api-content-worker
+    restart: unless-stopped
+    profiles:
+      - content-worker
+    environment:
+      - DATABASE_URL=${HOT_DATABASE_URL:-postgres://sub2api:${POSTGRES_PASSWORD}@postgres:5432/sub2api?sslmode=disable}
+      - HOT_WORKER_STATUS_PATH=${HOT_WORKER_STATUS_PATH:-/app/runtime/hot-worker-status.json}
+      - HOT_RSS_WORKER_STATUS_PATH=${HOT_RSS_WORKER_STATUS_PATH:-/app/runtime/hot-worker-status.json}
+      - HOT_RSS_COLLECT_INTERVAL_MS=${HOT_RSS_COLLECT_INTERVAL_MS:-1800000}
+      - HOT_RSS_COLLECT_MAX_BACKOFF_MS=${HOT_RSS_COLLECT_MAX_BACKOFF_MS:-600000}
+      - HOT_RSS_COLLECT_ON_START=${HOT_RSS_COLLECT_ON_START:-true}
+      - HOT_RSS_LIMIT_PER_SOURCE=${HOT_RSS_LIMIT_PER_SOURCE:-10}
+      - HOT_RSS_REQUEST_TIMEOUT_MS=${HOT_RSS_REQUEST_TIMEOUT_MS:-20000}
+      - HOT_RSS_WORKER_HEALTH_MAX_AGE_MS=${HOT_RSS_WORKER_HEALTH_MAX_AGE_MS:-0}
+      - X_AUTO_PORT=${X_AUTO_PORT:-8000}
+      - X_ATUO_ENVIRONMENT=${X_ATUO_ENVIRONMENT:-production}
+      - X_ATUO_DATA_DIR=${X_ATUO_DATA_DIR:-/app/data}
+      - X_ATUO_DB_PATH=${X_ATUO_DB_PATH:-/app/data/x_atuo.sqlite3}
+      - X_ATUO_AUTHOR_ALPHA__DB_PATH=${X_ATUO_AUTHOR_ALPHA_DB_PATH:-/app/data/author_alpha.sqlite3}
+      - X_ATUO_SCHEDULER__ENABLED=${X_ATUO_SCHEDULER_ENABLED:-false}
+      - X_ATUO_SCHEDULER__AUTOSTART=${X_ATUO_SCHEDULER_AUTOSTART:-false}
+      - X_ATUO_TWITTER__PROXY_URL=${X_AUTO_PROXY_URL:-}
+      - X_ATUO_TWITTER__AUTH_TOKEN_ENV=${X_ATUO_TWITTER_AUTH_TOKEN_ENV:-TWITTER_AUTH_TOKEN}
+      - X_ATUO_TWITTER__CT0_ENV=${X_ATUO_TWITTER_CT0_ENV:-TWITTER_CT0}
+      - TWITTER_AUTH_TOKEN=${TWITTER_AUTH_TOKEN:-}
+      - TWITTER_CT0=${TWITTER_CT0:-}
+    volumes:
+      - ${CONTENT_WORKER_DATA_MOUNT:-./data/content-worker}:/app/data
+      - ${HOT_RUNTIME_MOUNT:-./runtime}:/app/runtime
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - sub2api-network

@@ -4,7 +4,13 @@ version = "0.1.0"
 description = "Vendored x_atuo runtime used by Sub2API Touch X imports."
 requires-python = ">=3.11"
 dependencies = [
+  "apscheduler>=3.10",
   "pyyaml>=6.0",
+  "fastapi>=0.115",
+  "pydantic-settings>=2.0",
+  "psycopg[binary]>=3.2",
+  "requests>=2.31",
+  "uvicorn[standard]>=0.30",
   "curl_cffi>=0.7",
   "xclienttransaction>=1.0.1",
   "beautifulsoup4>=4.12",

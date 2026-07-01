@@ -93,12 +93,14 @@ const baseURL = (process.env.SUB2API_BASE_URL || 'http://127.0.0.1:8080/api/v1')
 const workerToken = process.env.WECHAT_EXPORT_WORKER_TOKEN || ''
 const outputRoot = process.env.WECHAT_EXPORT_OUTPUT_DIR || path.resolve(process.cwd(), 'runtime/wechat-export')
 const storageKeyRoot = process.env.WECHAT_EXPORT_STORAGE_KEY_ROOT || outputRoot
-const workerConcurrency = clampInteger(process.env.WECHAT_EXPORT_WORKER_CONCURRENCY || '1', 1, 8)
-const workerLeaseSeconds = clampInteger(process.env.WECHAT_EXPORT_WORKER_LEASE_SECONDS || '300', 60, 3600)
-const fetchRetries = clampInteger(process.env.WECHAT_EXPORT_FETCH_RETRIES || '2', 0, 5)
-const fetchTimeoutMs = clampInteger(process.env.WECHAT_EXPORT_FETCH_TIMEOUT_MS || '20000', 1000, 120000)
-const idleIntervalMs = clampInteger(process.env.WECHAT_EXPORT_WORKER_INTERVAL_MS || '5000', 1000, 300000)
-const maxBackoffMs = clampInteger(process.env.WECHAT_EXPORT_WORKER_MAX_BACKOFF_MS || '60000', idleIntervalMs, 300000)
+let workerConcurrency = clampInteger(process.env.WECHAT_EXPORT_WORKER_CONCURRENCY || '1', 1, 8)
+let workerLeaseSeconds = clampInteger(process.env.WECHAT_EXPORT_WORKER_LEASE_SECONDS || '300', 60, 3600)
+let fetchRetries = clampInteger(process.env.WECHAT_EXPORT_FETCH_RETRIES || '2', 0, 5)
+let fetchTimeoutMs = clampInteger(process.env.WECHAT_EXPORT_FETCH_TIMEOUT_MS || '20000', 1000, 120000)
+let idleIntervalMs = clampInteger(process.env.WECHAT_EXPORT_WORKER_INTERVAL_MS || '5000', 1000, 300000)
+let maxBackoffMs = clampInteger(process.env.WECHAT_EXPORT_WORKER_MAX_BACKOFF_MS || '60000', idleIntervalMs, 300000)
+let runtimeConfigRefreshMs = clampInteger(process.env.WECHAT_EXPORT_RUNTIME_CONFIG_REFRESH_MS || '60000', 10000, 3600000)
+let nextRuntimeConfigRefreshAt = 0
 
 function clampInteger(value: string, min: number, max: number) {
   const parsed = Number.parseInt(value, 10)
@@ -149,6 +151,37 @@ async function apiGet<T>(pathName: string) {
     throw new Error(`${pathName} failed: ${response.status} ${envelope.message || response.statusText}`)
   }
   return envelope.data as T
+}
+
+async function loadRuntimeConfig() {
+  try {
+    const runtime = await apiGet<{
+      fetch_retries?: number
+      fetch_timeout_ms?: number
+      worker_concurrency?: number
+      worker_interval_ms?: number
+      worker_lease_seconds?: number
+      worker_max_backoff_ms?: number
+    }>('/wechat/worker/runtime-config')
+    fetchRetries = clampInteger(String(runtime.fetch_retries ?? fetchRetries), 0, 5)
+    fetchTimeoutMs = clampInteger(String(runtime.fetch_timeout_ms ?? fetchTimeoutMs), 1000, 120000)
+    workerConcurrency = clampInteger(String(runtime.worker_concurrency ?? workerConcurrency), 1, 8)
+    workerLeaseSeconds = clampInteger(String(runtime.worker_lease_seconds ?? workerLeaseSeconds), 60, 3600)
+    idleIntervalMs = clampInteger(String(runtime.worker_interval_ms ?? idleIntervalMs), 1000, 300000)
+    maxBackoffMs = clampInteger(String(runtime.worker_max_backoff_ms ?? maxBackoffMs), idleIntervalMs, 300000)
+    console.log('[wechat-worker] loaded runtime config')
+  } catch (error) {
+    console.warn('[wechat-worker] failed to load runtime config; using env fallback', error instanceof Error ? error.message : String(error))
+  }
+}
+
+async function refreshRuntimeConfigIfDue(force = false) {
+  const now = Date.now()
+  if (!force && now < nextRuntimeConfigRefreshAt) {
+    return
+  }
+  nextRuntimeConfigRefreshAt = now + runtimeConfigRefreshMs
+  await loadRuntimeConfig()
 }
 
 async function logTaskEvent(taskId: number, leaseToken: string, payload: TaskLogPayload) {
@@ -607,6 +640,7 @@ async function runOnce() {
 }
 
 async function main() {
+  await refreshRuntimeConfigIfDue(true)
   if (process.argv.includes('--healthcheck')) {
     await apiGet('/wechat/worker/health')
     console.log('[wechat-worker] healthcheck ok')
@@ -619,6 +653,7 @@ async function main() {
   do {
     let processed = false
     try {
+      await refreshRuntimeConfigIfDue()
       if (once || workerConcurrency === 1) {
         processed = await runOnce()
       } else {

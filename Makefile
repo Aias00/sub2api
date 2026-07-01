@@ -1,4 +1,4 @@
-.PHONY: build build-core build-backend build-frontend build-all build-datamanagementd test test-core test-backend test-frontend test-frontend-critical test-datamanagementd validate-prompt-catalog validate-prompt-catalog-parity validate-prompt-catalog-external-images validate-prompt-catalog-production-preflight validate-prompt-catalog-production-full-urls validate-wechat-export validate-wechat-export-acceptance validate-wechat-export-fidelity validate-wechat-export-production-preflight validate-image-workspace validate-image-workspace-e2e validate-image-workspace-e2e-object-storage validate-image-workspace-real-e2e validate-image-workspace-acceptance validate-image-workspace-backend validate-image-workspace-upstream validate-image-workspace-worker-api validate-image-workspace-object-storage validate-image-workspace-production-preflight validate-home-business-capabilities validate-hot-content validate-hot-collector-preflight validate-object-storage validate-image-workspace-clean-mock secret-scan
+.PHONY: build build-core build-backend build-frontend build-all build-datamanagementd test test-core test-backend test-frontend test-frontend-critical test-datamanagementd validate-prompt-catalog validate-prompt-catalog-parity validate-prompt-catalog-external-images validate-prompt-catalog-production-preflight validate-prompt-catalog-production-full-urls validate-wechat-export validate-wechat-export-acceptance validate-wechat-export-fidelity validate-wechat-export-production-preflight validate-image-workspace validate-image-workspace-e2e validate-image-workspace-e2e-object-storage validate-image-workspace-real-e2e validate-image-workspace-acceptance validate-image-workspace-backend validate-image-workspace-upstream validate-image-workspace-worker-api validate-image-workspace-object-storage validate-image-workspace-production-preflight validate-business-worker validate-home-business-capabilities validate-hot-content validate-hot-collector-preflight validate-object-storage validate-image-workspace-clean-mock secret-scan
 
 FRONTEND_CRITICAL_VITEST := \
 	src/views/auth/__tests__/LinuxDoCallbackView.spec.ts \
@@ -103,6 +103,10 @@ validate-image-workspace-object-storage:
 
 validate-image-workspace-production-preflight:
 	@tools/image-workspace-production-preflight.sh
+
+validate-business-worker:
+	@node --check tools/business-worker.mjs
+	@POSTGRES_PASSWORD="$${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/sub2api-business-worker-compose.yml
 
 validate-home-business-capabilities:
 	@node tools/home-business-capabilities-smoke.mjs

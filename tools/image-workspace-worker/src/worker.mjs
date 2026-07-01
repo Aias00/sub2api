@@ -3,10 +3,10 @@ import { createHash, createHmac } from 'node:crypto'
 import { mkdir, writeFile } from 'node:fs/promises'
 import { join, posix } from 'node:path'
 
-const config = {
+let config = {
   baseURL: env('IMAGE_WORKSPACE_API_BASE_URL', 'http://127.0.0.1:8080'),
   workerToken: env('IMAGE_WORKSPACE_WORKER_TOKEN', ''),
-  upstreamURL: env('IMAGE_WORKSPACE_UPSTREAM_URL', 'https://api.openai.com/v1/images/generations'),
+  upstreamURL: '',
   upstreamAPIKey: env('IMAGE_WORKSPACE_UPSTREAM_API_KEY', ''),
   outputDir: env('IMAGE_WORKSPACE_OUTPUT_DIR', join(process.cwd(), 'runtime', 'image-workspace')),
   storageKeyRoot: env('IMAGE_WORKSPACE_STORAGE_KEY_ROOT', ''),
@@ -15,26 +15,30 @@ const config = {
   intervalMs: intEnv('IMAGE_WORKSPACE_WORKER_INTERVAL_MS', 5000),
   maxBackoffMs: intEnv('IMAGE_WORKSPACE_WORKER_MAX_BACKOFF_MS', 60000),
   leaseSeconds: intEnv('IMAGE_WORKSPACE_WORKER_LEASE_SECONDS', 300),
+  runtimeConfigRefreshMs: intEnv('IMAGE_WORKSPACE_RUNTIME_CONFIG_REFRESH_MS', 60000),
   requestTimeoutMs: intEnv('IMAGE_WORKSPACE_GENERATION_TIMEOUT_MS', 120000),
   generationRetries: intEnv('IMAGE_WORKSPACE_GENERATION_RETRIES', 2),
   generationRetryBaseMs: intEnv('IMAGE_WORKSPACE_GENERATION_RETRY_BASE_MS', 3000),
   diagnosticBodyPreviewBytes: intEnv('IMAGE_WORKSPACE_UPSTREAM_DIAGNOSTIC_BODY_PREVIEW_BYTES', 4096),
-  completionCost: floatEnv('IMAGE_WORKSPACE_COMPLETION_COST', 0),
-  completionCostMap: jsonEnv('IMAGE_WORKSPACE_COMPLETION_COST_MAP_JSON', {}),
+  completionCost: 0,
+  completionCostMap: {},
   objectStorage: {
-    enabled: boolEnv('IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED', false),
-    provider: env('IMAGE_WORKSPACE_OBJECT_STORAGE_PROVIDER', 'r2'),
+    enabled: false,
+    provider: 'r2',
     endpoint: env('IMAGE_WORKSPACE_OBJECT_STORAGE_ENDPOINT', env('IMAGE_WORKSPACE_R2_ENDPOINT', '')),
     accountID: env('IMAGE_WORKSPACE_R2_ACCOUNT_ID', ''),
     accessKeyID: env('IMAGE_WORKSPACE_OBJECT_STORAGE_ACCESS_KEY_ID', env('IMAGE_WORKSPACE_R2_ACCESS_KEY_ID', env('IMAGE_WORKSPACE_R2_ACCESS_KEY', ''))),
     secretAccessKey: env('IMAGE_WORKSPACE_OBJECT_STORAGE_SECRET_ACCESS_KEY', env('IMAGE_WORKSPACE_R2_SECRET_ACCESS_KEY', env('IMAGE_WORKSPACE_R2_SECRET_KEY', ''))),
-    bucket: env('IMAGE_WORKSPACE_OBJECT_STORAGE_BUCKET', env('IMAGE_WORKSPACE_R2_BUCKET', env('IMAGE_WORKSPACE_R2_BUCKET_NAME', ''))),
-    region: env('IMAGE_WORKSPACE_OBJECT_STORAGE_REGION', env('IMAGE_WORKSPACE_R2_REGION', 'auto')),
-    keyPrefix: trimSlashes(env('IMAGE_WORKSPACE_OBJECT_STORAGE_PREFIX', env('IMAGE_WORKSPACE_R2_UPLOAD_PATH', 'image-workspace'))),
-    publicBaseURL: env('IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL', env('IMAGE_WORKSPACE_R2_PUBLIC_BASE_URL', env('IMAGE_WORKSPACE_R2_DOMAIN', ''))),
+    bucket: '',
+    region: 'auto',
+    keyPrefix: 'image-workspace',
+    publicBaseURL: '',
     cacheControl: env('IMAGE_WORKSPACE_OBJECT_STORAGE_CACHE_CONTROL', 'public, max-age=31536000, immutable'),
   },
 }
+
+let nextRuntimeConfigRefreshAt = 0
+let runtimeConfigLoaded = false
 
 function env(key, fallback) {
   const value = process.env[key]
@@ -57,14 +61,13 @@ function boolEnv(key, fallback) {
   return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase())
 }
 
-function jsonEnv(key, fallback) {
-  const value = process.env[key]
+function parseObjectJSON(value, fallback) {
   if (!value) return fallback
+  if (typeof value === 'object' && !Array.isArray(value)) return value
   try {
-    const parsed = JSON.parse(value)
+    const parsed = JSON.parse(String(value))
     return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : fallback
   } catch {
-    console.warn(`${key} is not valid JSON; using fallback`)
     return fallback
   }
 }
@@ -160,6 +163,59 @@ async function apiFetch(path, options = {}) {
     throw new Error(body.message || `API ${response.status}`)
   }
   return body.data
+}
+
+async function loadRuntimeConfig({ required = false } = {}) {
+  try {
+    const runtime = await apiFetch('/image-workspace/worker/runtime-config', { method: 'GET' })
+    if (!runtime || typeof runtime !== 'object') {
+      throw new Error('runtime config response is empty')
+    }
+    if (typeof runtime.upstream_url === 'string' && runtime.upstream_url.trim()) {
+      config.upstreamURL = runtime.upstream_url.trim()
+    }
+    if (Number.isFinite(runtime.generation_timeout_ms) && runtime.generation_timeout_ms > 0) {
+      config.requestTimeoutMs = runtime.generation_timeout_ms
+    }
+    if (runtime.completion_cost !== undefined && runtime.completion_cost !== null) {
+      const completionCost = Number.parseFloat(String(runtime.completion_cost))
+      if (Number.isFinite(completionCost) && completionCost >= 0) {
+        config.completionCost = completionCost
+      }
+    }
+    if (runtime.completion_cost_map_json !== undefined && runtime.completion_cost_map_json !== null) {
+      config.completionCostMap = parseObjectJSON(runtime.completion_cost_map_json, config.completionCostMap)
+    }
+    if (typeof runtime.prompt_safety_enabled === 'boolean') {
+      process.env.IMAGE_WORKSPACE_PROMPT_SAFETY_ENABLED = String(runtime.prompt_safety_enabled)
+    }
+    const objectStorage = runtime.object_storage
+    if (objectStorage && typeof objectStorage === 'object') {
+      if (typeof objectStorage.enabled === 'boolean') config.objectStorage.enabled = objectStorage.enabled
+      if (typeof objectStorage.provider === 'string' && objectStorage.provider.trim()) config.objectStorage.provider = objectStorage.provider.trim()
+      if (typeof objectStorage.bucket === 'string') config.objectStorage.bucket = objectStorage.bucket.trim()
+      if (typeof objectStorage.region === 'string' && objectStorage.region.trim()) config.objectStorage.region = objectStorage.region.trim()
+      if (typeof objectStorage.key_prefix === 'string' && objectStorage.key_prefix.trim()) config.objectStorage.keyPrefix = trimSlashes(objectStorage.key_prefix)
+      if (typeof objectStorage.public_base_url === 'string') config.objectStorage.publicBaseURL = objectStorage.public_base_url.trim()
+    }
+    runtimeConfigLoaded = true
+    console.log('[image-workspace-worker] loaded runtime config')
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    if (required) {
+      throw new Error(`[image-workspace-worker] failed to load required runtime config: ${message}`)
+    }
+    console.warn('[image-workspace-worker] failed to refresh runtime config; keeping existing config', message)
+  }
+}
+
+async function refreshRuntimeConfigIfDue(force = false, options = {}) {
+  const now = Date.now()
+  if (!force && now < nextRuntimeConfigRefreshAt) {
+    return
+  }
+  nextRuntimeConfigRefreshAt = now + config.runtimeConfigRefreshMs
+  await loadRuntimeConfig(options)
 }
 
 async function claimTask() {
@@ -268,7 +324,7 @@ async function generateImages(task) {
     if (!response.ok) {
       const message = body?.error?.message || body?.message || `upstream ${response.status}`
       if (response.status === 404) {
-        throw errorWithUpstreamDiagnostics(`生图上游返回 404：当前 IMAGE_WORKSPACE_UPSTREAM_URL 未提供 OpenAI 图片生成端点，或该服务不支持所选模型 ${task.model || 'default'}。请确认上游是否支持 /v1/images/generations。`, diagnostics)
+        throw errorWithUpstreamDiagnostics(`生图上游返回 404：当前后台 Runtime Settings 未提供 OpenAI 图片生成端点，或该服务不支持所选模型 ${task.model || 'default'}。请确认上游是否支持 /v1/images/generations。`, diagnostics)
       }
       if (response.status === 401 || response.status === 403) {
         throw errorWithUpstreamDiagnostics('生图上游鉴权失败：请检查 IMAGE_WORKSPACE_UPSTREAM_API_KEY 是否有效，或该服务是否使用非 Bearer 鉴权。', diagnostics)
@@ -638,6 +694,7 @@ async function loop() {
   let backoff = config.intervalMs
   for (;;) {
     try {
+      await refreshRuntimeConfigIfDue()
       const task = await claimTask()
       if (task) {
         backoff = config.intervalMs
@@ -736,6 +793,7 @@ async function runUpstreamCheck() {
 }
 
 async function main() {
+  await refreshRuntimeConfigIfDue(true, { required: true })
   if (process.argv.includes('--storage-check')) {
     await runStorageCheck()
     return

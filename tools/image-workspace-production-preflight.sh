@@ -5,6 +5,7 @@ RUN_REAL_PROVIDER_CHECK="${RUN_IMAGE_WORKSPACE_REAL_PROVIDER_CHECK:-0}"
 RUN_REAL_E2E="${RUN_IMAGE_WORKSPACE_REAL_E2E:-0}"
 REQUIRE_READY="${REQUIRE_IMAGE_WORKSPACE_PRODUCTION_READY:-0}"
 TMP_RESULT=""
+TMP_RUNTIME=""
 
 section() {
   echo
@@ -45,6 +46,15 @@ require_any() {
   fi
 }
 
+require_flag() {
+  local label="$1"
+  local configured="$2"
+  echo "${label}_configured=${configured}"
+  if [[ "$configured" != "yes" ]]; then
+    failures=$((failures + 1))
+  fi
+}
+
 warn_or_fail() {
   local message="$1"
   if [[ "$REQUIRE_READY" == "1" ]]; then
@@ -59,12 +69,16 @@ cleanup() {
   if [[ -n "$TMP_RESULT" && -f "$TMP_RESULT" ]]; then
     rm -f "$TMP_RESULT"
   fi
+  if [[ -n "$TMP_RUNTIME" && -f "$TMP_RUNTIME" ]]; then
+    rm -f "$TMP_RUNTIME"
+  fi
 }
 trap cleanup EXIT
 
 section "Image Workspace production env"
-echo "IMAGE_WORKSPACE_API_BASE_URL=${IMAGE_WORKSPACE_API_BASE_URL:-${BASE_URL:-http://127.0.0.1:8080}}"
-echo "IMAGE_WORKSPACE_UPSTREAM_URL=${IMAGE_WORKSPACE_UPSTREAM_URL:-https://api.openai.com/v1/images/generations}"
+api_base="${IMAGE_WORKSPACE_API_BASE_URL:-${BASE_URL:-http://127.0.0.1:8080}}"
+api_base="${api_base%/}"
+echo "IMAGE_WORKSPACE_API_BASE_URL=${api_base}"
 require_any "upstream_api_key" IMAGE_WORKSPACE_UPSTREAM_API_KEY
 require_any "worker_token" IMAGE_WORKSPACE_WORKER_TOKEN
 echo "private_worker_without_token=${IMAGE_WORKSPACE_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN:-false}"
@@ -73,19 +87,90 @@ if [[ -z "${IMAGE_WORKSPACE_WORKER_TOKEN:-}" ]] && bool_env "${IMAGE_WORKSPACE_A
   warn_or_fail "private worker token bypass is enabled; production should use IMAGE_WORKSPACE_WORKER_TOKEN"
 fi
 
-section "Image Workspace object-storage env"
-object_storage_enabled="${IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED:-false}"
-echo "IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED=${object_storage_enabled}"
-echo "IMAGE_WORKSPACE_OBJECT_STORAGE_PROVIDER=${IMAGE_WORKSPACE_OBJECT_STORAGE_PROVIDER:-r2}"
-if bool_env "$object_storage_enabled"; then
+section "Image Workspace runtime config"
+if [[ "$api_base" == */api/v1 ]]; then
+  runtime_config_url="${api_base}/image-workspace/worker/runtime-config"
+else
+  runtime_config_url="${api_base}/api/v1/image-workspace/worker/runtime-config"
+fi
+echo "runtime_config_url=${runtime_config_url}"
+runtime_object_storage_enabled="false"
+runtime_object_storage_bucket_configured="no"
+runtime_object_storage_public_base_url_configured="no"
+runtime_object_storage_key_prefix=""
+if command -v curl >/dev/null 2>&1 && [[ -n "${IMAGE_WORKSPACE_WORKER_TOKEN:-}" ]]; then
+  TMP_RUNTIME="$(mktemp)"
+  if curl -fsS -H "X-Image-Workspace-Worker-Token: ${IMAGE_WORKSPACE_WORKER_TOKEN}" "$runtime_config_url" >"$TMP_RUNTIME"; then
+    node - "$TMP_RUNTIME" <<'NODE'
+const { readFileSync } = await import('node:fs')
+const payload = JSON.parse(readFileSync(process.argv[2], 'utf8'))
+const data = payload.data && typeof payload.data === 'object' ? payload.data : payload
+if (!data.upstream_url || typeof data.upstream_url !== 'string') {
+  throw new Error('runtime config missing upstream_url')
+}
+if (data.completion_cost_map_json) {
+  const map = JSON.parse(String(data.completion_cost_map_json))
+  if (!map || typeof map !== 'object' || Array.isArray(map)) {
+    throw new Error('completion_cost_map_json must be a JSON object')
+  }
+}
+const storage = data.object_storage && typeof data.object_storage === 'object' ? data.object_storage : {}
+console.log(`runtime_upstream_url=${data.upstream_url}`)
+console.log(`runtime_generation_timeout_ms=${data.generation_timeout_ms || ''}`)
+console.log(`runtime_completion_cost=${data.completion_cost || ''}`)
+console.log(`runtime_completion_cost_map_json_configured=${data.completion_cost_map_json ? 'yes' : 'no'}`)
+console.log(`runtime_object_storage_enabled=${storage.enabled === true ? 'true' : 'false'}`)
+console.log(`runtime_object_storage_provider=${storage.provider || ''}`)
+console.log(`runtime_object_storage_key_prefix=${storage.key_prefix || ''}`)
+console.log(`runtime_object_storage_bucket_configured=${storage.bucket ? 'yes' : 'no'}`)
+console.log(`runtime_object_storage_public_base_url_configured=${storage.public_base_url ? 'yes' : 'no'}`)
+NODE
+    runtime_object_storage_enabled="$(node - "$TMP_RUNTIME" <<'NODE'
+const { readFileSync } = await import('node:fs')
+const payload = JSON.parse(readFileSync(process.argv[2], 'utf8'))
+const data = payload.data && typeof payload.data === 'object' ? payload.data : payload
+console.log(data.object_storage?.enabled === true ? 'true' : 'false')
+NODE
+)"
+    runtime_object_storage_bucket_configured="$(node - "$TMP_RUNTIME" <<'NODE'
+const { readFileSync } = await import('node:fs')
+const payload = JSON.parse(readFileSync(process.argv[2], 'utf8'))
+const data = payload.data && typeof payload.data === 'object' ? payload.data : payload
+console.log(data.object_storage?.bucket ? 'yes' : 'no')
+NODE
+)"
+    runtime_object_storage_public_base_url_configured="$(node - "$TMP_RUNTIME" <<'NODE'
+const { readFileSync } = await import('node:fs')
+const payload = JSON.parse(readFileSync(process.argv[2], 'utf8'))
+const data = payload.data && typeof payload.data === 'object' ? payload.data : payload
+console.log(data.object_storage?.public_base_url ? 'yes' : 'no')
+NODE
+)"
+    runtime_object_storage_key_prefix="$(node - "$TMP_RUNTIME" <<'NODE'
+const { readFileSync } = await import('node:fs')
+const payload = JSON.parse(readFileSync(process.argv[2], 'utf8'))
+const data = payload.data && typeof payload.data === 'object' ? payload.data : payload
+console.log(data.object_storage?.key_prefix || '')
+NODE
+)"
+  else
+    warn_or_fail "Image Workspace runtime config endpoint is not reachable"
+  fi
+else
+  warn_or_fail "curl or IMAGE_WORKSPACE_WORKER_TOKEN is missing; cannot verify backend-managed runtime config"
+fi
+
+section "Image Workspace object-storage"
+echo "runtime_object_storage_enabled=${runtime_object_storage_enabled}"
+if bool_env "$runtime_object_storage_enabled"; then
   require_any "object_storage_endpoint_or_account" IMAGE_WORKSPACE_OBJECT_STORAGE_ENDPOINT IMAGE_WORKSPACE_R2_ENDPOINT IMAGE_WORKSPACE_R2_ACCOUNT_ID
   require_any "object_storage_access_key" IMAGE_WORKSPACE_OBJECT_STORAGE_ACCESS_KEY_ID IMAGE_WORKSPACE_R2_ACCESS_KEY_ID IMAGE_WORKSPACE_R2_ACCESS_KEY
   require_any "object_storage_secret_key" IMAGE_WORKSPACE_OBJECT_STORAGE_SECRET_ACCESS_KEY IMAGE_WORKSPACE_R2_SECRET_ACCESS_KEY IMAGE_WORKSPACE_R2_SECRET_KEY
-  require_any "object_storage_bucket" IMAGE_WORKSPACE_OBJECT_STORAGE_BUCKET IMAGE_WORKSPACE_R2_BUCKET IMAGE_WORKSPACE_R2_BUCKET_NAME
-  require_any "object_storage_public_base_url" IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL IMAGE_WORKSPACE_R2_PUBLIC_BASE_URL IMAGE_WORKSPACE_R2_DOMAIN
-  echo "object_storage_prefix=${IMAGE_WORKSPACE_OBJECT_STORAGE_PREFIX:-${IMAGE_WORKSPACE_R2_UPLOAD_PATH:-image-workspace}}"
+  require_flag "runtime_object_storage_bucket" "$runtime_object_storage_bucket_configured"
+  require_flag "runtime_object_storage_public_base_url" "$runtime_object_storage_public_base_url_configured"
+  echo "runtime_object_storage_key_prefix=${runtime_object_storage_key_prefix}"
 else
-  warn_or_fail "IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED is false; generated images will not be uploaded directly to R2/S3"
+  warn_or_fail "backend runtime config has object_storage.enabled=false; generated images will not be uploaded directly to R2/S3"
   require_any "local_output_dir" IMAGE_WORKSPACE_OUTPUT_DIR
   require_any "local_storage_key_root" IMAGE_WORKSPACE_STORAGE_KEY_ROOT
   public_base="$(value_of_any IMAGE_WORKSPACE_PUBLIC_ARTIFACT_BASE_URL || true)"
@@ -100,14 +185,14 @@ section "Worker static checks"
 node --check tools/image-workspace-acceptance.mjs
 npm --prefix tools/image-workspace-worker run check
 npm --prefix tools/image-workspace-worker run storage-check
-if [[ ! -f tools/image-workspace-worker/Dockerfile ]]; then
-  warn_or_fail "tools/image-workspace-worker/Dockerfile is missing"
+if [[ ! -f tools/business-worker.Dockerfile ]]; then
+  warn_or_fail "tools/business-worker.Dockerfile is missing"
 else
-  if grep -q "HEALTHCHECK" tools/image-workspace-worker/Dockerfile \
-    && grep -q "npm run healthcheck" tools/image-workspace-worker/Dockerfile; then
-    echo "image_workspace_worker_docker_healthcheck=ok"
+  if grep -q "HEALTHCHECK" tools/business-worker.Dockerfile \
+    && grep -q "business-worker.mjs --healthcheck" tools/business-worker.Dockerfile; then
+    echo "business_worker_docker_healthcheck=ok"
   else
-    warn_or_fail "tools/image-workspace-worker/Dockerfile must include a worker healthcheck"
+    warn_or_fail "tools/business-worker.Dockerfile must include a worker healthcheck"
   fi
 fi
 
@@ -150,13 +235,13 @@ fi
 
 section "Docker compose overlay"
 if command -v docker >/dev/null 2>&1; then
-  if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.image-worker.yml --profile image-worker config >/tmp/sub2api-image-worker-compose.yml; then
-    echo "docker_compose_image_worker_config=ok"
+  if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/sub2api-business-worker-compose.yml; then
+    echo "docker_compose_business_worker_config=ok"
   else
-    warn_or_fail "docker compose Image Workspace worker overlay does not render"
+    warn_or_fail "docker compose business worker overlay does not render"
   fi
 else
-  warn_or_fail "docker is not available; cannot validate Image Workspace worker compose overlay"
+  warn_or_fail "docker is not available; cannot validate business worker compose overlay"
 fi
 
 if [[ "$RUN_REAL_PROVIDER_CHECK" == "1" ]]; then

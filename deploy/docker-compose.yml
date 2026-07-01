@@ -1,22 +1,10 @@
-# =============================================================================
-# Sub2API Docker Compose Configuration
-# =============================================================================
-# Quick Start:
-#   1. Copy .env.example to .env and configure
-#   2. docker-compose up -d
-#   3. Check logs: docker-compose logs -f sub2api
-#   4. Access: http://localhost:8080
-#
-# All configuration is done via environment variables.
-# No Setup Wizard needed - the system auto-initializes on first run.
-# =============================================================================
+# Current local deployment: API + Postgres + Redis.
+# Add docker-compose.business-worker.yml and docker-compose.content-worker.yml
+# with their profiles for the full 5-service runtime.
 
 services:
-  # ===========================================================================
-  # Sub2API Application
-  # ===========================================================================
   sub2api:
-    image: weishaw/sub2api:latest
+    image: ${SUB2API_IMAGE:-sub2api-local:latest}
     container_name: sub2api
     restart: unless-stopped
     ulimits:
@@ -26,26 +14,10 @@ services:
     ports:
       - "${BIND_HOST:-0.0.0.0}:${SERVER_PORT:-8080}:8080"
     volumes:
-      # Data persistence (config.yaml will be auto-generated here)
-      - sub2api_data:/app/data
-      # Hot collector status file for /home business capability state.
+      - ${SUB2API_DATA_MOUNT:-./data}:/app/data
       - ${HOT_RUNTIME_MOUNT:-./runtime}:/app/runtime:ro
-      # Optional: Mount custom config.yaml (uncomment and create the file first)
-      # Copy config.example.yaml to config.yaml, modify it, then uncomment:
-      # - ./config.yaml:/app/data/config.yaml
-      # Optional: Mount a custom Codex instructions template file, then point
-      # gateway.forced_codex_instructions_template_file at /app/data/codex-instructions.md.tmpl
-      # in config.yaml.
-      # - ./codex-instructions.md.tmpl:/app/data/codex-instructions.md.tmpl:ro
     environment:
-      # =======================================================================
-      # Auto Setup (REQUIRED for Docker deployment)
-      # =======================================================================
       - AUTO_SETUP=true
-
-      # =======================================================================
-      # Server Configuration
-      # =======================================================================
       - SERVER_HOST=0.0.0.0
       - SERVER_PORT=8080
       - SERVER_MODE=${SERVER_MODE:-release}
@@ -53,10 +25,6 @@ services:
       - SERVER_TRUSTED_PROXIES=${SERVER_TRUSTED_PROXIES:-}
       - RUN_MODE=${RUN_MODE:-standard}
       - HEALTH_ENV_MARKER=${HEALTH_ENV_MARKER:-}
-
-      # =======================================================================
-      # Database Configuration (PostgreSQL)
-      # =======================================================================
       - DATABASE_HOST=postgres
       - DATABASE_PORT=5432
       - DATABASE_USER=${POSTGRES_USER:-sub2api}
@@ -67,10 +35,6 @@ services:
       - DATABASE_MAX_IDLE_CONNS=${DATABASE_MAX_IDLE_CONNS:-10}
       - DATABASE_CONN_MAX_LIFETIME_MINUTES=${DATABASE_CONN_MAX_LIFETIME_MINUTES:-30}
       - DATABASE_CONN_MAX_IDLE_TIME_MINUTES=${DATABASE_CONN_MAX_IDLE_TIME_MINUTES:-5}
-
-      # =======================================================================
-      # Redis Configuration
-      # =======================================================================
       - REDIS_HOST=redis
       - REDIS_PORT=6379
       - REDIS_PASSWORD=${REDIS_PASSWORD:-}
@@ -78,24 +42,13 @@ services:
       - REDIS_POOL_SIZE=${REDIS_POOL_SIZE:-1024}
       - REDIS_MIN_IDLE_CONNS=${REDIS_MIN_IDLE_CONNS:-10}
       - REDIS_ENABLE_TLS=${REDIS_ENABLE_TLS:-false}
-
-      # =======================================================================
-      # Admin Account (auto-created on first run)
-      # =======================================================================
       - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@sub2api.local}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
-
-      # =======================================================================
-      # JWT Configuration
-      # =======================================================================
-      # IMPORTANT: Set a fixed JWT_SECRET to prevent login sessions from being
-      # invalidated after container restarts. If left empty, a random secret
-      # will be generated on each startup.
-      # Generate a secure secret: openssl rand -hex 32
       - JWT_SECRET=${JWT_SECRET:-}
       - JWT_EXPIRE_HOUR=${JWT_EXPIRE_HOUR:-24}
       - WECHAT_EXPORT_WORKER_TOKEN=${WECHAT_EXPORT_WORKER_TOKEN:-}
       - WECHAT_EXPORT_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN=${WECHAT_EXPORT_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN:-false}
+      - WECHAT_EXPORT_CAPABILITY_STATUS_USER_ID=${WECHAT_EXPORT_CAPABILITY_STATUS_USER_ID:-}
       - WECHAT_EXPORT_OUTPUT_DIR=${WECHAT_EXPORT_OUTPUT_DIR:-/app/data/wechat-export}
       - WECHAT_EXPORT_STORAGE_ROOT=${WECHAT_EXPORT_STORAGE_ROOT:-/app/data/wechat-export}
       - WECHAT_EXPORT_STORAGE_KEY_ROOT=${WECHAT_EXPORT_STORAGE_KEY_ROOT:-/app/data/wechat-export}
@@ -105,90 +58,37 @@ services:
       - IMAGE_WORKSPACE_OUTPUT_DIR=${IMAGE_WORKSPACE_OUTPUT_DIR:-/app/data/image-workspace}
       - IMAGE_WORKSPACE_STORAGE_ROOT=${IMAGE_WORKSPACE_STORAGE_ROOT:-/app/data/image-workspace}
       - IMAGE_WORKSPACE_STORAGE_KEY_ROOT=${IMAGE_WORKSPACE_STORAGE_KEY_ROOT:-/app/data/image-workspace}
-      - IMAGE_WORKSPACE_UPSTREAM_URL=${IMAGE_WORKSPACE_UPSTREAM_URL:-https://api.openai.com/v1/images/generations}
       - IMAGE_WORKSPACE_UPSTREAM_API_KEY=${IMAGE_WORKSPACE_UPSTREAM_API_KEY:-}
-      - IMAGE_WORKSPACE_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY=${IMAGE_WORKSPACE_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY:-false}
-      - IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED=${IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED:-false}
       - IMAGE_WORKSPACE_OBJECT_STORAGE_ENDPOINT=${IMAGE_WORKSPACE_OBJECT_STORAGE_ENDPOINT:-}
-      - IMAGE_WORKSPACE_OBJECT_STORAGE_BUCKET=${IMAGE_WORKSPACE_OBJECT_STORAGE_BUCKET:-}
-      - IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL=${IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL:-}
       - IMAGE_WORKSPACE_R2_ACCOUNT_ID=${IMAGE_WORKSPACE_R2_ACCOUNT_ID:-}
       - IMAGE_WORKSPACE_R2_ENDPOINT=${IMAGE_WORKSPACE_R2_ENDPOINT:-}
-      - IMAGE_WORKSPACE_R2_BUCKET=${IMAGE_WORKSPACE_R2_BUCKET:-}
-      - IMAGE_WORKSPACE_R2_BUCKET_NAME=${IMAGE_WORKSPACE_R2_BUCKET_NAME:-}
-      - IMAGE_WORKSPACE_R2_PUBLIC_BASE_URL=${IMAGE_WORKSPACE_R2_PUBLIC_BASE_URL:-}
-      - IMAGE_WORKSPACE_R2_DOMAIN=${IMAGE_WORKSPACE_R2_DOMAIN:-}
       - HOT_WORKER_STATUS_PATH=${HOT_WORKER_STATUS_PATH:-/app/runtime/hot-worker-status.json}
       - HOT_WORKER_HEALTH_MAX_AGE_MS=${HOT_WORKER_HEALTH_MAX_AGE_MS:-0}
       - HOT_CONTENT_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY=${HOT_CONTENT_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY:-false}
-
-      # =======================================================================
-      # TOTP (2FA) Configuration
-      # =======================================================================
-      # IMPORTANT: Set a fixed encryption key for TOTP secrets. If left empty,
-      # a random key will be generated on each startup, causing all existing
-      # TOTP configurations to become invalid (users won't be able to login
-      # with 2FA).
-      # Generate a secure key: openssl rand -hex 32
+      - WORKER_MANAGER_ENABLED=${WORKER_MANAGER_ENABLED:-false}
+      - WORKER_MANAGER_DOCKER_SOCKET=${WORKER_MANAGER_DOCKER_SOCKET:-/var/run/docker.sock}
+      - BUSINESS_WORKER_CONTAINER_NAME=${BUSINESS_WORKER_CONTAINER_NAME:-sub2api-business-worker}
+      - HOT_WORKER_CONTAINER_NAME=${HOT_WORKER_CONTAINER_NAME:-sub2api-content-worker}
+      - X_AUTO_BASE_URL=${X_AUTO_BASE_URL:-http://content-worker:8000}
+      - CONTENT_WORKER_CONTAINER_NAME=${CONTENT_WORKER_CONTAINER_NAME:-sub2api-content-worker}
       - TOTP_ENCRYPTION_KEY=${TOTP_ENCRYPTION_KEY:-}
-
-      # =======================================================================
-      # Timezone Configuration
-      # This affects ALL time operations in the application:
-      # - Database timestamps
-      # - Usage statistics "today" boundary
-      # - Subscription expiry times
-      # - Log timestamps
-      # Common values: Asia/Shanghai, America/New_York, Europe/London, UTC
-      # =======================================================================
       - TZ=${TZ:-Asia/Shanghai}
-
-      # =======================================================================
-      # CORS Configuration
-      # =======================================================================
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
       - CORS_ALLOW_CREDENTIALS=${CORS_ALLOW_CREDENTIALS:-true}
-
-      # =======================================================================
-      # Gemini OAuth Configuration (for Gemini accounts)
-      # =======================================================================
       - GEMINI_OAUTH_CLIENT_ID=${GEMINI_OAUTH_CLIENT_ID:-}
       - GEMINI_OAUTH_CLIENT_SECRET=${GEMINI_OAUTH_CLIENT_SECRET:-}
       - GEMINI_OAUTH_SCOPES=${GEMINI_OAUTH_SCOPES:-}
       - GEMINI_QUOTA_POLICY=${GEMINI_QUOTA_POLICY:-}
-
-      # Built-in OAuth client secrets (optional)
-      # SECURITY: This repo does not embed third-party client_secret.
       - GEMINI_CLI_OAUTH_CLIENT_SECRET=${GEMINI_CLI_OAUTH_CLIENT_SECRET:-}
       - ANTIGRAVITY_OAUTH_CLIENT_SECRET=${ANTIGRAVITY_OAUTH_CLIENT_SECRET:-}
       - ANTIGRAVITY_USER_AGENT_VERSION=${ANTIGRAVITY_USER_AGENT_VERSION:-}
-
-      # =======================================================================
-      # Security Configuration (URL Allowlist)
-      # =======================================================================
-      # Enable URL allowlist validation (false to skip allowlist checks)
       - SECURITY_URL_ALLOWLIST_ENABLED=${SECURITY_URL_ALLOWLIST_ENABLED:-true}
-      # Allow insecure HTTP URLs when allowlist is disabled (default: false, requires https)
       - SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP=${SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP:-false}
-      # Allow private IP addresses for upstream/pricing/CRS (for internal deployments)
       - SECURITY_URL_ALLOWLIST_ALLOW_PRIVATE_HOSTS=${SECURITY_URL_ALLOWLIST_ALLOW_PRIVATE_HOSTS:-false}
-      # Upstream hosts whitelist (comma-separated, only used when enabled=true)
       - SECURITY_URL_ALLOWLIST_UPSTREAM_HOSTS=${SECURITY_URL_ALLOWLIST_UPSTREAM_HOSTS:-}
-      # Pricing and CRS host whitelists (comma-separated, only used when enabled=true)
       - SECURITY_URL_ALLOWLIST_PRICING_HOSTS=${SECURITY_URL_ALLOWLIST_PRICING_HOSTS:-raw.githubusercontent.com}
       - SECURITY_URL_ALLOWLIST_CRS_HOSTS=${SECURITY_URL_ALLOWLIST_CRS_HOSTS:-}
-
-      # =======================================================================
-      # Update Configuration (在线更新配置)
-      # =======================================================================
-      # Proxy for accessing GitHub (online updates + pricing data)
-      # Examples: http://host:port, socks5://host:port
       - UPDATE_PROXY_URL=${UPDATE_PROXY_URL:-}
-
-      # =======================================================================
-      # Image Generation Stream & Concurrency
-      # =======================================================================
-      # OpenAI HTTP upstream protocol/timeout
       - GATEWAY_OPENAI_RESPONSE_HEADER_TIMEOUT=${GATEWAY_OPENAI_RESPONSE_HEADER_TIMEOUT:-0}
       - GATEWAY_OPENAI_HTTP2_ENABLED=${GATEWAY_OPENAI_HTTP2_ENABLED:-true}
       - GATEWAY_OPENAI_HTTP2_ALLOW_PROXY_FALLBACK_TO_HTTP1=${GATEWAY_OPENAI_HTTP2_ALLOW_PROXY_FALLBACK_TO_HTTP1:-true}
@@ -226,9 +126,6 @@ services:
       retries: 3
       start_period: 30s
 
-  # ===========================================================================
-  # PostgreSQL Database
-  # ===========================================================================
   postgres:
     image: postgres:18-alpine
     container_name: sub2api-postgres
@@ -238,11 +135,8 @@ services:
         soft: 100000
         hard: 100000
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - ${POSTGRES_DATA_MOUNT:-./postgres_data}:/var/lib/postgresql/data
     environment:
-      # postgres:18-alpine 默认 PGDATA=/var/lib/postgresql/18/docker（位于镜像声明的匿名卷 /var/lib/postgresql 内）。
-      # 若不显式设置 PGDATA，则即使挂载了 postgres_data 到 /var/lib/postgresql/data，数据也不会落盘到该命名卷，
-      # docker compose down/up 后会触发 initdb 重新初始化，导致用户/密码等数据丢失。
       - PGDATA=/var/lib/postgresql/data
       - POSTGRES_USER=${POSTGRES_USER:-sub2api}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
@@ -260,12 +154,6 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
-    # 注意：不暴露端口到宿主机，应用通过内部网络连接
-    # 如需调试，可临时添加：ports: ["127.0.0.1:5433:5432"]
-
-  # ===========================================================================
-  # Redis Cache
-  # ===========================================================================
   redis:
     image: redis:8-alpine
     container_name: sub2api-redis
@@ -275,7 +163,7 @@ services:
         soft: 100000
         hard: 100000
     volumes:
-      - redis_data:/data
+      - ${REDIS_DATA_MOUNT:-./redis_data}:/data
     command: >
       sh -c '
         redis-server
@@ -285,7 +173,6 @@ services:
         ${REDIS_PASSWORD:+--requirepass "$REDIS_PASSWORD"}'
     environment:
       - TZ=${TZ:-Asia/Shanghai}
-      # REDISCLI_AUTH is used by redis-cli for authentication (safer than -a flag)
       - REDISCLI_AUTH=${REDIS_PASSWORD:-}
     networks:
       - sub2api-network
@@ -295,22 +182,7 @@ services:
       timeout: 5s
       retries: 5
       start_period: 5s
-    # 注意：不暴露端口到宿主机，应用通过内部网络连接
-    # 如需调试，可临时添加：ports: ["127.0.0.1:6379:6379"]
-# =============================================================================
-# Volumes
-# =============================================================================
-volumes:
-  sub2api_data:
-    driver: local
-  postgres_data:
-    driver: local
-  redis_data:
-    driver: local
 
-# =============================================================================
-# Networks
-# =============================================================================
 networks:
   sub2api-network:
     driver: bridge

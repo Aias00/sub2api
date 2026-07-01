@@ -14,7 +14,7 @@
 # - sub2api_hot_collector_last_failure_age_seconds
 #
 # Container platforms should also alert on the Docker/Kubernetes healthcheck
-# result from `node hot-rss-collector-worker.mjs --healthcheck`.
+# result from `python -m x_atuo.content_worker --healthcheck`.
 
 groups:
   - name: sub2api-hot-collector

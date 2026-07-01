@@ -1,8 +1,8 @@
 # Production Server Runbook
 
-This file is the authoritative local reference for the current `cloudbase.eu.org`
-production server. Use it as the default source of truth for future production
-operations in this repo.
+This legacy runbook documents the older non-Docker `cloudbase.eu.org` VM flow.
+For the current local project runtime, use the Docker compose files under
+`deploy/` plus `deploy/.env`.
 
 ## Host Identity
 
