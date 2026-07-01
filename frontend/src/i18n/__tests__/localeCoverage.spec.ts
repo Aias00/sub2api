@@ -38,4 +38,9 @@ describe('locale coverage for recent public/auth and admin additions', () => {
     expect(zh.admin.users.columns.balancePlatformQuota).toBe('余额 / 平台配额')
     expect(en.admin.users.columns.balancePlatformQuota).toBe('Balance / Platform Quota')
   })
+
+  it('covers public task navigation labels in both locales', () => {
+    expect(zh.nav.myTasks).toBe('我的任务')
+    expect(en.nav.myTasks).toBe('My Tasks')
+  })
 })
