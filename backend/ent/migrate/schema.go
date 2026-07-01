@@ -458,7 +458,7 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "channel_monitors_channel_monitor_request_templates_request_template",
-				Columns:    []*schema.Column{ChannelMonitorsColumns[19]},
+				Columns:    []*schema.Column{ChannelMonitorsColumns[24]},
 				RefColumns: []*schema.Column{ChannelMonitorRequestTemplatesColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -467,7 +467,12 @@ var (
 			{
 				Name:    "channelmonitor_enabled_last_checked_at",
 				Unique:  false,
-				Columns: []*schema.Column{ChannelMonitorsColumns[11], ChannelMonitorsColumns[14]},
+				Columns: []*schema.Column{ChannelMonitorsColumns[11], ChannelMonitorsColumns[19]},
+			},
+			{
+				Name:    "channelmonitor_auto_disabled_last_health_status",
+				Unique:  false,
+				Columns: []*schema.Column{ChannelMonitorsColumns[12], ChannelMonitorsColumns[16]},
 			},
 			{
 				Name:    "channelmonitor_provider",
@@ -487,7 +492,7 @@ var (
 			{
 				Name:    "channelmonitor_template_id",
 				Unique:  false,
-				Columns: []*schema.Column{ChannelMonitorsColumns[19]},
+				Columns: []*schema.Column{ChannelMonitorsColumns[24]},
 			},
 		},
 	}

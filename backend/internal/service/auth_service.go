@@ -732,6 +732,7 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	created := false
+	createdSignupSource := signupSource
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			// OAuth 首次登录视为注册

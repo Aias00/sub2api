@@ -345,6 +345,22 @@ func (r *apiKeyRepository) DeleteWithAudit(ctx context.Context, id int64) error 
 	return nil
 }
 
+func (r *apiKeyRepository) DisableAllActiveKeysByUserID(ctx context.Context, userID int64) (int64, error) {
+	affected, err := clientFromContext(ctx, r.client).APIKey.Update().
+		Where(
+			apikey.UserIDEQ(userID),
+			apikey.StatusEQ(service.StatusAPIKeyActive),
+			apikey.DeletedAtIsNil(),
+		).
+		SetStatus(service.StatusAPIKeyDisabled).
+		SetUpdatedAt(time.Now()).
+		Save(ctx)
+	if err != nil {
+		return 0, err
+	}
+	return int64(affected), nil
+}
+
 func (r *apiKeyRepository) deleteWithAudit(ctx context.Context, exec *dbent.Client, id int64, tombstoneKey string) error {
 	// 1. 审计:数据源即 api_keys 当前行;WHERE deleted_at IS NULL 保证只对未删除行写一次。
 	if _, err := exec.ExecContext(ctx, `

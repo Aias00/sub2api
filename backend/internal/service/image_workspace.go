@@ -267,6 +267,31 @@ func (s *ImageWorkspaceService) Health() error {
 	return nil
 }
 
+func (s *ImageWorkspaceService) GetWorkerRuntimeConfig(ctx context.Context) (ImageWorkspaceWorkerRuntimeConfig, error) {
+	if s == nil || s.settingRepo == nil {
+		return defaultImageWorkspaceWorkerRuntimeConfig(), nil
+	}
+	values, err := s.settingRepo.GetMultiple(ctx, []string{
+		SettingKeyImageWorkspaceUpstreamURL,
+		SettingKeyImageWorkspaceGenerationTimeoutMS,
+		SettingKeyImageWorkspaceCompletionCost,
+		SettingKeyImageWorkspaceCompletionCostMapJSON,
+		SettingKeyImageWorkspacePromptSafetyEnabled,
+		SettingKeyImageWorkspaceAssumeWorkerReady,
+		SettingKeyImageWorkspaceObjectStorageEnabled,
+		SettingKeyImageWorkspaceObjectStorageProvider,
+		SettingKeyImageWorkspaceObjectStorageBucket,
+		SettingKeyImageWorkspaceObjectStorageRegion,
+		SettingKeyImageWorkspaceObjectStoragePrefix,
+		SettingKeyImageWorkspaceObjectStoragePublicBaseURL,
+		SettingKeyMediaCDNBaseURL,
+	})
+	if err != nil {
+		return ImageWorkspaceWorkerRuntimeConfig{}, err
+	}
+	return imageWorkspaceWorkerRuntimeConfigFromSettings(values), nil
+}
+
 func (s *ImageWorkspaceService) CreateTask(ctx context.Context, userID int64, input CreateImageWorkspaceTaskInput) (*ImageWorkspaceTask, error) {
 	if err := s.Health(); err != nil {
 		return nil, err

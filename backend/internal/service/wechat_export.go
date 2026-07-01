@@ -325,6 +325,14 @@ type WeChatExportService struct {
 // CostPerArticleGetter abstracts fetching the per-article cost setting.
 type CostPerArticleGetter interface {
 	GetWeChatExportCostPerArticle() float64
+	GetWeChatExportWorkerRuntimeConfig(ctx context.Context) (WeChatExportWorkerRuntimeConfig, error)
+}
+
+func (s *WeChatExportService) GetWorkerRuntimeConfig(ctx context.Context) (WeChatExportWorkerRuntimeConfig, error) {
+	if s == nil || s.settingGetter == nil {
+		return defaultWeChatExportWorkerRuntimeConfig(), nil
+	}
+	return s.settingGetter.GetWeChatExportWorkerRuntimeConfig(ctx)
 }
 
 func NewWeChatExportService(repo WeChatExportRepository, settingGetter CostPerArticleGetter) *WeChatExportService {

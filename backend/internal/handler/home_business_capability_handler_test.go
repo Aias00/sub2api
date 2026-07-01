@@ -347,7 +347,6 @@ func TestHomeBusinessCapabilityImageWorkspaceRequiresRuntimeReadiness(t *testing
 	t.Setenv("IMAGE_WORKSPACE_UPSTREAM_API_KEY", "")
 	t.Setenv("IMAGE_WORKSPACE_OUTPUT_DIR", "/tmp/image-workspace")
 	t.Setenv("IMAGE_WORKSPACE_STORAGE_ROOT", "/tmp/image-workspace")
-	t.Setenv("IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED", "false")
 
 	imageWorkspace := NewImageWorkspaceHandler(service.NewImageWorkspaceService(&homeBusinessImageWorkspaceRepoStub{}, nil))
 	h := NewHomeBusinessCapabilityHandler(nil, nil, imageWorkspace, nil)
@@ -363,7 +362,6 @@ func TestHomeBusinessCapabilityImageWorkspaceAvailableWhenRuntimeReady(t *testin
 	t.Setenv("IMAGE_WORKSPACE_UPSTREAM_API_KEY", "provider-token")
 	t.Setenv("IMAGE_WORKSPACE_OUTPUT_DIR", "/tmp/image-workspace")
 	t.Setenv("IMAGE_WORKSPACE_STORAGE_ROOT", "/tmp/image-workspace")
-	t.Setenv("IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED", "false")
 
 	imageWorkspace := NewImageWorkspaceHandler(service.NewImageWorkspaceService(&homeBusinessImageWorkspaceRepoStub{}, nil))
 	h := NewHomeBusinessCapabilityHandler(nil, nil, imageWorkspace, nil)
@@ -380,7 +378,6 @@ func TestHomeBusinessCapabilityImageWorkspaceReportsRecentRuntimeFailure(t *test
 	t.Setenv("IMAGE_WORKSPACE_UPSTREAM_API_KEY", "provider-token")
 	t.Setenv("IMAGE_WORKSPACE_OUTPUT_DIR", "/tmp/image-workspace")
 	t.Setenv("IMAGE_WORKSPACE_STORAGE_ROOT", "/tmp/image-workspace")
-	t.Setenv("IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED", "false")
 
 	imageWorkspace := NewImageWorkspaceHandler(service.NewImageWorkspaceService(&homeBusinessImageWorkspaceRepoStub{
 		status: &service.ImageWorkspaceWorkerStatus{

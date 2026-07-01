@@ -234,6 +234,10 @@ type Provider interface {
 	Refund(ctx context.Context, req RefundRequest) (*RefundResponse, error)
 }
 
+type WebhookResponseProvider interface {
+	BuildWebhookSuccessResponse() (status int, body string, headers map[string]string, contentType string)
+}
+
 // RefundQueryProvider extends Provider with refund status querying.
 type RefundQueryProvider interface {
 	Provider

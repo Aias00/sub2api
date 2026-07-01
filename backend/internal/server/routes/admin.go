@@ -554,6 +554,17 @@ func registerSystemRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 	}
 }
 
+func registerRuntimeWorkerRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
+	if h == nil || h.HomeBusiness == nil {
+		return
+	}
+	runtime := admin.Group("/runtime")
+	{
+		runtime.GET("/workers", h.HomeBusiness.GetAdminWorkerRuntimeStatuses)
+		runtime.POST("/workers/:id/actions/:action", h.HomeBusiness.ManageAdminRuntimeWorker)
+	}
+}
+
 func registerSubscriptionRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 	subscriptions := admin.Group("/subscriptions")
 	{

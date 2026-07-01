@@ -3,6 +3,11 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"net"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -20,6 +25,11 @@ type HomeBusinessCapabilityHandler struct {
 	imageWorkspace *ImageWorkspaceHandler
 	hotContent     *HotContentHandler
 }
+
+const (
+	workerNodeBusiness = "business-worker"
+	workerNodeContent  = "content-worker"
+)
 
 func NewHomeBusinessCapabilityHandler(
 	promptCatalog *PromptCatalogHandler,
@@ -45,6 +55,9 @@ type homeBusinessCapabilityStatusDTO struct {
 type adminWorkerRuntimeStatusDTO struct {
 	ID               string   `json:"id"`
 	Name             string   `json:"name"`
+	NodeID           string   `json:"node_id,omitempty"`
+	ContainerName    string   `json:"container_name,omitempty"`
+	ContainerState   string   `json:"container_state,omitempty"`
 	Health           string   `json:"health"`
 	Message          string   `json:"message,omitempty"`
 	Queue            int64    `json:"queue,omitempty"`
@@ -59,6 +72,10 @@ type adminWorkerRuntimeStatusDTO struct {
 	AttentionReasons []string `json:"attention_reasons,omitempty"`
 	Configured       bool     `json:"configured"`
 	StatusPath       string   `json:"status_path,omitempty"`
+	Manageable       bool     `json:"manageable"`
+	ManagementReason string   `json:"management_reason,omitempty"`
+	DeployCommand    string   `json:"deploy_command,omitempty"`
+	Actions          []string `json:"actions,omitempty"`
 }
 
 func (h *HomeBusinessCapabilityHandler) GetStatuses(c *gin.Context) {
@@ -71,12 +88,74 @@ func (h *HomeBusinessCapabilityHandler) GetStatuses(c *gin.Context) {
 }
 
 func (h *HomeBusinessCapabilityHandler) GetAdminWorkerRuntimeStatuses(c *gin.Context) {
+	workers := []adminWorkerRuntimeStatusDTO{
+		h.adminImageWorkspaceWorkerStatus(c.Request.Context()),
+		h.adminWeChatExportWorkerStatus(c.Request.Context()),
+		h.adminHotCollectorWorkerStatus(),
+		h.adminXAutoWorkerStatus(c.Request.Context()),
+	}
+	manager := newRuntimeWorkerDockerManager()
+	for i := range workers {
+		workers[i] = manager.enrich(workers[i])
+	}
 	response.Success(c, gin.H{
-		"workers": []adminWorkerRuntimeStatusDTO{
-			h.adminImageWorkspaceWorkerStatus(c.Request.Context()),
-			h.adminWeChatExportWorkerStatus(c.Request.Context()),
-			h.adminHotCollectorWorkerStatus(),
+		"workers": workers,
+		"management": gin.H{
+			"enabled": manager.enabled,
+			"reason":  manager.disabledReason(),
+			"socket":  manager.socketPath,
 		},
+	})
+}
+
+func (h *HomeBusinessCapabilityHandler) ManageAdminRuntimeWorker(c *gin.Context) {
+	workerID := strings.TrimSpace(c.Param("id"))
+	action := strings.ToLower(strings.TrimSpace(c.Param("action")))
+	manager := newRuntimeWorkerDockerManager()
+	target, ok := runtimeWorkerTarget(workerID)
+	if !ok {
+		response.NotFound(c, "worker not found")
+		return
+	}
+	if action == "deploy" {
+		response.Success(c, gin.H{
+			"ok":              false,
+			"action":          action,
+			"worker_id":       workerID,
+			"container_name":  target.ContainerName,
+			"message":         "Deployment is intentionally exposed as an operator command, not executed by the API server.",
+			"deploy_command":  target.DeployCommand,
+			"management_note": manager.disabledReason(),
+		})
+		return
+	}
+	if !manager.enabled {
+		response.Forbidden(c, manager.disabledReason())
+		return
+	}
+	var err error
+	switch action {
+	case "restart":
+		err = manager.postDocker(c.Request.Context(), fmt.Sprintf("/containers/%s/restart?t=10", target.ContainerName))
+	case "start", "online":
+		action = "start"
+		err = manager.postDocker(c.Request.Context(), fmt.Sprintf("/containers/%s/start", target.ContainerName))
+	case "stop", "offline":
+		action = "stop"
+		err = manager.postDocker(c.Request.Context(), fmt.Sprintf("/containers/%s/stop?t=10", target.ContainerName))
+	default:
+		response.BadRequest(c, "unsupported worker action")
+		return
+	}
+	if err != nil {
+		response.InternalError(c, err.Error())
+		return
+	}
+	response.Success(c, gin.H{
+		"ok":             true,
+		"action":         action,
+		"worker_id":      workerID,
+		"container_name": target.ContainerName,
 	})
 }
 
@@ -158,7 +237,7 @@ func (h *HomeBusinessCapabilityHandler) imageWorkspaceStatus(ctx context.Context
 			return homeBusinessInProgress("Image Workspace queued tasks have been waiting for a worker for over 5 minutes.")
 		}
 	}
-	if reasons := imageWorkspaceRuntimeReadinessGaps(); len(reasons) > 0 {
+	if reasons := imageWorkspaceRuntimeReadinessGaps(ctx, h.imageWorkspace.service); len(reasons) > 0 {
 		return homeBusinessInProgress(strings.Join(reasons, " "))
 	}
 	return homeBusinessAvailable(enabledCount)
@@ -217,6 +296,7 @@ func (h *HomeBusinessCapabilityHandler) adminImageWorkspaceWorkerStatus(ctx cont
 	result := adminWorkerRuntimeStatusDTO{
 		ID:         "image-workspace",
 		Name:       "生图工作台 Worker",
+		NodeID:     workerNodeBusiness,
 		Health:     "unknown",
 		Configured: h != nil && h.imageWorkspace != nil && h.imageWorkspace.service != nil,
 	}
@@ -259,6 +339,7 @@ func (h *HomeBusinessCapabilityHandler) adminWeChatExportWorkerStatus(ctx contex
 	result := adminWorkerRuntimeStatusDTO{
 		ID:         "wechat-export",
 		Name:       "微信导出 Worker",
+		NodeID:     workerNodeBusiness,
 		Health:     "unknown",
 		Configured: h != nil && h.weChatExport != nil && h.weChatExport.service != nil,
 	}
@@ -322,6 +403,7 @@ func (h *HomeBusinessCapabilityHandler) adminHotCollectorWorkerStatus() adminWor
 	result := adminWorkerRuntimeStatusDTO{
 		ID:         "hot-collector",
 		Name:       "热点采集 Worker",
+		NodeID:     workerNodeContent,
 		Health:     "unknown",
 		Configured: statusPath != "",
 		StatusPath: statusPath,
@@ -377,6 +459,63 @@ func (h *HomeBusinessCapabilityHandler) adminHotCollectorWorkerStatus() adminWor
 	}
 	if len(result.AttentionReasons) == 0 && result.Message == "" {
 		result.Message = "Hot collector worker status file is current."
+	}
+	return result
+}
+
+func (h *HomeBusinessCapabilityHandler) adminXAutoWorkerStatus(ctx context.Context) adminWorkerRuntimeStatusDTO {
+	baseURL := xAutoBaseURL()
+	result := adminWorkerRuntimeStatusDTO{
+		ID:         "x-auto",
+		Name:       "X Auto Worker",
+		NodeID:     workerNodeContent,
+		Health:     "unknown",
+		Configured: baseURL != "",
+		StatusPath: baseURL,
+	}
+	if baseURL == "" {
+		result.Health = "not_configured"
+		result.Message = "X_AUTO_BASE_URL is not configured."
+		return result
+	}
+	reqCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, strings.TrimRight(baseURL, "/")+"/healthz", nil)
+	if err != nil {
+		result.Health = "attention"
+		result.Message = "X Auto worker health URL is invalid."
+		result.AttentionReasons = []string{err.Error()}
+		return result
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		result.Health = "attention"
+		result.Message = "X Auto worker is not reachable."
+		result.AttentionReasons = []string{err.Error()}
+		return result
+	}
+	defer func() { _ = resp.Body.Close() }()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		result.Health = "attention"
+		result.Message = fmt.Sprintf("X Auto worker healthcheck returned HTTP %d.", resp.StatusCode)
+		return result
+	}
+	var payload struct {
+		Status    string `json:"status"`
+		CheckedAt string `json:"checked_at"`
+		DBPath    string `json:"db_path"`
+	}
+	content, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if len(content) > 0 {
+		_ = json.Unmarshal(content, &payload)
+	}
+	result.Health = "active"
+	result.Message = "X Auto worker is reachable."
+	if strings.TrimSpace(payload.CheckedAt) != "" {
+		result.LastUpdatedAt = strings.TrimSpace(payload.CheckedAt)
+	}
+	if strings.TrimSpace(payload.DBPath) != "" {
+		result.AttentionReasons = []string{"db_path=" + strings.TrimSpace(payload.DBPath)}
 	}
 	return result
 }
@@ -439,24 +578,24 @@ func hotContentRuntimeReadinessGaps() []string {
 	return reasons
 }
 
-func imageWorkspaceRuntimeReadinessGaps() []string {
+func imageWorkspaceRuntimeReadinessGaps(ctx context.Context, svc *service.ImageWorkspaceService) []string {
 	reasons := make([]string, 0, 4)
 	if !homeBusinessEnvConfigured("IMAGE_WORKSPACE_WORKER_TOKEN") &&
 		!homeBusinessEnvEnabled("IMAGE_WORKSPACE_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN") {
 		reasons = append(reasons, "Image Workspace worker authentication is not configured.")
 	}
-	if !homeBusinessEnvConfigured("IMAGE_WORKSPACE_UPSTREAM_API_KEY") &&
-		!homeBusinessEnvEnabled("IMAGE_WORKSPACE_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY") {
+	runtimeConfig, _ := svc.GetWorkerRuntimeConfig(ctx)
+	if !homeBusinessEnvConfigured("IMAGE_WORKSPACE_UPSTREAM_API_KEY") && !runtimeConfig.AssumeWorkerReady {
 		reasons = append(reasons, "Image Workspace upstream image provider is not configured.")
 	}
-	if homeBusinessEnvEnabled("IMAGE_WORKSPACE_OBJECT_STORAGE_ENABLED") {
+	if runtimeConfig.ObjectStorage.Enabled {
 		if !homeBusinessAnyEnvConfigured("IMAGE_WORKSPACE_OBJECT_STORAGE_ENDPOINT", "IMAGE_WORKSPACE_R2_ENDPOINT", "IMAGE_WORKSPACE_R2_ACCOUNT_ID") {
 			reasons = append(reasons, "Image Workspace object storage endpoint/account is not configured.")
 		}
-		if !homeBusinessAnyEnvConfigured("IMAGE_WORKSPACE_OBJECT_STORAGE_BUCKET", "IMAGE_WORKSPACE_R2_BUCKET", "IMAGE_WORKSPACE_R2_BUCKET_NAME") {
+		if strings.TrimSpace(runtimeConfig.ObjectStorage.Bucket) == "" {
 			reasons = append(reasons, "Image Workspace object storage bucket is not configured.")
 		}
-		if !homeBusinessAnyEnvConfigured("IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL", "IMAGE_WORKSPACE_R2_PUBLIC_BASE_URL", "IMAGE_WORKSPACE_R2_DOMAIN") {
+		if strings.TrimSpace(runtimeConfig.ObjectStorage.PublicBaseURL) == "" {
 			reasons = append(reasons, "Image Workspace object storage public URL is not configured.")
 		}
 		return reasons
@@ -544,6 +683,168 @@ func hotWorkerStatusMaxAge() time.Duration {
 		maxAge = interval * 2
 	}
 	return maxAge
+}
+
+type runtimeWorkerTargetInfo struct {
+	ID            string
+	ContainerName string
+	DeployCommand string
+}
+
+type runtimeWorkerDockerManager struct {
+	enabled    bool
+	socketPath string
+	reason     string
+	client     *http.Client
+}
+
+func runtimeWorkerTarget(id string) (runtimeWorkerTargetInfo, bool) {
+	switch strings.ToLower(strings.TrimSpace(id)) {
+	case workerNodeBusiness, "wechat-export", "image-workspace":
+		return runtimeWorkerTargetInfo{
+			ID:            workerNodeBusiness,
+			ContainerName: envOrDefault("BUSINESS_WORKER_CONTAINER_NAME", "sub2api-business-worker"),
+			DeployCommand: "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker up -d --build",
+		}, true
+	case workerNodeContent, "hot-collector", "hot-rss-collector", "x-auto", "xauto":
+		return runtimeWorkerTargetInfo{
+			ID:            workerNodeContent,
+			ContainerName: envOrDefault("CONTENT_WORKER_CONTAINER_NAME", "sub2api-content-worker"),
+			DeployCommand: "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker up -d --build",
+		}, true
+	default:
+		return runtimeWorkerTargetInfo{}, false
+	}
+}
+
+func newRuntimeWorkerDockerManager() runtimeWorkerDockerManager {
+	socketPath := envOrDefault("WORKER_MANAGER_DOCKER_SOCKET", "/var/run/docker.sock")
+	manager := runtimeWorkerDockerManager{
+		enabled:    homeBusinessEnvEnabled("WORKER_MANAGER_ENABLED"),
+		socketPath: socketPath,
+	}
+	if !manager.enabled {
+		manager.reason = "Worker management is disabled. Set WORKER_MANAGER_ENABLED=true and mount the Docker socket to enable restart/online/offline actions."
+		return manager
+	}
+	if _, err := os.Stat(socketPath); err != nil {
+		manager.enabled = false
+		manager.reason = "Docker socket is not available at " + socketPath + "."
+		return manager
+	}
+	transport := &http.Transport{
+		DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			var dialer net.Dialer
+			return dialer.DialContext(ctx, "unix", socketPath)
+		},
+	}
+	manager.client = &http.Client{Transport: transport, Timeout: 15 * time.Second}
+	return manager
+}
+
+func (m runtimeWorkerDockerManager) disabledReason() string {
+	if m.reason != "" {
+		return m.reason
+	}
+	if m.enabled {
+		return ""
+	}
+	return "Worker management is disabled."
+}
+
+func (m runtimeWorkerDockerManager) enrich(worker adminWorkerRuntimeStatusDTO) adminWorkerRuntimeStatusDTO {
+	target, ok := runtimeWorkerTarget(worker.NodeID)
+	if !ok {
+		target, ok = runtimeWorkerTarget(worker.ID)
+	}
+	if !ok {
+		worker.ManagementReason = "Worker is not mapped to a managed container."
+		return worker
+	}
+	worker.NodeID = target.ID
+	worker.ContainerName = target.ContainerName
+	worker.DeployCommand = target.DeployCommand
+	worker.Actions = []string{"deploy", "restart", "start", "stop"}
+	worker.Manageable = m.enabled
+	if !m.enabled {
+		worker.ManagementReason = m.disabledReason()
+		return worker
+	}
+	state, err := m.containerState(context.Background(), target.ContainerName)
+	if err != nil {
+		worker.ContainerState = "unknown"
+		worker.ManagementReason = err.Error()
+		return worker
+	}
+	worker.ContainerState = state
+	return worker
+}
+
+func (m runtimeWorkerDockerManager) containerState(ctx context.Context, containerName string) (string, error) {
+	if m.client == nil {
+		return "", errors.New(m.disabledReason())
+	}
+	status := struct {
+		State struct {
+			Status string `json:"Status"`
+		} `json:"State"`
+	}{}
+	if err := m.doDocker(ctx, http.MethodGet, "/containers/"+containerName+"/json", nil, &status); err != nil {
+		return "", err
+	}
+	if strings.TrimSpace(status.State.Status) == "" {
+		return "unknown", nil
+	}
+	return status.State.Status, nil
+}
+
+func (m runtimeWorkerDockerManager) postDocker(ctx context.Context, path string) error {
+	return m.doDocker(ctx, http.MethodPost, path, nil, nil)
+}
+
+func (m runtimeWorkerDockerManager) doDocker(ctx context.Context, method, path string, body io.Reader, out any) error {
+	if m.client == nil {
+		return errors.New(m.disabledReason())
+	}
+	req, err := http.NewRequestWithContext(ctx, method, "http://docker"+path, body)
+	if err != nil {
+		return err
+	}
+	resp, err := m.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = resp.Body.Close() }()
+	content, _ := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if resp.StatusCode >= 300 && resp.StatusCode != http.StatusNotModified {
+		message := strings.TrimSpace(string(content))
+		if message == "" {
+			message = resp.Status
+		}
+		return fmt.Errorf("docker api %s %s failed: %s", method, path, message)
+	}
+	if out != nil && len(content) > 0 {
+		if err := json.Unmarshal(content, out); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func envOrDefault(key string, fallback string) string {
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return fallback
+	}
+	return value
+}
+
+func xAutoBaseURL() string {
+	value := strings.TrimRight(strings.TrimSpace(os.Getenv("X_AUTO_BASE_URL")), "/")
+	if value != "" {
+		return value
+	}
+	return strings.TrimRight(strings.TrimSpace(os.Getenv("X_ATUO_BASE_URL")), "/")
 }
 
 func positiveDurationMillisEnv(key string) time.Duration {

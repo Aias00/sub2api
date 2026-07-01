@@ -657,6 +657,19 @@ func (h *WeChatExportHandler) WorkerHealth(c *gin.Context) {
 	})
 }
 
+func (h *WeChatExportHandler) WorkerRuntimeConfig(c *gin.Context) {
+	if err := h.ensureWorkerReady(c); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	cfg, err := h.service.GetWorkerRuntimeConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, cfg)
+}
+
 func (h *WeChatExportHandler) WorkerEnrichArticle(c *gin.Context) {
 	if err := h.ensureWorkerReady(c); err != nil {
 		response.ErrorFrom(c, err)

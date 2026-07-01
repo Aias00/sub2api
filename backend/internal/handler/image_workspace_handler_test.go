@@ -30,7 +30,7 @@ func TestResolveImageWorkspaceStoragePathRestrictsToRoot(t *testing.T) {
 func TestImageWorkspaceRemoteArtifactRequiresAllowlistedHost(t *testing.T) {
 	require.False(t, isImageWorkspaceRemoteArtifactAllowed("https://evil.example.com/image.png"))
 
-	t.Setenv("IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL", "https://static.example.com/image-workspace")
+	t.Setenv("IMAGE_WORKSPACE_ARTIFACT_REMOTE_HOST_ALLOWLIST", "https://static.example.com/image-workspace")
 	require.True(t, isImageWorkspaceRemoteArtifactAllowed("https://static.example.com/image-workspace/user-1/image.png"))
 	require.False(t, isImageWorkspaceRemoteArtifactAllowed("https://static.example.net/image-workspace/user-1/image.png"))
 	require.False(t, isImageWorkspaceRemoteArtifactAllowed("javascript:alert(1)"))
@@ -38,7 +38,7 @@ func TestImageWorkspaceRemoteArtifactRequiresAllowlistedHost(t *testing.T) {
 
 func TestImageWorkspaceRemoteArtifactRedirectsForPublicStorage(t *testing.T) {
 	gin.SetMode(gin.TestMode)
-	t.Setenv("IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL", "https://static.example.com/image-workspace")
+	t.Setenv("IMAGE_WORKSPACE_ARTIFACT_REMOTE_HOST_ALLOWLIST", "https://static.example.com/image-workspace")
 
 	recorder := httptest.NewRecorder()
 	ctx, _ := gin.CreateTestContext(recorder)

@@ -87,11 +87,26 @@ func (h *AuthHandler) emailOAuthStart(c *gin.Context, provider string) {
 			return
 		}
 	}
+	source := strings.TrimSpace(c.Query("source"))
+	if err := h.ensureWebAuthSourceAllowed(c, source, provider); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 
 	secureCookie := isRequestHTTPS(c)
 	emailOAuthSetCookie(c, emailOAuthStateCookieName, encodeCookieValue(state), secureCookie)
 	emailOAuthSetCookie(c, emailOAuthRedirectCookie, encodeCookieValue(redirectTo), secureCookie)
 	emailOAuthSetCookie(c, emailOAuthProviderCookie, encodeCookieValue(provider), secureCookie)
+	if frontendCallback != "" {
+		emailOAuthSetCookie(c, emailOAuthFrontendCallbackCookie, encodeCookieValue(frontendCallback), secureCookie)
+	} else {
+		emailOAuthClearCookie(c, emailOAuthFrontendCallbackCookie, secureCookie)
+	}
+	if isWebAuthSource(source) {
+		emailOAuthSetCookie(c, emailOAuthSourceCookie, encodeCookieValue(webAuthSource), secureCookie)
+	} else {
+		emailOAuthClearCookie(c, emailOAuthSourceCookie, secureCookie)
+	}
 	captureOAuthPromoCode(c, secureCookie)
 	if affCode := strings.TrimSpace(firstNonEmpty(c.Query("aff_code"), c.Query("aff"))); affCode != "" {
 		emailOAuthSetCookie(c, emailOAuthAffiliateCookie, encodeCookieValue(affCode), secureCookie)
@@ -201,11 +216,16 @@ func (h *AuthHandler) emailOAuthCallbackWithProfile(
 		agreementInput.Accepted = true
 		agreementInput.Revision = strings.TrimSpace(agreementRevision)
 	}
-	shouldCreate, err := h.emailOAuthShouldCreatePendingRegistration(c.Request.Context(), input)
-	if err != nil {
-		redirectOAuthError(c, frontendCallback, infraerrors.Reason(err), infraerrors.Message(err), "")
-		return
-	} else if shouldCreate {
+	shouldCreate := false
+	if !h.isWebEmailOAuthSource(c) {
+		var err error
+		shouldCreate, err = h.emailOAuthShouldCreatePendingRegistration(c.Request.Context(), input)
+		if err != nil {
+			redirectOAuthError(c, frontendCallback, infraerrors.Reason(err), infraerrors.Message(err), "")
+			return
+		}
+	}
+	if shouldCreate {
 		if pendingErr := h.createEmailOAuthRegistrationPendingSession(c, provider, frontendCallback, redirectTo, profile); pendingErr != nil {
 			redirectOAuthError(c, frontendCallback, infraerrors.Reason(pendingErr), infraerrors.Message(pendingErr), "")
 			return
@@ -229,32 +249,6 @@ func (h *AuthHandler) emailOAuthCallbackWithProfile(
 			}
 			redirectToFrontendCallback(c, frontendCallback)
 			return
-		}
-	}
-	if shouldCreate {
-		if _, err := h.ensureAnonymousLoginAgreementAccepted(c.Request.Context(), agreementInput); err != nil {
-			redirectOAuthError(c, frontendCallback, "login_agreement_required", infraerrors.Reason(err), infraerrors.Message(err))
-			return
-		}
-	}
-
-	var tokenPair *service.TokenPair
-	var user *service.User
-	if h.isWebEmailOAuthSource(c) {
-		tokenPair, user, err = h.authService.LoginOrRegisterVerifiedEmailOAuthBypassInvitation(c.Request.Context(), input)
-	} else {
-		tokenPair, user, err = h.authService.LoginOrRegisterVerifiedEmailOAuthWithInvitation(c.Request.Context(), input, "", affiliateCode)
-	}
-	if err != nil {
-		if errors.Is(err, service.ErrOAuthInvitationRequired) {
-			if !h.isWebEmailOAuthSource(c) {
-				if pendingErr := h.createEmailOAuthRegistrationPendingSession(c, provider, frontendCallback, redirectTo, profile); pendingErr != nil {
-					redirectOAuthError(c, frontendCallback, infraerrors.Reason(pendingErr), infraerrors.Message(pendingErr), "")
-					return
-				}
-				redirectToFrontendCallback(c, frontendCallback)
-				return
-			}
 		}
 		redirectOAuthError(c, frontendCallback, infraerrors.Reason(err), infraerrors.Message(err), "")
 		return

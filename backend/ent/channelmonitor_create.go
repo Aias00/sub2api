@@ -389,6 +389,18 @@ func (_c *ChannelMonitorCreate) defaults() {
 		v := channelmonitor.DefaultEnabled
 		_c.mutation.SetEnabled(v)
 	}
+	if _, ok := _c.mutation.AutoDisabled(); !ok {
+		v := channelmonitor.DefaultAutoDisabled
+		_c.mutation.SetAutoDisabled(v)
+	}
+	if _, ok := _c.mutation.AutoDisabledReason(); !ok {
+		v := channelmonitor.DefaultAutoDisabledReason
+		_c.mutation.SetAutoDisabledReason(v)
+	}
+	if _, ok := _c.mutation.LastHealthStatus(); !ok {
+		v := channelmonitor.DefaultLastHealthStatus
+		_c.mutation.SetLastHealthStatus(v)
+	}
 	if _, ok := _c.mutation.JitterSeconds(); !ok {
 		v := channelmonitor.DefaultJitterSeconds
 		_c.mutation.SetJitterSeconds(v)

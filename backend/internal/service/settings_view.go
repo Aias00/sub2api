@@ -215,6 +215,26 @@ type SystemSettings struct {
 	WebTawkPropertyID             string
 	WebTawkWidgetID               string
 
+	WeChatExportFetchRetries                 int
+	WeChatExportFetchTimeoutMS               int
+	WeChatExportWorkerConcurrency            int
+	WeChatExportWorkerIntervalMS             int
+	WeChatExportWorkerLeaseSeconds           int
+	WeChatExportWorkerMaxBackoffMS           int
+	ImageWorkspaceUpstreamURL                string
+	ImageWorkspaceGenerationTimeoutMS        int
+	ImageWorkspaceCompletionCost             string
+	ImageWorkspaceCompletionCostMapJSON      string
+	ImageWorkspacePromptSafetyEnabled        bool
+	ImageWorkspaceAssumeWorkerReady          bool
+	ImageWorkspaceObjectStorageEnabled       bool
+	ImageWorkspaceObjectStorageProvider      string
+	ImageWorkspaceObjectStorageBucket        string
+	ImageWorkspaceObjectStorageRegion        string
+	ImageWorkspaceObjectStoragePrefix        string
+	ImageWorkspaceObjectStoragePublicBaseURL string
+	MediaCDNBaseURL                          string
+
 	DefaultConcurrency           int
 	DefaultBalance               float64
 	RiskControlEnabled           bool
@@ -304,6 +324,13 @@ type SystemSettings struct {
 	AccountQuotaNotifyEnabled bool
 	AccountQuotaNotifyEmails  []NotifyEmailEntry
 
+	// 用户注册通知
+	RegistrationNotifyEnabled          bool
+	RegistrationNotifyProvider         string
+	RegistrationNotifyWebhookURL       string
+	RegistrationNotifySecret           string
+	RegistrationNotifySecretConfigured bool
+
 	// 系统全局默认平台配额（key = platform，nil/缺省 = 不限制）
 	DefaultPlatformQuotas map[string]*DefaultPlatformQuotaSetting `json:"default_platform_quotas"`
 
@@ -336,6 +363,57 @@ type PublicSettings struct {
 	SiteName                         string
 	SiteLogo                         string
 	SiteSubtitle                     string
+	WebAppURL                        string
+	WebAppName                       string
+	WebAppDescription                string
+	WebAppLogo                       string
+	WebAppFavicon                    string
+	WebAppPreviewImage               string
+	WebTheme                         string
+	WebAppearance                    string
+	WebDefaultLocale                 string
+	WebPromptCasesTitle              string
+	WebPromptCasesDescription        string
+	WebPromptTemplatesTitle          string
+	WebPromptTemplatesDescription    string
+	PromptCatalogShellConfig         string
+	WebWorkspaceShellConfig          string
+	WebImagePromptFilterConfig       string
+	ImagePromptFilterConfig          string
+	WebPricingTitle                  string
+	WebPricingDescription            string
+	WebPricingShellConfig            string
+	WebPaymentShellConfig            string
+	WebPricingCurrencySymbol         string
+	WebCreditsTitle                  string
+	WebCreditsDescription            string
+	WebCreditsPurchaseLabel          string
+	WebCreditsBalanceLabel           string
+	WebCreditsPerBalance             string
+	CreditsPerBalance                string
+	CreditsShellConfig               string
+	WebLocaleDetectEnabled           bool
+	WebEmailAuthVisible              bool
+	WebGoogleAuthVisible             bool
+	WebGitHubAuthVisible             bool
+	WebGoogleAnalyticsID             string
+	WebClarityID                     string
+	WebPlausibleDomain               string
+	WebPlausibleSrc                  string
+	WebOpenPanelClientID             string
+	WebPublicIntegrationsEnabled     bool
+	WebVercelAnalyticsEnabled        bool
+	WebAdsenseCode                   string
+	WebAffonsoEnabled                bool
+	WebAffonsoID                     string
+	WebAffonsoCookieDuration         string
+	WebPromoteKitEnabled             bool
+	WebPromoteKitID                  string
+	WebCrispEnabled                  bool
+	WebCrispWebsiteID                string
+	WebTawkEnabled                   bool
+	WebTawkPropertyID                string
+	WebTawkWidgetID                  string
 	APIBaseURL                       string
 	ContactInfo                      string
 	DocURL                           string

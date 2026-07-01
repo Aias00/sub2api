@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"log/slog"
@@ -181,20 +182,20 @@ func (h *ImageWorkspaceHandler) DownloadArtifact(c *gin.Context) {
 	filename := imageWorkspaceArtifactDownloadName(artifact)
 	storagePath, ok := resolveImageWorkspaceStoragePath(artifact.StorageKey)
 	if !ok {
-		if redirectImageWorkspaceRemoteArtifact(c, artifact, filename, started) {
+		if h.redirectImageWorkspaceRemoteArtifact(c, artifact, filename, started) {
 			return
 		}
-		if serveImageWorkspaceRemoteArtifact(c, artifact.ImageURL, filename) {
+		if h.serveImageWorkspaceRemoteArtifact(c, artifact.ImageURL, filename) {
 			return
 		}
 		response.NotFound(c, "Artifact file not found")
 		return
 	}
 	if _, err := os.Stat(storagePath); err != nil {
-		if redirectImageWorkspaceRemoteArtifact(c, artifact, filename, started) {
+		if h.redirectImageWorkspaceRemoteArtifact(c, artifact, filename, started) {
 			return
 		}
-		if serveImageWorkspaceRemoteArtifact(c, artifact.ImageURL, filename) {
+		if h.serveImageWorkspaceRemoteArtifact(c, artifact.ImageURL, filename) {
 			return
 		}
 		response.NotFound(c, "Artifact file not found")
@@ -324,6 +325,19 @@ func (h *ImageWorkspaceHandler) WorkerStatus(c *gin.Context) {
 	response.Success(c, status)
 }
 
+func (h *ImageWorkspaceHandler) WorkerRuntimeConfig(c *gin.Context) {
+	if err := h.ensureWorkerReady(c); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	cfg, err := h.service.GetWorkerRuntimeConfig(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, cfg)
+}
+
 func (h *ImageWorkspaceHandler) WorkerClaimTask(c *gin.Context) {
 	if err := h.ensureWorkerReady(c); err != nil {
 		response.ErrorFrom(c, err)
@@ -445,9 +459,9 @@ func resolveImageWorkspaceStoragePath(storageKey string) (string, bool) {
 	return cleanKey, true
 }
 
-func serveImageWorkspaceRemoteArtifact(c *gin.Context, rawURL string, filename string) bool {
+func (h *ImageWorkspaceHandler) serveImageWorkspaceRemoteArtifact(c *gin.Context, rawURL string, filename string) bool {
 	started := time.Now()
-	if !isImageWorkspaceRemoteArtifactAllowed(rawURL) {
+	if !h.isImageWorkspaceRemoteArtifactAllowed(c.Request.Context(), rawURL) {
 		return false
 	}
 	client := &http.Client{Timeout: 60 * time.Second}
@@ -507,12 +521,12 @@ func serveImageWorkspaceRemoteArtifact(c *gin.Context, rawURL string, filename s
 	return true
 }
 
-func redirectImageWorkspaceRemoteArtifact(c *gin.Context, artifact *service.ImageWorkspaceArtifact, filename string, started time.Time) bool {
+func (h *ImageWorkspaceHandler) redirectImageWorkspaceRemoteArtifact(c *gin.Context, artifact *service.ImageWorkspaceArtifact, filename string, started time.Time) bool {
 	if artifact == nil || strings.EqualFold(strings.TrimSpace(artifact.StorageProvider), "upstream") {
 		return false
 	}
 	rawURL := strings.TrimSpace(artifact.ImageURL)
-	if !isImageWorkspaceRemoteArtifactAllowed(rawURL) {
+	if !h.isImageWorkspaceRemoteArtifactAllowed(c.Request.Context(), rawURL) {
 		return false
 	}
 	slog.Info("image_workspace.artifact_download",
@@ -527,7 +541,11 @@ func redirectImageWorkspaceRemoteArtifact(c *gin.Context, artifact *service.Imag
 	return true
 }
 
-func isImageWorkspaceRemoteArtifactAllowed(rawURL string) bool {
+func redirectImageWorkspaceRemoteArtifact(c *gin.Context, artifact *service.ImageWorkspaceArtifact, filename string, started time.Time) bool {
+	return ((*ImageWorkspaceHandler)(nil)).redirectImageWorkspaceRemoteArtifact(c, artifact, filename, started)
+}
+
+func (h *ImageWorkspaceHandler) isImageWorkspaceRemoteArtifactAllowed(ctx context.Context, rawURL string) bool {
 	parsed, err := url.Parse(strings.TrimSpace(rawURL))
 	if err != nil || parsed == nil {
 		return false
@@ -539,7 +557,7 @@ func isImageWorkspaceRemoteArtifactAllowed(rawURL string) bool {
 	if host == "" {
 		return false
 	}
-	for _, allowed := range allowedImageWorkspaceArtifactHosts() {
+	for _, allowed := range h.allowedImageWorkspaceArtifactHosts(ctx) {
 		if host == allowed || strings.ToLower(parsed.Host) == allowed {
 			return true
 		}
@@ -547,14 +565,20 @@ func isImageWorkspaceRemoteArtifactAllowed(rawURL string) bool {
 	return false
 }
 
-func allowedImageWorkspaceArtifactHosts() []string {
+func isImageWorkspaceRemoteArtifactAllowed(rawURL string) bool {
+	return ((*ImageWorkspaceHandler)(nil)).isImageWorkspaceRemoteArtifactAllowed(context.Background(), rawURL)
+}
+
+func (h *ImageWorkspaceHandler) allowedImageWorkspaceArtifactHosts(ctx context.Context) []string {
 	values := []string{
 		os.Getenv("IMAGE_WORKSPACE_ARTIFACT_REMOTE_HOST_ALLOWLIST"),
 		os.Getenv("IMAGE_WORKSPACE_PUBLIC_ARTIFACT_BASE_URL"),
-		os.Getenv("IMAGE_WORKSPACE_OBJECT_STORAGE_PUBLIC_BASE_URL"),
-		os.Getenv("IMAGE_WORKSPACE_R2_PUBLIC_BASE_URL"),
-		os.Getenv("IMAGE_WORKSPACE_R2_DOMAIN"),
 		os.Getenv("MEDIA_CDN_BASE_URL"),
+	}
+	if h != nil && h.service != nil {
+		if cfg, err := h.service.GetWorkerRuntimeConfig(ctx); err == nil {
+			values = append(values, cfg.ObjectStorage.PublicBaseURL, cfg.MediaCDNBaseURL)
+		}
 	}
 	hosts := make([]string, 0)
 	seen := map[string]bool{}

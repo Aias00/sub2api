@@ -50,6 +50,7 @@ func RegisterWeChatExportRoutes(
 	worker := v1.Group("/wechat/worker")
 	{
 		worker.GET("/health", h.WeChatExport.WorkerHealth)
+		worker.GET("/runtime-config", h.WeChatExport.WorkerRuntimeConfig)
 		worker.POST("/tasks/claim", h.WeChatExport.WorkerClaimTask)
 		worker.POST("/articles/:articleID/enrich", h.WeChatExport.WorkerEnrichArticle)
 		worker.POST("/articles/:articleID/engagement", h.WeChatExport.WorkerFetchArticleEngagement)

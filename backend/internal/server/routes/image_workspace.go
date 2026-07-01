@@ -37,6 +37,7 @@ func RegisterImageWorkspaceRoutes(
 	worker := v1.Group("/image-workspace/worker")
 	{
 		worker.GET("/health", h.ImageWorkspace.WorkerHealth)
+		worker.GET("/runtime-config", h.ImageWorkspace.WorkerRuntimeConfig)
 		worker.GET("/status", h.ImageWorkspace.WorkerStatus)
 		worker.POST("/tasks/claim", h.ImageWorkspace.WorkerClaimTask)
 		worker.POST("/tasks/:taskID/complete", h.ImageWorkspace.WorkerCompleteTask)

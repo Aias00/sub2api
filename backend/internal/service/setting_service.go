@@ -74,6 +74,12 @@ type SiteLogoImage struct {
 	ETag        string
 }
 
+type parsedSiteLogoDataURL struct {
+	ContentType string
+	Data        []byte
+	ETag        string
+}
+
 // cachedVersionBounds 缓存 Claude Code 版本号上下限（进程内缓存，60s TTL）
 type cachedVersionBounds struct {
 	min       string // 空字符串 = 不检查
@@ -806,6 +812,55 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeySiteName,
 		SettingKeySiteLogo,
 		SettingKeySiteSubtitle,
+		SettingKeyWebAppURL,
+		SettingKeyWebAppName,
+		SettingKeyWebAppDescription,
+		SettingKeyWebAppLogo,
+		SettingKeyWebAppFavicon,
+		SettingKeyWebAppPreviewImage,
+		SettingKeyWebTheme,
+		SettingKeyWebAppearance,
+		SettingKeyWebDefaultLocale,
+		SettingKeyPromptCasesTitle,
+		SettingKeyPromptCasesDescription,
+		SettingKeyPromptTemplatesTitle,
+		SettingKeyPromptTemplatesDescription,
+		SettingKeyPromptCatalogShellConfig,
+		SettingKeyWorkspaceShellConfig,
+		SettingKeyImagePromptFilterConfig,
+		SettingKeyPricingTitle,
+		SettingKeyPricingDescription,
+		SettingKeyPricingShellConfig,
+		SettingKeyPaymentShellConfig,
+		SettingKeyPricingCurrencySymbol,
+		SettingKeyCreditsTitle,
+		SettingKeyCreditsDescription,
+		SettingKeyCreditsPurchaseLabel,
+		SettingKeyCreditsBalanceLabel,
+		SettingKeyCreditsPerBalance,
+		SettingKeyCreditsShellConfig,
+		SettingKeyWebLocaleDetectEnabled,
+		SettingKeyWebEmailAuthVisible,
+		SettingKeyWebGoogleAuthVisible,
+		SettingKeyWebGitHubAuthVisible,
+		SettingKeyWebGoogleAnalyticsID,
+		SettingKeyWebClarityID,
+		SettingKeyWebPlausibleDomain,
+		SettingKeyWebPlausibleSrc,
+		SettingKeyWebOpenPanelClientID,
+		SettingKeyWebPublicIntegrationsEnabled,
+		SettingKeyWebVercelAnalyticsEnabled,
+		SettingKeyWebAdsenseCode,
+		SettingKeyWebAffonsoEnabled,
+		SettingKeyWebAffonsoID,
+		SettingKeyWebAffonsoCookieDuration,
+		SettingKeyWebPromoteKitEnabled,
+		SettingKeyWebPromoteKitID,
+		SettingKeyWebCrispEnabled,
+		SettingKeyWebCrispWebsiteID,
+		SettingKeyWebTawkEnabled,
+		SettingKeyWebTawkPropertyID,
+		SettingKeyWebTawkWidgetID,
 		SettingKeyAPIBaseURL,
 		SettingKeyContactInfo,
 		SettingKeyDocURL,
@@ -957,6 +1012,57 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SiteName:                         siteName,
 		SiteLogo:                         settings[SettingKeySiteLogo],
 		SiteSubtitle:                     siteSubtitle,
+		WebAppURL:                        strings.TrimSpace(settings[SettingKeyWebAppURL]),
+		WebAppName:                       strings.TrimSpace(settings[SettingKeyWebAppName]),
+		WebAppDescription:                strings.TrimSpace(settings[SettingKeyWebAppDescription]),
+		WebAppLogo:                       strings.TrimSpace(settings[SettingKeyWebAppLogo]),
+		WebAppFavicon:                    strings.TrimSpace(settings[SettingKeyWebAppFavicon]),
+		WebAppPreviewImage:               strings.TrimSpace(settings[SettingKeyWebAppPreviewImage]),
+		WebTheme:                         strings.TrimSpace(settings[SettingKeyWebTheme]),
+		WebAppearance:                    strings.TrimSpace(settings[SettingKeyWebAppearance]),
+		WebDefaultLocale:                 strings.TrimSpace(settings[SettingKeyWebDefaultLocale]),
+		WebPromptCasesTitle:              strings.TrimSpace(settings[SettingKeyPromptCasesTitle]),
+		WebPromptCasesDescription:        strings.TrimSpace(settings[SettingKeyPromptCasesDescription]),
+		WebPromptTemplatesTitle:          strings.TrimSpace(settings[SettingKeyPromptTemplatesTitle]),
+		WebPromptTemplatesDescription:    strings.TrimSpace(settings[SettingKeyPromptTemplatesDescription]),
+		PromptCatalogShellConfig:         promptCatalogShellConfigSetting(settings[SettingKeyPromptCatalogShellConfig]),
+		WebWorkspaceShellConfig:          workspaceShellConfigSetting(settings[SettingKeyWorkspaceShellConfig]),
+		ImagePromptFilterConfig:          strings.TrimSpace(settings[SettingKeyImagePromptFilterConfig]),
+		WebImagePromptFilterConfig:       strings.TrimSpace(settings[SettingKeyImagePromptFilterConfig]),
+		WebPricingTitle:                  strings.TrimSpace(settings[SettingKeyPricingTitle]),
+		WebPricingDescription:            strings.TrimSpace(settings[SettingKeyPricingDescription]),
+		WebPricingShellConfig:            pricingShellConfigSetting(settings[SettingKeyPricingShellConfig]),
+		WebPaymentShellConfig:            paymentShellConfigSetting(settings[SettingKeyPaymentShellConfig]),
+		WebPricingCurrencySymbol:         pricingCurrencySymbolSetting(settings[SettingKeyPricingCurrencySymbol]),
+		WebCreditsTitle:                  strings.TrimSpace(settings[SettingKeyCreditsTitle]),
+		WebCreditsDescription:            strings.TrimSpace(settings[SettingKeyCreditsDescription]),
+		WebCreditsPurchaseLabel:          strings.TrimSpace(settings[SettingKeyCreditsPurchaseLabel]),
+		WebCreditsBalanceLabel:           strings.TrimSpace(settings[SettingKeyCreditsBalanceLabel]),
+		WebCreditsPerBalance:             creditsPerBalanceSetting(settings[SettingKeyCreditsPerBalance]),
+		CreditsPerBalance:                creditsPerBalanceSetting(settings[SettingKeyCreditsPerBalance]),
+		CreditsShellConfig:               creditsShellConfigSetting(settings[SettingKeyCreditsShellConfig]),
+		WebLocaleDetectEnabled:           settings[SettingKeyWebLocaleDetectEnabled] == "true",
+		WebEmailAuthVisible:              webEmailVisible,
+		WebGoogleAuthVisible:             webGoogleVisible,
+		WebGitHubAuthVisible:             webGitHubVisible,
+		WebGoogleAnalyticsID:             strings.TrimSpace(settings[SettingKeyWebGoogleAnalyticsID]),
+		WebClarityID:                     strings.TrimSpace(settings[SettingKeyWebClarityID]),
+		WebPlausibleDomain:               strings.TrimSpace(settings[SettingKeyWebPlausibleDomain]),
+		WebPlausibleSrc:                  strings.TrimSpace(settings[SettingKeyWebPlausibleSrc]),
+		WebOpenPanelClientID:             strings.TrimSpace(settings[SettingKeyWebOpenPanelClientID]),
+		WebPublicIntegrationsEnabled:     !isFalseSettingValue(settings[SettingKeyWebPublicIntegrationsEnabled]),
+		WebVercelAnalyticsEnabled:        settings[SettingKeyWebVercelAnalyticsEnabled] == "true",
+		WebAdsenseCode:                   strings.TrimSpace(settings[SettingKeyWebAdsenseCode]),
+		WebAffonsoEnabled:                settings[SettingKeyWebAffonsoEnabled] == "true",
+		WebAffonsoID:                     strings.TrimSpace(settings[SettingKeyWebAffonsoID]),
+		WebAffonsoCookieDuration:         webAffonsoCookieDurationSetting(settings[SettingKeyWebAffonsoCookieDuration]),
+		WebPromoteKitEnabled:             settings[SettingKeyWebPromoteKitEnabled] == "true",
+		WebPromoteKitID:                  strings.TrimSpace(settings[SettingKeyWebPromoteKitID]),
+		WebCrispEnabled:                  settings[SettingKeyWebCrispEnabled] == "true",
+		WebCrispWebsiteID:                strings.TrimSpace(settings[SettingKeyWebCrispWebsiteID]),
+		WebTawkEnabled:                   settings[SettingKeyWebTawkEnabled] == "true",
+		WebTawkPropertyID:                strings.TrimSpace(settings[SettingKeyWebTawkPropertyID]),
+		WebTawkWidgetID:                  strings.TrimSpace(settings[SettingKeyWebTawkWidgetID]),
 		APIBaseURL:                       settings[SettingKeyAPIBaseURL],
 		ContactInfo:                      settings[SettingKeyContactInfo],
 		DocURL:                           settings[SettingKeyDocURL],
@@ -1018,6 +1124,57 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 
 		AllowUserViewErrorRequests: settings[SettingKeyAllowUserViewErrorRequests] == "true",
 	}, nil
+}
+
+func (s *SettingService) GetSiteLogoImage(ctx context.Context) (*SiteLogoImage, error) {
+	if s == nil || s.settingRepo == nil {
+		return nil, ErrServiceUnavailable
+	}
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeySiteLogo)
+	if err != nil {
+		return nil, fmt.Errorf("get site logo: %w", err)
+	}
+	logo, ok := parseSiteLogoDataURL(raw)
+	if !ok {
+		return nil, nil
+	}
+	return &SiteLogoImage{
+		ContentType: logo.ContentType,
+		Data:        logo.Data,
+		ETag:        logo.ETag,
+	}, nil
+}
+
+func (s *SettingService) GetEmailLogoURL(ctx context.Context) string {
+	if s == nil || s.settingRepo == nil {
+		return ""
+	}
+	return resolveEmailLogoURL(ctx, s.settingRepo)
+}
+
+func parseSiteLogoDataURL(raw string) (parsedSiteLogoDataURL, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || !strings.HasPrefix(strings.ToLower(raw), "data:image/") {
+		return parsedSiteLogoDataURL{}, false
+	}
+	meta, encoded, ok := strings.Cut(raw, ",")
+	if !ok || !strings.Contains(strings.ToLower(meta), ";base64") {
+		return parsedSiteLogoDataURL{}, false
+	}
+	contentType := strings.TrimPrefix(strings.TrimSpace(strings.Split(meta, ";")[0]), "data:")
+	if contentType == "" {
+		return parsedSiteLogoDataURL{}, false
+	}
+	data, err := base64.StdEncoding.DecodeString(strings.TrimSpace(encoded))
+	if err != nil || len(data) == 0 {
+		return parsedSiteLogoDataURL{}, false
+	}
+	sum := sha256.Sum256(data)
+	return parsedSiteLogoDataURL{
+		ContentType: contentType,
+		Data:        data,
+		ETag:        `"` + hex.EncodeToString(sum[:]) + `"`,
+	}, true
 }
 
 func creditsPerBalanceSetting(raw string) string {
@@ -1727,6 +1884,52 @@ func parseBoolSettingWithDefault(raw string, fallback bool) bool {
 	default:
 		return fallback
 	}
+}
+
+func parseBoundedIntSetting(raw string, fallback, minValue, maxValue int) int {
+	v, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil {
+		v = fallback
+	}
+	if v < minValue {
+		return minValue
+	}
+	if v > maxValue {
+		return maxValue
+	}
+	return v
+}
+
+func normalizeJSONObjectSetting(raw string, fallback string) string {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return fallback
+	}
+	var object map[string]any
+	if err := json.Unmarshal([]byte(value), &object); err != nil {
+		return fallback
+	}
+	normalized, err := json.Marshal(object)
+	if err != nil {
+		return fallback
+	}
+	return string(normalized)
+}
+
+func validateJSONObjectSetting(raw string, field string) (string, error) {
+	value := strings.TrimSpace(raw)
+	if value == "" {
+		return "{}", nil
+	}
+	var object map[string]any
+	if err := json.Unmarshal([]byte(value), &object); err != nil {
+		return "", infraerrors.BadRequest("INVALID_JSON_SETTING", fmt.Sprintf("%s must be a valid JSON object", field))
+	}
+	normalized, err := json.Marshal(object)
+	if err != nil {
+		return "", fmt.Errorf("marshal %s: %w", field, err)
+	}
+	return string(normalized), nil
 }
 
 // channelMonitorIntervalMin / channelMonitorIntervalMax bound the default interval
@@ -3025,6 +3228,31 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyWebTawkEnabled] = strconv.FormatBool(settings.WebTawkEnabled)
 	updates[SettingKeyWebTawkPropertyID] = strings.TrimSpace(settings.WebTawkPropertyID)
 	updates[SettingKeyWebTawkWidgetID] = strings.TrimSpace(settings.WebTawkWidgetID)
+	wechatWorkerIntervalMS := parseBoundedIntSetting(strconv.Itoa(settings.WeChatExportWorkerIntervalMS), 5000, 1000, 300000)
+	wechatWorkerMaxBackoffMS := parseBoundedIntSetting(strconv.Itoa(settings.WeChatExportWorkerMaxBackoffMS), 60000, wechatWorkerIntervalMS, 300000)
+	updates[SettingKeyWeChatExportFetchRetries] = strconv.Itoa(parseBoundedIntSetting(strconv.Itoa(settings.WeChatExportFetchRetries), 2, 0, 5))
+	updates[SettingKeyWeChatExportFetchTimeoutMS] = strconv.Itoa(parseBoundedIntSetting(strconv.Itoa(settings.WeChatExportFetchTimeoutMS), 20000, 1000, 120000))
+	updates[SettingKeyWeChatExportWorkerConcurrency] = strconv.Itoa(parseBoundedIntSetting(strconv.Itoa(settings.WeChatExportWorkerConcurrency), 1, 1, 8))
+	updates[SettingKeyWeChatExportWorkerIntervalMS] = strconv.Itoa(wechatWorkerIntervalMS)
+	updates[SettingKeyWeChatExportWorkerLeaseSeconds] = strconv.Itoa(parseBoundedIntSetting(strconv.Itoa(settings.WeChatExportWorkerLeaseSeconds), 300, 60, 3600))
+	updates[SettingKeyWeChatExportWorkerMaxBackoffMS] = strconv.Itoa(wechatWorkerMaxBackoffMS)
+	updates[SettingKeyImageWorkspaceUpstreamURL] = strings.TrimSpace(settings.ImageWorkspaceUpstreamURL)
+	updates[SettingKeyImageWorkspaceGenerationTimeoutMS] = strconv.Itoa(parseBoundedIntSetting(strconv.Itoa(settings.ImageWorkspaceGenerationTimeoutMS), 420000, 1000, 900000))
+	updates[SettingKeyImageWorkspaceCompletionCost] = strings.TrimSpace(settings.ImageWorkspaceCompletionCost)
+	imageWorkspaceCompletionCostMapJSON, err := validateJSONObjectSetting(settings.ImageWorkspaceCompletionCostMapJSON, "image_workspace_completion_cost_map_json")
+	if err != nil {
+		return nil, err
+	}
+	updates[SettingKeyImageWorkspaceCompletionCostMapJSON] = imageWorkspaceCompletionCostMapJSON
+	updates[SettingKeyImageWorkspacePromptSafetyEnabled] = strconv.FormatBool(settings.ImageWorkspacePromptSafetyEnabled)
+	updates[SettingKeyImageWorkspaceAssumeWorkerReady] = strconv.FormatBool(settings.ImageWorkspaceAssumeWorkerReady)
+	updates[SettingKeyImageWorkspaceObjectStorageEnabled] = strconv.FormatBool(settings.ImageWorkspaceObjectStorageEnabled)
+	updates[SettingKeyImageWorkspaceObjectStorageProvider] = strings.TrimSpace(settings.ImageWorkspaceObjectStorageProvider)
+	updates[SettingKeyImageWorkspaceObjectStorageBucket] = strings.TrimSpace(settings.ImageWorkspaceObjectStorageBucket)
+	updates[SettingKeyImageWorkspaceObjectStorageRegion] = strings.TrimSpace(settings.ImageWorkspaceObjectStorageRegion)
+	updates[SettingKeyImageWorkspaceObjectStoragePrefix] = strings.TrimSpace(settings.ImageWorkspaceObjectStoragePrefix)
+	updates[SettingKeyImageWorkspaceObjectStoragePublicBaseURL] = strings.TrimSpace(settings.ImageWorkspaceObjectStoragePublicBaseURL)
+	updates[SettingKeyMediaCDNBaseURL] = strings.TrimSpace(settings.MediaCDNBaseURL)
 
 	// 默认配置
 	updates[SettingKeyDefaultConcurrency] = strconv.Itoa(settings.DefaultConcurrency)
@@ -4017,6 +4245,25 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyWebTawkEnabled:                           "false",
 		SettingKeyWebTawkPropertyID:                        "",
 		SettingKeyWebTawkWidgetID:                          "",
+		SettingKeyWeChatExportFetchRetries:                 "2",
+		SettingKeyWeChatExportFetchTimeoutMS:               "20000",
+		SettingKeyWeChatExportWorkerConcurrency:            "1",
+		SettingKeyWeChatExportWorkerIntervalMS:             "5000",
+		SettingKeyWeChatExportWorkerLeaseSeconds:           "300",
+		SettingKeyWeChatExportWorkerMaxBackoffMS:           "60000",
+		SettingKeyImageWorkspaceUpstreamURL:                "https://api.openai.com/v1/images/generations",
+		SettingKeyImageWorkspaceGenerationTimeoutMS:        "420000",
+		SettingKeyImageWorkspaceCompletionCost:             "0",
+		SettingKeyImageWorkspaceCompletionCostMapJSON:      "{}",
+		SettingKeyImageWorkspacePromptSafetyEnabled:        "true",
+		SettingKeyImageWorkspaceAssumeWorkerReady:          "false",
+		SettingKeyImageWorkspaceObjectStorageEnabled:       "false",
+		SettingKeyImageWorkspaceObjectStorageProvider:      "r2",
+		SettingKeyImageWorkspaceObjectStorageBucket:        "",
+		SettingKeyImageWorkspaceObjectStorageRegion:        "auto",
+		SettingKeyImageWorkspaceObjectStoragePrefix:        "image-workspace",
+		SettingKeyImageWorkspaceObjectStoragePublicBaseURL: "",
+		SettingKeyMediaCDNBaseURL:                          "",
 		SettingKeyWeChatConnectEnabled:                     "false",
 		SettingKeyWeChatConnectOpenAppID:                   "",
 		SettingKeyWeChatConnectOpenAppSecret:               "",
@@ -4184,115 +4431,134 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		apiKeyACLTrustForwardedIP = s.cfg.Security.TrustForwardedIPForAPIKeyACL
 	}
 	result := &SystemSettings{
-		RegistrationEnabled:              settings[SettingKeyRegistrationEnabled] == "true",
-		EmailVerifyEnabled:               emailVerifyEnabled,
-		RegistrationEmailSuffixWhitelist: ParseRegistrationEmailSuffixWhitelist(settings[SettingKeyRegistrationEmailSuffixWhitelist]),
-		PromoCodeEnabled:                 settings[SettingKeyPromoCodeEnabled] != "false", // 默认启用
-		PasswordResetEnabled:             emailVerifyEnabled && settings[SettingKeyPasswordResetEnabled] == "true",
-		PasswordMinLength:                parsePasswordMinLength(settings[SettingKeyPasswordMinLength]),
-		FrontendURL:                      settings[SettingKeyFrontendURL],
-		InvitationCodeEnabled:            settings[SettingKeyInvitationCodeEnabled] == "true",
-		TotpEnabled:                      settings[SettingKeyTotpEnabled] == "true",
-		LoginAgreementEnabled:            settings[SettingKeyLoginAgreementEnabled] == "true",
-		LoginAgreementMode:               normalizeLoginAgreementMode(settings[SettingKeyLoginAgreementMode]),
-		LoginAgreementUpdatedAt:          loginAgreementUpdatedAt,
-		LoginAgreementDocuments:          loginAgreementDocuments,
-		SMTPHost:                         settings[SettingKeySMTPHost],
-		SMTPUsername:                     settings[SettingKeySMTPUsername],
-		SMTPFrom:                         settings[SettingKeySMTPFrom],
-		SMTPFromName:                     settings[SettingKeySMTPFromName],
-		SMTPUseTLS:                       settings[SettingKeySMTPUseTLS] == "true",
-		SMTPDailyLimit:                   parseSMTPDailyLimit(settings[SettingKeySMTPDailyLimit]),
-		SMTPChannels:                     parseSMTPChannels(settings[SettingKeySMTPChannels]),
-		SMTPPasswordConfigured:           settings[SettingKeySMTPPassword] != "",
-		TurnstileEnabled:                 settings[SettingKeyTurnstileEnabled] == "true",
-		TurnstileSiteKey:                 settings[SettingKeyTurnstileSiteKey],
-		TurnstileSecretKeyConfigured:     settings[SettingKeyTurnstileSecretKey] != "",
-		APIKeyACLTrustForwardedIP:        apiKeyACLTrustForwardedIP,
-		SiteName:                         s.getStringOrDefault(settings, SettingKeySiteName, "Sub2API"),
-		SiteLogo:                         settings[SettingKeySiteLogo],
-		SiteSubtitle:                     s.getStringOrDefault(settings, SettingKeySiteSubtitle, "Subscription to API Conversion Platform"),
-		APIBaseURL:                       settings[SettingKeyAPIBaseURL],
-		ContactInfo:                      settings[SettingKeyContactInfo],
-		DocURL:                           settings[SettingKeyDocURL],
-		DocsContentBasePath:              docsContentBasePathSetting(settings[SettingKeyDocsContentBasePath]),
-		HomeContent:                      settings[SettingKeyHomeContent],
-		HomeShellConfig:                  homeShellConfigSetting(settings[SettingKeyHomeShellConfig]),
-		HomeBusinessShellConfig:          homeBusinessShellConfigSetting(settings[SettingKeyHomeBusinessShellConfig]),
-		ModelPlazaItems:                  settings[SettingKeyModelPlazaItems],
-		ImageWorkspaceModelConfig:        imageWorkspaceModelConfigSetting(settings[SettingKeyImageWorkspaceModelConfig]),
-		ModelPlazaShellConfig:            modelPlazaShellConfigSetting(settings[SettingKeyModelPlazaShellConfig]),
-		DocsShellConfig:                  docsShellConfigSetting(settings[SettingKeyDocsShellConfig]),
-		LegalDocumentShellConfig:         legalDocumentShellConfigSetting(settings[SettingKeyLegalDocumentShellConfig]),
-		APIKeysShellConfig:               apiKeysShellConfigSetting(settings[SettingKeyAPIKeysShellConfig]),
-		KeyUsageShellConfig:              keyUsageShellConfigSetting(settings[SettingKeyKeyUsageShellConfig]),
-		DashboardShellConfig:             dashboardShellConfigSetting(settings[SettingKeyDashboardShellConfig]),
-		UsageShellConfig:                 usageShellConfigSetting(settings[SettingKeyUsageShellConfig]),
-		APIGuideShellConfig:              apiGuideShellConfigSetting(settings[SettingKeyAPIGuideShellConfig]),
-		APITestShellConfig:               apiTestShellConfigSetting(settings[SettingKeyAPITestShellConfig]),
-		AvailableGroupsShellConfig:       availableGroupsShellConfigSetting(settings[SettingKeyAvailableGroupsShellConfig]),
-		RedeemShellConfig:                redeemShellConfigSetting(settings[SettingKeyRedeemShellConfig]),
-		AffiliateShellConfig:             affiliateShellConfigSetting(settings[SettingKeyAffiliateShellConfig]),
-		AvailableChannelsShellConfig:     availableChannelsShellConfigSetting(settings[SettingKeyAvailableChannelsShellConfig]),
-		ChannelStatusShellConfig:         channelStatusShellConfigSetting(settings[SettingKeyChannelStatusShellConfig]),
-		CustomPageShellConfig:            customPageShellConfigSetting(settings[SettingKeyCustomPageShellConfig]),
-		ProfileShellConfig:               profileShellConfigSetting(settings[SettingKeyProfileShellConfig]),
-		AuthShellConfig:                  authShellConfigSetting(settings[SettingKeyAuthShellConfig]),
-		HideCcsImportButton:              settings[SettingKeyHideCcsImportButton] == "true",
-		PurchaseSubscriptionEnabled:      settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
-		PurchaseSubscriptionURL:          strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
-		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
-		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],
-		WebAppURL:                        strings.TrimSpace(settings[SettingKeyWebAppURL]),
-		WebAppName:                       strings.TrimSpace(settings[SettingKeyWebAppName]),
-		WebAppDescription:                strings.TrimSpace(settings[SettingKeyWebAppDescription]),
-		WebAppLogo:                       strings.TrimSpace(settings[SettingKeyWebAppLogo]),
-		WebAppFavicon:                    strings.TrimSpace(settings[SettingKeyWebAppFavicon]),
-		WebAppPreviewImage:               strings.TrimSpace(settings[SettingKeyWebAppPreviewImage]),
-		WebTheme:                         strings.TrimSpace(settings[SettingKeyWebTheme]),
-		WebAppearance:                    strings.TrimSpace(settings[SettingKeyWebAppearance]),
-		WebDefaultLocale:                 strings.TrimSpace(settings[SettingKeyWebDefaultLocale]),
-		WebPromptCasesTitle:              strings.TrimSpace(settings[SettingKeyPromptCasesTitle]),
-		WebPromptCasesDescription:        strings.TrimSpace(settings[SettingKeyPromptCasesDescription]),
-		WebPromptTemplatesTitle:          strings.TrimSpace(settings[SettingKeyPromptTemplatesTitle]),
-		WebPromptTemplatesDescription:    strings.TrimSpace(settings[SettingKeyPromptTemplatesDescription]),
-		PromptCatalogShellConfig:         promptCatalogShellConfigSetting(settings[SettingKeyPromptCatalogShellConfig]),
-		WebWorkspaceShellConfig:          workspaceShellConfigSetting(settings[SettingKeyWorkspaceShellConfig]),
-		ImagePromptFilterConfig:          strings.TrimSpace(settings[SettingKeyImagePromptFilterConfig]),
-		WebPricingTitle:                  strings.TrimSpace(settings[SettingKeyPricingTitle]),
-		WebPricingDescription:            strings.TrimSpace(settings[SettingKeyPricingDescription]),
-		WebPricingShellConfig:            pricingShellConfigSetting(settings[SettingKeyPricingShellConfig]),
-		WebPaymentShellConfig:            paymentShellConfigSetting(settings[SettingKeyPaymentShellConfig]),
-		WebPricingCurrencySymbol:         pricingCurrencySymbolSetting(settings[SettingKeyPricingCurrencySymbol]),
-		WebCreditsTitle:                  strings.TrimSpace(settings[SettingKeyCreditsTitle]),
-		WebCreditsDescription:            strings.TrimSpace(settings[SettingKeyCreditsDescription]),
-		WebCreditsPurchaseLabel:          strings.TrimSpace(settings[SettingKeyCreditsPurchaseLabel]),
-		WebCreditsBalanceLabel:           strings.TrimSpace(settings[SettingKeyCreditsBalanceLabel]),
-		WebCreditsPerBalance:             creditsPerBalanceSetting(settings[SettingKeyCreditsPerBalance]),
-		CreditsShellConfig:               creditsShellConfigSetting(settings[SettingKeyCreditsShellConfig]),
-		WebLocaleDetectEnabled:           settings[SettingKeyWebLocaleDetectEnabled] == "true",
-		WebEmailAuthVisible:              parseBoolSettingWithDefault(settings[SettingKeyWebEmailAuthVisible], true),
-		WebGoogleAuthVisible:             settings[SettingKeyWebGoogleAuthVisible] == "true",
-		WebGitHubAuthVisible:             settings[SettingKeyWebGitHubAuthVisible] == "true",
-		WebGoogleAnalyticsID:             strings.TrimSpace(settings[SettingKeyWebGoogleAnalyticsID]),
-		WebClarityID:                     strings.TrimSpace(settings[SettingKeyWebClarityID]),
-		WebPlausibleDomain:               strings.TrimSpace(settings[SettingKeyWebPlausibleDomain]),
-		WebPlausibleSrc:                  strings.TrimSpace(settings[SettingKeyWebPlausibleSrc]),
-		WebOpenPanelClientID:             strings.TrimSpace(settings[SettingKeyWebOpenPanelClientID]),
-		WebPublicIntegrationsEnabled:     !isFalseSettingValue(settings[SettingKeyWebPublicIntegrationsEnabled]),
-		WebVercelAnalyticsEnabled:        settings[SettingKeyWebVercelAnalyticsEnabled] == "true",
-		WebAdsenseCode:                   strings.TrimSpace(settings[SettingKeyWebAdsenseCode]),
-		WebAffonsoEnabled:                settings[SettingKeyWebAffonsoEnabled] == "true",
-		WebAffonsoID:                     strings.TrimSpace(settings[SettingKeyWebAffonsoID]),
-		WebAffonsoCookieDuration:         webAffonsoCookieDurationSetting(settings[SettingKeyWebAffonsoCookieDuration]),
-		WebPromoteKitEnabled:             settings[SettingKeyWebPromoteKitEnabled] == "true",
-		WebPromoteKitID:                  strings.TrimSpace(settings[SettingKeyWebPromoteKitID]),
-		WebCrispEnabled:                  settings[SettingKeyWebCrispEnabled] == "true",
-		WebCrispWebsiteID:                strings.TrimSpace(settings[SettingKeyWebCrispWebsiteID]),
-		WebTawkEnabled:                   settings[SettingKeyWebTawkEnabled] == "true",
-		WebTawkPropertyID:                strings.TrimSpace(settings[SettingKeyWebTawkPropertyID]),
-		WebTawkWidgetID:                  strings.TrimSpace(settings[SettingKeyWebTawkWidgetID]),
-		BackendModeEnabled:               settings[SettingKeyBackendModeEnabled] == "true",
+		RegistrationEnabled:                      settings[SettingKeyRegistrationEnabled] == "true",
+		EmailVerifyEnabled:                       emailVerifyEnabled,
+		RegistrationEmailSuffixWhitelist:         ParseRegistrationEmailSuffixWhitelist(settings[SettingKeyRegistrationEmailSuffixWhitelist]),
+		PromoCodeEnabled:                         settings[SettingKeyPromoCodeEnabled] != "false", // 默认启用
+		PasswordResetEnabled:                     emailVerifyEnabled && settings[SettingKeyPasswordResetEnabled] == "true",
+		PasswordMinLength:                        parsePasswordMinLength(settings[SettingKeyPasswordMinLength]),
+		FrontendURL:                              settings[SettingKeyFrontendURL],
+		InvitationCodeEnabled:                    settings[SettingKeyInvitationCodeEnabled] == "true",
+		TotpEnabled:                              settings[SettingKeyTotpEnabled] == "true",
+		LoginAgreementEnabled:                    settings[SettingKeyLoginAgreementEnabled] == "true",
+		LoginAgreementMode:                       normalizeLoginAgreementMode(settings[SettingKeyLoginAgreementMode]),
+		LoginAgreementUpdatedAt:                  loginAgreementUpdatedAt,
+		LoginAgreementDocuments:                  loginAgreementDocuments,
+		SMTPHost:                                 settings[SettingKeySMTPHost],
+		SMTPUsername:                             settings[SettingKeySMTPUsername],
+		SMTPFrom:                                 settings[SettingKeySMTPFrom],
+		SMTPFromName:                             settings[SettingKeySMTPFromName],
+		SMTPUseTLS:                               settings[SettingKeySMTPUseTLS] == "true",
+		SMTPDailyLimit:                           parseSMTPDailyLimit(settings[SettingKeySMTPDailyLimit]),
+		SMTPChannels:                             parseSMTPChannels(settings[SettingKeySMTPChannels]),
+		SMTPPasswordConfigured:                   settings[SettingKeySMTPPassword] != "",
+		TurnstileEnabled:                         settings[SettingKeyTurnstileEnabled] == "true",
+		TurnstileSiteKey:                         settings[SettingKeyTurnstileSiteKey],
+		TurnstileSecretKeyConfigured:             settings[SettingKeyTurnstileSecretKey] != "",
+		APIKeyACLTrustForwardedIP:                apiKeyACLTrustForwardedIP,
+		SiteName:                                 s.getStringOrDefault(settings, SettingKeySiteName, "Sub2API"),
+		SiteLogo:                                 settings[SettingKeySiteLogo],
+		SiteSubtitle:                             s.getStringOrDefault(settings, SettingKeySiteSubtitle, "Subscription to API Conversion Platform"),
+		APIBaseURL:                               settings[SettingKeyAPIBaseURL],
+		ContactInfo:                              settings[SettingKeyContactInfo],
+		DocURL:                                   settings[SettingKeyDocURL],
+		DocsContentBasePath:                      docsContentBasePathSetting(settings[SettingKeyDocsContentBasePath]),
+		HomeContent:                              settings[SettingKeyHomeContent],
+		HomeShellConfig:                          homeShellConfigSetting(settings[SettingKeyHomeShellConfig]),
+		HomeBusinessShellConfig:                  homeBusinessShellConfigSetting(settings[SettingKeyHomeBusinessShellConfig]),
+		ModelPlazaItems:                          settings[SettingKeyModelPlazaItems],
+		ImageWorkspaceModelConfig:                imageWorkspaceModelConfigSetting(settings[SettingKeyImageWorkspaceModelConfig]),
+		ModelPlazaShellConfig:                    modelPlazaShellConfigSetting(settings[SettingKeyModelPlazaShellConfig]),
+		DocsShellConfig:                          docsShellConfigSetting(settings[SettingKeyDocsShellConfig]),
+		LegalDocumentShellConfig:                 legalDocumentShellConfigSetting(settings[SettingKeyLegalDocumentShellConfig]),
+		APIKeysShellConfig:                       apiKeysShellConfigSetting(settings[SettingKeyAPIKeysShellConfig]),
+		KeyUsageShellConfig:                      keyUsageShellConfigSetting(settings[SettingKeyKeyUsageShellConfig]),
+		DashboardShellConfig:                     dashboardShellConfigSetting(settings[SettingKeyDashboardShellConfig]),
+		UsageShellConfig:                         usageShellConfigSetting(settings[SettingKeyUsageShellConfig]),
+		APIGuideShellConfig:                      apiGuideShellConfigSetting(settings[SettingKeyAPIGuideShellConfig]),
+		APITestShellConfig:                       apiTestShellConfigSetting(settings[SettingKeyAPITestShellConfig]),
+		AvailableGroupsShellConfig:               availableGroupsShellConfigSetting(settings[SettingKeyAvailableGroupsShellConfig]),
+		RedeemShellConfig:                        redeemShellConfigSetting(settings[SettingKeyRedeemShellConfig]),
+		AffiliateShellConfig:                     affiliateShellConfigSetting(settings[SettingKeyAffiliateShellConfig]),
+		AvailableChannelsShellConfig:             availableChannelsShellConfigSetting(settings[SettingKeyAvailableChannelsShellConfig]),
+		ChannelStatusShellConfig:                 channelStatusShellConfigSetting(settings[SettingKeyChannelStatusShellConfig]),
+		CustomPageShellConfig:                    customPageShellConfigSetting(settings[SettingKeyCustomPageShellConfig]),
+		ProfileShellConfig:                       profileShellConfigSetting(settings[SettingKeyProfileShellConfig]),
+		AuthShellConfig:                          authShellConfigSetting(settings[SettingKeyAuthShellConfig]),
+		HideCcsImportButton:                      settings[SettingKeyHideCcsImportButton] == "true",
+		PurchaseSubscriptionEnabled:              settings[SettingKeyPurchaseSubscriptionEnabled] == "true",
+		PurchaseSubscriptionURL:                  strings.TrimSpace(settings[SettingKeyPurchaseSubscriptionURL]),
+		CustomMenuItems:                          settings[SettingKeyCustomMenuItems],
+		CustomEndpoints:                          settings[SettingKeyCustomEndpoints],
+		WebAppURL:                                strings.TrimSpace(settings[SettingKeyWebAppURL]),
+		WebAppName:                               strings.TrimSpace(settings[SettingKeyWebAppName]),
+		WebAppDescription:                        strings.TrimSpace(settings[SettingKeyWebAppDescription]),
+		WebAppLogo:                               strings.TrimSpace(settings[SettingKeyWebAppLogo]),
+		WebAppFavicon:                            strings.TrimSpace(settings[SettingKeyWebAppFavicon]),
+		WebAppPreviewImage:                       strings.TrimSpace(settings[SettingKeyWebAppPreviewImage]),
+		WebTheme:                                 strings.TrimSpace(settings[SettingKeyWebTheme]),
+		WebAppearance:                            strings.TrimSpace(settings[SettingKeyWebAppearance]),
+		WebDefaultLocale:                         strings.TrimSpace(settings[SettingKeyWebDefaultLocale]),
+		WebPromptCasesTitle:                      strings.TrimSpace(settings[SettingKeyPromptCasesTitle]),
+		WebPromptCasesDescription:                strings.TrimSpace(settings[SettingKeyPromptCasesDescription]),
+		WebPromptTemplatesTitle:                  strings.TrimSpace(settings[SettingKeyPromptTemplatesTitle]),
+		WebPromptTemplatesDescription:            strings.TrimSpace(settings[SettingKeyPromptTemplatesDescription]),
+		PromptCatalogShellConfig:                 promptCatalogShellConfigSetting(settings[SettingKeyPromptCatalogShellConfig]),
+		WebWorkspaceShellConfig:                  workspaceShellConfigSetting(settings[SettingKeyWorkspaceShellConfig]),
+		ImagePromptFilterConfig:                  strings.TrimSpace(settings[SettingKeyImagePromptFilterConfig]),
+		WebPricingTitle:                          strings.TrimSpace(settings[SettingKeyPricingTitle]),
+		WebPricingDescription:                    strings.TrimSpace(settings[SettingKeyPricingDescription]),
+		WebPricingShellConfig:                    pricingShellConfigSetting(settings[SettingKeyPricingShellConfig]),
+		WebPaymentShellConfig:                    paymentShellConfigSetting(settings[SettingKeyPaymentShellConfig]),
+		WebPricingCurrencySymbol:                 pricingCurrencySymbolSetting(settings[SettingKeyPricingCurrencySymbol]),
+		WebCreditsTitle:                          strings.TrimSpace(settings[SettingKeyCreditsTitle]),
+		WebCreditsDescription:                    strings.TrimSpace(settings[SettingKeyCreditsDescription]),
+		WebCreditsPurchaseLabel:                  strings.TrimSpace(settings[SettingKeyCreditsPurchaseLabel]),
+		WebCreditsBalanceLabel:                   strings.TrimSpace(settings[SettingKeyCreditsBalanceLabel]),
+		WebCreditsPerBalance:                     creditsPerBalanceSetting(settings[SettingKeyCreditsPerBalance]),
+		CreditsShellConfig:                       creditsShellConfigSetting(settings[SettingKeyCreditsShellConfig]),
+		WebLocaleDetectEnabled:                   settings[SettingKeyWebLocaleDetectEnabled] == "true",
+		WebEmailAuthVisible:                      parseBoolSettingWithDefault(settings[SettingKeyWebEmailAuthVisible], true),
+		WebGoogleAuthVisible:                     settings[SettingKeyWebGoogleAuthVisible] == "true",
+		WebGitHubAuthVisible:                     settings[SettingKeyWebGitHubAuthVisible] == "true",
+		WebGoogleAnalyticsID:                     strings.TrimSpace(settings[SettingKeyWebGoogleAnalyticsID]),
+		WebClarityID:                             strings.TrimSpace(settings[SettingKeyWebClarityID]),
+		WebPlausibleDomain:                       strings.TrimSpace(settings[SettingKeyWebPlausibleDomain]),
+		WebPlausibleSrc:                          strings.TrimSpace(settings[SettingKeyWebPlausibleSrc]),
+		WebOpenPanelClientID:                     strings.TrimSpace(settings[SettingKeyWebOpenPanelClientID]),
+		WebPublicIntegrationsEnabled:             !isFalseSettingValue(settings[SettingKeyWebPublicIntegrationsEnabled]),
+		WebVercelAnalyticsEnabled:                settings[SettingKeyWebVercelAnalyticsEnabled] == "true",
+		WebAdsenseCode:                           strings.TrimSpace(settings[SettingKeyWebAdsenseCode]),
+		WebAffonsoEnabled:                        settings[SettingKeyWebAffonsoEnabled] == "true",
+		WebAffonsoID:                             strings.TrimSpace(settings[SettingKeyWebAffonsoID]),
+		WebAffonsoCookieDuration:                 webAffonsoCookieDurationSetting(settings[SettingKeyWebAffonsoCookieDuration]),
+		WebPromoteKitEnabled:                     settings[SettingKeyWebPromoteKitEnabled] == "true",
+		WebPromoteKitID:                          strings.TrimSpace(settings[SettingKeyWebPromoteKitID]),
+		WebCrispEnabled:                          settings[SettingKeyWebCrispEnabled] == "true",
+		WebCrispWebsiteID:                        strings.TrimSpace(settings[SettingKeyWebCrispWebsiteID]),
+		WebTawkEnabled:                           settings[SettingKeyWebTawkEnabled] == "true",
+		WebTawkPropertyID:                        strings.TrimSpace(settings[SettingKeyWebTawkPropertyID]),
+		WebTawkWidgetID:                          strings.TrimSpace(settings[SettingKeyWebTawkWidgetID]),
+		WeChatExportFetchRetries:                 parseBoundedIntSetting(settings[SettingKeyWeChatExportFetchRetries], 2, 0, 5),
+		WeChatExportFetchTimeoutMS:               parseBoundedIntSetting(settings[SettingKeyWeChatExportFetchTimeoutMS], 20000, 1000, 120000),
+		WeChatExportWorkerConcurrency:            parseBoundedIntSetting(settings[SettingKeyWeChatExportWorkerConcurrency], 1, 1, 8),
+		WeChatExportWorkerIntervalMS:             parseBoundedIntSetting(settings[SettingKeyWeChatExportWorkerIntervalMS], 5000, 1000, 300000),
+		WeChatExportWorkerLeaseSeconds:           parseBoundedIntSetting(settings[SettingKeyWeChatExportWorkerLeaseSeconds], 300, 60, 3600),
+		WeChatExportWorkerMaxBackoffMS:           parseBoundedIntSetting(settings[SettingKeyWeChatExportWorkerMaxBackoffMS], 60000, 1000, 300000),
+		ImageWorkspaceUpstreamURL:                strings.TrimSpace(settings[SettingKeyImageWorkspaceUpstreamURL]),
+		ImageWorkspaceGenerationTimeoutMS:        parseBoundedIntSetting(settings[SettingKeyImageWorkspaceGenerationTimeoutMS], 420000, 1000, 900000),
+		ImageWorkspaceCompletionCost:             strings.TrimSpace(settings[SettingKeyImageWorkspaceCompletionCost]),
+		ImageWorkspaceCompletionCostMapJSON:      normalizeJSONObjectSetting(settings[SettingKeyImageWorkspaceCompletionCostMapJSON], "{}"),
+		ImageWorkspacePromptSafetyEnabled:        parseBoolSettingWithDefault(settings[SettingKeyImageWorkspacePromptSafetyEnabled], true),
+		ImageWorkspaceAssumeWorkerReady:          settings[SettingKeyImageWorkspaceAssumeWorkerReady] == "true",
+		ImageWorkspaceObjectStorageEnabled:       settings[SettingKeyImageWorkspaceObjectStorageEnabled] == "true",
+		ImageWorkspaceObjectStorageProvider:      strings.TrimSpace(settings[SettingKeyImageWorkspaceObjectStorageProvider]),
+		ImageWorkspaceObjectStorageBucket:        strings.TrimSpace(settings[SettingKeyImageWorkspaceObjectStorageBucket]),
+		ImageWorkspaceObjectStorageRegion:        strings.TrimSpace(settings[SettingKeyImageWorkspaceObjectStorageRegion]),
+		ImageWorkspaceObjectStoragePrefix:        strings.TrimSpace(settings[SettingKeyImageWorkspaceObjectStoragePrefix]),
+		ImageWorkspaceObjectStoragePublicBaseURL: strings.TrimSpace(settings[SettingKeyImageWorkspaceObjectStoragePublicBaseURL]),
+		MediaCDNBaseURL:                          strings.TrimSpace(settings[SettingKeyMediaCDNBaseURL]),
+		BackendModeEnabled:                       settings[SettingKeyBackendModeEnabled] == "true",
 	}
 	result.TableDefaultPageSize, result.TablePageSizeOptions = parseTablePreferences(
 		settings[SettingKeyTableDefaultPageSize],

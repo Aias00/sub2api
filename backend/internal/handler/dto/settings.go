@@ -196,7 +196,7 @@ type SystemSettings struct {
 	PromptTemplatesTitle       string `json:"prompt_templates_title"`
 	PromptTemplatesDescription string `json:"prompt_templates_description"`
 	WorkspaceShellConfig       string `json:"workspace_shell_config"`
-	ImagePromptFilterConfig   string `json:"image_prompt_filter_config"`
+	ImagePromptFilterConfig    string `json:"image_prompt_filter_config"`
 	PricingTitle               string `json:"pricing_title"`
 	PricingDescription         string `json:"pricing_description"`
 	PricingShellConfig         string `json:"pricing_shell_config"`
@@ -232,6 +232,26 @@ type SystemSettings struct {
 	TawkEnabled               bool   `json:"tawk_enabled"`
 	TawkPropertyID            string `json:"tawk_property_id"`
 	TawkWidgetID              string `json:"tawk_widget_id"`
+
+	WeChatExportFetchRetries                 int    `json:"wechat_export_fetch_retries"`
+	WeChatExportFetchTimeoutMS               int    `json:"wechat_export_fetch_timeout_ms"`
+	WeChatExportWorkerConcurrency            int    `json:"wechat_export_worker_concurrency"`
+	WeChatExportWorkerIntervalMS             int    `json:"wechat_export_worker_interval_ms"`
+	WeChatExportWorkerLeaseSeconds           int    `json:"wechat_export_worker_lease_seconds"`
+	WeChatExportWorkerMaxBackoffMS           int    `json:"wechat_export_worker_max_backoff_ms"`
+	ImageWorkspaceUpstreamURL                string `json:"image_workspace_upstream_url"`
+	ImageWorkspaceGenerationTimeoutMS        int    `json:"image_workspace_generation_timeout_ms"`
+	ImageWorkspaceCompletionCost             string `json:"image_workspace_completion_cost"`
+	ImageWorkspaceCompletionCostMapJSON      string `json:"image_workspace_completion_cost_map_json"`
+	ImageWorkspacePromptSafetyEnabled        bool   `json:"image_workspace_prompt_safety_enabled"`
+	ImageWorkspaceAssumeWorkerReady          bool   `json:"image_workspace_assume_worker_ready"`
+	ImageWorkspaceObjectStorageEnabled       bool   `json:"image_workspace_object_storage_enabled"`
+	ImageWorkspaceObjectStorageProvider      string `json:"image_workspace_object_storage_provider"`
+	ImageWorkspaceObjectStorageBucket        string `json:"image_workspace_object_storage_bucket"`
+	ImageWorkspaceObjectStorageRegion        string `json:"image_workspace_object_storage_region"`
+	ImageWorkspaceObjectStoragePrefix        string `json:"image_workspace_object_storage_prefix"`
+	ImageWorkspaceObjectStoragePublicBaseURL string `json:"image_workspace_object_storage_public_base_url"`
+	MediaCDNBaseURL                          string `json:"media_cdn_base_url"`
 
 	DefaultConcurrency           int                          `json:"default_concurrency"`
 	DefaultBalance               float64                      `json:"default_balance"`

@@ -108,6 +108,9 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 
 	user := identityUser
 	created := false
+	options := emailOAuthRegistrationOptions{
+		SkipInvitationGate: userSignupSource == authSignupSourceTouch,
+	}
 	if user == nil {
 		if userSignupSource == authSignupSourceTouch {
 			user, err = s.getUserByEmailForSignupSource(ctx, email, userSignupSource)
