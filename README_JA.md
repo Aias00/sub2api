@@ -2,10 +2,10 @@
 
 <div align="center">
 
-[![Go](https://img.shields.io/badge/Go-1.25.7-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.26.4-00ADD8.svg)](https://golang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.4+-4FC08D.svg)](https://vuejs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791.svg)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18+-336791.svg)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-8+-DC382D.svg)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
 <a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Wei-Shaw%2Fcloudbase | Trendshift" width="250" height="55"/></a>
@@ -41,23 +41,16 @@ Cloudbase は、複数の上流 AI アカウント、API キー、サブスク�
 - **管理者・ユーザーポータル** - セットアップ、ユーザー管理、決済、プロフィール、カスタムメニュー、公開チェックアウト、管理者業務を Web コンソールで提供
 - **デプロイ自動化** - フロントエンドを埋め込んだ Go バックエンド、Docker Compose プロファイル、GHCR イメージ公開、インストールスクリプトを提供
 
-## エコシステム
-
-Cloudbase を拡張・統合するコミュニティプロジェクト:
-
-| プロジェクト | 説明 | 機能 |
-|---------|-------------|----------|
-| ~~[CloudbasePay](https://github.com/touwaeriol/cloudbasepay)~~ | ~~セルフサービス決済システム~~ | **内蔵済み** — 決済機能は Cloudbase に統合されました。別途デプロイは不要です。[決済設定ガイド](docs/PAYMENT.md)をご参照ください |
-| [cloudbase-mobile](https://github.com/ckken/cloudbase-mobile) | モバイル管理コンソール | ユーザー管理、アカウント管理、監視ダッシュボード、マルチバックエンド切り替えが可能なクロスプラットフォームアプリ（iOS/Android/Web）。Expo + React Native で構築 |
-
 ## 技術スタック
 
 | コンポーネント | 技術 |
 |-----------|------------|
-| バックエンド | Go 1.25.7, Gin, Ent |
-| フロントエンド | Vue 3.4+, Vite 5+, TailwindCSS |
-| データベース | PostgreSQL 15+ |
-| キャッシュ/キュー | Redis 7+ |
+| バックエンド | Go 1.26.4, Gin, Ent, go-redis, Zap |
+| フロントエンド | Vue 3.4+, Vite 5, TypeScript 5.6, Pinia, TailwindCSS |
+| データベース | PostgreSQL 18+ |
+| キャッシュ/キュー | Redis 8+ |
+| Worker | WeChat エクスポート、画像ワークスペース、ホットコンテンツ用 Node.js Worker |
+| デプロイ | Docker Compose、埋め込みフロントエンド資産、GHCR イメージ |
 
 ---
 
@@ -82,8 +75,8 @@ GitHub Releases からビルド済みバイナリをダウンロードするワ�
 #### 前提条件
 
 - Linux サーバー（amd64 または arm64）
-- PostgreSQL 15+（インストール済みかつ稼働中）
-- Redis 7+（インストール済みかつ稼働中）
+- PostgreSQL 18+（インストール済みかつ稼働中）
+- Redis 8+（インストール済みかつ稼働中）
 - root 権限
 
 #### インストール手順
@@ -314,10 +307,10 @@ rm -rf data/ postgres_data/ redis_data/
 
 #### 前提条件
 
-- Go 1.21+
+- Go 1.26.4+
 - Node.js 18+
-- PostgreSQL 15+
-- Redis 7+
+- PostgreSQL 18+
+- Redis 8+
 
 #### ビルド手順
 

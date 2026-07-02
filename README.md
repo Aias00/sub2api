@@ -2,10 +2,10 @@
 
 <div align="center">
 
-[![Go](https://img.shields.io/badge/Go-1.25.7-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.26.4-00ADD8.svg)](https://golang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.4+-4FC08D.svg)](https://vuejs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791.svg)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18+-336791.svg)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-8+-DC382D.svg)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
 <a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Wei-Shaw%2Fcloudbase | Trendshift" width="250" height="55"/></a>
@@ -41,23 +41,16 @@ Cloudbase is a self-hosted AI gateway and business operations platform for teams
 - **Admin and Public Portals** - Deliver setup, user management, payment, profile, custom menu, public checkout, and administrator workflows through the web console
 - **Deployment Automation** - Ship as an embedded Go backend with built frontend assets, Docker Compose profiles, GHCR image publishing, and install scripts
 
-## Ecosystem
-
-Community projects that extend or integrate with Cloudbase:
-
-| Project | Description | Features |
-|---------|-------------|----------|
-| ~~[CloudbasePay](https://github.com/touwaeriol/cloudbasepay)~~ | ~~Self-service payment system~~ | **Now Built-in** — Payment is now integrated into Cloudbase, no separate deployment needed. See [Payment Configuration Guide](docs/PAYMENT.md) |
-| [cloudbase-mobile](https://github.com/ckken/cloudbase-mobile) | Mobile admin console | Cross-platform app (iOS/Android/Web) for user management, account management, monitoring dashboard, and multi-backend switching; built with Expo + React Native |
-
 ## Tech Stack
 
 | Component | Technology |
 |-----------|------------|
-| Backend | Go 1.25.7, Gin, Ent |
-| Frontend | Vue 3.4+, Vite 5+, TailwindCSS |
-| Database | PostgreSQL 15+ |
-| Cache/Queue | Redis 7+ |
+| Backend | Go 1.26.4, Gin, Ent, go-redis, Zap |
+| Frontend | Vue 3.4+, Vite 5, TypeScript 5.6, Pinia, TailwindCSS |
+| Database | PostgreSQL 18+ |
+| Cache/Queue | Redis 8+ |
+| Workers | Node.js workers for WeChat export, image workspace, and hot content jobs |
+| Deployment | Docker Compose, embedded frontend assets, GHCR images |
 
 ---
 
@@ -82,8 +75,8 @@ One-click installation script that downloads pre-built binaries from GitHub Rele
 #### Prerequisites
 
 - Linux server (amd64 or arm64)
-- PostgreSQL 15+ (installed and running)
-- Redis 7+ (installed and running)
+- PostgreSQL 18+ (installed and running)
+- Redis 8+ (installed and running)
 - Root privileges
 
 #### Installation Steps
@@ -314,10 +307,10 @@ Build and run from source code for development or customization.
 
 #### Prerequisites
 
-- Go 1.21+
+- Go 1.26.4+
 - Node.js 18+
-- PostgreSQL 15+
-- Redis 7+
+- PostgreSQL 18+
+- Redis 8+
 
 #### Build Steps
 

@@ -2,10 +2,10 @@
 
 <div align="center">
 
-[![Go](https://img.shields.io/badge/Go-1.25.7-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.26.4-00ADD8.svg)](https://golang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.4+-4FC08D.svg)](https://vuejs.org/)
-[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-336791.svg)](https://www.postgresql.org/)
-[![Redis](https://img.shields.io/badge/Redis-7+-DC382D.svg)](https://redis.io/)
+[![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18+-336791.svg)](https://www.postgresql.org/)
+[![Redis](https://img.shields.io/badge/Redis-8+-DC382D.svg)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
 <a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Wei-Shaw%2Fcloudbase | Trendshift" width="250" height="55"/></a>
@@ -41,23 +41,16 @@ Cloudbase 是一个自托管的 AI 网关与业务运营平台，面向需要把
 - **管理与用户门户** - 提供初始化、用户管理、支付、个人中心、自定义菜单、公开收银台和管理员工作台
 - **部署自动化** - Go 后端嵌入前端静态资源，支持 Docker Compose、GHCR 镜像发布和安装脚本
 
-## 生态项目
-
-围绕 Cloudbase 的社区扩展与集成项目：
-
-| 项目 | 说明 | 功能 |
-|------|------|------|
-| ~~[CloudbasePay](https://github.com/touwaeriol/cloudbasepay)~~ | ~~自助支付系统~~ | **已内置** — 支付功能已集成到 Cloudbase 中，无需独立部署。详见 [支付配置指南](docs/PAYMENT_CN.md) |
-| [cloudbase-mobile](https://github.com/ckken/cloudbase-mobile) | 移动端管理控制台 | 跨平台应用（iOS/Android/Web），支持用户管理、账号管理、监控看板、多后端切换；基于 Expo + React Native 构建 |
-
 ## 技术栈
 
 | 组件 | 技术 |
 |------|------|
-| 后端 | Go 1.25.7, Gin, Ent |
-| 前端 | Vue 3.4+, Vite 5+, TailwindCSS |
-| 数据库 | PostgreSQL 15+ |
-| 缓存/队列 | Redis 7+ |
+| 后端 | Go 1.26.4, Gin, Ent, go-redis, Zap |
+| 前端 | Vue 3.4+, Vite 5, TypeScript 5.6, Pinia, TailwindCSS |
+| 数据库 | PostgreSQL 18+ |
+| 缓存/队列 | Redis 8+ |
+| Worker | Node.js Worker，支持微信公众号导出、生图工作台、热点内容任务 |
+| 部署 | Docker Compose、嵌入式前端资源、GHCR 镜像 |
 
 ---
 
@@ -82,8 +75,8 @@ Nginx 默认会丢弃名称中含下划线的请求头（如 `session_id`），�
 #### 前置条件
 
 - Linux 服务器（amd64 或 arm64）
-- PostgreSQL 15+（已安装并运行）
-- Redis 7+（已安装并运行）
+- PostgreSQL 18+（已安装并运行）
+- Redis 8+（已安装并运行）
 - Root 权限
 
 #### 安装步骤
@@ -326,10 +319,10 @@ rm -rf data/ postgres_data/ redis_data/
 
 #### 前置条件
 
-- Go 1.21+
+- Go 1.26.4+
 - Node.js 18+
-- PostgreSQL 15+
-- Redis 7+
+- PostgreSQL 18+
+- Redis 8+
 
 #### 编译步骤
 
