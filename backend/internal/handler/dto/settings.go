@@ -74,28 +74,6 @@ type SystemSettings struct {
 	TurnstileSecretKeyConfigured bool   `json:"turnstile_secret_key_configured"`
 	APIKeyACLTrustForwardedIP    bool   `json:"api_key_acl_trust_forwarded_ip"`
 
-	LinuxDoConnectEnabled                bool   `json:"linuxdo_connect_enabled"`
-	LinuxDoConnectClientID               string `json:"linuxdo_connect_client_id"`
-	LinuxDoConnectClientSecretConfigured bool   `json:"linuxdo_connect_client_secret_configured"`
-	LinuxDoConnectRedirectURL            string `json:"linuxdo_connect_redirect_url"`
-
-	DingTalkConnectEnabled                 bool   `json:"dingtalk_connect_enabled"`
-	DingTalkConnectClientID                string `json:"dingtalk_connect_client_id"`
-	DingTalkConnectClientSecretConfigured  bool   `json:"dingtalk_connect_client_secret_configured"`
-	DingTalkConnectRedirectURL             string `json:"dingtalk_connect_redirect_url"`
-	DingTalkConnectCorpRestrictionPolicy   string `json:"dingtalk_connect_corp_restriction_policy"`
-	DingTalkConnectInternalCorpID          string `json:"dingtalk_connect_internal_corp_id"`
-	DingTalkConnectBypassRegistration      bool   `json:"dingtalk_connect_bypass_registration"`
-	DingTalkConnectSyncCorpEmail           bool   `json:"dingtalk_connect_sync_corp_email"`
-	DingTalkConnectSyncDisplayName         bool   `json:"dingtalk_connect_sync_display_name"`
-	DingTalkConnectSyncDept                bool   `json:"dingtalk_connect_sync_dept"`
-	DingTalkConnectSyncCorpEmailAttrKey    string `json:"dingtalk_connect_sync_corp_email_attr_key"`
-	DingTalkConnectSyncDisplayNameAttrKey  string `json:"dingtalk_connect_sync_display_name_attr_key"`
-	DingTalkConnectSyncDeptAttrKey         string `json:"dingtalk_connect_sync_dept_attr_key"`
-	DingTalkConnectSyncCorpEmailAttrName   string `json:"dingtalk_connect_sync_corp_email_attr_name"`
-	DingTalkConnectSyncDisplayNameAttrName string `json:"dingtalk_connect_sync_display_name_attr_name"`
-	DingTalkConnectSyncDeptAttrName        string `json:"dingtalk_connect_sync_dept_attr_name"`
-
 	WeChatConnectEnabled                   bool   `json:"wechat_connect_enabled"`
 	WeChatConnectOpenAppID                 string `json:"wechat_connect_open_app_id"`
 	WeChatConnectOpenAppSecretConfigured   bool   `json:"wechat_connect_open_app_secret_configured"`
@@ -110,29 +88,6 @@ type SystemSettings struct {
 	WeChatConnectScopes                    string `json:"wechat_connect_scopes"`
 	WeChatConnectRedirectURL               string `json:"wechat_connect_redirect_url"`
 	WeChatConnectFrontendRedirectURL       string `json:"wechat_connect_frontend_redirect_url"`
-
-	OIDCConnectEnabled                bool   `json:"oidc_connect_enabled"`
-	OIDCConnectProviderName           string `json:"oidc_connect_provider_name"`
-	OIDCConnectClientID               string `json:"oidc_connect_client_id"`
-	OIDCConnectClientSecretConfigured bool   `json:"oidc_connect_client_secret_configured"`
-	OIDCConnectIssuerURL              string `json:"oidc_connect_issuer_url"`
-	OIDCConnectDiscoveryURL           string `json:"oidc_connect_discovery_url"`
-	OIDCConnectAuthorizeURL           string `json:"oidc_connect_authorize_url"`
-	OIDCConnectTokenURL               string `json:"oidc_connect_token_url"`
-	OIDCConnectUserInfoURL            string `json:"oidc_connect_userinfo_url"`
-	OIDCConnectJWKSURL                string `json:"oidc_connect_jwks_url"`
-	OIDCConnectScopes                 string `json:"oidc_connect_scopes"`
-	OIDCConnectRedirectURL            string `json:"oidc_connect_redirect_url"`
-	OIDCConnectFrontendRedirectURL    string `json:"oidc_connect_frontend_redirect_url"`
-	OIDCConnectTokenAuthMethod        string `json:"oidc_connect_token_auth_method"`
-	OIDCConnectUsePKCE                bool   `json:"oidc_connect_use_pkce"`
-	OIDCConnectValidateIDToken        bool   `json:"oidc_connect_validate_id_token"`
-	OIDCConnectAllowedSigningAlgs     string `json:"oidc_connect_allowed_signing_algs"`
-	OIDCConnectClockSkewSeconds       int    `json:"oidc_connect_clock_skew_seconds"`
-	OIDCConnectRequireEmailVerified   bool   `json:"oidc_connect_require_email_verified"`
-	OIDCConnectUserInfoEmailPath      string `json:"oidc_connect_userinfo_email_path"`
-	OIDCConnectUserInfoIDPath         string `json:"oidc_connect_userinfo_id_path"`
-	OIDCConnectUserInfoUsernamePath   string `json:"oidc_connect_userinfo_username_path"`
 
 	GitHubOAuthEnabled                bool   `json:"github_oauth_enabled"`
 	GitHubOAuthClientID               string `json:"github_oauth_client_id"`
@@ -373,10 +328,17 @@ type SystemSettings struct {
 	// 风控中心功能开关
 	RiskControlEnabled bool `json:"risk_control_enabled"`
 
-	SignupGrantRiskControlEnabled     bool `json:"signup_grant_risk_control_enabled"`
-	SignupGrantRiskControlEmailLimit  int  `json:"signup_grant_risk_control_email_limit"`
-	SignupGrantRiskControlIPLimit     int  `json:"signup_grant_risk_control_ip_daily_limit"`
-	SignupGrantRiskControlDomainLimit int  `json:"signup_grant_risk_control_domain_daily_limit"`
+	SignupGrantRiskControlEnabled              bool   `json:"signup_grant_risk_control_enabled"`
+	SignupGrantRiskControlEmailLimit           int    `json:"signup_grant_risk_control_email_limit"`
+	SignupGrantRiskControlIPLimit              int    `json:"signup_grant_risk_control_ip_daily_limit"`
+	SignupGrantRiskControlDomainLimit          int    `json:"signup_grant_risk_control_domain_daily_limit"`
+	SignupGrantRiskControlOAuthIdentityEnabled bool   `json:"signup_grant_risk_control_oauth_identity_enabled"`
+	SignupGrantRiskControlDeviceEnabled        bool   `json:"signup_grant_risk_control_device_enabled"`
+	SignupGrantRiskControlDeviceLimit          int    `json:"signup_grant_risk_control_device_daily_limit"`
+	SignupGrantRiskControlFreeDomainLimit      int    `json:"signup_grant_risk_control_free_domain_daily_limit"`
+	SignupGrantRiskControlBlockedDomains       string `json:"signup_grant_risk_control_blocked_email_domains"`
+	SignupGrantRiskControlFreeDomains          string `json:"signup_grant_risk_control_free_email_domains"`
+	SignupGrantRiskControlTrustedDomains       string `json:"signup_grant_risk_control_trusted_email_domains"`
 
 	// cyber 会话屏蔽开关 + TTL
 	CyberSessionBlockEnabled    bool `json:"cyber_session_block_enabled"`
@@ -481,14 +443,10 @@ type PublicSettings struct {
 	TablePageSizeOptions             []int                    `json:"table_page_size_options"`
 	CustomMenuItems                  []CustomMenuItem         `json:"custom_menu_items"`
 	CustomEndpoints                  []CustomEndpoint         `json:"custom_endpoints"`
-	DingTalkOAuthEnabled             bool                     `json:"dingtalk_oauth_enabled"`
-	LinuxDoOAuthEnabled              bool                     `json:"linuxdo_oauth_enabled"`
 	WeChatOAuthEnabled               bool                     `json:"wechat_oauth_enabled"`
 	WeChatOAuthOpenEnabled           bool                     `json:"wechat_oauth_open_enabled"`
 	WeChatOAuthMPEnabled             bool                     `json:"wechat_oauth_mp_enabled"`
 	WeChatOAuthMobileEnabled         bool                     `json:"wechat_oauth_mobile_enabled"`
-	OIDCOAuthEnabled                 bool                     `json:"oidc_oauth_enabled"`
-	OIDCOAuthProviderName            string                   `json:"oidc_oauth_provider_name"`
 	GitHubOAuthEnabled               bool                     `json:"github_oauth_enabled"`
 	GoogleOAuthEnabled               bool                     `json:"google_oauth_enabled"`
 	SoraClientEnabled                bool                     `json:"sora_client_enabled"`
@@ -509,6 +467,32 @@ type PublicSettings struct {
 	AffiliateEnabled bool `json:"affiliate_enabled"`
 
 	RiskControlEnabled bool `json:"risk_control_enabled"`
+
+	PromptCasesTitle           string `json:"prompt_cases_title"`
+	PromptCasesDescription     string `json:"prompt_cases_description"`
+	PromptTemplatesTitle       string `json:"prompt_templates_title"`
+	PromptTemplatesDescription string `json:"prompt_templates_description"`
+	PromptCatalogShellConfig   string `json:"prompt_catalog_shell_config"`
+	WorkspaceShellConfig       string `json:"workspace_shell_config"`
+	PricingTitle               string `json:"pricing_title"`
+	PricingDescription         string `json:"pricing_description"`
+	PricingShellConfig         string `json:"pricing_shell_config"`
+	PaymentShellConfig         string `json:"payment_shell_config"`
+	PricingCurrencySymbol      string `json:"pricing_currency_symbol"`
+	CreditsTitle               string `json:"credits_title"`
+	CreditsDescription         string `json:"credits_description"`
+	CreditsPurchaseLabel       string `json:"credits_purchase_label"`
+	CreditsBalanceLabel        string `json:"credits_balance_label"`
+	CreditsPerBalance          string `json:"credits_per_balance"`
+	CreditsShellConfig         string `json:"credits_shell_config"`
+	GoogleAnalyticsID          string `json:"google_analytics_id"`
+	AffonsoEnabled             bool   `json:"affonso_enabled"`
+	AffonsoID                  string `json:"affonso_id"`
+	AffonsoCookieDuration      string `json:"affonso_cookie_duration"`
+	PromoteKitEnabled          bool   `json:"promotekit_enabled"`
+	PromoteKitID               string `json:"promotekit_id"`
+	CrispEnabled               bool   `json:"crisp_enabled"`
+	CrispWebsiteID             string `json:"crisp_website_id"`
 
 	AllowUserViewErrorRequests bool `json:"allow_user_view_error_requests"`
 }

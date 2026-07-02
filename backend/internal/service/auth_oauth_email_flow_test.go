@@ -5,10 +5,12 @@ package service
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
 )
@@ -186,7 +188,7 @@ func TestRegisterOAuthEmailAccountRollsBackCreatedUserWhenTokenPairGenerationFai
 		"secret-123",
 		"246810",
 		"INVITE123",
-		"oidc",
+		"github",
 	)
 
 	require.Nil(t, tokenPair)
@@ -199,7 +201,7 @@ func TestRegisterOAuthEmailAccountRollsBackCreatedUserWhenTokenPairGenerationFai
 	require.Empty(t, redeemRepo.updateCalls)
 }
 
-func TestRegisterOAuthEmailAccountSetsNormalizedSignupSourceOnCreatedUser(t *testing.T) {
+func TestRegisterOAuthEmailAccountRejectsLegacyOIDCSignupSource(t *testing.T) {
 	userRepo := &userRepoStub{nextID: 42}
 	emailCache := &emailCacheStub{
 		data: &VerificationCodeData{
@@ -230,11 +232,37 @@ func TestRegisterOAuthEmailAccountSetsNormalizedSignupSourceOnCreatedUser(t *tes
 		" OIDC ",
 	)
 
-	require.NoError(t, err)
-	require.NotNil(t, tokenPair)
-	require.NotNil(t, user)
-	require.Len(t, userRepo.created, 1)
-	require.Equal(t, "oidc", userRepo.created[0].SignupSource)
+	require.Nil(t, tokenPair)
+	require.Nil(t, user)
+	require.Error(t, err)
+	require.Equal(t, "OAUTH_PROVIDER_INVALID", infraerrors.Reason(err))
+	require.Empty(t, userRepo.created)
+}
+
+func TestLoginOrRegisterVerifiedEmailOAuthRejectsLegacyOIDCProvider(t *testing.T) {
+	authService := newOAuthEmailFlowAuthService(
+		&userRepoStub{},
+		nil,
+		nil,
+		map[string]string{
+			SettingKeyRegistrationEnabled: "true",
+			SettingKeyEmailVerifyEnabled:  "true",
+		},
+		nil,
+		nil,
+	)
+
+	tokenPair, user, err := authService.LoginOrRegisterVerifiedEmailOAuth(context.Background(), EmailOAuthIdentityInput{
+		ProviderType:    "OIDC",
+		ProviderSubject: "oidc-subject",
+		Email:           "oidc@example.com",
+		EmailVerified:   true,
+	})
+
+	require.Nil(t, tokenPair)
+	require.Nil(t, user)
+	require.Equal(t, http.StatusBadRequest, infraerrors.Code(err))
+	require.Equal(t, "OAUTH_PROVIDER_INVALID", infraerrors.Reason(err))
 }
 
 func TestRegisterOAuthEmailAccountKeepsGitHubAndGoogleSignupSource(t *testing.T) {
@@ -299,7 +327,7 @@ func TestRegisterOAuthEmailAccountKeepsGitHubAndGoogleSignupSource(t *testing.T)
 	}
 }
 
-func TestRegisterOAuthEmailAccountFallsBackUnknownSignupSourceToEmail(t *testing.T) {
+func TestRegisterOAuthEmailAccountRejectsUnknownSignupSource(t *testing.T) {
 	userRepo := &userRepoStub{nextID: 43}
 	emailCache := &emailCacheStub{
 		data: &VerificationCodeData{
@@ -330,11 +358,11 @@ func TestRegisterOAuthEmailAccountFallsBackUnknownSignupSourceToEmail(t *testing
 		"unknown-provider",
 	)
 
-	require.NoError(t, err)
-	require.NotNil(t, tokenPair)
-	require.NotNil(t, user)
-	require.Len(t, userRepo.created, 1)
-	require.Equal(t, "email", userRepo.created[0].SignupSource)
+	require.Nil(t, tokenPair)
+	require.Nil(t, user)
+	require.Error(t, err)
+	require.Equal(t, "OAUTH_PROVIDER_INVALID", infraerrors.Reason(err))
+	require.Empty(t, userRepo.created)
 }
 
 func TestRollbackOAuthEmailAccountCreationRestoresInvitationUsage(t *testing.T) {
@@ -420,14 +448,14 @@ func TestFinalizeOAuthEmailAccount_SnapshotsPlatformQuotaDefaults(t *testing.T) 
 		Email:        "newuser@example.com",
 		Role:         RoleUser,
 		Status:       StatusActive,
-		SignupSource: "oidc",
+		SignupSource: "google",
 	}
 
 	err := authService.FinalizeOAuthEmailAccount(
 		context.Background(),
 		user,
 		"",
-		"oidc",
+		"google",
 		"",
 	)
 

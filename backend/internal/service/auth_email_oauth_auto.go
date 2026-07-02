@@ -27,9 +27,8 @@ type EmailOAuthIdentityInput struct {
 }
 
 type emailOAuthRegistrationOptions struct {
-	SkipInvitationGate bool
-	ProviderType       string
-	ProviderSubject    string
+	ProviderType    string
+	ProviderSubject string
 }
 
 func (s *AuthService) LoginOrRegisterVerifiedEmailOAuth(ctx context.Context, input EmailOAuthIdentityInput) (*TokenPair, *User, error) {
@@ -62,22 +61,22 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	affiliateCode string,
 	promoCode string,
 ) (*TokenPair, *User, error) {
-	if s == nil || s.userRepo == nil || s.entClient == nil {
+	if s == nil {
 		return nil, nil, ErrServiceUnavailable
 	}
 
 	providerType := normalizeOAuthSignupSource(input.ProviderType)
-	if providerType != "github" && providerType != "google" && providerType != "oidc" {
+	if providerType != "github" && providerType != "google" {
 		return nil, nil, infraerrors.BadRequest("OAUTH_PROVIDER_INVALID", "oauth provider is invalid")
+	}
+	if s.userRepo == nil || s.entClient == nil {
+		return nil, nil, ErrServiceUnavailable
 	}
 	providerKey := strings.TrimSpace(input.ProviderKey)
 	if providerKey == "" {
 		providerKey = providerType
 	}
 	userSignupSource := providerType
-	if normalizeEmailAuthSignupSource(input.SignupSource) == authSignupSourceTouch {
-		userSignupSource = authSignupSourceTouch
-	}
 	providerSubject := strings.TrimSpace(input.ProviderSubject)
 	if providerSubject == "" {
 		return nil, nil, infraerrors.BadRequest("OAUTH_SUBJECT_MISSING", "oauth subject is missing")
@@ -111,16 +110,11 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 	user := identityUser
 	created := false
 	options := emailOAuthRegistrationOptions{
-		SkipInvitationGate: userSignupSource == authSignupSourceTouch,
-		ProviderType:       providerType,
-		ProviderSubject:    providerSubject,
+		ProviderType:    providerType,
+		ProviderSubject: providerSubject,
 	}
 	if user == nil {
-		if userSignupSource == authSignupSourceTouch {
-			user, err = s.getUserByEmailForSignupSource(ctx, email, userSignupSource)
-		} else {
-			user, err = s.userRepo.GetByEmail(ctx, email)
-		}
+		user, err = s.userRepo.GetByEmail(ctx, email)
 		if err != nil {
 			if errors.Is(err, ErrUserNotFound) {
 				user, err = s.createEmailOAuthUser(ctx, email, input.Username, userSignupSource, invitationCode, affiliateCode, options)
@@ -185,15 +179,13 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 	}
 	var invitationRedeemCode *RedeemCode
 	effectiveAffiliateCode := strings.TrimSpace(affiliateCode)
-	if !options.SkipInvitationGate {
-		var err error
-		invitationRedeemCode, effectiveAffiliateCode, err = s.validateOAuthRegistrationInvitationWithAffiliate(ctx, invitationCode, affiliateCode)
-		if err != nil {
-			if errors.Is(err, ErrInvitationCodeRequired) {
-				return nil, ErrOAuthInvitationRequired
-			}
-			return nil, err
+	var err error
+	invitationRedeemCode, effectiveAffiliateCode, err = s.validateOAuthRegistrationInvitationWithAffiliate(ctx, invitationCode, affiliateCode)
+	if err != nil {
+		if errors.Is(err, ErrInvitationCodeRequired) {
+			return nil, ErrOAuthInvitationRequired
 		}
+		return nil, err
 	}
 
 	randomPassword, err := randomHexString(32)
@@ -229,11 +221,7 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 		if errors.Is(err, ErrEmailExists) {
 			var existing *User
 			var loadErr error
-			if providerType == authSignupSourceTouch {
-				existing, loadErr = s.getUserByEmailForSignupSource(ctx, email, providerType)
-			} else {
-				existing, loadErr = s.userRepo.GetByEmail(ctx, email)
-			}
+			existing, loadErr = s.userRepo.GetByEmail(ctx, email)
 			if loadErr != nil {
 				return nil, ErrServiceUnavailable
 			}

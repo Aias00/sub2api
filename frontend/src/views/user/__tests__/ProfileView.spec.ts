@@ -76,12 +76,9 @@ describe('ProfileView', () => {
         balance_low_notify_threshold: 0,
         password_min_length: 8,
         totp_enabled: false,
-        linuxdo_oauth_enabled: true,
         wechat_oauth_enabled: true,
         wechat_oauth_open_enabled: true,
         wechat_oauth_mp_enabled: false,
-        oidc_oauth_enabled: true,
-        oidc_oauth_provider_name: 'OIDC'
       }
       appState.cachedPublicSettings = {
         ...appState.cachedPublicSettings,
@@ -122,12 +119,9 @@ describe('ProfileView', () => {
         balance_low_notify_threshold: 0,
         password_min_length: 8,
         totp_enabled: false,
-        linuxdo_oauth_enabled: true,
         wechat_oauth_enabled: true,
         wechat_oauth_open_enabled: true,
         wechat_oauth_mp_enabled: false,
-        oidc_oauth_enabled: true,
-        oidc_oauth_provider_name: 'OIDC'
       }
       appState.cachedPublicSettings = {
         ...appState.cachedPublicSettings,
@@ -187,12 +181,9 @@ describe('ProfileView', () => {
         balance_low_notify_threshold: 0,
         password_min_length: 8,
         totp_enabled: false,
-        linuxdo_oauth_enabled: true,
         wechat_oauth_enabled: true,
         wechat_oauth_open_enabled: true,
         wechat_oauth_mp_enabled: false,
-        oidc_oauth_enabled: true,
-        oidc_oauth_provider_name: 'OIDC'
       }
       appState.cachedPublicSettings = {
         ...appState.cachedPublicSettings,
@@ -279,12 +270,9 @@ describe('ProfileView', () => {
       balance_low_notify_threshold: 0,
       password_min_length: 8,
       totp_enabled: true,
-      linuxdo_oauth_enabled: true,
       wechat_oauth_enabled: true,
       wechat_oauth_open_enabled: true,
       wechat_oauth_mp_enabled: false,
-      oidc_oauth_enabled: true,
-      oidc_oauth_provider_name: 'OIDC'
     })
 
     const wrapper = mount(ProfileView, {

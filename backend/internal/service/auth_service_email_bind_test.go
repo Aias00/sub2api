@@ -6,6 +6,7 @@ import (
 	"context"
 	"database/sql"
 	"errors"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -69,7 +70,8 @@ func newAuthServiceForEmailBindWithRefreshCache(
 ) (*service.AuthService, service.UserRepository, *dbent.Client) {
 	t.Helper()
 
-	db, err := sql.Open("sqlite", "file:auth_service_email_bind?mode=memory&cache=shared")
+	dbName := strings.NewReplacer("/", "_", " ", "_").Replace(t.Name())
+	db, err := sql.Open("sqlite", "file:auth_service_email_bind_"+dbName+"?mode=memory&cache=shared")
 	require.NoError(t, err)
 	t.Cleanup(func() { _ = db.Close() })
 
@@ -89,6 +91,15 @@ CREATE TABLE IF NOT EXISTS user_provider_default_grants (
 	drv := entsql.OpenDB(dialect.SQLite, db)
 	client := enttest.NewClient(t, enttest.WithOptions(dbent.Driver(drv)))
 	t.Cleanup(func() { _ = client.Close() })
+
+	for _, stmt := range []string{
+		`ALTER TABLE users ADD COLUMN paid_balance REAL NOT NULL DEFAULT 0`,
+		`ALTER TABLE users ADD COLUMN gift_balance REAL NOT NULL DEFAULT 0`,
+	} {
+		if _, err = db.Exec(stmt); err != nil && !strings.Contains(err.Error(), "duplicate column") {
+			require.NoError(t, err)
+		}
+	}
 
 	repo := repository.NewUserRepository(client, db)
 	cfg := &config.Config{
@@ -132,7 +143,7 @@ func TestAuthServiceBindEmailIdentity_UpdatesEmailAndAppliesFirstBindDefaults(t 
 
 	ctx := context.Background()
 	user, err := client.User.Create().
-		SetEmail("legacy-user" + service.LinuxDoConnectSyntheticEmailDomain).
+		SetEmail("legacy-user@reserved.invalid").
 		SetUsername("legacy-user").
 		SetPasswordHash("old-hash").
 		SetBalance(2.5).
@@ -184,7 +195,7 @@ func TestAuthServiceBindEmailIdentity_RejectsExistingEmailOnAnotherUser(t *testi
 
 	ctx := context.Background()
 	sourceUser, err := client.User.Create().
-		SetEmail("source-user" + service.OIDCConnectSyntheticEmailDomain).
+		SetEmail("source-user@reserved.invalid").
 		SetUsername("source-user").
 		SetPasswordHash("old-hash").
 		SetBalance(1).
@@ -210,7 +221,7 @@ func TestAuthServiceBindEmailIdentity_RejectsExistingEmailOnAnotherUser(t *testi
 
 	storedUser, err := client.User.Get(ctx, sourceUser.ID)
 	require.NoError(t, err)
-	require.Equal(t, "source-user"+service.OIDCConnectSyntheticEmailDomain, storedUser.Email)
+	require.Equal(t, "source-user@reserved.invalid", storedUser.Email)
 	require.Equal(t, 0, countProviderGrantRecords(t, client, sourceUser.ID, "email", "first_bind"))
 }
 
@@ -231,7 +242,7 @@ func TestAuthServiceBindEmailIdentity_RollsBackWhenFirstBindDefaultsFail(t *test
 	}, cache, assigner)
 
 	ctx := context.Background()
-	originalEmail := "legacy-rollback" + service.LinuxDoConnectSyntheticEmailDomain
+	originalEmail := "legacy-rollback@reserved.invalid"
 	user, err := client.User.Create().
 		SetEmail(originalEmail).
 		SetUsername("legacy-rollback").
@@ -292,7 +303,7 @@ func TestAuthServiceBindEmailIdentity_RejectsReservedEmail(t *testing.T) {
 		Save(ctx)
 	require.NoError(t, err)
 
-	updatedUser, err := svc.BindEmailIdentity(ctx, user.ID, "reserved"+service.LinuxDoConnectSyntheticEmailDomain, "123456", "new-password")
+	updatedUser, err := svc.BindEmailIdentity(ctx, user.ID, "user@reserved.invalid", "123456", "new-password")
 	require.ErrorIs(t, err, service.ErrEmailReserved)
 	require.Nil(t, updatedUser)
 }
@@ -451,7 +462,7 @@ func TestAuthServiceBindEmailIdentity_RevokesExistingAccessAndRefreshTokens(t *t
 	refreshTokenCache := newEmailBindRefreshTokenCacheStub()
 	userRepo := newEmailBindUserRepoStub(&service.User{
 		ID:           41,
-		Email:        "legacy-user" + service.OIDCConnectSyntheticEmailDomain,
+		Email:        "legacy-user@reserved.invalid",
 		Username:     "legacy-user",
 		PasswordHash: "old-hash",
 		Role:         service.RoleUser,
@@ -471,7 +482,7 @@ func TestAuthServiceBindEmailIdentity_RevokesExistingAccessAndRefreshTokens(t *t
 
 	oldTokenPair, err := svc.GenerateTokenPair(ctx, &service.User{
 		ID:           41,
-		Email:        "legacy-user" + service.OIDCConnectSyntheticEmailDomain,
+		Email:        "legacy-user@reserved.invalid",
 		Role:         service.RoleUser,
 		Status:       service.StatusActive,
 		TokenVersion: 4,
@@ -507,7 +518,7 @@ func TestAuthServiceEmailIdentityBinding_RejectsEmailOutsideRegistrationSuffixWh
 		service.SettingKeyRegistrationEmailSuffixWhitelist: `["@qq.com"]`,
 	}, cache, nil)
 
-	user := createEmailBindTestUser(t, client, "legacy-user"+service.OIDCConnectSyntheticEmailDomain, "legacy-user", "old-hash")
+	user := createEmailBindTestUser(t, client, "legacy-user@reserved.invalid", "legacy-user", "old-hash")
 
 	err := svc.SendEmailIdentityBindCode(ctx, user.ID, "intruder@gmail.com")
 	require.ErrorIs(t, err, service.ErrEmailSuffixNotAllowed)
@@ -519,7 +530,7 @@ func TestAuthServiceEmailIdentityBinding_RejectsEmailOutsideRegistrationSuffixWh
 
 	storedUser, err := client.User.Get(ctx, user.ID)
 	require.NoError(t, err)
-	require.Equal(t, "legacy-user"+service.OIDCConnectSyntheticEmailDomain, storedUser.Email)
+	require.Equal(t, "legacy-user@reserved.invalid", storedUser.Email)
 }
 
 func TestAuthServiceBindEmailIdentity_AllowsEmailInsideRegistrationSuffixWhitelist(t *testing.T) {
@@ -535,7 +546,7 @@ func TestAuthServiceBindEmailIdentity_AllowsEmailInsideRegistrationSuffixWhiteli
 		service.SettingKeyRegistrationEmailSuffixWhitelist: `["@qq.com"]`,
 	}, cache, nil)
 
-	user := createEmailBindTestUser(t, client, "legacy-qq"+service.LinuxDoConnectSyntheticEmailDomain, "legacy-qq", "old-hash")
+	user := createEmailBindTestUser(t, client, "legacy-qq@reserved.invalid", "legacy-qq", "old-hash")
 
 	updatedUser, err := svc.BindEmailIdentity(ctx, user.ID, " Member@QQ.com ", "123456", "new-password")
 	require.NoError(t, err)
@@ -561,7 +572,7 @@ func TestAuthServiceBindEmailIdentity_RegistrationSuffixWhitelistWildcard(t *tes
 		svc, _, client := newAuthServiceForEmailBind(t, map[string]string{
 			service.SettingKeyRegistrationEmailSuffixWhitelist: `["*.edu.cn"]`,
 		}, cache, nil)
-		user := createEmailBindTestUser(t, client, "legacy-student"+service.OIDCConnectSyntheticEmailDomain, "legacy-student", "old-hash")
+		user := createEmailBindTestUser(t, client, "legacy-student@reserved.invalid", "legacy-student", "old-hash")
 
 		updatedUser, err := svc.BindEmailIdentity(ctx, user.ID, "student@cs.edu.cn", "123456", "new-password")
 		require.NoError(t, err)
@@ -580,7 +591,7 @@ func TestAuthServiceBindEmailIdentity_RegistrationSuffixWhitelistWildcard(t *tes
 		svc, _, client := newAuthServiceForEmailBind(t, map[string]string{
 			service.SettingKeyRegistrationEmailSuffixWhitelist: `["*.edu.cn"]`,
 		}, cache, nil)
-		user := createEmailBindTestUser(t, client, "legacy-wildcard"+service.OIDCConnectSyntheticEmailDomain, "legacy-wildcard", "old-hash")
+		user := createEmailBindTestUser(t, client, "legacy-wildcard@reserved.invalid", "legacy-wildcard", "old-hash")
 
 		updatedUser, err := svc.BindEmailIdentity(ctx, user.ID, "foo@gmail.com", "123456", "new-password")
 		require.ErrorIs(t, err, service.ErrEmailSuffixNotAllowed)
@@ -588,7 +599,7 @@ func TestAuthServiceBindEmailIdentity_RegistrationSuffixWhitelistWildcard(t *tes
 
 		storedUser, err := client.User.Get(ctx, user.ID)
 		require.NoError(t, err)
-		require.Equal(t, "legacy-wildcard"+service.OIDCConnectSyntheticEmailDomain, storedUser.Email)
+		require.Equal(t, "legacy-wildcard@reserved.invalid", storedUser.Email)
 	})
 }
 
@@ -605,7 +616,7 @@ func TestAuthServiceBindEmailIdentity_AllowsAnyEmailWhenRegistrationSuffixWhitel
 		service.SettingKeyRegistrationEmailSuffixWhitelist: "[]",
 	}, cache, nil)
 
-	user := createEmailBindTestUser(t, client, "legacy-empty"+service.LinuxDoConnectSyntheticEmailDomain, "legacy-empty", "old-hash")
+	user := createEmailBindTestUser(t, client, "legacy-empty@reserved.invalid", "legacy-empty", "old-hash")
 
 	updatedUser, err := svc.BindEmailIdentity(ctx, user.ID, "anyone@gmail.com", "123456", "new-password")
 	require.NoError(t, err)

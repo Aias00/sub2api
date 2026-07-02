@@ -78,8 +78,22 @@ ON CONFLICT (user_id, provider_type, grant_reason) DO NOTHING`,
 	}
 
 	if providerDefaults.Balance != 0 {
-		if err := client.User.UpdateOneID(userID).AddBalance(providerDefaults.Balance).Exec(ctx); err != nil {
+		var balanceResult entsql.Result
+		if err := client.Driver().Exec(ctx, `
+			UPDATE users
+			SET balance = balance + $1,
+				gift_balance = gift_balance + $1,
+				updated_at = CURRENT_TIMESTAMP
+			WHERE id = $2 AND deleted_at IS NULL
+		`, []any{providerDefaults.Balance, userID}, &balanceResult); err != nil {
 			return fmt.Errorf("apply first bind balance default: %w", err)
+		}
+		affected, err := balanceResult.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("read first bind balance default result: %w", err)
+		}
+		if affected == 0 {
+			return ErrUserNotFound
 		}
 	}
 	if providerDefaults.Concurrency != 0 {

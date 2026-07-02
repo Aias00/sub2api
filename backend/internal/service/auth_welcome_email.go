@@ -311,7 +311,7 @@ func RenderEmailPreferencePageHTML(page *EmailPreferencePage) string {
 
 func isDeliverableWelcomeEmail(email string) bool {
 	normalized := strings.ToLower(strings.TrimSpace(email))
-	if normalized == "" || strings.HasSuffix(normalized, ".invalid") || isReservedEmail(normalized) {
+	if normalized == "" || isReservedEmail(normalized) {
 		return false
 	}
 	_, err := mail.ParseAddress(normalized)

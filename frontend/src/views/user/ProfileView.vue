@@ -6,13 +6,6 @@
     >
       <ProfileInfoCard
         :user="user"
-        :linuxdo-enabled="linuxdoOAuthEnabled"
-        :dingtalk-enabled="dingtalkOAuthEnabled"
-        :oidc-enabled="oidcOAuthEnabled"
-        :oidc-provider-name="oidcOAuthProviderName"
-        :wechat-enabled="wechatOAuthEnabled"
-        :wechat-open-enabled="wechatOAuthOpenEnabled"
-        :wechat-mp-enabled="wechatOAuthMPEnabled"
         :labels="profileShellLabels"
       />
 
@@ -66,7 +59,6 @@ import ProfileBalanceNotifyCard from '@/components/user/profile/ProfileBalanceNo
 import ProfileInfoCard from '@/components/user/profile/ProfileInfoCard.vue'
 import ProfilePasswordForm from '@/components/user/profile/ProfilePasswordForm.vue'
 import ProfileTotpCard from '@/components/user/profile/ProfileTotpCard.vue'
-import { isWeChatWebOAuthEnabled } from '@/api/auth'
 import { useAppStore } from '@/stores/app'
 import { useAuthStore } from '@/stores/auth'
 import {
@@ -85,14 +77,6 @@ const contactInfo = ref('')
 const balanceLowNotifyEnabled = ref(false)
 const systemDefaultThreshold = ref(0)
 const totpEnabled = ref(false)
-const linuxdoOAuthEnabled = ref(false)
-const dingtalkOAuthEnabled = ref(false)
-const wechatOAuthEnabled = ref(false)
-const wechatOAuthOpenEnabled = ref<boolean | undefined>(undefined)
-const wechatOAuthMPEnabled = ref<boolean | undefined>(undefined)
-const oidcOAuthEnabled = ref(false)
-const oidcOAuthProviderName = ref('')
-
 
 const profileShellLabels = computed(() =>
   resolveProfileShellLabels(
@@ -121,17 +105,6 @@ onMounted(async () => {
       balanceLowNotifyEnabled.value = settings.balance_low_notify_enabled ?? false
       systemDefaultThreshold.value = settings.balance_low_notify_threshold ?? 0
       totpEnabled.value = settings.totp_enabled ?? false
-      linuxdoOAuthEnabled.value = settings.linuxdo_oauth_enabled ?? false
-      dingtalkOAuthEnabled.value = settings.dingtalk_oauth_enabled ?? false
-      wechatOAuthEnabled.value = isWeChatWebOAuthEnabled(settings)
-      wechatOAuthOpenEnabled.value = typeof settings.wechat_oauth_open_enabled === 'boolean'
-        ? settings.wechat_oauth_open_enabled
-        : undefined
-      wechatOAuthMPEnabled.value = typeof settings.wechat_oauth_mp_enabled === 'boolean'
-        ? settings.wechat_oauth_mp_enabled
-        : undefined
-      oidcOAuthEnabled.value = settings.oidc_oauth_enabled ?? false
-      oidcOAuthProviderName.value = settings.oidc_oauth_provider_name || ''
     })
     .catch((error) => {
       console.error('Failed to load settings:', error)

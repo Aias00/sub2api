@@ -13,10 +13,6 @@ describe('authShell', () => {
           labels: {
             welcomeBack: '配置欢迎',
             allRightsReserved: '配置版权。',
-            dingtalkProviderName: '配置钉钉',
-            wechatAvailabilityUnknown: '配置微信可用性未知',
-            wechatProviderName: '配置微信',
-            wechatSystemBrowserOnly: '配置系统浏览器',
             signUpToStart: '注册以开始使用 {siteName}',
             signInWithProvider: '用 {providerName} 继续',
             oauthFlowCreateAccountTitle: '配置完成 {providerName} 账号',
@@ -48,10 +44,6 @@ describe('authShell', () => {
 
     expect(labels.welcomeBack).toBe('配置欢迎')
     expect(labels.allRightsReserved).toBe('配置版权。')
-    expect(labels.dingtalkProviderName).toBe('配置钉钉')
-    expect(labels.wechatAvailabilityUnknown).toBe('配置微信可用性未知')
-    expect(labels.wechatProviderName).toBe('配置微信')
-    expect(labels.wechatSystemBrowserOnly).toBe('配置系统浏览器')
     expect(labels.optional).toBe('可配置可选')
     expect(labels.totpLoginTitle).toBe('配置两步验证')
     expect(labels.oauthCallbackHint).toBe('配置回调提示')
@@ -125,8 +117,6 @@ describe('authShell', () => {
             adminRedirectPath: '/configured-admin',
             adminRuntimeSettingsPath: '/configured-admin-runtime-settings',
             adminSettingsPath: '/configured-admin-settings',
-            dingtalkCallbackPath: '/configured-dingtalk-callback',
-            dingtalkEmailCompletionPath: '/configured-dingtalk-email-completion',
           },
           labels: {
             signIn: 'Configured sign in',
@@ -159,8 +149,6 @@ describe('authShell', () => {
       adminRedirectPath: '/configured-admin',
       adminRuntimeSettingsPath: '/configured-admin-runtime-settings',
       adminSettingsPath: '/configured-admin-settings',
-      dingtalkCallbackPath: '/configured-dingtalk-callback',
-      dingtalkEmailCompletionPath: '/configured-dingtalk-email-completion',
     })
   })
 
@@ -190,8 +178,6 @@ describe('authShell', () => {
             adminRedirectPath: '/admin\nLocation',
             adminRuntimeSettingsPath: 'https://evil.example/admin/runtime-settings',
             adminSettingsPath: 'https://evil.example/admin/settings',
-            dingtalkCallbackPath: 'https://evil.example/auth/dingtalk/callback',
-            dingtalkEmailCompletionPath: '//evil.example/auth/dingtalk/email-completion',
           },
         },
       }),
@@ -220,8 +206,6 @@ describe('authShell', () => {
       adminRedirectPath: undefined,
       adminRuntimeSettingsPath: undefined,
       adminSettingsPath: undefined,
-      dingtalkCallbackPath: undefined,
-      dingtalkEmailCompletionPath: undefined,
     })
   })
 
@@ -236,13 +220,6 @@ describe('authShell', () => {
   it('does not embed default auth shell labels in the frontend parser', () => {
     expect(authShellLabelKeys).toContain('welcomeBack')
     expect(authShellLabelKeys).toContain('allRightsReserved')
-    expect(authShellLabelKeys).toContain('dingtalkProviderName')
-    expect(authShellLabelKeys).toContain('wechatProviderName')
-    expect(authShellLabelKeys).toContain('wechatAvailabilityUnknown')
-    expect(authShellLabelKeys).toContain('wechatSystemBrowserOnly')
-    expect(authShellLabelKeys).toContain('wechatBrowserOnly')
-    expect(authShellLabelKeys).toContain('wechatNativeAppOnly')
-    expect(authShellLabelKeys).toContain('wechatNotConfigured')
     expect(authShellLabelKeys).toContain('sendCode')
     expect(authShellLabelKeys).toContain('signInWithProvider')
     expect(authShellLabelKeys).toContain('oauthCallbackHint')

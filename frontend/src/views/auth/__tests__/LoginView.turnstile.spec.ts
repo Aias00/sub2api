@@ -56,7 +56,6 @@ vi.mock('@/stores', () => ({
 vi.mock('@/api/auth', () => ({
   getPublicSettings: (...args: any[]) => getPublicSettingsMock(...args),
   isTotp2FARequired: (response: any) => response?.requires_2fa === true,
-  isWeChatWebOAuthEnabled: () => false,
 }))
 
 describe('LoginView turnstile', () => {
@@ -70,11 +69,8 @@ describe('LoginView turnstile', () => {
     getPublicSettingsMock.mockResolvedValue({
       turnstile_enabled: true,
       turnstile_site_key: 'site-key',
-      linuxdo_oauth_enabled: false,
       wechat_oauth_enabled: false,
       backend_mode_enabled: false,
-      oidc_oauth_enabled: false,
-      oidc_oauth_provider_name: 'OIDC',
       github_oauth_enabled: false,
       google_oauth_enabled: false,
       password_reset_enabled: true,
@@ -126,9 +122,6 @@ describe('LoginView turnstile', () => {
           TotpLoginModal: true,
           Icon: true,
           EmailOAuthButtons: true,
-          LinuxDoOAuthSection: true,
-          WechatOAuthSection: true,
-          OidcOAuthSection: true,
           TurnstileWidget: { template: `<button data-testid="turnstile-widget" @click="$emit('verify', 'turnstile-token')">verify</button>` },
         },
       },
@@ -156,11 +149,8 @@ describe('LoginView turnstile', () => {
   it('renders login shell labels from public settings', async () => {
     getPublicSettingsMock.mockResolvedValue({
       turnstile_enabled: false,
-      linuxdo_oauth_enabled: false,
       wechat_oauth_enabled: false,
       backend_mode_enabled: false,
-      oidc_oauth_enabled: false,
-      oidc_oauth_provider_name: 'OIDC',
       github_oauth_enabled: false,
       google_oauth_enabled: false,
       password_reset_enabled: true,
@@ -201,9 +191,6 @@ describe('LoginView turnstile', () => {
           TotpLoginModal: true,
           Icon: true,
           EmailOAuthButtons: true,
-          LinuxDoOAuthSection: true,
-          WechatOAuthSection: true,
-          OidcOAuthSection: true,
         },
       },
     })
@@ -248,11 +235,8 @@ describe('LoginView turnstile', () => {
   it('does not auto-open the agreement modal when switching emails', async () => {
     getPublicSettingsMock.mockResolvedValue({
       turnstile_enabled: false,
-      linuxdo_oauth_enabled: false,
       wechat_oauth_enabled: false,
       backend_mode_enabled: false,
-      oidc_oauth_enabled: false,
-      oidc_oauth_provider_name: 'OIDC',
       github_oauth_enabled: false,
       google_oauth_enabled: false,
       password_reset_enabled: true,
@@ -277,9 +261,6 @@ describe('LoginView turnstile', () => {
           TotpLoginModal: true,
           Icon: true,
           EmailOAuthButtons: true,
-          LinuxDoOAuthSection: true,
-          WechatOAuthSection: true,
-          OidcOAuthSection: true,
         },
       },
     })
@@ -304,11 +285,8 @@ describe('LoginView turnstile', () => {
   it('opens the agreement modal on login requirement and retries automatically after accept', async () => {
     getPublicSettingsMock.mockResolvedValue({
       turnstile_enabled: false,
-      linuxdo_oauth_enabled: false,
       wechat_oauth_enabled: false,
       backend_mode_enabled: false,
-      oidc_oauth_enabled: false,
-      oidc_oauth_provider_name: 'OIDC',
       github_oauth_enabled: false,
       google_oauth_enabled: false,
       password_reset_enabled: true,
@@ -362,9 +340,6 @@ describe('LoginView turnstile', () => {
           TotpLoginModal: true,
           Icon: true,
           EmailOAuthButtons: true,
-          LinuxDoOAuthSection: true,
-          WechatOAuthSection: true,
-          OidcOAuthSection: true,
         },
       },
     })

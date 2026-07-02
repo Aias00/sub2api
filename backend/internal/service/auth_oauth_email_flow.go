@@ -19,10 +19,20 @@ func normalizeOAuthSignupSource(signupSource string) string {
 	switch signupSource {
 	case "", "email":
 		return "email"
-	case "linuxdo", "wechat", "oidc", "github", "google", "dingtalk":
+	case "github", "google":
 		return signupSource
 	default:
 		return "email"
+	}
+}
+
+func normalizeSupportedEmailOAuthSignupSource(signupSource string) (string, error) {
+	signupSource = strings.TrimSpace(strings.ToLower(signupSource))
+	switch signupSource {
+	case "github", "google":
+		return signupSource, nil
+	default:
+		return "", infraerrors.BadRequest("OAUTH_PROVIDER_INVALID", "oauth provider is invalid")
 	}
 }
 
@@ -121,7 +131,7 @@ func (s *AuthService) RegisterOAuthEmailAccount(
 	if s == nil {
 		return nil, nil, ErrServiceUnavailable
 	}
-	if s.settingService == nil || (!s.settingService.IsRegistrationEnabled(ctx) && !s.canBypassRegistrationDisabledForOAuth(ctx, signupSource)) {
+	if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
 		return nil, nil, ErrRegDisabled
 	}
 
@@ -160,7 +170,10 @@ func (s *AuthService) RegisterOAuthEmailAccount(
 		return nil, nil, fmt.Errorf("hash password: %w", err)
 	}
 
-	signupSource = normalizeOAuthSignupSource(signupSource)
+	signupSource, err = normalizeSupportedEmailOAuthSignupSource(signupSource)
+	if err != nil {
+		return nil, nil, err
+	}
 	grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
 	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(ctx, email, signupSource, grantPlan)
 
@@ -203,7 +216,7 @@ func (s *AuthService) RegisterVerifiedOAuthEmailAccount(
 	if s == nil {
 		return nil, nil, ErrServiceUnavailable
 	}
-	if s.settingService == nil || (!s.settingService.IsRegistrationEnabled(ctx) && !s.canBypassRegistrationDisabledForOAuth(ctx, signupSource)) {
+	if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
 		return nil, nil, ErrRegDisabled
 	}
 
@@ -220,7 +233,10 @@ func (s *AuthService) RegisterVerifiedOAuthEmailAccount(
 	if err := s.validateRegistrationEmailPolicy(ctx, email); err != nil {
 		return nil, nil, err
 	}
-	signupSource = normalizeOAuthSignupSource(signupSource)
+	signupSource, err := normalizeSupportedEmailOAuthSignupSource(signupSource)
+	if err != nil {
+		return nil, nil, err
+	}
 	resolvedPassword, err := s.resolveOAuthRegistrationPassword(signupSource, password)
 	if err != nil {
 		return nil, nil, err
@@ -293,7 +309,10 @@ func (s *AuthService) FinalizeOAuthEmailAccount(
 		return ErrServiceUnavailable
 	}
 
-	signupSource = normalizeOAuthSignupSource(signupSource)
+	signupSource, err := normalizeSupportedEmailOAuthSignupSource(signupSource)
+	if err != nil {
+		return err
+	}
 	invitationRedeemCode, effectiveAffiliateCode, err := s.validateOAuthRegistrationInvitationWithAffiliate(ctx, invitationCode, affiliateCode)
 	if err != nil {
 		return err

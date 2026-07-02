@@ -52,10 +52,7 @@ const maxTokenLength = 8192
 // refreshTokenPrefix is the prefix for refresh tokens to distinguish them from access tokens.
 const refreshTokenPrefix = "rt_"
 
-const (
-	authSignupSourceEmail = "email"
-	authSignupSourceTouch = "touch"
-)
+const authSignupSourceEmail = "email"
 
 type sourceAwareEmailUserRepository interface {
 	GetByEmailAndSignupSource(ctx context.Context, email string, signupSource string) (*User, error)
@@ -180,21 +177,13 @@ func (s *AuthService) RegisterWithVerificationSource(ctx context.Context, email,
 }
 
 func normalizeEmailAuthSignupSource(source string) string {
-	switch strings.ToLower(strings.TrimSpace(source)) {
-	case authSignupSourceTouch:
-		return authSignupSourceTouch
-	default:
-		return authSignupSourceEmail
-	}
+	return authSignupSourceEmail
 }
 
 func (s *AuthService) emailExistsForSignupSource(ctx context.Context, email string, signupSource string) (bool, error) {
 	signupSource = normalizeEmailAuthSignupSource(signupSource)
 	if repo, ok := s.userRepo.(sourceAwareEmailUserRepository); ok {
 		return repo.ExistsByEmailAndSignupSource(ctx, email, signupSource)
-	}
-	if signupSource == authSignupSourceTouch {
-		return false, nil
 	}
 	return s.userRepo.ExistsByEmail(ctx, email)
 }
@@ -203,9 +192,6 @@ func (s *AuthService) getUserByEmailForSignupSource(ctx context.Context, email s
 	signupSource = normalizeEmailAuthSignupSource(signupSource)
 	if repo, ok := s.userRepo.(sourceAwareEmailUserRepository); ok {
 		return repo.GetByEmailAndSignupSource(ctx, email, signupSource)
-	}
-	if signupSource == authSignupSourceTouch {
-		return nil, ErrUserNotFound
 	}
 	return s.userRepo.GetByEmail(ctx, email)
 }
@@ -596,7 +582,7 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 		username = string([]rune(username)[:100])
 	}
 
-	signupSource := inferLegacySignupSource(email)
+	signupSource := "email"
 	user, err := s.getOAuthUserByEmailForSignupSource(ctx, email, signupSource)
 	created := false
 	createdSignupSource := ""
@@ -684,19 +670,6 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 	return token, user, nil
 }
 
-// canBypassRegistrationDisabledForOAuth 在钉钉企业模式（internal_only）且
-// dingtalk_connect_bypass_registration=true 时，允许跳过全局 registration_enabled 检查。
-func (s *AuthService) canBypassRegistrationDisabledForOAuth(ctx context.Context, signupSource string) bool {
-	if signupSource != "dingtalk" {
-		return false
-	}
-	cfg, err := s.settingService.GetDingTalkConnectOAuthConfig(ctx)
-	if err != nil || !cfg.Enabled || !cfg.BypassRegistration {
-		return false
-	}
-	return cfg.CorpRestrictionPolicy == "internal_only"
-}
-
 // LoginOrRegisterOAuthWithTokenPair 用于第三方 OAuth/SSO 登录，返回完整的 TokenPair。
 // 与 LoginOrRegisterOAuth 功能相同，但返回 TokenPair 而非单个 token。
 // invitationCode 仅在邀请码注册模式下新用户注册时使用；已有账号登录时忽略。
@@ -739,7 +712,7 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 	if err != nil {
 		if errors.Is(err, ErrUserNotFound) {
 			// OAuth 首次登录视为注册
-			if s.settingService == nil || (!s.settingService.IsRegistrationEnabled(ctx) && !s.canBypassRegistrationDisabledForOAuth(ctx, signupSource)) {
+			if s.settingService == nil || !s.settingService.IsRegistrationEnabled(ctx) {
 				return nil, nil, ErrRegDisabled
 			}
 
@@ -970,18 +943,10 @@ func authSourceSignupSettings(defaults *AuthSourceDefaultSettings, signupSource 
 	switch strings.ToLower(strings.TrimSpace(signupSource)) {
 	case "email":
 		return defaults.Email, true
-	case "linuxdo":
-		return defaults.LinuxDo, true
-	case "oidc":
-		return defaults.OIDC, true
-	case "wechat":
-		return defaults.WeChat, true
 	case "github":
 		return defaults.GitHub, true
 	case "google":
 		return defaults.Google, true
-	case "dingtalk":
-		return defaults.DingTalk, true
 	default:
 		return ProviderDefaultGrantSettings{}, false
 	}
@@ -1192,22 +1157,6 @@ func (s *AuthService) ensureEmailAuthIdentity(ctx context.Context, user *User, s
 	return identity, !existed
 }
 
-func inferLegacySignupSource(email string) string {
-	normalized := strings.ToLower(strings.TrimSpace(email))
-	switch {
-	case strings.HasSuffix(normalized, DingTalkConnectSyntheticEmailDomain):
-		return "dingtalk"
-	case strings.HasSuffix(normalized, LinuxDoConnectSyntheticEmailDomain):
-		return "linuxdo"
-	case strings.HasSuffix(normalized, OIDCConnectSyntheticEmailDomain):
-		return "oidc"
-	case strings.HasSuffix(normalized, WeChatConnectSyntheticEmailDomain):
-		return "wechat"
-	default:
-		return "email"
-	}
-}
-
 func (s *AuthService) validateRegistrationEmailPolicy(ctx context.Context, email string) error {
 	if s.settingService == nil {
 		return nil
@@ -1289,10 +1238,7 @@ func randomHexString(byteLength int) (string, error) {
 
 func isReservedEmail(email string) bool {
 	normalized := strings.ToLower(strings.TrimSpace(email))
-	return strings.HasSuffix(normalized, LinuxDoConnectSyntheticEmailDomain) ||
-		strings.HasSuffix(normalized, OIDCConnectSyntheticEmailDomain) ||
-		strings.HasSuffix(normalized, WeChatConnectSyntheticEmailDomain) ||
-		strings.HasSuffix(normalized, DingTalkConnectSyntheticEmailDomain)
+	return strings.HasSuffix(normalized, ".invalid")
 }
 
 // GenerateToken 生成JWT access token

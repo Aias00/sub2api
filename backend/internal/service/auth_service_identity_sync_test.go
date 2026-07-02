@@ -121,6 +121,10 @@ CREATE TABLE IF NOT EXISTS user_provider_default_grants (
 	drv := entsql.OpenDB(dialect.SQLite, db)
 	client := enttest.NewClient(t, enttest.WithOptions(dbent.Driver(drv)))
 	t.Cleanup(func() { _ = client.Close() })
+	_, err = db.Exec("ALTER TABLE users ADD COLUMN paid_balance REAL NOT NULL DEFAULT 0")
+	require.NoError(t, err)
+	_, err = db.Exec("ALTER TABLE users ADD COLUMN gift_balance REAL NOT NULL DEFAULT 0")
+	require.NoError(t, err)
 
 	repo := repository.NewUserRepository(client, db)
 	cfg := &config.Config{
@@ -129,7 +133,7 @@ CREATE TABLE IF NOT EXISTS user_provider_default_grants (
 			ExpireHour: 1,
 		},
 		Default: config.DefaultConfig{
-			UserBalance:     3.5,
+			UserBalance:     0,
 			UserConcurrency: 2,
 		},
 	}
@@ -240,7 +244,7 @@ func TestAuthServiceRecordSuccessfulLoginBackfillsEmailIdentity(t *testing.T) {
 		Email:       "record@example.com",
 		Role:        service.RoleUser,
 		Status:      service.StatusActive,
-		Balance:     1,
+		Balance:     0,
 		Concurrency: 1,
 	}
 	require.NoError(t, user.SetPassword("password"))

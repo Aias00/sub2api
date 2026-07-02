@@ -262,7 +262,7 @@ describe('useAuthStore', () => {
 
       firstStore.setPendingAuthSession({
         token: '',
-        provider: 'oidc',
+        provider: 'github',
         redirect: '/welcome',
         adoption_required: true,
         suggested_display_name: 'OIDC Nick'
@@ -276,7 +276,7 @@ describe('useAuthStore', () => {
       expect(restoredStore.hasPendingAuthSession).toBe(true)
       expect(restoredStore.pendingAuthSession).toEqual({
         token: '',
-        provider: 'oidc',
+        provider: 'github',
         redirect: '/welcome',
         adoption_required: true,
         suggested_display_name: 'OIDC Nick',
@@ -288,7 +288,7 @@ describe('useAuthStore', () => {
       const store = useAuthStore()
       store.setPendingAuthSession({
         token: 'pending-token',
-        provider: 'oidc',
+        provider: 'github',
         redirect: '/register',
       })
       mockRegister.mockRejectedValue(new Error('Register failed'))
@@ -300,7 +300,7 @@ describe('useAuthStore', () => {
       expect(store.hasPendingAuthSession).toBe(true)
       expect(store.pendingAuthSession).toEqual({
         token: 'pending-token',
-        provider: 'oidc',
+        provider: 'github',
         redirect: '/register',
       })
     })

@@ -105,7 +105,7 @@ func TestSettingService_GetPublicSettings_ExposesAllowUserViewErrorRequests(t *t
 	require.True(t, settings.AllowUserViewErrorRequests)
 }
 
-func TestSettingService_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *testing.T) {
+func TestSettingService_GetPublicSettings_DoesNotExposeWeChatLoginOAuthCapabilities(t *testing.T) {
 	svc := NewSettingService(&settingPublicRepoStub{
 		values: map[string]string{
 			SettingKeyWeChatConnectEnabled:             "true",
@@ -124,9 +124,10 @@ func TestSettingService_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *
 
 	settings, err := svc.GetPublicSettings(context.Background())
 	require.NoError(t, err)
-	require.True(t, settings.WeChatOAuthEnabled)
-	require.True(t, settings.WeChatOAuthOpenEnabled)
-	require.True(t, settings.WeChatOAuthMPEnabled)
+	require.False(t, settings.WeChatOAuthEnabled)
+	require.False(t, settings.WeChatOAuthOpenEnabled)
+	require.False(t, settings.WeChatOAuthMPEnabled)
+	require.False(t, settings.WeChatOAuthMobileEnabled)
 }
 
 func TestSettingService_GetPublicSettings_DoesNotExposeMobileOnlyWeChatAsWebOAuthAvailable(t *testing.T) {
@@ -146,10 +147,10 @@ func TestSettingService_GetPublicSettings_DoesNotExposeMobileOnlyWeChatAsWebOAut
 	require.False(t, settings.WeChatOAuthEnabled)
 	require.False(t, settings.WeChatOAuthOpenEnabled)
 	require.False(t, settings.WeChatOAuthMPEnabled)
-	require.True(t, settings.WeChatOAuthMobileEnabled)
+	require.False(t, settings.WeChatOAuthMobileEnabled)
 }
 
-func TestSettingService_GetPublicSettings_FallsBackToConfigForWeChatOAuthCapabilities(t *testing.T) {
+func TestSettingService_GetPublicSettings_DoesNotExposeConfigWeChatLoginOAuthCapabilities(t *testing.T) {
 	svc := NewSettingService(&settingPublicRepoStub{values: map[string]string{}}, &config.Config{
 		WeChat: config.WeChatConnectConfig{
 			Enabled:             true,
@@ -162,8 +163,8 @@ func TestSettingService_GetPublicSettings_FallsBackToConfigForWeChatOAuthCapabil
 
 	settings, err := svc.GetPublicSettings(context.Background())
 	require.NoError(t, err)
-	require.True(t, settings.WeChatOAuthEnabled)
-	require.True(t, settings.WeChatOAuthOpenEnabled)
+	require.False(t, settings.WeChatOAuthEnabled)
+	require.False(t, settings.WeChatOAuthOpenEnabled)
 	require.False(t, settings.WeChatOAuthMPEnabled)
 	require.False(t, settings.WeChatOAuthMobileEnabled)
 }
@@ -893,9 +894,12 @@ func TestSettingService_GetPublicSettings_DefaultsProfileShellConfig(t *testing.
 	zhProviders, ok := payload["zh"].Labels["providers"].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "邮箱", zhProviders["email"])
-	require.Equal(t, "微信", zhProviders["wechat"])
 	require.Equal(t, "GitHub", zhProviders["github"])
 	require.Equal(t, "Google", zhProviders["google"])
+	require.NotContains(t, zhProviders, "wechat")
+	require.NotContains(t, zhProviders, "linuxdo")
+	require.NotContains(t, zhProviders, "oidc")
+	require.NotContains(t, zhProviders, "dingtalk")
 	require.Equal(t, "Account Balance", payload["en"].Labels["accountBalance"])
 	require.Equal(t, "Contact Support", payload["en"].Labels["contactSupport"])
 	require.Equal(t, "Password must be at least {count} characters long", payload["en"].Labels["passwordHint"])
@@ -945,9 +949,12 @@ func TestSettingService_GetPublicSettings_DefaultsProfileShellConfig(t *testing.
 	providers, ok := payload["en"].Labels["providers"].(map[string]any)
 	require.True(t, ok)
 	require.Equal(t, "Email", providers["email"])
-	require.Equal(t, "WeChat", providers["wechat"])
 	require.Equal(t, "GitHub", providers["github"])
 	require.Equal(t, "Google", providers["google"])
+	require.NotContains(t, providers, "wechat")
+	require.NotContains(t, providers, "linuxdo")
+	require.NotContains(t, providers, "oidc")
+	require.NotContains(t, providers, "dingtalk")
 }
 
 func TestSettingService_GetPublicSettings_DefaultsAuthShellConfig(t *testing.T) {
@@ -973,10 +980,10 @@ func TestSettingService_GetPublicSettings_DefaultsAuthShellConfig(t *testing.T) 
 	require.Equal(t, "绑定已有账户", payload["zh"].Labels["oauthFlowBindExistingAccount"])
 	require.Equal(t, "完成 {providerName} 账户注册", payload["zh"].Labels["oauthFlowCreateAccountTitle"])
 	require.Equal(t, "请输入 {account} 的 6 位验证码，以完成此次 {providerName} 登录绑定。", payload["zh"].Labels["oauthFlowTotpHint"])
-	require.Equal(t, "钉钉", payload["zh"].Labels["dingtalkProviderName"])
-	require.Equal(t, "微信", payload["zh"].Labels["wechatProviderName"])
-	require.Equal(t, "暂时无法确认微信登录可用性，请刷新后重试。", payload["zh"].Labels["wechatAvailabilityUnknown"])
-	require.Equal(t, "当前微信登录流程仅支持在系统浏览器中继续。", payload["zh"].Labels["wechatSystemBrowserOnly"])
+	require.NotContains(t, payload["zh"].Labels, "dingtalkProviderName")
+	require.NotContains(t, payload["zh"].Labels, "wechatProviderName")
+	require.NotContains(t, payload["zh"].Labels, "wechatAvailabilityUnknown")
+	require.NotContains(t, payload["zh"].Labels, "wechatSystemBrowserOnly")
 	require.Equal(t, "重置密码", payload["zh"].Labels["forgotPasswordTitle"])
 	require.Equal(t, "验证您的邮箱", payload["zh"].Labels["emailVerifyTitle"])
 	require.Equal(t, "{countdown}秒后可重新发送", payload["zh"].Labels["emailVerifyResendCountdown"])
@@ -1008,10 +1015,10 @@ func TestSettingService_GetPublicSettings_DefaultsAuthShellConfig(t *testing.T) 
 	require.Equal(t, "Bind existing account", payload["en"].Labels["oauthFlowBindExistingAccount"])
 	require.Equal(t, "Complete your {providerName} account setup", payload["en"].Labels["oauthFlowCreateAccountTitle"])
 	require.Equal(t, "Enter the 6-digit verification code for {account} to finish binding this {providerName} sign-in.", payload["en"].Labels["oauthFlowTotpHint"])
-	require.Equal(t, "DingTalk", payload["en"].Labels["dingtalkProviderName"])
-	require.Equal(t, "WeChat", payload["en"].Labels["wechatProviderName"])
-	require.Equal(t, "WeChat sign-in availability could not be confirmed. Refresh and retry.", payload["en"].Labels["wechatAvailabilityUnknown"])
-	require.Equal(t, "This WeChat sign-in flow is only available in your system browser.", payload["en"].Labels["wechatSystemBrowserOnly"])
+	require.NotContains(t, payload["en"].Labels, "dingtalkProviderName")
+	require.NotContains(t, payload["en"].Labels, "wechatProviderName")
+	require.NotContains(t, payload["en"].Labels, "wechatAvailabilityUnknown")
+	require.NotContains(t, payload["en"].Labels, "wechatSystemBrowserOnly")
 	require.Equal(t, "Reset Your Password", payload["en"].Labels["forgotPasswordTitle"])
 	require.Equal(t, "Verify Your Email", payload["en"].Labels["emailVerifyTitle"])
 	require.Equal(t, "Resend code in {countdown}s", payload["en"].Labels["emailVerifyResendCountdown"])

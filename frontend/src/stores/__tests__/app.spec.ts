@@ -331,7 +331,6 @@ describe('useAppStore', () => {
         table_page_size_options: [20, 100, 1000],
         custom_menu_items: [],
         custom_endpoints: [],
-        linuxdo_oauth_enabled: false,
         backend_mode_enabled: false,
         version: '1.0.0'
       })

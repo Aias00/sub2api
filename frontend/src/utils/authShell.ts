@@ -24,7 +24,6 @@ export const authShellLabelKeys = [
   'codeSentSuccess',
   'confirmPassword',
   'confirmPasswordPlaceholder',
-  'dingtalkProviderName',
   'dontHaveAccount',
   'emailLabel',
   'emailPlaceholder',
@@ -128,12 +127,6 @@ export const authShellLabelKeys = [
   'totpCancel',
   'totpVerifying',
   'verificationCodeHint',
-  'wechatAvailabilityUnknown',
-  'wechatBrowserOnly',
-  'wechatNativeAppOnly',
-  'wechatNotConfigured',
-  'wechatProviderName',
-  'wechatSystemBrowserOnly',
   'welcomeBack',
 ] as const
 
@@ -164,8 +157,6 @@ export type AuthShellConfig = {
     adminRedirectPath?: string
     adminRuntimeSettingsPath?: string
     adminSettingsPath?: string
-    dingtalkCallbackPath?: string
-    dingtalkEmailCompletionPath?: string
   }
 }
 
@@ -259,8 +250,6 @@ function readAuthShellDefaults(localized: Record<string, unknown> | null): AuthS
     adminRedirectPath: readInternalPath(localized.defaults.adminRedirectPath),
     adminRuntimeSettingsPath: readInternalPath(localized.defaults.adminRuntimeSettingsPath),
     adminSettingsPath: readInternalPath(localized.defaults.adminSettingsPath),
-    dingtalkCallbackPath: readInternalPath(localized.defaults.dingtalkCallbackPath),
-    dingtalkEmailCompletionPath: readInternalPath(localized.defaults.dingtalkEmailCompletionPath),
   }
 }
 

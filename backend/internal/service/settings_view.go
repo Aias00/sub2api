@@ -43,32 +43,6 @@ type SystemSettings struct {
 	TurnstileSecretKeyConfigured bool
 	APIKeyACLTrustForwardedIP    bool
 
-	// LinuxDo Connect OAuth 登录
-	LinuxDoConnectEnabled                bool
-	LinuxDoConnectClientID               string
-	LinuxDoConnectClientSecret           string
-	LinuxDoConnectClientSecretConfigured bool
-	LinuxDoConnectRedirectURL            string
-
-	// DingTalk Connect OAuth 登录
-	DingTalkConnectEnabled                 bool
-	DingTalkConnectClientID                string
-	DingTalkConnectClientSecret            string
-	DingTalkConnectClientSecretConfigured  bool
-	DingTalkConnectRedirectURL             string
-	DingTalkConnectCorpRestrictionPolicy   string
-	DingTalkConnectInternalCorpID          string
-	DingTalkConnectBypassRegistration      bool
-	DingTalkConnectSyncCorpEmail           bool
-	DingTalkConnectSyncDisplayName         bool
-	DingTalkConnectSyncDept                bool
-	DingTalkConnectSyncCorpEmailAttrKey    string
-	DingTalkConnectSyncDisplayNameAttrKey  string
-	DingTalkConnectSyncDeptAttrKey         string
-	DingTalkConnectSyncCorpEmailAttrName   string
-	DingTalkConnectSyncDisplayNameAttrName string
-	DingTalkConnectSyncDeptAttrName        string
-
 	// WeChat Connect OAuth 登录
 	WeChatConnectEnabled                   bool
 	WeChatConnectOpenAppID                 string
@@ -87,31 +61,6 @@ type SystemSettings struct {
 	WeChatConnectScopes                    string
 	WeChatConnectRedirectURL               string
 	WeChatConnectFrontendRedirectURL       string
-
-	// Generic OIDC OAuth 登录
-	OIDCConnectEnabled                bool
-	OIDCConnectProviderName           string
-	OIDCConnectClientID               string
-	OIDCConnectClientSecret           string
-	OIDCConnectClientSecretConfigured bool
-	OIDCConnectIssuerURL              string
-	OIDCConnectDiscoveryURL           string
-	OIDCConnectAuthorizeURL           string
-	OIDCConnectTokenURL               string
-	OIDCConnectUserInfoURL            string
-	OIDCConnectJWKSURL                string
-	OIDCConnectScopes                 string
-	OIDCConnectRedirectURL            string
-	OIDCConnectFrontendRedirectURL    string
-	OIDCConnectTokenAuthMethod        string
-	OIDCConnectUsePKCE                bool
-	OIDCConnectValidateIDToken        bool
-	OIDCConnectAllowedSigningAlgs     string
-	OIDCConnectClockSkewSeconds       int
-	OIDCConnectRequireEmailVerified   bool
-	OIDCConnectUserInfoEmailPath      string
-	OIDCConnectUserInfoIDPath         string
-	OIDCConnectUserInfoUsernamePath   string
 
 	// GitHub / Google 邮箱快捷登录
 	GitHubOAuthEnabled                bool
@@ -235,22 +184,29 @@ type SystemSettings struct {
 	ImageWorkspaceObjectStoragePublicBaseURL string
 	MediaCDNBaseURL                          string
 
-	DefaultConcurrency                int
-	DefaultBalance                    float64
-	RiskControlEnabled                bool
-	SignupGrantRiskControlEnabled     bool
-	SignupGrantRiskControlEmailLimit  int
-	SignupGrantRiskControlIPLimit     int
-	SignupGrantRiskControlDomainLimit int
-	CyberSessionBlockEnabled          bool
-	CyberSessionBlockTTLSeconds       int
-	AffiliateEnabled                  bool
-	AffiliateRebateRate               float64
-	AffiliateRebateFreezeHours        int
-	AffiliateRebateDurationDays       int
-	AffiliateRebatePerInviteeCap      float64
-	DefaultUserRPMLimit               int
-	DefaultSubscriptions              []DefaultSubscriptionSetting
+	DefaultConcurrency                         int
+	DefaultBalance                             float64
+	RiskControlEnabled                         bool
+	SignupGrantRiskControlEnabled              bool
+	SignupGrantRiskControlEmailLimit           int
+	SignupGrantRiskControlIPLimit              int
+	SignupGrantRiskControlDomainLimit          int
+	SignupGrantRiskControlOAuthIdentityEnabled bool
+	SignupGrantRiskControlDeviceEnabled        bool
+	SignupGrantRiskControlDeviceLimit          int
+	SignupGrantRiskControlFreeDomainLimit      int
+	SignupGrantRiskControlBlockedDomains       string
+	SignupGrantRiskControlFreeDomains          string
+	SignupGrantRiskControlTrustedDomains       string
+	CyberSessionBlockEnabled                   bool
+	CyberSessionBlockTTLSeconds                int
+	AffiliateEnabled                           bool
+	AffiliateRebateRate                        float64
+	AffiliateRebateFreezeHours                 int
+	AffiliateRebateDurationDays                int
+	AffiliateRebatePerInviteeCap               float64
+	DefaultUserRPMLimit                        int
+	DefaultSubscriptions                       []DefaultSubscriptionSetting
 
 	// Model fallback configuration
 	EnableModelFallback      bool   `json:"enable_model_fallback"`
@@ -477,16 +433,12 @@ type PublicSettings struct {
 	CustomMenuItems             string // JSON array of custom menu items
 	CustomEndpoints             string // JSON array of custom endpoints
 
-	LinuxDoOAuthEnabled      bool
-	DingTalkOAuthEnabled     bool
 	WeChatOAuthEnabled       bool
 	WeChatOAuthOpenEnabled   bool
 	WeChatOAuthMPEnabled     bool
 	WeChatOAuthMobileEnabled bool
 	BackendModeEnabled       bool
 	PaymentEnabled           bool
-	OIDCOAuthEnabled         bool
-	OIDCOAuthProviderName    string
 	GitHubOAuthEnabled       bool
 	GoogleOAuthEnabled       bool
 	Version                  string

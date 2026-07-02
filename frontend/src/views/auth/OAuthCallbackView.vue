@@ -392,7 +392,7 @@ async function handleSubmitRegistration() {
   } catch (e: unknown) {
     const err = e as { message?: string; response?: { data?: { message?: string } } }
     registrationError.value =
-      err.response?.data?.message || err.message || t('auth.oidc.completeRegistrationFailed')
+      err.response?.data?.message || err.message || t('auth.loginFailed')
   } finally {
     isSubmitting.value = false
   }

@@ -67,7 +67,7 @@ func TestApplySuggestedProfileToCompletionResponseKeepsExistingPayloadValues(t *
 func TestSetOAuthPendingSessionCookieUsesProviderCompletionPathPrefix(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	ginCtx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/oidc/callback", nil)
+	ginCtx.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/callback", nil)
 
 	setOAuthPendingSessionCookie(ginCtx, "pending-session-token", false)
 
@@ -81,7 +81,7 @@ func TestExchangePendingOAuthCompletionPreviewThenFinalizeAppliesAdoptionDecisio
 	ctx := context.Background()
 
 	userEntity, err := client.User.Create().
-		SetEmail("linuxdo-123@linuxdo-connect.invalid").
+		SetEmail("legacy-oauth-user@example.net").
 		SetUsername("legacy-name").
 		SetPasswordHash("hash").
 		SetRole(service.RoleUser).
@@ -92,14 +92,14 @@ func TestExchangePendingOAuthCompletionPreviewThenFinalizeAppliesAdoptionDecisio
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("pending-session-token").
 		SetIntent("login").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("123").
 		SetTargetUserID(userEntity.ID).
 		SetResolvedEmail(userEntity.Email).
 		SetBrowserSessionKey("browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
-			"username":               "linuxdo_user",
+			"username":               "github_user",
 			"suggested_display_name": "Alice Example",
 			"suggested_avatar_url":   "https://cdn.example/alice.png",
 		}).
@@ -157,8 +157,8 @@ func TestExchangePendingOAuthCompletionPreviewThenFinalizeAppliesAdoptionDecisio
 
 	identity, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("linuxdo"),
-			authidentity.ProviderKeyEQ("linuxdo"),
+			authidentity.ProviderTypeEQ("github"),
+			authidentity.ProviderKeyEQ("github"),
 			authidentity.ProviderSubjectEQ("123"),
 		).
 		Only(ctx)
@@ -204,14 +204,14 @@ func TestExchangePendingOAuthCompletionSkipsInvalidAvatarAdoptionWithoutBlocking
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("pending-invalid-avatar-token").
 		SetIntent("login").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("invalid-avatar-123").
 		SetTargetUserID(userEntity.ID).
 		SetResolvedEmail(userEntity.Email).
 		SetBrowserSessionKey("browser-invalid-avatar-key").
 		SetUpstreamIdentityClaims(map[string]any{
-			"username":               "linuxdo_user",
+			"username":               "github_user",
 			"suggested_display_name": "Alice Example",
 			"suggested_avatar_url":   "/avatars/alice.png",
 		}).
@@ -240,8 +240,8 @@ func TestExchangePendingOAuthCompletionSkipsInvalidAvatarAdoptionWithoutBlocking
 
 	identity, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("linuxdo"),
-			authidentity.ProviderKeyEQ("linuxdo"),
+			authidentity.ProviderTypeEQ("github"),
+			authidentity.ProviderKeyEQ("github"),
 			authidentity.ProviderSubjectEQ("invalid-avatar-123"),
 		).
 		Only(ctx)
@@ -276,14 +276,14 @@ func TestExchangePendingOAuthCompletionBindCurrentUserPreviewThenFinalizeBindsId
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("bind-pending-session-token").
 		SetIntent("bind_current_user").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("bind-123").
 		SetTargetUserID(userEntity.ID).
 		SetResolvedEmail(userEntity.Email).
 		SetBrowserSessionKey("bind-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
-			"username":               "linuxdo_user",
+			"username":               "github_user",
 			"suggested_display_name": "Bound Example",
 			"suggested_avatar_url":   "https://cdn.example/bound.png",
 		}).
@@ -314,8 +314,8 @@ func TestExchangePendingOAuthCompletionBindCurrentUserPreviewThenFinalizeBindsId
 
 	identityCount, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("linuxdo"),
-			authidentity.ProviderKeyEQ("linuxdo"),
+			authidentity.ProviderTypeEQ("github"),
+			authidentity.ProviderKeyEQ("github"),
 			authidentity.ProviderSubjectEQ("bind-123"),
 		).
 		Count(ctx)
@@ -347,8 +347,8 @@ func TestExchangePendingOAuthCompletionBindCurrentUserPreviewThenFinalizeBindsId
 
 	identity, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("linuxdo"),
-			authidentity.ProviderKeyEQ("linuxdo"),
+			authidentity.ProviderTypeEQ("github"),
+			authidentity.ProviderKeyEQ("github"),
 			authidentity.ProviderSubjectEQ("bind-123"),
 		).
 		Only(ctx)
@@ -401,8 +401,8 @@ func TestExchangePendingOAuthCompletionBindCurrentUserOwnershipConflict(t *testi
 
 	existingIdentity, err := client.AuthIdentity.Create().
 		SetUserID(ownerUser.ID).
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("conflict-123").
 		SetMetadata(map[string]any{"username": "owner-user"}).
 		Save(ctx)
@@ -411,8 +411,8 @@ func TestExchangePendingOAuthCompletionBindCurrentUserOwnershipConflict(t *testi
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("bind-conflict-session-token").
 		SetIntent("bind_current_user").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("conflict-123").
 		SetTargetUserID(targetUser.ID).
 		SetResolvedEmail(targetUser.Email).
@@ -480,8 +480,8 @@ func TestExchangePendingOAuthCompletionLoginFalseFalseBindsIdentityWithoutAdopti
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("login-false-session-token").
 		SetIntent("login").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("login-false-123").
 		SetTargetUserID(userEntity.ID).
 		SetResolvedEmail(userEntity.Email).
@@ -514,8 +514,8 @@ func TestExchangePendingOAuthCompletionLoginFalseFalseBindsIdentityWithoutAdopti
 
 	identity, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("linuxdo"),
-			authidentity.ProviderKeyEQ("linuxdo"),
+			authidentity.ProviderTypeEQ("github"),
+			authidentity.ProviderKeyEQ("github"),
 			authidentity.ProviderSubjectEQ("login-false-123"),
 		).
 		Only(ctx)
@@ -553,8 +553,8 @@ func TestExchangePendingOAuthCompletionLoginReassignsExistingDecisionIdentityRef
 
 	existingIdentity, err := client.AuthIdentity.Create().
 		SetUserID(userEntity.ID).
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("login-reassign-123").
 		SetMetadata(map[string]any{}).
 		Save(ctx)
@@ -563,8 +563,8 @@ func TestExchangePendingOAuthCompletionLoginReassignsExistingDecisionIdentityRef
 	previousSession, err := client.PendingAuthSession.Create().
 		SetSessionToken("login-reassign-previous-session-token").
 		SetIntent("login").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("login-reassign-123").
 		SetTargetUserID(userEntity.ID).
 		SetResolvedEmail(userEntity.Email).
@@ -589,8 +589,8 @@ func TestExchangePendingOAuthCompletionLoginReassignsExistingDecisionIdentityRef
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("login-reassign-session-token").
 		SetIntent("login").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("login-reassign-123").
 		SetTargetUserID(userEntity.ID).
 		SetResolvedEmail(userEntity.Email).
@@ -662,8 +662,8 @@ func TestExchangePendingOAuthCompletionLoginWithoutDecisionStillBindsIdentity(t 
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("login-nodecision-session-token").
 		SetIntent("login").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("login-nodecision-123").
 		SetTargetUserID(userEntity.ID).
 		SetResolvedEmail(userEntity.Email).
@@ -693,8 +693,8 @@ func TestExchangePendingOAuthCompletionLoginWithoutDecisionStillBindsIdentity(t 
 
 	identity, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("linuxdo"),
-			authidentity.ProviderKeyEQ("linuxdo"),
+			authidentity.ProviderTypeEQ("github"),
+			authidentity.ProviderKeyEQ("github"),
 			authidentity.ProviderSubjectEQ("login-nodecision-123"),
 		).
 		Only(ctx)
@@ -723,8 +723,8 @@ func TestExchangePendingOAuthCompletionExistingLoginWithSuggestedProfileSkipsAdo
 
 	_, err = client.AuthIdentity.Create().
 		SetUserID(userEntity.ID).
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("existing-login-123").
 		SetMetadata(map[string]any{
 			"username": "existing-login-user",
@@ -735,8 +735,8 @@ func TestExchangePendingOAuthCompletionExistingLoginWithSuggestedProfileSkipsAdo
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("existing-login-session-token").
 		SetIntent("login").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("existing-login-123").
 		SetTargetUserID(userEntity.ID).
 		SetResolvedEmail(userEntity.Email).
@@ -826,8 +826,8 @@ func TestExchangePendingOAuthCompletionBlocksBackendModeBeforeReturningTokenPayl
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("blocked-backend-mode-session-token").
 		SetIntent("login").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("blocked-subject-123").
 		SetTargetUserID(userEntity.ID).
 		SetResolvedEmail(userEntity.Email).
@@ -876,8 +876,8 @@ func TestExchangePendingOAuthCompletionRejectsDisabledTargetUser(t *testing.T) {
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("disabled-linked-session-token").
 		SetIntent("login").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("disabled-linked-subject").
 		SetTargetUserID(userEntity.ID).
 		SetResolvedEmail(userEntity.Email).
@@ -933,8 +933,8 @@ func TestExchangePendingOAuthCompletionInvitationRequiredFalseFalsePersistsDecis
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("invitation-required-session-token").
 		SetIntent("login").
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("invitation-123").
 		SetBrowserSessionKey("invitation-required-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
@@ -968,8 +968,8 @@ func TestExchangePendingOAuthCompletionInvitationRequiredFalseFalsePersistsDecis
 
 	identityCount, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("linuxdo"),
-			authidentity.ProviderKeyEQ("linuxdo"),
+			authidentity.ProviderTypeEQ("github"),
+			authidentity.ProviderKeyEQ("github"),
 			authidentity.ProviderSubjectEQ("invitation-123"),
 		).
 		Count(ctx)
@@ -991,20 +991,39 @@ func TestExchangePendingOAuthCompletionInvitationRequiredFalseFalsePersistsDecis
 	require.Nil(t, storedSession.ConsumedAt)
 }
 
-func TestCreateOIDCOAuthAccountCreatesUserBindsIdentityAndConsumesSession(t *testing.T) {
-	handler, client := newOAuthPendingFlowTestHandlerWithEmailVerification(t, false, "fresh@example.com", "246810")
+func TestCreatePendingOAuthAccountCreatesUserBindsIdentityAndConsumesSession(t *testing.T) {
+	emailCache := &oauthPendingFlowEmailCacheStub{
+		verificationCodes: map[string]*service.VerificationCodeData{
+			"fresh@example.com": {
+				Code:      "246810",
+				CreatedAt: time.Now().UTC(),
+				ExpiresAt: time.Now().UTC().Add(15 * time.Minute),
+			},
+		},
+	}
+	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
+		emailVerifyEnabled: true,
+		emailCache:         emailCache,
+		settingValues: map[string]string{
+			service.SettingKeyDefaultBalance:                             "5",
+			service.SettingKeySignupGrantRiskControlEnabled:              "true",
+			service.SettingKeySignupGrantRiskControlOAuthIdentityEnabled: "true",
+			service.SettingKeySignupGrantRiskControlDeviceEnabled:        "true",
+			service.SettingKeySignupGrantRiskControlDeviceLimit:          "1",
+		},
+	})
 	ctx := context.Background()
 
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("create-account-session-token").
 		SetIntent("login").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-create-123").
 		SetBrowserSessionKey("create-account-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
 			"username":               "oidc_user",
-			"suggested_display_name": "Fresh OIDC User",
+			"suggested_display_name": "Fresh PendingOAuth User",
 			"suggested_avatar_url":   "https://cdn.example/fresh.png",
 		}).
 		SetRedirectTo("/profile").
@@ -1015,13 +1034,16 @@ func TestCreateOIDCOAuthAccountCreatesUserBindsIdentityAndConsumesSession(t *tes
 	body := bytes.NewBufferString(`{"email":"fresh@example.com","verify_code":"246810","password":"secret-123","adopt_display_name":false,"adopt_avatar":false}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/create-account", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/create-account", body)
 	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("X-Forwarded-For", "203.0.113.10")
+	req.Header.Set("X-Device-Fingerprint", "device-fingerprint-1")
+	req.Header.Set("User-Agent", "PendingOAuthTest/1.0")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("create-account-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.CreateOIDCOAuthAccount(ginCtx)
+	handler.CreatePendingOAuthAccount(ginCtx)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 
@@ -1037,7 +1059,7 @@ func TestCreateOIDCOAuthAccountCreatesUserBindsIdentityAndConsumesSession(t *tes
 
 	identity, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("oidc"),
+			authidentity.ProviderTypeEQ("github"),
 			authidentity.ProviderKeyEQ("https://issuer.example"),
 			authidentity.ProviderSubjectEQ("oidc-create-123"),
 		).
@@ -1048,9 +1070,11 @@ func TestCreateOIDCOAuthAccountCreatesUserBindsIdentityAndConsumesSession(t *tes
 	storedSession, err := client.PendingAuthSession.Get(ctx, session.ID)
 	require.NoError(t, err)
 	require.NotNil(t, storedSession.ConsumedAt)
+
+	assertSignupGrantRiskClaimIncludesOAuthContext(t, client, createdUser.ID, "github", "oidc-create-123")
 }
 
-func TestCreateOIDCOAuthAccountAppliesPromoCodeFromPendingSession(t *testing.T) {
+func TestCreatePendingOAuthAccountAppliesPromoCodeFromPendingSession(t *testing.T) {
 	promoRepo := newOAuthPendingFlowPromoRepoStub("WELCOME2024", 25)
 	emailCache := &oauthPendingFlowEmailCacheStub{
 		verificationCodes: map[string]*service.VerificationCodeData{
@@ -1074,7 +1098,7 @@ func TestCreateOIDCOAuthAccountAppliesPromoCodeFromPendingSession(t *testing.T) 
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("promo-create-account-session-token").
 		SetIntent(oauthIntentLogin).
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-promo-123").
 		SetBrowserSessionKey("promo-create-account-browser-key").
@@ -1087,13 +1111,13 @@ func TestCreateOIDCOAuthAccountAppliesPromoCodeFromPendingSession(t *testing.T) 
 	body := bytes.NewBufferString(`{"email":"promo@example.com","verify_code":"246810","password":"secret-123"}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/create-account", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/create-account", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue(session.BrowserSessionKey)})
 	ginCtx.Request = req
 
-	handler.CreateOIDCOAuthAccount(ginCtx)
+	handler.CreatePendingOAuthAccount(ginCtx)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 	require.Equal(t, []string{"WELCOME2024"}, promoRepo.applyCalls)
@@ -1104,7 +1128,7 @@ func TestCreateOIDCOAuthAccountAppliesPromoCodeFromPendingSession(t *testing.T) 
 	require.Equal(t, createdUser.ID, promoRepo.usages[0].UserID)
 }
 
-func TestCreateOIDCOAuthAccountWithoutPromoCodeDoesNotApplyPromo(t *testing.T) {
+func TestCreatePendingOAuthAccountWithoutPromoCodeDoesNotApplyPromo(t *testing.T) {
 	promoRepo := newOAuthPendingFlowPromoRepoStub("WELCOME2024", 25)
 	emailCache := &oauthPendingFlowEmailCacheStub{
 		verificationCodes: map[string]*service.VerificationCodeData{
@@ -1128,7 +1152,7 @@ func TestCreateOIDCOAuthAccountWithoutPromoCodeDoesNotApplyPromo(t *testing.T) {
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("no-promo-create-account-session-token").
 		SetIntent(oauthIntentLogin).
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-no-promo-123").
 		SetBrowserSessionKey("no-promo-create-account-browser-key").
@@ -1140,13 +1164,13 @@ func TestCreateOIDCOAuthAccountWithoutPromoCodeDoesNotApplyPromo(t *testing.T) {
 	body := bytes.NewBufferString(`{"email":"no-promo@example.com","verify_code":"246810","password":"secret-123"}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/create-account", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/create-account", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue(session.BrowserSessionKey)})
 	ginCtx.Request = req
 
-	handler.CreateOIDCOAuthAccount(ginCtx)
+	handler.CreatePendingOAuthAccount(ginCtx)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 	require.Empty(t, promoRepo.applyCalls)
@@ -1155,7 +1179,7 @@ func TestCreateOIDCOAuthAccountWithoutPromoCodeDoesNotApplyPromo(t *testing.T) {
 	require.Zero(t, createdUser.Balance)
 }
 
-func TestCreateOIDCOAuthAccountDoesNotApplyPromoWhenDisabled(t *testing.T) {
+func TestCreatePendingOAuthAccountDoesNotApplyPromoWhenDisabled(t *testing.T) {
 	promoRepo := newOAuthPendingFlowPromoRepoStub("WELCOME2024", 25)
 	emailCache := &oauthPendingFlowEmailCacheStub{
 		verificationCodes: map[string]*service.VerificationCodeData{
@@ -1179,7 +1203,7 @@ func TestCreateOIDCOAuthAccountDoesNotApplyPromoWhenDisabled(t *testing.T) {
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("promo-disabled-session-token").
 		SetIntent(oauthIntentLogin).
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-promo-disabled-123").
 		SetBrowserSessionKey("promo-disabled-browser-key").
@@ -1192,13 +1216,13 @@ func TestCreateOIDCOAuthAccountDoesNotApplyPromoWhenDisabled(t *testing.T) {
 	body := bytes.NewBufferString(`{"email":"promo-disabled@example.com","verify_code":"246810","password":"secret-123"}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/create-account", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/create-account", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue(session.BrowserSessionKey)})
 	ginCtx.Request = req
 
-	handler.CreateOIDCOAuthAccount(ginCtx)
+	handler.CreatePendingOAuthAccount(ginCtx)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 	require.Empty(t, promoRepo.applyCalls)
@@ -1234,7 +1258,7 @@ func TestOAuthExistingUserLoginDoesNotApplyPromoCode(t *testing.T) {
 		"",
 		"",
 		"WELCOME2024",
-		"oidc",
+		"github",
 	)
 
 	require.NoError(t, err)
@@ -1245,7 +1269,7 @@ func TestOAuthExistingUserLoginDoesNotApplyPromoCode(t *testing.T) {
 	require.Equal(t, 7.0, reloadedUser.Balance)
 }
 
-func TestCreateOIDCOAuthAccountExistingEmailReturnsChoicePendingSessionState(t *testing.T) {
+func TestCreatePendingOAuthAccountExistingEmailReturnsChoicePendingSessionState(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandlerWithEmailVerification(t, false, "owner@example.com", "135790")
 	ctx := context.Background()
 
@@ -1261,13 +1285,13 @@ func TestCreateOIDCOAuthAccountExistingEmailReturnsChoicePendingSessionState(t *
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("existing-email-session-token").
 		SetIntent("login").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-existing-123").
 		SetBrowserSessionKey("existing-email-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
 			"username":               "oidc_user",
-			"suggested_display_name": "Existing OIDC User",
+			"suggested_display_name": "Existing PendingOAuth User",
 			"suggested_avatar_url":   "https://cdn.example/existing.png",
 		}).
 		SetRedirectTo("/dashboard").
@@ -1278,13 +1302,13 @@ func TestCreateOIDCOAuthAccountExistingEmailReturnsChoicePendingSessionState(t *
 	body := bytes.NewBufferString(`{"email":"owner@example.com","verify_code":"135790","password":"secret-123"}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/create-account", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/create-account", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("existing-email-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.CreateOIDCOAuthAccount(ginCtx)
+	handler.CreatePendingOAuthAccount(ginCtx)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 
@@ -1292,12 +1316,12 @@ func TestCreateOIDCOAuthAccountExistingEmailReturnsChoicePendingSessionState(t *
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &payload))
 	require.Equal(t, "pending_session", payload["auth_result"])
 	require.Equal(t, oauthIntentLogin, payload["intent"])
-	require.Equal(t, "oidc", payload["provider"])
+	require.Equal(t, "github", payload["provider"])
 	require.Equal(t, "/dashboard", payload["redirect"])
 	require.Equal(t, true, payload["adoption_required"])
 	require.Equal(t, oauthPendingChoiceStep, payload["step"])
 	require.Equal(t, "owner@example.com", payload["email"])
-	require.Equal(t, "Existing OIDC User", payload["suggested_display_name"])
+	require.Equal(t, "Existing PendingOAuth User", payload["suggested_display_name"])
 	require.Equal(t, "https://cdn.example/existing.png", payload["suggested_avatar_url"])
 
 	storedSession, err := client.PendingAuthSession.Get(ctx, session.ID)
@@ -1310,7 +1334,7 @@ func TestCreateOIDCOAuthAccountExistingEmailReturnsChoicePendingSessionState(t *
 
 	identityCount, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("oidc"),
+			authidentity.ProviderTypeEQ("github"),
 			authidentity.ProviderKeyEQ("https://issuer.example"),
 			authidentity.ProviderSubjectEQ("oidc-existing-123"),
 		).
@@ -1319,7 +1343,7 @@ func TestCreateOIDCOAuthAccountExistingEmailReturnsChoicePendingSessionState(t *
 	require.Zero(t, identityCount)
 }
 
-func TestCreateOIDCOAuthAccountExistingEmailNormalizesLegacySpacingAndCase(t *testing.T) {
+func TestCreatePendingOAuthAccountExistingEmailNormalizesLegacySpacingAndCase(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandlerWithEmailVerification(t, false, "owner@example.com", "135790")
 	ctx := context.Background()
 
@@ -1335,13 +1359,13 @@ func TestCreateOIDCOAuthAccountExistingEmailNormalizesLegacySpacingAndCase(t *te
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("existing-email-normalized-session-token").
 		SetIntent("login").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-existing-normalized-123").
 		SetBrowserSessionKey("existing-email-normalized-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
 			"username":               "oidc_user",
-			"suggested_display_name": "Existing OIDC User",
+			"suggested_display_name": "Existing PendingOAuth User",
 			"suggested_avatar_url":   "https://cdn.example/existing.png",
 		}).
 		SetRedirectTo("/dashboard").
@@ -1352,13 +1376,13 @@ func TestCreateOIDCOAuthAccountExistingEmailNormalizesLegacySpacingAndCase(t *te
 	body := bytes.NewBufferString(`{"email":"owner@example.com","verify_code":"135790","password":"secret-123"}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/create-account", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/create-account", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("existing-email-normalized-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.CreateOIDCOAuthAccount(ginCtx)
+	handler.CreatePendingOAuthAccount(ginCtx)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 
@@ -1374,7 +1398,7 @@ func TestCreateOIDCOAuthAccountExistingEmailNormalizesLegacySpacingAndCase(t *te
 	require.Equal(t, "owner@example.com", storedSession.ResolvedEmail)
 }
 
-func TestCreateOIDCOAuthAccountRejectsEmailOutsideRegistrationSuffixWhitelist(t *testing.T) {
+func TestCreatePendingOAuthAccountRejectsEmailOutsideRegistrationSuffixWhitelist(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
 		emailVerifyEnabled: true,
 		emailCache: &oauthPendingFlowEmailCacheStub{
@@ -1395,7 +1419,7 @@ func TestCreateOIDCOAuthAccountRejectsEmailOutsideRegistrationSuffixWhitelist(t 
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("suffix-whitelist-session-token").
 		SetIntent("login").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-suffix-whitelist-123").
 		SetBrowserSessionKey("suffix-whitelist-browser-session-key").
@@ -1409,13 +1433,13 @@ func TestCreateOIDCOAuthAccountRejectsEmailOutsideRegistrationSuffixWhitelist(t 
 	body := bytes.NewBufferString(`{"email":"foo@gmail.com","verify_code":"135790","password":"secret-123"}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/create-account", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/create-account", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("suffix-whitelist-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.CreateOIDCOAuthAccount(ginCtx)
+	handler.CreatePendingOAuthAccount(ginCtx)
 
 	require.Equal(t, http.StatusBadRequest, recorder.Code)
 	payload := decodeJSONBody(t, recorder)
@@ -1442,7 +1466,7 @@ func TestSendPendingOAuthVerifyCodeExistingEmailReturnsBindLoginState(t *testing
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("existing-email-send-code-session-token").
 		SetIntent("login").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-existing-send-code-123").
 		SetBrowserSessionKey("existing-email-send-code-browser-session-key").
@@ -1483,7 +1507,7 @@ func TestSendPendingOAuthVerifyCodeExistingEmailReturnsBindLoginState(t *testing
 	require.Equal(t, "owner@example.com", storedSession.ResolvedEmail)
 }
 
-func TestCreateOIDCOAuthAccountBlocksBackendModeBeforeCreatingUser(t *testing.T) {
+func TestCreatePendingOAuthAccountBlocksBackendModeBeforeCreatingUser(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
 		emailVerifyEnabled: true,
 		emailCache: &oauthPendingFlowEmailCacheStub{
@@ -1504,7 +1528,7 @@ func TestCreateOIDCOAuthAccountBlocksBackendModeBeforeCreatingUser(t *testing.T)
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("create-account-backend-mode-session-token").
 		SetIntent("login").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-create-backend-mode-123").
 		SetBrowserSessionKey("create-account-backend-mode-browser-session-key").
@@ -1518,13 +1542,13 @@ func TestCreateOIDCOAuthAccountBlocksBackendModeBeforeCreatingUser(t *testing.T)
 	body := bytes.NewBufferString(`{"email":"fresh@example.com","verify_code":"246810","password":"secret-123"}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/create-account", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/create-account", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("create-account-backend-mode-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.CreateOIDCOAuthAccount(ginCtx)
+	handler.CreatePendingOAuthAccount(ginCtx)
 
 	require.Equal(t, http.StatusForbidden, recorder.Code)
 
@@ -1546,7 +1570,6 @@ func TestLogoutClearsPendingOAuthAndBindCookies(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue("pending-session-token")})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("pending-browser-key")})
-	req.AddCookie(&http.Cookie{Name: oauthBindAccessTokenCookieName, Value: "bind-token"})
 	ginCtx.Request = req
 
 	handler.Logout(ginCtx)
@@ -1554,10 +1577,9 @@ func TestLogoutClearsPendingOAuthAndBindCookies(t *testing.T) {
 	require.Equal(t, http.StatusOK, recorder.Code)
 	require.Equal(t, -1, findCookie(recorder.Result().Cookies(), oauthPendingSessionCookieName).MaxAge)
 	require.Equal(t, -1, findCookie(recorder.Result().Cookies(), oauthPendingBrowserCookieName).MaxAge)
-	require.Equal(t, -1, findCookie(recorder.Result().Cookies(), oauthBindAccessTokenCookieName).MaxAge)
 }
 
-func TestCreateOIDCOAuthAccountRollsBackCreatedUserWhenBindingFails(t *testing.T) {
+func TestCreatePendingOAuthAccountRollsBackCreatedUserWhenBindingFails(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandlerWithEmailVerification(t, true, "fresh@example.com", "246810")
 	ctx := context.Background()
 
@@ -1572,7 +1594,7 @@ func TestCreateOIDCOAuthAccountRollsBackCreatedUserWhenBindingFails(t *testing.T
 
 	_, err = client.AuthIdentity.Create().
 		SetUserID(conflictOwner.ID).
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-conflict-123").
 		SetMetadata(map[string]any{
@@ -1592,7 +1614,7 @@ func TestCreateOIDCOAuthAccountRollsBackCreatedUserWhenBindingFails(t *testing.T
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("create-account-conflict-session-token").
 		SetIntent("login").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-conflict-123").
 		SetBrowserSessionKey("create-account-conflict-browser-session-key").
@@ -1607,13 +1629,13 @@ func TestCreateOIDCOAuthAccountRollsBackCreatedUserWhenBindingFails(t *testing.T
 	body := bytes.NewBufferString(`{"email":"fresh@example.com","verify_code":"246810","password":"secret-123","invitation_code":"INVITE123"}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/create-account", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/create-account", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("create-account-conflict-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.CreateOIDCOAuthAccount(ginCtx)
+	handler.CreatePendingOAuthAccount(ginCtx)
 
 	require.Equal(t, http.StatusConflict, recorder.Code)
 
@@ -1632,7 +1654,7 @@ func TestCreateOIDCOAuthAccountRollsBackCreatedUserWhenBindingFails(t *testing.T
 	require.Nil(t, storedSession.ConsumedAt)
 }
 
-func TestCreateOIDCOAuthAccountRollsBackPostBindFailureBeforeIdentityCanCommit(t *testing.T) {
+func TestCreatePendingOAuthAccountRollsBackPostBindFailureBeforeIdentityCanCommit(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
 		emailVerifyEnabled: true,
 		emailCache: &oauthPendingFlowEmailCacheStub{
@@ -1653,7 +1675,7 @@ func TestCreateOIDCOAuthAccountRollsBackPostBindFailureBeforeIdentityCanCommit(t
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("create-account-finalize-failure-session-token").
 		SetIntent("login").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-finalize-failure-123").
 		SetBrowserSessionKey("create-account-finalize-failure-browser-session-key").
@@ -1675,13 +1697,13 @@ func TestCreateOIDCOAuthAccountRollsBackPostBindFailureBeforeIdentityCanCommit(t
 	body := bytes.NewBufferString(`{"email":"fresh@example.com","verify_code":"246810","password":"secret-123"}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/create-account", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/create-account", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("create-account-finalize-failure-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.CreateOIDCOAuthAccount(ginCtx)
+	handler.CreatePendingOAuthAccount(ginCtx)
 
 	require.Equal(t, http.StatusInternalServerError, recorder.Code)
 
@@ -1691,7 +1713,7 @@ func TestCreateOIDCOAuthAccountRollsBackPostBindFailureBeforeIdentityCanCommit(t
 
 	identityCount, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("oidc"),
+			authidentity.ProviderTypeEQ("github"),
 			authidentity.ProviderKeyEQ("https://issuer.example"),
 			authidentity.ProviderSubjectEQ("oidc-finalize-failure-123"),
 		).
@@ -1704,7 +1726,7 @@ func TestCreateOIDCOAuthAccountRollsBackPostBindFailureBeforeIdentityCanCommit(t
 	require.Nil(t, storedSession.ConsumedAt)
 }
 
-func TestBindOIDCOAuthLoginBindsExistingUserAndConsumesSession(t *testing.T) {
+func TestBindPendingOAuthLoginBindsExistingUserAndConsumesSession(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandler(t, false)
 	ctx := context.Background()
 
@@ -1723,7 +1745,7 @@ func TestBindOIDCOAuthLoginBindsExistingUserAndConsumesSession(t *testing.T) {
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("bind-login-session-token").
 		SetIntent("adopt_existing_user_by_email").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-bind-123").
 		SetTargetUserID(existingUser.ID).
@@ -1731,7 +1753,7 @@ func TestBindOIDCOAuthLoginBindsExistingUserAndConsumesSession(t *testing.T) {
 		SetBrowserSessionKey("bind-login-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
 			"username":               "oidc_user",
-			"suggested_display_name": "Bound OIDC User",
+			"suggested_display_name": "Bound PendingOAuth User",
 			"suggested_avatar_url":   "https://cdn.example/bound.png",
 		}).
 		SetRedirectTo("/profile").
@@ -1742,13 +1764,13 @@ func TestBindOIDCOAuthLoginBindsExistingUserAndConsumesSession(t *testing.T) {
 	body := bytes.NewBufferString(`{"email":"owner@example.com","password":"secret-123","adopt_display_name":false,"adopt_avatar":false}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/bind-login", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/bind-login", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("bind-login-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.BindOIDCOAuthLogin(ginCtx)
+	handler.BindPendingOAuthLogin(ginCtx)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 
@@ -1760,7 +1782,7 @@ func TestBindOIDCOAuthLoginBindsExistingUserAndConsumesSession(t *testing.T) {
 
 	identity, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("oidc"),
+			authidentity.ProviderTypeEQ("github"),
 			authidentity.ProviderKeyEQ("https://issuer.example"),
 			authidentity.ProviderSubjectEQ("oidc-bind-123"),
 		).
@@ -1773,7 +1795,7 @@ func TestBindOIDCOAuthLoginBindsExistingUserAndConsumesSession(t *testing.T) {
 	require.NotNil(t, storedSession.ConsumedAt)
 }
 
-func TestBindOIDCOAuthLoginBlocksBackendModeBeforeTokenIssue(t *testing.T) {
+func TestBindPendingOAuthLoginBlocksBackendModeBeforeTokenIssue(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
 		settingValues: map[string]string{
 			service.SettingKeyBackendModeEnabled: "true",
@@ -1796,7 +1818,7 @@ func TestBindOIDCOAuthLoginBlocksBackendModeBeforeTokenIssue(t *testing.T) {
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("bind-login-backend-mode-session-token").
 		SetIntent("adopt_existing_user_by_email").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-bind-backend-mode-123").
 		SetTargetUserID(existingUser.ID).
@@ -1812,19 +1834,19 @@ func TestBindOIDCOAuthLoginBlocksBackendModeBeforeTokenIssue(t *testing.T) {
 	body := bytes.NewBufferString(`{"email":"owner@example.com","password":"secret-123"}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/bind-login", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/bind-login", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("bind-login-backend-mode-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.BindOIDCOAuthLogin(ginCtx)
+	handler.BindPendingOAuthLogin(ginCtx)
 
 	require.Equal(t, http.StatusForbidden, recorder.Code)
 
 	identityCount, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("oidc"),
+			authidentity.ProviderTypeEQ("github"),
 			authidentity.ProviderKeyEQ("https://issuer.example"),
 			authidentity.ProviderSubjectEQ("oidc-bind-backend-mode-123"),
 		).
@@ -1837,7 +1859,7 @@ func TestBindOIDCOAuthLoginBlocksBackendModeBeforeTokenIssue(t *testing.T) {
 	require.Nil(t, storedSession.ConsumedAt)
 }
 
-func TestBindOIDCOAuthLoginRejectsInvalidPasswordWithoutConsumingSession(t *testing.T) {
+func TestBindPendingOAuthLoginRejectsInvalidPasswordWithoutConsumingSession(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandler(t, false)
 	ctx := context.Background()
 
@@ -1856,7 +1878,7 @@ func TestBindOIDCOAuthLoginRejectsInvalidPasswordWithoutConsumingSession(t *test
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("bind-login-invalid-password-session-token").
 		SetIntent("adopt_existing_user_by_email").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-bind-invalid-123").
 		SetTargetUserID(existingUser.ID).
@@ -1864,7 +1886,7 @@ func TestBindOIDCOAuthLoginRejectsInvalidPasswordWithoutConsumingSession(t *test
 		SetBrowserSessionKey("bind-login-invalid-password-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
 			"username":               "oidc_user",
-			"suggested_display_name": "Bound OIDC User",
+			"suggested_display_name": "Bound PendingOAuth User",
 			"suggested_avatar_url":   "https://cdn.example/bound.png",
 		}).
 		SetExpiresAt(time.Now().UTC().Add(10 * time.Minute)).
@@ -1874,13 +1896,13 @@ func TestBindOIDCOAuthLoginRejectsInvalidPasswordWithoutConsumingSession(t *test
 	body := bytes.NewBufferString(`{"email":"owner@example.com","password":"wrong-password"}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/bind-login", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/bind-login", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("bind-login-invalid-password-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.BindOIDCOAuthLogin(ginCtx)
+	handler.BindPendingOAuthLogin(ginCtx)
 
 	require.Equal(t, http.StatusUnauthorized, recorder.Code)
 	payload := decodeJSONBody(t, recorder)
@@ -1888,7 +1910,7 @@ func TestBindOIDCOAuthLoginRejectsInvalidPasswordWithoutConsumingSession(t *test
 
 	identityCount, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("oidc"),
+			authidentity.ProviderTypeEQ("github"),
 			authidentity.ProviderKeyEQ("https://issuer.example"),
 			authidentity.ProviderSubjectEQ("oidc-bind-invalid-123"),
 		).
@@ -1901,7 +1923,7 @@ func TestBindOIDCOAuthLoginRejectsInvalidPasswordWithoutConsumingSession(t *test
 	require.Nil(t, storedSession.ConsumedAt)
 }
 
-func TestBindOIDCOAuthLoginReclaimsIdentityOwnedBySoftDeletedUser(t *testing.T) {
+func TestBindPendingOAuthLoginReclaimsIdentityOwnedBySoftDeletedUser(t *testing.T) {
 	handler, client := newOAuthPendingFlowTestHandler(t, false)
 	ctx := context.Background()
 
@@ -1918,7 +1940,7 @@ func TestBindOIDCOAuthLoginReclaimsIdentityOwnedBySoftDeletedUser(t *testing.T) 
 
 	identity, err := client.AuthIdentity.Create().
 		SetUserID(oldOwner.ID).
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-bind-soft-deleted-123").
 		SetMetadata(map[string]any{"username": "old-owner"}).
@@ -1942,7 +1964,7 @@ func TestBindOIDCOAuthLoginReclaimsIdentityOwnedBySoftDeletedUser(t *testing.T) 
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("bind-login-soft-deleted-owner-session-token").
 		SetIntent("adopt_existing_user_by_email").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-bind-soft-deleted-123").
 		SetTargetUserID(newOwner.ID).
@@ -1950,7 +1972,7 @@ func TestBindOIDCOAuthLoginReclaimsIdentityOwnedBySoftDeletedUser(t *testing.T) 
 		SetBrowserSessionKey("bind-login-soft-deleted-owner-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
 			"username":               "oidc_user",
-			"suggested_display_name": "Recovered OIDC User",
+			"suggested_display_name": "Recovered PendingOAuth User",
 		}).
 		SetRedirectTo("/profile").
 		SetExpiresAt(time.Now().UTC().Add(10 * time.Minute)).
@@ -1960,13 +1982,13 @@ func TestBindOIDCOAuthLoginReclaimsIdentityOwnedBySoftDeletedUser(t *testing.T) 
 	body := bytes.NewBufferString(`{"email":"owner@example.com","password":"secret-123","adopt_display_name":false,"adopt_avatar":false}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/bind-login", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/bind-login", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("bind-login-soft-deleted-owner-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.BindOIDCOAuthLogin(ginCtx)
+	handler.BindPendingOAuthLogin(ginCtx)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 
@@ -1975,14 +1997,14 @@ func TestBindOIDCOAuthLoginReclaimsIdentityOwnedBySoftDeletedUser(t *testing.T) 
 	require.Equal(t, newOwner.ID, identity.UserID)
 }
 
-func TestBindOIDCOAuthLoginAppliesFirstBindGrantOnce(t *testing.T) {
+func TestBindPendingOAuthLoginAppliesFirstBindGrantOnce(t *testing.T) {
 	defaultSubAssigner := &oauthPendingFlowDefaultSubAssignerStub{}
 	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
 		settingValues: map[string]string{
-			service.SettingKeyAuthSourceDefaultOIDCBalance:          "12.5",
-			service.SettingKeyAuthSourceDefaultOIDCConcurrency:      "3",
-			service.SettingKeyAuthSourceDefaultOIDCSubscriptions:    `[{"group_id":101,"validity_days":30}]`,
-			service.SettingKeyAuthSourceDefaultOIDCGrantOnFirstBind: "true",
+			service.SettingKeyAuthSourceDefaultGitHubBalance:          "12.5",
+			service.SettingKeyAuthSourceDefaultGitHubConcurrency:      "3",
+			service.SettingKeyAuthSourceDefaultGitHubSubscriptions:    `[{"group_id":101,"validity_days":30}]`,
+			service.SettingKeyAuthSourceDefaultGitHubGrantOnFirstBind: "true",
 		},
 		defaultSubAssigner: defaultSubAssigner,
 	})
@@ -2005,14 +2027,14 @@ func TestBindOIDCOAuthLoginAppliesFirstBindGrantOnce(t *testing.T) {
 	firstSession, err := client.PendingAuthSession.Create().
 		SetSessionToken("first-bind-session-token").
 		SetIntent("adopt_existing_user_by_email").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-bind-first-123").
 		SetTargetUserID(existingUser.ID).
 		SetResolvedEmail(existingUser.Email).
 		SetBrowserSessionKey("first-bind-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
-			"suggested_display_name": "Bound OIDC User",
+			"suggested_display_name": "Bound PendingOAuth User",
 			"suggested_avatar_url":   "https://cdn.example/bound.png",
 		}).
 		SetRedirectTo("/profile").
@@ -2023,13 +2045,13 @@ func TestBindOIDCOAuthLoginAppliesFirstBindGrantOnce(t *testing.T) {
 	firstBody := bytes.NewBufferString(`{"email":"owner@example.com","password":"secret-123","adopt_display_name":false,"adopt_avatar":false}`)
 	firstRecorder := httptest.NewRecorder()
 	firstGinCtx, _ := gin.CreateTestContext(firstRecorder)
-	firstReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/bind-login", firstBody)
+	firstReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/bind-login", firstBody)
 	firstReq.Header.Set("Content-Type", "application/json")
 	firstReq.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(firstSession.SessionToken)})
 	firstReq.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("first-bind-browser-session-key")})
 	firstGinCtx.Request = firstReq
 
-	handler.BindOIDCOAuthLogin(firstGinCtx)
+	handler.BindPendingOAuthLogin(firstGinCtx)
 
 	require.Equal(t, http.StatusOK, firstRecorder.Code)
 
@@ -2042,19 +2064,19 @@ func TestBindOIDCOAuthLoginAppliesFirstBindGrantOnce(t *testing.T) {
 	require.Equal(t, int64(existingUser.ID), defaultSubAssigner.calls[0].UserID)
 	require.Equal(t, int64(101), defaultSubAssigner.calls[0].GroupID)
 	require.Equal(t, 30, defaultSubAssigner.calls[0].ValidityDays)
-	require.Equal(t, 1, countProviderGrantRecords(t, client, existingUser.ID, "oidc", "first_bind"))
+	require.Equal(t, 1, countProviderGrantRecords(t, client, existingUser.ID, "github", "first_bind"))
 
 	secondSession, err := client.PendingAuthSession.Create().
 		SetSessionToken("second-bind-session-token").
 		SetIntent("adopt_existing_user_by_email").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-bind-second-456").
 		SetTargetUserID(existingUser.ID).
 		SetResolvedEmail(existingUser.Email).
 		SetBrowserSessionKey("second-bind-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
-			"suggested_display_name": "Second OIDC User",
+			"suggested_display_name": "Second PendingOAuth User",
 			"suggested_avatar_url":   "https://cdn.example/second.png",
 		}).
 		SetRedirectTo("/profile").
@@ -2065,13 +2087,13 @@ func TestBindOIDCOAuthLoginAppliesFirstBindGrantOnce(t *testing.T) {
 	secondBody := bytes.NewBufferString(`{"email":"owner@example.com","password":"secret-123","adopt_display_name":false,"adopt_avatar":false}`)
 	secondRecorder := httptest.NewRecorder()
 	secondGinCtx, _ := gin.CreateTestContext(secondRecorder)
-	secondReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/bind-login", secondBody)
+	secondReq := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/bind-login", secondBody)
 	secondReq.Header.Set("Content-Type", "application/json")
 	secondReq.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(secondSession.SessionToken)})
 	secondReq.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("second-bind-browser-session-key")})
 	secondGinCtx.Request = secondReq
 
-	handler.BindOIDCOAuthLogin(secondGinCtx)
+	handler.BindPendingOAuthLogin(secondGinCtx)
 
 	require.Equal(t, http.StatusOK, secondRecorder.Code)
 
@@ -2081,7 +2103,7 @@ func TestBindOIDCOAuthLoginAppliesFirstBindGrantOnce(t *testing.T) {
 	require.Equal(t, 5, storedUser.Concurrency)
 	require.Zero(t, storedUser.TotalRecharged)
 	require.Len(t, defaultSubAssigner.calls, 1)
-	require.Equal(t, 1, countProviderGrantRecords(t, client, existingUser.ID, "oidc", "first_bind"))
+	require.Equal(t, 1, countProviderGrantRecords(t, client, existingUser.ID, "github", "first_bind"))
 }
 
 func TestResolvePendingOAuthTargetUserIDNormalizesLegacySpacingAndCase(t *testing.T) {
@@ -2101,7 +2123,7 @@ func TestResolvePendingOAuthTargetUserIDNormalizesLegacySpacingAndCase(t *testin
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("resolve-target-session-token").
 		SetIntent("login").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-target-123").
 		SetResolvedEmail("owner@example.com").
@@ -2115,7 +2137,7 @@ func TestResolvePendingOAuthTargetUserIDNormalizesLegacySpacingAndCase(t *testin
 	require.Equal(t, existingUser.ID, resolvedUserID)
 }
 
-func TestBindOIDCOAuthLoginReturns2FAChallengeWhenUserHasTotp(t *testing.T) {
+func TestBindPendingOAuthLoginReturns2FAChallengeWhenUserHasTotp(t *testing.T) {
 	totpCache := &oauthPendingFlowTotpCacheStub{}
 	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
 		settingValues: map[string]string{
@@ -2146,14 +2168,14 @@ func TestBindOIDCOAuthLoginReturns2FAChallengeWhenUserHasTotp(t *testing.T) {
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("bind-login-2fa-session-token").
 		SetIntent("adopt_existing_user_by_email").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-bind-2fa-123").
 		SetTargetUserID(existingUser.ID).
 		SetResolvedEmail(existingUser.Email).
 		SetBrowserSessionKey("bind-login-2fa-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
-			"suggested_display_name": "Bound OIDC User",
+			"suggested_display_name": "Bound PendingOAuth User",
 			"suggested_avatar_url":   "https://cdn.example/bound.png",
 		}).
 		SetRedirectTo("/profile").
@@ -2164,13 +2186,13 @@ func TestBindOIDCOAuthLoginReturns2FAChallengeWhenUserHasTotp(t *testing.T) {
 	body := bytes.NewBufferString(`{"email":"owner@example.com","password":"secret-123","adopt_display_name":false,"adopt_avatar":false}`)
 	recorder := httptest.NewRecorder()
 	ginCtx, _ := gin.CreateTestContext(recorder)
-	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/oidc/bind-login", body)
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/auth/oauth/pending/bind-login", body)
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: oauthPendingSessionCookieName, Value: encodeCookieValue(session.SessionToken)})
 	req.AddCookie(&http.Cookie{Name: oauthPendingBrowserCookieName, Value: encodeCookieValue("bind-login-2fa-browser-session-key")})
 	ginCtx.Request = req
 
-	handler.BindOIDCOAuthLogin(ginCtx)
+	handler.BindPendingOAuthLogin(ginCtx)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
 	data := decodeJSONResponseData(t, recorder)
@@ -2189,7 +2211,7 @@ func TestBindOIDCOAuthLoginReturns2FAChallengeWhenUserHasTotp(t *testing.T) {
 
 	identityCount, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("oidc"),
+			authidentity.ProviderTypeEQ("github"),
 			authidentity.ProviderKeyEQ("https://issuer.example"),
 			authidentity.ProviderSubjectEQ("oidc-bind-2fa-123"),
 		).
@@ -2207,10 +2229,10 @@ func TestLogin2FACompletesPendingOAuthBindAndConsumesSession(t *testing.T) {
 	defaultSubAssigner := &oauthPendingFlowDefaultSubAssignerStub{}
 	handler, client := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{
 		settingValues: map[string]string{
-			service.SettingKeyTotpEnabled:                           "true",
-			service.SettingKeyAuthSourceDefaultOIDCBalance:          "8",
-			service.SettingKeyAuthSourceDefaultOIDCConcurrency:      "2",
-			service.SettingKeyAuthSourceDefaultOIDCGrantOnFirstBind: "true",
+			service.SettingKeyTotpEnabled:                             "true",
+			service.SettingKeyAuthSourceDefaultGitHubBalance:          "8",
+			service.SettingKeyAuthSourceDefaultGitHubConcurrency:      "2",
+			service.SettingKeyAuthSourceDefaultGitHubGrantOnFirstBind: "true",
 		},
 		defaultSubAssigner: defaultSubAssigner,
 		totpCache:          totpCache,
@@ -2240,14 +2262,14 @@ func TestLogin2FACompletesPendingOAuthBindAndConsumesSession(t *testing.T) {
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("login-2fa-pending-session-token").
 		SetIntent("adopt_existing_user_by_email").
-		SetProviderType("oidc").
+		SetProviderType("github").
 		SetProviderKey("https://issuer.example").
 		SetProviderSubject("oidc-login-2fa-123").
 		SetTargetUserID(existingUser.ID).
 		SetResolvedEmail(existingUser.Email).
 		SetBrowserSessionKey("login-2fa-browser-session-key").
 		SetUpstreamIdentityClaims(map[string]any{
-			"suggested_display_name": "Bound OIDC User",
+			"suggested_display_name": "Bound PendingOAuth User",
 			"suggested_avatar_url":   "https://cdn.example/bound.png",
 		}).
 		SetRedirectTo("/profile").
@@ -2299,7 +2321,7 @@ func TestLogin2FACompletesPendingOAuthBindAndConsumesSession(t *testing.T) {
 
 	identity, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("oidc"),
+			authidentity.ProviderTypeEQ("github"),
 			authidentity.ProviderKeyEQ("https://issuer.example"),
 			authidentity.ProviderSubjectEQ("oidc-login-2fa-123"),
 		).
@@ -2319,7 +2341,7 @@ func TestLogin2FACompletesPendingOAuthBindAndConsumesSession(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 9.5, storedUser.Balance)
 	require.Equal(t, 6, storedUser.Concurrency)
-	require.Equal(t, 1, countProviderGrantRecords(t, client, existingUser.ID, "oidc", "first_bind"))
+	require.Equal(t, 1, countProviderGrantRecords(t, client, existingUser.ID, "github", "first_bind"))
 	require.Empty(t, defaultSubAssigner.calls)
 }
 
@@ -2427,9 +2449,46 @@ CREATE TABLE IF NOT EXISTS user_affiliates (
 	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 )`)
 	require.NoError(t, err)
+	_, err = db.Exec(`
+CREATE TABLE IF NOT EXISTS signup_grant_claims (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	user_id INTEGER NULL,
+	email TEXT NOT NULL DEFAULT '',
+	email_domain TEXT NOT NULL DEFAULT '',
+	ip_address TEXT NOT NULL DEFAULT '',
+	email_hash TEXT NOT NULL DEFAULT '',
+	email_domain_hash TEXT NOT NULL DEFAULT '',
+	ip_hash TEXT NOT NULL DEFAULT '',
+	user_agent_hash TEXT NOT NULL DEFAULT '',
+	signup_source TEXT NOT NULL DEFAULT '',
+	provider_type TEXT NOT NULL DEFAULT '',
+	provider_subject TEXT NOT NULL DEFAULT '',
+	provider_subject_hash TEXT NOT NULL DEFAULT '',
+	decision TEXT NOT NULL DEFAULT '',
+	reason TEXT NOT NULL DEFAULT '',
+	grant_balance REAL NOT NULL DEFAULT 0,
+	grant_metadata TEXT NOT NULL DEFAULT '{}',
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+)`)
+	require.NoError(t, err)
+	_, err = db.Exec(`
+CREATE TABLE IF NOT EXISTS signup_grant_risk_overrides (
+	id INTEGER PRIMARY KEY AUTOINCREMENT,
+	subject_type TEXT NOT NULL,
+	subject_value TEXT NOT NULL DEFAULT '',
+	subject_hash TEXT NOT NULL,
+	action TEXT NOT NULL,
+	reason TEXT NOT NULL DEFAULT '',
+	created_by INTEGER NULL,
+	expires_at TIMESTAMP NULL,
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+)`)
+	require.NoError(t, err)
 
 	drv := entsql.OpenDB(dialect.SQLite, db)
 	client := enttest.NewClient(t, enttest.WithOptions(dbent.Driver(drv)))
+	ensureOAuthPendingFlowUserBalanceColumns(t, db)
 
 	cfg := &config.Config{
 		JWT: config.JWTConfig{
@@ -2525,6 +2584,19 @@ func boolSettingValue(v bool) string {
 
 func boolPtr(v bool) *bool {
 	return &v
+}
+
+func ensureOAuthPendingFlowUserBalanceColumns(t *testing.T, db *sql.DB) {
+	t.Helper()
+
+	for _, statement := range []string{
+		`ALTER TABLE users ADD COLUMN paid_balance REAL NOT NULL DEFAULT 0`,
+		`ALTER TABLE users ADD COLUMN gift_balance REAL NOT NULL DEFAULT 0`,
+	} {
+		if _, err := db.Exec(statement); err != nil && !strings.Contains(strings.ToLower(err.Error()), "duplicate column") {
+			require.NoError(t, err)
+		}
+	}
 }
 
 type oauthPendingFlowSettingRepoStub struct {
@@ -2963,6 +3035,44 @@ func countProviderGrantRecords(
 	return count
 }
 
+func assertSignupGrantRiskClaimIncludesOAuthContext(
+	t *testing.T,
+	client *dbent.Client,
+	userID int64,
+	providerType string,
+	providerSubject string,
+) {
+	t.Helper()
+
+	var rows entsql.Rows
+	err := client.Driver().Query(
+		context.Background(),
+		`SELECT provider_type, provider_subject, provider_subject_hash, ip_hash, user_agent_hash
+		 FROM signup_grant_claims
+		 WHERE user_id = ?
+		 ORDER BY id DESC
+		 LIMIT 1`,
+		[]any{userID},
+		&rows,
+	)
+	require.NoError(t, err)
+	defer func() { _ = rows.Close() }()
+
+	require.True(t, rows.Next())
+	var storedProviderType string
+	var storedProviderSubject string
+	var providerSubjectHash string
+	var ipHash string
+	var userAgentHash string
+	require.NoError(t, rows.Scan(&storedProviderType, &storedProviderSubject, &providerSubjectHash, &ipHash, &userAgentHash))
+	require.Equal(t, providerType, storedProviderType)
+	require.Equal(t, providerSubject, storedProviderSubject)
+	require.NotEmpty(t, providerSubjectHash)
+	require.NotEmpty(t, ipHash)
+	require.NotEmpty(t, userAgentHash)
+	require.False(t, rows.Next())
+}
+
 type oauthPendingFlowUserRepo struct {
 	client  *dbent.Client
 	options oauthPendingFlowUserRepoOptions
@@ -3311,7 +3421,7 @@ func oauthPendingFlowSignupSource(raw string) string {
 	switch strings.TrimSpace(raw) {
 	case "", "email":
 		return "email"
-	case "linuxdo", "wechat", "oidc", "github", "google":
+	case "github", "google":
 		return strings.TrimSpace(raw)
 	default:
 		return "email"

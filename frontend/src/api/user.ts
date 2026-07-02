@@ -3,13 +3,7 @@
  * Handles user profile management and password changes
  */
 
-import { apiClient, buildApiUrl } from './client'
-import {
-  resolveWeChatOAuthStartStrict,
-  prepareOAuthBindAccessTokenCookie,
-  type WeChatOAuthPublicSettings,
-} from './auth'
-import { resolveAuthBindRedirect } from '@/utils/authRedirect'
+import { apiClient } from './client'
 import type {
   User,
   ChangePasswordRequest,
@@ -123,64 +117,6 @@ export async function unbindAuthIdentity(provider: BindableOAuthProvider): Promi
 
 export type BindableOAuthProvider = Exclude<UserAuthProvider, 'email'>
 
-interface BuildOAuthBindingStartURLOptions {
-  redirectTo?: string
-  apiBaseSettings?: { api_base_url?: string | null } | null
-  wechatOAuthSettings?: WeChatOAuthPublicSettings | null
-}
-
-export function resolveWeChatOAuthMode(): 'open' | 'mp' {
-  if (typeof navigator === 'undefined') {
-    return 'open'
-  }
-  return /MicroMessenger/i.test(navigator.userAgent) ? 'mp' : 'open'
-}
-
-function resolveWeChatOAuthBindingMode(
-  settings?: WeChatOAuthPublicSettings | null
-): 'open' | 'mp' | null {
-  if (settings) {
-    return resolveWeChatOAuthStartStrict(settings).mode
-  }
-  return resolveWeChatOAuthMode()
-}
-
-export function buildOAuthBindingStartURL(
-  provider: BindableOAuthProvider,
-  options: BuildOAuthBindingStartURLOptions = {}
-): string | null {
-  const redirectTo = resolveAuthBindRedirect(options.redirectTo)
-  const params = new URLSearchParams({
-    redirect: redirectTo,
-    intent: 'bind_current_user'
-  })
-
-  if (provider === 'wechat') {
-    const mode = resolveWeChatOAuthBindingMode(options.wechatOAuthSettings)
-    if (!mode) {
-      return null
-    }
-    params.set('mode', mode)
-  }
-
-  return buildApiUrl(`/auth/oauth/${provider}/bind/start?${params.toString()}`, options.apiBaseSettings)
-}
-
-export async function startOAuthBinding(
-  provider: BindableOAuthProvider,
-  options: BuildOAuthBindingStartURLOptions = {}
-): Promise<void> {
-  if (typeof window === 'undefined') {
-    return
-  }
-  const startURL = buildOAuthBindingStartURL(provider, options)
-  if (!startURL) {
-    return
-  }
-  await prepareOAuthBindAccessTokenCookie()
-  window.location.href = startURL
-}
-
 export async function getAffiliateDetail(): Promise<UserAffiliateDetail> {
   const { data } = await apiClient.get<UserAffiliateDetail>('/user/aff')
   return data
@@ -234,8 +170,6 @@ export const userAPI = {
   sendEmailBindingCode,
   bindEmailIdentity,
   unbindAuthIdentity,
-  buildOAuthBindingStartURL,
-  startOAuthBinding,
   getAffiliateDetail,
   transferAffiliateQuota,
   getAffiliateRebates,

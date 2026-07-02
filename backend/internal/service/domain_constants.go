@@ -112,46 +112,41 @@ const (
 	SubscriptionStatusRevoked = "revoked"
 )
 
-// LinuxDoConnectSyntheticEmailDomain 是 LinuxDo Connect 用户的合成邮箱后缀（RFC 保留域名）。
-const LinuxDoConnectSyntheticEmailDomain = "@linuxdo-connect.invalid"
-
-// OIDCConnectSyntheticEmailDomain 是 OIDC 用户的合成邮箱后缀（RFC 保留域名）。
-const OIDCConnectSyntheticEmailDomain = "@oidc-connect.invalid"
-
-// WeChatConnectSyntheticEmailDomain 是 WeChat Connect 用户的合成邮箱后缀（RFC 保留域名）。
-const WeChatConnectSyntheticEmailDomain = "@wechat-connect.invalid"
-
-// DingTalkConnectSyntheticEmailDomain 是 DingTalk Connect 用户的合成邮箱后缀（RFC 保留域名）。
-const DingTalkConnectSyntheticEmailDomain = "@dingtalk-connect.invalid"
-
 // Setting keys
 const (
 	// 注册设置
-	SettingKeyRegistrationEnabled               = "registration_enabled"                // 是否开放注册
-	SettingKeyEmailVerifyEnabled                = "email_verify_enabled"                // 是否开启邮件验证
-	SettingKeyRegistrationEmailSuffixWhitelist  = "registration_email_suffix_whitelist" // 注册邮箱后缀白名单（JSON 数组）
-	SettingKeyPromoCodeEnabled                  = "promo_code_enabled"                  // 是否启用优惠码功能
-	SettingKeyPasswordResetEnabled              = "password_reset_enabled"              // 是否启用忘记密码功能（需要先开启邮件验证）
-	SettingKeyPasswordMinLength                 = "password_min_length"                 // 密码最小长度（下限 8）
-	SettingKeyFrontendURL                       = "frontend_url"                        // 前端基础URL，用于生成邮件中的重置密码链接
-	SettingKeyInvitationCodeEnabled             = "invitation_code_enabled"             // 是否启用邀请码注册
-	SettingKeyAffiliateEnabled                  = "affiliate_enabled"                   // 邀请返利功能总开关
-	SettingKeyAffiliateRebateRate               = "affiliate_rebate_rate"               // 邀请返利比例（百分比，0-100）
-	SettingKeyAffiliateRebateFreezeHours        = "affiliate_rebate_freeze_hours"       // 返利冻结期（小时，0=不冻结）
-	SettingKeyAffiliateRebateDurationDays       = "affiliate_rebate_duration_days"      // 返利有效期（天，0=永久）
-	SettingKeyAffiliateRebatePerInviteeCap      = "affiliate_rebate_per_invitee_cap"    // 单人返利上限（0=无上限）
-	SettingKeyRiskControlEnabled                = "risk_control_enabled"                // 是否启用风控中心入口与审计链路
-	SettingKeySignupGrantRiskControlEnabled     = "signup_grant_risk_control_enabled"   // 是否启用注册赠送风控
-	SettingKeySignupGrantRiskControlEmailLimit  = "signup_grant_risk_control_email_limit"
-	SettingKeySignupGrantRiskControlIPLimit     = "signup_grant_risk_control_ip_daily_limit"
-	SettingKeySignupGrantRiskControlDomainLimit = "signup_grant_risk_control_domain_daily_limit"
-	SettingKeyContentModerationConfig           = "content_moderation_config"       // 内容审计配置（JSON）
-	SettingKeyCyberSessionBlockEnabled          = "cyber_session_block_enabled"     // cyber 命中后会话级自动屏蔽总开关(默认关)
-	SettingKeyCyberSessionBlockTTLSeconds       = "cyber_session_block_ttl_seconds" // 会话屏蔽 TTL 秒数(默认 3600)
-	SettingKeyLoginAgreementEnabled             = "login_agreement_enabled"         // 登录前是否要求同意条款
-	SettingKeyLoginAgreementMode                = "login_agreement_mode"            // 条款确认展示模式：modal / checkbox
-	SettingKeyLoginAgreementUpdatedAt           = "login_agreement_updated_at"      // 条款更新日期（展示用）
-	SettingKeyLoginAgreementDocuments           = "login_agreement_documents"       // 条款文档列表（JSON，Markdown 内容）
+	SettingKeyRegistrationEnabled                        = "registration_enabled"                // 是否开放注册
+	SettingKeyEmailVerifyEnabled                         = "email_verify_enabled"                // 是否开启邮件验证
+	SettingKeyRegistrationEmailSuffixWhitelist           = "registration_email_suffix_whitelist" // 注册邮箱后缀白名单（JSON 数组）
+	SettingKeyPromoCodeEnabled                           = "promo_code_enabled"                  // 是否启用优惠码功能
+	SettingKeyPasswordResetEnabled                       = "password_reset_enabled"              // 是否启用忘记密码功能（需要先开启邮件验证）
+	SettingKeyPasswordMinLength                          = "password_min_length"                 // 密码最小长度（下限 8）
+	SettingKeyFrontendURL                                = "frontend_url"                        // 前端基础URL，用于生成邮件中的重置密码链接
+	SettingKeyInvitationCodeEnabled                      = "invitation_code_enabled"             // 是否启用邀请码注册
+	SettingKeyAffiliateEnabled                           = "affiliate_enabled"                   // 邀请返利功能总开关
+	SettingKeyAffiliateRebateRate                        = "affiliate_rebate_rate"               // 邀请返利比例（百分比，0-100）
+	SettingKeyAffiliateRebateFreezeHours                 = "affiliate_rebate_freeze_hours"       // 返利冻结期（小时，0=不冻结）
+	SettingKeyAffiliateRebateDurationDays                = "affiliate_rebate_duration_days"      // 返利有效期（天，0=永久）
+	SettingKeyAffiliateRebatePerInviteeCap               = "affiliate_rebate_per_invitee_cap"    // 单人返利上限（0=无上限）
+	SettingKeyRiskControlEnabled                         = "risk_control_enabled"                // 是否启用风控中心入口与审计链路
+	SettingKeySignupGrantRiskControlEnabled              = "signup_grant_risk_control_enabled"   // 是否启用注册赠送风控
+	SettingKeySignupGrantRiskControlEmailLimit           = "signup_grant_risk_control_email_limit"
+	SettingKeySignupGrantRiskControlIPLimit              = "signup_grant_risk_control_ip_daily_limit"
+	SettingKeySignupGrantRiskControlDomainLimit          = "signup_grant_risk_control_domain_daily_limit"
+	SettingKeySignupGrantRiskControlOAuthIdentityEnabled = "signup_grant_risk_control_oauth_identity_enabled"
+	SettingKeySignupGrantRiskControlDeviceEnabled        = "signup_grant_risk_control_device_enabled"
+	SettingKeySignupGrantRiskControlDeviceLimit          = "signup_grant_risk_control_device_daily_limit"
+	SettingKeySignupGrantRiskControlFreeDomainLimit      = "signup_grant_risk_control_free_domain_daily_limit"
+	SettingKeySignupGrantRiskControlBlockedDomains       = "signup_grant_risk_control_blocked_email_domains"
+	SettingKeySignupGrantRiskControlFreeDomains          = "signup_grant_risk_control_free_email_domains"
+	SettingKeySignupGrantRiskControlTrustedDomains       = "signup_grant_risk_control_trusted_email_domains"
+	SettingKeyContentModerationConfig                    = "content_moderation_config"       // 内容审计配置（JSON）
+	SettingKeyCyberSessionBlockEnabled                   = "cyber_session_block_enabled"     // cyber 命中后会话级自动屏蔽总开关(默认关)
+	SettingKeyCyberSessionBlockTTLSeconds                = "cyber_session_block_ttl_seconds" // 会话屏蔽 TTL 秒数(默认 3600)
+	SettingKeyLoginAgreementEnabled                      = "login_agreement_enabled"         // 登录前是否要求同意条款
+	SettingKeyLoginAgreementMode                         = "login_agreement_mode"            // 条款确认展示模式：modal / checkbox
+	SettingKeyLoginAgreementUpdatedAt                    = "login_agreement_updated_at"      // 条款更新日期（展示用）
+	SettingKeyLoginAgreementDocuments                    = "login_agreement_documents"       // 条款文档列表（JSON，Markdown 内容）
 
 	// 邮件服务设置
 	SettingKeySMTPHost       = "smtp_host"        // SMTP服务器地址
@@ -175,30 +170,6 @@ const (
 	// TOTP 双因素认证设置
 	SettingKeyTotpEnabled = "totp_enabled" // 是否启用 TOTP 2FA 功能
 
-	// LinuxDo Connect OAuth 登录设置
-	SettingKeyLinuxDoConnectEnabled      = "linuxdo_connect_enabled"
-	SettingKeyLinuxDoConnectClientID     = "linuxdo_connect_client_id"
-	SettingKeyLinuxDoConnectClientSecret = "linuxdo_connect_client_secret"
-	SettingKeyLinuxDoConnectRedirectURL  = "linuxdo_connect_redirect_url"
-
-	// DingTalk Connect OAuth 登录设置
-	SettingKeyDingTalkConnectEnabled                 = "dingtalk_connect_enabled"
-	SettingKeyDingTalkConnectClientID                = "dingtalk_connect_client_id"
-	SettingKeyDingTalkConnectClientSecret            = "dingtalk_connect_client_secret"
-	SettingKeyDingTalkConnectRedirectURL             = "dingtalk_connect_redirect_url"
-	SettingKeyDingTalkConnectCorpRestrictionPolicy   = "dingtalk_connect_corp_restriction_policy"
-	SettingKeyDingTalkConnectInternalCorpID          = "dingtalk_connect_internal_corp_id"
-	SettingKeyDingTalkConnectBypassRegistration      = "dingtalk_connect_bypass_registration"
-	SettingKeyDingTalkConnectSyncCorpEmail           = "dingtalk_connect_sync_corp_email"
-	SettingKeyDingTalkConnectSyncDisplayName         = "dingtalk_connect_sync_display_name"
-	SettingKeyDingTalkConnectSyncDept                = "dingtalk_connect_sync_dept"
-	SettingKeyDingTalkConnectSyncCorpEmailAttrKey    = "dingtalk_connect_sync_corp_email_attr_key"
-	SettingKeyDingTalkConnectSyncDisplayNameAttrKey  = "dingtalk_connect_sync_display_name_attr_key"
-	SettingKeyDingTalkConnectSyncDeptAttrKey         = "dingtalk_connect_sync_dept_attr_key"
-	SettingKeyDingTalkConnectSyncCorpEmailAttrName   = "dingtalk_connect_sync_corp_email_attr_name"
-	SettingKeyDingTalkConnectSyncDisplayNameAttrName = "dingtalk_connect_sync_display_name_attr_name"
-	SettingKeyDingTalkConnectSyncDeptAttrName        = "dingtalk_connect_sync_dept_attr_name"
-
 	// WeChat Connect OAuth 登录设置
 	SettingKeyWeChatConnectEnabled             = "wechat_connect_enabled"
 	SettingKeyWeChatConnectOpenAppID           = "wechat_connect_open_app_id"
@@ -214,30 +185,6 @@ const (
 	SettingKeyWeChatConnectScopes              = "wechat_connect_scopes"
 	SettingKeyWeChatConnectRedirectURL         = "wechat_connect_redirect_url"
 	SettingKeyWeChatConnectFrontendRedirectURL = "wechat_connect_frontend_redirect_url"
-
-	// Generic OIDC OAuth 登录设置
-	SettingKeyOIDCConnectEnabled              = "oidc_connect_enabled"
-	SettingKeyOIDCConnectProviderName         = "oidc_connect_provider_name"
-	SettingKeyOIDCConnectClientID             = "oidc_connect_client_id"
-	SettingKeyOIDCConnectClientSecret         = "oidc_connect_client_secret"
-	SettingKeyOIDCConnectIssuerURL            = "oidc_connect_issuer_url"
-	SettingKeyOIDCConnectDiscoveryURL         = "oidc_connect_discovery_url"
-	SettingKeyOIDCConnectAuthorizeURL         = "oidc_connect_authorize_url"
-	SettingKeyOIDCConnectTokenURL             = "oidc_connect_token_url"
-	SettingKeyOIDCConnectUserInfoURL          = "oidc_connect_userinfo_url"
-	SettingKeyOIDCConnectJWKSURL              = "oidc_connect_jwks_url"
-	SettingKeyOIDCConnectScopes               = "oidc_connect_scopes"
-	SettingKeyOIDCConnectRedirectURL          = "oidc_connect_redirect_url"
-	SettingKeyOIDCConnectFrontendRedirectURL  = "oidc_connect_frontend_redirect_url"
-	SettingKeyOIDCConnectTokenAuthMethod      = "oidc_connect_token_auth_method"
-	SettingKeyOIDCConnectUsePKCE              = "oidc_connect_use_pkce"
-	SettingKeyOIDCConnectValidateIDToken      = "oidc_connect_validate_id_token"
-	SettingKeyOIDCConnectAllowedSigningAlgs   = "oidc_connect_allowed_signing_algs"
-	SettingKeyOIDCConnectClockSkewSeconds     = "oidc_connect_clock_skew_seconds"
-	SettingKeyOIDCConnectRequireEmailVerified = "oidc_connect_require_email_verified"
-	SettingKeyOIDCConnectUserInfoEmailPath    = "oidc_connect_userinfo_email_path"
-	SettingKeyOIDCConnectUserInfoIDPath       = "oidc_connect_userinfo_id_path"
-	SettingKeyOIDCConnectUserInfoUsernamePath = "oidc_connect_userinfo_username_path"
 
 	// GitHub / Google 邮箱快捷登录设置
 	SettingKeyGitHubOAuthEnabled             = "github_oauth_enabled"
@@ -368,42 +315,22 @@ const (
 	SettingKeyDefaultUserRPMLimit  = "default_user_rpm_limit" // 新用户默认 RPM 限制（0 = 不限制）
 
 	// 第三方认证来源默认授予配置
-	SettingKeyAuthSourceDefaultEmailBalance             = "auth_source_default_email_balance"
-	SettingKeyAuthSourceDefaultEmailConcurrency         = "auth_source_default_email_concurrency"
-	SettingKeyAuthSourceDefaultEmailSubscriptions       = "auth_source_default_email_subscriptions"
-	SettingKeyAuthSourceDefaultEmailGrantOnSignup       = "auth_source_default_email_grant_on_signup"
-	SettingKeyAuthSourceDefaultEmailGrantOnFirstBind    = "auth_source_default_email_grant_on_first_bind"
-	SettingKeyAuthSourceDefaultLinuxDoBalance           = "auth_source_default_linuxdo_balance"
-	SettingKeyAuthSourceDefaultLinuxDoConcurrency       = "auth_source_default_linuxdo_concurrency"
-	SettingKeyAuthSourceDefaultLinuxDoSubscriptions     = "auth_source_default_linuxdo_subscriptions"
-	SettingKeyAuthSourceDefaultLinuxDoGrantOnSignup     = "auth_source_default_linuxdo_grant_on_signup"
-	SettingKeyAuthSourceDefaultLinuxDoGrantOnFirstBind  = "auth_source_default_linuxdo_grant_on_first_bind"
-	SettingKeyAuthSourceDefaultOIDCBalance              = "auth_source_default_oidc_balance"
-	SettingKeyAuthSourceDefaultOIDCConcurrency          = "auth_source_default_oidc_concurrency"
-	SettingKeyAuthSourceDefaultOIDCSubscriptions        = "auth_source_default_oidc_subscriptions"
-	SettingKeyAuthSourceDefaultOIDCGrantOnSignup        = "auth_source_default_oidc_grant_on_signup"
-	SettingKeyAuthSourceDefaultOIDCGrantOnFirstBind     = "auth_source_default_oidc_grant_on_first_bind"
-	SettingKeyAuthSourceDefaultWeChatBalance            = "auth_source_default_wechat_balance"
-	SettingKeyAuthSourceDefaultWeChatConcurrency        = "auth_source_default_wechat_concurrency"
-	SettingKeyAuthSourceDefaultWeChatSubscriptions      = "auth_source_default_wechat_subscriptions"
-	SettingKeyAuthSourceDefaultWeChatGrantOnSignup      = "auth_source_default_wechat_grant_on_signup"
-	SettingKeyAuthSourceDefaultWeChatGrantOnFirstBind   = "auth_source_default_wechat_grant_on_first_bind"
-	SettingKeyAuthSourceDefaultGitHubBalance            = "auth_source_default_github_balance"
-	SettingKeyAuthSourceDefaultGitHubConcurrency        = "auth_source_default_github_concurrency"
-	SettingKeyAuthSourceDefaultGitHubSubscriptions      = "auth_source_default_github_subscriptions"
-	SettingKeyAuthSourceDefaultGitHubGrantOnSignup      = "auth_source_default_github_grant_on_signup"
-	SettingKeyAuthSourceDefaultGitHubGrantOnFirstBind   = "auth_source_default_github_grant_on_first_bind"
-	SettingKeyAuthSourceDefaultGoogleBalance            = "auth_source_default_google_balance"
-	SettingKeyAuthSourceDefaultGoogleConcurrency        = "auth_source_default_google_concurrency"
-	SettingKeyAuthSourceDefaultGoogleSubscriptions      = "auth_source_default_google_subscriptions"
-	SettingKeyAuthSourceDefaultGoogleGrantOnSignup      = "auth_source_default_google_grant_on_signup"
-	SettingKeyAuthSourceDefaultGoogleGrantOnFirstBind   = "auth_source_default_google_grant_on_first_bind"
-	SettingKeyAuthSourceDefaultDingTalkBalance          = "auth_source_default_dingtalk_balance"
-	SettingKeyAuthSourceDefaultDingTalkConcurrency      = "auth_source_default_dingtalk_concurrency"
-	SettingKeyAuthSourceDefaultDingTalkSubscriptions    = "auth_source_default_dingtalk_subscriptions"
-	SettingKeyAuthSourceDefaultDingTalkGrantOnSignup    = "auth_source_default_dingtalk_grant_on_signup"
-	SettingKeyAuthSourceDefaultDingTalkGrantOnFirstBind = "auth_source_default_dingtalk_grant_on_first_bind"
-	SettingKeyForceEmailOnThirdPartySignup              = "force_email_on_third_party_signup"
+	SettingKeyAuthSourceDefaultEmailBalance           = "auth_source_default_email_balance"
+	SettingKeyAuthSourceDefaultEmailConcurrency       = "auth_source_default_email_concurrency"
+	SettingKeyAuthSourceDefaultEmailSubscriptions     = "auth_source_default_email_subscriptions"
+	SettingKeyAuthSourceDefaultEmailGrantOnSignup     = "auth_source_default_email_grant_on_signup"
+	SettingKeyAuthSourceDefaultEmailGrantOnFirstBind  = "auth_source_default_email_grant_on_first_bind"
+	SettingKeyAuthSourceDefaultGitHubBalance          = "auth_source_default_github_balance"
+	SettingKeyAuthSourceDefaultGitHubConcurrency      = "auth_source_default_github_concurrency"
+	SettingKeyAuthSourceDefaultGitHubSubscriptions    = "auth_source_default_github_subscriptions"
+	SettingKeyAuthSourceDefaultGitHubGrantOnSignup    = "auth_source_default_github_grant_on_signup"
+	SettingKeyAuthSourceDefaultGitHubGrantOnFirstBind = "auth_source_default_github_grant_on_first_bind"
+	SettingKeyAuthSourceDefaultGoogleBalance          = "auth_source_default_google_balance"
+	SettingKeyAuthSourceDefaultGoogleConcurrency      = "auth_source_default_google_concurrency"
+	SettingKeyAuthSourceDefaultGoogleSubscriptions    = "auth_source_default_google_subscriptions"
+	SettingKeyAuthSourceDefaultGoogleGrantOnSignup    = "auth_source_default_google_grant_on_signup"
+	SettingKeyAuthSourceDefaultGoogleGrantOnFirstBind = "auth_source_default_google_grant_on_first_bind"
+	SettingKeyForceEmailOnThirdPartySignup            = "force_email_on_third_party_signup"
 
 	// 管理员 API Key
 	SettingKeyAdminAPIKey = "admin_api_key" // 全局管理员 API Key（用于外部系统集成）

@@ -96,9 +96,6 @@ function simulateGuard(
       const allowed = ['/login', '/key-usage', '/setup', '/payment/result']
       const callbackPaths = [
         '/auth/callback',
-        '/auth/linuxdo/callback',
-        '/auth/oidc/callback',
-        '/auth/wechat/callback',
         '/auth/wechat/payment/callback',
       ]
       const pendingAuthPaths = ['/register', '/email-verify']
@@ -145,9 +142,6 @@ function simulateGuard(
     const allowed = ['/login', '/key-usage', '/setup', '/payment/result']
     const callbackPaths = [
       '/auth/callback',
-      '/auth/linuxdo/callback',
-      '/auth/oidc/callback',
-      '/auth/wechat/callback',
       '/auth/wechat/payment/callback',
     ]
     const pendingAuthPaths = ['/register', '/email-verify']
@@ -192,8 +186,6 @@ describe('路由守卫逻辑', () => {
           adminRedirectPath: '/configured-admin',
           adminRuntimeSettingsPath: '/configured-admin-runtime-settings',
           adminSettingsPath: '/configured-admin-settings',
-          dingtalkCallbackPath: '/configured-dingtalk-callback',
-          dingtalkEmailCompletionPath: '/configured-dingtalk-email-completion',
         },
       },
     })
@@ -222,8 +214,6 @@ describe('路由守卫逻辑', () => {
         adminRedirectPath: '/configured-admin',
         adminRuntimeSettingsPath: '/configured-admin-runtime-settings',
         adminSettingsPath: '/configured-admin-settings',
-        dingtalkCallbackPath: '/configured-dingtalk-callback',
-        dingtalkEmailCompletionPath: '/configured-dingtalk-email-completion',
       })
     })
 
@@ -614,7 +604,7 @@ describe('路由守卫逻辑', () => {
       expect(redirect).toBeNull()
     })
 
-    it('unauthenticated: callback routes are allowed', () => {
+    it('unauthenticated: generic OAuth callback route is allowed', () => {
       const authState: MockAuthState = {
         isAuthenticated: false,
         isAdmin: false,
@@ -622,7 +612,7 @@ describe('路由守卫逻辑', () => {
         backendModeEnabled: true,
         hasPendingAuthSession: false,
       }
-      const redirect = simulateGuard('/auth/wechat/callback', { requiresAuth: false }, authState)
+      const redirect = simulateGuard('/auth/callback', { requiresAuth: false }, authState)
       expect(redirect).toBeNull()
     })
 

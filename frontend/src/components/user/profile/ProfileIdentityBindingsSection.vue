@@ -30,7 +30,7 @@
         <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div class="flex min-w-0 flex-1 items-start gap-4">
             <div
-              :class="providerIconClass(item.provider)"
+              :class="providerIconClass()"
               class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-sm font-semibold"
             >
               <Icon
@@ -39,7 +39,7 @@
                 size="sm"
                 class="text-current"
               />
-              <span v-else>{{ providerInitial(item.provider) }}</span>
+              <span v-else>{{ providerInitial() }}</span>
             </div>
 
             <div class="min-w-0 flex-1 space-y-3">
@@ -196,22 +196,13 @@
 
 <script setup lang="ts">
 import { computed, reactive, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import {
-  hasExplicitWeChatOAuthCapabilities,
-  resolveWeChatOAuthStartStrict,
-  type WeChatOAuthPublicSettings,
-} from '@/api/auth'
 import {
   bindEmailIdentity,
   sendEmailBindingCode,
-  startOAuthBinding,
-  unbindAuthIdentity,
 } from '@/api/user'
 import Icon from '@/components/icons/Icon.vue'
 import { useAppStore, useAuthStore } from '@/stores'
 import type { User, UserAuthBindingStatus, UserAuthProvider } from '@/types'
-import { resolveAuthBindRedirect } from '@/utils/authRedirect'
 import { resolvePasswordMinLength } from '@/utils/passwordPolicy'
 import {
   authBindingLabelKeySet,
@@ -223,37 +214,20 @@ import {
   type AuthBindingLabelKey,
 } from '@/utils/profileShell'
 
-type BindableProvider = Exclude<UserAuthProvider, 'email'>
-
 const props = withDefaults(
   defineProps<{
     user: User | null
-    linuxdoEnabled?: boolean
-    dingtalkEnabled?: boolean
-    oidcEnabled?: boolean
-    oidcProviderName?: string
-    wechatEnabled?: boolean
-    wechatOpenEnabled?: boolean
-    wechatMpEnabled?: boolean
     embedded?: boolean
     compact?: boolean
     labels?: AuthBindingLabels
   }>(),
   {
-    linuxdoEnabled: false,
-    dingtalkEnabled: false,
-    oidcEnabled: false,
-    oidcProviderName: '',
-    wechatEnabled: false,
-    wechatOpenEnabled: undefined,
-    wechatMpEnabled: undefined,
     embedded: false,
     compact: false,
     labels: () => ({}),
   }
 )
 
-const route = useRoute()
 const appStore = useAppStore()
 const authStore = useAuthStore()
 const passwordMinLength = computed(() =>
@@ -264,7 +238,7 @@ const localUser = ref<User | null>(null)
 const isSendingEmailCode = ref(false)
 const isBindingEmail = ref(false)
 const isEmailFormExpanded = ref(!props.compact)
-const unbindingProvider = ref<BindableProvider | null>(null)
+const unbindingProvider = ref<UserAuthProvider | null>(null)
 const emailBindingForm = reactive({
   email: '',
   verifyCode: '',
@@ -321,48 +295,8 @@ function authBindingText(key: AuthBindingLabelKey, params?: Record<string, strin
 }
 
 function providerLabel(provider: UserAuthProvider): string {
-  return resolveAuthBindingProviderLabel(props.labels, provider, props.oidcProviderName)
+  return resolveAuthBindingProviderLabel(props.labels, provider)
 }
-
-function resolveLegacyCompatibleWeChatSettings(
-  settings: WeChatOAuthPublicSettings | null | undefined
-): (WeChatOAuthPublicSettings & {
-  wechat_oauth_open_enabled: boolean
-  wechat_oauth_mp_enabled: boolean
-}) | null {
-  if (!settings) {
-    return null
-  }
-
-  if (hasExplicitWeChatOAuthCapabilities(settings)) {
-    return settings
-  }
-
-  if (typeof settings.wechat_oauth_enabled !== 'boolean') {
-    return null
-  }
-
-  return {
-    ...settings,
-    wechat_oauth_open_enabled: settings.wechat_oauth_enabled,
-    wechat_oauth_mp_enabled: settings.wechat_oauth_enabled,
-  }
-}
-
-const wechatOAuthSettings = computed<WeChatOAuthPublicSettings | null>(() => {
-  const cachedSettings = resolveLegacyCompatibleWeChatSettings(appStore.cachedPublicSettings)
-  if (cachedSettings) {
-    return cachedSettings
-  }
-
-  return resolveLegacyCompatibleWeChatSettings({
-    wechat_oauth_enabled: props.wechatEnabled,
-    wechat_oauth_open_enabled: props.wechatOpenEnabled,
-    wechat_oauth_mp_enabled: props.wechatMpEnabled,
-  })
-})
-
-const resolvedWeChatBinding = computed(() => resolveWeChatOAuthStartStrict(wechatOAuthSettings.value))
 
 function normalizeBindingStatus(binding: boolean | UserAuthBindingStatus | undefined): boolean | null {
   if (typeof binding === 'boolean') {
@@ -420,19 +354,6 @@ function getDisplayableEmail(user: User | null | undefined): string {
   return email
 }
 
-function isProviderEnabledForBinding(provider: BindableProvider): boolean {
-  if (provider === 'linuxdo') {
-    return props.linuxdoEnabled
-  }
-  if (provider === 'dingtalk') {
-    return props.dingtalkEnabled
-  }
-  if (provider === 'oidc') {
-    return props.oidcEnabled
-  }
-  return resolvedWeChatBinding.value.mode !== null
-}
-
 const providerItems = computed(() => [
   {
     provider: 'email' as const,
@@ -442,90 +363,17 @@ const providerItems = computed(() => [
     canUnbind: false,
     details: getBindingDetails('email'),
   },
-  {
-    provider: 'linuxdo' as const,
-    label: providerLabel('linuxdo'),
-    bound: getBindingStatus('linuxdo'),
-    canBind:
-      !getBindingStatus('linuxdo') &&
-      isProviderEnabledForBinding('linuxdo') &&
-      (getBindingDetails('linuxdo')?.can_bind ?? true),
-    canUnbind: Boolean(getBindingStatus('linuxdo') && getBindingDetails('linuxdo')?.can_unbind),
-    details: getBindingDetails('linuxdo'),
-  },
-  {
-    provider: 'dingtalk' as const,
-    label: providerLabel('dingtalk'),
-    bound: getBindingStatus('dingtalk'),
-    canBind:
-      !getBindingStatus('dingtalk') &&
-      isProviderEnabledForBinding('dingtalk') &&
-      (getBindingDetails('dingtalk')?.can_bind ?? true),
-    canUnbind: Boolean(getBindingStatus('dingtalk') && getBindingDetails('dingtalk')?.can_unbind),
-    details: getBindingDetails('dingtalk'),
-  },
-  {
-    provider: 'oidc' as const,
-    label: providerLabel('oidc'),
-    bound: getBindingStatus('oidc'),
-    canBind:
-      !getBindingStatus('oidc') &&
-      isProviderEnabledForBinding('oidc') &&
-      (getBindingDetails('oidc')?.can_bind ?? true),
-    canUnbind: Boolean(getBindingStatus('oidc') && getBindingDetails('oidc')?.can_unbind),
-    details: getBindingDetails('oidc'),
-  },
-  {
-    provider: 'wechat' as const,
-    label: providerLabel('wechat'),
-    bound: getBindingStatus('wechat'),
-    canBind:
-      !getBindingStatus('wechat') &&
-      isProviderEnabledForBinding('wechat') &&
-      (getBindingDetails('wechat')?.can_bind ?? true),
-    canUnbind: Boolean(getBindingStatus('wechat') && getBindingDetails('wechat')?.can_unbind),
-    details: getBindingDetails('wechat'),
-  },
 ])
 
 const visibleProviderItems = computed(() =>
-  providerItems.value.filter((item) => {
-    if (item.provider === 'email') {
-      return true
-    }
-    return item.bound || item.canBind || item.canUnbind
-  })
+  providerItems.value
 )
 
-function providerInitial(provider: UserAuthProvider): string {
-  if (provider === 'linuxdo') {
-    return 'L'
-  }
-  if (provider === 'dingtalk') {
-    return 'D'
-  }
-  if (provider === 'wechat') {
-    return 'W'
-  }
-  if (provider === 'oidc') {
-    return 'O'
-  }
+function providerInitial(): string {
   return 'E'
 }
 
-function providerIconClass(provider: UserAuthProvider): string {
-  if (provider === 'linuxdo') {
-    return 'bg-orange-100 text-orange-600 dark:bg-orange-900/20 dark:text-orange-300'
-  }
-  if (provider === 'dingtalk') {
-    return 'bg-blue-100 text-blue-600 dark:bg-blue-900/20 dark:text-blue-300'
-  }
-  if (provider === 'wechat') {
-    return 'bg-green-100 text-green-600 dark:bg-green-900/20 dark:text-green-300'
-  }
-  if (provider === 'oidc') {
-    return 'bg-sky-100 text-sky-600 dark:bg-sky-900/20 dark:text-sky-300'
-  }
+function providerIconClass(): string {
   return 'bg-primary-100 text-primary-600 dark:bg-primary-900/20 dark:text-primary-300'
 }
 
@@ -577,40 +425,20 @@ function toggleEmailForm(): void {
   isEmailFormExpanded.value = !isEmailFormExpanded.value
 }
 
-function startBinding(provider: UserAuthProvider): void {
-  if (provider === 'email') {
-    return
-  }
-  startOAuthBinding(provider, {
-    redirectTo: resolveAuthBindRedirect(route.fullPath),
-    apiBaseSettings: appStore.cachedPublicSettings,
-    wechatOAuthSettings: provider === 'wechat' ? wechatOAuthSettings.value : null,
-  })
-}
-
 function applyUpdatedUser(user: User): void {
   localUser.value = user
   authStore.user = user
 }
 
-async function handleUnbind(provider: BindableProvider, providerLabel: string): Promise<void> {
-  unbindingProvider.value = provider
-  try {
-    const user = await unbindAuthIdentity(provider)
-    applyUpdatedUser(user)
-    appStore.showSuccess(authBindingText('authBindingsUnbindSuccess', { providerName: providerLabel }))
-  } catch (error) {
-    appStore.showError((error as { message?: string }).message || authBindingText('authBindingsTryAgain'))
-  } finally {
-    unbindingProvider.value = null
+function startBinding(provider: UserAuthProvider): void {
+  if (provider === 'email') {
+    return
   }
 }
 
 function handleUnbindForItem(provider: UserAuthProvider, providerLabel: string): void {
-  if (provider === 'email') {
-    return
-  }
-  void handleUnbind(provider, providerLabel)
+  void provider
+  void providerLabel
 }
 
 function validateEmailBindingForm(requireCode: boolean): boolean {

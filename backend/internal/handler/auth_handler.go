@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"log/slog"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/config"
@@ -33,13 +32,11 @@ type AuthHandler struct {
 	redeemService        *service.RedeemService
 	totpService          *service.TotpService
 	userAttributeService *service.UserAttributeService
-
-	dingTalkClientInstance *DingTalkClient
-	dingTalkClientMu       sync.Mutex
 }
 
 const (
-	webAuthSource                   = "touch"
+	webAuthSource                   = "web"
+	webAccountSignupSource          = "email"
 	webBridgeTokenQueryName         = "sub2api_web_bridge_token"
 	webAuthSourceTrustedContextName = "web_auth_source_trusted"
 )
@@ -81,6 +78,8 @@ func (h *AuthHandler) signupGrantRiskContext(c *gin.Context, providerType, provi
 		input.RemoteIP = ip.GetClientIP(c)
 		if c.Request != nil {
 			input.UserAgent = c.Request.UserAgent()
+			input.AcceptLanguage = c.GetHeader("Accept-Language")
+			input.DeviceFingerprint = c.GetHeader("X-Device-Fingerprint")
 		}
 	}
 	return service.WithSignupGrantRiskInput(ctx, input)

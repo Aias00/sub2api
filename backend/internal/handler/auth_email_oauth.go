@@ -206,7 +206,7 @@ func (h *AuthHandler) emailOAuthCallbackWithProfile(
 	}
 	if h.isWebEmailOAuthSource(c) {
 		input.ProviderKey = webAuthSource
-		input.SignupSource = webAuthSource
+		input.SignupSource = webAccountSignupSource
 	}
 	affiliateCode := h.emailOAuthAffiliateCode(c)
 	agreementInput := agreementAcceptanceInput{
@@ -457,9 +457,10 @@ func (h *AuthHandler) completeEmailOAuthRegistration(c *gin.Context, provider st
 	if affiliateCode == "" {
 		affiliateCode = pendingSessionStringValue(session.UpstreamIdentityClaims, "aff_code")
 	}
+	riskCtx := h.signupGrantRiskContext(c, session.ProviderType, session.ProviderSubject)
 
 	tokenPair, user, err := h.authService.RegisterVerifiedOAuthEmailAccount(
-		c.Request.Context(),
+		riskCtx,
 		strings.TrimSpace(session.ResolvedEmail),
 		req.Password,
 		strings.TrimSpace(req.InvitationCode),
@@ -479,13 +480,13 @@ func (h *AuthHandler) completeEmailOAuthRegistration(c *gin.Context, provider st
 		response.ErrorFrom(c, infraerrors.ServiceUnavailable("PENDING_AUTH_NOT_READY", "pending auth service is not ready"))
 		return
 	}
-	tx, err := client.Tx(c.Request.Context())
+	tx, err := client.Tx(riskCtx)
 	if err != nil {
 		response.ErrorFrom(c, infraerrors.InternalServer("PENDING_AUTH_BIND_APPLY_FAILED", "failed to consume pending oauth session").WithCause(err))
 		return
 	}
 	defer func() { _ = tx.Rollback() }()
-	txCtx := dbent.NewTxContext(c.Request.Context(), tx)
+	txCtx := dbent.NewTxContext(riskCtx, tx)
 	sessionForBinding := *session
 	sessionForBinding.UpstreamIdentityClaims = clonePendingMap(session.UpstreamIdentityClaims)
 	if strings.TrimSpace(req.InvitationCode) != "" {
@@ -516,7 +517,7 @@ func (h *AuthHandler) completeEmailOAuthRegistration(c *gin.Context, provider st
 		response.ErrorFrom(c, err)
 		return
 	}
-	if err := consumePendingOAuthBrowserSessionTx(c.Request.Context(), tx, session); err != nil {
+	if err := consumePendingOAuthBrowserSessionTx(riskCtx, tx, session); err != nil {
 		_ = tx.Rollback()
 		_ = h.authService.RollbackOAuthEmailAccountCreation(c.Request.Context(), user.ID, strings.TrimSpace(req.InvitationCode))
 		clearCookies()

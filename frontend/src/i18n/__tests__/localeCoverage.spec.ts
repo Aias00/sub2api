@@ -12,14 +12,9 @@ describe('locale coverage for recent public/auth and admin additions', () => {
     expect('modelsPlaza' in en).toBe(false)
   })
 
-  it('covers login agreement warnings and DingTalk auth copy in both locales', () => {
+  it('covers login agreement warnings in both locales', () => {
     expect(zh.auth.loginAgreementMustAcceptLogin).toContain('同意最新条款')
     expect(en.auth.loginAgreementMustAcceptLogin).toContain('accept the latest agreement')
-
-    expect(zh.auth.dingtalk.signIn).toBe('使用钉钉登录')
-    expect(en.auth.dingtalk.signIn).toBe('Continue with DingTalk')
-    expect(zh.profile.authBindings.providers.dingtalk).toBe('钉钉')
-    expect(en.profile.authBindings.providers.dingtalk).toBe('DingTalk')
   })
 
   it('covers targeted admin account, settings, and user locale additions', () => {
@@ -28,8 +23,6 @@ describe('locale coverage for recent public/auth and admin additions', () => {
     expect(zh.admin.accounts.syncUpstreamModels).toBe('同步上游模型')
     expect(en.admin.accounts.syncUpstreamModels).toBe('Sync upstream models')
 
-    expect(zh.admin.settings.dingtalk.title).toBe('钉钉登录')
-    expect(en.admin.settings.dingtalk.title).toBe('DingTalk Sign-In')
     expect(zh.admin.settings.emailTemplates.title).toBe('邮件模板')
     expect(en.admin.settings.subscriptionExpiryNotify.title).toBe('Subscription expiry reminders')
 

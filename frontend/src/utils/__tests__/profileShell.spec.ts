@@ -55,8 +55,8 @@ describe('resolveProfileShellLabels', () => {
       authBindingsBindAction: 'Bind {providerName}',
       authBindingsCodeSentTo: 'Code sent to {email}',
       providers: {
-        oidc: 'Configured {providerName}',
-        wechat: 'WeChat',
+        github: 'GitHub',
+        google: 'Google',
       },
     }
 
@@ -66,8 +66,8 @@ describe('resolveProfileShellLabels', () => {
       'Code sent to a@example.com'
     )
     expect(resolveAuthBindingText(labels, 'authBindingsEmailRequired')).toBe('')
-    expect(resolveAuthBindingProviderLabel(labels, 'oidc', 'ExampleID')).toBe('Configured ExampleID')
-    expect(resolveAuthBindingProviderLabel(labels, 'wechat', 'ExampleID')).toBe('WeChat')
+    expect(resolveAuthBindingProviderLabel(labels, 'github')).toBe('GitHub')
+    expect(resolveAuthBindingProviderLabel(labels, 'google')).toBe('Google')
   })
 
   it('centralizes auth binding note compatibility maps', () => {
@@ -83,8 +83,7 @@ describe('resolveProfileShellLabels', () => {
     expect(labels.accountBalance).toBe('Configured balance')
     expect(profileLabelKeys).toContain('accountBalance')
     expect(profileLabelKeys).toContain('authBindingsTitle')
-    expect(profileProviderKeys).toContain('wechat')
-    expect(profileProviderKeys).toContain('oidc')
+    expect(profileProviderKeys).toEqual(['email', 'github', 'google'])
   })
 
   it('keeps profile child components from owning local label-key unions', () => {

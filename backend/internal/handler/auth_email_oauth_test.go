@@ -163,13 +163,13 @@ func TestEmailOAuthStartStoresWebSource(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
 	token := buildWebBridgeTokenForTest(t, "touch-admin-key", "google", time.Now().Add(time.Minute).Unix())
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?redirect=/dashboard&source=touch&sub2api_web_bridge_token="+url.QueryEscape(token), nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?redirect=/dashboard&source=web&sub2api_web_bridge_token="+url.QueryEscape(token), nil)
 	c.Request = req
 
 	handler.GoogleOAuthStart(c)
 
 	require.Equal(t, http.StatusFound, recorder.Code)
-	require.Equal(t, "touch", decodeCookieValueForTest(t, findSetCookieValue(recorder.Result().Cookies(), emailOAuthSourceCookie)))
+	require.Equal(t, "web", decodeCookieValueForTest(t, findSetCookieValue(recorder.Result().Cookies(), emailOAuthSourceCookie)))
 }
 
 func TestEmailOAuthStartRejectsWebSourceWithoutBridgeKey(t *testing.T) {
@@ -186,7 +186,7 @@ func TestEmailOAuthStartRejectsWebSourceWithoutBridgeKey(t *testing.T) {
 
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?redirect=/dashboard&source=touch", nil)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?redirect=/dashboard&source=web", nil)
 
 	handler.GoogleOAuthStart(c)
 
@@ -207,17 +207,17 @@ func TestAuthHandlerAllowsWebSourceOnlyWithBridgeKey(t *testing.T) {
 
 	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "email"))
 
-	err := handler.ensureWebAuthSourceAllowed(c, "touch")
+	err := handler.ensureWebAuthSourceAllowed(c, "web")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "WEB_SOURCE_UNAUTHORIZED")
 
 	c.Request.Header.Set("x-api-key", "wrong-key")
-	err = handler.ensureWebAuthSourceAllowed(c, "touch")
+	err = handler.ensureWebAuthSourceAllowed(c, "web")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "WEB_SOURCE_UNAUTHORIZED")
 
 	c.Request.Header.Set("x-api-key", "touch-admin-key")
-	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "touch"))
+	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "web"))
 }
 
 func TestAuthHandlerAllowsWebOAuthBridgeToken(t *testing.T) {
@@ -232,8 +232,8 @@ func TestAuthHandlerAllowsWebOAuthBridgeToken(t *testing.T) {
 	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?sub2api_web_bridge_token="+url.QueryEscape(token), nil)
 
-	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "touch", "google"))
-	require.Error(t, handler.ensureWebAuthSourceAllowed(c, "touch", "github"))
+	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "web", "google"))
+	require.Error(t, handler.ensureWebAuthSourceAllowed(c, "web", "github"))
 }
 
 func TestAuthHandlerRejectsLegacyTouchOAuthBridgeTokenName(t *testing.T) {
@@ -248,12 +248,12 @@ func TestAuthHandlerRejectsLegacyTouchOAuthBridgeTokenName(t *testing.T) {
 	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?touch_bridge_token="+url.QueryEscape(token), nil)
 
-	err := handler.ensureWebAuthSourceAllowed(c, "touch", "google")
+	err := handler.ensureWebAuthSourceAllowed(c, "web", "google")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "WEB_SOURCE_UNAUTHORIZED")
 }
 
-func TestAuthHandlerAllowsTrustedTouchOAuthSourceContext(t *testing.T) {
+func TestAuthHandlerAllowsTrustedWebOAuthSourceContext(t *testing.T) {
 	handler, _ := newOAuthPendingFlowTestHandlerWithDependencies(t, oauthPendingFlowTestHandlerOptions{})
 
 	recorder := httptest.NewRecorder()
@@ -261,7 +261,7 @@ func TestAuthHandlerAllowsTrustedTouchOAuthSourceContext(t *testing.T) {
 	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/web/auth/oauth/google/start", nil)
 	c.Set(webAuthSourceTrustedContextName, true)
 
-	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "touch", "google"))
+	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "web", "google"))
 }
 
 func TestAuthHandlerRejectsWebOAuthBridgeTokenWithoutProviderScope(t *testing.T) {
@@ -276,19 +276,19 @@ func TestAuthHandlerRejectsWebOAuthBridgeTokenWithoutProviderScope(t *testing.T)
 	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/auth/login?sub2api_web_bridge_token="+url.QueryEscape(token), nil)
 
-	err := handler.ensureWebAuthSourceAllowed(c, "touch")
+	err := handler.ensureWebAuthSourceAllowed(c, "web")
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "WEB_SOURCE_UNAUTHORIZED")
 }
 
 func TestEmailOAuthCallbackWebSourceSkipsPendingManualCompletion(t *testing.T) {
-	handler, client := newOAuthPendingFlowTestHandler(t, true)
+	handler, client := newOAuthPendingFlowTestHandler(t, false)
 	ctx := context.Background()
 
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/github/callback", nil)
-	req.AddCookie(&http.Cookie{Name: emailOAuthSourceCookie, Value: encodeCookieValue("touch")})
+	req.AddCookie(&http.Cookie{Name: emailOAuthSourceCookie, Value: encodeCookieValue("web")})
 	c.Request = req
 
 	handler.emailOAuthCallbackWithProfile(c, "github", config.EmailOAuthProviderConfig{
@@ -298,11 +298,11 @@ func TestEmailOAuthCallbackWebSourceSkipsPendingManualCompletion(t *testing.T) {
 		RedirectURL:         "https://app.example/api/v1/auth/oauth/github/callback",
 		FrontendRedirectURL: "/auth/oauth/callback",
 	}, "/auth/oauth/callback", "/dashboard", &emailOAuthProfile{
-		Subject:       "github-touch-123",
-		Email:         "touch-github@example.com",
+		Subject:       "github-web-123",
+		Email:         "web-github@example.com",
 		EmailVerified: true,
-		Username:      "touch-github",
-		DisplayName:   "Touch GitHub",
+		Username:      "web-github",
+		DisplayName:   "Web GitHub",
 	})
 
 	require.Equal(t, http.StatusFound, recorder.Code)
@@ -310,17 +310,17 @@ func TestEmailOAuthCallbackWebSourceSkipsPendingManualCompletion(t *testing.T) {
 	require.Contains(t, location, "access_token=")
 	require.Contains(t, location, "redirect=%252Fdashboard")
 
-	userCount, err := client.User.Query().Where(dbuser.EmailEQ("touch-github@example.com")).Count(ctx)
+	userCount, err := client.User.Query().Where(dbuser.EmailEQ("web-github@example.com")).Count(ctx)
 	require.NoError(t, err)
 	require.Equal(t, 1, userCount)
-	user, err := client.User.Query().Where(dbuser.EmailEQ("touch-github@example.com")).Only(ctx)
+	user, err := client.User.Query().Where(dbuser.EmailEQ("web-github@example.com")).Only(ctx)
 	require.NoError(t, err)
-	require.Equal(t, "touch", user.SignupSource)
+	require.Equal(t, "github", user.SignupSource)
 
 	identity, err := client.AuthIdentity.Query().Where(
 		authidentity.ProviderTypeEQ("github"),
-		authidentity.ProviderKeyEQ("touch"),
-		authidentity.ProviderSubjectEQ("github-touch-123"),
+		authidentity.ProviderKeyEQ("web"),
+		authidentity.ProviderSubjectEQ("github-web-123"),
 	).Only(ctx)
 	require.NoError(t, err)
 	require.Equal(t, user.ID, identity.UserID)

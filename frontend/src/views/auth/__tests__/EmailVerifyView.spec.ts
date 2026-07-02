@@ -225,7 +225,7 @@ describe('EmailVerifyView', () => {
   it('skips the registration email suffix whitelist for pending oauth verification', async () => {
     authStoreState.pendingAuthSession = {
       token: 'pending-token-2',
-      provider: 'oidc',
+      provider: 'github',
       redirect: '/profile',
     }
     getPublicSettingsMock.mockResolvedValue({
@@ -265,7 +265,7 @@ describe('EmailVerifyView', () => {
   it('uses the pending oauth verify-code endpoint when auth store only carries the pending provider', async () => {
     authStoreState.pendingAuthSession = {
       token: '',
-      provider: 'oidc',
+      provider: 'github',
       redirect: '/profile',
     }
     getPublicSettingsMock.mockResolvedValue({
@@ -305,7 +305,7 @@ describe('EmailVerifyView', () => {
   it('returns to the oauth callback flow when pending send-code detects an existing account email', async () => {
     authStoreState.pendingAuthSession = {
       token: '',
-      provider: 'oidc',
+      provider: 'github',
       redirect: '/profile/security',
     }
     getPublicSettingsMock.mockResolvedValue({
@@ -316,7 +316,7 @@ describe('EmailVerifyView', () => {
     })
     sendPendingOAuthVerifyCodeMock.mockResolvedValue({
       auth_result: 'pending_session',
-      provider: 'oidc',
+      provider: 'github',
       redirect: '/profile/security',
     })
     sessionStorage.setItem(
@@ -342,10 +342,10 @@ describe('EmailVerifyView', () => {
 
     expect(setPendingAuthSessionMock).toHaveBeenCalledWith({
       token: '',
-      provider: 'oidc',
+      provider: 'github',
       redirect: '/profile/security',
     })
-    expect(pushMock).toHaveBeenCalledWith('/auth/oidc/callback')
+    expect(pushMock).toHaveBeenCalledWith('/auth/callback')
     expect(showErrorMock).not.toHaveBeenCalled()
   })
 
@@ -408,7 +408,7 @@ describe('EmailVerifyView', () => {
   it('returns to the oauth callback flow when pending account creation becomes bind-login', async () => {
     authStoreState.pendingAuthSession = {
       token: '',
-      provider: 'oidc',
+      provider: 'github',
       redirect: '/profile/security',
     }
     getPublicSettingsMock.mockResolvedValue({
@@ -427,7 +427,7 @@ describe('EmailVerifyView', () => {
     apiClientPostMock.mockResolvedValue({
       data: {
         auth_result: 'pending_session',
-        provider: 'oidc',
+        provider: 'github',
         step: 'bind_login_required',
         redirect: '/profile/security',
         email: 'fresh@example.com',
@@ -457,10 +457,10 @@ describe('EmailVerifyView', () => {
     })
     expect(setPendingAuthSessionMock).toHaveBeenCalledWith({
       token: '',
-      provider: 'oidc',
+      provider: 'github',
       redirect: '/profile/security',
     })
-    expect(pushMock).toHaveBeenCalledWith('/auth/oidc/callback')
+    expect(pushMock).toHaveBeenCalledWith('/auth/callback')
     expect(setTokenMock).not.toHaveBeenCalled()
     expect(persistOAuthTokenContextMock).not.toHaveBeenCalled()
     expect(clearPendingAuthSessionMock).not.toHaveBeenCalled()

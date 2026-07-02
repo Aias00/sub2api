@@ -362,17 +362,8 @@ function shouldBypassRegistrationEmailPolicy(): boolean {
   return isPendingOAuthFlow() || Boolean(pendingAuthToken.value.trim())
 }
 
-function resolvePendingOAuthCallbackRoute(provider: string): string {
-  switch (provider.trim().toLowerCase()) {
-    case 'linuxdo':
-      return '/auth/linuxdo/callback'
-    case 'oidc':
-      return '/auth/oidc/callback'
-    case 'wechat':
-      return '/auth/wechat/callback'
-    default:
-      return '/auth/callback'
-  }
+function resolvePendingOAuthCallbackRoute(_provider: string): string {
+  return '/auth/callback'
 }
 
 function isPendingOAuthSessionResponse(data: PendingOAuthCreateAccountResponse): boolean {

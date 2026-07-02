@@ -193,12 +193,10 @@ describe('ProfileIdentityBindingsSection', () => {
     })
 
     expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Configured bound')
-    expect(wrapper.get('[data-testid="profile-binding-linuxdo-status"]').text()).toBe('Configured bound')
-    expect(wrapper.get('[data-testid="profile-binding-oidc-status"]').text()).toBe('Configured not bound')
-    expect(wrapper.get('[data-testid="profile-binding-oidc-action"]').text()).toBe(
-      'Configured bind Configured ExampleID'
-    )
-    expect(wrapper.get('[data-testid="profile-binding-wechat-action"]').text()).toBe('Configured bind Configured WeChat')
+    expect(wrapper.find('[data-testid="profile-binding-linuxdo-status"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="profile-binding-oidc-status"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="profile-binding-oidc-action"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="profile-binding-wechat-action"]').exists()).toBe(false)
   })
 
   it('renders configured auth binding labels and interpolates actions', async () => {
@@ -255,8 +253,8 @@ describe('ProfileIdentityBindingsSection', () => {
     expect(wrapper.text()).toContain('Configured bindings description')
     expect(wrapper.text()).toContain('Configured Email')
     expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Configured password missing')
-    expect(wrapper.get('[data-testid="profile-binding-oidc-status"]').text()).toBe('Configured not bound')
-    expect(wrapper.get('[data-testid="profile-binding-oidc-action"]').text()).toBe('Configured bind Configured ExampleID')
+    expect(wrapper.find('[data-testid="profile-binding-oidc-status"]').exists()).toBe(false)
+    expect(wrapper.find('[data-testid="profile-binding-oidc-action"]').exists()).toBe(false)
     expect(wrapper.get('[data-testid="profile-binding-email-toggle"]').text()).toBe('Configured manage email')
 
     await wrapper.get('[data-testid="profile-binding-email-toggle"]').trigger('click')
@@ -297,7 +295,7 @@ describe('ProfileIdentityBindingsSection', () => {
     expect(showErrorSpy).toHaveBeenCalledWith('Configured send failed')
   })
 
-  it('starts the WeChat bind flow for the current profile page', async () => {
+  it('hides the WeChat bind flow even when open mode is configured', () => {
     const wrapper = mount(ProfileIdentityBindingsSection, {
       global: {
         plugins: [pinia],
@@ -312,12 +310,7 @@ describe('ProfileIdentityBindingsSection', () => {
       },
     })
 
-    await wrapper.get('[data-testid="profile-binding-wechat-action"]').trigger('click')
-
-    expect(locationState.current.href).toContain('/api/v1/auth/oauth/wechat/bind/start?')
-    expect(locationState.current.href).toContain('mode=open')
-    expect(locationState.current.href).toContain('intent=bind_current_user')
-    expect(locationState.current.href).toContain('redirect=%2Fprofile')
+    expect(wrapper.find('[data-testid="profile-binding-wechat-action"]').exists()).toBe(false)
   })
 
   it('hides the WeChat bind action outside the WeChat browser when only mp mode is configured', () => {
@@ -338,7 +331,7 @@ describe('ProfileIdentityBindingsSection', () => {
     expect(wrapper.find('[data-testid="profile-binding-wechat-action"]').exists()).toBe(false)
   })
 
-  it('keeps the WeChat bind action visible when only the legacy aggregate setting is present', () => {
+  it('hides the WeChat bind action when only the legacy aggregate setting is present', () => {
     const wrapper = mount(ProfileIdentityBindingsSection, {
       global: {
         plugins: [pinia],
@@ -351,10 +344,10 @@ describe('ProfileIdentityBindingsSection', () => {
       },
     })
 
-    expect(wrapper.find('[data-testid="profile-binding-wechat-action"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="profile-binding-wechat-action"]').exists()).toBe(false)
   })
 
-  it('starts the WeChat bind flow when only the legacy aggregate setting is present', async () => {
+  it('does not start the WeChat bind flow when only the legacy aggregate setting is present', () => {
     const wrapper = mount(ProfileIdentityBindingsSection, {
       global: {
         plugins: [pinia],
@@ -367,12 +360,7 @@ describe('ProfileIdentityBindingsSection', () => {
       },
     })
 
-    await wrapper.get('[data-testid="profile-binding-wechat-action"]').trigger('click')
-
-    expect(locationState.current.href).toContain('/api/v1/auth/oauth/wechat/bind/start?')
-    expect(locationState.current.href).toContain('mode=open')
-    expect(locationState.current.href).toContain('intent=bind_current_user')
-    expect(locationState.current.href).toContain('redirect=%2Fprofile')
+    expect(wrapper.find('[data-testid="profile-binding-wechat-action"]').exists()).toBe(false)
   })
 
   it('uses explicit cached WeChat capabilities and ignores legacy prop fallbacks', () => {
@@ -401,12 +389,9 @@ describe('ProfileIdentityBindingsSection', () => {
       table_page_size_options: [10, 20, 50, 100],
       custom_menu_items: [],
       custom_endpoints: [],
-      linuxdo_oauth_enabled: false,
       wechat_oauth_enabled: true,
       wechat_oauth_open_enabled: true,
       wechat_oauth_mp_enabled: false,
-      oidc_oauth_enabled: false,
-      oidc_oauth_provider_name: 'OIDC',
       backend_mode_enabled: false,
       version: 'test',
       balance_low_notify_enabled: false,
@@ -427,7 +412,7 @@ describe('ProfileIdentityBindingsSection', () => {
       },
     })
 
-    expect(wrapper.find('[data-testid="profile-binding-wechat-action"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="profile-binding-wechat-action"]').exists()).toBe(false)
   })
 
   it('sends email verification code and binds email from the profile card', async () => {
@@ -445,7 +430,7 @@ describe('ProfileIdentityBindingsSection', () => {
     const appStore = useAppStore()
     const authStore = useAuthStore()
     authStore.user = createUser({
-      email: 'legacy-user@linuxdo-connect.invalid',
+      email: 'legacy-user@reserved.invalid',
       email_bound: false,
       auth_bindings: {
         email: { bound: false },
@@ -509,14 +494,14 @@ describe('ProfileIdentityBindingsSection', () => {
     expect(wrapper.get('[data-testid="profile-binding-email-input"]').exists()).toBe(true)
   })
 
-  it('does not show a synthetic oauth-only email as the bound email summary', () => {
+  it('does not show a reserved invalid email as the bound email summary', () => {
     const wrapper = mount(ProfileIdentityBindingsSection, {
       global: {
         plugins: [pinia],
       },
       props: {
         user: createUser({
-          email: 'legacy-user@linuxdo-connect.invalid',
+          email: 'legacy-user@reserved.invalid',
           email_bound: false,
           auth_bindings: {
             email: { bound: false },
@@ -529,18 +514,18 @@ describe('ProfileIdentityBindingsSection', () => {
       },
     })
 
-    expect(wrapper.text()).not.toContain('legacy-user@linuxdo-connect.invalid')
+    expect(wrapper.text()).not.toContain('legacy-user@reserved.invalid')
     expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Configured password missing')
   })
 
-  it('does not show a synthetic oauth-only email when only fallback auth bindings mark email as unbound', () => {
+  it('does not show a reserved invalid email when only fallback auth bindings mark email as unbound', () => {
     const wrapper = mount(ProfileIdentityBindingsSection, {
       global: {
         plugins: [pinia],
       },
       props: {
         user: createUser({
-          email: 'legacy-user@wechat-connect.invalid',
+          email: 'legacy-user@reserved.invalid',
           auth_bindings: {
             email: { bound: false },
           },
@@ -552,7 +537,7 @@ describe('ProfileIdentityBindingsSection', () => {
       },
     })
 
-    expect(wrapper.text()).not.toContain('legacy-user@wechat-connect.invalid')
+    expect(wrapper.text()).not.toContain('legacy-user@reserved.invalid')
     expect(wrapper.get('[data-testid="profile-binding-email-status"]').text()).toBe('Configured password missing')
   })
 
@@ -681,7 +666,7 @@ describe('ProfileIdentityBindingsSection', () => {
     expect(wrapper.get('[data-testid="profile-binding-email-input"]').exists()).toBe(true)
   })
 
-  it('shows third-party binding details and unbinds a connected provider', async () => {
+  it('hides connected legacy third-party binding details', () => {
     userApiMocks.unbindAuthIdentity.mockResolvedValue(
       createUser({
         email_bound: true,
@@ -720,17 +705,14 @@ describe('ProfileIdentityBindingsSection', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('linuxdo-handle')
-    expect(wrapper.text()).toContain('lin***3456')
-    expect(wrapper.text()).toContain('Linked from LinuxDo')
-
-    await wrapper.get('[data-testid="profile-binding-linuxdo-unbind"]').trigger('click')
-
-    expect(userApiMocks.unbindAuthIdentity).toHaveBeenCalledWith('linuxdo')
-    expect(wrapper.get('[data-testid="profile-binding-linuxdo-status"]').text()).toBe('Configured not bound')
+    expect(wrapper.text()).not.toContain('linuxdo-handle')
+    expect(wrapper.text()).not.toContain('lin***3456')
+    expect(wrapper.text()).not.toContain('Linked from LinuxDo')
+    expect(wrapper.find('[data-testid="profile-binding-linuxdo-unbind"]').exists()).toBe(false)
+    expect(userApiMocks.unbindAuthIdentity).not.toHaveBeenCalled()
   })
 
-  it('uses configured fallback copy when unbinding a connected provider fails', async () => {
+  it('does not render legacy unbind action when unbinding would fail', () => {
     userApiMocks.unbindAuthIdentity.mockRejectedValue(new Error(''))
     const appStore = useAppStore()
     const showErrorSpy = vi.spyOn(appStore, 'showError')
@@ -761,12 +743,11 @@ describe('ProfileIdentityBindingsSection', () => {
       },
     })
 
-    await wrapper.get('[data-testid="profile-binding-linuxdo-unbind"]').trigger('click')
-
-    expect(showErrorSpy).toHaveBeenCalledWith('Configured try again')
+    expect(wrapper.find('[data-testid="profile-binding-linuxdo-unbind"]').exists()).toBe(false)
+    expect(showErrorSpy).not.toHaveBeenCalled()
   })
 
-  it('localizes third-party unbind guidance from note_key', () => {
+  it('hides legacy third-party unbind guidance from note_key', () => {
     const wrapper = mount(ProfileIdentityBindingsSection, {
       global: {
         plugins: [pinia],
@@ -793,7 +774,7 @@ describe('ProfileIdentityBindingsSection', () => {
       },
     })
 
-    expect(wrapper.text()).toContain('Configured can unbind note')
+    expect(wrapper.text()).not.toContain('Configured can unbind note')
     expect(wrapper.text()).not.toContain('You can unbind this sign-in method.')
   })
 
@@ -846,7 +827,7 @@ describe('ProfileIdentityBindingsSection', () => {
     expect(wrapper.text()).not.toContain('WeChat')
   })
 
-  it('keeps already bound third-party providers visible even when the source is not currently configured', () => {
+  it('hides already bound legacy third-party providers', () => {
     const wrapper = mount(ProfileIdentityBindingsSection, {
       global: {
         plugins: [pinia],
@@ -869,9 +850,9 @@ describe('ProfileIdentityBindingsSection', () => {
       },
     })
 
-    expect(wrapper.get('[data-testid="profile-binding-linuxdo-status"]').text()).toBe('Configured bound')
-    expect(wrapper.text()).toContain('Configured LinuxDo')
-    expect(wrapper.find('[data-testid="profile-binding-linuxdo-unbind"]').exists()).toBe(true)
+    expect(wrapper.find('[data-testid="profile-binding-linuxdo-status"]').exists()).toBe(false)
+    expect(wrapper.text()).not.toContain('Configured LinuxDo')
+    expect(wrapper.find('[data-testid="profile-binding-linuxdo-unbind"]').exists()).toBe(false)
   })
 
   it('does not render local label keys or provider names as fallback copy', () => {

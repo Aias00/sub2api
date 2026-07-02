@@ -161,7 +161,7 @@ export const profileLabelKeys = [
 export type ProfileLabelKey = typeof profileLabelKeys[number]
 export type ProfileLabels = Partial<Record<ProfileLabelKey, string>>
 
-export const profileProviderKeys = ['email', 'linuxdo', 'dingtalk', 'oidc', 'wechat', 'github', 'google'] as const
+export const profileProviderKeys = ['email', 'github', 'google'] as const
 
 export type ProfileProviderKey = typeof profileProviderKeys[number]
 export type ProfileViewShellLabels = ProfileShellLabels<ProfileLabelKey, ProfileProviderKey>
@@ -246,12 +246,8 @@ export function resolveAuthBindingText(
 export function resolveAuthBindingProviderLabel(
   labels: AuthBindingLabels | undefined,
   provider: UserAuthProvider,
-  oidcProviderName: string,
 ): string {
   const configured = labels?.providers?.[provider]
-  if (provider === 'oidc') {
-    return configured?.replace(/\{providerName\}/g, oidcProviderName) || ''
-  }
   return configured || ''
 }
 

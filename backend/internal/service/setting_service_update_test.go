@@ -134,16 +134,30 @@ func TestSettingService_UpdateSettings_SignupGrantRiskControl(t *testing.T) {
 	svc := NewSettingService(repo, &config.Config{})
 
 	err := svc.UpdateSettings(context.Background(), &SystemSettings{
-		SignupGrantRiskControlEnabled:     true,
-		SignupGrantRiskControlEmailLimit:  1,
-		SignupGrantRiskControlIPLimit:     3,
-		SignupGrantRiskControlDomainLimit: 10,
+		SignupGrantRiskControlEnabled:              true,
+		SignupGrantRiskControlEmailLimit:           1,
+		SignupGrantRiskControlIPLimit:              3,
+		SignupGrantRiskControlDomainLimit:          10,
+		SignupGrantRiskControlOAuthIdentityEnabled: true,
+		SignupGrantRiskControlDeviceEnabled:        true,
+		SignupGrantRiskControlDeviceLimit:          2,
+		SignupGrantRiskControlFreeDomainLimit:      5,
+		SignupGrantRiskControlBlockedDomains:       " @TempMail.COM\n*.Trash.test ",
+		SignupGrantRiskControlFreeDomains:          "gmail.com, QQ.com",
+		SignupGrantRiskControlTrustedDomains:       "example.com; corp.test",
 	})
 	require.NoError(t, err)
 	require.Equal(t, "true", repo.updates[SettingKeySignupGrantRiskControlEnabled])
 	require.Equal(t, "1", repo.updates[SettingKeySignupGrantRiskControlEmailLimit])
 	require.Equal(t, "3", repo.updates[SettingKeySignupGrantRiskControlIPLimit])
 	require.Equal(t, "10", repo.updates[SettingKeySignupGrantRiskControlDomainLimit])
+	require.Equal(t, "true", repo.updates[SettingKeySignupGrantRiskControlOAuthIdentityEnabled])
+	require.Equal(t, "true", repo.updates[SettingKeySignupGrantRiskControlDeviceEnabled])
+	require.Equal(t, "2", repo.updates[SettingKeySignupGrantRiskControlDeviceLimit])
+	require.Equal(t, "5", repo.updates[SettingKeySignupGrantRiskControlFreeDomainLimit])
+	require.Equal(t, "tempmail.com,trash.test", repo.updates[SettingKeySignupGrantRiskControlBlockedDomains])
+	require.Equal(t, "gmail.com,qq.com", repo.updates[SettingKeySignupGrantRiskControlFreeDomains])
+	require.Equal(t, "example.com,corp.test", repo.updates[SettingKeySignupGrantRiskControlTrustedDomains])
 }
 
 func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsNonSubscriptionGroup(t *testing.T) {

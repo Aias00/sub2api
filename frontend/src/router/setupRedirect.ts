@@ -22,8 +22,6 @@ export type AuthRouteDefaults = {
   adminRedirectPath: string
   adminRuntimeSettingsPath: string
   adminSettingsPath: string
-  dingtalkCallbackPath: string
-  dingtalkEmailCompletionPath: string
 }
 
 export const FALLBACK_AUTH_ROUTE_DEFAULTS: AuthRouteDefaults = {
@@ -47,8 +45,6 @@ export const FALLBACK_AUTH_ROUTE_DEFAULTS: AuthRouteDefaults = {
   adminRedirectPath: '/admin/dashboard',
   adminRuntimeSettingsPath: '/admin/runtime-settings',
   adminSettingsPath: '/admin/settings',
-  dingtalkCallbackPath: '/auth/dingtalk/callback',
-  dingtalkEmailCompletionPath: '/auth/dingtalk/email-completion',
 }
 
 export function resolveAuthRouteDefaults(
@@ -83,8 +79,6 @@ export function resolveAuthRouteDefaultsFromShellDefaults(
     adminRedirectPath: defaults.adminRedirectPath || FALLBACK_AUTH_ROUTE_DEFAULTS.adminRedirectPath,
     adminRuntimeSettingsPath: defaults.adminRuntimeSettingsPath || FALLBACK_AUTH_ROUTE_DEFAULTS.adminRuntimeSettingsPath,
     adminSettingsPath: defaults.adminSettingsPath || FALLBACK_AUTH_ROUTE_DEFAULTS.adminSettingsPath,
-    dingtalkCallbackPath: defaults.dingtalkCallbackPath || FALLBACK_AUTH_ROUTE_DEFAULTS.dingtalkCallbackPath,
-    dingtalkEmailCompletionPath: defaults.dingtalkEmailCompletionPath || FALLBACK_AUTH_ROUTE_DEFAULTS.dingtalkEmailCompletionPath,
   }
 }
 

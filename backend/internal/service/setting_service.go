@@ -22,7 +22,6 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
-	"github.com/imroc/req/v3"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -248,12 +247,8 @@ type ProviderDefaultGrantSettings struct {
 
 type AuthSourceDefaultSettings struct {
 	Email                        ProviderDefaultGrantSettings
-	LinuxDo                      ProviderDefaultGrantSettings
-	OIDC                         ProviderDefaultGrantSettings
-	WeChat                       ProviderDefaultGrantSettings
 	GitHub                       ProviderDefaultGrantSettings
 	Google                       ProviderDefaultGrantSettings
-	DingTalk                     ProviderDefaultGrantSettings
 	ForceEmailOnThirdPartySignup bool
 }
 
@@ -279,33 +274,6 @@ var (
 		grantOnFirstBind: SettingKeyAuthSourceDefaultEmailGrantOnFirstBind,
 		platformQuotas:   SettingKeyAuthSourcePlatformQuotas("email"),
 	}
-	linuxDoAuthSourceDefaultKeys = authSourceDefaultKeySet{
-		source:           "linuxdo",
-		balance:          SettingKeyAuthSourceDefaultLinuxDoBalance,
-		concurrency:      SettingKeyAuthSourceDefaultLinuxDoConcurrency,
-		subscriptions:    SettingKeyAuthSourceDefaultLinuxDoSubscriptions,
-		grantOnSignup:    SettingKeyAuthSourceDefaultLinuxDoGrantOnSignup,
-		grantOnFirstBind: SettingKeyAuthSourceDefaultLinuxDoGrantOnFirstBind,
-		platformQuotas:   SettingKeyAuthSourcePlatformQuotas("linuxdo"),
-	}
-	oidcAuthSourceDefaultKeys = authSourceDefaultKeySet{
-		source:           "oidc",
-		balance:          SettingKeyAuthSourceDefaultOIDCBalance,
-		concurrency:      SettingKeyAuthSourceDefaultOIDCConcurrency,
-		subscriptions:    SettingKeyAuthSourceDefaultOIDCSubscriptions,
-		grantOnSignup:    SettingKeyAuthSourceDefaultOIDCGrantOnSignup,
-		grantOnFirstBind: SettingKeyAuthSourceDefaultOIDCGrantOnFirstBind,
-		platformQuotas:   SettingKeyAuthSourcePlatformQuotas("oidc"),
-	}
-	weChatAuthSourceDefaultKeys = authSourceDefaultKeySet{
-		source:           "wechat",
-		balance:          SettingKeyAuthSourceDefaultWeChatBalance,
-		concurrency:      SettingKeyAuthSourceDefaultWeChatConcurrency,
-		subscriptions:    SettingKeyAuthSourceDefaultWeChatSubscriptions,
-		grantOnSignup:    SettingKeyAuthSourceDefaultWeChatGrantOnSignup,
-		grantOnFirstBind: SettingKeyAuthSourceDefaultWeChatGrantOnFirstBind,
-		platformQuotas:   SettingKeyAuthSourcePlatformQuotas("wechat"),
-	}
 	gitHubAuthSourceDefaultKeys = authSourceDefaultKeySet{
 		source:           "github",
 		balance:          SettingKeyAuthSourceDefaultGitHubBalance,
@@ -323,15 +291,6 @@ var (
 		grantOnSignup:    SettingKeyAuthSourceDefaultGoogleGrantOnSignup,
 		grantOnFirstBind: SettingKeyAuthSourceDefaultGoogleGrantOnFirstBind,
 		platformQuotas:   SettingKeyAuthSourcePlatformQuotas("google"),
-	}
-	dingTalkAuthSourceDefaultKeys = authSourceDefaultKeySet{
-		source:           "dingtalk",
-		balance:          SettingKeyAuthSourceDefaultDingTalkBalance,
-		concurrency:      SettingKeyAuthSourceDefaultDingTalkConcurrency,
-		subscriptions:    SettingKeyAuthSourceDefaultDingTalkSubscriptions,
-		grantOnSignup:    SettingKeyAuthSourceDefaultDingTalkGrantOnSignup,
-		grantOnFirstBind: SettingKeyAuthSourceDefaultDingTalkGrantOnFirstBind,
-		platformQuotas:   SettingKeyAuthSourcePlatformQuotas("dingtalk"),
 	}
 )
 
@@ -686,6 +645,13 @@ func NewSettingService(settingRepo SettingRepository, cfg *config.Config) *Setti
 	}
 }
 
+func (s *SettingService) signupGrantRiskHashSalt(_ context.Context) string {
+	if s != nil && s.cfg != nil && strings.TrimSpace(s.cfg.JWT.Secret) != "" {
+		return s.cfg.JWT.Secret
+	}
+	return "sub2api-signup-grant-risk"
+}
+
 // SetDefaultSubscriptionGroupReader injects an optional group reader for default subscription validation.
 func (s *SettingService) SetDefaultSubscriptionGroupReader(reader DefaultSubscriptionGroupReader) {
 	s.defaultSubGroupReader = reader
@@ -895,8 +861,6 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyTablePageSizeOptions,
 		SettingKeyCustomMenuItems,
 		SettingKeyCustomEndpoints,
-		SettingKeyLinuxDoConnectEnabled,
-		SettingKeyDingTalkConnectEnabled,
 		SettingKeyWeChatConnectEnabled,
 		SettingKeyWeChatConnectOpenAppID,
 		SettingKeyWeChatConnectOpenAppSecret,
@@ -913,8 +877,6 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		SettingKeyWeChatConnectFrontendRedirectURL,
 		SettingKeyBackendModeEnabled,
 		SettingPaymentEnabled,
-		SettingKeyOIDCConnectEnabled,
-		SettingKeyOIDCConnectProviderName,
 		SettingKeyGitHubOAuthEnabled,
 		SettingKeyGitHubOAuthClientID,
 		SettingKeyGitHubOAuthClientSecret,
@@ -938,34 +900,8 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		return nil, fmt.Errorf("get public settings: %w", err)
 	}
 
-	linuxDoEnabled := false
-	if raw, ok := settings[SettingKeyLinuxDoConnectEnabled]; ok {
-		linuxDoEnabled = raw == "true"
-	} else {
-		linuxDoEnabled = s.cfg != nil && s.cfg.LinuxDo.Enabled
-	}
-	dingTalkEnabled := false
-	if raw, ok := settings[SettingKeyDingTalkConnectEnabled]; ok {
-		dingTalkEnabled = raw == "true"
-	} else {
-		dingTalkEnabled = s.cfg != nil && s.cfg.DingTalk.Enabled
-	}
-	oidcEnabled := false
-	if raw, ok := settings[SettingKeyOIDCConnectEnabled]; ok {
-		oidcEnabled = raw == "true"
-	} else {
-		oidcEnabled = s.cfg != nil && s.cfg.OIDC.Enabled
-	}
-	oidcProviderName := strings.TrimSpace(settings[SettingKeyOIDCConnectProviderName])
-	if oidcProviderName == "" && s.cfg != nil {
-		oidcProviderName = strings.TrimSpace(s.cfg.OIDC.ProviderName)
-	}
-	if oidcProviderName == "" {
-		oidcProviderName = "OIDC"
-	}
 	gitHubEnabled := s.emailOAuthPublicEnabled(settings, "github")
 	googleEnabled := s.emailOAuthPublicEnabled(settings, "google")
-	weChatEnabled, weChatOpenEnabled, weChatMPEnabled, weChatMobileEnabled := s.weChatOAuthCapabilitiesFromSettings(settings)
 	siteName := s.getStringOrDefault(settings, SettingKeySiteName, "Sub2API")
 	siteSubtitle := s.getStringOrDefault(settings, SettingKeySiteSubtitle, "Subscription to API Conversion Platform")
 	webAppName := strings.TrimSpace(settings[SettingKeyWebAppName])
@@ -1132,16 +1068,12 @@ func (s *SettingService) GetPublicSettings(ctx context.Context) (*PublicSettings
 		TablePageSizeOptions:             tablePageSizeOptions,
 		CustomMenuItems:                  settings[SettingKeyCustomMenuItems],
 		CustomEndpoints:                  settings[SettingKeyCustomEndpoints],
-		LinuxDoOAuthEnabled:              linuxDoEnabled,
-		DingTalkOAuthEnabled:             dingTalkEnabled,
-		WeChatOAuthEnabled:               weChatEnabled,
-		WeChatOAuthOpenEnabled:           weChatOpenEnabled,
-		WeChatOAuthMPEnabled:             weChatMPEnabled,
-		WeChatOAuthMobileEnabled:         weChatMobileEnabled,
+		WeChatOAuthEnabled:               false,
+		WeChatOAuthOpenEnabled:           false,
+		WeChatOAuthMPEnabled:             false,
+		WeChatOAuthMobileEnabled:         false,
 		BackendModeEnabled:               settings[SettingKeyBackendModeEnabled] == "true",
 		PaymentEnabled:                   settings[SettingPaymentEnabled] == "true",
-		OIDCOAuthEnabled:                 oidcEnabled,
-		OIDCOAuthProviderName:            oidcProviderName,
 		GitHubOAuthEnabled:               gitHubEnabled,
 		GoogleOAuthEnabled:               googleEnabled,
 		BalanceLowNotifyEnabled:          settings[SettingKeyBalanceLowNotifyEnabled] == "true",
@@ -1574,7 +1506,7 @@ func customPageShellConfigSetting(raw string) string {
 	return value
 }
 
-const defaultProfileShellConfig = `{"zh":{"labels":{"user":"用户","administrator":"管理员","accountBalance":"账户余额","concurrencyLimit":"并发额度","memberSince":"加入时间","basicsTitle":"基础资料","basicsDescription":"管理头像、昵称以及当前账号展示信息。","linkedProfileSources":"资料来源","linkedProfileSourcesDescription":"部分资料会从绑定的第三方登录方式同步。","contactSupport":"联系客服","changePassword":"修改密码","currentPassword":"当前密码","newPassword":"新密码","confirmNewPassword":"确认新密码","passwordHint":"密码至少需要 {count} 位字符","changingPassword":"修改中...","changePasswordButton":"修改密码","passwordsNotMatch":"两次输入的新密码不一致","passwordTooShort":"密码至少需要 {count} 位字符","passwordChangeSuccess":"密码修改成功","passwordChangeFailed":"密码修改失败","balanceNotifyTitle":"余额不足提醒","balanceNotifyDescription":"当账户余额低于阈值时发送邮件提醒","balanceNotifyEnabled":"启用余额不足提醒","balanceNotifyThreshold":"自定义提醒阈值","balanceNotifyThresholdHint":"留空使用系统默认值","balanceNotifySystemDefault":"系统默认值","balanceNotifyThresholdPlaceholder":"输入金额","balanceNotifyExtraEmails":"通知邮箱","balanceNotifyExtraEmailsHint":"必须添加并验证邮箱后，余额不足时才能收到提醒邮件","balanceNotifyCodePlaceholder":"6位验证码","balanceNotifyVerify":"验证","balanceNotifyResend":"重发","balanceNotifyUnverified":"未验证","balanceNotifyVerified":"已验证","balanceNotifyRemoveEmail":"移除","balanceNotifySendCode":"发送验证码","balanceNotifyEmailPlaceholder":"输入邮箱地址","balanceNotifyMaxEmailsReached":"已达到通知邮箱数量上限","balanceNotifyEmailDuplicate":"该邮箱已存在","balanceNotifyCodeSent":"验证码已发送","balanceNotifyVerifySuccess":"邮箱添加成功","balanceNotifyRemoveSuccess":"邮箱已移除","balanceNotifySaving":"保存中...","balanceNotifySave":"保存","balanceNotifyCancel":"取消","balanceNotifyAdd":"添加","balanceNotifySaved":"已保存","balanceNotifyError":"操作失败","avatarTitle":"资料头像","avatarDescription":"仅支持上传头像图片；静态图片会自动压缩到 20KB 以内后再保存。","avatarUploadHint":"上传图片时会自动压缩静态图片到 20KB 以内，GIF 需自行控制在 20KB 以内","avatarUploadAction":"上传图片","avatarUploadRequired":"请先上传头像图片","avatarReadFailed":"读取所选图片失败","avatarCompressFailed":"压缩所选图片失败","avatarCompressTooLarge":"无法将图片压缩到 20KB 以内，请换一张更小的图片","avatarInvalidType":"请选择图片文件","avatarGifTooLarge":"GIF 头像必须在 20KB 以内","avatarSaveSuccess":"头像已更新","avatarEmptyDeleteHint":"当前没有可删除的头像","avatarDeleteSuccess":"头像已删除","totpTitle":"两步验证","totpDescription":"使用身份验证器应用为账号增加额外保护","totpFeatureDisabled":"两步验证当前未启用","totpFeatureDisabledHint":"管理员尚未开启此功能","totpEnabled":"两步验证已启用","totpEnabledAt":"启用时间","totpDisable":"停用","totpNotEnabled":"两步验证未启用","totpNotEnabledHint":"启用后，登录时需要输入身份验证器中的动态验证码","totpEnable":"启用","providers":{"email":"邮箱","linuxdo":"LinuxDo","dingtalk":"钉钉","oidc":"{providerName}","wechat":"微信","github":"GitHub","google":"Google"},"sourceAvatar":"头像当前来自 {providerName}","sourceUsername":"昵称当前来自 {providerName}"}},"en":{"labels":{"user":"User","administrator":"Administrator","accountBalance":"Account Balance","concurrencyLimit":"Concurrency Limit","memberSince":"Member Since","basicsTitle":"Basic Profile","basicsDescription":"Manage avatar, nickname, and account display information.","linkedProfileSources":"Profile Sources","linkedProfileSourcesDescription":"Some profile fields can be synced from connected sign-in providers.","contactSupport":"Contact Support","changePassword":"Change Password","currentPassword":"Current Password","newPassword":"New Password","confirmNewPassword":"Confirm New Password","passwordHint":"Password must be at least {count} characters long","changingPassword":"Changing...","changePasswordButton":"Change Password","passwordsNotMatch":"New passwords do not match","passwordTooShort":"Password must be at least {count} characters long","passwordChangeSuccess":"Password changed successfully","passwordChangeFailed":"Failed to change password","balanceNotifyTitle":"Balance Low Notification","balanceNotifyDescription":"Send email alert when account balance falls below threshold","balanceNotifyEnabled":"Enable Balance Low Notification","balanceNotifyThreshold":"Custom Threshold","balanceNotifyThresholdHint":"Leave empty to use system default","balanceNotifySystemDefault":"System Default","balanceNotifyThresholdPlaceholder":"Enter amount","balanceNotifyExtraEmails":"Notification Emails","balanceNotifyExtraEmailsHint":"You must add and verify an email address to receive low balance alerts","balanceNotifyCodePlaceholder":"6-digit code","balanceNotifyVerify":"Verify","balanceNotifyResend":"Resend","balanceNotifyUnverified":"Unverified","balanceNotifyVerified":"Verified","balanceNotifyRemoveEmail":"Remove","balanceNotifySendCode":"Send Code","balanceNotifyEmailPlaceholder":"Enter email address","balanceNotifyMaxEmailsReached":"Maximum number of notification emails reached","balanceNotifyEmailDuplicate":"This email already exists","balanceNotifyCodeSent":"Verification code sent","balanceNotifyVerifySuccess":"Email added successfully","balanceNotifyRemoveSuccess":"Email removed","balanceNotifySaving":"Saving...","balanceNotifySave":"Save","balanceNotifyCancel":"Cancel","balanceNotifyAdd":"Add","balanceNotifySaved":"Saved","balanceNotifyError":"Operation failed","avatarTitle":"Profile Avatar","avatarDescription":"Upload an avatar image. Static uploads are compressed to 20KB before saving.","avatarUploadHint":"Static uploads are compressed to 20KB when possible. GIF uploads must already be within 20KB.","avatarUploadAction":"Upload image","avatarUploadRequired":"Upload an avatar image first","avatarReadFailed":"Failed to read the selected image.","avatarCompressFailed":"Failed to compress the selected image.","avatarCompressTooLarge":"Unable to compress this image below 20KB. Try a smaller image.","avatarInvalidType":"Please choose an image file","avatarGifTooLarge":"GIF avatars must already be 20KB or smaller","avatarSaveSuccess":"Avatar updated","avatarEmptyDeleteHint":"Avatar is already empty","avatarDeleteSuccess":"Avatar removed","totpTitle":"Two-Factor Authentication","totpDescription":"Use an authenticator app to add extra protection to your account","totpFeatureDisabled":"Two-factor authentication is unavailable","totpFeatureDisabledHint":"This feature has not been enabled by an administrator","totpEnabled":"Two-factor authentication enabled","totpEnabledAt":"Enabled at","totpDisable":"Disable","totpNotEnabled":"Two-factor authentication is not enabled","totpNotEnabledHint":"After enabling it, sign-in requires a dynamic code from your authenticator app","totpEnable":"Enable","providers":{"email":"Email","linuxdo":"LinuxDo","dingtalk":"DingTalk","oidc":"{providerName}","wechat":"WeChat","github":"GitHub","google":"Google"},"sourceAvatar":"Avatar is currently synced from {providerName}","sourceUsername":"Nickname is currently synced from {providerName}"}}}`
+const defaultProfileShellConfig = `{"zh":{"labels":{"user":"用户","administrator":"管理员","accountBalance":"账户余额","concurrencyLimit":"并发额度","memberSince":"加入时间","basicsTitle":"基础资料","basicsDescription":"管理头像、昵称以及当前账号展示信息。","linkedProfileSources":"资料来源","linkedProfileSourcesDescription":"部分资料会从绑定的第三方登录方式同步。","contactSupport":"联系客服","changePassword":"修改密码","currentPassword":"当前密码","newPassword":"新密码","confirmNewPassword":"确认新密码","passwordHint":"密码至少需要 {count} 位字符","changingPassword":"修改中...","changePasswordButton":"修改密码","passwordsNotMatch":"两次输入的新密码不一致","passwordTooShort":"密码至少需要 {count} 位字符","passwordChangeSuccess":"密码修改成功","passwordChangeFailed":"密码修改失败","balanceNotifyTitle":"余额不足提醒","balanceNotifyDescription":"当账户余额低于阈值时发送邮件提醒","balanceNotifyEnabled":"启用余额不足提醒","balanceNotifyThreshold":"自定义提醒阈值","balanceNotifyThresholdHint":"留空使用系统默认值","balanceNotifySystemDefault":"系统默认值","balanceNotifyThresholdPlaceholder":"输入金额","balanceNotifyExtraEmails":"通知邮箱","balanceNotifyExtraEmailsHint":"必须添加并验证邮箱后，余额不足时才能收到提醒邮件","balanceNotifyCodePlaceholder":"6位验证码","balanceNotifyVerify":"验证","balanceNotifyResend":"重发","balanceNotifyUnverified":"未验证","balanceNotifyVerified":"已验证","balanceNotifyRemoveEmail":"移除","balanceNotifySendCode":"发送验证码","balanceNotifyEmailPlaceholder":"输入邮箱地址","balanceNotifyMaxEmailsReached":"已达到通知邮箱数量上限","balanceNotifyEmailDuplicate":"该邮箱已存在","balanceNotifyCodeSent":"验证码已发送","balanceNotifyVerifySuccess":"邮箱添加成功","balanceNotifyRemoveSuccess":"邮箱已移除","balanceNotifySaving":"保存中...","balanceNotifySave":"保存","balanceNotifyCancel":"取消","balanceNotifyAdd":"添加","balanceNotifySaved":"已保存","balanceNotifyError":"操作失败","avatarTitle":"资料头像","avatarDescription":"仅支持上传头像图片；静态图片会自动压缩到 20KB 以内后再保存。","avatarUploadHint":"上传图片时会自动压缩静态图片到 20KB 以内，GIF 需自行控制在 20KB 以内","avatarUploadAction":"上传图片","avatarUploadRequired":"请先上传头像图片","avatarReadFailed":"读取所选图片失败","avatarCompressFailed":"压缩所选图片失败","avatarCompressTooLarge":"无法将图片压缩到 20KB 以内，请换一张更小的图片","avatarInvalidType":"请选择图片文件","avatarGifTooLarge":"GIF 头像必须在 20KB 以内","avatarSaveSuccess":"头像已更新","avatarEmptyDeleteHint":"当前没有可删除的头像","avatarDeleteSuccess":"头像已删除","totpTitle":"两步验证","totpDescription":"使用身份验证器应用为账号增加额外保护","totpFeatureDisabled":"两步验证当前未启用","totpFeatureDisabledHint":"管理员尚未开启此功能","totpEnabled":"两步验证已启用","totpEnabledAt":"启用时间","totpDisable":"停用","totpNotEnabled":"两步验证未启用","totpNotEnabledHint":"启用后，登录时需要输入身份验证器中的动态验证码","totpEnable":"启用","providers":{"email":"邮箱","github":"GitHub","google":"Google"},"sourceAvatar":"头像当前来自 {providerName}","sourceUsername":"昵称当前来自 {providerName}"}},"en":{"labels":{"user":"User","administrator":"Administrator","accountBalance":"Account Balance","concurrencyLimit":"Concurrency Limit","memberSince":"Member Since","basicsTitle":"Basic Profile","basicsDescription":"Manage avatar, nickname, and account display information.","linkedProfileSources":"Profile Sources","linkedProfileSourcesDescription":"Some profile fields can be synced from connected sign-in providers.","contactSupport":"Contact Support","changePassword":"Change Password","currentPassword":"Current Password","newPassword":"New Password","confirmNewPassword":"Confirm New Password","passwordHint":"Password must be at least {count} characters long","changingPassword":"Changing...","changePasswordButton":"Change Password","passwordsNotMatch":"New passwords do not match","passwordTooShort":"Password must be at least {count} characters long","passwordChangeSuccess":"Password changed successfully","passwordChangeFailed":"Failed to change password","balanceNotifyTitle":"Balance Low Notification","balanceNotifyDescription":"Send email alert when account balance falls below threshold","balanceNotifyEnabled":"Enable Balance Low Notification","balanceNotifyThreshold":"Custom Threshold","balanceNotifyThresholdHint":"Leave empty to use system default","balanceNotifySystemDefault":"System Default","balanceNotifyThresholdPlaceholder":"Enter amount","balanceNotifyExtraEmails":"Notification Emails","balanceNotifyExtraEmailsHint":"You must add and verify an email address to receive low balance alerts","balanceNotifyCodePlaceholder":"6-digit code","balanceNotifyVerify":"Verify","balanceNotifyResend":"Resend","balanceNotifyUnverified":"Unverified","balanceNotifyVerified":"Verified","balanceNotifyRemoveEmail":"Remove","balanceNotifySendCode":"Send Code","balanceNotifyEmailPlaceholder":"Enter email address","balanceNotifyMaxEmailsReached":"Maximum number of notification emails reached","balanceNotifyEmailDuplicate":"This email already exists","balanceNotifyCodeSent":"Verification code sent","balanceNotifyVerifySuccess":"Email added successfully","balanceNotifyRemoveSuccess":"Email removed","balanceNotifySaving":"Saving...","balanceNotifySave":"Save","balanceNotifyCancel":"Cancel","balanceNotifyAdd":"Add","balanceNotifySaved":"Saved","balanceNotifyError":"Operation failed","avatarTitle":"Profile Avatar","avatarDescription":"Upload an avatar image. Static uploads are compressed to 20KB before saving.","avatarUploadHint":"Static uploads are compressed to 20KB when possible. GIF uploads must already be within 20KB.","avatarUploadAction":"Upload image","avatarUploadRequired":"Upload an avatar image first","avatarReadFailed":"Failed to read the selected image.","avatarCompressFailed":"Failed to compress the selected image.","avatarCompressTooLarge":"Unable to compress this image below 20KB. Try a smaller image.","avatarInvalidType":"Please choose an image file","avatarGifTooLarge":"GIF avatars must already be 20KB or smaller","avatarSaveSuccess":"Avatar updated","avatarEmptyDeleteHint":"Avatar is already empty","avatarDeleteSuccess":"Avatar removed","totpTitle":"Two-Factor Authentication","totpDescription":"Use an authenticator app to add extra protection to your account","totpFeatureDisabled":"Two-factor authentication is unavailable","totpFeatureDisabledHint":"This feature has not been enabled by an administrator","totpEnabled":"Two-factor authentication enabled","totpEnabledAt":"Enabled at","totpDisable":"Disable","totpNotEnabled":"Two-factor authentication is not enabled","totpNotEnabledHint":"After enabling it, sign-in requires a dynamic code from your authenticator app","totpEnable":"Enable","providers":{"email":"Email","github":"GitHub","google":"Google"},"sourceAvatar":"Avatar is currently synced from {providerName}","sourceUsername":"Nickname is currently synced from {providerName}"}}}`
 
 func profileShellConfigSetting(raw string) string {
 	value := strings.TrimSpace(raw)
@@ -1671,12 +1603,6 @@ const defaultAuthShellConfig = `{
       "oauthFlowUseDisplayName": "使用昵称",
       "oauthFlowVerifyAndContinue": "验证并继续",
       "oauthFlowYourAccount": "当前账户",
-      "wechatAvailabilityUnknown": "暂时无法确认微信登录可用性，请刷新后重试。",
-      "wechatBrowserOnly": "当前微信登录流程仅支持在微信内置浏览器中继续。",
-      "wechatNativeAppOnly": "当前仅配置微信移动应用登录，需要在原生 App 中通过微信 SDK 发起授权。",
-      "wechatNotConfigured": "微信登录尚未配置。",
-      "wechatProviderName": "微信",
-      "wechatSystemBrowserOnly": "当前微信登录流程仅支持在系统浏览器中继续。",
       "dontHaveAccount": "还没有账户？",
       "signUp": "注册",
       "createAccount": "创建账户",
@@ -1687,7 +1613,6 @@ const defaultAuthShellConfig = `{
       "newPasswordPlaceholder": "输入新密码",
       "confirmPassword": "确认密码",
       "confirmPasswordPlaceholder": "再次输入新密码",
-      "dingtalkProviderName": "钉钉",
       "passwordHint": "至少 {count} 个字符",
       "invitationCodeLabel": "邀请码",
       "invitationCodePlaceholder": "请输入邀请码",
@@ -1809,12 +1734,6 @@ const defaultAuthShellConfig = `{
       "oauthFlowUseDisplayName": "Use display name",
       "oauthFlowVerifyAndContinue": "Verify and continue",
       "oauthFlowYourAccount": "your account",
-      "wechatAvailabilityUnknown": "WeChat sign-in availability could not be confirmed. Refresh and retry.",
-      "wechatBrowserOnly": "This WeChat sign-in flow is only available inside the WeChat browser.",
-      "wechatNativeAppOnly": "This site only has WeChat mobile app login configured. Continue from the native app through the WeChat SDK.",
-      "wechatNotConfigured": "WeChat sign-in is not configured yet.",
-      "wechatProviderName": "WeChat",
-      "wechatSystemBrowserOnly": "This WeChat sign-in flow is only available in your system browser.",
       "dontHaveAccount": "Don't have an account?",
       "signUp": "Sign Up",
       "createAccount": "Create Account",
@@ -1825,7 +1744,6 @@ const defaultAuthShellConfig = `{
       "newPasswordPlaceholder": "Enter your new password",
       "confirmPassword": "Confirm Password",
       "confirmPasswordPlaceholder": "Confirm your new password",
-      "dingtalkProviderName": "DingTalk",
       "passwordHint": "At least {count} characters",
       "invitationCodeLabel": "Invitation Code",
       "invitationCodePlaceholder": "Enter invitation code",
@@ -2485,14 +2403,10 @@ type PublicSettingsInjectionPayload struct {
 	TablePageSizeOptions             []int                    `json:"table_page_size_options"`
 	CustomMenuItems                  json.RawMessage          `json:"custom_menu_items"`
 	CustomEndpoints                  json.RawMessage          `json:"custom_endpoints"`
-	LinuxDoOAuthEnabled              bool                     `json:"linuxdo_oauth_enabled"`
-	DingTalkOAuthEnabled             bool                     `json:"dingtalk_oauth_enabled"`
 	WeChatOAuthEnabled               bool                     `json:"wechat_oauth_enabled"`
 	WeChatOAuthOpenEnabled           bool                     `json:"wechat_oauth_open_enabled"`
 	WeChatOAuthMPEnabled             bool                     `json:"wechat_oauth_mp_enabled"`
 	WeChatOAuthMobileEnabled         bool                     `json:"wechat_oauth_mobile_enabled"`
-	OIDCOAuthEnabled                 bool                     `json:"oidc_oauth_enabled"`
-	OIDCOAuthProviderName            string                   `json:"oidc_oauth_provider_name"`
 	GitHubOAuthEnabled               bool                     `json:"github_oauth_enabled"`
 	GoogleOAuthEnabled               bool                     `json:"google_oauth_enabled"`
 	BackendModeEnabled               bool                     `json:"backend_mode_enabled"`
@@ -2513,6 +2427,32 @@ type PublicSettingsInjectionPayload struct {
 	AffiliateEnabled                     bool `json:"affiliate_enabled"`
 	RiskControlEnabled                   bool `json:"risk_control_enabled"`
 	AllowUserViewErrorRequests           bool `json:"allow_user_view_error_requests"`
+
+	PromptCasesTitle           string `json:"prompt_cases_title"`
+	PromptCasesDescription     string `json:"prompt_cases_description"`
+	PromptTemplatesTitle       string `json:"prompt_templates_title"`
+	PromptTemplatesDescription string `json:"prompt_templates_description"`
+	PromptCatalogShellConfig   string `json:"prompt_catalog_shell_config"`
+	WorkspaceShellConfig       string `json:"workspace_shell_config"`
+	PricingTitle               string `json:"pricing_title"`
+	PricingDescription         string `json:"pricing_description"`
+	PricingShellConfig         string `json:"pricing_shell_config"`
+	PaymentShellConfig         string `json:"payment_shell_config"`
+	PricingCurrencySymbol      string `json:"pricing_currency_symbol"`
+	CreditsTitle               string `json:"credits_title"`
+	CreditsDescription         string `json:"credits_description"`
+	CreditsPurchaseLabel       string `json:"credits_purchase_label"`
+	CreditsBalanceLabel        string `json:"credits_balance_label"`
+	CreditsPerBalance          string `json:"credits_per_balance"`
+	CreditsShellConfig         string `json:"credits_shell_config"`
+	GoogleAnalyticsID          string `json:"google_analytics_id"`
+	AffonsoEnabled             bool   `json:"affonso_enabled"`
+	AffonsoID                  string `json:"affonso_id"`
+	AffonsoCookieDuration      string `json:"affonso_cookie_duration"`
+	PromoteKitEnabled          bool   `json:"promotekit_enabled"`
+	PromoteKitID               string `json:"promotekit_id"`
+	CrispEnabled               bool   `json:"crisp_enabled"`
+	CrispWebsiteID             string `json:"crisp_website_id"`
 }
 
 // GetPublicSettingsForInjection returns public settings in a format suitable for HTML injection.
@@ -2575,14 +2515,10 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		TablePageSizeOptions:             settings.TablePageSizeOptions,
 		CustomMenuItems:                  filterUserVisibleMenuItems(settings.CustomMenuItems),
 		CustomEndpoints:                  safeRawJSONArray(settings.CustomEndpoints),
-		LinuxDoOAuthEnabled:              settings.LinuxDoOAuthEnabled,
-		DingTalkOAuthEnabled:             settings.DingTalkOAuthEnabled,
-		WeChatOAuthEnabled:               settings.WeChatOAuthEnabled,
-		WeChatOAuthOpenEnabled:           settings.WeChatOAuthOpenEnabled,
-		WeChatOAuthMPEnabled:             settings.WeChatOAuthMPEnabled,
-		WeChatOAuthMobileEnabled:         settings.WeChatOAuthMobileEnabled,
-		OIDCOAuthEnabled:                 settings.OIDCOAuthEnabled,
-		OIDCOAuthProviderName:            settings.OIDCOAuthProviderName,
+		WeChatOAuthEnabled:               false,
+		WeChatOAuthOpenEnabled:           false,
+		WeChatOAuthMPEnabled:             false,
+		WeChatOAuthMobileEnabled:         false,
 		GitHubOAuthEnabled:               settings.GitHubOAuthEnabled,
 		GoogleOAuthEnabled:               settings.GoogleOAuthEnabled,
 		BackendModeEnabled:               settings.BackendModeEnabled,
@@ -2600,6 +2536,31 @@ func (s *SettingService) GetPublicSettingsForInjection(ctx context.Context) (any
 		AffiliateEnabled:                     settings.AffiliateEnabled,
 		RiskControlEnabled:                   settings.RiskControlEnabled,
 		AllowUserViewErrorRequests:           settings.AllowUserViewErrorRequests,
+		PromptCasesTitle:                     settings.PromptCasesTitle,
+		PromptCasesDescription:               settings.PromptCasesDescription,
+		PromptTemplatesTitle:                 settings.PromptTemplatesTitle,
+		PromptTemplatesDescription:           settings.PromptTemplatesDescription,
+		PromptCatalogShellConfig:             settings.PromptCatalogShellConfig,
+		WorkspaceShellConfig:                 settings.WorkspaceShellConfig,
+		PricingTitle:                         settings.PricingTitle,
+		PricingDescription:                   settings.PricingDescription,
+		PricingShellConfig:                   settings.PricingShellConfig,
+		PaymentShellConfig:                   settings.PaymentShellConfig,
+		PricingCurrencySymbol:                settings.PricingCurrencySymbol,
+		CreditsTitle:                         settings.CreditsTitle,
+		CreditsDescription:                   settings.CreditsDescription,
+		CreditsPurchaseLabel:                 settings.CreditsPurchaseLabel,
+		CreditsBalanceLabel:                  settings.CreditsBalanceLabel,
+		CreditsPerBalance:                    settings.CreditsPerBalance,
+		CreditsShellConfig:                   settings.CreditsShellConfig,
+		GoogleAnalyticsID:                    settings.GoogleAnalyticsID,
+		AffonsoEnabled:                       settings.AffonsoEnabled,
+		AffonsoID:                            settings.AffonsoID,
+		AffonsoCookieDuration:                settings.AffonsoCookieDuration,
+		PromoteKitEnabled:                    settings.PromoteKitEnabled,
+		PromoteKitID:                         settings.PromoteKitID,
+		CrispEnabled:                         settings.CrispEnabled,
+		CrispWebsiteID:                       settings.CrispWebsiteID,
 	}, nil
 }
 
@@ -2875,30 +2836,6 @@ func parseCustomMenuItemURLs(raw string) []string {
 	return urls
 }
 
-func oidcUsePKCECompatibilityDefault(base config.OIDCConnectConfig) bool {
-	if base.UsePKCEExplicit {
-		return base.UsePKCE
-	}
-	return true
-}
-
-func oidcValidateIDTokenCompatibilityDefault(base config.OIDCConnectConfig) bool {
-	if base.ValidateIDTokenExplicit {
-		return base.ValidateIDToken
-	}
-	return true
-}
-
-func oidcCompatibilityWriteDefault(base config.OIDCConnectConfig, configured bool, raw string, explicit bool, explicitValue bool) bool {
-	if configured {
-		return strings.TrimSpace(raw) == "true"
-	}
-	if explicit {
-		return explicitValue
-	}
-	return false
-}
-
 // UpdateSettings 更新系统设置
 func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSettings) error {
 	updates, err := s.buildSystemSettingsUpdates(ctx, settings)
@@ -2911,28 +2848,6 @@ func (s *SettingService) UpdateSettings(ctx context.Context, settings *SystemSet
 		s.refreshCachedSettings(settings)
 	}
 	return err
-}
-
-func (s *SettingService) OIDCSecurityWriteDefaults(ctx context.Context) (bool, bool, error) {
-	rawSettings, err := s.settingRepo.GetMultiple(ctx, []string{
-		SettingKeyOIDCConnectUsePKCE,
-		SettingKeyOIDCConnectValidateIDToken,
-	})
-	if err != nil {
-		return false, false, fmt.Errorf("get oidc security write defaults: %w", err)
-	}
-
-	base := config.OIDCConnectConfig{}
-	if s != nil && s.cfg != nil {
-		base = s.cfg.OIDC
-	}
-
-	rawUsePKCE, hasUsePKCE := rawSettings[SettingKeyOIDCConnectUsePKCE]
-	rawValidateIDToken, hasValidateIDToken := rawSettings[SettingKeyOIDCConnectValidateIDToken]
-
-	return oidcCompatibilityWriteDefault(base, hasUsePKCE, rawUsePKCE, base.UsePKCEExplicit, base.UsePKCE),
-		oidcCompatibilityWriteDefault(base, hasValidateIDToken, rawValidateIDToken, base.ValidateIDTokenExplicit, base.ValidateIDToken),
-		nil
 }
 
 // UpdateSettingsWithAuthSourceDefaults persists system settings and auth-source defaults in a single write.
@@ -3077,60 +2992,6 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 		updates[SettingKeyTurnstileSecretKey] = settings.TurnstileSecretKey
 	}
 	updates[SettingKeyAPIKeyACLTrustForwardedIP] = strconv.FormatBool(settings.APIKeyACLTrustForwardedIP)
-
-	// LinuxDo Connect OAuth 登录
-	updates[SettingKeyLinuxDoConnectEnabled] = strconv.FormatBool(settings.LinuxDoConnectEnabled)
-	updates[SettingKeyLinuxDoConnectClientID] = settings.LinuxDoConnectClientID
-	updates[SettingKeyLinuxDoConnectRedirectURL] = settings.LinuxDoConnectRedirectURL
-	if settings.LinuxDoConnectClientSecret != "" {
-		updates[SettingKeyLinuxDoConnectClientSecret] = settings.LinuxDoConnectClientSecret
-	}
-
-	// DingTalk Connect OAuth 登录
-	updates[SettingKeyDingTalkConnectEnabled] = strconv.FormatBool(settings.DingTalkConnectEnabled)
-	updates[SettingKeyDingTalkConnectClientID] = settings.DingTalkConnectClientID
-	updates[SettingKeyDingTalkConnectRedirectURL] = settings.DingTalkConnectRedirectURL
-	if settings.DingTalkConnectClientSecret != "" {
-		updates[SettingKeyDingTalkConnectClientSecret] = settings.DingTalkConnectClientSecret
-	}
-	updates[SettingKeyDingTalkConnectCorpRestrictionPolicy] = settings.DingTalkConnectCorpRestrictionPolicy
-	updates[SettingKeyDingTalkConnectInternalCorpID] = settings.DingTalkConnectInternalCorpID
-	updates[SettingKeyDingTalkConnectBypassRegistration] = strconv.FormatBool(settings.DingTalkConnectBypassRegistration)
-	updates[SettingKeyDingTalkConnectSyncCorpEmail] = strconv.FormatBool(settings.DingTalkConnectSyncCorpEmail)
-	updates[SettingKeyDingTalkConnectSyncDisplayName] = strconv.FormatBool(settings.DingTalkConnectSyncDisplayName)
-	updates[SettingKeyDingTalkConnectSyncDept] = strconv.FormatBool(settings.DingTalkConnectSyncDept)
-	updates[SettingKeyDingTalkConnectSyncCorpEmailAttrKey] = settings.DingTalkConnectSyncCorpEmailAttrKey
-	updates[SettingKeyDingTalkConnectSyncDisplayNameAttrKey] = settings.DingTalkConnectSyncDisplayNameAttrKey
-	updates[SettingKeyDingTalkConnectSyncDeptAttrKey] = settings.DingTalkConnectSyncDeptAttrKey
-	updates[SettingKeyDingTalkConnectSyncCorpEmailAttrName] = settings.DingTalkConnectSyncCorpEmailAttrName
-	updates[SettingKeyDingTalkConnectSyncDisplayNameAttrName] = settings.DingTalkConnectSyncDisplayNameAttrName
-	updates[SettingKeyDingTalkConnectSyncDeptAttrName] = settings.DingTalkConnectSyncDeptAttrName
-
-	// Generic OIDC OAuth 登录
-	updates[SettingKeyOIDCConnectEnabled] = strconv.FormatBool(settings.OIDCConnectEnabled)
-	updates[SettingKeyOIDCConnectProviderName] = settings.OIDCConnectProviderName
-	updates[SettingKeyOIDCConnectClientID] = settings.OIDCConnectClientID
-	updates[SettingKeyOIDCConnectIssuerURL] = settings.OIDCConnectIssuerURL
-	updates[SettingKeyOIDCConnectDiscoveryURL] = settings.OIDCConnectDiscoveryURL
-	updates[SettingKeyOIDCConnectAuthorizeURL] = settings.OIDCConnectAuthorizeURL
-	updates[SettingKeyOIDCConnectTokenURL] = settings.OIDCConnectTokenURL
-	updates[SettingKeyOIDCConnectUserInfoURL] = settings.OIDCConnectUserInfoURL
-	updates[SettingKeyOIDCConnectJWKSURL] = settings.OIDCConnectJWKSURL
-	updates[SettingKeyOIDCConnectScopes] = settings.OIDCConnectScopes
-	updates[SettingKeyOIDCConnectRedirectURL] = settings.OIDCConnectRedirectURL
-	updates[SettingKeyOIDCConnectFrontendRedirectURL] = settings.OIDCConnectFrontendRedirectURL
-	updates[SettingKeyOIDCConnectTokenAuthMethod] = settings.OIDCConnectTokenAuthMethod
-	updates[SettingKeyOIDCConnectUsePKCE] = strconv.FormatBool(settings.OIDCConnectUsePKCE)
-	updates[SettingKeyOIDCConnectValidateIDToken] = strconv.FormatBool(settings.OIDCConnectValidateIDToken)
-	updates[SettingKeyOIDCConnectAllowedSigningAlgs] = settings.OIDCConnectAllowedSigningAlgs
-	updates[SettingKeyOIDCConnectClockSkewSeconds] = strconv.Itoa(settings.OIDCConnectClockSkewSeconds)
-	updates[SettingKeyOIDCConnectRequireEmailVerified] = strconv.FormatBool(settings.OIDCConnectRequireEmailVerified)
-	updates[SettingKeyOIDCConnectUserInfoEmailPath] = settings.OIDCConnectUserInfoEmailPath
-	updates[SettingKeyOIDCConnectUserInfoIDPath] = settings.OIDCConnectUserInfoIDPath
-	updates[SettingKeyOIDCConnectUserInfoUsernamePath] = settings.OIDCConnectUserInfoUsernamePath
-	if settings.OIDCConnectClientSecret != "" {
-		updates[SettingKeyOIDCConnectClientSecret] = settings.OIDCConnectClientSecret
-	}
 
 	// GitHub / Google 邮箱快捷登录
 	updates[SettingKeyGitHubOAuthEnabled] = strconv.FormatBool(settings.GitHubOAuthEnabled)
@@ -3357,6 +3218,13 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeySignupGrantRiskControlEmailLimit] = strconv.Itoa(nonNegativeInt(settings.SignupGrantRiskControlEmailLimit))
 	updates[SettingKeySignupGrantRiskControlIPLimit] = strconv.Itoa(nonNegativeInt(settings.SignupGrantRiskControlIPLimit))
 	updates[SettingKeySignupGrantRiskControlDomainLimit] = strconv.Itoa(nonNegativeInt(settings.SignupGrantRiskControlDomainLimit))
+	updates[SettingKeySignupGrantRiskControlOAuthIdentityEnabled] = strconv.FormatBool(settings.SignupGrantRiskControlOAuthIdentityEnabled)
+	updates[SettingKeySignupGrantRiskControlDeviceEnabled] = strconv.FormatBool(settings.SignupGrantRiskControlDeviceEnabled)
+	updates[SettingKeySignupGrantRiskControlDeviceLimit] = strconv.Itoa(nonNegativeInt(settings.SignupGrantRiskControlDeviceLimit))
+	updates[SettingKeySignupGrantRiskControlFreeDomainLimit] = strconv.Itoa(nonNegativeInt(settings.SignupGrantRiskControlFreeDomainLimit))
+	updates[SettingKeySignupGrantRiskControlBlockedDomains] = normalizeDomainListSetting(settings.SignupGrantRiskControlBlockedDomains)
+	updates[SettingKeySignupGrantRiskControlFreeDomains] = normalizeDomainListSetting(settings.SignupGrantRiskControlFreeDomains)
+	updates[SettingKeySignupGrantRiskControlTrustedDomains] = normalizeDomainListSetting(settings.SignupGrantRiskControlTrustedDomains)
 
 	// cyber 会话屏蔽开关 + TTL
 	updates[SettingKeyCyberSessionBlockEnabled] = strconv.FormatBool(settings.CyberSessionBlockEnabled)
@@ -3460,12 +3328,8 @@ func (s *SettingService) buildAuthSourceDefaultUpdates(ctx context.Context, sett
 
 	for _, subscriptions := range [][]DefaultSubscriptionSetting{
 		settings.Email.Subscriptions,
-		settings.LinuxDo.Subscriptions,
-		settings.OIDC.Subscriptions,
-		settings.WeChat.Subscriptions,
 		settings.GitHub.Subscriptions,
 		settings.Google.Subscriptions,
-		settings.DingTalk.Subscriptions,
 	} {
 		if err := s.validateDefaultSubscriptionGroups(ctx, subscriptions); err != nil {
 			return nil, err
@@ -3478,12 +3342,8 @@ func (s *SettingService) buildAuthSourceDefaultUpdates(ctx context.Context, sett
 		pq   map[string]*DefaultPlatformQuotaSetting
 	}{
 		{"email", settings.Email.PlatformQuotas},
-		{"linuxdo", settings.LinuxDo.PlatformQuotas},
-		{"oidc", settings.OIDC.PlatformQuotas},
-		{"wechat", settings.WeChat.PlatformQuotas},
 		{"github", settings.GitHub.PlatformQuotas},
 		{"google", settings.Google.PlatformQuotas},
-		{"dingtalk", settings.DingTalk.PlatformQuotas},
 	} {
 		if pgs.pq != nil {
 			if err := validateDefaultPlatformQuotaMap(pgs.pq); err != nil {
@@ -3494,12 +3354,8 @@ func (s *SettingService) buildAuthSourceDefaultUpdates(ctx context.Context, sett
 
 	updates := make(map[string]string, 36)
 	writeProviderDefaultGrantUpdates(updates, emailAuthSourceDefaultKeys, settings.Email)
-	writeProviderDefaultGrantUpdates(updates, linuxDoAuthSourceDefaultKeys, settings.LinuxDo)
-	writeProviderDefaultGrantUpdates(updates, oidcAuthSourceDefaultKeys, settings.OIDC)
-	writeProviderDefaultGrantUpdates(updates, weChatAuthSourceDefaultKeys, settings.WeChat)
 	writeProviderDefaultGrantUpdates(updates, gitHubAuthSourceDefaultKeys, settings.GitHub)
 	writeProviderDefaultGrantUpdates(updates, googleAuthSourceDefaultKeys, settings.Google)
-	writeProviderDefaultGrantUpdates(updates, dingTalkAuthSourceDefaultKeys, settings.DingTalk)
 	updates[SettingKeyForceEmailOnThirdPartySignup] = strconv.FormatBool(settings.ForceEmailOnThirdPartySignup)
 	return updates, nil
 }
@@ -4088,21 +3944,6 @@ func (s *SettingService) GetAuthSourceDefaultSettings(ctx context.Context) (*Aut
 		SettingKeyAuthSourceDefaultEmailSubscriptions,
 		SettingKeyAuthSourceDefaultEmailGrantOnSignup,
 		SettingKeyAuthSourceDefaultEmailGrantOnFirstBind,
-		SettingKeyAuthSourceDefaultLinuxDoBalance,
-		SettingKeyAuthSourceDefaultLinuxDoConcurrency,
-		SettingKeyAuthSourceDefaultLinuxDoSubscriptions,
-		SettingKeyAuthSourceDefaultLinuxDoGrantOnSignup,
-		SettingKeyAuthSourceDefaultLinuxDoGrantOnFirstBind,
-		SettingKeyAuthSourceDefaultOIDCBalance,
-		SettingKeyAuthSourceDefaultOIDCConcurrency,
-		SettingKeyAuthSourceDefaultOIDCSubscriptions,
-		SettingKeyAuthSourceDefaultOIDCGrantOnSignup,
-		SettingKeyAuthSourceDefaultOIDCGrantOnFirstBind,
-		SettingKeyAuthSourceDefaultWeChatBalance,
-		SettingKeyAuthSourceDefaultWeChatConcurrency,
-		SettingKeyAuthSourceDefaultWeChatSubscriptions,
-		SettingKeyAuthSourceDefaultWeChatGrantOnSignup,
-		SettingKeyAuthSourceDefaultWeChatGrantOnFirstBind,
 		SettingKeyAuthSourceDefaultGitHubBalance,
 		SettingKeyAuthSourceDefaultGitHubConcurrency,
 		SettingKeyAuthSourceDefaultGitHubSubscriptions,
@@ -4113,18 +3954,9 @@ func (s *SettingService) GetAuthSourceDefaultSettings(ctx context.Context) (*Aut
 		SettingKeyAuthSourceDefaultGoogleSubscriptions,
 		SettingKeyAuthSourceDefaultGoogleGrantOnSignup,
 		SettingKeyAuthSourceDefaultGoogleGrantOnFirstBind,
-		SettingKeyAuthSourceDefaultDingTalkBalance,
-		SettingKeyAuthSourceDefaultDingTalkConcurrency,
-		SettingKeyAuthSourceDefaultDingTalkSubscriptions,
-		SettingKeyAuthSourceDefaultDingTalkGrantOnSignup,
-		SettingKeyAuthSourceDefaultDingTalkGrantOnFirstBind,
 		SettingKeyAuthSourcePlatformQuotas("email"),
-		SettingKeyAuthSourcePlatformQuotas("linuxdo"),
-		SettingKeyAuthSourcePlatformQuotas("oidc"),
-		SettingKeyAuthSourcePlatformQuotas("wechat"),
 		SettingKeyAuthSourcePlatformQuotas("github"),
 		SettingKeyAuthSourcePlatformQuotas("google"),
-		SettingKeyAuthSourcePlatformQuotas("dingtalk"),
 		SettingKeyForceEmailOnThirdPartySignup,
 	}
 
@@ -4135,12 +3967,8 @@ func (s *SettingService) GetAuthSourceDefaultSettings(ctx context.Context) (*Aut
 
 	return &AuthSourceDefaultSettings{
 		Email:                        parseProviderDefaultGrantSettings(settings, emailAuthSourceDefaultKeys),
-		LinuxDo:                      parseProviderDefaultGrantSettings(settings, linuxDoAuthSourceDefaultKeys),
-		OIDC:                         parseProviderDefaultGrantSettings(settings, oidcAuthSourceDefaultKeys),
-		WeChat:                       parseProviderDefaultGrantSettings(settings, weChatAuthSourceDefaultKeys),
 		GitHub:                       parseProviderDefaultGrantSettings(settings, gitHubAuthSourceDefaultKeys),
 		Google:                       parseProviderDefaultGrantSettings(settings, googleAuthSourceDefaultKeys),
-		DingTalk:                     parseProviderDefaultGrantSettings(settings, dingTalkAuthSourceDefaultKeys),
 		ForceEmailOnThirdPartySignup: settings[SettingKeyForceEmailOnThirdPartySignup] == "true",
 	}, nil
 }
@@ -4198,17 +4026,6 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 	}
 	if !errors.Is(err, ErrSettingNotFound) {
 		return fmt.Errorf("check existing settings: %w", err)
-	}
-
-	oidcUsePKCEDefault := true
-	oidcValidateIDTokenDefault := true
-	if s != nil && s.cfg != nil {
-		if s.cfg.OIDC.UsePKCEExplicit {
-			oidcUsePKCEDefault = s.cfg.OIDC.UsePKCE
-		}
-		if s.cfg.OIDC.ValidateIDTokenExplicit {
-			oidcValidateIDTokenDefault = s.cfg.OIDC.ValidateIDToken
-		}
 	}
 	loginAgreementDocumentsJSON, err := marshalLoginAgreementDocuments(defaultLoginAgreementDocuments())
 	if err != nil {
@@ -4347,28 +4164,6 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyGoogleOAuthClientSecret:                  "",
 		SettingKeyGoogleOAuthRedirectURL:                   "",
 		SettingKeyGoogleOAuthFrontendRedirectURL:           defaultGoogleOAuthFrontend,
-		SettingKeyOIDCConnectEnabled:                       "false",
-		SettingKeyOIDCConnectProviderName:                  "OIDC",
-		SettingKeyOIDCConnectClientID:                      "",
-		SettingKeyOIDCConnectClientSecret:                  "",
-		SettingKeyOIDCConnectIssuerURL:                     "",
-		SettingKeyOIDCConnectDiscoveryURL:                  "",
-		SettingKeyOIDCConnectAuthorizeURL:                  "",
-		SettingKeyOIDCConnectTokenURL:                      "",
-		SettingKeyOIDCConnectUserInfoURL:                   "",
-		SettingKeyOIDCConnectJWKSURL:                       "",
-		SettingKeyOIDCConnectScopes:                        "openid email profile",
-		SettingKeyOIDCConnectRedirectURL:                   "",
-		SettingKeyOIDCConnectFrontendRedirectURL:           "/auth/oidc/callback",
-		SettingKeyOIDCConnectTokenAuthMethod:               "client_secret_post",
-		SettingKeyOIDCConnectUsePKCE:                       strconv.FormatBool(oidcUsePKCEDefault),
-		SettingKeyOIDCConnectValidateIDToken:               strconv.FormatBool(oidcValidateIDTokenDefault),
-		SettingKeyOIDCConnectAllowedSigningAlgs:            "RS256,ES256,PS256",
-		SettingKeyOIDCConnectClockSkewSeconds:              "120",
-		SettingKeyOIDCConnectRequireEmailVerified:          "false",
-		SettingKeyOIDCConnectUserInfoEmailPath:             "",
-		SettingKeyOIDCConnectUserInfoIDPath:                "",
-		SettingKeyOIDCConnectUserInfoUsernamePath:          "",
 		SettingKeyDefaultConcurrency:                       strconv.Itoa(s.cfg.Default.UserConcurrency),
 		SettingKeyDefaultBalance:                           strconv.FormatFloat(s.cfg.Default.UserBalance, 'f', 8, 64),
 		SettingKeyAffiliateRebateRate:                      strconv.FormatFloat(AffiliateRebateRateDefault, 'f', 8, 64),
@@ -4382,21 +4177,6 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyAuthSourceDefaultEmailSubscriptions:      "[]",
 		SettingKeyAuthSourceDefaultEmailGrantOnSignup:      "false",
 		SettingKeyAuthSourceDefaultEmailGrantOnFirstBind:   "false",
-		SettingKeyAuthSourceDefaultLinuxDoBalance:          "0",
-		SettingKeyAuthSourceDefaultLinuxDoConcurrency:      "5",
-		SettingKeyAuthSourceDefaultLinuxDoSubscriptions:    "[]",
-		SettingKeyAuthSourceDefaultLinuxDoGrantOnSignup:    "false",
-		SettingKeyAuthSourceDefaultLinuxDoGrantOnFirstBind: "false",
-		SettingKeyAuthSourceDefaultOIDCBalance:             "0",
-		SettingKeyAuthSourceDefaultOIDCConcurrency:         "5",
-		SettingKeyAuthSourceDefaultOIDCSubscriptions:       "[]",
-		SettingKeyAuthSourceDefaultOIDCGrantOnSignup:       "false",
-		SettingKeyAuthSourceDefaultOIDCGrantOnFirstBind:    "false",
-		SettingKeyAuthSourceDefaultWeChatBalance:           "0",
-		SettingKeyAuthSourceDefaultWeChatConcurrency:       "5",
-		SettingKeyAuthSourceDefaultWeChatSubscriptions:     "[]",
-		SettingKeyAuthSourceDefaultWeChatGrantOnSignup:     "false",
-		SettingKeyAuthSourceDefaultWeChatGrantOnFirstBind:  "false",
 		SettingKeyAuthSourceDefaultGitHubBalance:           "0",
 		SettingKeyAuthSourceDefaultGitHubConcurrency:       "5",
 		SettingKeyAuthSourceDefaultGitHubSubscriptions:     "[]",
@@ -4439,11 +4219,18 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyAffiliateEnabled: "false",
 
 		// 风控中心功能（默认关闭，显式启用）
-		SettingKeyRiskControlEnabled:                "false",
-		SettingKeySignupGrantRiskControlEnabled:     "false",
-		SettingKeySignupGrantRiskControlEmailLimit:  "1",
-		SettingKeySignupGrantRiskControlIPLimit:     "3",
-		SettingKeySignupGrantRiskControlDomainLimit: "10",
+		SettingKeyRiskControlEnabled:                         "false",
+		SettingKeySignupGrantRiskControlEnabled:              "false",
+		SettingKeySignupGrantRiskControlEmailLimit:           "1",
+		SettingKeySignupGrantRiskControlIPLimit:              "3",
+		SettingKeySignupGrantRiskControlDomainLimit:          "10",
+		SettingKeySignupGrantRiskControlOAuthIdentityEnabled: "true",
+		SettingKeySignupGrantRiskControlDeviceEnabled:        "true",
+		SettingKeySignupGrantRiskControlDeviceLimit:          "2",
+		SettingKeySignupGrantRiskControlFreeDomainLimit:      "5",
+		SettingKeySignupGrantRiskControlBlockedDomains:       "",
+		SettingKeySignupGrantRiskControlFreeDomains:          defaultSignupGrantRiskFreeDomains,
+		SettingKeySignupGrantRiskControlTrustedDomains:       "",
 
 		// cyber 会话屏蔽（默认关闭，TTL 默认 3600s）
 		SettingKeyCyberSessionBlockEnabled:    "false",
@@ -4678,300 +4465,6 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	result.SMTPPassword = settings[SettingKeySMTPPassword]
 	result.TurnstileSecretKey = settings[SettingKeyTurnstileSecretKey]
 
-	// LinuxDo Connect 设置：
-	// - 兼容 config.yaml/env（避免老部署因为未迁移到数据库设置而被意外关闭）
-	// - 支持在后台“系统设置”中覆盖并持久化（存储于 DB）
-	linuxDoBase := config.LinuxDoConnectConfig{}
-	if s.cfg != nil {
-		linuxDoBase = s.cfg.LinuxDo
-	}
-
-	if raw, ok := settings[SettingKeyLinuxDoConnectEnabled]; ok {
-		result.LinuxDoConnectEnabled = raw == "true"
-	} else {
-		result.LinuxDoConnectEnabled = linuxDoBase.Enabled
-	}
-
-	if v, ok := settings[SettingKeyLinuxDoConnectClientID]; ok && strings.TrimSpace(v) != "" {
-		result.LinuxDoConnectClientID = strings.TrimSpace(v)
-	} else {
-		result.LinuxDoConnectClientID = linuxDoBase.ClientID
-	}
-
-	if v, ok := settings[SettingKeyLinuxDoConnectRedirectURL]; ok && strings.TrimSpace(v) != "" {
-		result.LinuxDoConnectRedirectURL = strings.TrimSpace(v)
-	} else {
-		result.LinuxDoConnectRedirectURL = linuxDoBase.RedirectURL
-	}
-
-	result.LinuxDoConnectClientSecret = strings.TrimSpace(settings[SettingKeyLinuxDoConnectClientSecret])
-	if result.LinuxDoConnectClientSecret == "" {
-		result.LinuxDoConnectClientSecret = strings.TrimSpace(linuxDoBase.ClientSecret)
-	}
-	result.LinuxDoConnectClientSecretConfigured = result.LinuxDoConnectClientSecret != ""
-
-	// DingTalk Connect 设置：
-	// - 兼容 config.yaml/env
-	// - 支持后台系统设置覆盖并持久化（存储于 DB）
-	dingTalkBase := config.DingTalkConnectConfig{}
-	if s.cfg != nil {
-		dingTalkBase = s.cfg.DingTalk
-	}
-
-	if raw, ok := settings[SettingKeyDingTalkConnectEnabled]; ok {
-		result.DingTalkConnectEnabled = raw == "true"
-	} else {
-		result.DingTalkConnectEnabled = dingTalkBase.Enabled
-	}
-
-	if v, ok := settings[SettingKeyDingTalkConnectClientID]; ok && strings.TrimSpace(v) != "" {
-		result.DingTalkConnectClientID = strings.TrimSpace(v)
-	} else {
-		result.DingTalkConnectClientID = dingTalkBase.ClientID
-	}
-
-	if v, ok := settings[SettingKeyDingTalkConnectRedirectURL]; ok && strings.TrimSpace(v) != "" {
-		result.DingTalkConnectRedirectURL = strings.TrimSpace(v)
-	} else {
-		result.DingTalkConnectRedirectURL = dingTalkBase.RedirectURL
-	}
-
-	result.DingTalkConnectClientSecret = strings.TrimSpace(settings[SettingKeyDingTalkConnectClientSecret])
-	if result.DingTalkConnectClientSecret == "" {
-		result.DingTalkConnectClientSecret = strings.TrimSpace(dingTalkBase.ClientSecret)
-	}
-	result.DingTalkConnectClientSecretConfigured = result.DingTalkConnectClientSecret != ""
-
-	if v, ok := settings[SettingKeyDingTalkConnectCorpRestrictionPolicy]; ok && strings.TrimSpace(v) != "" {
-		result.DingTalkConnectCorpRestrictionPolicy = strings.TrimSpace(v)
-	} else {
-		result.DingTalkConnectCorpRestrictionPolicy = dingTalkBase.CorpRestrictionPolicy
-	}
-	result.DingTalkConnectCorpRestrictionPolicy = coerceDeprecatedDingTalkCorpPolicy(result.DingTalkConnectCorpRestrictionPolicy)
-
-	if v, ok := settings[SettingKeyDingTalkConnectInternalCorpID]; ok && strings.TrimSpace(v) != "" {
-		result.DingTalkConnectInternalCorpID = strings.TrimSpace(v)
-	} else {
-		result.DingTalkConnectInternalCorpID = dingTalkBase.InternalCorpID
-	}
-
-	if v, ok := settings[SettingKeyDingTalkConnectBypassRegistration]; ok && strings.TrimSpace(v) != "" {
-		result.DingTalkConnectBypassRegistration = strings.EqualFold(strings.TrimSpace(v), "true")
-	} else {
-		result.DingTalkConnectBypassRegistration = dingTalkBase.BypassRegistration
-	}
-	// bypass_registration 仅在 internal_only 模式下有意义；其它策略下强制 false，
-	// 以保证加载出的 effective config 永远是一致状态。
-	if result.DingTalkConnectCorpRestrictionPolicy != "internal_only" {
-		result.DingTalkConnectBypassRegistration = false
-	}
-
-	if v, ok := settings[SettingKeyDingTalkConnectSyncCorpEmail]; ok && strings.TrimSpace(v) != "" {
-		result.DingTalkConnectSyncCorpEmail = strings.EqualFold(strings.TrimSpace(v), "true")
-	} else {
-		result.DingTalkConnectSyncCorpEmail = dingTalkBase.SyncCorpEmail
-	}
-	if v, ok := settings[SettingKeyDingTalkConnectSyncDisplayName]; ok && strings.TrimSpace(v) != "" {
-		result.DingTalkConnectSyncDisplayName = strings.EqualFold(strings.TrimSpace(v), "true")
-	} else {
-		result.DingTalkConnectSyncDisplayName = dingTalkBase.SyncDisplayName
-	}
-	if v, ok := settings[SettingKeyDingTalkConnectSyncDept]; ok && strings.TrimSpace(v) != "" {
-		result.DingTalkConnectSyncDept = strings.EqualFold(strings.TrimSpace(v), "true")
-	} else {
-		result.DingTalkConnectSyncDept = dingTalkBase.SyncDept
-	}
-	// 身份同步三开关仅在 internal_only 模式下有意义；其它策略强制 false。
-	if result.DingTalkConnectCorpRestrictionPolicy != "internal_only" {
-		result.DingTalkConnectSyncCorpEmail = false
-		result.DingTalkConnectSyncDisplayName = false
-		result.DingTalkConnectSyncDept = false
-	}
-
-	// 身份同步目标 attr key（DB 空 → fallback 默认值）
-	result.DingTalkConnectSyncCorpEmailAttrKey = strings.TrimSpace(settings[SettingKeyDingTalkConnectSyncCorpEmailAttrKey])
-	if result.DingTalkConnectSyncCorpEmailAttrKey == "" {
-		if v := strings.TrimSpace(dingTalkBase.SyncCorpEmailAttrKey); v != "" {
-			result.DingTalkConnectSyncCorpEmailAttrKey = v
-		} else {
-			result.DingTalkConnectSyncCorpEmailAttrKey = "dingtalk_email"
-		}
-	}
-	result.DingTalkConnectSyncDisplayNameAttrKey = strings.TrimSpace(settings[SettingKeyDingTalkConnectSyncDisplayNameAttrKey])
-	if result.DingTalkConnectSyncDisplayNameAttrKey == "" {
-		if v := strings.TrimSpace(dingTalkBase.SyncDisplayNameAttrKey); v != "" {
-			result.DingTalkConnectSyncDisplayNameAttrKey = v
-		} else {
-			result.DingTalkConnectSyncDisplayNameAttrKey = "dingtalk_name"
-		}
-	}
-	result.DingTalkConnectSyncDeptAttrKey = strings.TrimSpace(settings[SettingKeyDingTalkConnectSyncDeptAttrKey])
-	if result.DingTalkConnectSyncDeptAttrKey == "" {
-		if v := strings.TrimSpace(dingTalkBase.SyncDeptAttrKey); v != "" {
-			result.DingTalkConnectSyncDeptAttrKey = v
-		} else {
-			result.DingTalkConnectSyncDeptAttrKey = "dingtalk_department"
-		}
-	}
-
-	// 身份同步目标 attr 显示名称（DB 空 → fallback 默认中文）
-	result.DingTalkConnectSyncCorpEmailAttrName = strings.TrimSpace(settings[SettingKeyDingTalkConnectSyncCorpEmailAttrName])
-	if result.DingTalkConnectSyncCorpEmailAttrName == "" {
-		if v := strings.TrimSpace(dingTalkBase.SyncCorpEmailAttrName); v != "" {
-			result.DingTalkConnectSyncCorpEmailAttrName = v
-		} else {
-			result.DingTalkConnectSyncCorpEmailAttrName = "钉钉企业邮箱"
-		}
-	}
-	result.DingTalkConnectSyncDisplayNameAttrName = strings.TrimSpace(settings[SettingKeyDingTalkConnectSyncDisplayNameAttrName])
-	if result.DingTalkConnectSyncDisplayNameAttrName == "" {
-		if v := strings.TrimSpace(dingTalkBase.SyncDisplayNameAttrName); v != "" {
-			result.DingTalkConnectSyncDisplayNameAttrName = v
-		} else {
-			result.DingTalkConnectSyncDisplayNameAttrName = "钉钉姓名"
-		}
-	}
-	result.DingTalkConnectSyncDeptAttrName = strings.TrimSpace(settings[SettingKeyDingTalkConnectSyncDeptAttrName])
-	if result.DingTalkConnectSyncDeptAttrName == "" {
-		if v := strings.TrimSpace(dingTalkBase.SyncDeptAttrName); v != "" {
-			result.DingTalkConnectSyncDeptAttrName = v
-		} else {
-			result.DingTalkConnectSyncDeptAttrName = "钉钉部门"
-		}
-	}
-
-	// Generic OIDC 设置：
-	// - 兼容 config.yaml/env
-	// - 支持后台系统设置覆盖并持久化（存储于 DB）
-	oidcBase := config.OIDCConnectConfig{}
-	if s.cfg != nil {
-		oidcBase = s.cfg.OIDC
-	}
-
-	if raw, ok := settings[SettingKeyOIDCConnectEnabled]; ok {
-		result.OIDCConnectEnabled = raw == "true"
-	} else {
-		result.OIDCConnectEnabled = oidcBase.Enabled
-	}
-
-	if v, ok := settings[SettingKeyOIDCConnectProviderName]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectProviderName = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectProviderName = strings.TrimSpace(oidcBase.ProviderName)
-	}
-	if result.OIDCConnectProviderName == "" {
-		result.OIDCConnectProviderName = "OIDC"
-	}
-
-	if v, ok := settings[SettingKeyOIDCConnectClientID]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectClientID = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectClientID = strings.TrimSpace(oidcBase.ClientID)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectIssuerURL]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectIssuerURL = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectIssuerURL = strings.TrimSpace(oidcBase.IssuerURL)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectDiscoveryURL]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectDiscoveryURL = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectDiscoveryURL = strings.TrimSpace(oidcBase.DiscoveryURL)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectAuthorizeURL]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectAuthorizeURL = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectAuthorizeURL = strings.TrimSpace(oidcBase.AuthorizeURL)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectTokenURL]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectTokenURL = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectTokenURL = strings.TrimSpace(oidcBase.TokenURL)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectUserInfoURL]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectUserInfoURL = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectUserInfoURL = strings.TrimSpace(oidcBase.UserInfoURL)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectJWKSURL]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectJWKSURL = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectJWKSURL = strings.TrimSpace(oidcBase.JWKSURL)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectScopes]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectScopes = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectScopes = strings.TrimSpace(oidcBase.Scopes)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectRedirectURL]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectRedirectURL = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectRedirectURL = strings.TrimSpace(oidcBase.RedirectURL)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectFrontendRedirectURL]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectFrontendRedirectURL = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectFrontendRedirectURL = strings.TrimSpace(oidcBase.FrontendRedirectURL)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectTokenAuthMethod]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectTokenAuthMethod = strings.ToLower(strings.TrimSpace(v))
-	} else {
-		result.OIDCConnectTokenAuthMethod = strings.ToLower(strings.TrimSpace(oidcBase.TokenAuthMethod))
-	}
-	if raw, ok := settings[SettingKeyOIDCConnectUsePKCE]; ok {
-		result.OIDCConnectUsePKCE = raw == "true"
-	} else {
-		result.OIDCConnectUsePKCE = oidcUsePKCECompatibilityDefault(oidcBase)
-	}
-	if raw, ok := settings[SettingKeyOIDCConnectValidateIDToken]; ok {
-		result.OIDCConnectValidateIDToken = raw == "true"
-	} else {
-		result.OIDCConnectValidateIDToken = oidcValidateIDTokenCompatibilityDefault(oidcBase)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectAllowedSigningAlgs]; ok && strings.TrimSpace(v) != "" {
-		result.OIDCConnectAllowedSigningAlgs = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectAllowedSigningAlgs = strings.TrimSpace(oidcBase.AllowedSigningAlgs)
-	}
-	clockSkewSet := false
-	if raw, ok := settings[SettingKeyOIDCConnectClockSkewSeconds]; ok && strings.TrimSpace(raw) != "" {
-		if parsed, err := strconv.Atoi(strings.TrimSpace(raw)); err == nil {
-			result.OIDCConnectClockSkewSeconds = parsed
-			clockSkewSet = true
-		}
-	}
-	if !clockSkewSet {
-		result.OIDCConnectClockSkewSeconds = oidcBase.ClockSkewSeconds
-	}
-	if !clockSkewSet && result.OIDCConnectClockSkewSeconds == 0 {
-		result.OIDCConnectClockSkewSeconds = 120
-	}
-	if raw, ok := settings[SettingKeyOIDCConnectRequireEmailVerified]; ok {
-		result.OIDCConnectRequireEmailVerified = raw == "true"
-	} else {
-		result.OIDCConnectRequireEmailVerified = oidcBase.RequireEmailVerified
-	}
-	if v, ok := settings[SettingKeyOIDCConnectUserInfoEmailPath]; ok {
-		result.OIDCConnectUserInfoEmailPath = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectUserInfoEmailPath = strings.TrimSpace(oidcBase.UserInfoEmailPath)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectUserInfoIDPath]; ok {
-		result.OIDCConnectUserInfoIDPath = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectUserInfoIDPath = strings.TrimSpace(oidcBase.UserInfoIDPath)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectUserInfoUsernamePath]; ok {
-		result.OIDCConnectUserInfoUsernamePath = strings.TrimSpace(v)
-	} else {
-		result.OIDCConnectUserInfoUsernamePath = strings.TrimSpace(oidcBase.UserInfoUsernamePath)
-	}
-	result.OIDCConnectClientSecret = strings.TrimSpace(settings[SettingKeyOIDCConnectClientSecret])
-	if result.OIDCConnectClientSecret == "" {
-		result.OIDCConnectClientSecret = strings.TrimSpace(oidcBase.ClientSecret)
-	}
-	result.OIDCConnectClientSecretConfigured = result.OIDCConnectClientSecret != ""
-
 	gitHubEffective := s.effectiveEmailOAuthConfig(settings, "github")
 	result.GitHubOAuthEnabled = gitHubEffective.Enabled
 	result.GitHubOAuthClientID = strings.TrimSpace(gitHubEffective.ClientID)
@@ -5060,6 +4553,13 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	result.SignupGrantRiskControlEmailLimit = parseNonNegativeIntSetting(settings[SettingKeySignupGrantRiskControlEmailLimit], 1)
 	result.SignupGrantRiskControlIPLimit = parseNonNegativeIntSetting(settings[SettingKeySignupGrantRiskControlIPLimit], 3)
 	result.SignupGrantRiskControlDomainLimit = parseNonNegativeIntSetting(settings[SettingKeySignupGrantRiskControlDomainLimit], 10)
+	result.SignupGrantRiskControlOAuthIdentityEnabled = settings[SettingKeySignupGrantRiskControlOAuthIdentityEnabled] != "false"
+	result.SignupGrantRiskControlDeviceEnabled = settings[SettingKeySignupGrantRiskControlDeviceEnabled] != "false"
+	result.SignupGrantRiskControlDeviceLimit = parseNonNegativeIntSetting(settings[SettingKeySignupGrantRiskControlDeviceLimit], 2)
+	result.SignupGrantRiskControlFreeDomainLimit = parseNonNegativeIntSetting(settings[SettingKeySignupGrantRiskControlFreeDomainLimit], 5)
+	result.SignupGrantRiskControlBlockedDomains = normalizeDomainListSetting(settings[SettingKeySignupGrantRiskControlBlockedDomains])
+	result.SignupGrantRiskControlFreeDomains = normalizeDomainListSetting(settings[SettingKeySignupGrantRiskControlFreeDomains])
+	result.SignupGrantRiskControlTrustedDomains = normalizeDomainListSetting(settings[SettingKeySignupGrantRiskControlTrustedDomains])
 
 	// cyber 会话屏蔽（默认关闭，TTL 默认 3600s）
 	result.CyberSessionBlockEnabled = settings[SettingKeyCyberSessionBlockEnabled] == "true"
@@ -5501,246 +5001,6 @@ func (s *SettingService) GetFallbackModel(ctx context.Context, platform string) 
 	return value
 }
 
-// GetLinuxDoConnectOAuthConfig 返回用于登录的"最终生效" LinuxDo Connect 配置。
-//
-// 优先级：
-// - 若对应系统设置键存在，则覆盖 config.yaml/env 的值
-// - 否则回退到 config.yaml/env 的值
-func (s *SettingService) GetLinuxDoConnectOAuthConfig(ctx context.Context) (config.LinuxDoConnectConfig, error) {
-	if s == nil || s.cfg == nil {
-		return config.LinuxDoConnectConfig{}, infraerrors.ServiceUnavailable("CONFIG_NOT_READY", "config not loaded")
-	}
-
-	effective := s.cfg.LinuxDo
-
-	keys := []string{
-		SettingKeyLinuxDoConnectEnabled,
-		SettingKeyLinuxDoConnectClientID,
-		SettingKeyLinuxDoConnectClientSecret,
-		SettingKeyLinuxDoConnectRedirectURL,
-	}
-	settings, err := s.settingRepo.GetMultiple(ctx, keys)
-	if err != nil {
-		return config.LinuxDoConnectConfig{}, fmt.Errorf("get linuxdo connect settings: %w", err)
-	}
-
-	if raw, ok := settings[SettingKeyLinuxDoConnectEnabled]; ok {
-		effective.Enabled = raw == "true"
-	}
-	if v, ok := settings[SettingKeyLinuxDoConnectClientID]; ok && strings.TrimSpace(v) != "" {
-		effective.ClientID = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyLinuxDoConnectClientSecret]; ok && strings.TrimSpace(v) != "" {
-		effective.ClientSecret = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyLinuxDoConnectRedirectURL]; ok && strings.TrimSpace(v) != "" {
-		effective.RedirectURL = strings.TrimSpace(v)
-	}
-	if !effective.Enabled {
-		return config.LinuxDoConnectConfig{}, infraerrors.NotFound("OAUTH_DISABLED", "oauth login is disabled")
-	}
-
-	// 基础健壮性校验（避免把用户重定向到一个必然失败或不安全的 OAuth 流程里）。
-	if strings.TrimSpace(effective.ClientID) == "" {
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth client id not configured")
-	}
-	if strings.TrimSpace(effective.AuthorizeURL) == "" {
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth authorize url not configured")
-	}
-	if strings.TrimSpace(effective.TokenURL) == "" {
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth token url not configured")
-	}
-	if strings.TrimSpace(effective.UserInfoURL) == "" {
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth userinfo url not configured")
-	}
-	if strings.TrimSpace(effective.RedirectURL) == "" {
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth redirect url not configured")
-	}
-	if strings.TrimSpace(effective.FrontendRedirectURL) == "" {
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth frontend redirect url not configured")
-	}
-
-	if err := config.ValidateAbsoluteHTTPURL(effective.AuthorizeURL); err != nil {
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth authorize url invalid")
-	}
-	if err := config.ValidateAbsoluteHTTPURL(effective.TokenURL); err != nil {
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth token url invalid")
-	}
-	if err := config.ValidateAbsoluteHTTPURL(effective.UserInfoURL); err != nil {
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth userinfo url invalid")
-	}
-	if err := config.ValidateAbsoluteHTTPURL(effective.RedirectURL); err != nil {
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth redirect url invalid")
-	}
-	if err := config.ValidateFrontendRedirectURL(effective.FrontendRedirectURL); err != nil {
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth frontend redirect url invalid")
-	}
-
-	method := strings.ToLower(strings.TrimSpace(effective.TokenAuthMethod))
-	switch method {
-	case "", "client_secret_post", "client_secret_basic":
-		if strings.TrimSpace(effective.ClientSecret) == "" {
-			return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth client secret not configured")
-		}
-	case "none":
-	default:
-		return config.LinuxDoConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth token_auth_method invalid")
-	}
-
-	return effective, nil
-}
-
-// GetDingTalkConnectOAuthConfig 返回用于登录的"最终生效" DingTalk Connect 配置。
-//
-// 优先级：
-// - 若对应系统设置键存在，则覆盖 config.yaml/env 的值
-// - 否则回退到 config.yaml/env 的值
-func (s *SettingService) GetDingTalkConnectOAuthConfig(ctx context.Context) (config.DingTalkConnectConfig, error) {
-	if s == nil || s.cfg == nil {
-		return config.DingTalkConnectConfig{}, infraerrors.ServiceUnavailable("CONFIG_NOT_READY", "config not loaded")
-	}
-
-	effective := s.cfg.DingTalk
-
-	keys := []string{
-		SettingKeyDingTalkConnectEnabled,
-		SettingKeyDingTalkConnectClientID,
-		SettingKeyDingTalkConnectClientSecret,
-		SettingKeyDingTalkConnectRedirectURL,
-		SettingKeyDingTalkConnectCorpRestrictionPolicy,
-		SettingKeyDingTalkConnectInternalCorpID,
-		SettingKeyDingTalkConnectBypassRegistration,
-		SettingKeyDingTalkConnectSyncCorpEmail,
-		SettingKeyDingTalkConnectSyncDisplayName,
-		SettingKeyDingTalkConnectSyncDept,
-		SettingKeyDingTalkConnectSyncCorpEmailAttrKey,
-		SettingKeyDingTalkConnectSyncDisplayNameAttrKey,
-		SettingKeyDingTalkConnectSyncDeptAttrKey,
-	}
-	settings, err := s.settingRepo.GetMultiple(ctx, keys)
-	if err != nil {
-		return config.DingTalkConnectConfig{}, fmt.Errorf("get dingtalk connect settings: %w", err)
-	}
-
-	if raw, ok := settings[SettingKeyDingTalkConnectEnabled]; ok {
-		effective.Enabled = raw == "true"
-	}
-	if v, ok := settings[SettingKeyDingTalkConnectClientID]; ok && strings.TrimSpace(v) != "" {
-		effective.ClientID = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyDingTalkConnectClientSecret]; ok && strings.TrimSpace(v) != "" {
-		effective.ClientSecret = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyDingTalkConnectRedirectURL]; ok && strings.TrimSpace(v) != "" {
-		effective.RedirectURL = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyDingTalkConnectCorpRestrictionPolicy]; ok && strings.TrimSpace(v) != "" {
-		effective.CorpRestrictionPolicy = strings.TrimSpace(v)
-	}
-	effective.CorpRestrictionPolicy = coerceDeprecatedDingTalkCorpPolicy(effective.CorpRestrictionPolicy)
-	if v, ok := settings[SettingKeyDingTalkConnectInternalCorpID]; ok && strings.TrimSpace(v) != "" {
-		effective.InternalCorpID = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyDingTalkConnectBypassRegistration]; ok && strings.TrimSpace(v) != "" {
-		effective.BypassRegistration = strings.EqualFold(strings.TrimSpace(v), "true")
-	}
-	// bypass_registration 仅在 internal_only 模式下有意义；其它策略下强制 false，
-	// 以保证 OAuth callback 看到的 effective config 永远是一致状态。
-	if effective.CorpRestrictionPolicy != "internal_only" {
-		effective.BypassRegistration = false
-	}
-
-	if v, ok := settings[SettingKeyDingTalkConnectSyncCorpEmail]; ok && strings.TrimSpace(v) != "" {
-		effective.SyncCorpEmail = strings.EqualFold(strings.TrimSpace(v), "true")
-	}
-	if v, ok := settings[SettingKeyDingTalkConnectSyncDisplayName]; ok && strings.TrimSpace(v) != "" {
-		effective.SyncDisplayName = strings.EqualFold(strings.TrimSpace(v), "true")
-	}
-	if v, ok := settings[SettingKeyDingTalkConnectSyncDept]; ok && strings.TrimSpace(v) != "" {
-		effective.SyncDept = strings.EqualFold(strings.TrimSpace(v), "true")
-	}
-	// 身份同步三开关仅在 internal_only 模式下有意义；其它策略强制 false。
-	if effective.CorpRestrictionPolicy != "internal_only" {
-		effective.SyncCorpEmail = false
-		effective.SyncDisplayName = false
-		effective.SyncDept = false
-	}
-
-	// 身份同步目标 attr key（DB 空 → fallback 默认值）
-	if v := strings.TrimSpace(settings[SettingKeyDingTalkConnectSyncCorpEmailAttrKey]); v != "" {
-		effective.SyncCorpEmailAttrKey = v
-	}
-	if effective.SyncCorpEmailAttrKey == "" {
-		effective.SyncCorpEmailAttrKey = "dingtalk_email"
-	}
-	if v := strings.TrimSpace(settings[SettingKeyDingTalkConnectSyncDisplayNameAttrKey]); v != "" {
-		effective.SyncDisplayNameAttrKey = v
-	}
-	if effective.SyncDisplayNameAttrKey == "" {
-		effective.SyncDisplayNameAttrKey = "dingtalk_name"
-	}
-	if v := strings.TrimSpace(settings[SettingKeyDingTalkConnectSyncDeptAttrKey]); v != "" {
-		effective.SyncDeptAttrKey = v
-	}
-	if effective.SyncDeptAttrKey == "" {
-		effective.SyncDeptAttrKey = "dingtalk_department"
-	}
-
-	if !effective.Enabled {
-		return config.DingTalkConnectConfig{}, infraerrors.NotFound("OAUTH_DISABLED", "dingtalk oauth login is disabled")
-	}
-
-	// 基础健壮性校验（避免把用户重定向到一个必然失败或不安全的 OAuth 流程里）。
-	if strings.TrimSpace(effective.ClientID) == "" {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth client id not configured")
-	}
-	if strings.TrimSpace(effective.AuthorizeURL) == "" {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth authorize url not configured")
-	}
-	if strings.TrimSpace(effective.TokenURL) == "" {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth token url not configured")
-	}
-	if strings.TrimSpace(effective.UserInfoURL) == "" {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth userinfo url not configured")
-	}
-	if strings.TrimSpace(effective.RedirectURL) == "" {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth redirect url not configured")
-	}
-	if strings.TrimSpace(effective.FrontendRedirectURL) == "" {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth frontend redirect url not configured")
-	}
-
-	if err := config.ValidateAbsoluteHTTPURL(effective.AuthorizeURL); err != nil {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth authorize url invalid")
-	}
-	if err := config.ValidateAbsoluteHTTPURL(effective.TokenURL); err != nil {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth token url invalid")
-	}
-	if err := config.ValidateAbsoluteHTTPURL(effective.UserInfoURL); err != nil {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth userinfo url invalid")
-	}
-	if err := config.ValidateAbsoluteHTTPURL(effective.RedirectURL); err != nil {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth redirect url invalid")
-	}
-	if err := config.ValidateFrontendRedirectURL(effective.FrontendRedirectURL); err != nil {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth frontend redirect url invalid")
-	}
-	if strings.TrimSpace(effective.ClientSecret) == "" {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "dingtalk oauth client secret not configured")
-	}
-
-	// 镜像 admin handler 行为：internal_only policy 隐式要求 AppType=internal
-	if effective.CorpRestrictionPolicy == "internal_only" {
-		effective.AppType = "internal"
-	}
-
-	if err := config.ValidateDingTalkConfig(effective); err != nil {
-		return config.DingTalkConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", err.Error())
-	}
-
-	return effective, nil
-}
-
 // GetWeChatConnectOAuthConfig 返回用于登录的最终生效 WeChat Connect 配置。
 //
 // WeChat Connect 已回归 DB 系统设置模型，不再回退到 config/env。
@@ -5920,283 +5180,6 @@ func (s *SettingService) SetRateLimit429CooldownSettings(ctx context.Context, se
 	}
 
 	return s.settingRepo.Set(ctx, SettingKeyRateLimit429CooldownSettings, string(data))
-}
-
-// GetOIDCConnectOAuthConfig 返回用于登录的“最终生效” OIDC 配置。
-//
-// 优先级：
-// - 若对应系统设置键存在，则覆盖 config.yaml/env 的值
-// - 否则回退到 config.yaml/env 的值
-func (s *SettingService) GetOIDCConnectOAuthConfig(ctx context.Context) (config.OIDCConnectConfig, error) {
-	if s == nil || s.cfg == nil {
-		return config.OIDCConnectConfig{}, infraerrors.ServiceUnavailable("CONFIG_NOT_READY", "config not loaded")
-	}
-
-	effective := s.cfg.OIDC
-
-	keys := []string{
-		SettingKeyOIDCConnectEnabled,
-		SettingKeyOIDCConnectProviderName,
-		SettingKeyOIDCConnectClientID,
-		SettingKeyOIDCConnectClientSecret,
-		SettingKeyOIDCConnectIssuerURL,
-		SettingKeyOIDCConnectDiscoveryURL,
-		SettingKeyOIDCConnectAuthorizeURL,
-		SettingKeyOIDCConnectTokenURL,
-		SettingKeyOIDCConnectUserInfoURL,
-		SettingKeyOIDCConnectJWKSURL,
-		SettingKeyOIDCConnectScopes,
-		SettingKeyOIDCConnectRedirectURL,
-		SettingKeyOIDCConnectFrontendRedirectURL,
-		SettingKeyOIDCConnectTokenAuthMethod,
-		SettingKeyOIDCConnectUsePKCE,
-		SettingKeyOIDCConnectValidateIDToken,
-		SettingKeyOIDCConnectAllowedSigningAlgs,
-		SettingKeyOIDCConnectClockSkewSeconds,
-		SettingKeyOIDCConnectRequireEmailVerified,
-		SettingKeyOIDCConnectUserInfoEmailPath,
-		SettingKeyOIDCConnectUserInfoIDPath,
-		SettingKeyOIDCConnectUserInfoUsernamePath,
-	}
-	settings, err := s.settingRepo.GetMultiple(ctx, keys)
-	if err != nil {
-		return config.OIDCConnectConfig{}, fmt.Errorf("get oidc connect settings: %w", err)
-	}
-
-	if raw, ok := settings[SettingKeyOIDCConnectEnabled]; ok {
-		effective.Enabled = raw == "true"
-	}
-	if v, ok := settings[SettingKeyOIDCConnectProviderName]; ok && strings.TrimSpace(v) != "" {
-		effective.ProviderName = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectClientID]; ok && strings.TrimSpace(v) != "" {
-		effective.ClientID = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectClientSecret]; ok && strings.TrimSpace(v) != "" {
-		effective.ClientSecret = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectIssuerURL]; ok && strings.TrimSpace(v) != "" {
-		effective.IssuerURL = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectDiscoveryURL]; ok && strings.TrimSpace(v) != "" {
-		effective.DiscoveryURL = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectAuthorizeURL]; ok && strings.TrimSpace(v) != "" {
-		effective.AuthorizeURL = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectTokenURL]; ok && strings.TrimSpace(v) != "" {
-		effective.TokenURL = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectUserInfoURL]; ok && strings.TrimSpace(v) != "" {
-		effective.UserInfoURL = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectJWKSURL]; ok && strings.TrimSpace(v) != "" {
-		effective.JWKSURL = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectScopes]; ok && strings.TrimSpace(v) != "" {
-		effective.Scopes = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectRedirectURL]; ok && strings.TrimSpace(v) != "" {
-		effective.RedirectURL = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectFrontendRedirectURL]; ok && strings.TrimSpace(v) != "" {
-		effective.FrontendRedirectURL = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectTokenAuthMethod]; ok && strings.TrimSpace(v) != "" {
-		effective.TokenAuthMethod = strings.ToLower(strings.TrimSpace(v))
-	}
-	if raw, ok := settings[SettingKeyOIDCConnectUsePKCE]; ok {
-		effective.UsePKCE = raw == "true"
-	} else {
-		effective.UsePKCE = oidcUsePKCECompatibilityDefault(effective)
-	}
-	if raw, ok := settings[SettingKeyOIDCConnectValidateIDToken]; ok {
-		effective.ValidateIDToken = raw == "true"
-	} else {
-		effective.ValidateIDToken = oidcValidateIDTokenCompatibilityDefault(effective)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectAllowedSigningAlgs]; ok && strings.TrimSpace(v) != "" {
-		effective.AllowedSigningAlgs = strings.TrimSpace(v)
-	}
-	if raw, ok := settings[SettingKeyOIDCConnectClockSkewSeconds]; ok && strings.TrimSpace(raw) != "" {
-		if parsed, parseErr := strconv.Atoi(strings.TrimSpace(raw)); parseErr == nil {
-			effective.ClockSkewSeconds = parsed
-		}
-	}
-	if raw, ok := settings[SettingKeyOIDCConnectRequireEmailVerified]; ok {
-		effective.RequireEmailVerified = raw == "true"
-	}
-	if v, ok := settings[SettingKeyOIDCConnectUserInfoEmailPath]; ok {
-		effective.UserInfoEmailPath = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectUserInfoIDPath]; ok {
-		effective.UserInfoIDPath = strings.TrimSpace(v)
-	}
-	if v, ok := settings[SettingKeyOIDCConnectUserInfoUsernamePath]; ok {
-		effective.UserInfoUsernamePath = strings.TrimSpace(v)
-	}
-
-	if !effective.Enabled {
-		return config.OIDCConnectConfig{}, infraerrors.NotFound("OAUTH_DISABLED", "oauth login is disabled")
-	}
-	if strings.TrimSpace(effective.ProviderName) == "" {
-		effective.ProviderName = "OIDC"
-	}
-	if strings.TrimSpace(effective.ClientID) == "" {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth client id not configured")
-	}
-	if strings.TrimSpace(effective.IssuerURL) == "" {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth issuer url not configured")
-	}
-	if strings.TrimSpace(effective.RedirectURL) == "" {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth redirect url not configured")
-	}
-	if strings.TrimSpace(effective.FrontendRedirectURL) == "" {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth frontend redirect url not configured")
-	}
-	if !scopesContainOpenID(effective.Scopes) {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth scopes must contain openid")
-	}
-	if effective.ClockSkewSeconds < 0 || effective.ClockSkewSeconds > 600 {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth clock skew must be between 0 and 600")
-	}
-
-	if err := config.ValidateAbsoluteHTTPURL(effective.IssuerURL); err != nil {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth issuer url invalid")
-	}
-
-	discoveryURL := strings.TrimSpace(effective.DiscoveryURL)
-	if discoveryURL == "" {
-		discoveryURL = oidcDefaultDiscoveryURL(effective.IssuerURL)
-		effective.DiscoveryURL = discoveryURL
-	}
-	if discoveryURL != "" {
-		if err := config.ValidateAbsoluteHTTPURL(discoveryURL); err != nil {
-			return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth discovery url invalid")
-		}
-	}
-
-	needsDiscovery := strings.TrimSpace(effective.AuthorizeURL) == "" ||
-		strings.TrimSpace(effective.TokenURL) == "" ||
-		(effective.ValidateIDToken && strings.TrimSpace(effective.JWKSURL) == "")
-	if needsDiscovery && discoveryURL != "" {
-		metadata, resolveErr := oidcResolveProviderMetadata(ctx, discoveryURL)
-		if resolveErr != nil {
-			return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth discovery resolve failed").WithCause(resolveErr)
-		}
-		if strings.TrimSpace(effective.AuthorizeURL) == "" {
-			effective.AuthorizeURL = strings.TrimSpace(metadata.AuthorizationEndpoint)
-		}
-		if strings.TrimSpace(effective.TokenURL) == "" {
-			effective.TokenURL = strings.TrimSpace(metadata.TokenEndpoint)
-		}
-		if strings.TrimSpace(effective.UserInfoURL) == "" {
-			effective.UserInfoURL = strings.TrimSpace(metadata.UserInfoEndpoint)
-		}
-		if strings.TrimSpace(effective.JWKSURL) == "" {
-			effective.JWKSURL = strings.TrimSpace(metadata.JWKSURI)
-		}
-	}
-
-	if strings.TrimSpace(effective.AuthorizeURL) == "" {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth authorize url not configured")
-	}
-	if strings.TrimSpace(effective.TokenURL) == "" {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth token url not configured")
-	}
-	if err := config.ValidateAbsoluteHTTPURL(effective.AuthorizeURL); err != nil {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth authorize url invalid")
-	}
-	if err := config.ValidateAbsoluteHTTPURL(effective.TokenURL); err != nil {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth token url invalid")
-	}
-	if v := strings.TrimSpace(effective.UserInfoURL); v != "" {
-		if err := config.ValidateAbsoluteHTTPURL(v); err != nil {
-			return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth userinfo url invalid")
-		}
-	}
-	if effective.ValidateIDToken {
-		if strings.TrimSpace(effective.JWKSURL) == "" {
-			return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth jwks url not configured")
-		}
-		if strings.TrimSpace(effective.AllowedSigningAlgs) == "" {
-			return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth signing algs not configured")
-		}
-	}
-	if v := strings.TrimSpace(effective.JWKSURL); v != "" {
-		if err := config.ValidateAbsoluteHTTPURL(v); err != nil {
-			return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth jwks url invalid")
-		}
-	}
-	if err := config.ValidateAbsoluteHTTPURL(effective.RedirectURL); err != nil {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth redirect url invalid")
-	}
-	if err := config.ValidateFrontendRedirectURL(effective.FrontendRedirectURL); err != nil {
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth frontend redirect url invalid")
-	}
-
-	method := strings.ToLower(strings.TrimSpace(effective.TokenAuthMethod))
-	switch method {
-	case "", "client_secret_post", "client_secret_basic":
-		if strings.TrimSpace(effective.ClientSecret) == "" {
-			return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth client secret not configured")
-		}
-	case "none":
-	default:
-		return config.OIDCConnectConfig{}, infraerrors.InternalServer("OAUTH_CONFIG_INVALID", "oauth token_auth_method invalid")
-	}
-
-	return effective, nil
-}
-
-func scopesContainOpenID(scopes string) bool {
-	for _, scope := range strings.Fields(strings.ToLower(strings.TrimSpace(scopes))) {
-		if scope == "openid" {
-			return true
-		}
-	}
-	return false
-}
-
-type oidcProviderMetadata struct {
-	AuthorizationEndpoint string `json:"authorization_endpoint"`
-	TokenEndpoint         string `json:"token_endpoint"`
-	UserInfoEndpoint      string `json:"userinfo_endpoint"`
-	JWKSURI               string `json:"jwks_uri"`
-}
-
-func oidcDefaultDiscoveryURL(issuerURL string) string {
-	issuerURL = strings.TrimSpace(issuerURL)
-	if issuerURL == "" {
-		return ""
-	}
-	return strings.TrimRight(issuerURL, "/") + "/.well-known/openid-configuration"
-}
-
-func oidcResolveProviderMetadata(ctx context.Context, discoveryURL string) (*oidcProviderMetadata, error) {
-	discoveryURL = strings.TrimSpace(discoveryURL)
-	if discoveryURL == "" {
-		return nil, fmt.Errorf("discovery url is empty")
-	}
-
-	resp, err := req.C().
-		SetTimeout(15*time.Second).
-		R().
-		SetContext(ctx).
-		SetHeader("Accept", "application/json").
-		Get(discoveryURL)
-	if err != nil {
-		return nil, fmt.Errorf("request discovery document: %w", err)
-	}
-	if !resp.IsSuccessState() {
-		return nil, fmt.Errorf("discovery request failed: status=%d", resp.StatusCode)
-	}
-
-	metadata := &oidcProviderMetadata{}
-	if err := json.Unmarshal(resp.Bytes(), metadata); err != nil {
-		return nil, fmt.Errorf("parse discovery document: %w", err)
-	}
-	return metadata, nil
 }
 
 // GetStreamTimeoutSettings 获取流超时处理配置

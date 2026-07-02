@@ -446,9 +446,9 @@ func TestSettingHandler_GetPublicSettings_ExposesWeChatOAuthModeCapabilities(t *
 	}
 	require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &resp))
 	require.Equal(t, 0, resp.Code)
-	require.True(t, resp.Data.WeChatOAuthEnabled)
-	require.True(t, resp.Data.WeChatOAuthOpenEnabled)
-	require.True(t, resp.Data.WeChatOAuthMPEnabled)
+	require.False(t, resp.Data.WeChatOAuthEnabled)
+	require.False(t, resp.Data.WeChatOAuthOpenEnabled)
+	require.False(t, resp.Data.WeChatOAuthMPEnabled)
 }
 
 func TestSettingHandler_GetPublicSettings_ExposesModelPlazaItems(t *testing.T) {
