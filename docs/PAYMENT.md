@@ -13,7 +13,6 @@ Cloudbase has a built-in payment system that enables user self-service top-up wi
 - [Provider Instance Management](#provider-instance-management)
 - [Webhook Configuration](#webhook-configuration)
 - [Payment Flow](#payment-flow)
-- [Migrating from CloudbasePay](#migrating-from-cloudbasepay)
 
 ---
 
@@ -25,15 +24,12 @@ Cloudbase has a built-in payment system that enables user self-service top-up wi
 | **Alipay (Direct)** | Desktop QR code, mobile Alipay redirect | Direct integration with Alipay Open Platform, returning desktop QR codes and mobile WAP/app launch links |
 | **WeChat Pay (Direct)** | Native QR, H5, MP/JSAPI Pay | Direct integration with WeChat Pay APIv3 with environment-aware routing |
 | **Stripe** | Card, Alipay, WeChat Pay, Link, etc. | International payments, multi-currency support |
+| **Creem** | Hosted checkout | Creem checkout integration for products that require a provider-side product ID |
+| **Waffo** | Hosted checkout | Waffo checkout integration with signed requests and webhook verification |
 
 > Alipay/WeChat Pay direct and EasyPay can both exist as backend provider instances, but the frontend always exposes only two visible buttons: `Alipay` and `WeChat Pay`. Admins choose exactly one source for each visible method: direct or EasyPay. Direct channels connect to payment APIs directly with lower fees; EasyPay aggregates through third-party platforms with easier setup.
 
-> **EasyPay Provider Recommendations**: Both options below are third-party aggregators compatible with the EasyPay protocol. Pick based on the funding channel and settlement currency you need:
->
-> - **Domestic channel / CNY settlement** — [ZPay](https://z-pay.cn/?uid=23808) (`https://z-pay.cn/?uid=23808`): direct integration with official Alipay / WeChat Pay APIs, fee **1.6%**; funds go straight to the merchant account with **T+1 automatic settlement**. Supports **individual users** (no business license required) with up to 10,000 CNY daily transactions; business-licensed accounts have no limit. Link contains the referral code of the [CloudbasePay](https://github.com/touwaeriol/cloudbasepay) original author [@touwaeriol](https://github.com/touwaeriol) — feel free to remove it.
-> - **International channel / USDT or USD settlement** — [Kyren Topup](https://kyren.top/?code=CLOUDBASE) (`https://kyren.top/?code=CLOUDBASE`): a ready-to-launch global payment stack for AI startups with WeChat Pay and Alipay support, local-currency checkout, and USD settlement. Fees: WeChat 2%, Alipay 2.5%; withdrawal 0.1% (min $40, max $150), settled in **USDT or USD**. No qualification review required — sign up and use immediately, making it the lowest barrier to entry. Withdrawal threshold is relatively high, recommended for users **who do not use domestic Chinese payment channels, cannot tolerate Stripe's 6%+ fees, have high transaction volume, and have USD or USDT channels to receive withdrawn funds**. Kyren Topup charges a $200 account opening fee; signing up via this link (which contains Cloudbase maintainer [@Wei-Shaw](https://github.com/Wei-Shaw)'s referral code) **waives the opening fee**. Feel free to remove it if you prefer.
->
-> Please evaluate the security, reliability, and compliance of any third-party payment provider on your own — this project does not endorse or guarantee any of them.
+> Please evaluate the security, reliability, and compliance of any third-party payment provider on your own. Cloudbase provides provider adapters and webhook verification, but it does not endorse or guarantee any payment provider.
 
 ---
 
@@ -154,6 +150,26 @@ International payment platform supporting multiple payment methods and currencie
 | **Publishable Key** | Stripe publishable key (`pk_live_...` or `pk_test_...`) | Yes |
 | **Webhook Secret** | Stripe Webhook signing secret (`whsec_...`) | Yes |
 
+### Creem
+
+Hosted checkout integration for Creem.
+
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| **API Key** | Creem API key | Yes |
+| **Webhook Secret** | Creem webhook signing secret | Yes |
+| **Product ID** | Provider-side product ID configured on recharge products or subscription plans | Required for products paid through Creem |
+
+### Waffo
+
+Hosted checkout integration for Waffo.
+
+| Parameter | Description | Required |
+|-----------|-------------|----------|
+| **API Key** | Waffo API key | Yes |
+| **Private Key** | Merchant private key used for signing requests | Yes |
+| **Waffo Public Key** | Waffo public key used for response and webhook verification | Yes |
+
 ---
 
 ## Provider Instance Management
@@ -195,6 +211,8 @@ When adding a provider, the system auto-generates callback URLs from your site d
 | **Alipay (Direct)** | `https://your-domain.com/api/v1/payment/webhook/alipay` |
 | **WeChat Pay (Direct)** | `https://your-domain.com/api/v1/payment/webhook/wxpay` |
 | **Stripe** | `https://your-domain.com/api/v1/payment/webhook/stripe` |
+| **Creem** | `https://your-domain.com/api/v1/payment/webhook/creem` |
+| **Waffo** | `https://your-domain.com/api/v1/payment/webhook/waffo` |
 
 > Replace `your-domain.com` with your actual domain. For EasyPay / Alipay / WeChat Pay, the callback URL is auto-filled when adding the provider — no manual configuration needed.
 
@@ -231,7 +249,9 @@ User selects amount and payment method
   ├─ EasyPay     → QR code / H5 redirect
   ├─ Alipay      → Desktop QR payload (Face-to-Face preferred, Website Pay fallback) / mobile Alipay redirect
   ├─ WeChat Pay  → Desktop Native QR / non-WeChat H5 / in-WeChat JSAPI
-  └─ Stripe      → Payment Element (card/Alipay/WeChat/etc.)
+  ├─ Stripe      → Payment Element (card/Alipay/WeChat/etc.)
+  ├─ Creem       → Hosted checkout
+  └─ Waffo       → Hosted checkout
        │
        ▼
   Webhook callback verified → Order PAID
@@ -259,29 +279,3 @@ User selects amount and payment method
 - Before marking an order as expired, the background job queries the upstream payment status first
 - If the user has actually paid but the callback was delayed, the system will reconcile automatically
 - The background job runs every 60 seconds to check for timed-out orders
-
----
-
-## Migrating from CloudbasePay
-
-If you previously used [CloudbasePay](https://github.com/touwaeriol/cloudbasepay) as an external payment system, you can migrate to the built-in payment system:
-
-### Key Differences
-
-| Aspect | CloudbasePay | Built-in Payment |
-|--------|-----------|-----------------|
-| Deployment | Separate service (Next.js + PostgreSQL) | Built into Cloudbase, no extra deployment |
-| Payment Methods | EasyPay, Alipay, WeChat, Stripe | Same |
-| Configuration | Environment variables + separate admin UI | Unified in Cloudbase admin dashboard |
-| Top-up Integration | Via Admin API callback | Internal processing, more reliable |
-| Subscription Plans | Supported | Not yet (planned) |
-| Order Management | Separate admin interface | Integrated in Cloudbase admin dashboard |
-
-### Migration Steps
-
-1. Enable payment in Cloudbase admin dashboard and configure providers (use the same payment credentials)
-2. Update webhook callback URLs to Cloudbase's callback endpoints
-3. Verify that new orders are processed correctly via built-in payment
-4. Decommission the CloudbasePay service
-
-> **Note**: Historical order data from CloudbasePay will not be automatically migrated. Keep CloudbasePay running for a while to access historical records.

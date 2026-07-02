@@ -34,7 +34,7 @@ Cloudbase is a self-hosted AI gateway and business operations platform for teams
 - **Account Pool Operations** - Manage OAuth accounts, API keys, proxies, account groups, priorities, sticky sessions, and failover policy from one console
 - **Access and Quota Control** - Issue user API keys, bind groups, configure concurrency, RPM/TPM limits, model access, subscription plans, and per-platform quotas
 - **Billing and Payments** - Track token-level usage, maintain balance and gift-credit buckets, support subscriptions, promo/redeem codes, refunds, affiliates, and self-service top-up
-- **Payment Provider Management** - Built-in EasyPay, Alipay, WeChat Pay, and Stripe integrations with provider instances, routing, limits, webhook handling, and reconciliation ([Configuration Guide](docs/PAYMENT.md))
+- **Payment Provider Management** - Built-in EasyPay, Alipay, WeChat Pay, Stripe, Creem, and Waffo integrations with provider instances, routing, limits, webhook handling, and reconciliation ([Configuration Guide](docs/PAYMENT.md))
 - **Usage Analytics and Auditing** - Provide request logs, cost breakdowns, token statistics, user/account attribution, audit trails, and operational troubleshooting data
 - **Operational Monitoring** - Monitor channel health, request latency, availability, error passthrough, risk controls, scheduler behavior, and worker status
 - **Worker-Driven Business Features** - Run optional workers for WeChat article export, image workspace generation, hot-topic/content jobs, and other business workflows

@@ -13,7 +13,6 @@ Cloudbase 内置支付系统，支持用户自助充值，无需部署独立的�
 - [服务商实例管理](#服务商实例管理)
 - [Webhook 配置](#webhook-配置)
 - [支付流程](#支付流程)
-- [从 CloudbasePay 迁移](#从-cloudbasepay-迁移)
 
 ---
 
@@ -25,15 +24,12 @@ Cloudbase 内置支付系统，支持用户自助充值，无需部署独立的�
 | **支付宝官方** | 桌面二维码扫码、移动端支付宝跳转 | 直接对接支付宝开放平台，桌面端返回二维码，移动端返回 WAP/唤起链接 |
 | **微信官方** | Native 扫码、H5、公众号/JSAPI 支付 | 直接对接微信支付 APIv3，按终端环境自动分流 |
 | **Stripe** | 银行卡、支付宝、微信支付、Link 等 | 国际支付，支持多币种 |
+| **Creem** | 托管收银台 | 对接 Creem Checkout，适合需要服务商侧商品 ID 的充值或订阅商品 |
+| **Waffo** | 托管收银台 | 对接 Waffo Checkout，支持请求签名与回调验签 |
 
 > 支付宝官方 / 微信官方与易支付可以同时作为后台服务商实例存在，但前台始终只展示 `支付宝`、`微信支付` 两个可见按钮。管理员需要分别为这两个按钮选择唯一支付来源：官方或易支付。官方渠道直接对接 API，资金直达商户账户，手续费更低；易支付通过第三方平台聚合，接入门槛更低。
 
-> **易支付服务商推荐**：以下两家均为兼容易支付协议的第三方聚合支付，按资金通道与结算方式选择：
->
-> - **国内渠道 / 人民币结算** — [ZPay](https://z-pay.cn/?uid=23808)（`https://z-pay.cn/?uid=23808`）：支付宝 / 微信官方 API 直连，手续费 **1.6%**；资金直达商家账户，**T+1 自动到账**。支持**个人用户**（无营业执照）每日 1 万元以内交易；拥有营业执照则无限额。链接含 [CloudbasePay](https://github.com/touwaeriol/cloudbasepay) 原作者 [@touwaeriol](https://github.com/touwaeriol) 的邀请码，介意可去掉。
-> - **国际渠道 / USDT 或美元结算** — [启润支付](https://kyren.top/?code=CLOUDBASE)（`https://kyren.top/?code=CLOUDBASE`）：为 AI 项目提供低门槛国际收款通道，支持国际版微信支付与支付宝，本地货币支付、美元结算。手续费：微信 2%、支付宝 2.5%；提现 0.1%（最低 40 美元、最高 150 美元），以 **USDT 或美元**到账。无资质审核、注册即用，使用门槛最低；提现门槛略高，适合**不使用国内支付渠道、无法接受 Stripe 高达 6%+ 手续费、流水较大，且拥有美元或 USDT 渠道可接收提现资金**的用户。启润支付开户费 200 美元，通过本链接注册（含 Cloudbase 维护者 [@Wei-Shaw](https://github.com/Wei-Shaw) 邀请码）可**免开户费**，介意可去掉。
->
-> 支付渠道的安全性、稳定性及合规性请自行鉴别，本项目不对任何第三方支付服务商做担保或背书。
+> 支付渠道的安全性、稳定性及合规性请自行鉴别。Cloudbase 提供服务商适配和回调验签能力，但不对任何支付服务商做担保或背书。
 
 ---
 
@@ -154,6 +150,26 @@ Cloudbase 内置支付系统，支持用户自助充值，无需部署独立的�
 | **Publishable Key** | Stripe 可公开密钥（`pk_live_...` 或 `pk_test_...`） | 是 |
 | **Webhook Secret** | Stripe Webhook 签名密钥（`whsec_...`） | 是 |
 
+### Creem
+
+对接 Creem 托管收银台。
+
+| 参数 | 说明 | 必填 |
+|------|------|------|
+| **API Key** | Creem API Key | 是 |
+| **Webhook Secret** | Creem Webhook 签名密钥 | 是 |
+| **Product ID** | 配置在充值商品或订阅套餐上的服务商商品 ID | 使用 Creem 支付的商品必填 |
+
+### Waffo
+
+对接 Waffo 托管收银台。
+
+| 参数 | 说明 | 必填 |
+|------|------|------|
+| **API Key** | Waffo API Key | 是 |
+| **Private Key** | 商户请求签名私钥 | 是 |
+| **Waffo Public Key** | 用于响应和回调验签的 Waffo 公钥 | 是 |
+
 ---
 
 ## 服务商实例管理
@@ -195,6 +211,8 @@ Cloudbase 内置支付系统，支持用户自助充值，无需部署独立的�
 | **支付宝官方** | `https://your-domain.com/api/v1/payment/webhook/alipay` |
 | **微信官方** | `https://your-domain.com/api/v1/payment/webhook/wxpay` |
 | **Stripe** | `https://your-domain.com/api/v1/payment/webhook/stripe` |
+| **Creem** | `https://your-domain.com/api/v1/payment/webhook/creem` |
+| **Waffo** | `https://your-domain.com/api/v1/payment/webhook/waffo` |
 
 > 将 `your-domain.com` 替换为你的实际域名。EasyPay / 支付宝 / 微信的回调地址在添加服务商时自动填入，无需手动配置。
 
@@ -231,7 +249,9 @@ Cloudbase 内置支付系统，支持用户自助充值，无需部署独立的�
   ├─ EasyPay    → 扫码 / H5 跳转
   ├─ 支付宝官方  → 桌面扫码单（当面付优先，电脑网站支付回退）/ 移动端支付宝跳转
   ├─ 微信官方    → 桌面 Native 扫码 / 非微信 H5 / 微信内 JSAPI
-  └─ Stripe     → Payment Element（银行卡/支付宝/微信等）
+  ├─ Stripe     → Payment Element（银行卡/支付宝/微信等）
+  ├─ Creem      → 托管收银台
+  └─ Waffo      → 托管收银台
        │
        ▼
   支付回调验签 → 订单 PAID
@@ -259,29 +279,3 @@ Cloudbase 内置支付系统，支持用户自助充值，无需部署独立的�
 - 订单超时后，后台任务会先查询上游支付状态再标记过期
 - 如果用户实际已支付但回调延迟，系统会通过查询补单
 - 后台任务每 60 秒执行一次超时检查
-
----
-
-## 从 CloudbasePay 迁移
-
-如果你之前使用 [CloudbasePay](https://github.com/touwaeriol/cloudbasepay) 作为外部支付系统，现在可以迁移到内置支付：
-
-### 主要差异
-
-| 对比项 | CloudbasePay | 内置支付 |
-|--------|-----------|---------|
-| 部署方式 | 独立服务（Next.js + PostgreSQL） | 内置于 Cloudbase，无需额外部署 |
-| 支付方式 | EasyPay、支付宝、微信、Stripe | 相同 |
-| 配置方式 | 环境变量 + 独立管理后台 | Cloudbase 管理后台内统一配置 |
-| 充值对接 | 通过 Admin API 回调 | 内部直接处理，更可靠 |
-| 订阅套餐 | 支持 | 暂不支持（计划中） |
-| 订单管理 | 独立管理界面 | 集成在 Cloudbase 管理后台 |
-
-### 迁移步骤
-
-1. 在 Cloudbase 管理后台启用支付并配置服务商（使用相同的支付凭证）
-2. 更新 Webhook 回调地址为 Cloudbase 的回调地址
-3. 确认新订单通过内置支付正常处理
-4. 停用 CloudbasePay 服务
-
-> **注意**：CloudbasePay 中的历史订单数据不会自动迁移。建议保留 CloudbasePay 一段时间以便查询历史记录。
