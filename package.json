@@ -1,15 +1,15 @@
 {
-  "name": "sub2api-platform",
+  "name": "cloudbase-platform",
   "private": true,
   "version": "0.0.0",
   "packageManager": "pnpm@10.33.0",
   "scripts": {
     "build:web": "pnpm run frontend:build",
-    "frontend:build": "pnpm --filter sub2api-frontend run build",
-    "frontend:dev": "pnpm --filter sub2api-frontend run dev",
-    "frontend:lint:check": "pnpm --filter sub2api-frontend run lint:check",
-    "frontend:test:critical": "pnpm --filter sub2api-frontend exec vitest run src/views/auth/__tests__/LinuxDoCallbackView.spec.ts src/views/auth/__tests__/WechatCallbackView.spec.ts src/views/user/__tests__/PaymentView.spec.ts src/views/user/__tests__/PaymentResultView.spec.ts src/components/user/profile/__tests__/ProfileInfoCard.spec.ts src/views/admin/__tests__/SettingsView.spec.ts",
-    "frontend:typecheck": "pnpm --filter sub2api-frontend run typecheck",
+    "frontend:build": "pnpm --filter cloudbase-frontend run build",
+    "frontend:dev": "pnpm --filter cloudbase-frontend run dev",
+    "frontend:lint:check": "pnpm --filter cloudbase-frontend run lint:check",
+    "frontend:test:critical": "pnpm --filter cloudbase-frontend exec vitest run src/views/auth/__tests__/LinuxDoCallbackView.spec.ts src/views/auth/__tests__/WechatCallbackView.spec.ts src/views/user/__tests__/PaymentView.spec.ts src/views/user/__tests__/PaymentResultView.spec.ts src/components/user/profile/__tests__/ProfileInfoCard.spec.ts src/views/admin/__tests__/SettingsView.spec.ts",
+    "frontend:typecheck": "pnpm --filter cloudbase-frontend run typecheck",
     "test:web": "pnpm run frontend:test",
     "frontend:test": "pnpm run frontend:lint:check && pnpm run frontend:typecheck && pnpm run frontend:test:critical"
   },
