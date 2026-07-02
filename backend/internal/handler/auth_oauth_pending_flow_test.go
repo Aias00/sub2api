@@ -2582,10 +2582,6 @@ func boolSettingValue(v bool) string {
 	return "false"
 }
 
-func boolPtr(v bool) *bool {
-	return &v
-}
-
 func ensureOAuthPendingFlowUserBalanceColumns(t *testing.T, db *sql.DB) {
 	t.Helper()
 

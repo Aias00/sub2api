@@ -86,32 +86,32 @@ func TestScanPromptCatalogCase(t *testing.T) {
 
 	t.Run("full row scan", func(t *testing.T) {
 		row := &mockScanner{values: []any{
-			"case-1",                        // id
-			"Title",                         // title
-			"Prompt body",                   // prompt
-			"Preview",                       // prompt_preview
-			"portrait",                      // category
-			[]byte(`["tag1","tag2"]`),       // tags
-			[]byte(`["openai-image"]`),      // model_tags
-			"https://x.com/123",             // source_url
-			"https://img.example.com/1.jpg", // image_url
-			[]byte(`["url1","url2"]`),       // image_urls
-			"https://img.example.com/orig",  // image_original_url
-			"https://img.example.com/prev",  // image_preview_url
-			"https://img.example.com/thumb", // image_thumb_url
-			"twitter",                       // source_project
-			"case",                          // source_type
-			"X",                             // source_label
-			"https://github.com/repo",       // github_url
-			true,                            // featured
-			[]byte(`["style1"]`),            // styles
-			[]byte(`["scene1"]`),            // scenes
-			"twitter",                       // import_source
-			`{"key":"value"}`,               // raw_json (COALESCE'd to '{}')
-			"published",                     // status
+			"case-1",                             // id
+			"Title",                              // title
+			"Prompt body",                        // prompt
+			"Preview",                            // prompt_preview
+			"portrait",                           // category
+			[]byte(`["tag1","tag2"]`),            // tags
+			[]byte(`["openai-image"]`),           // model_tags
+			"https://x.com/123",                  // source_url
+			"https://img.example.com/1.jpg",      // image_url
+			[]byte(`["url1","url2"]`),            // image_urls
+			"https://img.example.com/orig",       // image_original_url
+			"https://img.example.com/prev",       // image_preview_url
+			"https://img.example.com/thumb",      // image_thumb_url
+			"twitter",                            // source_project
+			"case",                               // source_type
+			"X",                                  // source_label
+			"https://github.com/repo",            // github_url
+			true,                                 // featured
+			[]byte(`["style1"]`),                 // styles
+			[]byte(`["scene1"]`),                 // scenes
+			"twitter",                            // import_source
+			`{"key":"value"}`,                    // raw_json (COALESCE'd to '{}')
+			"published",                          // status
 			sql.NullTime{Time: now, Valid: true}, // imported_at
-			now,                             // created_at
-			now,                             // updated_at
+			now,                                  // created_at
+			now,                                  // updated_at
 		}}
 
 		item, err := scanPromptCatalogCase(row)
@@ -130,32 +130,32 @@ func TestScanPromptCatalogCase(t *testing.T) {
 
 	t.Run("null imported_at", func(t *testing.T) {
 		row := &mockScanner{values: []any{
-			"case-2",           // id
-			"Title",            // title
-			"Prompt body",      // prompt
-			"Preview",          // prompt_preview
-			"general",          // category
-			[]byte("[]"),       // tags
-			[]byte("[]"),       // model_tags
-			"",                 // source_url
-			"",                 // image_url
-			[]byte("[]"),       // image_urls
-			"",                 // image_original_url
-			"",                 // image_preview_url
-			"",                 // image_thumb_url
-			"manual",           // source_project
-			"case",             // source_type
-			"",                 // source_label
-			"",                 // github_url
-			false,              // featured
-			[]byte("[]"),       // styles
-			[]byte("[]"),       // scenes
-			"catalog",          // import_source
-			"{}",                // raw_json
-			"published",        // status
+			"case-2",                   // id
+			"Title",                    // title
+			"Prompt body",              // prompt
+			"Preview",                  // prompt_preview
+			"general",                  // category
+			[]byte("[]"),               // tags
+			[]byte("[]"),               // model_tags
+			"",                         // source_url
+			"",                         // image_url
+			[]byte("[]"),               // image_urls
+			"",                         // image_original_url
+			"",                         // image_preview_url
+			"",                         // image_thumb_url
+			"manual",                   // source_project
+			"case",                     // source_type
+			"",                         // source_label
+			"",                         // github_url
+			false,                      // featured
+			[]byte("[]"),               // styles
+			[]byte("[]"),               // scenes
+			"catalog",                  // import_source
+			"{}",                       // raw_json
+			"published",                // status
 			sql.NullTime{Valid: false}, // imported_at (NULL)
-			now,                // created_at
-			now,                // updated_at
+			now,                        // created_at
+			now,                        // updated_at
 		}}
 
 		item, err := scanPromptCatalogCase(row)
@@ -173,9 +173,9 @@ func TestScanPromptCatalogCase(t *testing.T) {
 func TestPromptCatalogFacetCounts(t *testing.T) {
 	t.Run("sorts by count descending then value ascending", func(t *testing.T) {
 		counts := map[string]int64{
-			"portrait":   5,
-			"landscape":  10,
-			"abstract":   5,
+			"portrait":  5,
+			"landscape": 10,
+			"abstract":  5,
 		}
 		labels := map[string]string{
 			"portrait":  "Portrait",

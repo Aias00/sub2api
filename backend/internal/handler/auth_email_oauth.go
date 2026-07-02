@@ -286,19 +286,6 @@ func (h *AuthHandler) isWebEmailOAuthSource(c *gin.Context) bool {
 	return false
 }
 
-func (h *AuthHandler) emailOAuthRequiresManualCompletion(ctx context.Context, provider string, affiliateCode string) bool {
-	if !strings.EqualFold(strings.TrimSpace(provider), "google") {
-		return true
-	}
-	if h == nil || h.settingSvc == nil {
-		return true
-	}
-	if !h.settingSvc.IsInvitationCodeEnabled(ctx) {
-		return false
-	}
-	return h.authService == nil || !h.authService.CanUseAffiliateCodeAsRegistrationInvite(ctx, affiliateCode)
-}
-
 func (h *AuthHandler) emailOAuthShouldCreatePendingRegistration(ctx context.Context, input service.EmailOAuthIdentityInput) (bool, error) {
 	client := h.entClient()
 	if client == nil {

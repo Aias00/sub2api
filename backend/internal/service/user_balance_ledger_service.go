@@ -11,59 +11,59 @@ import (
 type BalanceLedgerEntryType string
 
 const (
-	EntryTypeRecharge         BalanceLedgerEntryType = "recharge"          // 充值订单
-	EntryTypeAPIUsage         BalanceLedgerEntryType = "api_usage"         // API调用扣费
-	EntryTypeImageWorkspace   BalanceLedgerEntryType = "image_workspace"   // 图片工作台扣费
-	EntryTypeWechatExport     BalanceLedgerEntryType = "wechat_export"     // 微信导出扣费
-	EntryTypeRedeem           BalanceLedgerEntryType = "redeem"            // 兑换码兑换
-	EntryTypeAdminAdjustment  BalanceLedgerEntryType = "admin_adjustment"  // 管理员调整
+	EntryTypeRecharge          BalanceLedgerEntryType = "recharge"           // 充值订单
+	EntryTypeAPIUsage          BalanceLedgerEntryType = "api_usage"          // API调用扣费
+	EntryTypeImageWorkspace    BalanceLedgerEntryType = "image_workspace"    // 图片工作台扣费
+	EntryTypeWechatExport      BalanceLedgerEntryType = "wechat_export"      // 微信导出扣费
+	EntryTypeRedeem            BalanceLedgerEntryType = "redeem"             // 兑换码兑换
+	EntryTypeAdminAdjustment   BalanceLedgerEntryType = "admin_adjustment"   // 管理员调整
 	EntryTypeAffiliateTransfer BalanceLedgerEntryType = "affiliate_transfer" // 返利转余额
-	EntryTypeRefund           BalanceLedgerEntryType = "refund"            // 退款扣减
-	EntryTypePromoBonus       BalanceLedgerEntryType = "promo_bonus"       // 优惠码奖励
-	EntryTypeOAuthBindBonus   BalanceLedgerEntryType = "oauth_bind_bonus"  // OAuth首次绑定奖励
-	EntryTypeExpiry           BalanceLedgerEntryType = "expiry"            // 过期清零
-	EntryTypeCorrection       BalanceLedgerEntryType = "correction"        // 系统纠正
+	EntryTypeRefund            BalanceLedgerEntryType = "refund"             // 退款扣减
+	EntryTypePromoBonus        BalanceLedgerEntryType = "promo_bonus"        // 优惠码奖励
+	EntryTypeOAuthBindBonus    BalanceLedgerEntryType = "oauth_bind_bonus"   // OAuth首次绑定奖励
+	EntryTypeExpiry            BalanceLedgerEntryType = "expiry"             // 过期清零
+	EntryTypeCorrection        BalanceLedgerEntryType = "correction"         // 系统纠正
 )
 
 // SourceType 来源类型枚举
 type BalanceLedgerSourceType string
 
 const (
-	SourceTypePaymentOrder       BalanceLedgerSourceType = "payment_order"
-	SourceTypeUsageLog           BalanceLedgerSourceType = "usage_log"
-	SourceTypeRedeemCode         BalanceLedgerSourceType = "redeem_code"
-	SourceTypeAdminAction        BalanceLedgerSourceType = "admin_action"
-	SourceTypeAffiliateLedger    BalanceLedgerSourceType = "affiliate_ledger"
-	SourceTypeRefund             BalanceLedgerSourceType = "refund"
-	SourceTypePromoCodeUsage     BalanceLedgerSourceType = "promo_code_usage"
-	SourceTypeOAuthBinding       BalanceLedgerSourceType = "oauth_binding"
+	SourceTypePaymentOrder         BalanceLedgerSourceType = "payment_order"
+	SourceTypeUsageLog             BalanceLedgerSourceType = "usage_log"
+	SourceTypeRedeemCode           BalanceLedgerSourceType = "redeem_code"
+	SourceTypeAdminAction          BalanceLedgerSourceType = "admin_action"
+	SourceTypeAffiliateLedger      BalanceLedgerSourceType = "affiliate_ledger"
+	SourceTypeRefund               BalanceLedgerSourceType = "refund"
+	SourceTypePromoCodeUsage       BalanceLedgerSourceType = "promo_code_usage"
+	SourceTypeOAuthBinding         BalanceLedgerSourceType = "oauth_binding"
 	SourceTypeImageWorkspaceRecord BalanceLedgerSourceType = "image_workspace_record"
-	SourceTypeWechatExportTask   BalanceLedgerSourceType = "wechat_export_task"
-	SourceTypeSystemCorrection   BalanceLedgerSourceType = "system_correction"
+	SourceTypeWechatExportTask     BalanceLedgerSourceType = "wechat_export_task"
+	SourceTypeSystemCorrection     BalanceLedgerSourceType = "system_correction"
 )
 
 // UserBalanceLedgerEntry 余额流水记录
 type UserBalanceLedgerEntry struct {
-	ID            int64              `json:"id"`
-	UserID        int64              `json:"user_id"`
-	EntryType     BalanceLedgerEntryType `json:"entry_type"`
-	Amount        float64            `json:"amount"`          // 正数入账，负数扣费
-	BalanceBefore *float64           `json:"balance_before"`  // 变动前余额（历史数据可能为 NULL）
-	BalanceAfter  *float64           `json:"balance_after"`   // 变动后余额
+	ID            int64                   `json:"id"`
+	UserID        int64                   `json:"user_id"`
+	EntryType     BalanceLedgerEntryType  `json:"entry_type"`
+	Amount        float64                 `json:"amount"`         // 正数入账，负数扣费
+	BalanceBefore *float64                `json:"balance_before"` // 变动前余额（历史数据可能为 NULL）
+	BalanceAfter  *float64                `json:"balance_after"`  // 变动后余额
 	SourceType    BalanceLedgerSourceType `json:"source_type"`
-	SourceID      *int64             `json:"source_id"`       // 来源记录 ID
-	Description   string             `json:"description"`
-	MetadataJSON  json.RawMessage    `json:"metadata_json"`   // 扩展元数据
-	CreatedAt     time.Time          `json:"created_at"`
+	SourceID      *int64                  `json:"source_id"` // 来源记录 ID
+	Description   string                  `json:"description"`
+	MetadataJSON  json.RawMessage         `json:"metadata_json"` // 扩展元数据
+	CreatedAt     time.Time               `json:"created_at"`
 }
 
 // BalanceLedgerFilter 流水查询过滤器
 type BalanceLedgerFilter struct {
-	Page       int                    `json:"page"`
-	PageSize   int                    `json:"page_size"`
+	Page       int                      `json:"page"`
+	PageSize   int                      `json:"page_size"`
 	EntryTypes []BalanceLedgerEntryType `json:"entry_types"` // 筛选类型（可选）
-	StartAt    *time.Time             `json:"start_at"`    // 开始时间
-	EndAt      *time.Time             `json:"end_at"`      // 结束时间
+	StartAt    *time.Time               `json:"start_at"`    // 开始时间
+	EndAt      *time.Time               `json:"end_at"`      // 结束时间
 }
 
 // UserBalanceLedgerRepository 余额流水仓储接口
@@ -72,7 +72,9 @@ type UserBalanceLedgerRepository interface {
 	Create(ctx context.Context, entry *UserBalanceLedgerEntry) error
 
 	// CreateTx 在指定事务内写入流水记录（ExecContext 返回 sql.Result）
-	CreateTx(ctx context.Context, exec interface{ ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) }, entry *UserBalanceLedgerEntry) error
+	CreateTx(ctx context.Context, exec interface {
+		ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	}, entry *UserBalanceLedgerEntry) error
 
 	// ListByUser 查询用户流水（分页）
 	ListByUser(ctx context.Context, userID int64, filter BalanceLedgerFilter) ([]UserBalanceLedgerEntry, int64, error)
@@ -118,7 +120,7 @@ func (s *UserBalanceLedgerService) WriteLedger(
 	sourceType BalanceLedgerSourceType,
 	sourceID *int64,
 	description string,
-	metadata map[string]interface{},
+	metadata map[string]any,
 ) error {
 	// 构建 metadata JSON
 	var metadataJSON json.RawMessage
@@ -149,7 +151,9 @@ func (s *UserBalanceLedgerService) WriteLedger(
 // 此方法在余额变动的事务内调用，确保流水与余额变动原子性
 func (s *UserBalanceLedgerService) WriteLedgerTx(
 	ctx context.Context,
-	exec interface{ ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) },
+	exec interface {
+		ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	},
 	userID int64,
 	entryType BalanceLedgerEntryType,
 	amount float64,
@@ -158,7 +162,7 @@ func (s *UserBalanceLedgerService) WriteLedgerTx(
 	sourceType BalanceLedgerSourceType,
 	sourceID *int64,
 	description string,
-	metadata map[string]interface{},
+	metadata map[string]any,
 ) error {
 	// 构建 metadata JSON
 	var metadataJSON json.RawMessage
@@ -250,18 +254,18 @@ func EntryTypeIcon(entryType BalanceLedgerEntryType) string {
 // EntryTypeColor 流水类型对应的颜色（CSS class）
 func EntryTypeColor(entryType BalanceLedgerEntryType) string {
 	colors := map[BalanceLedgerEntryType]string{
-		EntryTypeRecharge:          "green",    // 入账
-		EntryTypeAPIUsage:          "red",      // 扣费
-		EntryTypeImageWorkspace:    "red",      // 扣费
-		EntryTypeWechatExport:      "red",      // 扣费
-		EntryTypeRedeem:            "blue",     // 兑换
-		EntryTypeAdminAdjustment:   "yellow",   // 调整（可能是正或负）
-		EntryTypeAffiliateTransfer: "purple",   // 转入
-		EntryTypeRefund:            "red",      // 扣减
-		EntryTypePromoBonus:        "green",    // 奖励
-		EntryTypeOAuthBindBonus:    "green",    // 奖励
-		EntryTypeExpiry:            "gray",     // 过期
-		EntryTypeCorrection:        "orange",   // 纠正
+		EntryTypeRecharge:          "green",  // 入账
+		EntryTypeAPIUsage:          "red",    // 扣费
+		EntryTypeImageWorkspace:    "red",    // 扣费
+		EntryTypeWechatExport:      "red",    // 扣费
+		EntryTypeRedeem:            "blue",   // 兑换
+		EntryTypeAdminAdjustment:   "yellow", // 调整（可能是正或负）
+		EntryTypeAffiliateTransfer: "purple", // 转入
+		EntryTypeRefund:            "red",    // 扣减
+		EntryTypePromoBonus:        "green",  // 奖励
+		EntryTypeOAuthBindBonus:    "green",  // 奖励
+		EntryTypeExpiry:            "gray",   // 过期
+		EntryTypeCorrection:        "orange", // 纠正
 	}
 	if color, ok := colors[entryType]; ok {
 		return color

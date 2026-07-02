@@ -1106,7 +1106,7 @@ func (s *adminServiceImpl) UpdateUserBalance(ctx context.Context, userID int64, 
 				SourceTypeAdminAction,
 				nil,
 				notes,
-				map[string]interface{}{
+				map[string]any{
 					"operation":       operation,
 					"adjustment_code": code,
 				},
@@ -1309,7 +1309,7 @@ func (s *adminServiceImpl) ManualGrantSignupGiftBalance(ctx context.Context, use
 			SourceTypeAdminAction,
 			nil,
 			reason,
-			map[string]interface{}{
+			map[string]any{
 				"operation": "signup_gift_manual_grant",
 				"admin_id":  adminID,
 			},

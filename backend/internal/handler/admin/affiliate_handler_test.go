@@ -26,14 +26,18 @@ func (s *affiliateHandlerRepoStub) EnsureUserAffiliate(context.Context, int64) (
 func (s *affiliateHandlerRepoStub) GetAffiliateByCode(context.Context, string) (*service.AffiliateSummary, error) {
 	return nil, service.ErrAffiliateProfileNotFound
 }
-func (s *affiliateHandlerRepoStub) BindInviter(context.Context, int64, int64) (bool, error) { return false, nil }
+func (s *affiliateHandlerRepoStub) BindInviter(context.Context, int64, int64) (bool, error) {
+	return false, nil
+}
 func (s *affiliateHandlerRepoStub) AccrueQuota(context.Context, int64, int64, float64, int, *int64) (bool, error) {
 	return false, nil
 }
 func (s *affiliateHandlerRepoStub) GetAccruedRebateFromInvitee(context.Context, int64, int64) (float64, error) {
 	return 0, nil
 }
-func (s *affiliateHandlerRepoStub) ThawFrozenQuota(context.Context, int64) (float64, error) { return 0, nil }
+func (s *affiliateHandlerRepoStub) ThawFrozenQuota(context.Context, int64) (float64, error) {
+	return 0, nil
+}
 func (s *affiliateHandlerRepoStub) TransferQuotaToBalance(context.Context, int64) (float64, float64, error) {
 	return 0, 0, nil
 }
@@ -49,9 +53,15 @@ func (s *affiliateHandlerRepoStub) ListUserTransferRecords(context.Context, int6
 func (s *affiliateHandlerRepoStub) GetAffiliateOverview(context.Context) (*service.AffiliateAdminOverview, error) {
 	return s.overview, nil
 }
-func (s *affiliateHandlerRepoStub) UpdateUserAffCode(context.Context, int64, string) error { return nil }
-func (s *affiliateHandlerRepoStub) ResetUserAffCode(context.Context, int64) (string, error) { return "", nil }
-func (s *affiliateHandlerRepoStub) SetUserRebateRate(context.Context, int64, *float64) error { return nil }
+func (s *affiliateHandlerRepoStub) UpdateUserAffCode(context.Context, int64, string) error {
+	return nil
+}
+func (s *affiliateHandlerRepoStub) ResetUserAffCode(context.Context, int64) (string, error) {
+	return "", nil
+}
+func (s *affiliateHandlerRepoStub) SetUserRebateRate(context.Context, int64, *float64) error {
+	return nil
+}
 func (s *affiliateHandlerRepoStub) BatchSetUserRebateRate(context.Context, []int64, *float64) error {
 	return nil
 }
@@ -75,7 +85,9 @@ type affiliateHandlerSettingRepoStub struct {
 	values map[string]string
 }
 
-func (s *affiliateHandlerSettingRepoStub) Get(context.Context, string) (*service.Setting, error) { return nil, service.ErrSettingNotFound }
+func (s *affiliateHandlerSettingRepoStub) Get(context.Context, string) (*service.Setting, error) {
+	return nil, service.ErrSettingNotFound
+}
 func (s *affiliateHandlerSettingRepoStub) GetValue(_ context.Context, key string) (string, error) {
 	if value, ok := s.values[key]; ok {
 		return value, nil
@@ -197,11 +209,11 @@ func TestAffiliateHandlerOverviewAndRulesEndpoints(t *testing.T) {
 	require.Equal(t, 48, rulesResp.Data.AffiliateRebateFreezeHours)
 
 	body, err := json.Marshal(map[string]any{
-		"affiliate_enabled":               false,
-		"invitation_code_enabled":         false,
-		"affiliate_rebate_rate":           20,
-		"affiliate_rebate_freeze_hours":   24,
-		"affiliate_rebate_duration_days":  60,
+		"affiliate_enabled":                false,
+		"invitation_code_enabled":          false,
+		"affiliate_rebate_rate":            20,
+		"affiliate_rebate_freeze_hours":    24,
+		"affiliate_rebate_duration_days":   60,
 		"affiliate_rebate_per_invitee_cap": 88.8,
 	})
 	require.NoError(t, err)

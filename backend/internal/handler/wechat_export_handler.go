@@ -458,7 +458,7 @@ func (h *WeChatExportHandler) DownloadTaskArtifactsZip(c *gin.Context) {
 	defer func() { _ = zipWriter.Close() }()
 	for _, entry := range entries {
 		if err := writeWeChatArtifactZipEntry(zipWriter, entry); err != nil {
-			c.Error(err)
+			_ = c.Error(err)
 			return
 		}
 	}

@@ -128,18 +128,18 @@ type SignupGrantRiskOverrideFilter struct {
 }
 
 type SignupGrantAdminAuditLog struct {
-	ID           int64                  `json:"id"`
-	Operation    string                 `json:"operation"`
-	TargetUserID *int64                 `json:"target_user_id,omitempty"`
-	SubjectType  string                 `json:"subject_type"`
-	SubjectValue string                 `json:"subject_value"`
-	SubjectHash  string                 `json:"subject_hash"`
-	Action       string                 `json:"action"`
-	Amount       float64                `json:"amount"`
-	Reason       string                 `json:"reason"`
-	AdminID      *int64                 `json:"admin_id,omitempty"`
-	Metadata     map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt    time.Time              `json:"created_at"`
+	ID           int64          `json:"id"`
+	Operation    string         `json:"operation"`
+	TargetUserID *int64         `json:"target_user_id,omitempty"`
+	SubjectType  string         `json:"subject_type"`
+	SubjectValue string         `json:"subject_value"`
+	SubjectHash  string         `json:"subject_hash"`
+	Action       string         `json:"action"`
+	Amount       float64        `json:"amount"`
+	Reason       string         `json:"reason"`
+	AdminID      *int64         `json:"admin_id,omitempty"`
+	Metadata     map[string]any `json:"metadata,omitempty"`
+	CreatedAt    time.Time      `json:"created_at"`
 }
 
 type SignupGrantAdminAuditLogFilter struct {

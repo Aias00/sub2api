@@ -211,8 +211,8 @@ func (s *PaymentService) alreadyProcessed(ctx context.Context, o *dbent.PaymentO
 				"failedReason", cur.FailedReason,
 			)
 			s.writeAuditLog(ctx, o.ID, "FULFILLMENT_RETRY_SKIPPED", "system", map[string]any{
-				"reason":      "max retries exceeded",
-				"retryCount":  retryCount,
+				"reason":       "max retries exceeded",
+				"retryCount":   retryCount,
 				"failedReason": cur.FailedReason,
 			})
 			return nil
@@ -518,46 +518,6 @@ func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder) error
 		return err
 	}
 	return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
-}
-
-// tryClaimSubscriptionAudit uses INSERT ... ON CONFLICT DO NOTHING to atomically
-// claim the subscription fulfillment slot for an order. Returns true if the claim
-// was inserted (caller should proceed), false if a row already exists (skip).
-func (s *PaymentService) tryClaimSubscriptionAudit(ctx context.Context, orderID int64, baseAmount float64) (bool, error) {
-	if s.entClient == nil {
-		return false, errors.New("nil payment client")
-	}
-	oid := strconv.FormatInt(orderID, 10)
-	detail, _ := json.Marshal(map[string]any{
-		"baseAmount": baseAmount,
-		"status":     "pending",
-	})
-	rows, err := s.entClient.QueryContext(ctx, `
-INSERT INTO payment_audit_logs (order_id, action, detail, operator, created_at)
-SELECT $1::text, 'SUBSCRIPTION_PENDING', $2::text, 'system', NOW()
-WHERE NOT EXISTS (
-	SELECT 1
-	FROM payment_audit_logs
-	WHERE order_id = $1::text
-	  AND action IN ('SUBSCRIPTION_PENDING', 'SUBSCRIPTION_SUCCESS')
-)
-ON CONFLICT (order_id, action) DO NOTHING
-RETURNING id`, oid, string(detail))
-	if err != nil {
-		return false, err
-	}
-	defer func() { _ = rows.Close() }()
-	if !rows.Next() {
-		if err := rows.Err(); err != nil {
-			return false, err
-		}
-		return false, nil
-	}
-	var claimID int64
-	if err := rows.Scan(&claimID); err != nil {
-		return false, err
-	}
-	return true, nil
 }
 
 func (s *PaymentService) hasAuditLog(ctx context.Context, orderID int64, action string) bool {

@@ -4,11 +4,9 @@ import (
 	"encoding/base64"
 	"net/http"
 	"net/url"
-	"strconv"
 	"strings"
 	"unicode/utf8"
 
-	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -113,18 +111,6 @@ func truncateFragmentValue(value string) string {
 	return value
 }
 
-func clearCookieWithPath(c *gin.Context, name string, path string, secure bool) {
-	http.SetCookie(c.Writer, &http.Cookie{
-		Name:     name,
-		Value:    "",
-		Path:     path,
-		MaxAge:   -1,
-		HttpOnly: true,
-		Secure:   secure,
-		SameSite: http.SameSiteLaxMode,
-	})
-}
-
 func redirectOAuthError(c *gin.Context, frontendCallback string, code string, message string, description string) {
 	fragment := url.Values{}
 	fragment.Set("error", truncateFragmentValue(code))
@@ -133,35 +119,6 @@ func redirectOAuthError(c *gin.Context, frontendCallback string, code string, me
 	}
 	if strings.TrimSpace(description) != "" {
 		fragment.Set("error_description", truncateFragmentValue(description))
-	}
-	redirectWithFragment(c, frontendCallback, fragment)
-}
-
-func redirectOAuthTokenPair(c *gin.Context, frontendCallback string, tokenPair *service.TokenPair, redirectTo string) {
-	fragment := url.Values{}
-	if tokenPair != nil {
-		fragment.Set("access_token", truncateFragmentValue(tokenPair.AccessToken))
-		fragment.Set("refresh_token", truncateFragmentValue(tokenPair.RefreshToken))
-		fragment.Set("expires_in", strconv.Itoa(tokenPair.ExpiresIn))
-		fragment.Set("token_type", "Bearer")
-	}
-	if redirect := strings.TrimSpace(redirectTo); redirect != "" {
-		originalRedirect := redirect
-		for range 2 {
-			decoded, err := url.QueryUnescape(redirect)
-			if err != nil || decoded == redirect {
-				break
-			}
-			redirect = decoded
-		}
-		if redirect != originalRedirect {
-			if sanitized := sanitizeFrontendRedirectPath(redirect); sanitized != "" {
-				redirect = sanitized
-			} else {
-				redirect = originalRedirect
-			}
-		}
-		fragment.Set("redirect", truncateFragmentValue(redirect))
 	}
 	redirectWithFragment(c, frontendCallback, fragment)
 }

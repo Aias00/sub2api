@@ -91,7 +91,7 @@ func (r *userBalanceLedgerRepository) ListByUser(
 ) ([]service.UserBalanceLedgerEntry, int64, error) {
 	// 构建 WHERE 条件
 	whereClause := "WHERE user_id = $1"
-	args := []interface{}{userID}
+	args := []any{userID}
 	argIndex := 2
 
 	if len(filter.EntryTypes) > 0 {
@@ -146,7 +146,7 @@ LIMIT $%d OFFSET $%d
 	if err != nil {
 		return nil, 0, fmt.Errorf("list balance ledger: %w", err)
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	var entries []service.UserBalanceLedgerEntry
 	for rows.Next() {

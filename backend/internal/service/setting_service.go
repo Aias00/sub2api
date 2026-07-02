@@ -2609,19 +2609,6 @@ func (s *SettingService) parseWeChatConnectOAuthConfig(settings map[string]strin
 	return cfg, nil
 }
 
-func (s *SettingService) weChatOAuthCapabilitiesFromSettings(settings map[string]string) (bool, bool, bool, bool) {
-	cfg := s.effectiveWeChatConnectOAuthConfig(settings)
-	if !cfg.Enabled {
-		return false, false, false, false
-	}
-
-	openReady := cfg.OpenEnabled && cfg.AppIDForMode("open") != "" && cfg.AppSecretForMode("open") != ""
-	mpReady := cfg.MPEnabled && cfg.AppIDForMode("mp") != "" && cfg.AppSecretForMode("mp") != ""
-	mobileReady := cfg.MobileEnabled && cfg.AppIDForMode("mobile") != "" && cfg.AppSecretForMode("mobile") != ""
-
-	return openReady || mpReady, openReady, mpReady, mobileReady
-}
-
 func (s *SettingService) emailOAuthBaseConfig(provider string) config.EmailOAuthProviderConfig {
 	switch strings.ToLower(strings.TrimSpace(provider)) {
 	case "github":

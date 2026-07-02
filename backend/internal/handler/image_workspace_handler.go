@@ -433,7 +433,7 @@ func (h *ImageWorkspaceHandler) ensureWorkerReady(c *gin.Context) error {
 		host = c.ClientIP()
 	}
 	ip := net.ParseIP(host)
-	if ip == nil || !(ip.IsLoopback() || ip.IsPrivate()) {
+	if ip == nil || !ip.IsLoopback() && !ip.IsPrivate() {
 		return infraerrors.Unauthorized("IMAGE_WORKSPACE_WORKER_UNAUTHORIZED", "image workspace worker token is required")
 	}
 	return nil
@@ -605,7 +605,7 @@ func imageWorkspaceArtifactDownloadName(artifact *service.ImageWorkspaceArtifact
 	if artifact == nil {
 		return "image-workspace-artifact.bin"
 	}
-	extension := "png"
+	var extension string
 	switch strings.ToLower(strings.TrimSpace(artifact.MimeType)) {
 	case "image/jpeg", "image/jpg":
 		extension = "jpg"

@@ -208,15 +208,6 @@ const (
 	defaultWeChatConnectFrontendRedirect = "/auth/wechat/callback"
 )
 
-func firstNonEmptyString(values ...string) string {
-	for _, value := range values {
-		if trimmed := strings.TrimSpace(value); trimmed != "" {
-			return trimmed
-		}
-	}
-	return ""
-}
-
 func normalizeWeChatConnectMode(raw string) string {
 	switch strings.ToLower(strings.TrimSpace(raw)) {
 	case "mp":
@@ -283,14 +274,6 @@ func normalizeWeChatConnectScopes(raw, mode string) string {
 	default:
 		return defaultWeChatConnectScopes
 	}
-}
-
-func hasExplicitConfigOrEnv(configKey, envKey string) bool {
-	if viper.InConfig(configKey) {
-		return true
-	}
-	_, ok := os.LookupEnv(envKey)
-	return ok
 }
 
 func normalizeWeChatConnectConfig(cfg *WeChatConnectConfig) {
@@ -2548,15 +2531,6 @@ func ValidateFrontendRedirectURL(raw string) error {
 		return fmt.Errorf("must not include fragment")
 	}
 	return nil
-}
-
-func scopeContainsOpenID(scopes string) bool {
-	for _, scope := range strings.Fields(strings.ToLower(strings.TrimSpace(scopes))) {
-		if scope == "openid" {
-			return true
-		}
-	}
-	return false
 }
 
 // isHTTPScheme 检查是否为 HTTP 或 HTTPS 协议

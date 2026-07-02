@@ -459,9 +459,9 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 				SourceTypeRedeemCode,
 				&redeemCode.ID,
 				fmt.Sprintf("兑换码 %s", substringCode(redeemCode.Code, 8)),
-				map[string]interface{}{
-					"code": redeemCode.Code,
-					"type": redeemCode.Type,
+				map[string]any{
+					"code":  redeemCode.Code,
+					"type":  redeemCode.Type,
 					"notes": redeemCode.Notes,
 				},
 			); err != nil {

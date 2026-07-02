@@ -53,15 +53,15 @@ func TestWeChatExportServiceSyncAccountRequiresBoundAccount(t *testing.T) {
 
 	// Bind accounts for user 42
 	repo.accounts[1] = WeChatAccount{
-		ID:     1,
-		UserID: 42,
-		FakeID: "biz-001",
+		ID:       1,
+		UserID:   42,
+		FakeID:   "biz-001",
 		Nickname: "Business Account",
 	}
 	repo.accounts[2] = WeChatAccount{
-		ID:     2,
-		UserID: 42,
-		FakeID: "biz-002",
+		ID:       2,
+		UserID:   42,
+		FakeID:   "biz-002",
 		Nickname: "Another Account",
 	}
 

@@ -62,10 +62,6 @@ func reserveUserBalanceWithComponents(ctx context.Context, q sqlExecutor, userID
 	return userBalanceReservation{}, service.ErrInsufficientBalance
 }
 
-func creditPaidBalanceWithComponents(ctx context.Context, q sqlExecutor, userID int64, amount float64) (float64, error) {
-	return creditBalanceComponents(ctx, q, userID, amount, 0)
-}
-
 func creditBalanceComponents(ctx context.Context, q sqlExecutor, userID int64, paidAmount, giftAmount float64) (float64, error) {
 	paidAmount = math.Max(paidAmount, 0)
 	giftAmount = math.Max(giftAmount, 0)
@@ -132,15 +128,4 @@ func reduceBalanceReservation(base userBalanceReservation, refunded userBalanceR
 	base.Paid = math.Max(base.Paid-refunded.Paid, 0)
 	base.Gift = math.Max(base.Gift-refunded.Gift, 0)
 	return base
-}
-
-func reservationTotal(reservation userBalanceReservation) float64 {
-	return math.Max(reservation.Paid, 0) + math.Max(reservation.Gift, 0)
-}
-
-func reservationMetadata(reservation userBalanceReservation) map[string]float64 {
-	return map[string]float64{
-		"reserved_paid_balance": reservation.Paid,
-		"reserved_gift_balance": reservation.Gift,
-	}
 }

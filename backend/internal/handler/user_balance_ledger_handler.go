@@ -34,16 +34,16 @@ type BalanceLedgerListRequest struct {
 
 // BalanceLedgerEntryResponse 流水记录响应
 type BalanceLedgerEntryResponse struct {
-	ID            int64   `json:"id"`
-	EntryType     string  `json:"entry_type"`
-	Amount        float64 `json:"amount"`
-	BalanceBefore *float64 `json:"balance_before"`
-	BalanceAfter  *float64 `json:"balance_after"`
-	SourceType    string  `json:"source_type"`
-	SourceID      *int64  `json:"source_id"`
-	Description   string  `json:"description"`
-	Metadata      map[string]interface{} `json:"metadata,omitempty"`
-	CreatedAt     string  `json:"created_at"`
+	ID            int64          `json:"id"`
+	EntryType     string         `json:"entry_type"`
+	Amount        float64        `json:"amount"`
+	BalanceBefore *float64       `json:"balance_before"`
+	BalanceAfter  *float64       `json:"balance_after"`
+	SourceType    string         `json:"source_type"`
+	SourceID      *int64         `json:"source_id"`
+	Description   string         `json:"description"`
+	Metadata      map[string]any `json:"metadata,omitempty"`
+	CreatedAt     string         `json:"created_at"`
 }
 
 // BalanceLedgerListResponse 流水列表响应
@@ -51,7 +51,7 @@ type BalanceLedgerListResponse struct {
 	Entries  []BalanceLedgerEntryResponse `json:"entries"`
 	Total    int64                        `json:"total"`
 	Page     int                          `json:"page"`
-PageSize int                          `json:"page_size"`
+	PageSize int                          `json:"page_size"`
 }
 
 // GetUserBalanceLedger GET /api/v1/user/balance-ledger
@@ -106,9 +106,9 @@ func (h *UserBalanceLedgerHandler) GetUserBalanceLedger(c *gin.Context) {
 
 	// 转换响应格式
 	resp := BalanceLedgerListResponse{
-		Entries: make([]BalanceLedgerEntryResponse, len(entries)),
-		Total:   total,
-		Page:    filter.Page,
+		Entries:  make([]BalanceLedgerEntryResponse, len(entries)),
+		Total:    total,
+		Page:     filter.Page,
 		PageSize: filter.PageSize,
 	}
 
@@ -147,8 +147,8 @@ func convertEntryToResponse(entry service.UserBalanceLedgerEntry) BalanceLedgerE
 	}
 
 	// 解析 metadata JSON
-	if entry.MetadataJSON != nil && len(entry.MetadataJSON) > 0 {
-		var metadata map[string]interface{}
+	if len(entry.MetadataJSON) > 0 {
+		var metadata map[string]any
 		if err := parseJSON(entry.MetadataJSON, &metadata); err == nil {
 			resp.Metadata = metadata
 		}
@@ -186,6 +186,6 @@ func trimSpace(s string) string {
 	return s[start:end]
 }
 
-func parseJSON(data []byte, v interface{}) error {
+func parseJSON(data []byte, v any) error {
 	return json.Unmarshal(data, v)
 }

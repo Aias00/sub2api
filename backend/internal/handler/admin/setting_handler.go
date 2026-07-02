@@ -1,7 +1,6 @@
 package admin
 
 import (
-	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -33,15 +32,6 @@ func generateMenuItemID() (string, error) {
 		return "", fmt.Errorf("generate menu item ID: %w", err)
 	}
 	return hex.EncodeToString(b), nil
-}
-
-func scopesContainOpenID(scopes string) bool {
-	for _, scope := range strings.Fields(strings.ToLower(strings.TrimSpace(scopes))) {
-		if scope == "openid" {
-			return true
-		}
-	}
-	return false
 }
 
 func firstNonEmpty(values ...string) string {
@@ -3943,37 +3933,6 @@ func (h *SettingHandler) TestWebSearchEmulation(c *gin.Context) {
 		return
 	}
 	response.Success(c, result)
-}
-
-func (h *SettingHandler) ensureUserAttributeDefinition(ctx context.Context, key, name, description string, attrType service.UserAttributeType) {
-	key = strings.TrimSpace(key)
-	if key == "" {
-		return
-	}
-	existing, err := h.userAttributeService.GetDefinitionByKey(ctx, key)
-	if err == nil && existing != nil {
-		if strings.TrimSpace(name) != "" && existing.Name != name {
-			if _, err := h.userAttributeService.UpdateDefinition(ctx, existing.ID, service.UpdateAttributeDefinitionInput{
-				Name: &name,
-			}); err != nil {
-				slog.Warn("dingtalk: update user attribute definition name failed", "key", key, "err", err.Error())
-				return
-			}
-			slog.Info("dingtalk: updated user attribute definition name", "key", key, "name", name)
-		}
-		return
-	}
-	if _, err := h.userAttributeService.CreateDefinition(ctx, service.CreateAttributeDefinitionInput{
-		Key:         key,
-		Name:        name,
-		Description: description,
-		Type:        attrType,
-		Enabled:     true,
-	}); err != nil {
-		slog.Warn("dingtalk: ensure user attribute definition failed", "key", key, "err", err.Error())
-		return
-	}
-	slog.Info("dingtalk: created user attribute definition", "key", key, "name", name, "type", attrType)
 }
 
 // ListEmailTemplates returns all editable notification email templates.

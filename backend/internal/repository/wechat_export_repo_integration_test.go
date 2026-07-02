@@ -6,7 +6,6 @@ import (
 	"context"
 	"sync"
 	"testing"
-	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/stretchr/testify/require"
@@ -43,17 +42,18 @@ func TestWeChatExportRepoIntegrationSuite(t *testing.T) {
 // TestClaimNextTask_Concurrent tests concurrent task claiming with FOR UPDATE SKIP LOCKED
 func (s *WeChatExportRepoIntegrationSuite) TestClaimNextTask_Concurrent() {
 	// Create test user
-	user, err := s.repo.db.ExecContext(s.ctx, `
-		INSERT INTO users (email, password_hash, role, balance, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, NOW(), NOW())
+	var userID int64
+	err := s.repo.db.QueryRowContext(s.ctx, `
+		INSERT INTO users (email, password_hash, role, balance, paid_balance, gift_balance, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $4, 0, NOW(), NOW())
 		RETURNING id
-	`, "test@example.com", "hash", "user", 10.0)
+	`, "test@example.com", "hash", "user", 10.0).Scan(&userID)
 	require.NoError(s.T(), err)
 
 	// Create multiple queued tasks
 	for i := 0; i < 10; i++ {
 		task := &service.WeChatExportTask{
-			UserID:               42, // Mock user ID
+			UserID:               userID,
 			Status:               service.WeChatExportTaskStatusQueued,
 			SelectedArticleCount: 3,
 			PayloadJSON:          `{"article_ids":[1,2,3],"formats":["html"]}`,
@@ -106,8 +106,13 @@ func (s *WeChatExportRepoIntegrationSuite) TestClaimNextTask_Concurrent() {
 // TestCreateTask_ConcurrentBalanceDeduction tests concurrent balance deduction
 func (s *WeChatExportRepoIntegrationSuite) TestCreateTask_ConcurrentBalanceDeduction() {
 	// Create test user with limited balance
-	userID := int64(42)
-	balance := 5.0 // Enough for 5 tasks at 1.0 each
+	var userID int64
+	err := s.repo.db.QueryRowContext(s.ctx, `
+		INSERT INTO users (email, password_hash, role, balance, paid_balance, gift_balance, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $4, 0, NOW(), NOW())
+		RETURNING id
+	`, "balance-test@example.com", "hash", "user", 5.0).Scan(&userID)
+	require.NoError(s.T(), err)
 
 	// Concurrent task creation: 10 tasks trying to consume 1.0 each
 	const tasks = 10

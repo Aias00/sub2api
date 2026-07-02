@@ -404,19 +404,6 @@ func ensurePendingOAuthCompleteRegistrationSession(session *dbent.PendingAuthSes
 	return nil
 }
 
-func currentCompleteRegistrationSessionStatus(session *dbent.PendingAuthSession) (*dbent.PendingAuthSession, bool, error) {
-	if session == nil {
-		return nil, false, infraerrors.BadRequest("PENDING_AUTH_SESSION_INVALID", "pending auth registration context is invalid")
-	}
-
-	payload := normalizePendingOAuthCompletionResponse(mergePendingCompletionResponse(session, nil))
-	if step := pendingSessionStringValue(payload, "step"); step != "" {
-		return session, true, nil
-	}
-
-	return session, false, nil
-}
-
 func (r oauthAdoptionDecisionRequest) hasDecision() bool {
 	return r.AdoptDisplayName != nil || r.AdoptAvatar != nil
 }
@@ -467,17 +454,6 @@ func (h *AuthHandler) entClient() *dbent.Client {
 		return nil
 	}
 	return h.authService.EntClient()
-}
-
-func (h *AuthHandler) isForceEmailOnThirdPartySignup(ctx context.Context) bool {
-	if h == nil || h.settingSvc == nil {
-		return false
-	}
-	defaults, err := h.settingSvc.GetAuthSourceDefaultSettings(ctx)
-	if err != nil || defaults == nil {
-		return false
-	}
-	return defaults.ForceEmailOnThirdPartySignup
 }
 
 func (h *AuthHandler) findOAuthIdentityUser(ctx context.Context, identity service.PendingAuthIdentityKey) (*dbent.User, error) {
@@ -724,38 +700,6 @@ func findUserByNormalizedEmail(ctx context.Context, client *dbent.Client, email 
 		return nil, infraerrors.Conflict("USER_EMAIL_CONFLICT", "normalized email matched multiple users")
 	}
 	return matches[0], nil
-}
-
-func ensurePendingOAuthRegistrationIdentityAvailable(ctx context.Context, client *dbent.Client, session *dbent.PendingAuthSession) error {
-	if client == nil || session == nil {
-		return infraerrors.BadRequest("PENDING_AUTH_SESSION_INVALID", "pending auth registration context is invalid")
-	}
-
-	identity, err := client.AuthIdentity.Query().
-		Where(
-			authidentity.ProviderTypeEQ(strings.TrimSpace(session.ProviderType)),
-			authidentity.ProviderKeyEQ(strings.TrimSpace(session.ProviderKey)),
-			authidentity.ProviderSubjectEQ(strings.TrimSpace(session.ProviderSubject)),
-		).
-		Only(ctx)
-	if err != nil {
-		if dbent.IsNotFound(err) {
-			return nil
-		}
-		return err
-	}
-	if identity == nil || identity.UserID <= 0 {
-		return nil
-	}
-
-	activeOwner, err := findActiveUserByID(ctx, client, identity.UserID)
-	if err != nil {
-		return err
-	}
-	if activeOwner != nil {
-		return infraerrors.Conflict("AUTH_IDENTITY_OWNERSHIP_CONFLICT", "auth identity already belongs to another user")
-	}
-	return nil
 }
 
 func oauthIdentityIssuer(session *dbent.PendingAuthSession) *string {
@@ -1216,38 +1160,6 @@ func consumePendingOAuthBrowserSessionTx(
 	}
 
 	return nil
-}
-
-func applyPendingOAuthAdoptionAndConsumeSession(
-	ctx context.Context,
-	client *dbent.Client,
-	authService *service.AuthService,
-	userService *service.UserService,
-	session *dbent.PendingAuthSession,
-	decision *dbent.IdentityAdoptionDecision,
-	userID int64,
-) error {
-	if client == nil {
-		return infraerrors.ServiceUnavailable("PENDING_AUTH_NOT_READY", "pending auth service is not ready")
-	}
-	if session == nil || userID <= 0 {
-		return infraerrors.BadRequest("PENDING_AUTH_SESSION_INVALID", "pending auth registration context is invalid")
-	}
-
-	tx, err := client.Tx(ctx)
-	if err != nil {
-		return err
-	}
-	defer func() { _ = tx.Rollback() }()
-
-	txCtx := dbent.NewTxContext(ctx, tx)
-	if err := applyPendingOAuthAdoption(txCtx, client, authService, userService, session, decision, &userID); err != nil {
-		return err
-	}
-	if err := consumePendingOAuthBrowserSessionTx(txCtx, tx, session); err != nil {
-		return err
-	}
-	return tx.Commit()
 }
 
 func applyPendingOAuthAdoption(
