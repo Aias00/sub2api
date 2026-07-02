@@ -3,6 +3,7 @@ import argparse
 import json
 import sys
 from datetime import date
+from json import JSONDecodeError
 
 
 HIGH_SEVERITIES = {"high", "critical"}
@@ -145,8 +146,18 @@ def main() -> int:
     parser.add_argument("--exceptions", required=True)
     args = parser.parse_args()
 
-    with open(args.audit, "r", encoding="utf-8") as handle:
-        audit = json.load(handle)
+    try:
+        with open(args.audit, "r", encoding="utf-8") as handle:
+            audit = json.load(handle)
+    except FileNotFoundError:
+        sys.stderr.write(f"Audit file not found: {args.audit}\n")
+        return 1
+    except JSONDecodeError as exc:
+        sys.stderr.write(
+            f"Audit file is not valid JSON: {args.audit} "
+            f"(line {exc.lineno}, column {exc.colno})\n"
+        )
+        return 1
 
     # 读取异常清单并建立索引，便于快速匹配包名 + advisory。
     exceptions = parse_exceptions(args.exceptions)
