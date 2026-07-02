@@ -35,9 +35,7 @@ vi.mock('vue-i18n', async (importOriginal) => {
         if (key === 'profile.administrator') return 'Administrator'
         if (key === 'profile.user') return 'User'
         if (key === 'profile.authBindings.providers.email') return 'Email'
-        if (key === 'profile.authBindings.providers.linuxdo') return 'LinuxDo'
         if (key === 'profile.authBindings.providers.wechat') return 'WeChat'
-        if (key === 'profile.authBindings.providers.oidc') return params?.providerName || 'OIDC'
         if (key === 'profile.authBindings.source.avatar') {
           return `Avatar synced from ${params?.providerName || 'provider'}`
         }
@@ -104,17 +102,18 @@ describe('ProfileInfoCard', () => {
     const wrapper = mount(ProfileInfoCard, {
       props: {
         user: createUser({
-          avatar_url: 'https://cdn.example.com/linuxdo.png',
+          avatar_url: 'https://cdn.example.com/google.png',
           profile_sources: {
-            avatar: { provider: 'linuxdo', source: 'linuxdo' },
-            username: { provider: 'linuxdo', source: 'linuxdo' }
+            avatar: { provider: 'google', source: 'google' },
+            username: { provider: 'github', source: 'github' }
           }
         }),
         labels: {
           sourceAvatar: 'Configured avatar from {providerName}',
           sourceUsername: 'Configured username from {providerName}',
           providers: {
-            linuxdo: 'Configured LinuxDo',
+            github: 'Configured GitHub',
+            google: 'Configured Google',
           },
         },
       },
@@ -125,24 +124,20 @@ describe('ProfileInfoCard', () => {
       }
     })
 
-    expect(wrapper.text()).toContain('Configured avatar from Configured LinuxDo')
-    expect(wrapper.text()).toContain('Configured username from Configured LinuxDo')
+    expect(wrapper.text()).toContain('Configured avatar from Configured Google')
+    expect(wrapper.text()).toContain('Configured username from Configured GitHub')
   })
 
-  it('uses the configured OIDC provider name in source hints', () => {
+  it('uses an explicit provider label in source hints', () => {
     const wrapper = mount(ProfileInfoCard, {
       props: {
         user: createUser({
           profile_sources: {
-            username: { provider: 'oidc', source: 'oidc' }
+            username: { provider: 'github', providerName: 'ExampleID' }
           }
         }),
-        oidcProviderName: 'ExampleID',
         labels: {
           sourceUsername: 'Configured username from {providerName}',
-          providers: {
-            oidc: '{providerName}',
-          },
         },
       },
       global: {

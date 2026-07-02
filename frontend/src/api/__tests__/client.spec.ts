@@ -1,7 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import axios from 'axios'
 import type { AxiosInstance } from 'axios'
-import { readFileSync } from 'node:fs'
 
 // 需要在导入 client 之前设置 mock
 vi.mock('@/i18n', () => ({

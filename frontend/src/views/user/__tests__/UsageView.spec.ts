@@ -77,57 +77,6 @@ const messages: Record<string, string> = {
   'common.reset': 'Reset',
 }
 
-function buildUsageShellConfig(
-  overrides: Record<string, string> = {},
-  defaults: Record<string, unknown> = {},
-): string {
-  return JSON.stringify({
-    zh: {
-      labels: {
-        totalRequests: 'Total Requests',
-        inSelectedRange: 'In selected range',
-        totalTokens: 'Total Tokens',
-        in: 'In',
-        out: 'Out',
-        totalCost: 'Total Cost',
-        actualCost: 'Actual Cost',
-        standardCost: 'Standard Cost',
-        avgDuration: 'Avg Duration',
-        perRequest: 'Per request',
-        apiKeyFilter: 'API Key',
-        allApiKeys: 'All API Keys',
-        timeRange: 'Time Range',
-        refresh: 'Refresh',
-        reset: 'Reset',
-        exportCsv: 'Export CSV',
-        exporting: 'Exporting...',
-        model: 'Model',
-        reasoningEffort: 'Reasoning Effort',
-        endpoint: 'Endpoint',
-        type: 'Type',
-        billingMode: 'Billing Mode',
-        tokens: 'Tokens',
-        cost: 'Cost',
-        firstToken: 'First Token',
-        duration: 'Duration',
-        time: 'Time',
-        userAgent: 'User Agent',
-        noRecords: 'No usage records',
-        rate: 'Rate',
-        original: 'Original',
-        billed: 'Billed',
-        failedToLoad: 'Failed to load usage records',
-        noDataToExport: 'No data to export',
-        preparingExport: 'Preparing export...',
-        exportSuccess: 'Export successful',
-        exportFailed: 'Export failed',
-        ...overrides,
-      },
-      defaults,
-    },
-  })
-}
-
 vi.mock('@/api', () => ({
   usageAPI: {
     query,
