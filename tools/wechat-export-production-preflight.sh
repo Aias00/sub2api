@@ -71,14 +71,14 @@ else
   warn_or_fail "npm is not available; cannot run WeChat worker typecheck/fidelity checks"
 fi
 
-if [[ ! -f tools/business-worker.Dockerfile ]]; then
-  warn_or_fail "tools/business-worker.Dockerfile is missing"
+if [[ ! -f tools/wechat-worker.Dockerfile ]]; then
+  warn_or_fail "tools/wechat-worker.Dockerfile is missing"
 else
-  if grep -q "HEALTHCHECK" tools/business-worker.Dockerfile \
-    && grep -q "business-worker.mjs --healthcheck" tools/business-worker.Dockerfile; then
-    echo "business_worker_docker_healthcheck=ok"
+  if grep -q "HEALTHCHECK" tools/wechat-worker.Dockerfile \
+    && grep -q "worker -- --healthcheck" tools/wechat-worker.Dockerfile; then
+    echo "wechat_worker_docker_healthcheck=ok"
   else
-    warn_or_fail "tools/business-worker.Dockerfile must include a worker healthcheck"
+    warn_or_fail "tools/wechat-worker.Dockerfile must include a worker healthcheck"
   fi
 fi
 
@@ -121,13 +121,13 @@ fi
 
 section "Docker compose overlay"
 if command -v docker >/dev/null 2>&1; then
-  if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/cloudbase-business-worker-compose.yml; then
-    echo "docker_compose_business_worker_config=ok"
+  if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile wechat-worker config >/tmp/cloudbase-wechat-worker-compose.yml; then
+    echo "docker_compose_wechat_worker_config=ok"
   else
-    warn_or_fail "docker compose business worker overlay does not render"
+    warn_or_fail "docker compose wechat worker overlay does not render"
   fi
 else
-  warn_or_fail "docker is not available; cannot validate business worker compose overlay"
+  warn_or_fail "docker is not available; cannot validate WeChat worker compose overlay"
 fi
 
 section "Live worker health"

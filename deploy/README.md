@@ -164,8 +164,8 @@ For the current `cloudbase.eu.org` VM production host, use the dedicated runbook
 deploy/PRODUCTION_SERVER_RUNBOOK.md
 ```
 
-For the current Docker deployment, start the main services plus the two merged
-worker containers through compose:
+For the current Docker deployment, start the main services plus the independent
+business worker containers through compose:
 
 ```bash
 docker compose \
@@ -177,12 +177,18 @@ docker compose \
   up -d
 ```
 
+The `business-worker` profile starts both `wechat-worker` and
+`image-workspace-worker`. To operate them independently, use `--profile
+wechat-worker ... wechat-worker` or `--profile image-workspace-worker ...
+image-workspace-worker`.
+
 For production hosts that should only pull CI-built images and restart
 containers, include the image override or use the helper script:
 
 ```bash
 CLOUDBASE_IMAGE_TAG=latest \
-BUSINESS_WORKER_IMAGE_TAG=latest \
+WECHAT_WORKER_IMAGE_TAG=latest \
+IMAGE_WORKSPACE_WORKER_IMAGE_TAG=latest \
 CONTENT_WORKER_IMAGE_TAG=latest \
 deploy/pull-and-restart.sh
 ```

@@ -1,21 +1,42 @@
-# Combined business worker: WeChat export + Image Workspace.
+# Business workers: WeChat export and Image Workspace run as independent
+# containers so one worker failure does not stop the other.
 
 services:
-  business-worker:
+  wechat-worker:
     build:
       context: ../tools
-      dockerfile: business-worker.Dockerfile
-    image: cloudbase-business-worker:${BUSINESS_WORKER_IMAGE_TAG:-local}
-    container_name: cloudbase-business-worker
+      dockerfile: wechat-worker.Dockerfile
+    image: cloudbase-wechat-worker:${WECHAT_WORKER_IMAGE_TAG:-local}
+    container_name: ${WECHAT_WORKER_CONTAINER_NAME:-cloudbase-wechat-worker}
     restart: unless-stopped
     profiles:
       - business-worker
+      - wechat-worker
     environment:
       - CLOUDBASE_BASE_URL=${CLOUDBASE_BASE_URL:-http://cloudbase:8080/api/v1}
       - WECHAT_EXPORT_WORKER_TOKEN=${WECHAT_EXPORT_WORKER_TOKEN:-}
       - WECHAT_EXPORT_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN=${WECHAT_EXPORT_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN:-false}
       - WECHAT_EXPORT_OUTPUT_DIR=${WECHAT_EXPORT_OUTPUT_DIR:-/app/data/wechat-export}
       - WECHAT_EXPORT_STORAGE_KEY_ROOT=${WECHAT_EXPORT_STORAGE_KEY_ROOT:-/app/data/wechat-export}
+    volumes:
+      - ${WECHAT_WORKER_DATA_MOUNT:-./data}:/app/data
+    depends_on:
+      cloudbase:
+        condition: service_healthy
+    networks:
+      - cloudbase-network
+
+  image-workspace-worker:
+    build:
+      context: ../tools
+      dockerfile: image-workspace-worker.Dockerfile
+    image: cloudbase-image-workspace-worker:${IMAGE_WORKSPACE_WORKER_IMAGE_TAG:-local}
+    container_name: ${IMAGE_WORKSPACE_WORKER_CONTAINER_NAME:-cloudbase-image-workspace-worker}
+    restart: unless-stopped
+    profiles:
+      - business-worker
+      - image-workspace-worker
+    environment:
       - IMAGE_WORKSPACE_API_BASE_URL=${IMAGE_WORKSPACE_API_BASE_URL:-http://cloudbase:8080}
       - IMAGE_WORKSPACE_WORKER_TOKEN=${IMAGE_WORKSPACE_WORKER_TOKEN:-}
       - IMAGE_WORKSPACE_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN=${IMAGE_WORKSPACE_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN:-false}
@@ -37,10 +58,8 @@ services:
       - IMAGE_WORKSPACE_WORKER_INTERVAL_MS=${IMAGE_WORKSPACE_WORKER_INTERVAL_MS:-5000}
       - IMAGE_WORKSPACE_WORKER_MAX_BACKOFF_MS=${IMAGE_WORKSPACE_WORKER_MAX_BACKOFF_MS:-60000}
       - IMAGE_WORKSPACE_WORKER_LEASE_SECONDS=${IMAGE_WORKSPACE_WORKER_LEASE_SECONDS:-300}
-      - BUSINESS_WORKER_ENABLE_WECHAT_EXPORT=${BUSINESS_WORKER_ENABLE_WECHAT_EXPORT:-auto}
-      - BUSINESS_WORKER_ENABLE_IMAGE_WORKSPACE=${BUSINESS_WORKER_ENABLE_IMAGE_WORKSPACE:-auto}
     volumes:
-      - ${BUSINESS_WORKER_DATA_MOUNT:-./data}:/app/data
+      - ${IMAGE_WORKSPACE_WORKER_DATA_MOUNT:-./data}:/app/data
     depends_on:
       cloudbase:
         condition: service_healthy
