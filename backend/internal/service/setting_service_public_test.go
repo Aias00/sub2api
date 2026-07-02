@@ -440,7 +440,7 @@ func TestSettingService_GetPublicSettings_DefaultsHomeBusinessShellConfig(t *tes
 	require.Equal(t, "进入热点追踪", payload["zh"].BusinessCards[1].PathLabel)
 	require.Equal(t, "available", payload["zh"].BusinessCards[1].Status)
 	require.Equal(t, "可用", payload["zh"].BusinessCards[1].StatusLabel)
-	require.Contains(t, payload["zh"].BusinessCards[1].CapabilityTags, "内容采集")
+	require.Contains(t, payload["zh"].BusinessCards[1].CapabilityTags, "内容处理")
 	require.Equal(t, "/wechat", payload["en"].BusinessCards[0].Path)
 	require.Equal(t, "/hot", payload["en"].BusinessCards[1].Path)
 	require.Equal(t, "Open hot topics", payload["en"].BusinessCards[1].PathLabel)
