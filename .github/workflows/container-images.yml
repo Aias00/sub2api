@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - master
+      - cloudbase
     tags:
       - 'v*'
   workflow_dispatch:
