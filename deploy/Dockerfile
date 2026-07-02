@@ -84,9 +84,9 @@ RUN VERSION_VALUE="${VERSION}" && \
 FROM ${ALPINE_IMAGE}
 
 # Labels
-LABEL maintainer="Wei-Shaw <github.com/Wei-Shaw>"
+LABEL maintainer="Aias00 <github.com/Aias00>"
 LABEL description="Cloudbase - AI API Gateway Platform"
-LABEL org.opencontainers.image.source="https://github.com/Wei-Shaw/cloudbase"
+LABEL org.opencontainers.image.source="https://github.com/Aias00/cloudbase"
 
 # Install runtime dependencies
 RUN apk add --no-cache \

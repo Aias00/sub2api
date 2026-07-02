@@ -8,7 +8,7 @@
 [![Redis](https://img.shields.io/badge/Redis-8+-DC382D.svg)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
-<a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Wei-Shaw%2Fcloudbase | Trendshift" width="250" height="55"/></a>
+<a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Aias00%2Fcloudbase | Trendshift" width="250" height="55"/></a>
 
 **Self-hosted AI Gateway and Business Operations Platform**
 
@@ -82,7 +82,7 @@ One-click installation script that downloads pre-built binaries from GitHub Rele
 #### Installation Steps
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/Aias00/cloudbase/main/deploy/install.sh | sudo bash
 ```
 
 The script will:
@@ -132,7 +132,7 @@ sudo journalctl -u cloudbase -f
 sudo systemctl restart cloudbase
 
 # Uninstall
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/install.sh | sudo bash -s -- uninstall -y
+curl -sSL https://raw.githubusercontent.com/Aias00/cloudbase/main/deploy/install.sh | sudo bash -s -- uninstall -y
 ```
 
 ---
@@ -155,7 +155,7 @@ Use the automated deployment script for easy setup:
 mkdir -p cloudbase-deploy && cd cloudbase-deploy
 
 # Download and run deployment preparation script
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/docker-deploy.sh | bash
+curl -sSL https://raw.githubusercontent.com/Aias00/cloudbase/main/deploy/docker-deploy.sh | bash
 
 # Start services
 docker compose up -d
@@ -177,7 +177,7 @@ If you prefer manual setup:
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Wei-Shaw/cloudbase.git
+git clone https://github.com/Aias00/cloudbase.git
 cd cloudbase/deploy
 
 # 2. Copy environment configuration
@@ -316,7 +316,7 @@ Build and run from source code for development or customization.
 
 ```bash
 # 1. Clone the repository
-git clone https://github.com/Wei-Shaw/cloudbase.git
+git clone https://github.com/Aias00/cloudbase.git
 cd cloudbase
 
 # 2. Install pnpm (if not already installed)
@@ -590,11 +590,11 @@ cloudbase/
 
 ## Star History
 
-<a href="https://star-history.com/#Wei-Shaw/cloudbase&Date">
+<a href="https://star-history.com/#Aias00/cloudbase&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Wei-Shaw/cloudbase&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Wei-Shaw/cloudbase&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Wei-Shaw/cloudbase&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Aias00/cloudbase&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Aias00/cloudbase&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Aias00/cloudbase&type=Date" />
  </picture>
 </a>
 

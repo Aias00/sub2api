@@ -90,7 +90,7 @@
 
                 <a
                   v-if="showGithubLink"
-                  href="https://github.com/Wei-Shaw/cloudbase"
+                  href="https://github.com/Aias00/cloudbase"
                   target="_blank"
                   rel="noopener noreferrer"
                   @click="closeDropdown"

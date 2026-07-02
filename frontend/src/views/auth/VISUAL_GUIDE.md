@@ -12,7 +12,7 @@ Both LoginView and RegisterView use the AuthLayout component, which provides:
 │  ┌─────────────────────────────────────┐   │
 │  │                                     │   │
 │  │         Cloudbase Logo                │   │
-│  │  "Subscription to API Conversion"   │   │
+│  │  "AI Gateway and Operations"        │   │
 │  │                                     │   │
 │  └─────────────────────────────────────┘   │
 │                                             │
@@ -40,7 +40,7 @@ Centered: Both horizontally and vertically
 ┌─────────────────────────────────────────────┐
 │                                             │
 │         🔷 Cloudbase                          │
-│    Subscription to API Conversion Platform  │
+│    AI Gateway and Business Operations Platform │
 │                                             │
 │  ┌─────────────────────────────────────┐   │
 │  │                                     │   │
@@ -134,7 +134,7 @@ Centered: Both horizontally and vertically
 ┌─────────────────────────────────────────────┐
 │                                             │
 │         🔷 Cloudbase                          │
-│    Subscription to API Conversion Platform  │
+│    AI Gateway and Business Operations Platform │
 │                                             │
 │  ┌─────────────────────────────────────┐   │
 │  │                                     │   │

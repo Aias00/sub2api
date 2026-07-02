@@ -2,7 +2,7 @@
 #
 # Cloudbase Installation Script
 # Cloudbase 安装脚本
-# Usage: curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/install.sh | bash
+# Usage: curl -sSL https://raw.githubusercontent.com/Aias00/cloudbase/main/deploy/install.sh | bash
 #
 
 set -e
@@ -31,7 +31,7 @@ CYAN='\033[0;36m'
 NC='\033[0m' # No Color
 
 # Configuration
-GITHUB_REPO="Wei-Shaw/cloudbase"
+GITHUB_REPO="Aias00/cloudbase"
 INSTALL_DIR="/opt/cloudbase"
 SERVICE_NAME="cloudbase"
 SERVICE_USER="cloudbase"
@@ -670,7 +670,7 @@ install_service() {
     cat > /etc/systemd/system/cloudbase.service << EOF
 [Unit]
 Description=Cloudbase - AI API Gateway Platform
-Documentation=https://github.com/Wei-Shaw/cloudbase
+Documentation=https://github.com/Aias00/cloudbase
 After=network.target postgresql.service redis.service
 Wants=postgresql.service redis.service
 
