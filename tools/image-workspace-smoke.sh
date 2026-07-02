@@ -125,7 +125,7 @@ Required checks for a full real Image Workspace run:
 2. Configure IMAGE_WORKSPACE_WORKER_TOKEN, or private local worker fallback only for local development.
 3. Configure local artifact storage, or enable object storage in Admin -> Runtime Settings
    with endpoint/credentials supplied through IMAGE_WORKSPACE_OBJECT_STORAGE_* / R2 env.
-4. Authenticate in Sub2API and open /image-generator.
+4. Authenticate in Cloudbase and open /image-generator.
 5. Create a generation task and verify balance pre-authorization succeeds.
 6. Start the image worker and verify the task moves queued -> running -> succeeded.
 7. Confirm artifacts appear in the task detail with preview/download URLs.

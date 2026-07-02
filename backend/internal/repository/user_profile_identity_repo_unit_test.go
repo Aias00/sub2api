@@ -6,104 +6,11 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/authidentity"
-	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
-	"github.com/Wei-Shaw/sub2api/ent/identityadoptiondecision"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Wei-Shaw/cloudbase/ent/identityadoptiondecision"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 	"github.com/stretchr/testify/require"
 )
-
-func TestUserRepositoryBindAuthIdentityToUserCanonicalizesLegacyWeChatAlias(t *testing.T) {
-	repo, client := newUserEntRepo(t)
-	ctx := context.Background()
-
-	user := &service.User{
-		Email:        "wechat-legacy@example.com",
-		Username:     "wechat-legacy",
-		PasswordHash: "hash",
-		Role:         service.RoleUser,
-		Status:       service.StatusActive,
-	}
-	require.NoError(t, repo.Create(ctx, user))
-
-	legacyIdentity, err := client.AuthIdentity.Create().
-		SetUserID(user.ID).
-		SetProviderType("wechat").
-		SetProviderKey("wechat").
-		SetProviderSubject("union-legacy-123").
-		SetMetadata(map[string]any{"source": "legacy-alias"}).
-		Save(ctx)
-	require.NoError(t, err)
-
-	legacyChannel, err := client.AuthIdentityChannel.Create().
-		SetIdentityID(legacyIdentity.ID).
-		SetProviderType("wechat").
-		SetProviderKey("wechat").
-		SetChannel("oa").
-		SetChannelAppID("wx-app-legacy").
-		SetChannelSubject("openid-legacy-123").
-		SetMetadata(map[string]any{"scene": "legacy-alias"}).
-		Save(ctx)
-	require.NoError(t, err)
-
-	bound, err := repo.BindAuthIdentityToUser(ctx, BindAuthIdentityInput{
-		UserID: user.ID,
-		Canonical: AuthIdentityKey{
-			ProviderType:    "wechat",
-			ProviderKey:     "wechat-main",
-			ProviderSubject: "union-legacy-123",
-		},
-		Channel: &AuthIdentityChannelKey{
-			ProviderType:   "wechat",
-			ProviderKey:    "wechat-main",
-			Channel:        "oa",
-			ChannelAppID:   "wx-app-legacy",
-			ChannelSubject: "openid-legacy-123",
-		},
-		Metadata:        map[string]any{"source": "canonical-bind"},
-		ChannelMetadata: map[string]any{"scene": "canonical-bind"},
-	})
-	require.NoError(t, err)
-	require.NotNil(t, bound)
-	require.NotNil(t, bound.Identity)
-	require.NotNil(t, bound.Channel)
-	require.Equal(t, legacyIdentity.ID, bound.Identity.ID)
-	require.Equal(t, legacyChannel.ID, bound.Channel.ID)
-	require.Equal(t, "wechat-main", bound.Identity.ProviderKey)
-	require.Equal(t, "wechat-main", bound.Channel.ProviderKey)
-
-	reloadedIdentity, err := client.AuthIdentity.Get(ctx, legacyIdentity.ID)
-	require.NoError(t, err)
-	require.Equal(t, "wechat-main", reloadedIdentity.ProviderKey)
-	require.Equal(t, "canonical-bind", reloadedIdentity.Metadata["source"])
-
-	reloadedChannel, err := client.AuthIdentityChannel.Get(ctx, legacyChannel.ID)
-	require.NoError(t, err)
-	require.Equal(t, "wechat-main", reloadedChannel.ProviderKey)
-	require.Equal(t, "canonical-bind", reloadedChannel.Metadata["scene"])
-
-	identityCount, err := client.AuthIdentity.Query().
-		Where(
-			authidentity.UserIDEQ(user.ID),
-			authidentity.ProviderTypeEQ("wechat"),
-			authidentity.ProviderSubjectEQ("union-legacy-123"),
-		).
-		Count(ctx)
-	require.NoError(t, err)
-	require.Equal(t, 1, identityCount)
-
-	channelCount, err := client.AuthIdentityChannel.Query().
-		Where(
-			authidentitychannel.ProviderTypeEQ("wechat"),
-			authidentitychannel.ChannelEQ("oa"),
-			authidentitychannel.ChannelAppIDEQ("wx-app-legacy"),
-			authidentitychannel.ChannelSubjectEQ("openid-legacy-123"),
-		).
-		Count(ctx)
-	require.NoError(t, err)
-	require.Equal(t, 1, channelCount)
-}
 
 func TestUserRepositoryUpsertIdentityAdoptionDecisionIsIdempotentUnderConcurrency(t *testing.T) {
 	repo, client := newUserEntRepo(t)
@@ -120,7 +27,7 @@ func TestUserRepositoryUpsertIdentityAdoptionDecisionIsIdempotentUnderConcurrenc
 
 	identity, err := client.AuthIdentity.Create().
 		SetUserID(user.ID).
-		SetProviderType("wechat").
+		SetProviderType("github").
 		SetProviderKey("wechat-main").
 		SetProviderSubject("union-repo-adoption").
 		SetMetadata(map[string]any{}).
@@ -130,7 +37,7 @@ func TestUserRepositoryUpsertIdentityAdoptionDecisionIsIdempotentUnderConcurrenc
 	session, err := client.PendingAuthSession.Create().
 		SetSessionToken("pending-repo-adoption").
 		SetIntent("bind_current_user").
-		SetProviderType("wechat").
+		SetProviderType("github").
 		SetProviderKey("wechat-main").
 		SetProviderSubject("union-repo-adoption").
 		SetExpiresAt(time.Now().UTC().Add(15 * time.Minute)).

@@ -20,17 +20,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/domain"
-	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/geminicli"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/timezone"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/xai"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/cloudbase/internal/domain"
+	"github.com/Wei-Shaw/cloudbase/internal/handler/dto"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/antigravity"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/claude"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/geminicli"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/openai"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/timezone"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/xai"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
@@ -2530,7 +2530,7 @@ func (h *AccountHandler) StartGeminiWebLogin(c *gin.Context) {
 	extra[geminiWebSessionMessageKey] = "Login session started, please import cookies"
 	extra[geminiWebSessionUpdatedAtKey] = time.Now().UTC().Format(time.RFC3339)
 	extra[geminiWebSessionModeKey] = loginMode
-	extra[geminiWebSessionSourceKey] = "sub2api"
+	extra[geminiWebSessionSourceKey] = "cloudbase"
 
 	if gatewayData, gatewayErr := h.tryGeminiWebGatewayStart(c.Request.Context(), account, loginID, loginMode); gatewayErr == nil {
 		mergeGeminiWebGatewaySession(extra, gatewayData)
@@ -2685,7 +2685,7 @@ func (h *AccountHandler) ImportGeminiWebCookies(c *gin.Context) {
 	extra[geminiWebSessionStatusKey] = "ready"
 	extra[geminiWebSessionMessageKey] = "Cookies imported"
 	extra[geminiWebSessionUpdatedAtKey] = time.Now().UTC().Format(time.RFC3339)
-	extra[geminiWebSessionSourceKey] = "sub2api"
+	extra[geminiWebSessionSourceKey] = "cloudbase"
 
 	if gatewayData, gatewayErr := h.tryGeminiWebGatewayImportCookies(c.Request.Context(), account, toString(extra[geminiWebSessionLoginIDKey]), cookiesJSON); gatewayErr == nil {
 		mergeGeminiWebGatewaySession(extra, gatewayData)

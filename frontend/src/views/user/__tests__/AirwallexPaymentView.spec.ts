@@ -162,7 +162,7 @@ describe('AirwallexPaymentView', () => {
     expect(successUrl.searchParams.get('resume_token')).toBe('resume-awx')
   })
 
-  it('uses the Sub2API auth shell payment result path for Airwallex success URLs', async () => {
+  it('uses the Cloudbase auth shell payment result path for Airwallex success URLs', async () => {
     appStoreState.cachedPublicSettings = {
       auth_shell_config: buildAuthShellConfig('/configured-payment-result'),
       payment_shell_config: buildAirwallexPaymentShellConfig(),

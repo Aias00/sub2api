@@ -3,14 +3,14 @@ set -euo pipefail
 
 PROD_PORT="${PROD_PORT:-65530}"
 STAGING_PORT="${STAGING_PORT:-65531}"
-PROD_PUBLIC_HOST="${PROD_PUBLIC_HOST:-sub2api.airflow.eu.org}"
-STAGING_PUBLIC_HOST="${STAGING_PUBLIC_HOST:-sub2api-staging.airflow.eu.org}"
+PROD_PUBLIC_HOST="${PROD_PUBLIC_HOST:-cloudbase.airflow.eu.org}"
+STAGING_PUBLIC_HOST="${STAGING_PUBLIC_HOST:-cloudbase-staging.airflow.eu.org}"
 CLOUDFLARED_CONFIG="${CLOUDFLARED_CONFIG:-$HOME/.cloudflared/config.yml}"
 
-PROD_DEPLOY_DIR="${PROD_DEPLOY_DIR:-/Volumes/data/sub2api/deploy}"
-STAGING_DEPLOY_DIR="${STAGING_DEPLOY_DIR:-/Volumes/data/sub2api-staging/deploy}"
-PROD_CONTAINERS="${PROD_CONTAINERS:-sub2api,sub2api-postgres,sub2api-redis}"
-STAGING_CONTAINERS="${STAGING_CONTAINERS:-sub2api-staging,sub2api-staging-postgres,sub2api-staging-redis}"
+PROD_DEPLOY_DIR="${PROD_DEPLOY_DIR:-/Volumes/data/cloudbase/deploy}"
+STAGING_DEPLOY_DIR="${STAGING_DEPLOY_DIR:-/Volumes/data/cloudbase-staging/deploy}"
+PROD_CONTAINERS="${PROD_CONTAINERS:-cloudbase,cloudbase-postgres,cloudbase-redis}"
+STAGING_CONTAINERS="${STAGING_CONTAINERS:-cloudbase-staging,cloudbase-staging-postgres,cloudbase-staging-redis}"
 
 PASS_COUNT=0
 FAIL_COUNT=0

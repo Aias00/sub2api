@@ -5,18 +5,18 @@ services:
     build:
       context: ../tools
       dockerfile: business-worker.Dockerfile
-    image: sub2api-business-worker:${BUSINESS_WORKER_IMAGE_TAG:-local}
-    container_name: sub2api-business-worker
+    image: cloudbase-business-worker:${BUSINESS_WORKER_IMAGE_TAG:-local}
+    container_name: cloudbase-business-worker
     restart: unless-stopped
     profiles:
       - business-worker
     environment:
-      - SUB2API_BASE_URL=${SUB2API_BASE_URL:-http://sub2api:8080/api/v1}
+      - CLOUDBASE_BASE_URL=${CLOUDBASE_BASE_URL:-http://cloudbase:8080/api/v1}
       - WECHAT_EXPORT_WORKER_TOKEN=${WECHAT_EXPORT_WORKER_TOKEN:-}
       - WECHAT_EXPORT_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN=${WECHAT_EXPORT_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN:-false}
       - WECHAT_EXPORT_OUTPUT_DIR=${WECHAT_EXPORT_OUTPUT_DIR:-/app/data/wechat-export}
       - WECHAT_EXPORT_STORAGE_KEY_ROOT=${WECHAT_EXPORT_STORAGE_KEY_ROOT:-/app/data/wechat-export}
-      - IMAGE_WORKSPACE_API_BASE_URL=${IMAGE_WORKSPACE_API_BASE_URL:-http://sub2api:8080}
+      - IMAGE_WORKSPACE_API_BASE_URL=${IMAGE_WORKSPACE_API_BASE_URL:-http://cloudbase:8080}
       - IMAGE_WORKSPACE_WORKER_TOKEN=${IMAGE_WORKSPACE_WORKER_TOKEN:-}
       - IMAGE_WORKSPACE_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN=${IMAGE_WORKSPACE_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN:-false}
       - IMAGE_WORKSPACE_UPSTREAM_API_KEY=${IMAGE_WORKSPACE_UPSTREAM_API_KEY:-}
@@ -42,7 +42,7 @@ services:
     volumes:
       - ${BUSINESS_WORKER_DATA_MOUNT:-./data}:/app/data
     depends_on:
-      sub2api:
+      cloudbase:
         condition: service_healthy
     networks:
-      - sub2api-network
+      - cloudbase-network

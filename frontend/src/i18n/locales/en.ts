@@ -171,8 +171,8 @@ export default {
     noDailyUsage: 'No daily usage data',
   },
   setup: {
-    title: 'Sub2API Setup',
-    description: 'Configure your Sub2API instance',
+    title: 'Cloudbase Setup',
+    description: 'Configure your Cloudbase instance',
     database: {
       title: 'Database Configuration',
       description: 'Connect to your PostgreSQL database',
@@ -2009,7 +2009,7 @@ export default {
           cookiesRequired: 'Paste cookies JSON first',
           description: 'The system creates a Gemini Web account first, then opens Gemini in the browser currently visiting this page. After sign-in, import the cookies back so the server-side gateway can reuse that session.',
           flowStepFinish: 'Paste the cookies back into this dialog so the server-side gateway can mark the account as ready.',
-          flowStepLaunch: 'Open the Gemini / Google sign-in page in the browser currently visiting Sub2API.',
+          flowStepLaunch: 'Open the Gemini / Google sign-in page in the browser currently visiting Cloudbase.',
           flowStepLogin: 'Complete sign-in there, then export the related Gemini cookies JSON.',
           importCookies: 'Import Cookies',
           importFailed: 'Failed to import cookies',
@@ -2231,7 +2231,7 @@ export default {
       pleaseSelectStatus: 'Please select a valid account status',
       poolMode: 'Pool Mode',
       poolModeHint: 'Enable when upstream is an account pool; errors won\'t mark local account status',
-      poolModeInfo: 'When enabled, upstream 429/403/401 errors will auto-retry without marking the account as rate-limited or errored. Suitable for upstream pointing to another sub2api instance.',
+      poolModeInfo: 'When enabled, upstream 429/403/401 errors will auto-retry without marking the account as rate-limited or errored. Suitable for upstream pointing to another cloudbase instance.',
       poolModeRetryCount: 'Same-Account Retries',
       poolModeRetryCountHint: 'Only applies in pool mode. Use 0 to disable in-place retry. Default {default}, maximum {max}.',
       poolModeRetryStatusCodes: 'Same-account retry status codes',
@@ -2875,7 +2875,7 @@ export default {
         intro: 'Cloudflare R2 provides S3-compatible object storage with a free tier of 10GB storage + 1M Class A requests/month, ideal for database backups.',
         step1: {
           line1: 'Log in to the Cloudflare Dashboard (dash.cloudflare.com), select "R2 Object Storage" from the sidebar',
-          line2: 'Click "Create bucket", enter a name (e.g. sub2api-backups), choose a region',
+          line2: 'Click "Create bucket", enter a name (e.g. cloudbase-backups), choose a region',
           line3: 'Click create to finish',
           title: 'Create an R2 Bucket',
         },
@@ -3892,7 +3892,7 @@ export default {
       cookiesLabel: 'Cookies JSON',
       cookiesPlaceholder: 'Paste browser-exported cookies JSON',
       cookiesRequired: 'Paste cookies JSON first',
-      description: 'Manage gemini-command-gateway sessions in one place. The default flow opens Gemini in the same browser that is currently visiting Sub2API, then imports cookies JSON back into the remote gateway session.',
+      description: 'Manage gemini-command-gateway sessions in one place. The default flow opens Gemini in the same browser that is currently visiting Cloudbase, then imports cookies JSON back into the remote gateway session.',
       emptyDescription: 'There is no gemini-web account available for gemini-command-gateway right now. Create one first so the login entry and session state can be managed here.',
       emptyTitle: 'No Gemini Web accounts yet',
       gatewayUrl: 'Gateway URL',
@@ -5397,7 +5397,7 @@ export default {
         clientSecretConfiguredPlaceholder: '********',
         clientSecretHint: 'Used by backend to exchange tokens (keep it secret)',
         clientSecretPlaceholder: '********',
-        description: 'Configure LinuxDo Connect OAuth for Sub2API end-user login',
+        description: 'Configure LinuxDo Connect OAuth for Cloudbase end-user login',
         enable: 'Enable LinuxDo Login',
         enableHint: 'Show LinuxDo login on the login/register pages',
         quickSetCopy: 'Generate & Copy (current site)',
@@ -5413,7 +5413,7 @@ export default {
         backendMode: 'Backend Mode',
         backendModeDescription: 'Disables user registration, public site, and self-service features. Only admin can log in and manage the platform.',
         siteName: 'Site Name',
-        siteNamePlaceholder: 'Sub2API',
+        siteNamePlaceholder: 'Cloudbase',
         siteNameHint: 'Displayed in emails and page titles',
         siteSubtitle: 'Site Subtitle',
         siteSubtitlePlaceholder: 'Subscription to API Conversion Platform',
@@ -5997,7 +5997,7 @@ export default {
         appFavicon: 'Favicon URL',
         appLogo: 'Logo URL',
         appName: 'App Name',
-        appNamePlaceholder: 'Sub2API',
+        appNamePlaceholder: 'Cloudbase',
         appPreviewImage: 'Share Preview Image URL',
         appUrl: 'Public Site URL',
         appUrlHint: 'Used for canonical URLs, share links, and email redirects. Leave empty to use the current request origin.',
@@ -6017,7 +6017,7 @@ export default {
         customerSection: 'Customer Support',
         defaultLocale: 'Default Locale',
         defaultLocalePlaceholder: 'en',
-        description: 'Configure runtime settings read by the public frontend from Sub2API public settings.',
+        description: 'Configure runtime settings read by the public frontend from Cloudbase public settings.',
         emailAuthVisible: 'Show Email Login',
         githubAuthVisible: 'Show GitHub Login',
         googleAnalyticsId: 'Google Analytics ID',
@@ -6133,8 +6133,10 @@ export default {
         pricingCurrencySymbolPlaceholder: '¥',
         pricingCurrencySymbolHint: 'Display symbol used by public pricing cards. Amounts and checkout currency still come from payment configuration.',
         pricingShellConfig: 'Pricing Shell Config JSON',
-        pricingShellConfigPlaceholder: '{{"en":{{"groups":[{{"name":"one-time","title":"One-time"}}],"button":{{"title":"Choose plan","icon":"Zap"}},"labels":{{"prompts":"Prompt cases","eyebrow":"Pricing","title":"Pricing","description":"Plans and balance are configured in Sub2API","recharge":"Recharge","subscription":"Subscription","buy":"Buy","catalogStatus":"Catalog status","emptyRecharge":"No recharge products are configured yet","recommended":"Recommended"}}}}}}',
-        pricingShellConfigHint: 'Override groups, button, navigation, hero, tabs, cards, empty states, and labels per locale. Leave empty for the built-in shell.',
+        pricingShellConfigPlaceholder:
+          '{{"en":{{"groups":[{{"name":"one-time","title":"One-time"}}],"button":{{"title":"Choose plan","icon":"Zap"}},"labels":{{"prompts":"Prompt cases","eyebrow":"Pricing","title":"Pricing","description":"Plans and balance are configured in Cloudbase","recharge":"Recharge","subscription":"Subscription","buy":"Buy","catalogStatus":"Catalog status","emptyRecharge":"No recharge products are configured yet","recommended":"Recommended"}}}}}}',
+        pricingShellConfigHint:
+          'Override groups, button, navigation, hero, tabs, cards, empty states, and labels per locale. Leave empty for the built-in shell.',
         paymentShellConfig: 'Payment Shell Config JSON',
         paymentShellConfigPlaceholder: '{{"en":{{"labels":{{"tabTopUp":"Top Up","tabSubscribe":"Subscribe","rechargeAccount":"Recharge Account","currentBalance":"Current Balance","createOrder":"Create Order","selectAmountFirst":"Select a recharge product"}},"defaults":{{"paymentStatusPollIntervalMs":3000,"paymentVerifyRetryIntervalMs":15000,"paymentVerifyRetryMaxAttempts":6,"paymentResultRefreshIntervalMs":2000,"paymentResultMaxRefreshAttempts":15,"stripePollIntervalMs":3000,"stripeCloseDelayMs":2000,"stripePopupInitTimeoutMs":15000}}}}}}',
         paymentShellConfigHint: 'Override labels, buttons, empty states, order confirmation copy, and payment polling defaults on the signed-in payment pages. User-facing copy should say balance, while payment methods, amounts, order logic, and the backend balance ledger still come from payment configuration. Supports defaults.paymentStatusPollIntervalMs, defaults.paymentVerifyRetryIntervalMs, defaults.paymentVerifyRetryMaxAttempts, defaults.paymentResultRefreshIntervalMs, defaults.paymentResultMaxRefreshAttempts, defaults.stripePollIntervalMs, defaults.stripeCloseDelayMs, and defaults.stripePopupInitTimeoutMs.',
@@ -6144,8 +6146,10 @@ export default {
         creditsPerBalancePlaceholder: '1',
         creditsPerBalanceHint: 'Unified unit is fixed at 1: the frontend says balance, while the backend keeps balance as the only ledger field.',
         creditsShellConfig: 'Balance Shell Config JSON',
-        creditsShellConfigPlaceholder: '{{"en":{{"labels":{{"credits":"Balance","sub2apiBalance":"Ledger balance","conversion":"Unified unit: 1 balance unit = 1 ledger unit.","actionsTitle":"Balance actions","recharge":"Recharge","viewOrders":"View orders"}},"actions":{{"title":"Balance actions","description":"Recharge and orders use the unified payment flow and write to the same balance ledger."}},"buttons":{{"recharge":"Recharge","orders":"View orders"}}}}}}',
-        creditsShellConfigHint: 'Override balance page labels, actions, buttons, and conversion per locale. Conversion copy supports {creditsPerBalance}. Leave empty for the built-in shell.',
+        creditsShellConfigPlaceholder:
+          '{{"en":{{"labels":{{"credits":"Balance","cloudbaseBalance":"Ledger balance","conversion":"Unified unit: 1 balance unit = 1 ledger unit.","actionsTitle":"Balance actions","recharge":"Recharge","viewOrders":"View orders"}},"actions":{{"title":"Balance actions","description":"Recharge and orders use the unified payment flow and write to the same balance ledger."}},"buttons":{{"recharge":"Recharge","orders":"View orders"}}}}}}',
+        creditsShellConfigHint:
+          'Override balance page labels, actions, buttons, and conversion per locale. Conversion copy supports {creditsPerBalance}. Leave empty for the built-in shell.',
         tawkEnabled: 'Enable Tawk',
         tawkPropertyId: 'Tawk Property ID',
         tawkWidgetId: 'Tawk Widget ID',
@@ -6167,7 +6171,7 @@ export default {
         fromEmail: 'From Email',
         fromEmailPlaceholder: 'noreply{\'@\'}example.com',
         fromName: 'From Name',
-        fromNamePlaceholder: 'Sub2API',
+        fromNamePlaceholder: 'Cloudbase',
         host: 'SMTP Host',
         hostPlaceholder: 'smtp.gmail.com',
         noFallbackChannels: 'No fallback channels',
@@ -7674,8 +7678,8 @@ export default {
         title: '🔒 4. Exclusive Group (Optional)',
       },
       groupManage: {
-        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;"><b>What is a Group?</b></p><p style="margin-bottom: 12px;">Groups are the core concept of Sub2API, like a "service package":</p><ul style="margin-left: 20px; margin-bottom: 12px; font-size: 13px;"><li>🎯 Each group can contain multiple upstream accounts</li><li>💰 Each group has independent billing multiplier</li><li>👥 Can be set as public or exclusive</li></ul><p style="margin-top: 12px; padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 Example:</b> You can create "VIP Premium" (high rate) and "Free Trial" (low rate) groups</p><p style="margin-top: 16px; color: #10b981; font-weight: 600;">👉 Click "Group Management" on the left sidebar</p></div>',
-        title: '📦 Step 1: Group Management',
+        description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;"><b>What is a Group?</b></p><p style="margin-bottom: 12px;">Groups are the core concept of Cloudbase, like a "service package":</p><ul style="margin-left: 20px; margin-bottom: 12px; font-size: 13px;"><li>🎯 Each group can contain multiple upstream accounts</li><li>💰 Each group has independent billing multiplier</li><li>👥 Can be set as public or exclusive</li></ul><p style="margin-top: 12px; padding: 8px 12px; background: #f0fdf4; border-left: 3px solid #10b981; border-radius: 4px; font-size: 13px;"><b>💡 Example:</b> You can create "VIP Premium" (high rate) and "Free Trial" (low rate) groups</p><p style="margin-top: 16px; color: #10b981; font-weight: 600;">👉 Click "Group Management" on the left sidebar</p></div>',
+        title: '📦 Step 1: Group Management'
       },
       groupMultiplier: {
         description: '<div style="line-height: 1.7;"><p style="margin-bottom: 12px;">Set the billing multiplier to control user charges.</p><div style="padding: 8px 12px; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 4px; font-size: 13px; margin-bottom: 12px;"><b>⚙️ Billing Rules:</b><ul style="margin: 8px 0 0 16px;"><li><b>1.0</b> - Original price (cost price)</li><li><b>1.5</b> - User consumes $1, charged $1.5</li><li><b>2.0</b> - User consumes $1, charged $2</li><li><b>0.8</b> - Subsidy mode (loss-making)</li></ul></div><p style="font-size: 13px; color: #6b7280;">Recommend setting test group to 1.0</p></div>',
@@ -7715,11 +7719,11 @@ export default {
         title: '🎉 Generate and Copy',
       },
       welcome: {
-        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Sub2API is a powerful AI service gateway platform that helps you easily manage and distribute AI services.</p><p style="margin-bottom: 12px;"><b>🎯 Core Features:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>Group Management</b> - Create service tiers (VIP, Free Trial, etc.)</li><li>🔗 <b>Account Pool</b> - Connect multiple upstream AI service accounts</li><li>🔑 <b>Key Distribution</b> - Generate independent API Keys for users</li><li>💰 <b>Billing Control</b> - Flexible rate and quota management</li></ul><p style="color: #10b981; font-weight: 600;">Let\'s complete the initial setup in 3 minutes →</p></div>',
+        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Cloudbase is a powerful AI service gateway platform that helps you easily manage and distribute AI services.</p><p style="margin-bottom: 12px;"><b>🎯 Core Features:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>📦 <b>Group Management</b> - Create service tiers (VIP, Free Trial, etc.)</li><li>🔗 <b>Account Pool</b> - Connect multiple upstream AI service accounts</li><li>🔑 <b>Key Distribution</b> - Generate independent API Keys for users</li><li>💰 <b>Billing Control</b> - Flexible rate and quota management</li></ul><p style="color: #10b981; font-weight: 600;">Let\'s complete the initial setup in 3 minutes →</p></div>',
         nextBtn: 'Start Setup 🚀',
         prevBtn: 'Skip',
-        title: '👋 Welcome to Sub2API',
-      },
+        title: '👋 Welcome to Cloudbase'
+      }
     },
     confirmDontShow: 'Are you sure you don\'t want to see the onboarding guide again?\n\nYou can restart it anytime from the user menu in the top right corner.',
     confirmExit: 'Are you sure you want to exit the onboarding guide? You can restart it anytime from the top right menu.',
@@ -7755,12 +7759,12 @@ export default {
         title: '🎉 Complete Creation',
       },
       welcome: {
-        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Hello! Welcome to the Sub2API AI service platform.</p><p style="margin-bottom: 12px;"><b>🎯 Quick Start:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 Create API Key</li><li>📋 Copy key to your application</li><li>🚀 Start using AI services</li></ul><p style="color: #10b981; font-weight: 600;">Just 1 minute, let\'s get started →</p></div>',
+        description: '<div style="line-height: 1.8;"><p style="margin-bottom: 16px;">Hello! Welcome to the Cloudbase AI service platform.</p><p style="margin-bottom: 12px;"><b>🎯 Quick Start:</b></p><ul style="margin-left: 20px; margin-bottom: 16px;"><li>🔑 Create API Key</li><li>📋 Copy key to your application</li><li>🚀 Start using AI services</li></ul><p style="color: #10b981; font-weight: 600;">Just 1 minute, let\'s get started →</p></div>',
         nextBtn: 'Start 🚀',
         prevBtn: 'Skip',
-        title: '👋 Welcome to Sub2API',
-      },
-    },
+        title: '👋 Welcome to Cloudbase'
+      }
+    }
   },
   credits: {
     ledger: {

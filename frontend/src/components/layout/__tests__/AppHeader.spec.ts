@@ -24,8 +24,8 @@ describe('AppHeader GitHub dropdown visibility', () => {
 
   it('keeps the embedded frontend dist aligned with the admin-only rule', () => {
     expect(appLayoutChunk).toBeTruthy()
-    expect(appLayoutSource).toContain('href:"https://github.com/Wei-Shaw/sub2api"')
-    expect(appLayoutSource).not.toContain('}),e("a",{href:"https://github.com/Wei-Shaw/sub2api"')
+    expect(appLayoutSource).toContain('href:"https://github.com/Wei-Shaw/cloudbase"')
+    expect(appLayoutSource).not.toContain('}),e("a",{href:"https://github.com/Wei-Shaw/cloudbase"')
   })
 })
 

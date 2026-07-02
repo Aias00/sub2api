@@ -102,7 +102,7 @@ describe('OrderTable', () => {
     expect(wrapper.text()).not.toContain('#42')
   })
 
-  it('uses explicit user email or name when Sub2API provides it', () => {
+  it('uses explicit user email or name when Cloudbase provides it', () => {
     expect(mountTable({ user_email: 'billing@example.com', user_name: 'Configured User' }).text()).toContain('billing@example.com')
     expect(mountTable({ user_email: '', user_name: 'Configured User' }).text()).toContain('Configured User')
   })

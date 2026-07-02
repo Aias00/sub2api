@@ -4,7 +4,7 @@ type LocaleCode = 'en' | 'zh'
 
 type LocaleMessages = Record<string, any>
 
-const LOCALE_KEY = 'sub2api_locale'
+const LOCALE_KEY = 'cloudbase_locale'
 const DEFAULT_LOCALE: LocaleCode = 'en'
 
 const localeLoaders: Record<LocaleCode, () => Promise<{ default: LocaleMessages }>> = {
@@ -89,7 +89,7 @@ export async function setLocale(locale: string): Promise<void> {
   localStorage.setItem(LOCALE_KEY, locale)
   document.documentElement.setAttribute('lang', locale)
 
-  window.dispatchEvent(new CustomEvent('sub2api-locale-changed', {
+  window.dispatchEvent(new CustomEvent('cloudbase-locale-changed', {
     detail: { locale }
   }))
 }

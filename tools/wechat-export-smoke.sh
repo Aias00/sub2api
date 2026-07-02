@@ -101,7 +101,7 @@ fi
 
 section "Node worker"
 if [[ "$RUN_WORKER_ONCE" == "1" ]]; then
-  SUB2API_BASE_URL="${API_BASE%/}" npm --prefix tools/wechat-worker run worker -- --once
+  CLOUDBASE_BASE_URL="${API_BASE%/}" npm --prefix tools/wechat-worker run worker -- --once
 else
   echo "Worker --once skipped. Set RUN_WORKER_ONCE=1 to verify task claiming with the local Node worker."
 fi
@@ -124,7 +124,7 @@ fi
 section "Manual real-chain acceptance"
 cat <<'CHECKLIST'
 Required manual checks for a full real WeChat export run:
-1. Open /wechat and authenticate in Sub2API.
+1. Open /wechat and authenticate in Cloudbase.
 2. Create a WeChat QR session and scan it until status becomes ready.
 3. Search a real official account and bind it, or import at least one mp.weixin.qq.com article link.
 4. Sync account articles or select imported links.

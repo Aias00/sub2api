@@ -1,4 +1,4 @@
-"""Supervisor for the combined Sub2API content worker."""
+"""Supervisor for the combined Cloudbase content worker."""
 
 from __future__ import annotations
 

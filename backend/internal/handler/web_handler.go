@@ -7,16 +7,16 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Wei-Shaw/sub2api/internal/payment"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/cloudbase/internal/payment"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
 const (
-	webAccessTokenCookie  = "sub2api_web_access_token"
-	webRefreshTokenCookie = "sub2api_web_refresh_token"
-	webPaymentSource      = "sub2api_web"
+	webAccessTokenCookie  = "cloudbase_web_access_token"
+	webRefreshTokenCookie = "cloudbase_web_refresh_token"
+	webPaymentSource      = "cloudbase_web"
 )
 
 type WebHandler struct {
@@ -156,7 +156,7 @@ func (h *WebHandler) Register(c *gin.Context) {
 func (h *WebHandler) Refresh(c *gin.Context) {
 	refreshToken, err := readWebSessionCookie(c, webRefreshTokenCookie)
 	if err != nil || strings.TrimSpace(refreshToken) == "" {
-		response.Unauthorized(c, "Sub2API refresh token is missing")
+		response.Unauthorized(c, "Cloudbase refresh token is missing")
 		return
 	}
 
@@ -203,7 +203,7 @@ func (h *WebHandler) OAuthSession(c *gin.Context) {
 		return
 	}
 	if !isWebSessionAccountSource(user.SignupSource) {
-		response.Forbidden(c, "Sub2API token is not valid for this web session")
+		response.Forbidden(c, "Cloudbase token is not valid for this web session")
 		return
 	}
 	if !user.IsActive() {
@@ -450,8 +450,8 @@ func (h *WebHandler) webCreditsPayload(ctx context.Context, user *service.User) 
 	creditsPerBalance := h.creditsPerBalance(ctx)
 	return gin.H{
 		"remainingCredits": int(balance * creditsPerBalance),
-		"sub2apiBalance":   balance,
-		"sub2apiUserId":    userID,
+		"cloudbaseBalance": balance,
+		"cloudbaseUserId":  userID,
 	}
 }
 

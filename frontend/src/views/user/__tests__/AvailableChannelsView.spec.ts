@@ -102,7 +102,7 @@ describe('AvailableChannelsView', () => {
     appStoreState.cachedPublicSettings = null
   })
 
-  it('passes Sub2API shell labels into the available channels table and search', async () => {
+  it('passes Cloudbase shell labels into the available channels table and search', async () => {
     appStoreState.cachedPublicSettings = {
       available_channels_shell_config: JSON.stringify({
         zh: {

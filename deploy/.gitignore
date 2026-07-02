@@ -1,13 +1,17 @@
 # =============================================================================
-# Sub2API Deploy Directory - Git Ignore
+# Cloudbase Deploy Directory - Git Ignore
 # =============================================================================
 
 # Data directories (generated at runtime when using docker-compose.local.yml)
 data/
+data_cloudbase/
 postgres_data/
 postgres_data.backup-*/
+postgres_data_cloudbase/
 redis_data/
+redis_data_cloudbase/
 runtime/
+runtime_cloudbase/
 hot/
 
 # Environment configuration (contains sensitive information)

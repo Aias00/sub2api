@@ -4,7 +4,7 @@ import (
 	"net/url"
 	"strings"
 
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
 )
 
 const (

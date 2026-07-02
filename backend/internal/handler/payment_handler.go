@@ -7,13 +7,13 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/internal/payment"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Wei-Shaw/cloudbase/internal/payment"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
+	middleware2 "github.com/Wei-Shaw/cloudbase/internal/server/middleware"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

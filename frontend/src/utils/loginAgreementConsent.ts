@@ -1,4 +1,4 @@
-const LOGIN_AGREEMENT_STORAGE_KEY = 'sub2api_login_agreement_attempt'
+const LOGIN_AGREEMENT_STORAGE_KEY = 'cloudbase_login_agreement_attempt'
 
 export interface LoginAgreementAcceptancePayload {
   agreement_accepted: true

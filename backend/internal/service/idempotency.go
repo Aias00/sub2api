@@ -13,8 +13,8 @@ import (
 	"time"
 	"unicode/utf8"
 
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/util/logredact"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	"github.com/Wei-Shaw/cloudbase/internal/util/logredact"
 )
 
 const (

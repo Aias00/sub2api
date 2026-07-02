@@ -131,12 +131,12 @@ router.afterEach(() => {
 onBeforeUnmount(() => {
   document.removeEventListener('visibilitychange', onVisibilityChange)
   window.removeEventListener('admin-compliance-required', onAdminComplianceRequired)
-  window.removeEventListener('sub2api-locale-changed', onLocaleChanged)
+  window.removeEventListener('cloudbase-locale-changed', onLocaleChanged)
 })
 
 onMounted(async () => {
   window.addEventListener('admin-compliance-required', onAdminComplianceRequired)
-  window.addEventListener('sub2api-locale-changed', onLocaleChanged)
+  window.addEventListener('cloudbase-locale-changed', onLocaleChanged)
 
   // Check if setup is needed
   try {

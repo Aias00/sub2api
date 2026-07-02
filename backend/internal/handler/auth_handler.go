@@ -11,13 +11,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/ip"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/cloudbase/internal/config"
+	"github.com/Wei-Shaw/cloudbase/internal/handler/dto"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/ip"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
+	middleware2 "github.com/Wei-Shaw/cloudbase/internal/server/middleware"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -37,7 +37,7 @@ type AuthHandler struct {
 const (
 	webAuthSource                   = "web"
 	webAccountSignupSource          = "email"
-	webBridgeTokenQueryName         = "sub2api_web_bridge_token"
+	webBridgeTokenQueryName         = "cloudbase_web_bridge_token"
 	webAuthSourceTrustedContextName = "web_auth_source_trusted"
 )
 

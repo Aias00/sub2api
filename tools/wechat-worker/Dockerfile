@@ -3,7 +3,7 @@ FROM node:22-alpine
 WORKDIR /worker
 
 ENV NODE_ENV=production
-ENV SUB2API_BASE_URL=http://sub2api:8080/api/v1
+ENV CLOUDBASE_BASE_URL=http://cloudbase:8080/api/v1
 ENV WECHAT_EXPORT_OUTPUT_DIR=/app/data/wechat-export
 ENV WECHAT_EXPORT_STORAGE_KEY_ROOT=/app/data/wechat-export
 

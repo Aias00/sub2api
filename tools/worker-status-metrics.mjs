@@ -11,8 +11,8 @@ const workerTokenHeader = env('WORKER_STATUS_WORKER_TOKEN_HEADER', '')
 
 const serviceConfigs = {
   wechat: {
-    prefix: 'sub2api_wechat_export',
-    healthMetric: 'sub2api_wechat_export_worker_health',
+    prefix: 'cloudbase_wechat_export',
+    healthMetric: 'cloudbase_wechat_export_worker_health',
     healthValues: ['idle', 'waiting', 'active', 'attention'],
     countFields: [
       ['total_count', 'total_count'],
@@ -27,8 +27,8 @@ const serviceConfigs = {
     ],
   },
   image: {
-    prefix: 'sub2api_image_workspace',
-    healthMetric: 'sub2api_image_workspace_worker_health',
+    prefix: 'cloudbase_image_workspace',
+    healthMetric: 'cloudbase_image_workspace_worker_health',
     healthValues: ['idle', 'waiting', 'active', 'attention'],
     countFields: [
       ['total_count', 'total_count'],
@@ -82,7 +82,7 @@ function renderMetrics(status, config) {
   const health = String(status.health || 'idle')
   const attentionReasons = Array.isArray(status.attention_reasons) ? status.attention_reasons : []
   const lines = [
-    `# HELP ${config.healthMetric} Worker health state exported from the Sub2API status API.`,
+    `# HELP ${config.healthMetric} Worker health state exported from the Cloudbase status API.`,
     `# TYPE ${config.healthMetric} gauge`,
     ...config.healthValues.map((value) => metricLine(config.healthMetric, health === value ? 1 : 0, { health: value })),
   ]

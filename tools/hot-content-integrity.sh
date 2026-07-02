@@ -5,7 +5,7 @@ BASE_URL="${BASE_URL:-http://127.0.0.1:8080}"
 API_BASE="${API_BASE:-${BASE_URL%/}/api/v1}"
 REQUIRE_DB="${REQUIRE_HOT_DB:-0}"
 RUN_API_SMOKE="${RUN_HOT_API_SMOKE:-1}"
-PGDOCKER_CONTAINER="${PGDOCKER_CONTAINER:-sub2api-postgres}"
+PGDOCKER_CONTAINER="${PGDOCKER_CONTAINER:-cloudbase-postgres}"
 
 PSQL_ARGS=()
 if [[ -n "${DATABASE_URL:-}" ]]; then
@@ -14,8 +14,8 @@ else
   PSQL_ARGS+=(
     "host=${PGHOST:-127.0.0.1}"
     "port=${PGPORT:-5432}"
-    "user=${PGUSER:-sub2api}"
-    "dbname=${PGDATABASE:-sub2api}"
+    "user=${PGUSER:-cloudbase}"
+    "dbname=${PGDATABASE:-cloudbase}"
     "sslmode=${PGSSLMODE:-disable}"
   )
 fi
@@ -32,8 +32,8 @@ psql_query() {
   fi
   if command -v docker >/dev/null 2>&1 && docker inspect "$PGDOCKER_CONTAINER" >/dev/null 2>&1; then
     docker exec -i "$PGDOCKER_CONTAINER" psql \
-      -U "${PGUSER:-sub2api}" \
-      -d "${PGDATABASE:-sub2api}" \
+      -U "${PGUSER:-cloudbase}" \
+      -d "${PGDATABASE:-cloudbase}" \
       -v ON_ERROR_STOP=1 \
       "$@"
     return
@@ -129,7 +129,7 @@ fi
 
 section "Hot surface mapping"
 cat <<'NOTE'
-The live Sub2API Hot collector reads enabled RSS sources from hot_sources and
+The live Cloudbase Hot collector reads enabled RSS sources from hot_sources and
 writes runs, checkpoints, run events, and hot_items directly into PostgreSQL.
 Legacy presentation tables are preserved as empty table structures only:
 hot_media_assets, hot_feed_items, hot_daily_issues, hot_daily_sections,

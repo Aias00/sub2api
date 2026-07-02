@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/sub2api/internal/payment"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Wei-Shaw/cloudbase/ent/paymentproviderinstance"
+	"github.com/Wei-Shaw/cloudbase/internal/payment"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
 )
 
 func enabledVisibleMethodsForProvider(providerKey, supportedTypes string) []string {

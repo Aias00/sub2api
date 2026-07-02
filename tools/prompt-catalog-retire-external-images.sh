@@ -4,7 +4,7 @@ set -euo pipefail
 APPLY="${PROMPT_CATALOG_RETIRE_EXTERNAL_IMAGES_APPLY:-0}"
 ALLOWED_HOSTS_CSV="${PROMPT_CATALOG_ALLOWED_IMAGE_HOSTS:-static.cloudbase.eu.org}"
 TARGET_HOSTS_CSV="${PROMPT_CATALOG_RETIRE_IMAGE_HOSTS:-}"
-PGDOCKER_CONTAINER="${PGDOCKER_CONTAINER:-sub2api-postgres}"
+PGDOCKER_CONTAINER="${PGDOCKER_CONTAINER:-cloudbase-postgres}"
 
 PSQL_ARGS=()
 if [[ -n "${DATABASE_URL:-}" ]]; then
@@ -13,8 +13,8 @@ else
   PSQL_ARGS+=(
     "host=${PGHOST:-127.0.0.1}"
     "port=${PGPORT:-5432}"
-    "user=${PGUSER:-sub2api}"
-    "dbname=${PGDATABASE:-sub2api}"
+    "user=${PGUSER:-cloudbase}"
+    "dbname=${PGDATABASE:-cloudbase}"
     "sslmode=${PGSSLMODE:-disable}"
   )
 fi
@@ -26,8 +26,8 @@ psql_query() {
   fi
   if command -v docker >/dev/null 2>&1 && docker inspect "$PGDOCKER_CONTAINER" >/dev/null 2>&1; then
     docker exec -i "$PGDOCKER_CONTAINER" psql \
-      -U "${PGUSER:-sub2api}" \
-      -d "${PGDATABASE:-sub2api}" \
+      -U "${PGUSER:-cloudbase}" \
+      -d "${PGDATABASE:-cloudbase}" \
       -v ON_ERROR_STOP=1 \
       "$@"
     return

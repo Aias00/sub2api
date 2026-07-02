@@ -5,7 +5,7 @@ export type CreditsCopy = {
   purchase: string
   orders: string
   credits: string
-  sub2apiBalance: string
+  cloudbaseBalance: string
   conversion: string
   balanceLabel: string
   actionsTitle: string
@@ -38,7 +38,7 @@ const creditsLabelKeys: Array<keyof CreditsCopy> = [
   'purchase',
   'orders',
   'credits',
-  'sub2apiBalance',
+  'cloudbaseBalance',
   'conversion',
   'balanceLabel',
   'actionsTitle',

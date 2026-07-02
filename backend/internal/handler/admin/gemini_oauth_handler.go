@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

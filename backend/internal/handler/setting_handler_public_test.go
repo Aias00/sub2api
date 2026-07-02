@@ -9,8 +9,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/cloudbase/internal/config"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -372,13 +372,13 @@ func TestSettingHandler_GetRobotsTxt_FallsBackToRequestOrigin(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
 	c.Request = httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
-	c.Request.Host = "sub2api.example.com"
+	c.Request.Host = "cloudbase.example.com"
 	c.Request.Header.Set("X-Forwarded-Proto", "https")
 
 	h.GetRobotsTxt(c)
 
 	require.Equal(t, http.StatusOK, recorder.Code)
-	require.Contains(t, recorder.Body.String(), "Sitemap: https://sub2api.example.com/sitemap.xml")
+	require.Contains(t, recorder.Body.String(), "Sitemap: https://cloudbase.example.com/sitemap.xml")
 }
 
 func TestSettingHandler_GetSitemapXML_UsesWebAppURLAndDefaultLocale(t *testing.T) {

@@ -4,14 +4,14 @@ import (
 	"context"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/predicate"
-	"github.com/Wei-Shaw/sub2api/ent/schema/mixins"
-	"github.com/Wei-Shaw/sub2api/ent/user"
-	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Wei-Shaw/cloudbase/ent/group"
+	"github.com/Wei-Shaw/cloudbase/ent/predicate"
+	"github.com/Wei-Shaw/cloudbase/ent/schema/mixins"
+	"github.com/Wei-Shaw/cloudbase/ent/user"
+	"github.com/Wei-Shaw/cloudbase/ent/usersubscription"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 )
 
 type userSubscriptionRepository struct {

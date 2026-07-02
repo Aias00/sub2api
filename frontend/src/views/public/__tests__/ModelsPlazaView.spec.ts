@@ -17,7 +17,7 @@ const currentLocale = vi.hoisted(() => ({ value: 'zh-CN' }))
 
 const appStoreState = vi.hoisted(() => ({
   publicSettingsLoaded: true,
-  siteName: 'Sub2API',
+  siteName: 'Cloudbase',
   siteLogo: '',
   docUrl: '/docs',
   cachedPublicSettings: {

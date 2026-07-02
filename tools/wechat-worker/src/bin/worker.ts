@@ -89,7 +89,7 @@ interface ClaimResponse {
   leaseToken?: string
 }
 
-const baseURL = (process.env.SUB2API_BASE_URL || 'http://127.0.0.1:8080/api/v1').replace(/\/+$/, '')
+const baseURL = (process.env.CLOUDBASE_BASE_URL || 'http://127.0.0.1:8080/api/v1').replace(/\/+$/, '')
 const workerToken = process.env.WECHAT_EXPORT_WORKER_TOKEN || ''
 const outputRoot = process.env.WECHAT_EXPORT_OUTPUT_DIR || path.resolve(process.cwd(), 'runtime/wechat-export')
 const storageKeyRoot = process.env.WECHAT_EXPORT_STORAGE_KEY_ROOT || outputRoot

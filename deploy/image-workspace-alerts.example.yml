@@ -3,58 +3,58 @@
 # These rules assume an external probe periodically authenticates against
 # GET /api/v1/image-workspace/worker/status and maps the JSON fields below to gauges:
 #
-# - sub2api_image_workspace_worker_health{health="idle|waiting|active|attention"}
-# - sub2api_image_workspace_queued_count
-# - sub2api_image_workspace_running_count
-# - sub2api_image_workspace_stale_running_count
-# - sub2api_image_workspace_failed_count
-# - sub2api_image_workspace_artifact_count
-# - sub2api_image_workspace_oldest_queued_seconds
-# - sub2api_image_workspace_last_task_age_seconds
+# - cloudbase_image_workspace_worker_health{health="idle|waiting|active|attention"}
+# - cloudbase_image_workspace_queued_count
+# - cloudbase_image_workspace_running_count
+# - cloudbase_image_workspace_stale_running_count
+# - cloudbase_image_workspace_failed_count
+# - cloudbase_image_workspace_artifact_count
+# - cloudbase_image_workspace_oldest_queued_seconds
+# - cloudbase_image_workspace_last_task_age_seconds
 #
 # The status API is protected by IMAGE_WORKSPACE_WORKER_TOKEN, or by the
 # private-network development fallback when explicitly enabled. Production
 # probes should use a dedicated worker token and avoid browser exposure.
 
 groups:
-  - name: sub2api-image-workspace
+  - name: cloudbase-image-workspace
     rules:
       - alert: ImageWorkspaceStaleRunningTask
-        expr: sub2api_image_workspace_stale_running_count > 0
+        expr: cloudbase_image_workspace_stale_running_count > 0
         for: 5m
         labels:
           severity: warning
-          service: sub2api-image-workspace
+          service: cloudbase-image-workspace
         annotations:
           summary: "Image Workspace has stale running tasks"
           description: "At least one running image task lease expired and should be reclaimed by the worker."
 
       - alert: ImageWorkspaceQueueBacklog
-        expr: sub2api_image_workspace_oldest_queued_seconds > 900
+        expr: cloudbase_image_workspace_oldest_queued_seconds > 900
         for: 10m
         labels:
           severity: warning
-          service: sub2api-image-workspace
+          service: cloudbase-image-workspace
         annotations:
           summary: "Image Workspace queue is waiting too long"
           description: "The oldest queued image task has been waiting for more than 15 minutes."
 
       - alert: ImageWorkspaceFailureBacklog
-        expr: sub2api_image_workspace_failed_count >= 3
+        expr: cloudbase_image_workspace_failed_count >= 3
         for: 10m
         labels:
           severity: warning
-          service: sub2api-image-workspace
+          service: cloudbase-image-workspace
         annotations:
           summary: "Image Workspace has multiple failed tasks"
           description: "Three or more failed image tasks are visible in the worker status snapshot."
 
       - alert: ImageWorkspaceWorkerAttention
-        expr: sub2api_image_workspace_worker_health{health="attention"} == 1
+        expr: cloudbase_image_workspace_worker_health{health="attention"} == 1
         for: 5m
         labels:
           severity: warning
-          service: sub2api-image-workspace
+          service: cloudbase-image-workspace
         annotations:
           summary: "Image Workspace worker status needs attention"
           description: "The worker status endpoint reports attention state. Check attention_reasons and task error messages."

@@ -8,14 +8,14 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/apikey"
-	"github.com/Wei-Shaw/sub2api/ent/group"
-	"github.com/Wei-Shaw/sub2api/ent/schema/mixins"
-	"github.com/Wei-Shaw/sub2api/ent/user"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Wei-Shaw/cloudbase/ent/apikey"
+	"github.com/Wei-Shaw/cloudbase/ent/group"
+	"github.com/Wei-Shaw/cloudbase/ent/schema/mixins"
+	"github.com/Wei-Shaw/cloudbase/ent/user"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
 
 	entsql "entgo.io/ent/dialect/sql"
 )
@@ -790,6 +790,7 @@ func userEntityToService(u *dbent.User) *service.User {
 		RPMLimit:                       u.RpmLimit,
 		CreatedAt:                      u.CreatedAt,
 		UpdatedAt:                      u.UpdatedAt,
+		DeletedAt:                      u.DeletedAt,
 	}
 	// Parse extra emails JSON (supports both old []string and new []NotifyEmailEntry format)
 	if u.BalanceNotifyExtraEmails != "" && u.BalanceNotifyExtraEmails != "[]" {

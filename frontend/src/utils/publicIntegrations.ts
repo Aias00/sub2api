@@ -1,6 +1,6 @@
 import type { PublicSettings } from '@/types'
 
-const INTEGRATION_ATTR = 'data-sub2api-public-integration'
+const INTEGRATION_ATTR = 'data-cloudbase-public-integration'
 
 type NodeTarget = 'head' | 'body'
 

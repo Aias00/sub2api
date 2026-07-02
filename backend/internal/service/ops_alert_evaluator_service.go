@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/Wei-Shaw/cloudbase/internal/config"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
@@ -801,7 +801,7 @@ func buildOpsAlertEmailBody(rule *OpsAlertRule, event *OpsAlertEvent) string {
 		threshold = fmt.Sprintf("%.2f", *event.ThresholdValue)
 	}
 	return renderProductEmail(emailTemplateData{
-		SiteName: "Sub2API",
+		SiteName: "Cloudbase",
 		Title:    "Ops Alert",
 		Intro:    "A monitored operation rule has fired.",
 		SupportHTML: emailDetailsBlock("Alert details", []emailDetailRow{

@@ -5,13 +5,13 @@ services:
     build:
       context: ../tools
       dockerfile: content-worker.Dockerfile
-    image: sub2api-content-worker:${CONTENT_WORKER_IMAGE_TAG:-local}
-    container_name: sub2api-content-worker
+    image: cloudbase-content-worker:${CONTENT_WORKER_IMAGE_TAG:-local}
+    container_name: cloudbase-content-worker
     restart: unless-stopped
     profiles:
       - content-worker
     environment:
-      - DATABASE_URL=${HOT_DATABASE_URL:-postgres://sub2api:${POSTGRES_PASSWORD}@postgres:5432/sub2api?sslmode=disable}
+      - DATABASE_URL=${HOT_DATABASE_URL:-postgres://cloudbase:${POSTGRES_PASSWORD}@postgres:5432/cloudbase?sslmode=disable}
       - HOT_WORKER_STATUS_PATH=${HOT_WORKER_STATUS_PATH:-/app/runtime/hot-worker-status.json}
       - HOT_RSS_WORKER_STATUS_PATH=${HOT_RSS_WORKER_STATUS_PATH:-/app/runtime/hot-worker-status.json}
       - HOT_RSS_COLLECT_INTERVAL_MS=${HOT_RSS_COLLECT_INTERVAL_MS:-1800000}
@@ -39,4 +39,4 @@ services:
       postgres:
         condition: service_healthy
     networks:
-      - sub2api-network
+      - cloudbase-network

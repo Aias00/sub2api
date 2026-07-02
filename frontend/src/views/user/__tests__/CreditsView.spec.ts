@@ -20,7 +20,7 @@ const configuredCreditsShellConfig = vi.hoisted(() => JSON.stringify({
       purchase: 'Buy balance',
       orders: 'Billing history',
       credits: 'Configured balance',
-      sub2apiBalance: 'Configured balance',
+      cloudbaseBalance: 'Configured balance',
       balanceLabel: 'Configured balance: {balance}',
       actionsTitle: 'Configured actions',
       actionsDescription: 'Configured action description.',

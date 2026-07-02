@@ -88,7 +88,7 @@ describe('ChannelStatusView', () => {
     appStoreState.cachedPublicSettings = null
   })
 
-  it('passes Sub2API channel status shell labels to monitor components', async () => {
+  it('passes Cloudbase channel status shell labels to monitor components', async () => {
     appStoreState.cachedPublicSettings = {
       channel_status_shell_config: JSON.stringify({
         zh: {

@@ -106,7 +106,7 @@ validate-image-workspace-production-preflight:
 
 validate-business-worker:
 	@node --check tools/business-worker.mjs
-	@POSTGRES_PASSWORD="$${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/sub2api-business-worker-compose.yml
+	@POSTGRES_PASSWORD="$${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/cloudbase-business-worker-compose.yml
 
 validate-home-business-capabilities:
 	@node tools/home-business-capabilities-smoke.mjs

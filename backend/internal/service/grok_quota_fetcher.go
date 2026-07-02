@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/xai"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/xai"
 )
 
 const grokQuotaSnapshotExtraKey = "grok_usage_snapshot"

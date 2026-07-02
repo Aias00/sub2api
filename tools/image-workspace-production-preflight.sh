@@ -202,7 +202,7 @@ if [[ -f deploy/image-workspace-alerts.example.yml ]]; then
     && grep -q "ImageWorkspaceQueueBacklog" deploy/image-workspace-alerts.example.yml \
     && grep -q "ImageWorkspaceFailureBacklog" deploy/image-workspace-alerts.example.yml \
     && grep -q "ImageWorkspaceWorkerAttention" deploy/image-workspace-alerts.example.yml \
-    && grep -q "sub2api_image_workspace_worker_health" deploy/image-workspace-alerts.example.yml; then
+    && grep -q "cloudbase_image_workspace_worker_health" deploy/image-workspace-alerts.example.yml; then
     echo "image_workspace_alert_rules=ok"
   else
     warn_or_fail "deploy/image-workspace-alerts.example.yml is missing required Image Workspace alert rules"
@@ -221,9 +221,9 @@ JSON
     WORKER_STATUS_INPUT_PATH="$tmp_status" \
     WORKER_STATUS_METRICS_PATH="$tmp_metrics" \
     node tools/worker-status-metrics.mjs >/tmp/image-workspace-worker-metrics.out
-  if grep -q "sub2api_image_workspace_worker_health{health=\"attention\"} 1" "$tmp_metrics" \
-    && grep -q "sub2api_image_workspace_stale_running_count 1" "$tmp_metrics" \
-    && grep -q "sub2api_image_workspace_artifact_count 4" "$tmp_metrics"; then
+  if grep -q "cloudbase_image_workspace_worker_health{health=\"attention\"} 1" "$tmp_metrics" \
+    && grep -q "cloudbase_image_workspace_stale_running_count 1" "$tmp_metrics" \
+    && grep -q "cloudbase_image_workspace_artifact_count 4" "$tmp_metrics"; then
     echo "image_workspace_metrics_export=ok"
   else
     warn_or_fail "tools/worker-status-metrics.mjs did not export required Image Workspace metrics"
@@ -235,7 +235,7 @@ fi
 
 section "Docker compose overlay"
 if command -v docker >/dev/null 2>&1; then
-  if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/sub2api-business-worker-compose.yml; then
+  if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/cloudbase-business-worker-compose.yml; then
     echo "docker_compose_business_worker_config=ok"
   else
     warn_or_fail "docker compose business worker overlay does not render"

@@ -35,10 +35,10 @@ const configuredPricingShellConfig = vi.hoisted(() => JSON.stringify({
 
 const appStoreState = vi.hoisted(() => ({
   publicSettingsLoaded: true,
-  siteName: 'Sub2API',
+  siteName: 'Cloudbase',
   siteLogo: '',
   cachedPublicSettings: {
-    site_name: 'Sub2API',
+    site_name: 'Cloudbase',
     site_logo: '',
     pricing_currency_symbol: '$',
     pricing_shell_config: configuredPricingShellConfig,
@@ -73,7 +73,7 @@ describe('PricingView', () => {
     currentLocale.value = 'en'
     appStoreState.publicSettingsLoaded = true
     appStoreState.cachedPublicSettings = {
-      site_name: 'Sub2API',
+      site_name: 'Cloudbase',
       site_logo: '',
       pricing_currency_symbol: '$',
       pricing_shell_config: configuredPricingShellConfig,

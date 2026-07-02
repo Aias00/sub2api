@@ -85,7 +85,7 @@ func renderProductEmail(data emailTemplateData) string {
 func normalizeEmailSiteName(siteName string) string {
 	siteName = strings.TrimSpace(siteName)
 	if siteName == "" {
-		return "Sub2API"
+		return "Cloudbase"
 	}
 	return siteName
 }

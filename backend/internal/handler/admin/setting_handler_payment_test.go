@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 )
 
 func TestDTORechargeProductsEncodesEmptyFeaturesAsArray(t *testing.T) {

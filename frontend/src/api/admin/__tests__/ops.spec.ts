@@ -13,7 +13,7 @@ describe('admin ops websocket runtime URL', () => {
     vi.restoreAllMocks()
   })
 
-  it('uses the same-origin Sub2API base path by default', async () => {
+  it('uses the same-origin Cloudbase base path by default', async () => {
     const { resolveOpsWebSocketURL } = await import('../ops')
     const expectedOrigin = new URL(window.location.origin)
     expectedOrigin.protocol = expectedOrigin.protocol === 'https:' ? 'wss:' : 'ws:'
@@ -23,14 +23,14 @@ describe('admin ops websocket runtime URL', () => {
     )
   })
 
-  it('follows injected public api_base_url for remote Sub2API runtimes', async () => {
+  it('follows injected public api_base_url for remote Cloudbase runtimes', async () => {
     window.__APP_CONFIG__ = {
-      api_base_url: 'https://api.example.com/sub2api/v1/',
+      api_base_url: 'https://api.example.com/cloudbase/v1/',
     } as typeof window.__APP_CONFIG__
     const { resolveOpsWebSocketURL } = await import('../ops')
 
     expect(resolveOpsWebSocketURL('/admin/ops/ws/qps')).toBe(
-      'wss://api.example.com/sub2api/v1/admin/ops/ws/qps',
+      'wss://api.example.com/cloudbase/v1/admin/ops/ws/qps',
     )
   })
 

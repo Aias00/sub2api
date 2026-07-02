@@ -1,13 +1,13 @@
 package routes
 
 import (
-	"github.com/Wei-Shaw/sub2api/internal/handler"
-	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
+	"github.com/Wei-Shaw/cloudbase/internal/handler"
+	"github.com/Wei-Shaw/cloudbase/internal/server/middleware"
 	"github.com/gin-gonic/gin"
 )
 
 // RegisterPromptRoutes registers public prompt catalog routes shared by
-// Sub2API web frontend surfaces.
+// Cloudbase web frontend surfaces.
 func RegisterPromptRoutes(v1 *gin.RouterGroup, h *handler.Handlers, adminAuth middleware.AdminAuthMiddleware) {
 	if h == nil {
 		return

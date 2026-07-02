@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
 )
 
 func activeEmailScopeForUserID(userID int64) string {

@@ -7,9 +7,9 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/Wei-Shaw/cloudbase/internal/config"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/antigravity"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -267,7 +267,7 @@ func TestSettingService_UpdateSettings_PersistsWebRuntimeSettings(t *testing.T) 
 
 	err := svc.UpdateSettings(context.Background(), &SystemSettings{
 		WebAppName:                    " Prompt Web ",
-		WebAppDescription:             " Managed by Sub2API ",
+		WebAppDescription:             " Managed by Cloudbase ",
 		WebAppLogo:                    " https://static.example.com/logo.png ",
 		WebDefaultLocale:              " zh ",
 		WebPromptCasesTitle:           " Cases title ",
@@ -304,7 +304,7 @@ func TestSettingService_UpdateSettings_PersistsWebRuntimeSettings(t *testing.T) 
 	})
 	require.NoError(t, err)
 	require.Equal(t, "Prompt Web", repo.updates[SettingKeyWebAppName])
-	require.Equal(t, "Managed by Sub2API", repo.updates[SettingKeyWebAppDescription])
+	require.Equal(t, "Managed by Cloudbase", repo.updates[SettingKeyWebAppDescription])
 	require.Equal(t, "https://static.example.com/logo.png", repo.updates[SettingKeyWebAppLogo])
 	require.Equal(t, "zh", repo.updates[SettingKeyWebDefaultLocale])
 	require.Equal(t, "Cases title", repo.updates[SettingKeyPromptCasesTitle])

@@ -7,7 +7,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/cloudbase/internal/config"
 	"github.com/stretchr/testify/require"
 )
 
@@ -188,7 +188,7 @@ func TestSettingService_GetPublicSettings_DefaultsWorkspaceShellConfig(t *testin
 	require.Equal(t, "Task and artifact status", payload["en"]["workspaceTitle"])
 	require.Contains(t, payload["en"]["workspaceStatus"], "real image tasks")
 	require.NotContains(t, payload["en"]["workspaceStatus"], "does not call a model directly")
-	require.NotContains(t, payload["en"]["workspaceStatus"], "future Sub2API")
+	require.NotContains(t, payload["en"]["workspaceStatus"], "future Cloudbase")
 	require.Equal(t, "Copy prompt", payload["en"]["copyPromptLabel"])
 }
 
@@ -219,14 +219,14 @@ func TestSettingService_GetPublicSettings_DefaultsPromptCatalogShellConfig(t *te
 	require.Equal(t, "imported_at", payload["zh"].Defaults.SortBy)
 	require.Equal(t, "desc", payload["zh"].Defaults.SortOrder)
 	require.Equal(t, "/image-generator", payload["zh"].Defaults.GeneratorPath)
-	require.Equal(t, "sub2api-vue-prompt-catalog", payload["zh"].Defaults.GeneratorDraftSource)
+	require.Equal(t, "cloudbase-vue-prompt-catalog", payload["zh"].Defaults.GeneratorDraftSource)
 	require.Equal(t, "case", payload["en"].Defaults.SourceType)
 	require.True(t, payload["en"].Defaults.HasImage)
 	require.Equal(t, 24, payload["en"].Defaults.PageSize)
 	require.Equal(t, "imported_at", payload["en"].Defaults.SortBy)
 	require.Equal(t, "desc", payload["en"].Defaults.SortOrder)
 	require.Equal(t, "/image-generator", payload["en"].Defaults.GeneratorPath)
-	require.Equal(t, "sub2api-vue-prompt-catalog", payload["en"].Defaults.GeneratorDraftSource)
+	require.Equal(t, "cloudbase-vue-prompt-catalog", payload["en"].Defaults.GeneratorDraftSource)
 	require.Equal(t, "提示词案例库", payload["zh"].Labels["title"])
 	require.Equal(t, "提示词案例库", payload["zh"].Labels["caseTitle"])
 	require.Equal(t, "提示词模板库", payload["zh"].Labels["templateTitle"])
@@ -1048,9 +1048,9 @@ func TestSettingService_GetPublicSettings_ExposesWebRuntimeSettings(t *testing.T
 	svc := NewSettingService(&settingPublicRepoStub{
 		values: map[string]string{
 			SettingKeyRegistrationEnabled:          "true",
-			SettingKeySiteName:                     "Sub2API Name",
+			SettingKeySiteName:                     "Cloudbase Name",
 			SettingKeySiteLogo:                     "https://static.example.com/site-logo.png",
-			SettingKeySiteSubtitle:                 "Sub2API subtitle",
+			SettingKeySiteSubtitle:                 "Cloudbase subtitle",
 			SettingKeyGoogleOAuthEnabled:           "true",
 			SettingKeyGoogleOAuthClientID:          "google-client",
 			SettingKeyWebAppName:                   "Web Name",
@@ -1167,7 +1167,7 @@ func TestSettingService_GetPublicSettings_IgnoresLegacyTouchRuntimeKeys(t *testi
 	svc := NewSettingService(&settingPublicRepoStub{
 		values: map[string]string{
 			SettingKeyRegistrationEnabled:        "true",
-			SettingKeySiteName:                   "Sub2API Name",
+			SettingKeySiteName:                   "Cloudbase Name",
 			"touch_app_name":                     "Legacy Touch Name",
 			"touch_prompt_cases_title":           "Legacy Cases",
 			"touch_prompt_templates_description": "Legacy Templates",
@@ -1183,7 +1183,7 @@ func TestSettingService_GetPublicSettings_IgnoresLegacyTouchRuntimeKeys(t *testi
 
 	settings, err := svc.GetPublicSettings(context.Background())
 	require.NoError(t, err)
-	require.Equal(t, "Sub2API Name", settings.WebAppName)
+	require.Equal(t, "Cloudbase Name", settings.WebAppName)
 	require.Empty(t, settings.PromptCasesTitle)
 	require.Empty(t, settings.PromptTemplatesDescription)
 	require.NotEqual(t, `{"zh":{"title":"旧工作台"}}`, settings.WorkspaceShellConfig)
@@ -1199,7 +1199,7 @@ func TestSettingService_GetPublicSettings_UsesOnlyGenericRuntimeKeys(t *testing.
 	svc := NewSettingService(&settingPublicRepoStub{
 		values: map[string]string{
 			SettingKeyRegistrationEnabled: "true",
-			SettingKeySiteName:            "Sub2API Name",
+			SettingKeySiteName:            "Cloudbase Name",
 			SettingKeyWebAppName:          "Web Name",
 			"touch_app_name":              "Legacy Touch Name",
 			SettingKeyPromptCasesTitle:    "Web Cases",

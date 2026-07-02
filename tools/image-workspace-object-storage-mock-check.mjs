@@ -10,11 +10,11 @@ const png1x1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8A
 const apiKey = 'mock-image-workspace-key'
 const accessKeyID = 'mock-r2-access-key'
 const secretAccessKey = 'mock-r2-secret-key'
-const bucket = 'sub2api-image-workspace'
+const bucket = 'cloudbase-image-workspace'
 const keyPrefix = 'image-workspace-e2e'
 const publicBaseURL = 'https://assets.example.test/image-workspace'
 const workerToken = 'mock-worker-token'
-const outputDir = mkdtempSync(join(tmpdir(), 'sub2api-image-object-storage-'))
+const outputDir = mkdtempSync(join(tmpdir(), 'cloudbase-image-object-storage-'))
 const keepOutput = process.env.KEEP_IMAGE_WORKSPACE_MOCK_OUTPUT === '1'
 const workerPath = resolve('tools/image-workspace-worker/src/worker.mjs')
 const upstreamRequests = []

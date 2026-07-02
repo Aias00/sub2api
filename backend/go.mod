@@ -1,4 +1,4 @@
-module github.com/Wei-Shaw/sub2api
+module github.com/Wei-Shaw/cloudbase
 
 go 1.26.4
 

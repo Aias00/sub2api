@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	dbuser "github.com/Wei-Shaw/sub2api/ent/user"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	dbuser "github.com/Wei-Shaw/cloudbase/ent/user"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
 )
 
 const emailPreferenceTokenVersion = "v1"
@@ -100,7 +100,7 @@ func (s *AuthService) welcomeEmailSiteName(ctx context.Context) string {
 	if s != nil && s.settingService != nil {
 		return s.settingService.GetSiteName(ctx)
 	}
-	return "Sub2API"
+	return "Cloudbase"
 }
 
 func (s *AuthService) emailPreferenceLinks(ctx context.Context, user *User) emailPreferenceLinks {
@@ -153,7 +153,7 @@ func (s *AuthService) emailPreferenceSecret() string {
 	if s != nil && s.cfg != nil && strings.TrimSpace(s.cfg.JWT.Secret) != "" {
 		return strings.TrimSpace(s.cfg.JWT.Secret)
 	}
-	return "sub2api-email-preference-development-secret"
+	return "cloudbase-email-preference-development-secret"
 }
 
 func emailPreferenceHash(email string) string {
@@ -266,7 +266,7 @@ func (s *AuthService) SubscribeMarketingEmails(ctx context.Context, token string
 
 func RenderEmailPreferencePageHTML(page *EmailPreferencePage) string {
 	if page == nil {
-		page = &EmailPreferencePage{SiteName: "Sub2API", Title: "Email preferences", Message: "The preference link is invalid or expired."}
+		page = &EmailPreferencePage{SiteName: "Cloudbase", Title: "Email preferences", Message: "The preference link is invalid or expired."}
 	}
 	siteName := normalizeEmailSiteName(page.SiteName)
 	status := "Subscribed"

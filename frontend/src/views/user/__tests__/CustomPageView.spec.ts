@@ -83,7 +83,7 @@ describe('CustomPageView', () => {
     adminSettingsStoreState.customMenuItems = []
   })
 
-  it('renders missing custom-page state from Sub2API shell labels', () => {
+  it('renders missing custom-page state from Cloudbase shell labels', () => {
     const wrapper = mount(CustomPageView, {
       global: {
         stubs: {
@@ -97,7 +97,7 @@ describe('CustomPageView', () => {
     expect(wrapper.text()).toContain('配置不存在描述')
   })
 
-  it('renders invalid and iframe custom-page actions from Sub2API shell labels', async () => {
+  it('renders invalid and iframe custom-page actions from Cloudbase shell labels', async () => {
     routeState.params.id = 'bad-url'
     appStoreState.cachedPublicSettings.custom_menu_items = [
       { id: 'bad-url', url: 'ftp://example.com' },

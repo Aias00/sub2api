@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-HOSTNAME_TARGET="${HOSTNAME_TARGET:-sub2api.airflow.eu.org}"
-STAGING_HOSTNAME_TARGET="${STAGING_HOSTNAME_TARGET:-sub2api-staging.airflow.eu.org}"
+HOSTNAME_TARGET="${HOSTNAME_TARGET:-cloudbase.airflow.eu.org}"
+STAGING_HOSTNAME_TARGET="${STAGING_HOSTNAME_TARGET:-cloudbase-staging.airflow.eu.org}"
 PROD_PORT="${PROD_PORT:-65530}"
 STAGING_PORT="${STAGING_PORT:-65531}"
 PROD_HEALTH_HINT="${PROD_HEALTH_HINT:-}"
 STAGING_HEALTH_HINT="${STAGING_HEALTH_HINT:-}"
 CONFIG_FILE="${CLOUDFLARED_CONFIG:-$HOME/.cloudflared/config.yml}"
 CLOUDFLARED_BIN="${CLOUDFLARED_BIN:-cloudflared}"
-LOCK_DIR="${LOCK_DIR:-/tmp/sub2api-traffic-switch.lock.d}"
+LOCK_DIR="${LOCK_DIR:-/tmp/cloudbase-traffic-switch.lock.d}"
 
 usage() {
   cat <<USAGE
@@ -20,15 +20,15 @@ Usage:
   $0 --to staging
 
 Environment:
-  HOSTNAME_TARGET      primary hostname to switch (default: sub2api.airflow.eu.org)
-  STAGING_HOSTNAME_TARGET staging hostname for report checks (default: sub2api-staging.airflow.eu.org)
+  HOSTNAME_TARGET      primary hostname to switch (default: cloudbase.airflow.eu.org)
+  STAGING_HOSTNAME_TARGET staging hostname for report checks (default: cloudbase-staging.airflow.eu.org)
   PROD_PORT            prod local port (default: 65530)
   STAGING_PORT         staging local port (default: 65531)
   PROD_HEALTH_HINT     optional expected prod /health marker (e.g. env=prod)
   STAGING_HEALTH_HINT  optional expected staging /health marker (e.g. env=staging)
   CLOUDFLARED_CONFIG   cloudflared config path (default: ~/.cloudflared/config.yml)
   CLOUDFLARED_BIN      cloudflared binary (default: cloudflared)
-  LOCK_DIR             lock directory path (default: /tmp/sub2api-traffic-switch.lock.d)
+  LOCK_DIR             lock directory path (default: /tmp/cloudbase-traffic-switch.lock.d)
 USAGE
 }
 
@@ -125,7 +125,7 @@ reload_cloudflared() {
   local old_pid=""
   old_pid="$(pgrep -f "$pattern" | head -n1 || true)"
 
-  nohup "$CLOUDFLARED_BIN" tunnel --config "$CONFIG_FILE" run >/tmp/cloudflared-sub2api-switch.log 2>&1 &
+  nohup "$CLOUDFLARED_BIN" tunnel --config "$CONFIG_FILE" run >/tmp/cloudflared-cloudbase-switch.log 2>&1 &
   sleep 2
   local newest_pid=""
   newest_pid="$(pgrep -f "$pattern" | tail -n1 || true)"
@@ -254,15 +254,15 @@ dry_run_report() {
 
   log "----- Suggested drill sequence -----"
   if [[ "$current_target" == "prod" ]]; then
-    log "1) ./switch_sub2api_traffic.sh --to staging"
+    log "1) ./switch_cloudbase_traffic.sh --to staging"
     log "2) verify business flow on ${HOSTNAME_TARGET}"
-    log "3) ./switch_sub2api_traffic.sh --to prod"
+    log "3) ./switch_cloudbase_traffic.sh --to prod"
   elif [[ "$current_target" == "staging" ]]; then
-    log "1) ./switch_sub2api_traffic.sh --to prod"
+    log "1) ./switch_cloudbase_traffic.sh --to prod"
     log "2) verify business flow on ${HOSTNAME_TARGET}"
-    log "3) ./switch_sub2api_traffic.sh --to staging (optional rollback drill)"
+    log "3) ./switch_cloudbase_traffic.sh --to staging (optional rollback drill)"
   else
-    log "1) ./switch_sub2api_traffic.sh --status"
+    log "1) ./switch_cloudbase_traffic.sh --status"
     log "2) fix unknown route before any switch"
   fi
 

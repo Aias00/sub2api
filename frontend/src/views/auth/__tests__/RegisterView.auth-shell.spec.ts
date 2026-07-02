@@ -73,7 +73,7 @@ describe('RegisterView auth shell', () => {
       turnstile_enabled: false,
       turnstile_site_key: '',
       password_min_length: 8,
-      site_name: 'Sub2API',
+      site_name: 'Cloudbase',
       wechat_oauth_enabled: false,
       github_oauth_enabled: false,
       google_oauth_enabled: false,
@@ -120,7 +120,7 @@ describe('RegisterView auth shell', () => {
 
     const text = wrapper.text()
     expect(text).toContain('Configured Create Account')
-    expect(text).toContain('Configured start for Sub2API')
+    expect(text).toContain('Configured start for Cloudbase')
     expect(text).toContain('Configured minimum 8')
     expect(text).toContain('(Configured optional)')
     expect(text).toContain('Configured existing account')
@@ -138,7 +138,7 @@ describe('RegisterView auth shell', () => {
       turnstile_enabled: false,
       turnstile_site_key: '',
       password_min_length: 8,
-      site_name: 'Sub2API',
+      site_name: 'Cloudbase',
       wechat_oauth_enabled: false,
       github_oauth_enabled: false,
       google_oauth_enabled: false,
@@ -199,7 +199,7 @@ describe('RegisterView auth shell', () => {
       turnstile_enabled: false,
       turnstile_site_key: '',
       password_min_length: 8,
-      site_name: 'Sub2API',
+      site_name: 'Cloudbase',
       wechat_oauth_enabled: false,
       github_oauth_enabled: false,
       google_oauth_enabled: false,

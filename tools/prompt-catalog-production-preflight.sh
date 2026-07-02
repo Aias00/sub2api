@@ -3,7 +3,7 @@ set -euo pipefail
 
 BASE_URL="${BASE_URL:-http://127.0.0.1:8080}"
 API_BASE="${API_BASE:-${BASE_URL%/}/api/v1}"
-PGDOCKER_CONTAINER="${PGDOCKER_CONTAINER:-sub2api-postgres}"
+PGDOCKER_CONTAINER="${PGDOCKER_CONTAINER:-cloudbase-postgres}"
 STRICT="${REQUIRE_PROMPT_CATALOG_PRODUCTION_READY:-0}"
 RUN_URL_SAMPLE="${RUN_PROMPT_CATALOG_URL_SAMPLE:-0}"
 URL_SAMPLE_LIMIT="${PROMPT_CATALOG_URL_SAMPLE_LIMIT:-10}"
@@ -35,8 +35,8 @@ else
   PSQL_ARGS+=(
     "host=${PGHOST:-127.0.0.1}"
     "port=${PGPORT:-5432}"
-    "user=${PGUSER:-sub2api}"
-    "dbname=${PGDATABASE:-sub2api}"
+    "user=${PGUSER:-cloudbase}"
+    "dbname=${PGDATABASE:-cloudbase}"
     "sslmode=${PGSSLMODE:-disable}"
   )
 fi
@@ -117,8 +117,8 @@ psql_query() {
   fi
   if command -v docker >/dev/null 2>&1 && docker inspect "$PGDOCKER_CONTAINER" >/dev/null 2>&1; then
     docker exec -i "$PGDOCKER_CONTAINER" psql \
-      -U "${PGUSER:-sub2api}" \
-      -d "${PGDATABASE:-sub2api}" \
+      -U "${PGUSER:-cloudbase}" \
+      -d "${PGDATABASE:-cloudbase}" \
       -v ON_ERROR_STOP=1 \
       "$@"
     return
@@ -158,7 +158,7 @@ write_acceptance_report() {
   mkdir -p "$(dirname "$ACCEPTANCE_REPORT_PATH")"
   cat > "$ACCEPTANCE_REPORT_PATH" <<JSON
 {
-  "schema": "sub2api-prompt-catalog-acceptance/v1",
+  "schema": "cloudbase-prompt-catalog-acceptance/v1",
   "status": $(json_escape "$status"),
   "generated_at": $(json_escape "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"),
   "base_url": $(json_escape "$BASE_URL"),

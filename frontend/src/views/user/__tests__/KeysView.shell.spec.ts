@@ -39,8 +39,8 @@ describe('KeysView shell config', () => {
   })
 
   it('does not invent a local provider name for CCS import links', () => {
-    expect(source).not.toContain("|| 'sub2api'")
-    expect(source).not.toContain('|| "sub2api"')
+    expect(source).not.toContain("|| 'cloudbase'")
+    expect(source).not.toContain('|| "cloudbase"')
     expect(source).toContain("publicSettings.value?.site_name?.trim() || ''")
   })
 

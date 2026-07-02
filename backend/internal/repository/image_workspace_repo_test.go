@@ -6,8 +6,8 @@ import (
 	"time"
 
 	sqlmock "github.com/DATA-DOG/go-sqlmock"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 	"github.com/stretchr/testify/require"
 )
 
@@ -55,7 +55,7 @@ func TestImageWorkspaceRepositoryCompleteTaskSettlesArtifactsAndUsage(t *testing
 	now := time.Date(2026, 6, 26, 1, 2, 3, 0, time.UTC)
 	artifact := service.ImageWorkspaceArtifact{
 		StorageProvider: "local",
-		StorageKey:      "/tmp/sub2api-image-workspace/demo.png",
+		StorageKey:      "/tmp/cloudbase-image-workspace/demo.png",
 		ImageURL:        "/api/v1/image-workspace/artifacts/900/download",
 		Prompt:          "A clean product render",
 		MimeType:        "image/png",
@@ -102,7 +102,7 @@ func TestImageWorkspaceRepositoryCompleteTaskRejectsAdditionalCostWhenBalanceIns
 	now := time.Date(2026, 6, 26, 1, 2, 3, 0, time.UTC)
 	artifact := service.ImageWorkspaceArtifact{
 		StorageProvider: "local",
-		StorageKey:      "/tmp/sub2api-image-workspace/demo.png",
+		StorageKey:      "/tmp/cloudbase-image-workspace/demo.png",
 		ImageURL:        "/api/v1/image-workspace/artifacts/900/download",
 		Prompt:          "A clean product render",
 		MimeType:        "image/png",

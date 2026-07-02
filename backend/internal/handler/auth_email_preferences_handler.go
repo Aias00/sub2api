@@ -3,7 +3,7 @@ package handler
 import (
 	"net/http"
 
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
@@ -31,7 +31,7 @@ func (h *AuthHandler) renderEmailPreferencePage(c *gin.Context, load func(token 
 	page, err := load(c.Query("token"))
 	if err != nil {
 		status = http.StatusBadRequest
-		siteName := "Sub2API"
+		siteName := "Cloudbase"
 		if h != nil && h.settingSvc != nil {
 			siteName = h.settingSvc.GetSiteName(c.Request.Context())
 		}

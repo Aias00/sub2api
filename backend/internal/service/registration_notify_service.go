@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
 )
 
 const registrationNotifyTimeout = 5 * time.Second
@@ -101,7 +101,7 @@ func (s *AuthService) loadRegistrationNotifyConfig(ctx context.Context) (registr
 
 	siteName := strings.TrimSpace(values[SettingKeySiteName])
 	if siteName == "" {
-		siteName = "Sub2API"
+		siteName = "Cloudbase"
 	}
 	enabled := values[SettingKeyRegistrationNotifyEnabled] == "true"
 	if !enabled {
@@ -166,7 +166,7 @@ func buildRegistrationNotifyRequest(cfg registrationNotifyConfig, user *User, si
 
 func buildRegistrationNotifyText(siteName string, user *User, signupSource string, now time.Time) string {
 	if strings.TrimSpace(siteName) == "" {
-		siteName = "Sub2API"
+		siteName = "Cloudbase"
 	}
 	username := strings.TrimSpace(user.Username)
 	if username == "" {

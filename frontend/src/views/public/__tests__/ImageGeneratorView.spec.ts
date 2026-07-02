@@ -69,10 +69,10 @@ const imageWorkspaceTasks = vi.hoisted(() => ({
 
 const appStoreState = vi.hoisted(() => ({
   publicSettingsLoaded: true,
-  siteName: 'Sub2API',
+  siteName: 'Cloudbase',
   siteLogo: '',
   cachedPublicSettings: {
-    site_name: 'Sub2API',
+    site_name: 'Cloudbase',
     site_logo: '',
     workspace_shell_config: configuredWorkspaceShellConfig,
   },
@@ -220,7 +220,7 @@ describe('ImageGeneratorView', () => {
     fetchPublicSettings.mockReset()
     appStoreState.publicSettingsLoaded = true
     appStoreState.cachedPublicSettings = {
-      site_name: 'Sub2API',
+      site_name: 'Cloudbase',
       site_logo: '',
       workspace_shell_config: configuredWorkspaceShellConfig,
     }
@@ -272,12 +272,12 @@ describe('ImageGeneratorView', () => {
 
   it('does not render removed template and balance concepts from stale workspace shell copy', async () => {
     appStoreState.cachedPublicSettings = {
-      site_name: 'Sub2API',
+      site_name: 'Cloudbase',
       site_logo: '',
       workspace_shell_config: JSON.stringify({
         zh: {
           workspaceTitle: '任务与产物状态',
-          workspaceDescription: '模型配置、任务历史、参数模板、余额预授权和产物存储已由 Sub2API 生图工作台统一管理。',
+          workspaceDescription: '模型配置、任务历史、参数模板、余额预授权和产物存储已由 Cloudbase 生图工作台统一管理。',
           workspaceStatus: '登录后可创建真实生图任务。',
         },
       }),
@@ -299,7 +299,7 @@ describe('ImageGeneratorView', () => {
     await flushPromises()
 
     expect(wrapper.text()).not.toContain('任务与产物状态')
-    expect(wrapper.text()).not.toContain('模型配置、任务历史和产物存储已由 Sub2API 生图工作台统一管理。')
+    expect(wrapper.text()).not.toContain('模型配置、任务历史和产物存储已由 Cloudbase 生图工作台统一管理。')
     expect(wrapper.text()).not.toContain('登录后可创建真实生图任务。')
     expect(wrapper.text()).not.toContain('参数模板')
     expect(wrapper.text()).not.toContain('余额预授权')
@@ -639,13 +639,13 @@ describe('ImageGeneratorView', () => {
     expect(zhLocaleSource).not.toContain('参数模板、余额预授权')
     expect(zhLocaleSource).not.toContain('任务与产物状态')
     expect(zhLocaleSource).not.toContain('当前版本不会直接发起模型调用')
-    expect(zhLocaleSource).not.toContain('后续 Sub2API 原生生成流程')
+    expect(zhLocaleSource).not.toContain('后续 Cloudbase 原生生成流程')
 
     expect(enLocaleSource).toContain('AI Image Workspace')
     expect(enLocaleSource).toContain('create an image task')
     expect(enLocaleSource).not.toContain('Task and artifact status')
     expect(enLocaleSource).not.toContain('Prompt Staging Area')
     expect(enLocaleSource).not.toContain('This version does not call a model directly')
-    expect(enLocaleSource).not.toContain('future Sub2API-native generation flow')
+    expect(enLocaleSource).not.toContain('future Cloudbase-native generation flow')
   })
 })

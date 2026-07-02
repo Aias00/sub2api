@@ -178,7 +178,7 @@ async function main() {
   assert(zip.bytes.length > 4, `task ${task.id} zip download is empty`)
   assert(zip.bytes[0] === 0x50 && zip.bytes[1] === 0x4b, `task ${task.id} zip does not start with PK magic`)
   const report = {
-    schema: 'sub2api-wechat-export-acceptance/v1',
+    schema: 'cloudbase-wechat-export-acceptance/v1',
     status: 'passed',
     generated_at: new Date().toISOString(),
     api_base: apiBase,

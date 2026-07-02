@@ -16,7 +16,7 @@ const authStoreState = vi.hoisted(() => ({
 const routerPush = vi.hoisted(() => vi.fn())
 
 const appStoreState = vi.hoisted(() => ({
-  siteName: 'Sub2API',
+  siteName: 'Cloudbase',
   siteLogo: '',
   cachedPublicSettings: {
     site_name: 'cloudbase',
@@ -72,7 +72,7 @@ describe('PublicDarkHeader', () => {
     authStoreState.isAuthenticated = true
     authStoreState.isAdmin = false
     authStoreState.logout.mockReset()
-    appStoreState.siteName = 'Sub2API'
+    appStoreState.siteName = 'Cloudbase'
     appStoreState.siteLogo = ''
     appStoreState.cachedPublicSettings = {
       site_name: 'cloudbase',
@@ -179,7 +179,7 @@ describe('PublicDarkHeader', () => {
     })
 
     expect(wrapper.find('a[href="/home"]').text()).toContain('cloudbase')
-    expect(wrapper.find('a[href="/home"]').text()).not.toContain('Sub2API')
+    expect(wrapper.find('a[href="/home"]').text()).not.toContain('Cloudbase')
   })
 
   it('toggles the public theme template from the shared header', async () => {

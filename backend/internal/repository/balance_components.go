@@ -6,7 +6,7 @@ import (
 	"errors"
 	"math"
 
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 )
 
 type userBalanceReservation struct {

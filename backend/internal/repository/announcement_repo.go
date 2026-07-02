@@ -5,10 +5,10 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/announcement"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Wei-Shaw/cloudbase/ent/announcement"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 
 	entsql "entgo.io/ent/dialect/sql"
 )

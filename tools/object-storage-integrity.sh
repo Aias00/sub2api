@@ -10,7 +10,7 @@ REQUIRE_NO_MOCK_URLS="${REQUIRE_OBJECT_STORAGE_NO_MOCK_URLS:-${REQUIRE_URL_SAMPL
 REQUIRE_ALLOWED_PROMPT_HOSTS="${REQUIRE_OBJECT_STORAGE_ALLOWED_PROMPT_HOSTS:-${REQUIRE_URL_SAMPLE}}"
 ALLOWED_PROMPT_IMAGE_HOSTS="${PROMPT_CATALOG_ALLOWED_IMAGE_HOSTS:-static.cloudbase.eu.org}"
 URL_SAMPLE_LIMIT="${OBJECT_STORAGE_URL_SAMPLE_LIMIT:-10}"
-PGDOCKER_CONTAINER="${PGDOCKER_CONTAINER:-sub2api-postgres}"
+PGDOCKER_CONTAINER="${PGDOCKER_CONTAINER:-cloudbase-postgres}"
 
 PSQL_ARGS=()
 if [[ -n "${DATABASE_URL:-}" ]]; then
@@ -19,8 +19,8 @@ else
   PSQL_ARGS+=(
     "host=${PGHOST:-127.0.0.1}"
     "port=${PGPORT:-5432}"
-    "user=${PGUSER:-sub2api}"
-    "dbname=${PGDATABASE:-sub2api}"
+    "user=${PGUSER:-cloudbase}"
+    "dbname=${PGDATABASE:-cloudbase}"
     "sslmode=${PGSSLMODE:-disable}"
   )
 fi
@@ -49,8 +49,8 @@ psql_query() {
   fi
   if command -v docker >/dev/null 2>&1 && docker inspect "$PGDOCKER_CONTAINER" >/dev/null 2>&1; then
     docker exec -i "$PGDOCKER_CONTAINER" psql \
-      -U "${PGUSER:-sub2api}" \
-      -d "${PGDATABASE:-sub2api}" \
+      -U "${PGUSER:-cloudbase}" \
+      -d "${PGDATABASE:-cloudbase}" \
       -v ON_ERROR_STOP=1 \
       "$@"
     return

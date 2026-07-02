@@ -1,4 +1,4 @@
--- Separate Touch-created users from native Sub2API identities.
+-- Separate Touch-created users from native Cloudbase identities.
 -- Touch users are keyed by auth_identities(provider_type='touch') instead of email.
 
 ALTER TABLE users

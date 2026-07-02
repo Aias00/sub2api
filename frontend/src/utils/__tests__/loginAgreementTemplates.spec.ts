@@ -48,7 +48,7 @@ describe("loginAgreementTemplates", () => {
   it("does not inject a local default site name into commercial templates", () => {
     const privacy = buildPrivacyPolicyLoginAgreementDocument();
 
-    expect(privacy.content_md).not.toContain("Sub2API");
+    expect(privacy.content_md).not.toContain("Cloudbase");
     expect(privacy.content_md).toContain("本隐私条款说明  在您访问网站");
   });
 

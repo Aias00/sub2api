@@ -59,7 +59,7 @@ describe('authShell', () => {
     expect(labels.providerInvitationRequired).toBe('配置 {providerName} 邀请码提示')
     expect(labels.resetEmailSent).toBe('配置已发送')
     expect(labels).not.toHaveProperty('ignored')
-    expect(renderAuthShellText(labels, 'signUpToStart', { siteName: 'Sub2API' })).toBe('注册以开始使用 Sub2API')
+    expect(renderAuthShellText(labels, 'signUpToStart', { siteName: 'Cloudbase' })).toBe('注册以开始使用 Cloudbase')
     expect(renderAuthShellText(labels, 'signInWithProvider', { providerName: 'GitHub' })).toBe('用 GitHub 继续')
     expect(renderAuthShellText(labels, 'oauthFlowCreateAccountTitle', { providerName: 'DingTalk' })).toBe('配置完成 DingTalk 账号')
     expect(renderAuthShellText(labels, 'oauthCallbackPasswordOptionalHint', { providerName: 'Google' })).toBe('配置 Google 可选密码')

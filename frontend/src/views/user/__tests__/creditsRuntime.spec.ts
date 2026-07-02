@@ -22,7 +22,7 @@ const copy: CreditsCopy = {
   purchase: '',
   orders: '',
   credits: '',
-  sub2apiBalance: '',
+  cloudbaseBalance: '',
   conversion: 'Default conversion {creditsPerBalance}',
   balanceLabel: 'Balance {balance}',
   actionsTitle: 'Default actions title',

@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/repository"
+	"github.com/Wei-Shaw/cloudbase/internal/repository"
 	_ "github.com/lib/pq"
 )
 
@@ -18,9 +18,9 @@ func main() {
 	if dsn == "" {
 		host := getenv("DATABASE_HOST", "127.0.0.1")
 		port := getenv("DATABASE_PORT", "5432")
-		user := getenv("DATABASE_USER", getenv("PGUSER", "sub2api"))
+		user := getenv("DATABASE_USER", getenv("PGUSER", "cloudbase"))
 		password := getenv("DATABASE_PASSWORD", "")
-		dbname := getenv("DATABASE_DBNAME", getenv("PGDATABASE", "sub2api"))
+		dbname := getenv("DATABASE_DBNAME", getenv("PGDATABASE", "cloudbase"))
 		sslmode := getenv("DATABASE_SSLMODE", "disable")
 		if _, err := strconv.Atoi(port); err != nil {
 			log.Fatalf("invalid DATABASE_PORT: %v", err)

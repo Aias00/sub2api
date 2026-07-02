@@ -1,7 +1,7 @@
 # =============================================================================
-# Sub2API Docker Compose - Standalone Configuration
+# Cloudbase Docker Compose - Standalone Configuration
 # =============================================================================
-# This configuration runs only the Sub2API application.
+# This configuration runs only the Cloudbase application.
 # PostgreSQL and Redis must be provided externally.
 #
 # Usage:
@@ -11,9 +11,9 @@
 # =============================================================================
 
 services:
-  sub2api:
-    image: weishaw/sub2api:latest
-    container_name: sub2api
+  cloudbase:
+    image: weishaw/cloudbase:latest
+    container_name: cloudbase
     restart: unless-stopped
     ulimits:
       nofile:
@@ -22,7 +22,7 @@ services:
     ports:
       - "${BIND_HOST:-0.0.0.0}:${SERVER_PORT:-8080}:8080"
     volumes:
-      - sub2api_data:/app/data
+      - cloudbase_data:/app/data
       - ${HOT_RUNTIME_MOUNT:-./runtime}:/app/runtime:ro
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -47,9 +47,9 @@ services:
       # =======================================================================
       - DATABASE_HOST=${DATABASE_HOST:?DATABASE_HOST is required}
       - DATABASE_PORT=${DATABASE_PORT:-5432}
-      - DATABASE_USER=${DATABASE_USER:-sub2api}
+      - DATABASE_USER=${DATABASE_USER:-cloudbase}
       - DATABASE_PASSWORD=${DATABASE_PASSWORD:?DATABASE_PASSWORD is required}
-      - DATABASE_DBNAME=${DATABASE_DBNAME:-sub2api}
+      - DATABASE_DBNAME=${DATABASE_DBNAME:-cloudbase}
       - DATABASE_SSLMODE=${DATABASE_SSLMODE:-disable}
       - DATABASE_MAX_OPEN_CONNS=${DATABASE_MAX_OPEN_CONNS:-50}
       - DATABASE_MAX_IDLE_CONNS=${DATABASE_MAX_IDLE_CONNS:-10}
@@ -70,7 +70,7 @@ services:
       # =======================================================================
       # Admin Account (auto-created on first run)
       # =======================================================================
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@sub2api.local}
+      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@cloudbase.local}
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
 
       # =======================================================================
@@ -98,10 +98,10 @@ services:
       - HOT_CONTENT_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY=${HOT_CONTENT_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY:-false}
       - WORKER_MANAGER_ENABLED=${WORKER_MANAGER_ENABLED:-false}
       - WORKER_MANAGER_DOCKER_SOCKET=${WORKER_MANAGER_DOCKER_SOCKET:-/var/run/docker.sock}
-      - BUSINESS_WORKER_CONTAINER_NAME=${BUSINESS_WORKER_CONTAINER_NAME:-sub2api-business-worker}
-      - HOT_WORKER_CONTAINER_NAME=${HOT_WORKER_CONTAINER_NAME:-sub2api-content-worker}
+      - BUSINESS_WORKER_CONTAINER_NAME=${BUSINESS_WORKER_CONTAINER_NAME:-cloudbase-business-worker}
+      - HOT_WORKER_CONTAINER_NAME=${HOT_WORKER_CONTAINER_NAME:-cloudbase-content-worker}
       - X_AUTO_BASE_URL=${X_AUTO_BASE_URL:-http://content-worker:8000}
-      - CONTENT_WORKER_CONTAINER_NAME=${CONTENT_WORKER_CONTAINER_NAME:-sub2api-content-worker}
+      - CONTENT_WORKER_CONTAINER_NAME=${CONTENT_WORKER_CONTAINER_NAME:-cloudbase-content-worker}
 
       # =======================================================================
       # Timezone Configuration
@@ -159,5 +159,5 @@ services:
       start_period: 30s
 
 volumes:
-  sub2api_data:
+  cloudbase_data:
     driver: local

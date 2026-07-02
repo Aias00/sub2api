@@ -32,9 +32,9 @@ CREATE INDEX IF NOT EXISTS idx_signup_grant_claims_ip_allowed
 CREATE INDEX IF NOT EXISTS idx_signup_grant_claims_user_created_at
     ON signup_grant_claims (user_id, created_at DESC);
 
-INSERT INTO settings (key, value, description, created_at, updated_at) VALUES
-    ('signup_grant_risk_control_enabled', 'false', '是否启用注册赠送风控', NOW(), NOW()),
-    ('signup_grant_risk_control_email_limit', '1', '同邮箱历史可领取注册赠送次数，0 表示不限', NOW(), NOW()),
-    ('signup_grant_risk_control_ip_daily_limit', '3', '同 IP 24 小时可领取注册赠送次数，0 表示不限', NOW(), NOW()),
-    ('signup_grant_risk_control_domain_daily_limit', '10', '同邮箱域名 24 小时可领取注册赠送次数，0 表示不限', NOW(), NOW())
+INSERT INTO settings (key, value, updated_at) VALUES
+    ('signup_grant_risk_control_enabled', 'false', NOW()),
+    ('signup_grant_risk_control_email_limit', '1', NOW()),
+    ('signup_grant_risk_control_ip_daily_limit', '3', NOW()),
+    ('signup_grant_risk_control_domain_daily_limit', '10', NOW())
 ON CONFLICT (key) DO NOTHING;

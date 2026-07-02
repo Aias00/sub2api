@@ -5,8 +5,8 @@ import (
 	"strings"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
 )
 
 var ErrHotContentInvalidInput = infraerrors.BadRequest("HOT_CONTENT_INVALID_INPUT", "hot content input is invalid")

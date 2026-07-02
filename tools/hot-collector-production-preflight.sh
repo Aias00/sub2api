@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-HOT_WORKER_STATUS_PATH="${HOT_WORKER_STATUS_PATH:-/tmp/sub2api-hot-worker-status.json}"
+HOT_WORKER_STATUS_PATH="${HOT_WORKER_STATUS_PATH:-/tmp/cloudbase-hot-worker-status.json}"
 RUN_ONCE_CHECK="${RUN_HOT_COLLECTOR_APPLY_CHECK:-0}"
 RUN_SCHEDULE_CHECK="${RUN_HOT_COLLECTOR_SCHEDULE_CHECK:-0}"
 REQUIRE_READY="${REQUIRE_HOT_COLLECTOR_PRODUCTION_READY:-0}"
 DATABASE_DSN="${HOT_DATABASE_URL:-${DATABASE_URL:-}}"
-PGDOCKER_CONTAINER="${PGDOCKER_CONTAINER:-sub2api-postgres}"
+PGDOCKER_CONTAINER="${PGDOCKER_CONTAINER:-cloudbase-postgres}"
 
 failures=0
 
@@ -97,7 +97,7 @@ section "Hot monitoring baseline"
 if [[ -f deploy/hot-collector-alerts.example.yml ]]; then
   if grep -q "HotCollectorWorkerUnhealthy" deploy/hot-collector-alerts.example.yml \
     && grep -q "HotCollectorStatusStale" deploy/hot-collector-alerts.example.yml \
-    && grep -q "sub2api_hot_collector_status_age_seconds" deploy/hot-collector-alerts.example.yml; then
+    && grep -q "cloudbase_hot_collector_status_age_seconds" deploy/hot-collector-alerts.example.yml; then
     echo "hot_collector_alert_rules=ok"
   else
     warn_or_fail "deploy/hot-collector-alerts.example.yml is missing required Hot collector alerts"
@@ -158,9 +158,9 @@ if [[ -s "$HOT_WORKER_STATUS_PATH" ]]; then
   HOT_WORKER_STATUS_PATH="$HOT_WORKER_STATUS_PATH" \
   HOT_WORKER_METRICS_PATH="$metrics_path" \
   node tools/hot-collector-status-metrics.mjs
-  if grep -q "sub2api_hot_collector_status_age_seconds" "$metrics_path" \
-    && grep -q "sub2api_hot_collector_last_success_age_seconds" "$metrics_path" \
-    && grep -q "sub2api_hot_collector_run_count" "$metrics_path"; then
+  if grep -q "cloudbase_hot_collector_status_age_seconds" "$metrics_path" \
+    && grep -q "cloudbase_hot_collector_last_success_age_seconds" "$metrics_path" \
+    && grep -q "cloudbase_hot_collector_run_count" "$metrics_path"; then
     echo "hot_worker_metrics_export=ok"
   else
     warn_or_fail "hot collector metrics export is missing required metrics"
@@ -203,7 +203,7 @@ fi
 section "Docker compose overlay"
 if command -v docker >/dev/null 2>&1; then
   if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" \
-    docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker config >/tmp/sub2api-content-worker-compose.yml; then
+    docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker config >/tmp/cloudbase-content-worker-compose.yml; then
     echo "docker_compose_content_worker_config=ok"
   else
     warn_or_fail "docker compose content-worker overlay did not render"

@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
-	"github.com/Wei-Shaw/sub2api/internal/payment"
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Wei-Shaw/cloudbase/ent/paymentauditlog"
+	"github.com/Wei-Shaw/cloudbase/internal/payment"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 

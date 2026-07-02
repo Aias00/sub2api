@@ -1,4 +1,4 @@
-const IMAGE_GENERATOR_DRAFT_KEY = 'sub2api:image-generator:draft'
+const IMAGE_GENERATOR_DRAFT_KEY = 'cloudbase:image-generator:draft'
 
 export interface ImageGeneratorDraft {
   prompt: string

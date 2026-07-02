@@ -272,7 +272,7 @@ def fetch_text(config: Config, url: str) -> str:
         url,
         headers={
             "accept": "application/rss+xml, application/atom+xml, application/xml, text/xml, */*",
-            "user-agent": "sub2api-hot-rss-collector/1.0",
+            "user-agent": "cloudbase-hot-rss-collector/1.0",
         },
     )
     try:

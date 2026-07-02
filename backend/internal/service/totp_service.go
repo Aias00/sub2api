@@ -13,7 +13,7 @@ import (
 
 	"github.com/pquerna/otp/totp"
 
-	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
 )
 
 var (
@@ -91,7 +91,7 @@ const (
 	totpLoginTTL      = 5 * time.Minute
 	totpAttemptsTTL   = 15 * time.Minute
 	maxTotpAttempts   = 5
-	defaultTotpIssuer = "Sub2API"
+	defaultTotpIssuer = "Cloudbase"
 )
 
 // TotpService handles TOTP operations

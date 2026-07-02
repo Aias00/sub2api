@@ -4,10 +4,12 @@ package repository
 
 import (
 	"context"
+	"fmt"
 	"sync"
 	"testing"
+	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 )
@@ -22,11 +24,20 @@ type WeChatExportRepoIntegrationSuite struct {
 // SetupTest runs before each test
 func (s *WeChatExportRepoIntegrationSuite) SetupTest() {
 	s.ctx = context.Background()
-	// Use integration test harness
-	tx := testEntTx(s.T())
+	_, err := integrationDB.ExecContext(s.ctx, `
+TRUNCATE TABLE
+	wechat_export_usage_records,
+	wechat_export_task_logs,
+	wechat_export_artifacts,
+	wechat_export_tasks,
+	wechat_articles,
+	wechat_accounts,
+	wechat_sessions
+RESTART IDENTITY CASCADE`)
+	require.NoError(s.T(), err)
 	s.repo = &wechatExportRepository{
 		db:  integrationDB,
-		sql: tx,
+		sql: integrationDB,
 	}
 }
 
@@ -39,6 +50,10 @@ func TestWeChatExportRepoIntegrationSuite(t *testing.T) {
 	suite.Run(t, new(WeChatExportRepoIntegrationSuite))
 }
 
+func uniqueWeChatExportEmail(prefix string) string {
+	return fmt.Sprintf("%s-%d@example.com", prefix, time.Now().UnixNano())
+}
+
 // TestClaimNextTask_Concurrent tests concurrent task claiming with FOR UPDATE SKIP LOCKED
 func (s *WeChatExportRepoIntegrationSuite) TestClaimNextTask_Concurrent() {
 	// Create test user
@@ -47,7 +62,7 @@ func (s *WeChatExportRepoIntegrationSuite) TestClaimNextTask_Concurrent() {
 		INSERT INTO users (email, password_hash, role, balance, paid_balance, gift_balance, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $4, 0, NOW(), NOW())
 		RETURNING id
-	`, "test@example.com", "hash", "user", 10.0).Scan(&userID)
+	`, uniqueWeChatExportEmail("wechat-claim"), "hash", "user", 10.0).Scan(&userID)
 	require.NoError(s.T(), err)
 
 	// Create multiple queued tasks
@@ -111,7 +126,7 @@ func (s *WeChatExportRepoIntegrationSuite) TestCreateTask_ConcurrentBalanceDeduc
 		INSERT INTO users (email, password_hash, role, balance, paid_balance, gift_balance, created_at, updated_at)
 		VALUES ($1, $2, $3, $4, $4, 0, NOW(), NOW())
 		RETURNING id
-	`, "balance-test@example.com", "hash", "user", 5.0).Scan(&userID)
+	`, uniqueWeChatExportEmail("wechat-balance"), "hash", "user", 5.0).Scan(&userID)
 	require.NoError(s.T(), err)
 
 	// Concurrent task creation: 10 tasks trying to consume 1.0 each

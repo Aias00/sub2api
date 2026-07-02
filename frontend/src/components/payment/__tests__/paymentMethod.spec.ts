@@ -6,7 +6,7 @@ import {
 } from '../paymentMethod'
 
 describe('payment method normalization', () => {
-  it('normalizes only explicit visible payment method data from Sub2API', () => {
+  it('normalizes only explicit visible payment method data from Cloudbase', () => {
     expect(resolveVisiblePaymentMethod('wxpay_direct')).toBe('wxpay')
     expect(resolveVisiblePaymentMethod('')).toBe('')
     expect(resolveVisiblePaymentMethod(null)).toBe('')

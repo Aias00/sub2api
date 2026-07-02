@@ -8,7 +8,7 @@ import { spawn } from 'node:child_process'
 const png1x1 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII='
 const workerToken = 'mock-worker-token'
 const upstreamKey = 'mock-upstream-key'
-const outputDir = mkdtempSync(join(tmpdir(), 'sub2api-image-worker-api-'))
+const outputDir = mkdtempSync(join(tmpdir(), 'cloudbase-image-worker-api-'))
 const keepOutput = process.env.KEEP_IMAGE_WORKSPACE_MOCK_OUTPUT === '1'
 const workerPath = resolve('tools/image-workspace-worker/src/worker.mjs')
 const upstreamRequests = []

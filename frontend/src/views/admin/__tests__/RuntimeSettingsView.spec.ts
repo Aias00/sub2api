@@ -141,7 +141,7 @@ describe('RuntimeSettingsView', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     getSettings.mockResolvedValue({
-      site_name: 'Sub2API',
+      site_name: 'Cloudbase',
       app_name: 'Web',
       app_url: 'https://web.example.com',
       home_business_shell_config: '{"en":{"labels":{"heroTitle":"Business Home"}}}',

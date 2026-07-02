@@ -1,7 +1,7 @@
 [project]
-name = "sub2api-x-atuo"
+name = "cloudbase-x-atuo"
 version = "0.1.0"
-description = "Vendored x_atuo runtime used by Sub2API Touch X imports."
+description = "Vendored x_atuo runtime used by Cloudbase Touch X imports."
 requires-python = ">=3.11"
 dependencies = [
   "apscheduler>=3.10",

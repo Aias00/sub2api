@@ -306,7 +306,7 @@ const baseSettingsResponse = {
   default_balance: 0,
   default_concurrency: 1,
   default_subscriptions: [],
-  site_name: "Sub2API",
+  site_name: "Cloudbase",
   site_logo: "",
   site_subtitle: "",
   api_base_url: "",
@@ -578,10 +578,10 @@ describe("admin SettingsView payment visible method controls", () => {
 
     expect(paymentLinks).toHaveLength(2);
     expect(paymentLinks[0]?.attributes("href")).toBe(
-      "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md",
+      "https://github.com/Wei-Shaw/cloudbase/blob/main/docs/PAYMENT_CN.md",
     );
     expect(paymentLinks[1]?.attributes("href")).toBe(
-      "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md#支持的支付方式",
+      "https://github.com/Wei-Shaw/cloudbase/blob/main/docs/PAYMENT_CN.md#支持的支付方式",
     );
     for (const link of paymentLinks) {
       expect(link.attributes("href")).toContain("docs/PAYMENT");
@@ -619,7 +619,7 @@ describe("admin SettingsView payment visible method controls", () => {
   });
 
   it("does not initialize site, user, affiliate, or recharge multiplier business defaults in the frontend", () => {
-    expect(settingsViewSource).not.toContain('site_name: "Sub2API"');
+    expect(settingsViewSource).not.toContain('site_name: "Cloudbase"');
     expect(settingsViewSource).not.toContain('site_subtitle: "Subscription to API Conversion Platform"');
     expect(settingsViewSource).not.toContain("default_concurrency: 1,");
     expect(settingsViewSource).not.toContain("affiliate_rebate_rate: 20,");

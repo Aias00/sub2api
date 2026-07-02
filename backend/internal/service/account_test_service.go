@@ -18,13 +18,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/claude"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/geminicli"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/openai"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/openai_compat"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/xai"
-	"github.com/Wei-Shaw/sub2api/internal/util/urlvalidator"
+	"github.com/Wei-Shaw/cloudbase/internal/config"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/claude"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/geminicli"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/openai"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/openai_compat"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/xai"
+	"github.com/Wei-Shaw/cloudbase/internal/util/urlvalidator"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -925,7 +925,7 @@ func (s *AccountTestService) testGrokAccountConnection(c *gin.Context, account *
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("Accept", "application/json, text/event-stream")
 	req.Header.Set("Authorization", "Bearer "+authToken)
-	req.Header.Set("User-Agent", "sub2api-grok/1.0")
+	req.Header.Set("User-Agent", "cloudbase-grok/1.0")
 
 	proxyURL := ""
 	if account.ProxyID != nil && account.Proxy != nil {

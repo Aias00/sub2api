@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -703,13 +703,13 @@ func runtimeWorkerTarget(id string) (runtimeWorkerTargetInfo, bool) {
 	case workerNodeBusiness, "wechat-export", "image-workspace":
 		return runtimeWorkerTargetInfo{
 			ID:            workerNodeBusiness,
-			ContainerName: envOrDefault("BUSINESS_WORKER_CONTAINER_NAME", "sub2api-business-worker"),
+			ContainerName: envOrDefault("BUSINESS_WORKER_CONTAINER_NAME", "cloudbase-business-worker"),
 			DeployCommand: "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker up -d --build",
 		}, true
 	case workerNodeContent, "hot-collector", "hot-rss-collector", "x-auto", "xauto":
 		return runtimeWorkerTargetInfo{
 			ID:            workerNodeContent,
-			ContainerName: envOrDefault("CONTENT_WORKER_CONTAINER_NAME", "sub2api-content-worker"),
+			ContainerName: envOrDefault("CONTENT_WORKER_CONTAINER_NAME", "cloudbase-content-worker"),
 			DeployCommand: "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker up -d --build",
 		}, true
 	default:

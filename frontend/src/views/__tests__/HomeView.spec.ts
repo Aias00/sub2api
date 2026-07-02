@@ -69,7 +69,7 @@ const authStoreState = vi.hoisted(() => ({
 
 const appStoreState = vi.hoisted(() => ({
   publicSettingsLoaded: true,
-  siteName: 'Sub2API',
+  siteName: 'Cloudbase',
   siteLogo: '',
   docUrl: '',
   cachedPublicSettings: {

@@ -1,4 +1,4 @@
-# Optional Sub2API config override.
+# Optional Cloudbase config override.
 #
 # The current Docker deployment is env-first:
 # - deploy/.env stores secrets and runtime variables.
@@ -9,7 +9,7 @@
 # To use this file for a binary/non-compose deployment, copy it to one of:
 # - ./config.yaml
 # - ./config/config.yaml
-# - /etc/sub2api/config.yaml
+# - /etc/cloudbase/config.yaml
 #
 # For the local Docker deployment, prefer leaving deploy/data/config.yaml absent.
 

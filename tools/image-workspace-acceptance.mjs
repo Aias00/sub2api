@@ -224,7 +224,7 @@ async function main() {
   const storageProviders = [...new Set(artifacts.map((artifact) => String(artifact.storage_provider || '')).filter(Boolean))]
   const localDownloadSucceeded = localDownloadChecks.filter((item) => item.ok && item.bytes > 0).length
   const report = {
-    schema: 'sub2api-image-workspace-acceptance/v1',
+    schema: 'cloudbase-image-workspace-acceptance/v1',
     status: 'passed',
     generated_at: new Date().toISOString(),
     api_base: apiBase,

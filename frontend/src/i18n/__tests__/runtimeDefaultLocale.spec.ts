@@ -16,7 +16,7 @@ describe('runtime default locale', () => {
   })
 
   it('keeps the user saved locale ahead of public settings default_locale', async () => {
-    localStorage.setItem('sub2api_locale', 'en')
+    localStorage.setItem('cloudbase_locale', 'en')
     window.__APP_CONFIG__ = { default_locale: 'zh' } as typeof window.__APP_CONFIG__
 
     const { getLocale } = await import('../index')

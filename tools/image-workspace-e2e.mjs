@@ -12,10 +12,10 @@ let runtimeSettingsSnapshotForCleanup = null
 
 const config = {
   baseURL: env('BASE_URL', 'http://127.0.0.1:8080').replace(/\/$/, ''),
-  appContainer: env('APPDOCKER_CONTAINER', env('APP_CONTAINER', 'sub2api')),
-  pgContainer: env('PGDOCKER_CONTAINER', 'sub2api-postgres'),
-  pgUser: env('PGUSER', 'sub2api'),
-  pgDatabase: env('PGDATABASE', 'sub2api'),
+  appContainer: env('APPDOCKER_CONTAINER', env('APP_CONTAINER', 'cloudbase')),
+  pgContainer: env('PGDOCKER_CONTAINER', 'cloudbase-postgres'),
+  pgUser: env('PGUSER', 'cloudbase'),
+  pgDatabase: env('PGDATABASE', 'cloudbase'),
   smokeEmail: env('IMAGE_WORKSPACE_E2E_EMAIL', `iw-e2e-${Date.now()}@example.test`),
   smokePasswordHash: env(
     'IMAGE_WORKSPACE_E2E_PASSWORD_HASH',
@@ -36,7 +36,7 @@ const config = {
   objectStorageSecretAccessKey: realProviderMode
     ? env('IMAGE_WORKSPACE_OBJECT_STORAGE_SECRET_ACCESS_KEY', env('IMAGE_WORKSPACE_R2_SECRET_ACCESS_KEY', env('IMAGE_WORKSPACE_R2_SECRET_KEY', '')))
     : 'mock-r2-secret-key',
-  objectStorageBucket: env('IMAGE_WORKSPACE_E2E_OBJECT_STORAGE_BUCKET', 'sub2api-image-workspace'),
+  objectStorageBucket: env('IMAGE_WORKSPACE_E2E_OBJECT_STORAGE_BUCKET', 'cloudbase-image-workspace'),
   objectStoragePrefix: env('IMAGE_WORKSPACE_E2E_OBJECT_STORAGE_PREFIX', 'image-workspace-e2e'),
   objectStoragePublicBaseURL: env('IMAGE_WORKSPACE_E2E_OBJECT_STORAGE_PUBLIC_BASE_URL', 'https://assets.example.test/image-workspace'),
   cleanup: boolEnv('IMAGE_WORKSPACE_E2E_CLEANUP', !realProviderMode),

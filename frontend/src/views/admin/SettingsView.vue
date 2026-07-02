@@ -4847,7 +4847,7 @@
                     </div>
                   </div>
                 </div>
-                <!-- Row 4: Enabled payment types (provider badges like sub2apipay) -->
+                <!-- Row 4: Enabled payment types (provider badges like cloudbasepay) -->
                 <div>
                   <label class="input-label">{{
                     t("admin.settings.payment.enabledPaymentTypes")
@@ -6001,14 +6001,14 @@ const adminSettingsStore = useAdminSettingsStore();
 
 const paymentGuideHref = computed(() =>
   resolveRuntimeLanguage(locale) === "zh"
-    ? "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md"
-    : "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md",
+    ? "https://github.com/Wei-Shaw/cloudbase/blob/main/docs/PAYMENT_CN.md"
+    : "https://github.com/Wei-Shaw/cloudbase/blob/main/docs/PAYMENT.md",
 );
 
 const paymentMethodsHref = computed(() =>
   resolveRuntimeLanguage(locale) === "zh"
-    ? "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT_CN.md#支持的支付方式"
-    : "https://github.com/Wei-Shaw/sub2api/blob/main/docs/PAYMENT.md#supported-payment-methods",
+    ? "https://github.com/Wei-Shaw/cloudbase/blob/main/docs/PAYMENT_CN.md#支持的支付方式"
+    : "https://github.com/Wei-Shaw/cloudbase/blob/main/docs/PAYMENT.md#supported-payment-methods",
 );
 
 type SettingsTab =
@@ -6221,7 +6221,7 @@ const tablePageSizeMax = 1000;
 function defaultLoginAgreementDocuments(): LoginAgreementDocument[] {
 
   return buildCommercialLoginAgreementDocuments({
-    siteName: "Sub2API",
+    siteName: "Cloudbase",
     effectiveDate: "",
   });
 

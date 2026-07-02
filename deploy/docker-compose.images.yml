@@ -1,0 +1,15 @@
+# Production image override.
+# Use this after CI has pushed images to GHCR. It removes local build contexts
+# from worker services so production only pulls and restarts containers.
+
+services:
+  cloudbase:
+    image: ${CLOUDBASE_IMAGE:-ghcr.io/aias00/cloudbase:${CLOUDBASE_IMAGE_TAG:-latest}}
+
+  business-worker:
+    build: !reset null
+    image: ${BUSINESS_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-business-worker:${BUSINESS_WORKER_IMAGE_TAG:-latest}}
+
+  content-worker:
+    build: !reset null
+    image: ${CONTENT_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-content-worker:${CONTENT_WORKER_IMAGE_TAG:-latest}}

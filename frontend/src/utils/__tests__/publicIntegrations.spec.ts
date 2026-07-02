@@ -7,7 +7,7 @@ import {
 import type { PublicSettings } from '@/types'
 
 function managedNodes() {
-  return [...document.querySelectorAll('[data-sub2api-public-integration]')]
+  return [...document.querySelectorAll('[data-cloudbase-public-integration]')]
 }
 
 describe('publicIntegrations', () => {
@@ -17,8 +17,8 @@ describe('publicIntegrations', () => {
 
   it('injects enabled integrations from public settings', () => {
     applyPublicIntegrations({
-      google_analytics_id: 'G-SUB2API',
-      adsense_code: 'ca-pub-sub2api',
+      google_analytics_id: 'G-CLOUDBASE',
+      adsense_code: 'ca-pub-cloudbase',
       affonso_enabled: true,
       affonso_id: 'affonso-public',
       affonso_cookie_duration: '45',
@@ -27,10 +27,10 @@ describe('publicIntegrations', () => {
     } as PublicSettings)
 
     expect(document.querySelector('script#google-analytics-loader')?.getAttribute('src')).toBe(
-      'https://www.googletagmanager.com/gtag/js?id=G-SUB2API'
+      'https://www.googletagmanager.com/gtag/js?id=G-CLOUDBASE'
     )
     expect(document.querySelector('meta[name="google-adsense-account"]')?.getAttribute('content')).toBe(
-      'ca-pub-sub2api'
+      'ca-pub-cloudbase'
     )
     expect(document.querySelector('script#affonso')?.getAttribute('data-affonso')).toBe(
       'affonso-public'

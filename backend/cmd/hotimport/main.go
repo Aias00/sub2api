@@ -57,8 +57,8 @@ func postgresDSN() string {
 	}
 	host := envOrDefault("PGHOST", "127.0.0.1")
 	port := envOrDefault("PGPORT", "5432")
-	user := envOrDefault("PGUSER", "sub2api")
-	dbname := envOrDefault("PGDATABASE", "sub2api")
+	user := envOrDefault("PGUSER", "cloudbase")
+	dbname := envOrDefault("PGDATABASE", "cloudbase")
 	sslmode := envOrDefault("PGSSLMODE", "disable")
 	password := os.Getenv("PGPASSWORD")
 	parts := []string{

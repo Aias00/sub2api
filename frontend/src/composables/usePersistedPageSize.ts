@@ -5,5 +5,5 @@ export function getPersistedPageSize(fallback = getConfiguredTableDefaultPageSiz
 }
 
 export function setPersistedPageSize(_size: number): void {
-  // Page-size persistence is centralized in Sub2API public settings.
+  // Page-size persistence is centralized in Cloudbase public settings.
 }

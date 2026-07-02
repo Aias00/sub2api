@@ -9,7 +9,7 @@ const authStore = vi.hoisted(() => ({
 }))
 
 const appStore = vi.hoisted(() => ({
-  siteName: 'Sub2API',
+  siteName: 'Cloudbase',
   backendModeEnabled: false,
   cachedPublicSettings: null as null | Record<string, unknown>,
 }))
@@ -45,7 +45,7 @@ vi.mock('@/composables/useRoutePrefetch', () => ({
 }))
 
 describe('legacy OAuth compatibility routes', () => {
-  it('registers legacy callback aliases on the Sub2API OAuth callback route', async () => {
+  it('registers legacy callback aliases on the Cloudbase OAuth callback route', async () => {
     const { default: router } = await import('@/router')
 
     for (const path of ['/auth-callback', '/en/auth-callback', '/zh/auth-callback']) {

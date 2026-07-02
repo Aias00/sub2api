@@ -6,14 +6,14 @@ import {
   saveImageGeneratorDraft,
 } from '@/utils/imageGeneratorDraft'
 
-const DRAFT_KEY = 'sub2api:image-generator:draft'
+const DRAFT_KEY = 'cloudbase:image-generator:draft'
 
 describe('imageGeneratorDraft', () => {
   afterEach(() => {
     window.sessionStorage.clear()
   })
 
-  it('stores drafts under the generic Sub2API key', () => {
+  it('stores drafts under the generic Cloudbase key', () => {
     saveImageGeneratorDraft({
       prompt: 'A cinematic city skyline',
       title: 'City',

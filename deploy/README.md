@@ -1,6 +1,6 @@
-# Sub2API Deployment Files
+# Cloudbase Deployment Files
 
-This directory contains files for deploying Sub2API on Linux servers.
+This directory contains files for deploying Cloudbase on Linux servers.
 
 ## Deployment Methods
 
@@ -20,8 +20,8 @@ This directory contains files for deploying Sub2API on Linux servers.
 | `DOCKER.md` | Docker Hub documentation |
 | `install.sh` | One-click binary installation script |
 | `install-datamanagementd.sh` | datamanagementd 一键安装脚本 |
-| `sub2api.service` | Systemd service unit file |
-| `sub2api-datamanagementd.service` | datamanagementd systemd service unit file |
+| `cloudbase.service` | Systemd service unit file |
+| `cloudbase-datamanagementd.service` | datamanagementd systemd service unit file |
 | `DATAMANAGEMENTD_CN.md` | datamanagementd 部署与联动说明（中文） |
 | `config.example.yaml` | Optional config override example |
 
@@ -35,10 +35,10 @@ Use the automated preparation script for the easiest setup:
 
 ```bash
 # Download and run the preparation script
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/docker-deploy.sh | bash
+curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/docker-deploy.sh | bash
 
 # Or download first, then run
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/docker-deploy.sh -o docker-deploy.sh
+curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/docker-deploy.sh -o docker-deploy.sh
 chmod +x docker-deploy.sh
 ./docker-deploy.sh
 ```
@@ -56,10 +56,10 @@ chmod +x docker-deploy.sh
 docker compose -f docker-compose.local.yml up -d
 
 # View logs
-docker compose -f docker-compose.local.yml logs -f sub2api
+docker compose -f docker-compose.local.yml logs -f cloudbase
 
 # If admin password was auto-generated, find it in logs:
-docker compose -f docker-compose.local.yml logs sub2api | grep "admin password"
+docker compose -f docker-compose.local.yml logs cloudbase | grep "admin password"
 
 # Access Web UI
 # http://localhost:8080
@@ -71,8 +71,8 @@ If you prefer manual control:
 
 ```bash
 # Clone repository
-git clone https://github.com/Wei-Shaw/sub2api.git
-cd sub2api/deploy
+git clone https://github.com/Wei-Shaw/cloudbase.git
+cd cloudbase/deploy
 
 # Configure environment
 cp .env.example .env
@@ -91,7 +91,7 @@ mkdir -p data postgres_data redis_data
 docker compose -f docker-compose.local.yml up -d
 
 # View logs (check for auto-generated admin password)
-docker compose -f docker-compose.local.yml logs -f sub2api
+docker compose -f docker-compose.local.yml logs -f cloudbase
 
 # Access Web UI
 # http://localhost:8080
@@ -121,7 +121,7 @@ When using Docker Compose with `AUTO_SETUP=true`:
 
 3. If `ADMIN_PASSWORD` is not set, check logs for the generated password:
    ```bash
-   docker compose logs sub2api | grep "admin password"
+   docker compose logs cloudbase | grep "admin password"
    ```
 
 ### Database Migration Notes (PostgreSQL)
@@ -152,7 +152,7 @@ SELECT
 
 如需启用管理后台“数据管理”功能，请额外部署宿主机 `datamanagementd`：
 
-- 主进程固定探测 `/tmp/sub2api-datamanagement.sock`
+- 主进程固定探测 `/tmp/cloudbase-datamanagement.sock`
 - Docker 场景下需把宿主机 Socket 挂载到容器内同路径
 - 详细步骤见：`deploy/DATAMANAGEMENTD_CN.md`
 
@@ -177,6 +177,16 @@ docker compose \
   up -d
 ```
 
+For production hosts that should only pull CI-built images and restart
+containers, include the image override or use the helper script:
+
+```bash
+CLOUDBASE_IMAGE_TAG=latest \
+BUSINESS_WORKER_IMAGE_TAG=latest \
+CONTENT_WORKER_IMAGE_TAG=latest \
+deploy/pull-and-restart.sh
+```
+
 The current runtime reads Docker environment from `deploy/.env`. A
 `deploy/data/config.yaml` file is optional and should only be added for
 settings that cannot be expressed cleanly as environment variables.
@@ -191,10 +201,10 @@ docker compose -f docker-compose.local.yml up -d
 docker compose -f docker-compose.local.yml down
 
 # View logs
-docker compose -f docker-compose.local.yml logs -f sub2api
+docker compose -f docker-compose.local.yml logs -f cloudbase
 
-# Restart Sub2API only
-docker compose -f docker-compose.local.yml restart sub2api
+# Restart Cloudbase only
+docker compose -f docker-compose.local.yml restart cloudbase
 
 # Update to latest version
 docker compose -f docker-compose.local.yml pull
@@ -215,10 +225,10 @@ docker compose up -d
 docker compose down
 
 # View logs
-docker compose logs -f sub2api
+docker compose logs -f cloudbase
 
-# Restart Sub2API only
-docker compose restart sub2api
+# Restart Cloudbase only
+docker compose restart cloudbase
 
 # Update to latest version
 docker compose pull
@@ -236,7 +246,7 @@ docker compose down -v
 | `JWT_SECRET` | **Recommended** | *(auto-generated)* | JWT secret (fixed for persistent sessions) |
 | `TOTP_ENCRYPTION_KEY` | **Recommended** | *(auto-generated)* | TOTP encryption key (fixed for persistent 2FA) |
 | `SERVER_PORT` | No | `8080` | Server port |
-| `ADMIN_EMAIL` | No | `admin@sub2api.local` | Admin email |
+| `ADMIN_EMAIL` | No | `admin@cloudbase.local` | Admin email |
 | `ADMIN_PASSWORD` | No | *(auto-generated)* | Admin password |
 | `TZ` | No | `Asia/Shanghai` | Timezone |
 | `GEMINI_OAUTH_CLIENT_ID` | No | *(builtin)* | Google OAuth client ID (Gemini OAuth). Leave empty to use the built-in Gemini CLI client. |
@@ -257,13 +267,13 @@ When using `docker-compose.local.yml`, all data is stored in local directories, 
 cd /path/to/deployment
 docker compose -f docker-compose.local.yml down
 cd ..
-tar czf sub2api-complete.tar.gz deployment/
+tar czf cloudbase-complete.tar.gz deployment/
 
 # Transfer to new server
-scp sub2api-complete.tar.gz user@new-server:/path/to/destination/
+scp cloudbase-complete.tar.gz user@new-server:/path/to/destination/
 
 # On new server: Extract and start
-tar xzf sub2api-complete.tar.gz
+tar xzf cloudbase-complete.tar.gz
 cd deployment/
 docker compose -f docker-compose.local.yml up -d
 ```
@@ -274,7 +284,7 @@ Your entire deployment (configuration + data) is migrated!
 
 ## Gemini OAuth Configuration
 
-Sub2API supports three methods to connect to Gemini:
+Cloudbase supports three methods to connect to Gemini:
 
 ### Method 1: Code Assist OAuth (Recommended for GCP Users)
 
@@ -319,7 +329,7 @@ Requires your own OAuth client credentials.
    - Go to "APIs & Services" → "Credentials"
    - Click "Create Credentials" → "OAuth client ID"
    - Application type: **Web application** (or **Desktop app**)
-   - Name: e.g., "Sub2API Gemini"
+   - Name: e.g., "Cloudbase Gemini"
    - Authorized redirect URIs: Add `http://localhost:1455/auth/callback`
 6. Copy the **Client ID** and **Client Secret**
 7. **⚠️ Publish to Production (IMPORTANT):**
@@ -376,19 +386,19 @@ For production servers using systemd.
 ### One-Line Installation
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/install.sh | sudo bash
 ```
 
 ### Manual Installation
 
-1. Download the latest release from [GitHub Releases](https://github.com/Wei-Shaw/sub2api/releases)
-2. Extract and copy the binary to `/opt/sub2api/`
-3. Copy `sub2api.service` to `/etc/systemd/system/`
+1. Download the latest release from [GitHub Releases](https://github.com/Wei-Shaw/cloudbase/releases)
+2. Extract and copy the binary to `/opt/cloudbase/`
+3. Copy `cloudbase.service` to `/etc/systemd/system/`
 4. Run:
    ```bash
    sudo systemctl daemon-reload
-   sudo systemctl enable sub2api
-   sudo systemctl start sub2api
+   sudo systemctl enable cloudbase
+   sudo systemctl start cloudbase
    ```
 5. Open the Setup Wizard in your browser to complete configuration
 
@@ -409,22 +419,22 @@ sudo ./install.sh uninstall
 
 ```bash
 # Start the service
-sudo systemctl start sub2api
+sudo systemctl start cloudbase
 
 # Stop the service
-sudo systemctl stop sub2api
+sudo systemctl stop cloudbase
 
 # Restart the service
-sudo systemctl restart sub2api
+sudo systemctl restart cloudbase
 
 # Check status
-sudo systemctl status sub2api
+sudo systemctl status cloudbase
 
 # View logs
-sudo journalctl -u sub2api -f
+sudo journalctl -u cloudbase -f
 
 # Enable auto-start on boot
-sudo systemctl enable sub2api
+sudo systemctl enable cloudbase
 ```
 
 ### Configuration
@@ -437,7 +447,7 @@ To change after installation:
 
 1. Edit the systemd service:
    ```bash
-   sudo systemctl edit sub2api
+   sudo systemctl edit cloudbase
    ```
 
 2. Add or modify:
@@ -450,7 +460,7 @@ To change after installation:
 3. Reload and restart:
    ```bash
    sudo systemctl daemon-reload
-   sudo systemctl restart sub2api
+   sudo systemctl restart cloudbase
    ```
 
 #### Gemini OAuth Configuration
@@ -459,7 +469,7 @@ If you need to use AI Studio OAuth for Gemini accounts, add the OAuth client cre
 
 1. Edit the service file:
    ```bash
-   sudo nano /etc/systemd/system/sub2api.service
+   sudo nano /etc/systemd/system/cloudbase.service
    ```
 
 2. Add your OAuth credentials in the `[Service]` section (after the existing `Environment=` lines):
@@ -476,7 +486,7 @@ If you need to use AI Studio OAuth for Gemini accounts, add the OAuth client cre
 3. Reload and restart:
    ```bash
    sudo systemctl daemon-reload
-   sudo systemctl restart sub2api
+   sudo systemctl restart cloudbase
    ```
 
 > **Note:** Code Assist OAuth does not require any configuration - it uses the built-in Gemini CLI client.
@@ -484,7 +494,7 @@ If you need to use AI Studio OAuth for Gemini accounts, add the OAuth client cre
 
 #### Application Configuration
 
-The main config file is at `/etc/sub2api/config.yaml` (created by Setup Wizard).
+The main config file is at `/etc/cloudbase/config.yaml` (created by Setup Wizard).
 
 ### Prerequisites
 
@@ -496,12 +506,12 @@ The main config file is at `/etc/sub2api/config.yaml` (created by Setup Wizard).
 ### Directory Structure
 
 ```
-/opt/sub2api/
-├── sub2api              # Main binary
-├── sub2api.backup       # Backup (after upgrade)
+/opt/cloudbase/
+├── cloudbase              # Main binary
+├── cloudbase.backup       # Backup (after upgrade)
 └── data/                # Runtime data
 
-/etc/sub2api/
+/etc/cloudbase/
 └── config.yaml          # Configuration file
 ```
 
@@ -518,7 +528,7 @@ For **local directory version**:
 docker compose -f docker-compose.local.yml ps
 
 # View detailed logs
-docker compose -f docker-compose.local.yml logs --tail=100 sub2api
+docker compose -f docker-compose.local.yml logs --tail=100 cloudbase
 
 # Check database connection
 docker compose -f docker-compose.local.yml exec postgres pg_isready
@@ -540,7 +550,7 @@ For **named volumes version**:
 docker compose ps
 
 # View detailed logs
-docker compose logs --tail=100 sub2api
+docker compose logs --tail=100 cloudbase
 
 # Check database connection
 docker compose exec postgres pg_isready
@@ -556,13 +566,13 @@ docker compose restart
 
 ```bash
 # Check service status
-sudo systemctl status sub2api
+sudo systemctl status cloudbase
 
 # View recent logs
-sudo journalctl -u sub2api -n 50
+sudo journalctl -u cloudbase -n 50
 
 # Check config file
-sudo cat /etc/sub2api/config.yaml
+sudo cat /etc/cloudbase/config.yaml
 
 # Check PostgreSQL
 sudo systemctl status postgresql
@@ -582,9 +592,9 @@ sudo systemctl status redis
 
 ## TLS Fingerprint Configuration
 
-Sub2API supports TLS fingerprint simulation to make requests appear as if they come from the official Claude CLI (Node.js client).
+Cloudbase supports TLS fingerprint simulation to make requests appear as if they come from the official Claude CLI (Node.js client).
 
-> **💡 Tip:** Visit **[tls.sub2api.org](https://tls.sub2api.org/)** to get TLS fingerprint information for different devices and browsers.
+> **💡 Tip:** Visit **[tls.cloudbase.org](https://tls.cloudbase.org/)** to get TLS fingerprint information for different devices and browsers.
 
 ### Default Behavior
 
@@ -637,36 +647,36 @@ gateway:
 
 ## Traffic Switch (Prod/Staging)
 
-Use this helper to switch `sub2api.airflow.eu.org` between local prod (`65530`) and staging (`65531`) without touching app containers.
+Use this helper to switch `cloudbase.airflow.eu.org` between local prod (`65530`) and staging (`65531`) without touching app containers.
 
 ```bash
 cd deploy
-./switch_sub2api_traffic.sh --status
-./switch_sub2api_traffic.sh --dry-run-report
-./switch_sub2api_traffic.sh --to staging
-./switch_sub2api_traffic.sh --to prod
+./switch_cloudbase_traffic.sh --status
+./switch_cloudbase_traffic.sh --dry-run-report
+./switch_cloudbase_traffic.sh --to staging
+./switch_cloudbase_traffic.sh --to prod
 ```
 
 Notes:
 - It edits `~/.cloudflared/config.yml` (or `CLOUDFLARED_CONFIG`) with a timestamped backup.
 - It validates ingress before reloading `cloudflared`.
-- It acquires a lock file (`/tmp/sub2api-traffic-switch.lock.d`) to avoid concurrent switch operations.
+- It acquires a lock file (`/tmp/cloudbase-traffic-switch.lock.d`) to avoid concurrent switch operations.
 - It performs strict local/public health checks and auto-rolls back to previous config on failure.
 - `--dry-run-report` prints a non-invasive readiness/drill report and does not change traffic.
-- It now verifies post-switch hostname mapping (`sub2api.airflow.eu.org -> expected localhost port`) before declaring success.
+- It now verifies post-switch hostname mapping (`cloudbase.airflow.eu.org -> expected localhost port`) before declaring success.
 - For safer production switching, make prod/staging `/health` payloads distinguishable (for example include `env=prod` / `env=staging`) so manual/automated checks can detect misrouting.
 - You can enforce strong routing verification by setting `PROD_HEALTH_HINT` / `STAGING_HEALTH_HINT`; switch only succeeds when health responses contain the expected hint.
 
 Optional env overrides example:
 
 ```bash
-HOSTNAME_TARGET="sub2api.example.com" \
-STAGING_HOSTNAME_TARGET="sub2api-staging.example.com" \
+HOSTNAME_TARGET="cloudbase.example.com" \
+STAGING_HOSTNAME_TARGET="cloudbase-staging.example.com" \
 PROD_PORT="18080" \
 STAGING_PORT="18081" \
 PROD_HEALTH_HINT="env=prod" \
 STAGING_HEALTH_HINT="env=staging" \
-./switch_sub2api_traffic.sh --dry-run-report
+./switch_cloudbase_traffic.sh --dry-run-report
 ```
 
 ## New Version Optimization (Precheck)
@@ -688,8 +698,8 @@ What it verifies:
 Optional env overrides example:
 
 ```bash
-PROD_CONTAINERS="sub2api,sub2api-postgres,sub2api-redis" \
-STAGING_CONTAINERS="sub2api-staging,sub2api-staging-postgres,sub2api-staging-redis" \
+PROD_CONTAINERS="cloudbase,cloudbase-postgres,cloudbase-redis" \
+STAGING_CONTAINERS="cloudbase-staging,cloudbase-staging-postgres,cloudbase-staging-redis" \
 ./optimize_new_version.sh
 ```
 

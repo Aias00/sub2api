@@ -5,7 +5,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/cloudbase/internal/config"
 	"github.com/gin-gonic/gin"
 )
 

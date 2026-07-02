@@ -88,7 +88,7 @@ if [[ -f deploy/wechat-export-alerts.example.yml ]]; then
     && grep -q "WeChatExportQueueBacklog" deploy/wechat-export-alerts.example.yml \
     && grep -q "WeChatExportFailureBacklog" deploy/wechat-export-alerts.example.yml \
     && grep -q "WeChatExportWorkerAttention" deploy/wechat-export-alerts.example.yml \
-    && grep -q "sub2api_wechat_export_worker_health" deploy/wechat-export-alerts.example.yml; then
+    && grep -q "cloudbase_wechat_export_worker_health" deploy/wechat-export-alerts.example.yml; then
     echo "wechat_export_alert_rules=ok"
   else
     warn_or_fail "deploy/wechat-export-alerts.example.yml is missing required WeChat export alert rules"
@@ -107,9 +107,9 @@ JSON
     WORKER_STATUS_INPUT_PATH="$tmp_status" \
     WORKER_STATUS_METRICS_PATH="$tmp_metrics" \
     node tools/worker-status-metrics.mjs >/tmp/wechat-export-worker-metrics.out
-  if grep -q "sub2api_wechat_export_worker_health{health=\"attention\"} 1" "$tmp_metrics" \
-    && grep -q "sub2api_wechat_export_stale_running_count 1" "$tmp_metrics" \
-    && grep -q "sub2api_wechat_export_oldest_queued_seconds 901" "$tmp_metrics"; then
+  if grep -q "cloudbase_wechat_export_worker_health{health=\"attention\"} 1" "$tmp_metrics" \
+    && grep -q "cloudbase_wechat_export_stale_running_count 1" "$tmp_metrics" \
+    && grep -q "cloudbase_wechat_export_oldest_queued_seconds 901" "$tmp_metrics"; then
     echo "wechat_export_metrics_export=ok"
   else
     warn_or_fail "tools/worker-status-metrics.mjs did not export required WeChat export metrics"
@@ -121,7 +121,7 @@ fi
 
 section "Docker compose overlay"
 if command -v docker >/dev/null 2>&1; then
-  if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/sub2api-business-worker-compose.yml; then
+  if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/cloudbase-business-worker-compose.yml; then
     echo "docker_compose_business_worker_config=ok"
   else
     warn_or_fail "docker compose business worker overlay does not render"

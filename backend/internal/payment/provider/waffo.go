@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/payment"
+	"github.com/Wei-Shaw/cloudbase/internal/payment"
 )
 
 const (
@@ -27,7 +27,7 @@ const (
 	waffoHeaderAPIVersion  = "X-API-VERSION"
 	waffoHeaderSDKVersion  = "X-SDK-VERSION"
 	waffoAPIVersion        = "1.0.0"
-	waffoSDKVersion        = "sub2api/waffo"
+	waffoSDKVersion        = "cloudbase/waffo"
 	waffoPaySuccess        = "PAY_SUCCESS"
 	waffoOrderClosed       = "ORDER_CLOSE"
 	waffoOrderAuthRequired = "AUTHORIZATION_REQUIRED"

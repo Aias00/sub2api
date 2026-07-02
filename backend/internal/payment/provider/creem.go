@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/sub2api/internal/payment"
+	"github.com/Wei-Shaw/cloudbase/internal/payment"
 )
 
 const (

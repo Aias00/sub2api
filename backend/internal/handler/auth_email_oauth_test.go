@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/authidentity"
-	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
-	dbuser "github.com/Wei-Shaw/sub2api/ent/user"
-	"github.com/Wei-Shaw/sub2api/internal/config"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Wei-Shaw/cloudbase/ent/authidentity"
+	"github.com/Wei-Shaw/cloudbase/ent/redeemcode"
+	dbuser "github.com/Wei-Shaw/cloudbase/ent/user"
+	"github.com/Wei-Shaw/cloudbase/internal/config"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -163,7 +163,7 @@ func TestEmailOAuthStartStoresWebSource(t *testing.T) {
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
 	token := buildWebBridgeTokenForTest(t, "touch-admin-key", "google", time.Now().Add(time.Minute).Unix())
-	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?redirect=/dashboard&source=web&sub2api_web_bridge_token="+url.QueryEscape(token), nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?redirect=/dashboard&source=web&cloudbase_web_bridge_token="+url.QueryEscape(token), nil)
 	c.Request = req
 
 	handler.GoogleOAuthStart(c)
@@ -230,7 +230,7 @@ func TestAuthHandlerAllowsWebOAuthBridgeToken(t *testing.T) {
 	token := buildWebBridgeTokenForTest(t, "touch-admin-key", "google", time.Now().Add(time.Minute).Unix())
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
-	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?sub2api_web_bridge_token="+url.QueryEscape(token), nil)
+	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/auth/oauth/google/start?cloudbase_web_bridge_token="+url.QueryEscape(token), nil)
 
 	require.NoError(t, handler.ensureWebAuthSourceAllowed(c, "web", "google"))
 	require.Error(t, handler.ensureWebAuthSourceAllowed(c, "web", "github"))
@@ -274,7 +274,7 @@ func TestAuthHandlerRejectsWebOAuthBridgeTokenWithoutProviderScope(t *testing.T)
 	token := buildWebBridgeTokenForTest(t, "touch-admin-key", "google", time.Now().Add(time.Minute).Unix())
 	recorder := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(recorder)
-	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/auth/login?sub2api_web_bridge_token="+url.QueryEscape(token), nil)
+	c.Request = httptest.NewRequest(http.MethodPost, "/api/v1/auth/login?cloudbase_web_bridge_token="+url.QueryEscape(token), nil)
 
 	err := handler.ensureWebAuthSourceAllowed(c, "web")
 	require.Error(t, err)

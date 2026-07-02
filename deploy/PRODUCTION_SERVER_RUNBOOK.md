@@ -22,8 +22,8 @@ gcloud compute ssh --zone "us-central1-a" \
 - Public site: `https://cloudbase.eu.org`
 - Local service health endpoint: `http://127.0.0.1:8081/health`
 - External health endpoint: `https://cloudbase.eu.org/health`
-- Server-side repo path: `/home/aias94coffee/sub2api-work/sub2api-main`
-- Restart helper path: `/home/aias94coffee/sub2api-work/runtime/restart-sub2api.sh`
+- Server-side repo path: `/home/aias94coffee/cloudbase-work/cloudbase-main`
+- Restart helper path: `/home/aias94coffee/cloudbase-work/runtime/restart-cloudbase.sh`
 - Service owner for repo/build/runtime operations: `aias94coffee`
 - Typical login user through `gcloud compute ssh`: `aias`
 - Production operations should therefore run through:
@@ -35,15 +35,15 @@ sudo -n -u aias94coffee bash -lc '<commands>'
 ## Important Paths
 
 - Repo root binary used by restart script:
-  - `/home/aias94coffee/sub2api-work/sub2api-main/sub2api`
+  - `/home/aias94coffee/cloudbase-work/cloudbase-main/cloudbase`
 - Backend source tree:
-  - `/home/aias94coffee/sub2api-work/sub2api-main/backend`
+  - `/home/aias94coffee/cloudbase-work/cloudbase-main/backend`
 - Frontend source tree:
-  - `/home/aias94coffee/sub2api-work/sub2api-main/frontend`
+  - `/home/aias94coffee/cloudbase-work/cloudbase-main/frontend`
 - Embedded frontend output:
-  - `/home/aias94coffee/sub2api-work/sub2api-main/backend/internal/web/dist`
+  - `/home/aias94coffee/cloudbase-work/cloudbase-main/backend/internal/web/dist`
 - Runtime logs:
-  - `/home/aias94coffee/sub2api-work/runtime/sub2api-8081.log`
+  - `/home/aias94coffee/cloudbase-work/runtime/cloudbase-8081.log`
 
 ## Current Disk Layout
 
@@ -70,12 +70,12 @@ gcloud compute ssh --zone "us-central1-a" \
   --project "project-f473f4a5-f3a5-4f31-a57" \
   --command "sudo -n -u aias94coffee bash -lc '
 set -euo pipefail
-cd /home/aias94coffee/sub2api-work/sub2api-main
+cd /home/aias94coffee/cloudbase-work/cloudbase-main
 git pull origin main
 pnpm install --frozen-lockfile
 pnpm run frontend:build
-(cd backend && /usr/local/go/bin/go build -tags embed -o ../sub2api ./cmd/server)
-/home/aias94coffee/sub2api-work/runtime/restart-sub2api.sh
+(cd backend && /usr/local/go/bin/go build -tags embed -o ../cloudbase ./cmd/server)
+/home/aias94coffee/cloudbase-work/runtime/restart-cloudbase.sh
 curl --max-time 15 -fsS http://127.0.0.1:8081/health
 '"
 ```
@@ -92,21 +92,21 @@ Do **not** rely on either of these commands:
 
 ```bash
 cd backend && /usr/local/go/bin/go build -tags embed ./cmd/server
-/usr/local/go/bin/go build -tags embed -o sub2api ./backend/cmd/server
+/usr/local/go/bin/go build -tags embed -o cloudbase ./backend/cmd/server
 ```
 
 The first writes a binary like `backend/server`, but the restart script launches
-the repo-root binary `./sub2api`. The second runs from the repo root, but this
+the repo-root binary `./cloudbase`. The second runs from the repo root, but this
 repository's Go module is under `backend/`, so root builds fail with
 `go: cannot find main module`.
 
-If you build only inside `backend/` without `-o ../sub2api`, the running service
+If you build only inside `backend/` without `-o ../cloudbase`, the running service
 may continue using the old root binary even though the compile step succeeded.
 
 Always build from the backend module with an explicit repo-root output:
 
 ```bash
-cd backend && /usr/local/go/bin/go build -tags embed -o ../sub2api ./cmd/server
+cd backend && /usr/local/go/bin/go build -tags embed -o ../cloudbase ./cmd/server
 ```
 
 ## Restart Behavior
@@ -115,14 +115,14 @@ The tracked helper already handles:
 
 - `DATA_DIR` forwarding
 - killing the old process on `SERVER_PORT=8081`
-- starting the repo-root `./sub2api`
+- starting the repo-root `./cloudbase`
 - local health verification
 
 Default helper assumptions:
 
 - `SERVER_PORT=8081`
-- `DATA_DIR=/home/aias94coffee/sub2api-work/sub2api-main`
-- runtime logs under `/home/aias94coffee/sub2api-work/runtime/`
+- `DATA_DIR=/home/aias94coffee/cloudbase-work/cloudbase-main`
+- runtime logs under `/home/aias94coffee/cloudbase-work/runtime/`
 
 ## Source Build vs Admin Update API
 
@@ -146,7 +146,7 @@ If root disk usage climbs again, these are the first safe cleanup targets:
 ```bash
 rm -rf /home/aias94coffee/.cache/go-build/*
 rm -rf /home/aias94coffee/go/pkg/mod/cache/*
-find /home/aias94coffee/sub2api-work/runtime -type f -name 'sub2api-*.log' -exec truncate -s 0 {} \;
+find /home/aias94coffee/cloudbase-work/runtime -type f -name 'cloudbase-*.log' -exec truncate -s 0 {} \;
 ```
 
 Check space before and after:

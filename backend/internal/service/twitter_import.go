@@ -24,8 +24,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 )
 
-const twitterImporterUserAgent = "sub2api-twitter-importer/1.0"
-const promptCatalogImageSyncUserAgent = "sub2api-prompt-catalog-image-sync/1.0"
+const twitterImporterUserAgent = "cloudbase-twitter-importer/1.0"
+const promptCatalogImageSyncUserAgent = "cloudbase-prompt-catalog-image-sync/1.0"
 const promptCatalogImageCacheControl = "public, max-age=31536000, immutable"
 
 var (

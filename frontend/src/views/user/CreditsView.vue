@@ -41,7 +41,7 @@
 
         <div class="rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-dark-700 dark:bg-dark-900">
           <p class="text-sm font-medium text-gray-500 dark:text-dark-300">
-            {{ copy.sub2apiBalance }}
+            {{ copy.cloudbaseBalance }}
           </p>
           <p class="mt-3 text-5xl font-black text-primary-600 dark:text-primary-300">
             {{ formattedBalanceAmount }}

@@ -18,10 +18,10 @@ const authStoreState = vi.hoisted(() => ({
 
 const appStoreState = vi.hoisted(() => ({
   publicSettingsLoaded: true,
-  siteName: 'Sub2API',
+  siteName: 'Cloudbase',
   siteLogo: '',
   cachedPublicSettings: {
-    site_name: 'Sub2API',
+    site_name: 'Cloudbase',
     site_logo: '',
     prompt_catalog_shell_config: JSON.stringify({
       en: {
@@ -453,9 +453,9 @@ describe('PromptCatalogView', () => {
     expect(promptCatalogViewSource).not.toContain("|| 'imported_at'")
     expect(promptCatalogViewSource).not.toContain("|| 'desc'")
     expect(promptCatalogViewSource).not.toContain("window.location.assign('/image-generator')")
-    expect(promptCatalogViewSource).not.toContain("source: 'sub2api-vue-prompt-catalog'")
+    expect(promptCatalogViewSource).not.toContain("source: 'cloudbase-vue-prompt-catalog'")
     expect(promptCatalogViewSource).not.toContain("|| '/image-generator'")
-    expect(promptCatalogViewSource).not.toContain("|| 'sub2api-vue-prompt-catalog'")
+    expect(promptCatalogViewSource).not.toContain("|| 'cloudbase-vue-prompt-catalog'")
     expect(promptCatalogViewSource).not.toContain("loadError: 'Failed to load prompt cases'")
     expect(promptCatalogViewSource).not.toContain('function isSupportedTwitterURL')
     expect(promptCatalogViewSource).not.toContain('copy.value.importInvalidUrl')

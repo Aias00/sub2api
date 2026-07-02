@@ -9,10 +9,8 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/authidentity"
-	"github.com/Wei-Shaw/sub2api/ent/authidentitychannel"
-	"github.com/Wei-Shaw/sub2api/internal/service"
+	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Wei-Shaw/cloudbase/internal/service"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -81,12 +79,12 @@ func (s *UserProfileIdentityRepoSuite) TestCreateAndLookupCanonicalAndChannelIde
 	created, err := s.repo.CreateAuthIdentity(s.ctx, CreateAuthIdentityInput{
 		UserID: user.ID,
 		Canonical: AuthIdentityKey{
-			ProviderType:    "wechat",
+			ProviderType:    "github",
 			ProviderKey:     "wechat-open",
 			ProviderSubject: "union-123",
 		},
 		Channel: &AuthIdentityChannelKey{
-			ProviderType:   "wechat",
+			ProviderType:   "github",
 			ProviderKey:    "wechat-open",
 			Channel:        "mp",
 			ChannelAppID:   "wx-app",
@@ -121,12 +119,12 @@ func (s *UserProfileIdentityRepoSuite) TestBindAuthIdentityToUser_IsIdempotentAn
 	first, err := s.repo.BindAuthIdentityToUser(s.ctx, BindAuthIdentityInput{
 		UserID: owner.ID,
 		Canonical: AuthIdentityKey{
-			ProviderType:    "linuxdo",
+			ProviderType:    "google",
 			ProviderKey:     "linuxdo-main",
 			ProviderSubject: "subject-1",
 		},
 		Channel: &AuthIdentityChannelKey{
-			ProviderType:   "linuxdo",
+			ProviderType:   "google",
 			ProviderKey:    "linuxdo-main",
 			Channel:        "oauth",
 			ChannelAppID:   "linuxdo-web",
@@ -140,12 +138,12 @@ func (s *UserProfileIdentityRepoSuite) TestBindAuthIdentityToUser_IsIdempotentAn
 	second, err := s.repo.BindAuthIdentityToUser(s.ctx, BindAuthIdentityInput{
 		UserID: owner.ID,
 		Canonical: AuthIdentityKey{
-			ProviderType:    "linuxdo",
+			ProviderType:    "google",
 			ProviderKey:     "linuxdo-main",
 			ProviderSubject: "subject-1",
 		},
 		Channel: &AuthIdentityChannelKey{
-			ProviderType:   "linuxdo",
+			ProviderType:   "google",
 			ProviderKey:    "linuxdo-main",
 			Channel:        "oauth",
 			ChannelAppID:   "linuxdo-web",
@@ -163,7 +161,7 @@ func (s *UserProfileIdentityRepoSuite) TestBindAuthIdentityToUser_IsIdempotentAn
 	_, err = s.repo.BindAuthIdentityToUser(s.ctx, BindAuthIdentityInput{
 		UserID: other.ID,
 		Canonical: AuthIdentityKey{
-			ProviderType:    "linuxdo",
+			ProviderType:    "google",
 			ProviderKey:     "linuxdo-main",
 			ProviderSubject: "subject-1",
 		},
@@ -173,12 +171,12 @@ func (s *UserProfileIdentityRepoSuite) TestBindAuthIdentityToUser_IsIdempotentAn
 	_, err = s.repo.BindAuthIdentityToUser(s.ctx, BindAuthIdentityInput{
 		UserID: other.ID,
 		Canonical: AuthIdentityKey{
-			ProviderType:    "linuxdo",
+			ProviderType:    "google",
 			ProviderKey:     "linuxdo-main",
 			ProviderSubject: "subject-2",
 		},
 		Channel: &AuthIdentityChannelKey{
-			ProviderType:   "linuxdo",
+			ProviderType:   "google",
 			ProviderKey:    "linuxdo-main",
 			Channel:        "oauth",
 			ChannelAppID:   "linuxdo-web",
@@ -188,91 +186,18 @@ func (s *UserProfileIdentityRepoSuite) TestBindAuthIdentityToUser_IsIdempotentAn
 	s.Require().ErrorIs(err, ErrAuthIdentityChannelOwnershipConflict)
 }
 
-func (s *UserProfileIdentityRepoSuite) TestBindAuthIdentityToUser_ReusesLegacyWeChatAliasRecords() {
-	user := s.mustCreateUser("wechat-legacy-alias")
-
-	legacyIdentity, err := s.client.AuthIdentity.Create().
-		SetUserID(user.ID).
-		SetProviderType("wechat").
-		SetProviderKey("wechat").
-		SetProviderSubject("union-legacy-123").
-		SetMetadata(map[string]any{"source": "legacy-alias"}).
-		Save(s.ctx)
-	s.Require().NoError(err)
-
-	legacyChannel, err := s.client.AuthIdentityChannel.Create().
-		SetIdentityID(legacyIdentity.ID).
-		SetProviderType("wechat").
-		SetProviderKey("wechat").
-		SetChannel("oa").
-		SetChannelAppID("wx-app-legacy").
-		SetChannelSubject("openid-legacy-123").
-		SetMetadata(map[string]any{"scene": "legacy-alias"}).
-		Save(s.ctx)
-	s.Require().NoError(err)
-
-	bound, err := s.repo.BindAuthIdentityToUser(s.ctx, BindAuthIdentityInput{
-		UserID: user.ID,
-		Canonical: AuthIdentityKey{
-			ProviderType:    "wechat",
-			ProviderKey:     "wechat-main",
-			ProviderSubject: "union-legacy-123",
-		},
-		Channel: &AuthIdentityChannelKey{
-			ProviderType:   "wechat",
-			ProviderKey:    "wechat-main",
-			Channel:        "oa",
-			ChannelAppID:   "wx-app-legacy",
-			ChannelSubject: "openid-legacy-123",
-		},
-		Metadata:        map[string]any{"source": "canonical-bind"},
-		ChannelMetadata: map[string]any{"scene": "canonical-bind"},
-	})
-	s.Require().NoError(err)
-	s.Require().NotNil(bound)
-	s.Require().NotNil(bound.Identity)
-	s.Require().NotNil(bound.Channel)
-	s.Require().Equal(legacyIdentity.ID, bound.Identity.ID)
-	s.Require().Equal(legacyChannel.ID, bound.Channel.ID)
-	s.Require().Equal("wechat-main", bound.Identity.ProviderKey)
-	s.Require().Equal("wechat-main", bound.Channel.ProviderKey)
-	s.Require().Equal("canonical-bind", bound.Identity.Metadata["source"])
-	s.Require().Equal("canonical-bind", bound.Channel.Metadata["scene"])
-
-	identityCount, err := s.client.AuthIdentity.Query().
-		Where(
-			authidentity.UserIDEQ(user.ID),
-			authidentity.ProviderTypeEQ("wechat"),
-			authidentity.ProviderSubjectEQ("union-legacy-123"),
-		).
-		Count(s.ctx)
-	s.Require().NoError(err)
-	s.Require().Equal(1, identityCount)
-
-	channelCount, err := s.client.AuthIdentityChannel.Query().
-		Where(
-			authidentitychannel.ProviderTypeEQ("wechat"),
-			authidentitychannel.ChannelEQ("oa"),
-			authidentitychannel.ChannelAppIDEQ("wx-app-legacy"),
-			authidentitychannel.ChannelSubjectEQ("openid-legacy-123"),
-		).
-		Count(s.ctx)
-	s.Require().NoError(err)
-	s.Require().Equal(1, channelCount)
-}
-
 func (s *UserProfileIdentityRepoSuite) TestCreateAuthIdentity_RejectsChannelProviderMismatch() {
 	user := s.mustCreateUser("provider-mismatch-create")
 
 	_, err := s.repo.CreateAuthIdentity(s.ctx, CreateAuthIdentityInput{
 		UserID: user.ID,
 		Canonical: AuthIdentityKey{
-			ProviderType:    "wechat",
+			ProviderType:    "github",
 			ProviderKey:     "wechat-main",
 			ProviderSubject: "union-create-mismatch",
 		},
 		Channel: &AuthIdentityChannelKey{
-			ProviderType:   "linuxdo",
+			ProviderType:   "google",
 			ProviderKey:    "linuxdo-main",
 			Channel:        "oauth",
 			ChannelAppID:   "app-mismatch",
@@ -288,12 +213,12 @@ func (s *UserProfileIdentityRepoSuite) TestBindAuthIdentityToUser_RejectsChannel
 	_, err := s.repo.BindAuthIdentityToUser(s.ctx, BindAuthIdentityInput{
 		UserID: user.ID,
 		Canonical: AuthIdentityKey{
-			ProviderType:    "wechat",
+			ProviderType:    "github",
 			ProviderKey:     "wechat-main",
 			ProviderSubject: "union-bind-mismatch",
 		},
 		Channel: &AuthIdentityChannelKey{
-			ProviderType:   "wechat",
+			ProviderType:   "github",
 			ProviderKey:    "wechat-legacy",
 			Channel:        "oa",
 			ChannelAppID:   "wx-app-bind-mismatch",
@@ -311,7 +236,7 @@ func (s *UserProfileIdentityRepoSuite) TestWithUserProfileIdentityTx_RollsBackId
 		_, err := s.repo.CreateAuthIdentity(txCtx, CreateAuthIdentityInput{
 			UserID: user.ID,
 			Canonical: AuthIdentityKey{
-				ProviderType:    "oidc",
+				ProviderType:    "github",
 				ProviderKey:     "https://issuer.example",
 				ProviderSubject: "subject-rollback",
 			},
@@ -320,7 +245,7 @@ func (s *UserProfileIdentityRepoSuite) TestWithUserProfileIdentityTx_RollsBackId
 
 		inserted, err := s.repo.RecordProviderGrant(txCtx, ProviderGrantRecordInput{
 			UserID:       user.ID,
-			ProviderType: "oidc",
+			ProviderType: "github",
 			GrantReason:  ProviderGrantReasonFirstBind,
 		})
 		s.Require().NoError(err)
@@ -330,7 +255,7 @@ func (s *UserProfileIdentityRepoSuite) TestWithUserProfileIdentityTx_RollsBackId
 	s.Require().ErrorIs(err, expectedErr)
 
 	_, err = s.repo.GetUserByCanonicalIdentity(s.ctx, AuthIdentityKey{
-		ProviderType:    "oidc",
+		ProviderType:    "github",
 		ProviderKey:     "https://issuer.example",
 		ProviderSubject: "subject-rollback",
 	})
@@ -342,7 +267,7 @@ SELECT COUNT(*)
 FROM user_provider_default_grants
 WHERE user_id = $1 AND provider_type = $2 AND grant_reason = $3`,
 		user.ID,
-		"oidc",
+		"github",
 		string(ProviderGrantReasonFirstBind),
 	).Scan(&count))
 	s.Require().Zero(count)
@@ -353,7 +278,7 @@ func (s *UserProfileIdentityRepoSuite) TestRecordProviderGrant_IsIdempotentPerRe
 
 	inserted, err := s.repo.RecordProviderGrant(s.ctx, ProviderGrantRecordInput{
 		UserID:       user.ID,
-		ProviderType: "wechat",
+		ProviderType: "github",
 		GrantReason:  ProviderGrantReasonFirstBind,
 	})
 	s.Require().NoError(err)
@@ -361,7 +286,7 @@ func (s *UserProfileIdentityRepoSuite) TestRecordProviderGrant_IsIdempotentPerRe
 
 	inserted, err = s.repo.RecordProviderGrant(s.ctx, ProviderGrantRecordInput{
 		UserID:       user.ID,
-		ProviderType: "wechat",
+		ProviderType: "github",
 		GrantReason:  ProviderGrantReasonFirstBind,
 	})
 	s.Require().NoError(err)
@@ -369,7 +294,7 @@ func (s *UserProfileIdentityRepoSuite) TestRecordProviderGrant_IsIdempotentPerRe
 
 	inserted, err = s.repo.RecordProviderGrant(s.ctx, ProviderGrantRecordInput{
 		UserID:       user.ID,
-		ProviderType: "wechat",
+		ProviderType: "github",
 		GrantReason:  ProviderGrantReasonSignup,
 	})
 	s.Require().NoError(err)
@@ -381,7 +306,7 @@ SELECT COUNT(*)
 FROM user_provider_default_grants
 WHERE user_id = $1 AND provider_type = $2`,
 		user.ID,
-		"wechat",
+		"github",
 	).Scan(&count))
 	s.Require().Equal(2, count)
 }
@@ -391,7 +316,7 @@ func (s *UserProfileIdentityRepoSuite) TestUpsertIdentityAdoptionDecision_Persis
 	identity, err := s.repo.CreateAuthIdentity(s.ctx, CreateAuthIdentityInput{
 		UserID: user.ID,
 		Canonical: AuthIdentityKey{
-			ProviderType:    "wechat",
+			ProviderType:    "github",
 			ProviderKey:     "wechat-open",
 			ProviderSubject: "union-adoption",
 		},
@@ -433,7 +358,7 @@ func (s *UserProfileIdentityRepoSuite) TestUpsertIdentityAdoptionDecision_Reassi
 	identity, err := s.repo.CreateAuthIdentity(s.ctx, CreateAuthIdentityInput{
 		UserID: user.ID,
 		Canonical: AuthIdentityKey{
-			ProviderType:    "wechat",
+			ProviderType:    "github",
 			ProviderKey:     "wechat-open",
 			ProviderSubject: "union-adoption-reassign",
 		},

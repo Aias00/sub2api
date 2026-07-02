@@ -63,7 +63,7 @@ func TestReadWebSessionCookieIgnoresLegacyName(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c, _ := gin.CreateTestContext(rec)
 	c.Request = httptest.NewRequest(http.MethodGet, "/api/v1/web/auth/me", nil)
-	c.Request.AddCookie(&http.Cookie{Name: "touch_sub2api_access_token", Value: "legacy-access-token"})
+	c.Request.AddCookie(&http.Cookie{Name: "touch_cloudbase_access_token", Value: "legacy-access-token"})
 
 	value, err := readWebSessionCookie(c, webAccessTokenCookie)
 

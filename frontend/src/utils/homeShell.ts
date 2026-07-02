@@ -434,7 +434,7 @@ const businessHomeShellConfigZh: HomeShellConfig = {
     experienceKicker: '中台定位',
     experienceTitle: '业务能力前台，平台能力落到中台',
     experienceDescription:
-      '用户、订单、套餐、支付与账户治理逐步统一收口到 Sub2API 中台，让前台页面更多表达业务价值而不是底层接线细节。',
+      '用户、订单、套餐、支付与账户治理逐步统一收口到 Cloudbase 中台，让前台页面更多表达业务价值而不是底层接线细节。',
     whyChooseKicker: '能力组织方式',
     whyChooseTitle: '先讲用户能完成什么，再讲平台怎么支撑',
     whyChooseDescription:
@@ -560,7 +560,7 @@ const businessHomeShellConfigZh: HomeShellConfig = {
     {
       key: 'platform-backbone',
       title: '中台继续做能力骨架',
-      description: '账户、订单、套餐与支付能力继续沉到 Sub2API 中台，不需要在首页重复解释。',
+      description: '账户、订单、套餐与支付能力继续沉到 Cloudbase 中台，不需要在首页重复解释。',
     },
     {
       key: 'reuse',
@@ -595,7 +595,7 @@ const businessHomeShellConfigEn: HomeShellConfig = {
     experienceKicker: 'Platform direction',
     experienceTitle: 'Business-facing home, platform-backed operations',
     experienceDescription:
-      'Users, orders, plans, payments, and account management continue moving into the Sub2API platform so public pages can focus on user-facing workflows.',
+      'Users, orders, plans, payments, and account management continue moving into the Cloudbase platform so public pages can focus on user-facing workflows.',
     whyChooseKicker: 'Information architecture',
     whyChooseTitle: 'Explain what users can do before how the platform works',
     whyChooseDescription:
@@ -721,7 +721,7 @@ const businessHomeShellConfigEn: HomeShellConfig = {
     {
       key: 'platform-backbone',
       title: 'Keep the platform as the backbone',
-      description: 'Users, orders, plans, and payment keep consolidating into Sub2API without forcing every homepage section to explain the machinery.',
+      description: 'Users, orders, plans, and payment keep consolidating into Cloudbase without forcing every homepage section to explain the machinery.',
     },
     {
       key: 'reuse',

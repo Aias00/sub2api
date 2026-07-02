@@ -19,19 +19,19 @@ vi.mock('@/stores', () => ({
 }))
 
 function managedNodes() {
-  return [...document.querySelectorAll('[data-sub2api-public-integration]')]
+  return [...document.querySelectorAll('[data-cloudbase-public-integration]')]
 }
 
 describe('PublicIntegrations', () => {
   beforeEach(() => {
     appStoreState.cachedPublicSettings = null
-    document.head.querySelectorAll('[data-sub2api-public-integration]').forEach((node) => node.remove())
-    document.body.querySelectorAll('[data-sub2api-public-integration]').forEach((node) => node.remove())
+    document.head.querySelectorAll('[data-cloudbase-public-integration]').forEach((node) => node.remove())
+    document.body.querySelectorAll('[data-cloudbase-public-integration]').forEach((node) => node.remove())
   })
 
   afterEach(() => {
-    document.head.querySelectorAll('[data-sub2api-public-integration]').forEach((node) => node.remove())
-    document.body.querySelectorAll('[data-sub2api-public-integration]').forEach((node) => node.remove())
+    document.head.querySelectorAll('[data-cloudbase-public-integration]').forEach((node) => node.remove())
+    document.body.querySelectorAll('[data-cloudbase-public-integration]').forEach((node) => node.remove())
   })
 
   it('injects integrations when public settings leave the switch enabled', async () => {
@@ -49,7 +49,7 @@ describe('PublicIntegrations', () => {
     expect(managedNodes()).toHaveLength(0)
   })
 
-  it('clears integrations when Sub2API public settings disable injection', async () => {
+  it('clears integrations when Cloudbase public settings disable injection', async () => {
     appStoreState.cachedPublicSettings = {
       public_integrations_enabled: false,
       google_analytics_id: 'G-DISABLED',

@@ -15,8 +15,8 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/internal/pkg/logger"
+	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
 )
 
 const (
@@ -416,7 +416,7 @@ func (s *AuthService) signupGrantRiskSalt() string {
 	if s != nil && s.cfg != nil && strings.TrimSpace(s.cfg.JWT.Secret) != "" {
 		return s.cfg.JWT.Secret
 	}
-	return "sub2api-signup-grant-risk"
+	return "cloudbase-signup-grant-risk"
 }
 
 func signupGrantPlanHasBonus(plan signupGrantPlan) bool {

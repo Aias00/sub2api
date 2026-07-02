@@ -1,5 +1,5 @@
 {
-  "name": "sub2api-wechat-worker",
+  "name": "cloudbase-wechat-worker",
   "private": true,
   "type": "module",
   "version": "0.0.0",
