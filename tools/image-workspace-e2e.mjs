@@ -249,7 +249,7 @@ function createSmokeUser() {
   const row = psql(`
 INSERT INTO users (email, username, password_hash, role, balance, concurrency, status, signup_source, created_at, updated_at)
 VALUES (${sqlString(config.smokeEmail)}, 'Image Workspace E2E', ${sqlString(config.smokePasswordHash)}, 'user', ${config.initialBalance}, 5, 'active', 'email', now(), now())
-ON CONFLICT (email) WHERE deleted_at IS NULL AND signup_source <> 'touch'
+ON CONFLICT (email) WHERE deleted_at IS NULL
 DO UPDATE SET password_hash = EXCLUDED.password_hash, balance = EXCLUDED.balance, status = 'active', updated_at = now()
 RETURNING id, email, role, password_hash, balance;
 `)

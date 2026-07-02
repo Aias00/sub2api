@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"crypto/sha256"
 	"database/sql"
 	"encoding/json"
 	"errors"
@@ -579,6 +580,17 @@ type userGroupRateBatchReader interface {
 	GetByUserIDs(ctx context.Context, userIDs []int64) (map[int64]map[int64]float64, error)
 }
 
+type signupGrantRiskAdminStore interface {
+	ListSignupGrantRiskClaims(ctx context.Context, limit, offset int, filter SignupGrantRiskClaimFilter) ([]SignupGrantRiskClaimRecord, int64, error)
+	GetSignupGrantRiskUserSummary(ctx context.Context, userID int64) (*SignupGrantRiskUserSummary, error)
+	UpsertSignupGrantRiskOverride(ctx context.Context, input SignupGrantRiskOverrideInput) error
+	DeleteSignupGrantRiskOverride(ctx context.Context, id int64, adminID int64) error
+	ListSignupGrantRiskOverrides(ctx context.Context, limit, offset int, filter SignupGrantRiskOverrideFilter) ([]SignupGrantRiskOverrideRecord, int64, error)
+	CreateSignupGrantAdminAuditLog(ctx context.Context, input SignupGrantAdminAuditLog) error
+	ListSignupGrantAdminAuditLogs(ctx context.Context, limit, offset int, filter SignupGrantAdminAuditLogFilter) ([]SignupGrantAdminAuditLog, int64, error)
+	AddGiftBalance(ctx context.Context, id int64, amount float64) error
+}
+
 // NewAdminService creates a new AdminService
 func NewAdminService(
 	userRepo UserRepository,
@@ -1041,10 +1053,12 @@ func (s *adminServiceImpl) UpdateUserBalance(ctx context.Context, userID int64, 
 		return nil, fmt.Errorf("balance cannot be negative, current balance: %.2f, requested operation would result in: %.2f", oldBalance, user.Balance)
 	}
 
-	if err := s.userRepo.Update(ctx, user); err != nil {
-		return nil, err
-	}
 	balanceDiff := user.Balance - oldBalance
+	if balanceDiff != 0 {
+		if err := s.userRepo.UpdateBalance(ctx, userID, balanceDiff); err != nil {
+			return nil, err
+		}
+	}
 	if s.authCacheInvalidator != nil && balanceDiff != 0 {
 		s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, userID)
 	}
@@ -1102,7 +1116,271 @@ func (s *adminServiceImpl) UpdateUserBalance(ctx context.Context, userID int64, 
 		}
 	}
 
-	return user, nil
+	updatedUser, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return updatedUser, nil
+}
+
+func (s *adminServiceImpl) ListSignupGrantRiskClaims(ctx context.Context, page, pageSize int, filter SignupGrantRiskClaimFilter) ([]SignupGrantRiskClaimRecord, int64, error) {
+	store, ok := s.userRepo.(signupGrantRiskAdminStore)
+	if !ok {
+		return nil, 0, ErrServiceUnavailable
+	}
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 200 {
+		pageSize = 50
+	}
+	filter.Decision = strings.TrimSpace(strings.ToLower(filter.Decision))
+	filter.SubjectType = strings.TrimSpace(strings.ToLower(filter.SubjectType))
+	filter.SubjectQuery = strings.TrimSpace(filter.SubjectQuery)
+	filter.Reason = strings.TrimSpace(filter.Reason)
+	return store.ListSignupGrantRiskClaims(ctx, pageSize, (page-1)*pageSize, filter)
+}
+
+func (s *adminServiceImpl) GetSignupGrantRiskUserSummary(ctx context.Context, userID int64) (*SignupGrantRiskUserSummary, error) {
+	store, ok := s.userRepo.(signupGrantRiskAdminStore)
+	if !ok {
+		return nil, ErrServiceUnavailable
+	}
+	if _, err := s.userRepo.GetByID(ctx, userID); err != nil {
+		return nil, err
+	}
+	return store.GetSignupGrantRiskUserSummary(ctx, userID)
+}
+
+func (s *adminServiceImpl) UpsertSignupGrantRiskOverride(ctx context.Context, input SignupGrantRiskOverrideInput) error {
+	store, ok := s.userRepo.(signupGrantRiskAdminStore)
+	if !ok {
+		return ErrServiceUnavailable
+	}
+	subjectType := strings.TrimSpace(strings.ToLower(input.SubjectType))
+	subject := normalizeSignupGrantOverrideSubject(subjectType, input.Subject)
+	if subjectType == "" || subject == "" {
+		return infraerrors.BadRequest("SIGNUP_GRANT_RISK_OVERRIDE_INVALID", "subject_type and subject are required")
+	}
+	action := strings.TrimSpace(strings.ToLower(input.Action))
+	if action != "allow" && action != "block" {
+		return infraerrors.BadRequest("SIGNUP_GRANT_RISK_OVERRIDE_INVALID", "action must be allow or block")
+	}
+	hashSalt := ""
+	if s.settingService != nil {
+		hashSalt = s.settingService.signupGrantRiskHashSalt(ctx)
+	}
+	subjectValue := subject
+	subjectHash := subject
+	if !isSignupGrantRiskHash(subject) {
+		subjectHash = signupGrantRiskHash(hashSalt, subject)
+	}
+	input.SubjectType = subjectType
+	input.Subject = subjectHash
+	input.SubjectValue = subjectValue
+	input.Action = action
+	input.Reason = strings.TrimSpace(input.Reason)
+	if err := store.UpsertSignupGrantRiskOverride(ctx, input); err != nil {
+		return err
+	}
+	adminID := input.CreatedBy
+	var adminIDPtr *int64
+	if adminID > 0 {
+		adminIDPtr = &adminID
+	}
+	if err := store.CreateSignupGrantAdminAuditLog(ctx, SignupGrantAdminAuditLog{
+		Operation:    "risk_override_upsert",
+		SubjectType:  input.SubjectType,
+		SubjectValue: input.SubjectValue,
+		SubjectHash:  input.Subject,
+		Action:       input.Action,
+		Reason:       input.Reason,
+		AdminID:      adminIDPtr,
+	}); err != nil {
+		logger.LegacyPrintf("service.admin", "failed to write signup grant override audit: admin_id=%d err=%v", adminID, err)
+	}
+	return nil
+}
+
+func (s *adminServiceImpl) DeleteSignupGrantRiskOverride(ctx context.Context, id int64, adminID int64) error {
+	if id <= 0 {
+		return infraerrors.BadRequest("SIGNUP_GRANT_RISK_OVERRIDE_INVALID", "override id is required")
+	}
+	store, ok := s.userRepo.(signupGrantRiskAdminStore)
+	if !ok {
+		return ErrServiceUnavailable
+	}
+
+	txCtx := ctx
+	var tx *dbent.Tx
+	var err error
+	if s.entClient != nil {
+		tx, err = s.entClient.Tx(ctx)
+		if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
+			return err
+		}
+		if err == nil {
+			defer func() { _ = tx.Rollback() }()
+			txCtx = dbent.NewTxContext(ctx, tx)
+		}
+	}
+
+	if err := store.DeleteSignupGrantRiskOverride(txCtx, id, adminID); err != nil {
+		return err
+	}
+	if tx != nil {
+		if err := tx.Commit(); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *adminServiceImpl) ListSignupGrantRiskOverrides(ctx context.Context, page, pageSize int, filter SignupGrantRiskOverrideFilter) ([]SignupGrantRiskOverrideRecord, int64, error) {
+	store, ok := s.userRepo.(signupGrantRiskAdminStore)
+	if !ok {
+		return nil, 0, ErrServiceUnavailable
+	}
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 200 {
+		pageSize = 50
+	}
+	filter.SubjectType = strings.TrimSpace(strings.ToLower(filter.SubjectType))
+	filter.Action = strings.TrimSpace(strings.ToLower(filter.Action))
+	filter.SubjectQuery = strings.TrimSpace(filter.SubjectQuery)
+	return store.ListSignupGrantRiskOverrides(ctx, pageSize, (page-1)*pageSize, filter)
+}
+
+func (s *adminServiceImpl) ListSignupGrantAdminAuditLogs(ctx context.Context, page, pageSize int, filter SignupGrantAdminAuditLogFilter) ([]SignupGrantAdminAuditLog, int64, error) {
+	store, ok := s.userRepo.(signupGrantRiskAdminStore)
+	if !ok {
+		return nil, 0, ErrServiceUnavailable
+	}
+	if page < 1 {
+		page = 1
+	}
+	if pageSize <= 0 || pageSize > 200 {
+		pageSize = 50
+	}
+	filter.Operation = strings.TrimSpace(strings.ToLower(filter.Operation))
+	return store.ListSignupGrantAdminAuditLogs(ctx, pageSize, (page-1)*pageSize, filter)
+}
+
+func (s *adminServiceImpl) ManualGrantSignupGiftBalance(ctx context.Context, userID int64, amount float64, reason string, adminID int64) (*User, error) {
+	if amount <= 0 {
+		return nil, fmt.Errorf("amount must be positive")
+	}
+	store, ok := s.userRepo.(signupGrantRiskAdminStore)
+	if !ok {
+		return nil, ErrServiceUnavailable
+	}
+
+	txCtx := ctx
+	var tx *dbent.Tx
+	var err error
+	if s.entClient != nil {
+		tx, err = s.entClient.Tx(ctx)
+		if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
+			return nil, err
+		}
+		if err == nil {
+			defer func() { _ = tx.Rollback() }()
+			txCtx = dbent.NewTxContext(ctx, tx)
+		}
+	}
+
+	user, err := s.userRepo.GetByID(txCtx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if err := store.AddGiftBalance(txCtx, userID, amount); err != nil {
+		return nil, err
+	}
+	if s.ledgerService != nil {
+		balanceBefore := user.Balance
+		if err := s.ledgerService.WriteLedger(
+			txCtx,
+			userID,
+			EntryTypeAdminAdjustment,
+			amount,
+			&balanceBefore,
+			SourceTypeAdminAction,
+			nil,
+			reason,
+			map[string]interface{}{
+				"operation": "signup_gift_manual_grant",
+				"admin_id":  adminID,
+			},
+		); err != nil {
+			return nil, err
+		}
+	}
+	var adminIDPtr *int64
+	if adminID > 0 {
+		adminIDPtr = &adminID
+	}
+	targetUserID := userID
+	if err := store.CreateSignupGrantAdminAuditLog(txCtx, SignupGrantAdminAuditLog{
+		Operation:    "manual_gift_grant",
+		TargetUserID: &targetUserID,
+		Amount:       amount,
+		Reason:       strings.TrimSpace(reason),
+		AdminID:      adminIDPtr,
+	}); err != nil {
+		return nil, err
+	}
+	if tx != nil {
+		if err := tx.Commit(); err != nil {
+			return nil, err
+		}
+	}
+	updatedUser, err := s.userRepo.GetByID(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	if s.authCacheInvalidator != nil {
+		s.authCacheInvalidator.InvalidateAuthCacheByUserID(ctx, userID)
+	}
+	if s.billingCacheService != nil {
+		_ = s.billingCacheService.InvalidateUserBalance(ctx, userID)
+	}
+	return updatedUser, nil
+}
+
+func normalizeSignupGrantOverrideSubject(subjectType, subject string) string {
+	trimmed := strings.TrimSpace(subject)
+	if isSignupGrantRiskHash(trimmed) {
+		return strings.ToLower(trimmed)
+	}
+	switch subjectType {
+	case "email":
+		email, _ := normalizeSignupGrantRiskEmail(subject)
+		return email
+	case "email_domain":
+		return normalizeSignupGrantRiskDomain(subject)
+	case "ip":
+		return normalizeSignupGrantRiskIP(subject)
+	case "oauth_identity", "device":
+		return strings.TrimSpace(subject)
+	default:
+		return ""
+	}
+}
+
+func isSignupGrantRiskHash(subject string) bool {
+	subject = strings.TrimSpace(subject)
+	if len(subject) != sha256.Size*2 {
+		return false
+	}
+	for _, ch := range subject {
+		if (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'f') || (ch >= 'A' && ch <= 'F') {
+			continue
+		}
+		return false
+	}
+	return true
 }
 
 func (s *adminServiceImpl) GetUserAPIKeys(ctx context.Context, userID int64, page, pageSize int, sortBy, sortOrder string) ([]APIKey, int64, error) {
@@ -1427,7 +1705,7 @@ func (s *adminServiceImpl) BindUserAuthIdentity(ctx context.Context, userID int6
 	providerKey := strings.TrimSpace(input.ProviderKey)
 	providerSubject := strings.TrimSpace(input.ProviderSubject)
 	if providerType == "" {
-		return nil, infraerrors.BadRequest("INVALID_INPUT", "provider_type must be one of email, linuxdo, oidc, wechat, or dingtalk")
+		return nil, infraerrors.BadRequest("INVALID_INPUT", "provider_type must be one of email, github, or google")
 	}
 	if providerKey == "" || providerSubject == "" {
 		return nil, infraerrors.BadRequest("INVALID_INPUT", "provider_type, provider_key, and provider_subject are required")
@@ -1676,14 +1954,10 @@ func normalizeAdminAuthIdentityProviderType(input string) string {
 	switch strings.ToLower(strings.TrimSpace(input)) {
 	case "email":
 		return "email"
-	case "linuxdo":
-		return "linuxdo"
-	case "oidc":
-		return "oidc"
-	case "wechat":
-		return "wechat"
-	case "dingtalk":
-		return "dingtalk"
+	case "github":
+		return "github"
+	case "google":
+		return "google"
 	default:
 		return ""
 	}

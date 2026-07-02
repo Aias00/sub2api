@@ -161,7 +161,7 @@ func TestWeChatExportRepositoryCreateAndClaimTask(t *testing.T) {
 	formatsForDB := []byte(`["html"]`)
 
 	mock.ExpectQuery("INSERT INTO wechat_export_tasks").
-		WithArgs(task.UserID, task.Status, task.SelectedArticleCount, formatsForDB, task.IncludeEngagement, task.PayloadJSON, task.ResultManifestJSON, task.RetentionDays, task.CostEstimate, task.BalanceSnapshot).
+		WithArgs(task.UserID, task.Status, task.SelectedArticleCount, formatsForDB, task.IncludeEngagement, task.PayloadJSON, task.ResultManifestJSON, task.RetentionDays, task.CostEstimate, task.BalanceSnapshot, task.ReservedPaidBalance, task.ReservedGiftBalance).
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(int64(11), now, now))
 	mock.ExpectQuery("INSERT INTO wechat_export_task_logs").
 		WithArgs(int64(11), task.UserID, "task_created", task.Status, "Task queued for export.", "{}").
@@ -182,8 +182,9 @@ func TestWeChatExportRepositoryCreateAndClaimTask(t *testing.T) {
 			"id", "user_id", "status", "selected_article_count", "successful_article_count", "failed_article_count",
 			"formats_json", "include_engagement", "payload_json", "result_manifest_json", "error_message",
 			"worker_lease_until", "retention_days", "expires_at", "cost_estimate", "balance_snapshot",
+			"reserved_paid_balance", "reserved_gift_balance",
 			"worker_lease_token", "worker_run_id", "created_at", "updated_at", // Phase 6：新增字段
-		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 1, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[3],"formats":["html"]}`), []byte(`{}`), "", now.Add(time.Minute), 7, nil, 0.0, 0.0,
+		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 1, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[3],"formats":["html"]}`), []byte(`{}`), "", now.Add(time.Minute), 7, nil, 0.0, 0.0, 0.0, 0.0,
 			"test_lease_token_12345", "test_run_id_67890", now, now)) // Phase 6：新增token和run_id
 	mock.ExpectQuery("INSERT INTO wechat_export_task_logs").
 		WithArgs(int64(11), int64(42), "task_claimed", service.WeChatExportTaskStatusRunning, "Worker claimed the task.", "{}").
@@ -221,16 +222,18 @@ func TestWeChatExportRepositoryCompleteTaskStoresArtifacts(t *testing.T) {
 			"id", "user_id", "status", "selected_article_count", "successful_article_count", "failed_article_count",
 			"formats_json", "include_engagement", "payload_json", "result_manifest_json", "error_message",
 			"worker_lease_until", "retention_days", "expires_at", "cost_estimate", "balance_snapshot",
+			"reserved_paid_balance", "reserved_gift_balance",
 			"worker_lease_token", "worker_run_id", "created_at", "updated_at",
-		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 1, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[3]}`), []byte(`{}`), "", nil, 7, nil, 0.0, 0.0, "test_lease_token", "", now, now))
+		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 1, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[3]}`), []byte(`{}`), "", nil, 7, nil, 0.0, 0.0, 0.0, 0.0, "test_lease_token", "", now, now))
 	mock.ExpectQuery("UPDATE wechat_export_tasks").
 		WithArgs(service.WeChatExportTaskStatusCompleted, 0, `{"ok":true}`, int64(11), service.WeChatExportTaskStatusRunning).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"id", "user_id", "status", "selected_article_count", "successful_article_count", "failed_article_count",
 			"formats_json", "include_engagement", "payload_json", "result_manifest_json", "error_message",
 			"worker_lease_until", "retention_days", "expires_at", "cost_estimate", "balance_snapshot",
+			"reserved_paid_balance", "reserved_gift_balance",
 			"worker_lease_token", "worker_run_id", "created_at", "updated_at", // Phase 6：新增字段
-		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusCompleted, 1, 1, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[3]}`), []byte(`{"ok":true}`), "", nil, 7, nil, 0.0, 0.0, "", "", now, now)) // Phase 6：token清空
+		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusCompleted, 1, 1, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[3]}`), []byte(`{"ok":true}`), "", nil, 7, nil, 0.0, 0.0, 0.0, 0.0, "", "", now, now)) // Phase 6：token清空
 	// CostEstimate == 0, actualCost == 0, so adjustment == 0 — no balance update expected
 	mock.ExpectExec("INSERT INTO wechat_export_usage_records").
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -259,8 +262,9 @@ func TestWeChatExportRepositoryGetTaskAllowsWorkerInternalLookup(t *testing.T) {
 			"id", "user_id", "status", "selected_article_count", "successful_article_count", "failed_article_count",
 			"formats_json", "include_engagement", "payload_json", "result_manifest_json", "error_message",
 			"worker_lease_until", "retention_days", "expires_at", "cost_estimate", "balance_snapshot",
+			"reserved_paid_balance", "reserved_gift_balance",
 			"worker_lease_token", "worker_run_id", "created_at", "updated_at",
-		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 1, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[3]}`), []byte(`{}`), "", nil, 7, nil, 0.10, 99.90, "", "", now, now))
+		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 1, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[3]}`), []byte(`{}`), "", nil, 7, nil, 0.10, 99.90, 0.10, 0.0, "", "", now, now))
 
 	task, err := repo.GetTask(context.Background(), 0, 11)
 	require.NoError(t, err)
@@ -324,16 +328,18 @@ func TestWeChatExportRepositoryCompleteTaskWithErrors(t *testing.T) {
 			"id", "user_id", "status", "selected_article_count", "successful_article_count", "failed_article_count",
 			"formats_json", "include_engagement", "payload_json", "result_manifest_json", "error_message",
 			"worker_lease_until", "retention_days", "expires_at", "cost_estimate", "balance_snapshot",
+			"reserved_paid_balance", "reserved_gift_balance",
 			"worker_lease_token", "worker_run_id", "created_at", "updated_at",
-		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 3, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[3,4,5]}`), []byte(`{}`), "", nil, 7, nil, 0.0, 0.0, "test_lease_token", "", now, now))
+		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 3, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[3,4,5]}`), []byte(`{}`), "", nil, 7, nil, 0.0, 0.0, 0.0, 0.0, "test_lease_token", "", now, now))
 	mock.ExpectQuery("UPDATE wechat_export_tasks").
 		WithArgs(service.WeChatExportTaskStatusCompletedWithErrors, 1, `{"ok":true}`, int64(11), service.WeChatExportTaskStatusRunning).
 		WillReturnRows(sqlmock.NewRows([]string{
 			"id", "user_id", "status", "selected_article_count", "successful_article_count", "failed_article_count",
 			"formats_json", "include_engagement", "payload_json", "result_manifest_json", "error_message",
 			"worker_lease_until", "retention_days", "expires_at", "cost_estimate", "balance_snapshot",
+			"reserved_paid_balance", "reserved_gift_balance",
 			"worker_lease_token", "worker_run_id", "created_at", "updated_at", // Phase 6：新增字段
-		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusCompletedWithErrors, 3, 2, 1, []byte(`["html"]`), false, []byte(`{"article_ids":[3,4,5]}`), []byte(`{"ok":true}`), "", nil, 7, nil, 0.0, 0.0, "", "", now, now)) // Phase 6：token清空
+		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusCompletedWithErrors, 3, 2, 1, []byte(`["html"]`), false, []byte(`{"article_ids":[3,4,5]}`), []byte(`{"ok":true}`), "", nil, 7, nil, 0.0, 0.0, 0.0, 0.0, "", "", now, now)) // Phase 6：token清空
 	// CostEstimate == 0, actualCost == 0, so adjustment == 0 — no balance update expected
 	mock.ExpectExec("INSERT INTO wechat_export_usage_records").
 		WillReturnResult(sqlmock.NewResult(1, 1))
@@ -443,7 +449,7 @@ func TestWeChatExportRepositoryCreateTaskInsufficientBalance(t *testing.T) {
 
 	// 预留余额失败（余额不足）
 	mock.ExpectBegin()
-	mock.ExpectQuery("UPDATE users SET balance = balance -").
+	mock.ExpectQuery("UPDATE users\\s+SET balance = balance -").
 		WithArgs(0.45, int64(42)).
 		WillReturnError(sqlmock.ErrCancelled) // 模拟余额不足
 	mock.ExpectRollback()
@@ -471,9 +477,9 @@ func TestWeChatExportRepositoryCreateTaskWithBalanceReservation(t *testing.T) {
 
 	// 预留余额成功
 	mock.ExpectBegin()
-	mock.ExpectQuery("UPDATE users SET balance = balance -").
+	mock.ExpectQuery("UPDATE users\\s+SET balance = balance -").
 		WithArgs(0.45, int64(42)).
-		WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(9.55)) // 余额从10扣到9.55
+		WillReturnRows(sqlmock.NewRows([]string{"balance", "paid_reserved", "gift_reserved"}).AddRow(9.55, 0.45, 0.0)) // 余额从10扣到9.55
 	// 插入任务记录
 	mock.ExpectQuery("INSERT INTO wechat_export_tasks").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(int64(11), now, now))
@@ -486,6 +492,8 @@ func TestWeChatExportRepositoryCreateTaskWithBalanceReservation(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, int64(11), task.ID)
 	require.Equal(t, 9.55, task.BalanceSnapshot)
+	require.Equal(t, 0.45, task.ReservedPaidBalance)
+	require.Equal(t, 0.0, task.ReservedGiftBalance)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -532,8 +540,9 @@ func TestWeChatExportRepositoryCompleteTask_InvalidLeaseToken(t *testing.T) {
 			"id", "user_id", "status", "selected_article_count", "successful_article_count", "failed_article_count",
 			"formats_json", "include_engagement", "payload_json", "result_manifest_json", "error_message",
 			"worker_lease_until", "retention_days", "expires_at", "cost_estimate", "balance_snapshot",
+			"reserved_paid_balance", "reserved_gift_balance",
 			"worker_lease_token", "worker_run_id", "created_at", "updated_at",
-		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 3, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[1,2,3],"formats":["html"]}`), []byte(`{}`), "", nil, 7, nil, 0.45, 9.55, "correct_lease_token", "", now, now))
+		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 3, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[1,2,3],"formats":["html"]}`), []byte(`{}`), "", nil, 7, nil, 0.45, 9.55, 0.45, 0.0, "correct_lease_token", "", now, now))
 	mock.ExpectRollback()
 
 	// 使用错误的lease_token
@@ -558,8 +567,9 @@ func TestWeChatExportRepositoryCompleteTask_ExpiredLease(t *testing.T) {
 			"id", "user_id", "status", "selected_article_count", "successful_article_count", "failed_article_count",
 			"formats_json", "include_engagement", "payload_json", "result_manifest_json", "error_message",
 			"worker_lease_until", "retention_days", "expires_at", "cost_estimate", "balance_snapshot",
+			"reserved_paid_balance", "reserved_gift_balance",
 			"worker_lease_token", "worker_run_id", "created_at", "updated_at",
-		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 3, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[1,2,3],"formats":["html"]}`), []byte(`{}`), "", &expiredLease, 7, nil, 0.45, 9.55, "test_lease_token", "", now, now))
+		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 3, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[1,2,3],"formats":["html"]}`), []byte(`{}`), "", &expiredLease, 7, nil, 0.45, 9.55, 0.45, 0.0, "test_lease_token", "", now, now))
 	mock.ExpectRollback()
 
 	// 使用正确的lease_token但lease已过期
@@ -583,8 +593,9 @@ func TestWeChatExportRepositoryFailTask_InvalidLeaseToken(t *testing.T) {
 			"id", "user_id", "status", "selected_article_count", "successful_article_count", "failed_article_count",
 			"formats_json", "include_engagement", "payload_json", "result_manifest_json", "error_message",
 			"worker_lease_until", "retention_days", "expires_at", "cost_estimate", "balance_snapshot",
+			"reserved_paid_balance", "reserved_gift_balance",
 			"worker_lease_token", "worker_run_id", "created_at", "updated_at",
-		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 3, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[1,2,3],"formats":["html"]}`), []byte(`{}`), "", nil, 7, nil, 0.45, 9.55, "correct_lease_token", "", now, now))
+		}).AddRow(int64(11), int64(42), service.WeChatExportTaskStatusRunning, 3, 0, 0, []byte(`["html"]`), false, []byte(`{"article_ids":[1,2,3],"formats":["html"]}`), []byte(`{}`), "", nil, 7, nil, 0.45, 9.55, 0.45, 0.0, "correct_lease_token", "", now, now))
 	mock.ExpectRollback()
 
 	// 使用错误的lease_token调用FailTask

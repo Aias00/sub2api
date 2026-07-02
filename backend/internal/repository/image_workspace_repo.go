@@ -40,18 +40,21 @@ func (r *imageWorkspaceRepository) CreateTask(ctx context.Context, task *service
 		if _, err := tx.ExecContext(ctx, "SELECT pg_advisory_xact_lock($1)", task.UserID); err != nil {
 			return err
 		}
-		balanceSnapshot, err := reserveImageWorkspaceBalance(ctx, q, task.UserID, task.CostEstimate)
+		reservation, err := reserveImageWorkspaceBalance(ctx, q, task.UserID, task.CostEstimate)
 		if err != nil {
 			return err
 		}
-		task.BalanceSnapshot = balanceSnapshot
+		task.BalanceSnapshot = reservation.BalanceSnapshot
+		task.ReservedPaidBalance = reservation.Paid
+		task.ReservedGiftBalance = reservation.Gift
 	}
 	if err := scanSingleRow(ctx, q, `
 		INSERT INTO image_workspace_tasks (
 			user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
-			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, result_json
+			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot,
+			reserved_paid_balance, reserved_gift_balance, result_json
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16::jsonb)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18::jsonb)
 		RETURNING id, created_at, updated_at
 	`, []any{
 		task.UserID,
@@ -69,6 +72,8 @@ func (r *imageWorkspaceRepository) CreateTask(ctx context.Context, task *service
 		task.WorkerLeaseUntil,
 		task.CostEstimate,
 		task.BalanceSnapshot,
+		task.ReservedPaidBalance,
+		task.ReservedGiftBalance,
 		normalizeJSONText(task.ResultJSON),
 	}, &task.ID, &task.CreatedAt, &task.UpdatedAt); err != nil {
 		return err
@@ -102,7 +107,7 @@ func (r *imageWorkspaceRepository) ListTasks(ctx context.Context, userID int64, 
 	}
 	dataQuery := fmt.Sprintf(`
 		SELECT id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
-			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, error_message,
+			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
 			result_json, created_at, updated_at
 		FROM image_workspace_tasks
 		WHERE %s
@@ -128,7 +133,7 @@ func (r *imageWorkspaceRepository) ListTasks(ctx context.Context, userID int64, 
 func (r *imageWorkspaceRepository) GetTask(ctx context.Context, userID int64, taskID int64) (*service.ImageWorkspaceTask, error) {
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
-			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, error_message,
+			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
 			result_json, created_at, updated_at
 		FROM image_workspace_tasks
 		WHERE user_id = $1 AND id = $2
@@ -320,7 +325,8 @@ func (r *imageWorkspaceRepository) ClaimNextTask(ctx context.Context, leaseSecon
 		FROM next
 		WHERE tasks.id = next.id
 		RETURNING tasks.id, tasks.user_id, tasks.status, tasks.prompt, tasks.negative_prompt, tasks.model, tasks.provider, tasks.size, tasks.quality, tasks.style,
-			tasks.seed, tasks.batch_size, tasks.template_id, tasks.worker_lease_until, tasks.cost_estimate, tasks.balance_snapshot, tasks.error_message,
+			tasks.seed, tasks.batch_size, tasks.template_id, tasks.worker_lease_until, tasks.cost_estimate, tasks.balance_snapshot,
+			tasks.reserved_paid_balance, tasks.reserved_gift_balance, tasks.error_message,
 			tasks.result_json, tasks.created_at, tasks.updated_at
 	`
 	task, err := scanImageWorkspaceTask(ctx, r.sql, query, service.ImageWorkspaceTaskStatusQueued, service.ImageWorkspaceTaskStatusRunning, leaseSeconds)
@@ -340,7 +346,7 @@ func (r *imageWorkspaceRepository) CompleteTask(ctx context.Context, taskID int6
 	}()
 	current, err := scanImageWorkspaceTask(ctx, tx, `
 		SELECT id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
-			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, error_message,
+			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
 			result_json, created_at, updated_at
 		FROM image_workspace_tasks
 		WHERE id = $1
@@ -369,22 +375,19 @@ func (r *imageWorkspaceRepository) CompleteTask(ctx context.Context, taskID int6
 		return nil, service.ErrImageWorkspaceInvalidCost
 	}
 	adjustment := cost - originalEstimate
-	balanceSnapshot := current.BalanceSnapshot
+	reservation := imageWorkspaceTaskReservation(current)
 	if adjustment > 0 {
-		balanceSnapshot, err = reserveImageWorkspaceBalance(ctx, tx, current.UserID, adjustment)
+		delta, err := reserveImageWorkspaceBalance(ctx, tx, current.UserID, adjustment)
 		if err != nil {
 			return nil, err
 		}
+		reservation = mergeBalanceReservation(reservation, delta)
 	} else if adjustment < 0 {
-		if err := scanSingleRow(ctx, tx, `
-			UPDATE users
-			SET balance = balance + $1,
-				updated_at = NOW()
-			WHERE id = $2
-			RETURNING balance
-		`, []any{-adjustment, current.UserID}, &balanceSnapshot); err != nil {
+		refunded, err := refundBalanceReservation(ctx, tx, current.UserID, -adjustment, reservation.Paid, reservation.Gift)
+		if err != nil {
 			return nil, err
 		}
+		reservation = reduceBalanceReservation(reservation, refunded)
 	}
 	task, err := scanImageWorkspaceTask(ctx, tx, `
 		UPDATE image_workspace_tasks
@@ -396,7 +399,7 @@ func (r *imageWorkspaceRepository) CompleteTask(ctx context.Context, taskID int6
 			updated_at = NOW()
 		WHERE id = $4
 		RETURNING id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
-			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, error_message,
+			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
 			result_json, created_at, updated_at
 	`, service.ImageWorkspaceTaskStatusSucceeded, cost, normalizeJSONText(resultJSON), taskID)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -416,12 +419,16 @@ func (r *imageWorkspaceRepository) CompleteTask(ctx context.Context, taskID int6
 	if adjustment != 0 {
 		if _, err := tx.ExecContext(ctx, `
 			UPDATE image_workspace_tasks
-			SET balance_snapshot = $1
-			WHERE id = $2
-		`, balanceSnapshot, task.ID); err != nil {
+			SET balance_snapshot = $1,
+				reserved_paid_balance = $2,
+				reserved_gift_balance = $3
+			WHERE id = $4
+		`, reservation.BalanceSnapshot, reservation.Paid, reservation.Gift, task.ID); err != nil {
 			return nil, err
 		}
-		task.BalanceSnapshot = balanceSnapshot
+		task.BalanceSnapshot = reservation.BalanceSnapshot
+		task.ReservedPaidBalance = reservation.Paid
+		task.ReservedGiftBalance = reservation.Gift
 	}
 	if err := upsertImageWorkspaceUsageRecord(ctx, tx, task, len(artifacts), originalEstimate, cost, resultJSON); err != nil {
 		return nil, err
@@ -440,7 +447,7 @@ func (r *imageWorkspaceRepository) FailTask(ctx context.Context, taskID int64, m
 	defer func() { _ = tx.Rollback() }()
 	current, err := scanImageWorkspaceTask(ctx, tx, `
 		SELECT id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
-			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, error_message,
+			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
 			result_json, created_at, updated_at
 		FROM image_workspace_tasks
 		WHERE id = $1
@@ -469,7 +476,7 @@ func (r *imageWorkspaceRepository) FailTask(ctx context.Context, taskID int64, m
 			updated_at = NOW()
 		WHERE id = $4
 		RETURNING id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
-			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, error_message,
+			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
 			result_json, created_at, updated_at
 	`, service.ImageWorkspaceTaskStatusFailed, message, normalizeJSONText(resultJSON), taskID)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -479,24 +486,22 @@ func (r *imageWorkspaceRepository) FailTask(ctx context.Context, taskID int64, m
 		return nil, err
 	}
 	if task.CostEstimate > 0 {
-		var balanceSnapshot float64
-		if err := scanSingleRow(ctx, tx, `
-			UPDATE users
-			SET balance = balance + $1,
-				updated_at = NOW()
-			WHERE id = $2
-			RETURNING balance
-		`, []any{task.CostEstimate, task.UserID}, &balanceSnapshot); err != nil {
+		refunded, err := refundFullBalanceReservation(ctx, tx, task.UserID, imageWorkspaceTaskReservation(task).Paid, imageWorkspaceTaskReservation(task).Gift)
+		if err != nil {
 			return nil, err
 		}
 		if _, err := tx.ExecContext(ctx, `
 			UPDATE image_workspace_tasks
-			SET balance_snapshot = $1
+			SET balance_snapshot = $1,
+				reserved_paid_balance = 0,
+				reserved_gift_balance = 0
 			WHERE id = $2
-		`, balanceSnapshot, task.ID); err != nil {
+		`, refunded.BalanceSnapshot, task.ID); err != nil {
 			return nil, err
 		}
-		task.BalanceSnapshot = balanceSnapshot
+		task.BalanceSnapshot = refunded.BalanceSnapshot
+		task.ReservedPaidBalance = 0
+		task.ReservedGiftBalance = 0
 	}
 	if task.CostEstimate > 0 {
 		metadataJSON, _ := json.Marshal(map[string]string{
@@ -521,7 +526,7 @@ func (r *imageWorkspaceRepository) CancelTask(ctx context.Context, taskID int64,
 	defer func() { _ = tx.Rollback() }()
 	current, err := scanImageWorkspaceTask(ctx, tx, `
 		SELECT id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
-			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, error_message,
+			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
 			result_json, created_at, updated_at
 		FROM image_workspace_tasks
 		WHERE id = $1 AND user_id = $2
@@ -551,7 +556,7 @@ func (r *imageWorkspaceRepository) CancelTask(ctx context.Context, taskID int64,
 			updated_at = NOW()
 		WHERE id = $2
 		RETURNING id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
-			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, error_message,
+			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
 			result_json, created_at, updated_at
 	`, service.ImageWorkspaceTaskStatusCancelled, taskID)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -561,24 +566,22 @@ func (r *imageWorkspaceRepository) CancelTask(ctx context.Context, taskID int64,
 		return nil, err
 	}
 	if task.CostEstimate > 0 {
-		var balanceSnapshot float64
-		if err := scanSingleRow(ctx, tx, `
-			UPDATE users
-			SET balance = balance + $1,
-				updated_at = NOW()
-			WHERE id = $2
-			RETURNING balance
-		`, []any{task.CostEstimate, task.UserID}, &balanceSnapshot); err != nil {
+		refunded, err := refundFullBalanceReservation(ctx, tx, task.UserID, imageWorkspaceTaskReservation(task).Paid, imageWorkspaceTaskReservation(task).Gift)
+		if err != nil {
 			return nil, err
 		}
 		if _, err := tx.ExecContext(ctx, `
 			UPDATE image_workspace_tasks
-			SET balance_snapshot = $1
+			SET balance_snapshot = $1,
+				reserved_paid_balance = 0,
+				reserved_gift_balance = 0
 			WHERE id = $2
-		`, balanceSnapshot, task.ID); err != nil {
+		`, refunded.BalanceSnapshot, task.ID); err != nil {
 			return nil, err
 		}
-		task.BalanceSnapshot = balanceSnapshot
+		task.BalanceSnapshot = refunded.BalanceSnapshot
+		task.ReservedPaidBalance = 0
+		task.ReservedGiftBalance = 0
 	}
 	if task.CostEstimate > 0 {
 		metadataJSON, _ := json.Marshal(map[string]string{
@@ -667,29 +670,19 @@ func (r *imageWorkspaceRepository) GetWorkerStatus(ctx context.Context) (*servic
 	return &status, nil
 }
 
-func reserveImageWorkspaceBalance(ctx context.Context, q sqlExecutor, userID int64, amount float64) (float64, error) {
-	var balanceSnapshot float64
-	if err := scanSingleRow(ctx, q, `
-		UPDATE users
-		SET balance = balance - $1,
-			updated_at = NOW()
-		WHERE id = $2 AND balance >= $1
-		RETURNING balance
-	`, []any{amount, userID}, &balanceSnapshot); err == nil {
-		return balanceSnapshot, nil
-	} else if !errors.Is(err, sql.ErrNoRows) {
-		return 0, err
+func reserveImageWorkspaceBalance(ctx context.Context, q sqlExecutor, userID int64, amount float64) (userBalanceReservation, error) {
+	return reserveUserBalanceWithComponents(ctx, q, userID, amount, service.ErrInsufficientBalance)
+}
+
+func imageWorkspaceTaskReservation(task *service.ImageWorkspaceTask) userBalanceReservation {
+	if task == nil {
+		return userBalanceReservation{}
 	}
-	var exists bool
-	if err := scanSingleRow(ctx, q, `
-		SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)
-	`, []any{userID}, &exists); err != nil {
-		return 0, err
+	return userBalanceReservation{
+		BalanceSnapshot: task.BalanceSnapshot,
+		Paid:            task.ReservedPaidBalance,
+		Gift:            task.ReservedGiftBalance,
 	}
-	if !exists {
-		return 0, service.ErrUserNotFound
-	}
-	return 0, service.ErrInsufficientBalance
 }
 
 func scanImageWorkspaceTask(ctx context.Context, q sqlQueryer, query string, args ...any) (*service.ImageWorkspaceTask, error) {
@@ -858,6 +851,8 @@ func scanImageWorkspaceTaskRows(rows *sql.Rows) ([]service.ImageWorkspaceTask, e
 			&workerLeaseUntil,
 			&item.CostEstimate,
 			&item.BalanceSnapshot,
+			&item.ReservedPaidBalance,
+			&item.ReservedGiftBalance,
 			&item.ErrorMessage,
 			&resultJSON,
 			&item.CreatedAt,

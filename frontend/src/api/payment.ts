@@ -18,11 +18,24 @@ import type {
 import type { BasePaginationResponse } from '@/types'
 
 export interface PublicOrderVerifyResult {
+  id?: number
+  user_id?: number
+  amount?: number
+  pay_amount?: number
+  currency?: string
+  fee_rate?: number
+  payment_type?: string
   out_trade_no: string
   status: string
+  order_type?: PaymentOrder['order_type']
   paid: boolean
   created_at: string
   expires_at: string
+  paid_at?: string
+  completed_at?: string
+  refund_amount?: number
+  plan_id?: number
+  provider_instance_id?: string
 }
 
 export const paymentAPI = {

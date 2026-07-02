@@ -468,11 +468,13 @@ func (r *wechatExportRepository) CreateTask(ctx context.Context, task *service.W
 		defer func() { _ = tx.Rollback() }()
 		q = tx
 		// 预留余额，余额不足则返回错误（任务创建失败）
-		balanceSnapshot, err := reserveWeChatExportBalance(ctx, q, task.UserID, task.CostEstimate)
+		reservation, err := reserveWeChatExportBalance(ctx, q, task.UserID, task.CostEstimate)
 		if err != nil {
 			return err
 		}
-		task.BalanceSnapshot = balanceSnapshot
+		task.BalanceSnapshot = reservation.BalanceSnapshot
+		task.ReservedPaidBalance = reservation.Paid
+		task.ReservedGiftBalance = reservation.Gift
 	}
 	// Extract formats from PayloadJSON for database storage (formats_json field is kept for SQL queries)
 	var formatsForDB []byte
@@ -491,9 +493,10 @@ func (r *wechatExportRepository) CreateTask(ctx context.Context, task *service.W
 	query := `
 		INSERT INTO wechat_export_tasks (
 			user_id, status, selected_article_count, formats_json, include_engagement,
-			payload_json, result_manifest_json, retention_days, cost_estimate, balance_snapshot
+			payload_json, result_manifest_json, retention_days, cost_estimate, balance_snapshot,
+			reserved_paid_balance, reserved_gift_balance
 		)
-		VALUES ($1, $2, $3, $4::jsonb, $5, $6::jsonb, $7::jsonb, $8, $9, $10)
+		VALUES ($1, $2, $3, $4::jsonb, $5, $6::jsonb, $7::jsonb, $8, $9, $10, $11, $12)
 		RETURNING id, created_at, updated_at
 	`
 	if err := scanSingleRow(ctx, q, query, []any{
@@ -507,6 +510,8 @@ func (r *wechatExportRepository) CreateTask(ctx context.Context, task *service.W
 		task.RetentionDays,
 		task.CostEstimate,
 		task.BalanceSnapshot,
+		task.ReservedPaidBalance,
+		task.ReservedGiftBalance,
 	}, &task.ID, &task.CreatedAt, &task.UpdatedAt); err != nil {
 		return err
 	}
@@ -538,7 +543,7 @@ func (r *wechatExportRepository) ListTasks(ctx context.Context, userID int64, pa
 	query := `
 		SELECT id, user_id, status, selected_article_count, successful_article_count, failed_article_count,
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
-			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot,
+			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
 		FROM wechat_export_tasks
 		WHERE user_id = $1
@@ -615,7 +620,7 @@ func (r *wechatExportRepository) GetTask(ctx context.Context, userID int64, task
 	query := `
 		SELECT id, user_id, status, selected_article_count, successful_article_count, failed_article_count,
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
-			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot,
+			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
 		FROM wechat_export_tasks
 		WHERE ` + where + `
@@ -638,7 +643,7 @@ func (r *wechatExportRepository) CancelTask(ctx context.Context, userID int64, t
 	task, err := scanWeChatTask(ctx, tx, `
 		SELECT id, user_id, status, selected_article_count, successful_article_count, failed_article_count,
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
-			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot,
+			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
 		FROM wechat_export_tasks
 		WHERE user_id = $1 AND id = $2
@@ -656,13 +661,20 @@ func (r *wechatExportRepository) CancelTask(ctx context.Context, userID int64, t
 	}
 	// Refund reserved credits if any
 	if task.CostEstimate > 0 {
-		balanceSnapshot, refundErr := refundWeChatExportBalance(ctx, tx, task.UserID, task.CostEstimate)
+		refunded, refundErr := refundFullBalanceReservation(ctx, tx, task.UserID, weChatExportTaskReservation(task).Paid, weChatExportTaskReservation(task).Gift)
 		if refundErr != nil {
 			return nil, refundErr
 		}
-		task.BalanceSnapshot = balanceSnapshot
+		task.BalanceSnapshot = refunded.BalanceSnapshot
+		task.ReservedPaidBalance = 0
+		task.ReservedGiftBalance = 0
 		if _, updateErr := tx.ExecContext(ctx, `
-			UPDATE wechat_export_tasks SET balance_snapshot = $1, updated_at = NOW() WHERE id = $2
+			UPDATE wechat_export_tasks
+			SET balance_snapshot = $1,
+				reserved_paid_balance = 0,
+				reserved_gift_balance = 0,
+				updated_at = NOW()
+			WHERE id = $2
 		`, task.BalanceSnapshot, task.ID); updateErr != nil {
 			return nil, updateErr
 		}
@@ -684,7 +696,7 @@ func (r *wechatExportRepository) CancelTask(ctx context.Context, userID int64, t
 			AND status IN ($5, $6)
 		RETURNING id, user_id, status, selected_article_count, successful_article_count, failed_article_count,
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
-			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot,
+			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
 	`, service.WeChatExportTaskStatusCancelled, "cancelled by user", userID, taskID, service.WeChatExportTaskStatusQueued, service.WeChatExportTaskStatusRunning)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -719,7 +731,7 @@ func (r *wechatExportRepository) RetryTask(ctx context.Context, userID int64, ta
 	task, err := scanWeChatTask(ctx, tx, `
 		SELECT id, user_id, status, selected_article_count, successful_article_count, failed_article_count,
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
-			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot,
+			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
 		FROM wechat_export_tasks
 		WHERE user_id = $1 AND id = $2
@@ -742,11 +754,11 @@ func (r *wechatExportRepository) RetryTask(ctx context.Context, userID int64, ta
 	// CompleteTask (actual cost adjustment) or FailTask/CancelTask (full refund).
 	// Re-estimate and re-reserve credits for the retry.
 	var costEstimate float64
-	var balanceSnapshot float64
+	var reservation userBalanceReservation
 	if task.CostEstimate > 0 {
 		// Re-reserve the same estimated cost for the retry.
 		// If the user's balance is insufficient, the retry fails.
-		balanceSnapshot, err = reserveWeChatExportBalance(ctx, tx, task.UserID, task.CostEstimate)
+		reservation, err = reserveWeChatExportBalance(ctx, tx, task.UserID, task.CostEstimate)
 		if err != nil {
 			return nil, fmt.Errorf("re-reserve balance for retry: %w", err)
 		}
@@ -766,14 +778,16 @@ func (r *wechatExportRepository) RetryTask(ctx context.Context, userID int64, ta
 			expires_at = NULL,
 			cost_estimate = $2,
 			balance_snapshot = $3,
+			reserved_paid_balance = $4,
+			reserved_gift_balance = $5,
 			updated_at = NOW()
-		WHERE id = $4
-			AND status IN ($5, $6, $7, $8)
+		WHERE id = $6
+			AND status IN ($7, $8, $9, $10)
 		RETURNING id, user_id, status, selected_article_count, successful_article_count, failed_article_count,
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
-			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot,
+			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
-	`, service.WeChatExportTaskStatusQueued, costEstimate, balanceSnapshot, task.ID,
+	`, service.WeChatExportTaskStatusQueued, costEstimate, reservation.BalanceSnapshot, reservation.Paid, reservation.Gift, task.ID,
 		service.WeChatExportTaskStatusFailed, service.WeChatExportTaskStatusCompletedWithErrors,
 		service.WeChatExportTaskStatusCancelled, service.WeChatExportTaskStatusCompleted)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -783,7 +797,9 @@ func (r *wechatExportRepository) RetryTask(ctx context.Context, userID int64, ta
 		return nil, err
 	}
 	task.CostEstimate = costEstimate
-	task.BalanceSnapshot = balanceSnapshot
+	task.BalanceSnapshot = reservation.BalanceSnapshot
+	task.ReservedPaidBalance = reservation.Paid
+	task.ReservedGiftBalance = reservation.Gift
 	if _, err := tx.ExecContext(ctx, `
 		UPDATE wechat_export_artifacts
 		SET deleted_at = NOW(),
@@ -842,6 +858,7 @@ func (r *wechatExportRepository) ClaimNextTask(ctx context.Context, leaseSeconds
 		RETURNING tasks.id, tasks.user_id, tasks.status, tasks.selected_article_count, tasks.successful_article_count, tasks.failed_article_count,
 			tasks.formats_json, tasks.include_engagement, tasks.payload_json, tasks.result_manifest_json, tasks.error_message,
 			tasks.worker_lease_until, tasks.retention_days, tasks.expires_at, tasks.cost_estimate, tasks.balance_snapshot,
+			tasks.reserved_paid_balance, tasks.reserved_gift_balance,
 			tasks.worker_lease_token, tasks.worker_run_id, tasks.created_at, tasks.updated_at
 	`
 	task, err := scanWeChatTask(ctx, r.sql, query, service.WeChatExportTaskStatusQueued, service.WeChatExportTaskStatusRunning, leaseSeconds, service.WeChatExportTaskStatusRunning, leaseToken, runID)
@@ -880,7 +897,7 @@ func (r *wechatExportRepository) CompleteTask(ctx context.Context, taskID int64,
 	existing, err := scanWeChatTask(ctx, tx, `
 		SELECT id, user_id, status, selected_article_count, successful_article_count, failed_article_count,
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
-			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot,
+			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
 		FROM wechat_export_tasks
 		WHERE id = $1
@@ -923,7 +940,7 @@ func (r *wechatExportRepository) CompleteTask(ctx context.Context, taskID int64,
 		WHERE id = $4 AND status = $5
 		RETURNING id, user_id, status, selected_article_count, successful_article_count, failed_article_count,
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
-			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot,
+			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
 	`, status, failedArticleCount, resultManifestJSON, taskID, service.WeChatExportTaskStatusRunning)
 	if errors.Is(err, sql.ErrNoRows) {
@@ -934,26 +951,32 @@ func (r *wechatExportRepository) CompleteTask(ctx context.Context, taskID int64,
 	}
 	// Billing adjustment: settle the difference between reserved and actual cost
 	adjustment := actualCost - task.CostEstimate
+	reservation := weChatExportTaskReservation(task)
 	if adjustment > 0 {
-		balanceSnapshot, reserveErr := reserveWeChatExportBalance(ctx, tx, task.UserID, adjustment)
+		delta, reserveErr := reserveWeChatExportBalance(ctx, tx, task.UserID, adjustment)
 		if reserveErr != nil {
 			return nil, reserveErr
 		}
-		task.BalanceSnapshot = balanceSnapshot
-		if _, updateErr := tx.ExecContext(ctx, `
-			UPDATE wechat_export_tasks SET balance_snapshot = $1, updated_at = NOW() WHERE id = $2
-		`, task.BalanceSnapshot, task.ID); updateErr != nil {
-			return nil, updateErr
-		}
+		reservation = mergeBalanceReservation(reservation, delta)
 	} else if adjustment < 0 {
-		balanceSnapshot, refundErr := refundWeChatExportBalance(ctx, tx, task.UserID, -adjustment)
+		refunded, refundErr := refundBalanceReservation(ctx, tx, task.UserID, -adjustment, reservation.Paid, reservation.Gift)
 		if refundErr != nil {
 			return nil, refundErr
 		}
-		task.BalanceSnapshot = balanceSnapshot
+		reservation = reduceBalanceReservation(reservation, refunded)
+	}
+	if adjustment != 0 {
+		task.BalanceSnapshot = reservation.BalanceSnapshot
+		task.ReservedPaidBalance = reservation.Paid
+		task.ReservedGiftBalance = reservation.Gift
 		if _, updateErr := tx.ExecContext(ctx, `
-			UPDATE wechat_export_tasks SET balance_snapshot = $1, updated_at = NOW() WHERE id = $2
-		`, task.BalanceSnapshot, task.ID); updateErr != nil {
+			UPDATE wechat_export_tasks
+			SET balance_snapshot = $1,
+				reserved_paid_balance = $2,
+				reserved_gift_balance = $3,
+				updated_at = NOW()
+			WHERE id = $4
+		`, task.BalanceSnapshot, task.ReservedPaidBalance, task.ReservedGiftBalance, task.ID); updateErr != nil {
 			return nil, updateErr
 		}
 	}
@@ -998,7 +1021,7 @@ func (r *wechatExportRepository) FailTask(ctx context.Context, taskID int64, lea
 	task, err := scanWeChatTask(ctx, tx, `
 		SELECT id, user_id, status, selected_article_count, successful_article_count, failed_article_count,
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
-			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot,
+			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
 		FROM wechat_export_tasks
 		WHERE id = $1
@@ -1029,11 +1052,13 @@ func (r *wechatExportRepository) FailTask(ctx context.Context, taskID int64, lea
 	// Refund reserved credits if any (before the status update, within the same
 	// transaction and row lock, so it's safe from concurrent FailTask calls).
 	if task.CostEstimate > 0 {
-		balanceSnapshot, refundErr := refundWeChatExportBalance(ctx, tx, task.UserID, task.CostEstimate)
+		refunded, refundErr := refundFullBalanceReservation(ctx, tx, task.UserID, weChatExportTaskReservation(task).Paid, weChatExportTaskReservation(task).Gift)
 		if refundErr != nil {
 			return nil, refundErr
 		}
-		task.BalanceSnapshot = balanceSnapshot
+		task.BalanceSnapshot = refunded.BalanceSnapshot
+		task.ReservedPaidBalance = 0
+		task.ReservedGiftBalance = 0
 		if usageErr := upsertWeChatExportUsageRecord(ctx, tx, task, task.SelectedArticleCount, task.CostEstimate, 0, "refunded", "{}"); usageErr != nil {
 			return nil, usageErr
 		}
@@ -1046,15 +1071,17 @@ func (r *wechatExportRepository) FailTask(ctx context.Context, taskID int64, lea
 			worker_lease_until = NULL,
 			worker_lease_token = '',  -- Phase 3：清空token
 			worker_run_id = '',       -- Phase 3：清空run_id
-			balance_snapshot = 0,
+			balance_snapshot = $4,
+			reserved_paid_balance = 0,
+			reserved_gift_balance = 0,
 			updated_at = NOW()
 		WHERE id = $3
-			AND status IN ($4, $5)
+			AND status IN ($5, $6)
 		RETURNING id, user_id, status, selected_article_count, successful_article_count, failed_article_count,
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
-			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot,
+			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
-	`, service.WeChatExportTaskStatusFailed, message, taskID, service.WeChatExportTaskStatusRunning, service.WeChatExportTaskStatusQueued)
+	`, service.WeChatExportTaskStatusFailed, message, taskID, task.BalanceSnapshot, service.WeChatExportTaskStatusRunning, service.WeChatExportTaskStatusQueued)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, service.ErrWeChatTaskConflict
 	}
@@ -1217,44 +1244,19 @@ func scanWeChatTask(ctx context.Context, q sqlQueryer, query string, args ...any
 	return &tasks[0], nil
 }
 
-func reserveWeChatExportBalance(ctx context.Context, q sqlExecutor, userID int64, amount float64) (float64, error) {
-	if amount <= 0 {
-		return 0, nil
-	}
-	var balanceSnapshot float64
-	if err := scanSingleRow(ctx, q, `
-		UPDATE users SET balance = balance - $1, updated_at = NOW()
-		WHERE id = $2 AND balance >= $1
-		RETURNING balance
-	`, []any{amount, userID}, &balanceSnapshot); err == nil {
-		return balanceSnapshot, nil
-	} else if !errors.Is(err, sql.ErrNoRows) {
-		return 0, err
-	}
-	// If no rows updated, check if user exists
-	var exists bool
-	if err := scanSingleRow(ctx, q, `SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)`, []any{userID}, &exists); err != nil {
-		return 0, err
-	}
-	if !exists {
-		return 0, service.ErrUserNotFound
-	}
-	return 0, service.ErrWeChatInsufficientBalance
+func reserveWeChatExportBalance(ctx context.Context, q sqlExecutor, userID int64, amount float64) (userBalanceReservation, error) {
+	return reserveUserBalanceWithComponents(ctx, q, userID, amount, service.ErrWeChatInsufficientBalance)
 }
 
-func refundWeChatExportBalance(ctx context.Context, q sqlExecutor, userID int64, amount float64) (float64, error) {
-	if amount <= 0 {
-		return 0, nil
+func weChatExportTaskReservation(task *service.WeChatExportTask) userBalanceReservation {
+	if task == nil {
+		return userBalanceReservation{}
 	}
-	var balanceSnapshot float64
-	if err := scanSingleRow(ctx, q, `
-		UPDATE users SET balance = balance + $1, updated_at = NOW()
-		WHERE id = $2
-		RETURNING balance
-	`, []any{amount, userID}, &balanceSnapshot); err != nil {
-		return 0, err
+	return userBalanceReservation{
+		BalanceSnapshot: task.BalanceSnapshot,
+		Paid:            task.ReservedPaidBalance,
+		Gift:            task.ReservedGiftBalance,
 	}
-	return balanceSnapshot, nil
 }
 
 func upsertWeChatExportUsageRecord(ctx context.Context, q sqlExecutor, task *service.WeChatExportTask, articleCount int, reservedCost float64, actualCost float64, billingStatus string, metadataJSON string) error {
@@ -1433,6 +1435,8 @@ func scanWeChatTaskRows(rows *sql.Rows) ([]service.WeChatExportTask, error) {
 			&expiresAt,
 			&item.CostEstimate,
 			&item.BalanceSnapshot,
+			&item.ReservedPaidBalance,
+			&item.ReservedGiftBalance,
 			&leaseToken, // Phase 3：新增
 			&runID,      // Phase 3：新增
 			&item.CreatedAt,

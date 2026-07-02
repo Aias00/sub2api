@@ -133,14 +133,16 @@ type WeChatExportTask struct {
 	ErrorMessage           string               `json:"error_message"`
 	WorkerLeaseUntil       *time.Time           `json:"worker_lease_until,omitempty"`
 	// 新增字段（Phase 2：Worker信任边界重构）
-	WorkerLeaseToken string     `json:"-"` // 完全隐藏，只在ClaimNextTask响应中单独返回
-	WorkerRunID      string     `json:"-"` // 可选，用于唯一标识一次运行
-	RetentionDays    int        `json:"retention_days"`
-	ExpiresAt        *time.Time `json:"expires_at,omitempty"`
-	CostEstimate     float64    `json:"cost_estimate"`
-	BalanceSnapshot  float64    `json:"balance_snapshot"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
+	WorkerLeaseToken    string     `json:"-"` // 完全隐藏，只在ClaimNextTask响应中单独返回
+	WorkerRunID         string     `json:"-"` // 可选，用于唯一标识一次运行
+	RetentionDays       int        `json:"retention_days"`
+	ExpiresAt           *time.Time `json:"expires_at,omitempty"`
+	CostEstimate        float64    `json:"cost_estimate"`
+	BalanceSnapshot     float64    `json:"balance_snapshot"`
+	ReservedPaidBalance float64    `json:"-"`
+	ReservedGiftBalance float64    `json:"-"`
+	CreatedAt           time.Time  `json:"created_at"`
+	UpdatedAt           time.Time  `json:"updated_at"`
 }
 
 type WeChatExportWorkerStatus struct {

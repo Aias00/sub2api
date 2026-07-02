@@ -199,16 +199,16 @@ func (s *UserRepoSuite) TestDeleteRemovesAuthIdentitiesAndChannels() {
 
 	identity, err := s.client.AuthIdentity.Create().
 		SetUserID(user.ID).
-		SetProviderType("linuxdo").
-		SetProviderKey("linuxdo").
+		SetProviderType("github").
+		SetProviderKey("github").
 		SetProviderSubject("delete-oauth-subject").
 		Save(s.ctx)
 	s.Require().NoError(err)
 
 	_, err = s.client.AuthIdentityChannel.Create().
 		SetIdentityID(identity.ID).
-		SetProviderType("wechat").
-		SetProviderKey("wechat").
+		SetProviderType("google").
+		SetProviderKey("google").
 		SetChannel("open").
 		SetChannelAppID("app-id").
 		SetChannelSubject("openid-123").

@@ -36,7 +36,7 @@ func TestImageWorkspaceRepositoryCreateTaskReservesBalance(t *testing.T) {
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectQuery("UPDATE users\\s+SET balance = balance -").
 		WithArgs(0.5, int64(42)).
-		WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(9.5))
+		WillReturnRows(sqlmock.NewRows([]string{"balance", "paid_reserved", "gift_reserved"}).AddRow(9.5, 0.5, 0.0))
 	mock.ExpectQuery("INSERT INTO image_workspace_tasks").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(int64(101), now, now))
 	mock.ExpectCommit()
@@ -44,6 +44,8 @@ func TestImageWorkspaceRepositoryCreateTaskReservesBalance(t *testing.T) {
 	require.NoError(t, repo.CreateTask(context.Background(), task))
 	require.Equal(t, int64(101), task.ID)
 	require.Equal(t, 9.5, task.BalanceSnapshot)
+	require.Equal(t, 0.5, task.ReservedPaidBalance)
+	require.Equal(t, 0.0, task.ReservedGiftBalance)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -68,19 +70,19 @@ func TestImageWorkspaceRepositoryCompleteTaskSettlesArtifactsAndUsage(t *testing
 	mock.ExpectQuery("FROM image_workspace_tasks\\s+WHERE id = \\$1\\s+FOR UPDATE").
 		WithArgs(int64(101)).
 		WillReturnRows(imageWorkspaceTaskRows(now).
-			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusRunning, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, now.Add(time.Minute), 0.5, 9.5, "", []byte(`{}`), now, now))
+			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusRunning, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, now.Add(time.Minute), 0.5, 9.5, 0.5, 0.0, "", []byte(`{}`), now, now))
 	mock.ExpectQuery("UPDATE users\\s+SET balance = balance -").
 		WithArgs(0.25, int64(42)).
-		WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(9.25))
+		WillReturnRows(sqlmock.NewRows([]string{"balance", "paid_reserved", "gift_reserved"}).AddRow(9.25, 0.25, 0.0))
 	mock.ExpectQuery("UPDATE image_workspace_tasks\\s+SET status = \\$1").
 		WithArgs(service.ImageWorkspaceTaskStatusSucceeded, 0.75, `{"artifact_count":1}`, int64(101)).
 		WillReturnRows(imageWorkspaceTaskRows(now).
-			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusSucceeded, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, nil, 0.75, 9.5, "", []byte(`{"artifact_count":1}`), now, now))
+			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusSucceeded, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, nil, 0.75, 9.5, 0.5, 0.0, "", []byte(`{"artifact_count":1}`), now, now))
 	mock.ExpectExec("INSERT INTO image_workspace_artifacts").
 		WithArgs(int64(101), int64(42), artifact.StorageProvider, artifact.StorageKey, artifact.ImageURL, artifact.Prompt, artifact.MimeType, artifact.Width, artifact.Height, artifact.FileSize, artifact.Checksum, artifact.MetadataJSON).
 		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec("UPDATE image_workspace_tasks\\s+SET balance_snapshot = \\$1").
-		WithArgs(9.25, int64(101)).
+		WithArgs(9.25, 0.75, 0.0, int64(101)).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectExec("INSERT INTO image_workspace_usage_records").
 		WithArgs(int64(101), int64(42), "openai", "gpt-image-2", "1024x1024", "standard", 1, 0.5, 0.75, 9.25, "settled", `{"artifact_count":1}`).
@@ -115,11 +117,11 @@ func TestImageWorkspaceRepositoryCompleteTaskRejectsAdditionalCostWhenBalanceIns
 	mock.ExpectQuery("FROM image_workspace_tasks\\s+WHERE id = \\$1\\s+FOR UPDATE").
 		WithArgs(int64(101)).
 		WillReturnRows(imageWorkspaceTaskRows(now).
-			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusRunning, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, now.Add(time.Minute), 0.5, 0, "", []byte(`{}`), now, now))
+			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusRunning, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, now.Add(time.Minute), 0.5, 0, 0.5, 0.0, "", []byte(`{}`), now, now))
 	mock.ExpectQuery("UPDATE users\\s+SET balance = balance -").
 		WithArgs(0.25, int64(42)).
-		WillReturnRows(sqlmock.NewRows([]string{"balance"}))
-	mock.ExpectQuery("SELECT EXISTS\\(SELECT 1 FROM users WHERE id = \\$1\\)").
+		WillReturnRows(sqlmock.NewRows([]string{"balance", "paid_reserved", "gift_reserved"}))
+	mock.ExpectQuery("SELECT EXISTS\\(SELECT 1 FROM users WHERE id = \\$1 AND deleted_at IS NULL\\)").
 		WithArgs(int64(42)).
 		WillReturnRows(sqlmock.NewRows([]string{"exists"}).AddRow(true))
 	mock.ExpectRollback()
@@ -138,7 +140,7 @@ func TestImageWorkspaceRepositoryClaimNextTaskUsesQualifiedReturningColumns(t *t
 	mock.ExpectQuery("RETURNING tasks\\.id, tasks\\.user_id, tasks\\.status").
 		WithArgs(service.ImageWorkspaceTaskStatusQueued, service.ImageWorkspaceTaskStatusRunning, int64(300)).
 		WillReturnRows(imageWorkspaceTaskRows(now).
-			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusRunning, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, now.Add(5*time.Minute), 0.5, 9.5, "", []byte(`{}`), now, now))
+			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusRunning, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, now.Add(5*time.Minute), 0.5, 9.5, 0.5, 0.0, "", []byte(`{}`), now, now))
 
 	task, err := repo.ClaimNextTask(context.Background(), 300)
 	require.NoError(t, err)
@@ -157,13 +159,13 @@ func TestImageWorkspaceRepositoryFailTaskRefundsReservedBalance(t *testing.T) {
 	mock.ExpectQuery("FROM image_workspace_tasks\\s+WHERE id = \\$1\\s+FOR UPDATE").
 		WithArgs(int64(101)).
 		WillReturnRows(imageWorkspaceTaskRows(now).
-			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusRunning, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, now.Add(time.Minute), 0.5, 9.5, "", []byte(`{}`), now, now))
+			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusRunning, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, now.Add(time.Minute), 0.5, 9.5, 0.5, 0.0, "", []byte(`{}`), now, now))
 	mock.ExpectQuery("UPDATE image_workspace_tasks\\s+SET status = \\$1").
 		WithArgs(service.ImageWorkspaceTaskStatusFailed, "upstream timeout", `{"failure":{"upstream_status":504}}`, int64(101)).
 		WillReturnRows(imageWorkspaceTaskRows(now).
-			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusFailed, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, nil, 0.5, 9.5, "upstream timeout", []byte(`{"failure":{"upstream_status":504}}`), now, now))
+			AddRow(int64(101), int64(42), service.ImageWorkspaceTaskStatusFailed, "A clean product render", "blurry", "gpt-image-2", "openai", "1024x1024", "standard", "editorial", nil, 1, nil, nil, 0.5, 9.5, 0.5, 0.0, "upstream timeout", []byte(`{"failure":{"upstream_status":504}}`), now, now))
 	mock.ExpectQuery("UPDATE users\\s+SET balance = balance \\+").
-		WithArgs(0.5, int64(42)).
+		WithArgs(0.5, 0.0, int64(42)).
 		WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(10.0))
 	mock.ExpectExec("UPDATE image_workspace_tasks\\s+SET balance_snapshot = \\$1").
 		WithArgs(10.0, int64(101)).
@@ -285,6 +287,6 @@ func imageWorkspaceTaskRows(_ time.Time) *sqlmock.Rows {
 	return sqlmock.NewRows([]string{
 		"id", "user_id", "status", "prompt", "negative_prompt", "model", "provider", "size", "quality", "style",
 		"seed", "batch_size", "template_id", "worker_lease_until", "cost_estimate", "balance_snapshot",
-		"error_message", "result_json", "created_at", "updated_at",
+		"reserved_paid_balance", "reserved_gift_balance", "error_message", "result_json", "created_at", "updated_at",
 	})
 }

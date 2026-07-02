@@ -45,7 +45,7 @@
           </div>
           <div class="flex justify-between">
             <span class="text-gray-500 dark:text-gray-400">{{ paymentText('amount') }}</span>
-            <span class="font-medium text-gray-900 dark:text-white">{{ paidOrder.order_type === 'balance' ? '$' + paidOrder.amount.toFixed(2) : formatOrderPaymentAmount(paidOrder.amount) }}</span>
+            <span class="font-medium text-gray-900 dark:text-white">{{ formatCreditedAmount(paidOrder.amount) }}</span>
           </div>
           <div class="flex justify-between">
             <span class="text-gray-500 dark:text-gray-400">{{ paymentText('payAmount') }}</span>
@@ -124,6 +124,14 @@ const expired = ref(false)
 const cancelling = ref(false)
 const success = ref(false)
 const paidOrder = ref<PaymentOrder | null>(null)
+const localeCode = computed(() => {
+  const raw = locale as unknown
+  if (typeof raw === 'string') return raw
+  if (raw && typeof raw === 'object' && 'value' in raw) {
+    return String((raw as { value?: string }).value || '')
+  }
+  return undefined
+})
 
 let pollTimer: ReturnType<typeof setInterval> | null = null
 let countdownTimer: ReturnType<typeof setInterval> | null = null
@@ -158,7 +166,11 @@ const countdownDisplay = computed(() => {
 })
 
 function formatOrderPaymentAmount(value: number): string {
-  return formatPaymentAmount(value, normalizePaymentCurrency(paidOrder.value?.currency), locale.value)
+  return formatPaymentAmount(value, normalizePaymentCurrency(paidOrder.value?.currency), localeCode.value)
+}
+
+function formatCreditedAmount(value: number): string {
+  return formatPaymentAmount(value, 'USD', localeCode.value)
 }
 
 function getLogoForType(): string | null {

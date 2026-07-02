@@ -485,7 +485,7 @@ describe('PaymentResultView', () => {
 
     await flushPromises()
 
-    expect(wrapper.text()).toContain('payment.result.success')
+    expect(wrapper.text()).toContain('Payment successful')
     expect(wrapper.text()).toContain('legacy-minimal')
     expect(wrapper.text()).not.toContain('payment.orders.paymentMethod')
   })

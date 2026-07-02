@@ -44,6 +44,107 @@ export interface AdminBoundAuthIdentity {
   channel?: AdminBoundAuthIdentityChannel | null
 }
 
+export interface SignupGrantRiskClaimRecord {
+  id: number
+  user_id?: number | null
+  email: string
+  email_domain: string
+  ip_address: string
+  email_hash: string
+  email_domain_hash: string
+  ip_hash: string
+  device_hash: string
+  signup_source: string
+  provider_type: string
+  provider_subject: string
+  provider_subject_hash: string
+  decision: string
+  reason: string
+  grant_balance: number
+  created_at: string
+  updated_at: string
+}
+
+export interface SignupGrantRiskClaimsResponse {
+  items: SignupGrantRiskClaimRecord[]
+  total: number
+  page: number
+  size: number
+}
+
+export interface SignupGrantRiskClaimFilters {
+  decision?: string
+  user_id?: number | string
+  subject_type?: 'email' | 'email_domain' | 'ip' | 'oauth_identity' | 'device' | ''
+  subject?: string
+  reason?: string
+}
+
+export interface SignupGrantRiskUserSummary {
+  user_id: number
+  has_claim: boolean
+  decision?: string
+  reason?: string
+  grant_balance?: number
+  created_at?: string | null
+  updated_at?: string | null
+}
+
+export interface SignupGrantRiskOverrideRequest {
+  subject_type: 'email' | 'email_domain' | 'ip' | 'oauth_identity' | 'device'
+  subject: string
+  action: 'allow' | 'block'
+  reason?: string
+}
+
+export interface SignupGrantRiskOverrideRecord {
+  id: number
+  subject_type: string
+  subject_value: string
+  subject_hash: string
+  action: string
+  reason: string
+  created_by?: number | null
+  expires_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SignupGrantRiskOverridesResponse {
+  items: SignupGrantRiskOverrideRecord[]
+  total: number
+  page: number
+  size: number
+}
+
+export interface SignupGrantRiskOverrideFilters {
+  subject_type?: 'email' | 'email_domain' | 'ip' | 'oauth_identity' | 'device' | ''
+  action?: 'allow' | 'block' | ''
+  subject?: string
+}
+
+export interface SignupGrantAdminAuditLog {
+  id: number
+  operation: string
+  target_user_id?: number | null
+  subject_type: string
+  subject_value: string
+  subject_hash: string
+  action: string
+  amount: number
+  reason: string
+  admin_id?: number | null
+  metadata?: Record<string, unknown>
+  created_at: string
+}
+
+export interface SignupGrantAdminAuditLogsResponse {
+  items: SignupGrantAdminAuditLog[]
+  total: number
+  page: number
+  size: number
+}
+
 /**
  * List all users with pagination
  * @param page - Page number (default: 1)
@@ -170,6 +271,82 @@ export async function updateBalance(
     operation,
     notes: notes || ''
   })
+  return data
+}
+
+export async function listSignupGrantRiskClaims(
+  page: number = 1,
+  pageSize: number = 20,
+  filters?: SignupGrantRiskClaimFilters
+): Promise<SignupGrantRiskClaimsResponse> {
+  const { data } = await apiClient.get<SignupGrantRiskClaimsResponse>(
+    '/admin/users/signup-grant-risk/claims',
+    { params: { page, page_size: pageSize, ...filters } }
+  )
+  return data
+}
+
+export async function getSignupGrantRiskSummary(id: number): Promise<SignupGrantRiskUserSummary> {
+  const { data } = await apiClient.get<SignupGrantRiskUserSummary>(
+    `/admin/users/${id}/signup-grant/summary`
+  )
+  return data
+}
+
+export async function manualGrantSignupGiftBalance(
+  id: number,
+  amount: number,
+  reason?: string
+): Promise<AdminUser> {
+  const { data } = await apiClient.post<AdminUser>(
+    `/admin/users/${id}/signup-grant/manual-grant`,
+    { amount, reason: reason || '' }
+  )
+  return data
+}
+
+export async function upsertSignupGrantRiskOverride(
+  input: SignupGrantRiskOverrideRequest
+): Promise<{ message: string }> {
+  const { data } = await apiClient.post<{ message: string }>(
+    '/admin/users/signup-grant-risk/overrides',
+    input
+  )
+  return data
+}
+
+export async function deleteSignupGrantRiskOverride(id: number): Promise<{ message: string }> {
+  const { data } = await apiClient.delete<{ message: string }>(
+    `/admin/users/signup-grant-risk/overrides/${id}`
+  )
+  return data
+}
+
+export async function listSignupGrantRiskOverrides(
+  page: number = 1,
+  pageSize: number = 20,
+  filters?: SignupGrantRiskOverrideFilters
+): Promise<SignupGrantRiskOverridesResponse> {
+  const { data } = await apiClient.get<SignupGrantRiskOverridesResponse>(
+    '/admin/users/signup-grant-risk/overrides',
+    { params: { page, page_size: pageSize, ...filters } }
+  )
+  return data
+}
+
+export async function listSignupGrantAdminAuditLogs(
+  page: number = 1,
+  pageSize: number = 20,
+  filters?: {
+    operation?: string
+    admin_id?: number | string
+    target_user_id?: number | string
+  }
+): Promise<SignupGrantAdminAuditLogsResponse> {
+  const { data } = await apiClient.get<SignupGrantAdminAuditLogsResponse>(
+    '/admin/users/signup-grant-risk/audit-logs',
+    { params: { page, page_size: pageSize, ...filters } }
+  )
   return data
 }
 
@@ -383,6 +560,13 @@ export const usersAPI = {
   update,
   delete: deleteUser,
   updateBalance,
+  listSignupGrantRiskClaims,
+  getSignupGrantRiskSummary,
+  manualGrantSignupGiftBalance,
+  upsertSignupGrantRiskOverride,
+  deleteSignupGrantRiskOverride,
+  listSignupGrantRiskOverrides,
+  listSignupGrantAdminAuditLogs,
   updateConcurrency,
   toggleStatus,
   getUserApiKeys,

@@ -259,18 +259,23 @@ function restoreRecoverySnapshot(context: {
 
 function publicVerifyResultToOrder(result: PublicOrderVerifyResult): PaymentOrder {
   return {
-    id: 0,
-    user_id: 0,
-    amount: 0,
-    pay_amount: 0,
-    fee_rate: 0,
-    payment_type: '',
+    id: Number(result.id) || 0,
+    user_id: Number(result.user_id) || 0,
+    amount: Number(result.amount) || 0,
+    pay_amount: Number(result.pay_amount) || 0,
+    currency: result.currency,
+    fee_rate: Number(result.fee_rate) || 0,
+    payment_type: result.payment_type || '',
     out_trade_no: result.out_trade_no,
     status: result.status as OrderStatus,
-    order_type: 'balance',
+    order_type: result.order_type || 'balance',
     created_at: result.created_at,
     expires_at: result.expires_at,
-    refund_amount: 0,
+    paid_at: result.paid_at,
+    completed_at: result.completed_at,
+    refund_amount: Number(result.refund_amount) || 0,
+    plan_id: result.plan_id,
+    provider_instance_id: result.provider_instance_id,
   }
 }
 

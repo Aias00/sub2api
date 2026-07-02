@@ -15,6 +15,8 @@ CREATE TABLE IF NOT EXISTS image_workspace_tasks (
     worker_lease_until TIMESTAMPTZ,
     cost_estimate NUMERIC(20,8) NOT NULL DEFAULT 0,
     balance_snapshot NUMERIC(20,8) NOT NULL DEFAULT 0,
+    reserved_paid_balance NUMERIC(20,8) NOT NULL DEFAULT 0,
+    reserved_gift_balance NUMERIC(20,8) NOT NULL DEFAULT 0,
     error_message TEXT NOT NULL DEFAULT '',
     result_json JSONB NOT NULL DEFAULT '{}'::jsonb,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),

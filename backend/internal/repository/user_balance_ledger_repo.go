@@ -34,7 +34,8 @@ INSERT INTO user_balance_ledger (
     created_at
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
 `
-	_, err := r.db.ExecContext(ctx, query,
+	exec := txAwareSQLExecutor(ctx, r.db, r.client)
+	_, err := exec.ExecContext(ctx, query,
 		entry.UserID,
 		entry.EntryType,
 		entry.Amount,
@@ -53,7 +54,9 @@ INSERT INTO user_balance_ledger (
 // exec 参数可以是 *sql.Tx 或其他支持 ExecContext 的执行器
 func (r *userBalanceLedgerRepository) CreateTx(
 	ctx context.Context,
-	exec interface{ ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error) },
+	exec interface {
+		ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	},
 	entry *service.UserBalanceLedgerEntry,
 ) error {
 	query := `

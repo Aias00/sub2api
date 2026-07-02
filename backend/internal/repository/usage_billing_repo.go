@@ -115,7 +115,7 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 	}
 
 	if cmd.BalanceCost > 0 {
-		newBalance, sufficient, err := deductUsageBillingBalance(ctx, tx, cmd.UserID, cmd.BalanceCost)
+		newBalance, sufficient, err := deductUsageBillingBalance(ctx, tx, cmd.UserID, cmd.BalanceCost, signupGiftBalanceEligible(cmd))
 		if err != nil {
 			return err
 		}
@@ -294,13 +294,49 @@ func isOneTimeDailyQuota(startsAt, expiresAt time.Time) bool {
 	return !expiresAt.After(startsAt.AddDate(0, 0, 1))
 }
 
-func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, bool, error) {
+func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64, giftEligible bool) (float64, bool, error) {
 	var newBalance float64
+	if giftEligible {
+		err := tx.QueryRowContext(ctx, `
+			UPDATE users
+			SET balance = balance - $1,
+				gift_balance = GREATEST(gift_balance - $1, 0),
+				paid_balance = paid_balance - GREATEST($1 - gift_balance, 0),
+				updated_at = NOW()
+			WHERE id = $2 AND deleted_at IS NULL AND balance >= $1
+			RETURNING balance
+		`, amount, userID).Scan(&newBalance)
+		if err == nil {
+			return newBalance, true, nil
+		}
+		if !errors.Is(err, sql.ErrNoRows) {
+			return 0, false, err
+		}
+
+		err = tx.QueryRowContext(ctx, `
+				UPDATE users
+				SET balance = balance - $1,
+					gift_balance = 0,
+					paid_balance = balance - $1,
+					updated_at = NOW()
+				WHERE id = $2 AND deleted_at IS NULL
+				RETURNING balance
+		`, amount, userID).Scan(&newBalance)
+		if errors.Is(err, sql.ErrNoRows) {
+			return 0, false, service.ErrUserNotFound
+		}
+		if err != nil {
+			return 0, false, err
+		}
+		return newBalance, false, nil
+	}
+
 	err := tx.QueryRowContext(ctx, `
 		UPDATE users
 		SET balance = balance - $1,
+			paid_balance = paid_balance - $1,
 			updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL AND balance >= $1
+		WHERE id = $2 AND deleted_at IS NULL AND paid_balance >= $1
 		RETURNING balance
 	`, amount, userID).Scan(&newBalance)
 	if err == nil {
@@ -313,6 +349,7 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 	err = tx.QueryRowContext(ctx, `
 		UPDATE users
 		SET balance = balance - $1,
+			paid_balance = paid_balance - $1,
 			updated_at = NOW()
 		WHERE id = $2 AND deleted_at IS NULL
 		RETURNING balance
@@ -324,6 +361,54 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 		return 0, false, err
 	}
 	return newBalance, false, nil
+}
+
+func signupGiftBalanceEligible(cmd *service.UsageBillingCommand) bool {
+	if cmd == nil || cmd.BalanceCost <= 0 {
+		return false
+	}
+	model := strings.ToLower(strings.TrimSpace(cmd.Model))
+	if model == "" {
+		return false
+	}
+	if !signupGiftAllowedModel(model) {
+		return false
+	}
+	if cmd.ImageCount > 1 {
+		return false
+	}
+	if cmd.ImageCount == 1 && !signupGiftAllowedImageSize(cmd.ImageSize) {
+		return false
+	}
+	return true
+}
+
+func signupGiftAllowedModel(model string) bool {
+	allowed := []string{
+		"gpt-5.4-mini",
+		"gpt-5.3-codex-spark",
+		"gpt-image-2",
+	}
+	for _, item := range allowed {
+		if strings.EqualFold(model, item) {
+			return true
+		}
+	}
+	return false
+}
+
+func signupGiftAllowedImageSize(raw string) bool {
+	size := strings.ToLower(strings.TrimSpace(raw))
+	if size == "" {
+		return true
+	}
+	size = strings.ReplaceAll(size, " ", "")
+	switch size {
+	case "1024x1024", "1024*1024", "1k", "low":
+		return true
+	default:
+		return false
+	}
 }
 
 func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID int64, amount float64) (bool, error) {

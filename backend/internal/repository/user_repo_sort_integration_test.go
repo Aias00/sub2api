@@ -61,14 +61,14 @@ func (s *UserRepoSuite) TestCreateAndRead_PreservesSignupSourceAndActivityTimest
 
 	created := s.mustCreateUser(&service.User{
 		Email:        "identity-meta@example.com",
-		SignupSource: "linuxdo",
+		SignupSource: "github",
 		LastLoginAt:  &lastLoginAt,
 		LastActiveAt: &lastActiveAt,
 	})
 
 	got, err := s.repo.GetByID(s.ctx, created.ID)
 	s.Require().NoError(err)
-	s.Require().Equal("linuxdo", got.SignupSource)
+	s.Require().Equal("github", got.SignupSource)
 	s.Require().NotNil(got.LastLoginAt)
 	s.Require().NotNil(got.LastActiveAt)
 	s.Require().True(got.LastLoginAt.Equal(lastLoginAt))
@@ -80,7 +80,7 @@ func (s *UserRepoSuite) TestUpdate_PersistsSignupSourceAndActivityTimestamps() {
 	lastLoginAt := time.Now().Add(-90 * time.Minute).UTC().Truncate(time.Microsecond)
 	lastActiveAt := time.Now().Add(-15 * time.Minute).UTC().Truncate(time.Microsecond)
 
-	created.SignupSource = "oidc"
+	created.SignupSource = "google"
 	created.LastLoginAt = &lastLoginAt
 	created.LastActiveAt = &lastActiveAt
 
@@ -88,7 +88,7 @@ func (s *UserRepoSuite) TestUpdate_PersistsSignupSourceAndActivityTimestamps() {
 
 	got, err := s.repo.GetByID(s.ctx, created.ID)
 	s.Require().NoError(err)
-	s.Require().Equal("oidc", got.SignupSource)
+	s.Require().Equal("google", got.SignupSource)
 	s.Require().NotNil(got.LastLoginAt)
 	s.Require().NotNil(got.LastActiveAt)
 	s.Require().True(got.LastLoginAt.Equal(lastLoginAt))

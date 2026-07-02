@@ -68,27 +68,29 @@ var (
 )
 
 type ImageWorkspaceTask struct {
-	ID               int64                    `json:"id"`
-	UserID           int64                    `json:"user_id"`
-	Status           string                   `json:"status"`
-	Prompt           string                   `json:"prompt"`
-	NegativePrompt   string                   `json:"negative_prompt"`
-	Model            string                   `json:"model"`
-	Provider         string                   `json:"provider"`
-	Size             string                   `json:"size"`
-	Quality          string                   `json:"quality"`
-	Style            string                   `json:"style"`
-	Seed             *int64                   `json:"seed,omitempty"`
-	BatchSize        int                      `json:"batch_size"`
-	TemplateID       *int64                   `json:"template_id,omitempty"`
-	WorkerLeaseUntil *time.Time               `json:"worker_lease_until,omitempty"`
-	CostEstimate     float64                  `json:"cost_estimate"`
-	BalanceSnapshot  float64                  `json:"balance_snapshot"`
-	ErrorMessage     string                   `json:"error_message"`
-	ResultJSON       string                   `json:"result_json"`
-	CreatedAt        time.Time                `json:"created_at"`
-	UpdatedAt        time.Time                `json:"updated_at"`
-	Artifacts        []ImageWorkspaceArtifact `json:"artifacts,omitempty"`
+	ID                  int64                    `json:"id"`
+	UserID              int64                    `json:"user_id"`
+	Status              string                   `json:"status"`
+	Prompt              string                   `json:"prompt"`
+	NegativePrompt      string                   `json:"negative_prompt"`
+	Model               string                   `json:"model"`
+	Provider            string                   `json:"provider"`
+	Size                string                   `json:"size"`
+	Quality             string                   `json:"quality"`
+	Style               string                   `json:"style"`
+	Seed                *int64                   `json:"seed,omitempty"`
+	BatchSize           int                      `json:"batch_size"`
+	TemplateID          *int64                   `json:"template_id,omitempty"`
+	WorkerLeaseUntil    *time.Time               `json:"worker_lease_until,omitempty"`
+	CostEstimate        float64                  `json:"cost_estimate"`
+	BalanceSnapshot     float64                  `json:"balance_snapshot"`
+	ReservedPaidBalance float64                  `json:"-"`
+	ReservedGiftBalance float64                  `json:"-"`
+	ErrorMessage        string                   `json:"error_message"`
+	ResultJSON          string                   `json:"result_json"`
+	CreatedAt           time.Time                `json:"created_at"`
+	UpdatedAt           time.Time                `json:"updated_at"`
+	Artifacts           []ImageWorkspaceArtifact `json:"artifacts,omitempty"`
 }
 
 type ImageWorkspaceArtifact struct {

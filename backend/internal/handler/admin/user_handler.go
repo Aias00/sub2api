@@ -13,6 +13,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	"github.com/Wei-Shaw/sub2api/internal/handler/quotaview"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
+	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 
 	"github.com/gin-gonic/gin"
@@ -81,6 +82,28 @@ type UpdateBalanceRequest struct {
 	Balance   float64 `json:"balance" binding:"required,gt=0"`
 	Operation string  `json:"operation" binding:"required,oneof=set add subtract"`
 	Notes     string  `json:"notes"`
+}
+
+type ManualSignupGrantRequest struct {
+	Amount float64 `json:"amount" binding:"required,gt=0"`
+	Reason string  `json:"reason"`
+}
+
+type SignupGrantRiskOverrideRequest struct {
+	SubjectType string `json:"subject_type" binding:"required"`
+	Subject     string `json:"subject" binding:"required"`
+	Action      string `json:"action" binding:"required,oneof=allow block"`
+	Reason      string `json:"reason"`
+}
+
+type signupGrantRiskAdminService interface {
+	ListSignupGrantRiskClaims(ctx context.Context, page, pageSize int, filter service.SignupGrantRiskClaimFilter) ([]service.SignupGrantRiskClaimRecord, int64, error)
+	GetSignupGrantRiskUserSummary(ctx context.Context, userID int64) (*service.SignupGrantRiskUserSummary, error)
+	UpsertSignupGrantRiskOverride(ctx context.Context, input service.SignupGrantRiskOverrideInput) error
+	DeleteSignupGrantRiskOverride(ctx context.Context, id int64, adminID int64) error
+	ListSignupGrantRiskOverrides(ctx context.Context, page, pageSize int, filter service.SignupGrantRiskOverrideFilter) ([]service.SignupGrantRiskOverrideRecord, int64, error)
+	ListSignupGrantAdminAuditLogs(ctx context.Context, page, pageSize int, filter service.SignupGrantAdminAuditLogFilter) ([]service.SignupGrantAdminAuditLog, int64, error)
+	ManualGrantSignupGiftBalance(ctx context.Context, userID int64, amount float64, reason string, adminID int64) (*service.User, error)
 }
 
 type BindUserAuthIdentityRequest struct {
@@ -365,6 +388,200 @@ func (h *UserHandler) UpdateBalance(c *gin.Context) {
 		}
 		return dto.UserFromServiceAdmin(user), nil
 	})
+}
+
+func (h *UserHandler) ListSignupGrantRiskClaims(c *gin.Context) {
+	svc, ok := h.adminService.(signupGrantRiskAdminService)
+	if !ok {
+		response.Error(c, 503, "signup grant risk admin service unavailable")
+		return
+	}
+	page, pageSize := response.ParsePagination(c)
+	var userID int64
+	if raw := strings.TrimSpace(c.Query("user_id")); raw != "" {
+		parsed, parseErr := strconv.ParseInt(raw, 10, 64)
+		if parseErr != nil || parsed < 0 {
+			response.BadRequest(c, "Invalid user_id")
+			return
+		}
+		userID = parsed
+	}
+	records, total, err := svc.ListSignupGrantRiskClaims(c.Request.Context(), page, pageSize, service.SignupGrantRiskClaimFilter{
+		Decision:     c.Query("decision"),
+		UserID:       userID,
+		SubjectType:  c.Query("subject_type"),
+		SubjectQuery: c.Query("subject"),
+		Reason:       c.Query("reason"),
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{
+		"items": records,
+		"total": total,
+		"page":  page,
+		"size":  pageSize,
+	})
+}
+
+func (h *UserHandler) ListSignupGrantRiskOverrides(c *gin.Context) {
+	svc, ok := h.adminService.(signupGrantRiskAdminService)
+	if !ok {
+		response.Error(c, 503, "signup grant risk admin service unavailable")
+		return
+	}
+	page, pageSize := response.ParsePagination(c)
+	records, total, err := svc.ListSignupGrantRiskOverrides(c.Request.Context(), page, pageSize, service.SignupGrantRiskOverrideFilter{
+		SubjectType:  c.Query("subject_type"),
+		Action:       c.Query("action"),
+		SubjectQuery: c.Query("subject"),
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{
+		"items": records,
+		"total": total,
+		"page":  page,
+		"size":  pageSize,
+	})
+}
+
+func (h *UserHandler) ListSignupGrantAdminAuditLogs(c *gin.Context) {
+	svc, ok := h.adminService.(signupGrantRiskAdminService)
+	if !ok {
+		response.Error(c, 503, "signup grant risk admin service unavailable")
+		return
+	}
+	page, pageSize := response.ParsePagination(c)
+	var adminID int64
+	if raw := strings.TrimSpace(c.Query("admin_id")); raw != "" {
+		parsed, parseErr := strconv.ParseInt(raw, 10, 64)
+		if parseErr != nil || parsed < 0 {
+			response.BadRequest(c, "Invalid admin_id")
+			return
+		}
+		adminID = parsed
+	}
+	var targetUserID int64
+	if raw := strings.TrimSpace(c.Query("target_user_id")); raw != "" {
+		parsed, parseErr := strconv.ParseInt(raw, 10, 64)
+		if parseErr != nil || parsed < 0 {
+			response.BadRequest(c, "Invalid target_user_id")
+			return
+		}
+		targetUserID = parsed
+	}
+	records, total, err := svc.ListSignupGrantAdminAuditLogs(c.Request.Context(), page, pageSize, service.SignupGrantAdminAuditLogFilter{
+		Operation:    c.Query("operation"),
+		AdminID:      adminID,
+		TargetUserID: targetUserID,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{
+		"items": records,
+		"total": total,
+		"page":  page,
+		"size":  pageSize,
+	})
+}
+
+func (h *UserHandler) GetSignupGrantRiskUserSummary(c *gin.Context) {
+	svc, ok := h.adminService.(signupGrantRiskAdminService)
+	if !ok {
+		response.Error(c, 503, "signup grant risk admin service unavailable")
+		return
+	}
+	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid user ID")
+		return
+	}
+	summary, err := svc.GetSignupGrantRiskUserSummary(c.Request.Context(), userID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, summary)
+}
+
+func (h *UserHandler) UpsertSignupGrantRiskOverride(c *gin.Context) {
+	svc, ok := h.adminService.(signupGrantRiskAdminService)
+	if !ok {
+		response.Error(c, 503, "signup grant risk admin service unavailable")
+		return
+	}
+	var req SignupGrantRiskOverrideRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequestWithError(c, err)
+		return
+	}
+	err := svc.UpsertSignupGrantRiskOverride(c.Request.Context(), service.SignupGrantRiskOverrideInput{
+		SubjectType: req.SubjectType,
+		Subject:     req.Subject,
+		Action:      req.Action,
+		Reason:      req.Reason,
+		CreatedBy:   currentAdminUserID(c),
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"message": "ok"})
+}
+
+func (h *UserHandler) DeleteSignupGrantRiskOverride(c *gin.Context) {
+	svc, ok := h.adminService.(signupGrantRiskAdminService)
+	if !ok {
+		response.Error(c, 503, "signup grant risk admin service unavailable")
+		return
+	}
+	id, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || id <= 0 {
+		response.BadRequest(c, "Invalid override ID")
+		return
+	}
+	if err := svc.DeleteSignupGrantRiskOverride(c.Request.Context(), id, currentAdminUserID(c)); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"message": "ok"})
+}
+
+func (h *UserHandler) ManualGrantSignupGiftBalance(c *gin.Context) {
+	svc, ok := h.adminService.(signupGrantRiskAdminService)
+	if !ok {
+		response.Error(c, 503, "signup grant risk admin service unavailable")
+		return
+	}
+	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid user ID")
+		return
+	}
+	var req ManualSignupGrantRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequestWithError(c, err)
+		return
+	}
+	user, err := svc.ManualGrantSignupGiftBalance(c.Request.Context(), userID, req.Amount, req.Reason, currentAdminUserID(c))
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, dto.UserFromServiceAdmin(user))
+}
+
+func currentAdminUserID(c *gin.Context) int64 {
+	if subject, ok := middleware.GetAuthSubjectFromContext(c); ok {
+		return subject.UserID
+	}
+	return 0
 }
 
 // GetUserAPIKeys handles getting user's API keys

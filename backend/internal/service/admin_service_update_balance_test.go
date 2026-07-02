@@ -15,6 +15,21 @@ type balanceUserRepoStub struct {
 	updated   []*User
 }
 
+func (s *balanceUserRepoStub) UpdateBalance(ctx context.Context, id int64, amount float64) error {
+	if s.updateErr != nil {
+		return s.updateErr
+	}
+	if s.userRepoStub == nil || s.userRepoStub.user == nil {
+		return ErrUserNotFound
+	}
+	clone := *s.userRepoStub.user
+	clone.Balance += amount
+	clone.PaidBalance += amount
+	s.updated = append(s.updated, &clone)
+	s.userRepoStub.user = &clone
+	return nil
+}
+
 func (s *balanceUserRepoStub) Update(ctx context.Context, user *User) error {
 	if s.updateErr != nil {
 		return s.updateErr

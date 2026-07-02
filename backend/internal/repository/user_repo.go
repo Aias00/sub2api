@@ -3,9 +3,11 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,6 +22,7 @@ import (
 	dbuser "github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
+	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/lib/pq"
@@ -44,6 +47,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	if userIn == nil {
 		return nil
 	}
+	rawSignupSource := strings.TrimSpace(userIn.SignupSource)
 
 	// 统一使用 ent 的事务：保证用户与允许分组的更新原子化，
 	// 并避免基于 *sql.Tx 手动构造 ent client 导致的 ExecQuerier 断言错误。
@@ -107,10 +111,21 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	if err := r.syncUserAllowedGroupsWithClient(txCtx, txClient, created.ID, userIn.AllowedGroups); err != nil {
 		return err
 	}
-	if signupSource != "touch" {
-		if err := ensureEmailAuthIdentityWithClient(txCtx, txClient, created.ID, created.Email, "user_repo_create"); err != nil {
+	if userIn.Balance > 0 {
+		exec := txAwareSQLExecutor(txCtx, r.sql, r.client)
+		if exec == nil {
+			return service.ErrServiceUnavailable
+		}
+		if rawSignupSource != "" {
+			if err := setGiftBalanceComponentWithExec(txCtx, exec, created.ID, userIn.Balance); err != nil {
+				return err
+			}
+		} else if err := setPaidBalanceComponentWithExec(txCtx, exec, created.ID, userIn.Balance); err != nil {
 			return err
 		}
+	}
+	if err := ensureEmailAuthIdentityWithClient(txCtx, txClient, created.ID, created.Email, "user_repo_create"); err != nil {
+		return err
 	}
 
 	if tx != nil {
@@ -120,6 +135,15 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	}
 
 	applyUserEntityToService(userIn, created)
+	if userIn.Balance > 0 {
+		if rawSignupSource != "" {
+			userIn.GiftBalance = userIn.Balance
+			userIn.PaidBalance = 0
+		} else {
+			userIn.PaidBalance = userIn.Balance
+			userIn.GiftBalance = 0
+		}
+	}
 	return nil
 }
 
@@ -130,6 +154,9 @@ func (r *userRepository) GetByID(ctx context.Context, id int64) (*service.User, 
 	}
 
 	out := userEntityToService(m)
+	if err := r.hydrateUserBalanceBuckets(ctx, out); err != nil {
+		return nil, err
+	}
 	groups, err := r.loadAllowedGroups(ctx, []int64{id})
 	if err != nil {
 		return nil, err
@@ -147,6 +174,9 @@ func (r *userRepository) GetByIDIncludeDeleted(ctx context.Context, id int64) (*
 		return nil, translatePersistenceError(err, service.ErrUserNotFound, nil)
 	}
 	out := userEntityToService(m)
+	if err := r.hydrateUserBalanceBuckets(ctx, out); err != nil {
+		return nil, err
+	}
 	groups, err := r.loadAllowedGroups(ctx, []int64{id})
 	if err != nil {
 		return nil, err
@@ -174,6 +204,9 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*service
 	m := matches[0]
 
 	out := userEntityToService(m)
+	if err := r.hydrateUserBalanceBuckets(ctx, out); err != nil {
+		return nil, err
+	}
 	groups, err := r.loadAllowedGroups(ctx, []int64{m.ID})
 	if err != nil {
 		return nil, err
@@ -276,10 +309,8 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 		SetNillableBalanceNotifyThreshold(userIn.BalanceNotifyThreshold).
 		SetBalanceNotifyExtraEmails(marshalExtraEmails(userIn.BalanceNotifyExtraEmails)).
 		SetTotalRecharged(userIn.TotalRecharged).
-		SetRpmLimit(userIn.RPMLimit)
-	if userIn.SignupSource != "" {
-		updateOp = updateOp.SetSignupSource(userIn.SignupSource)
-	}
+		SetRpmLimit(userIn.RPMLimit).
+		SetSignupSource(signupSource)
 	if userIn.LastLoginAt != nil {
 		updateOp = updateOp.SetLastLoginAt(*userIn.LastLoginAt)
 	}
@@ -302,21 +333,8 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	if err := r.syncUserAllowedGroupsWithClient(txCtx, txClient, updated.ID, userIn.AllowedGroups); err != nil {
 		return err
 	}
-	if signupSource != "touch" {
-		if err := replaceEmailAuthIdentityWithClient(txCtx, txClient, updated.ID, oldEmail, updated.Email, "user_repo_update"); err != nil {
-			return err
-		}
-	} else {
-		_, err := clientFromContext(txCtx, txClient).AuthIdentity.Delete().
-			Where(
-				authidentity.UserIDEQ(updated.ID),
-				authidentity.ProviderTypeEQ("email"),
-				authidentity.ProviderKeyEQ("email"),
-			).
-			Exec(txCtx)
-		if err != nil {
-			return err
-		}
+	if err := replaceEmailAuthIdentityWithClient(txCtx, txClient, updated.ID, oldEmail, updated.Email, "user_repo_update"); err != nil {
+		return err
 	}
 
 	if tx != nil {
@@ -438,10 +456,7 @@ func normalizeEmailAuthIdentitySubject(email string) string {
 	if normalized == "" {
 		return ""
 	}
-	if strings.HasSuffix(normalized, service.LinuxDoConnectSyntheticEmailDomain) ||
-		strings.HasSuffix(normalized, service.OIDCConnectSyntheticEmailDomain) ||
-		strings.HasSuffix(normalized, service.WeChatConnectSyntheticEmailDomain) ||
-		strings.HasSuffix(normalized, service.DingTalkConnectSyntheticEmailDomain) {
+	if strings.HasSuffix(normalized, ".invalid") {
 		return ""
 	}
 	return normalized
@@ -605,6 +620,9 @@ func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.
 		u := userEntityToService(users[i])
 		outUsers = append(outUsers, *u)
 		userMap[u.ID] = &outUsers[len(outUsers)-1]
+	}
+	if err := r.hydrateUserBalanceBucketsMap(ctx, userMap); err != nil {
+		return nil, nil, err
 	}
 
 	shouldLoadSubscriptions := filters.IncludeSubscriptions == nil || *filters.IncludeSubscriptions
@@ -823,18 +841,519 @@ func (r *userRepository) filterUsersByAttributes(ctx context.Context, attrs map[
 }
 
 func (r *userRepository) UpdateBalance(ctx context.Context, id int64, amount float64) error {
-	client := clientFromContext(ctx, r.client)
-	update := client.User.Update().Where(dbuser.IDEQ(id)).AddBalance(amount)
-	// Track cumulative recharge amount for percentage-based notifications
-	if amount > 0 {
-		update = update.AddTotalRecharged(amount)
+	if r == nil {
+		return service.ErrServiceUnavailable
 	}
-	n, err := update.Save(ctx)
+	if amount == 0 {
+		return nil
+	}
+	exec := txAwareSQLExecutor(ctx, r.sql, r.client)
+	if exec == nil {
+		return service.ErrServiceUnavailable
+	}
+	query := `
+		UPDATE users
+		SET balance = balance + $1,
+			paid_balance = paid_balance + $1,
+			total_recharged = CASE WHEN $1 > 0 THEN total_recharged + $1 ELSE total_recharged END,
+			updated_at = NOW()
+		WHERE id = $2 AND deleted_at IS NULL
+	`
+	if amount < 0 {
+		query = `
+			UPDATE users
+			SET balance = balance + $1,
+				gift_balance = LEAST(gift_balance, GREATEST(balance + $1, 0)),
+				paid_balance = (balance + $1) - LEAST(gift_balance, GREATEST(balance + $1, 0)),
+				updated_at = NOW()
+			WHERE id = $2 AND deleted_at IS NULL
+		`
+	}
+	res, err := exec.ExecContext(ctx, query, amount, id)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
 	}
 	if n == 0 {
 		return service.ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *userRepository) SetGiftBalanceComponent(ctx context.Context, id int64, amount float64) error {
+	if r == nil || amount <= 0 {
+		return nil
+	}
+	exec := txAwareSQLExecutor(ctx, r.sql, r.client)
+	if exec == nil {
+		return service.ErrServiceUnavailable
+	}
+	return setGiftBalanceComponentWithExec(ctx, exec, id, amount)
+}
+
+func setGiftBalanceComponentWithExec(ctx context.Context, exec sqlQueryExecutor, id int64, amount float64) error {
+	res, err := exec.ExecContext(ctx, `
+		UPDATE users
+		SET gift_balance = $1,
+			paid_balance = GREATEST(balance - $1, 0),
+			updated_at = NOW()
+		WHERE id = $2 AND deleted_at IS NULL
+	`, amount, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return service.ErrUserNotFound
+	}
+	return nil
+}
+
+func setPaidBalanceComponentWithExec(ctx context.Context, exec sqlQueryExecutor, id int64, amount float64) error {
+	res, err := exec.ExecContext(ctx, `
+		UPDATE users
+		SET paid_balance = $1,
+			gift_balance = 0,
+			updated_at = NOW()
+		WHERE id = $2 AND deleted_at IS NULL
+	`, amount, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return service.ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *userRepository) AddGiftBalance(ctx context.Context, id int64, amount float64) error {
+	if r == nil || amount <= 0 {
+		return nil
+	}
+	exec := txAwareSQLExecutor(ctx, r.sql, r.client)
+	if exec == nil {
+		return service.ErrServiceUnavailable
+	}
+	res, err := exec.ExecContext(ctx, `
+		UPDATE users
+		SET balance = balance + $1,
+			gift_balance = gift_balance + $1,
+			updated_at = NOW()
+		WHERE id = $2 AND deleted_at IS NULL
+	`, amount, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return service.ErrUserNotFound
+	}
+	return nil
+}
+
+func (r *userRepository) ListSignupGrantRiskClaims(ctx context.Context, limit, offset int, filter service.SignupGrantRiskClaimFilter) ([]service.SignupGrantRiskClaimRecord, int64, error) {
+	if r == nil || r.sql == nil {
+		return nil, 0, service.ErrServiceUnavailable
+	}
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	clauses := make([]string, 0, 5)
+	args := make([]any, 0, 5)
+	if strings.TrimSpace(filter.Decision) != "" {
+		args = append(args, strings.TrimSpace(filter.Decision))
+		clauses = append(clauses, "decision = $"+strconv.Itoa(len(args)))
+	}
+	if filter.UserID > 0 {
+		args = append(args, filter.UserID)
+		clauses = append(clauses, "user_id = $"+strconv.Itoa(len(args)))
+	}
+	if strings.TrimSpace(filter.SubjectQuery) != "" {
+		if rawColumn, hashColumn := signupGrantRiskClaimSubjectColumns(filter.SubjectType); rawColumn != "" && hashColumn != "" {
+			query := strings.TrimSpace(filter.SubjectQuery)
+			args = append(args, query, "%"+query+"%")
+			exactIndex := strconv.Itoa(len(args) - 1)
+			likeIndex := strconv.Itoa(len(args))
+			clauses = append(clauses, "("+hashColumn+" = $"+exactIndex+" OR "+rawColumn+" ILIKE $"+likeIndex+")")
+		}
+	}
+	if strings.TrimSpace(filter.Reason) != "" {
+		args = append(args, "%"+strings.TrimSpace(filter.Reason)+"%")
+		clauses = append(clauses, "reason ILIKE $"+strconv.Itoa(len(args)))
+	}
+	where := ""
+	if len(clauses) > 0 {
+		where = "WHERE " + strings.Join(clauses, " AND ")
+	}
+	var total int64
+	if err := scanSingleRow(ctx, r.sql, "SELECT COUNT(*) FROM signup_grant_claims "+where, args, &total); err != nil {
+		return nil, 0, err
+	}
+	queryArgs := append(args, limit, offset)
+	rows, err := r.sql.QueryContext(ctx, `
+		SELECT id, user_id, email, email_domain, ip_address,
+		       email_hash, email_domain_hash, ip_hash, user_agent_hash,
+		       signup_source, provider_type, provider_subject, provider_subject_hash, decision, reason,
+		       grant_balance, created_at, updated_at
+		FROM signup_grant_claims
+		`+where+`
+		ORDER BY created_at DESC
+		LIMIT $`+strconv.Itoa(len(args)+1)+` OFFSET $`+strconv.Itoa(len(args)+2),
+		queryArgs...,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+	records := make([]service.SignupGrantRiskClaimRecord, 0)
+	for rows.Next() {
+		var rec service.SignupGrantRiskClaimRecord
+		var userID sql.NullInt64
+		if err := rows.Scan(
+			&rec.ID, &userID, &rec.Email, &rec.EmailDomain, &rec.IPAddress,
+			&rec.EmailHash, &rec.EmailDomainHash, &rec.IPHash, &rec.UserAgentHash,
+			&rec.SignupSource, &rec.ProviderType, &rec.ProviderSubject, &rec.ProviderSubjectHash, &rec.Decision, &rec.Reason,
+			&rec.GrantBalance, &rec.CreatedAt, &rec.UpdatedAt,
+		); err != nil {
+			return nil, 0, err
+		}
+		if userID.Valid {
+			rec.UserID = &userID.Int64
+		}
+		records = append(records, rec)
+	}
+	return records, total, rows.Err()
+}
+
+func signupGrantRiskClaimSubjectColumns(subjectType string) (string, string) {
+	switch strings.TrimSpace(strings.ToLower(subjectType)) {
+	case "email":
+		return "email", "email_hash"
+	case "email_domain":
+		return "email_domain", "email_domain_hash"
+	case "ip":
+		return "ip_address", "ip_hash"
+	case "oauth_identity":
+		return "provider_subject", "provider_subject_hash"
+	case "device":
+		return "user_agent_hash", "user_agent_hash"
+	default:
+		return "", ""
+	}
+}
+
+func (r *userRepository) GetSignupGrantRiskUserSummary(ctx context.Context, userID int64) (*service.SignupGrantRiskUserSummary, error) {
+	if r == nil || r.sql == nil {
+		return nil, service.ErrServiceUnavailable
+	}
+	summary := &service.SignupGrantRiskUserSummary{UserID: userID}
+	var createdAt time.Time
+	var updatedAt time.Time
+	err := scanSingleRow(ctx, r.sql, `
+		SELECT decision, reason, grant_balance, created_at, updated_at
+		FROM signup_grant_claims
+		WHERE user_id = $1
+		ORDER BY created_at DESC
+		LIMIT 1
+	`, []any{userID}, &summary.Decision, &summary.Reason, &summary.GrantBalance, &createdAt, &updatedAt)
+	if errors.Is(err, sql.ErrNoRows) {
+		return summary, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	summary.HasClaim = true
+	summary.CreatedAt = &createdAt
+	summary.UpdatedAt = &updatedAt
+	return summary, nil
+}
+
+func (r *userRepository) UpsertSignupGrantRiskOverride(ctx context.Context, input service.SignupGrantRiskOverrideInput) error {
+	if r == nil || r.sql == nil {
+		return service.ErrServiceUnavailable
+	}
+	exec := txAwareSQLExecutor(ctx, r.sql, r.client)
+	_, err := exec.ExecContext(ctx, `
+		INSERT INTO signup_grant_risk_overrides (subject_type, subject_value, subject_hash, action, reason, created_by, updated_at)
+		VALUES ($1, $2, $3, $4, $5, NULLIF($6, 0), NOW())
+		ON CONFLICT (subject_type, subject_hash)
+		DO UPDATE SET action = EXCLUDED.action,
+		              subject_value = EXCLUDED.subject_value,
+		              reason = EXCLUDED.reason,
+		              created_by = EXCLUDED.created_by,
+		              updated_at = NOW()
+	`, input.SubjectType, input.SubjectValue, input.Subject, input.Action, input.Reason, input.CreatedBy)
+	return err
+}
+
+func (r *userRepository) DeleteSignupGrantRiskOverride(ctx context.Context, id int64, adminID int64) error {
+	if r == nil || r.sql == nil {
+		return service.ErrServiceUnavailable
+	}
+	exec := txAwareSQLExecutor(ctx, r.sql, r.client)
+	var rec service.SignupGrantRiskOverrideRecord
+	var createdBy sql.NullInt64
+	var expiresAt sql.NullTime
+	if err := scanSingleRow(ctx, exec, `
+		SELECT id, subject_type, subject_value, subject_hash, action, reason, created_by, expires_at, created_at, updated_at
+		FROM signup_grant_risk_overrides
+		WHERE id = $1
+	`, []any{id}, &rec.ID, &rec.SubjectType, &rec.SubjectValue, &rec.SubjectHash, &rec.Action, &rec.Reason, &createdBy, &expiresAt, &rec.CreatedAt, &rec.UpdatedAt); err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return infraerrors.NotFound("SIGNUP_GRANT_RISK_OVERRIDE_NOT_FOUND", "signup grant risk override not found")
+		}
+		return err
+	}
+	if createdBy.Valid {
+		rec.CreatedBy = &createdBy.Int64
+	}
+	if expiresAt.Valid {
+		rec.ExpiresAt = &expiresAt.Time
+	}
+	res, err := exec.ExecContext(ctx, `DELETE FROM signup_grant_risk_overrides WHERE id = $1`, id)
+	if err != nil {
+		return err
+	}
+	affected, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return infraerrors.NotFound("SIGNUP_GRANT_RISK_OVERRIDE_NOT_FOUND", "signup grant risk override not found")
+	}
+	var adminIDPtr *int64
+	if adminID > 0 {
+		adminIDPtr = &adminID
+	}
+	if err := r.CreateSignupGrantAdminAuditLog(ctx, service.SignupGrantAdminAuditLog{
+		Operation:    "risk_override_delete",
+		SubjectType:  rec.SubjectType,
+		SubjectValue: rec.SubjectValue,
+		SubjectHash:  rec.SubjectHash,
+		Action:       rec.Action,
+		Reason:       rec.Reason,
+		AdminID:      adminIDPtr,
+		Metadata: map[string]any{
+			"override_id": id,
+		},
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *userRepository) ListSignupGrantRiskOverrides(ctx context.Context, limit, offset int, filter service.SignupGrantRiskOverrideFilter) ([]service.SignupGrantRiskOverrideRecord, int64, error) {
+	if r == nil || r.sql == nil {
+		return nil, 0, service.ErrServiceUnavailable
+	}
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	clauses := make([]string, 0, 3)
+	args := make([]any, 0, 3)
+	if strings.TrimSpace(filter.SubjectType) != "" {
+		args = append(args, strings.TrimSpace(filter.SubjectType))
+		clauses = append(clauses, "subject_type = $"+strconv.Itoa(len(args)))
+	}
+	if strings.TrimSpace(filter.Action) != "" {
+		args = append(args, strings.TrimSpace(filter.Action))
+		clauses = append(clauses, "action = $"+strconv.Itoa(len(args)))
+	}
+	if strings.TrimSpace(filter.SubjectQuery) != "" {
+		query := strings.TrimSpace(filter.SubjectQuery)
+		args = append(args, query, "%"+query+"%")
+		exactIndex := strconv.Itoa(len(args) - 1)
+		likeIndex := strconv.Itoa(len(args))
+		clauses = append(clauses, "(subject_hash = $"+exactIndex+" OR subject_value ILIKE $"+likeIndex+")")
+	}
+	where := ""
+	if len(clauses) > 0 {
+		where = "WHERE " + strings.Join(clauses, " AND ")
+	}
+	var total int64
+	if err := scanSingleRow(ctx, r.sql, "SELECT COUNT(*) FROM signup_grant_risk_overrides "+where, args, &total); err != nil {
+		return nil, 0, err
+	}
+	queryArgs := append(args, limit, offset)
+	rows, err := r.sql.QueryContext(ctx, `
+		SELECT id, subject_type, subject_value, subject_hash, action, reason, created_by, expires_at, created_at, updated_at
+		FROM signup_grant_risk_overrides
+		`+where+`
+		ORDER BY updated_at DESC
+		LIMIT $`+strconv.Itoa(len(args)+1)+` OFFSET $`+strconv.Itoa(len(args)+2),
+		queryArgs...,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+	records := make([]service.SignupGrantRiskOverrideRecord, 0)
+	for rows.Next() {
+		var rec service.SignupGrantRiskOverrideRecord
+		var createdBy sql.NullInt64
+		var expiresAt sql.NullTime
+		if err := rows.Scan(
+			&rec.ID, &rec.SubjectType, &rec.SubjectValue, &rec.SubjectHash, &rec.Action, &rec.Reason,
+			&createdBy, &expiresAt, &rec.CreatedAt, &rec.UpdatedAt,
+		); err != nil {
+			return nil, 0, err
+		}
+		if createdBy.Valid {
+			rec.CreatedBy = &createdBy.Int64
+		}
+		if expiresAt.Valid {
+			rec.ExpiresAt = &expiresAt.Time
+		}
+		records = append(records, rec)
+	}
+	return records, total, rows.Err()
+}
+
+func (r *userRepository) CreateSignupGrantAdminAuditLog(ctx context.Context, input service.SignupGrantAdminAuditLog) error {
+	if r == nil || r.sql == nil {
+		return service.ErrServiceUnavailable
+	}
+	exec := txAwareSQLExecutor(ctx, r.sql, r.client)
+	var metadata []byte
+	var err error
+	if input.Metadata != nil {
+		metadata, err = json.Marshal(input.Metadata)
+		if err != nil {
+			return err
+		}
+	} else {
+		metadata = []byte(`{}`)
+	}
+	var targetUserID any
+	if input.TargetUserID != nil && *input.TargetUserID > 0 {
+		targetUserID = *input.TargetUserID
+	}
+	var adminID any
+	if input.AdminID != nil && *input.AdminID > 0 {
+		adminID = *input.AdminID
+	}
+	_, err = exec.ExecContext(ctx, `
+		INSERT INTO signup_grant_admin_audit_logs
+			(operation, target_user_id, subject_type, subject_value, subject_hash, action, amount, reason, admin_id, metadata)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10::jsonb)
+	`, strings.TrimSpace(input.Operation), targetUserID, strings.TrimSpace(input.SubjectType), strings.TrimSpace(input.SubjectValue), strings.TrimSpace(input.SubjectHash),
+		strings.TrimSpace(input.Action), input.Amount, strings.TrimSpace(input.Reason), adminID, string(metadata))
+	return err
+}
+
+func (r *userRepository) ListSignupGrantAdminAuditLogs(ctx context.Context, limit, offset int, filter service.SignupGrantAdminAuditLogFilter) ([]service.SignupGrantAdminAuditLog, int64, error) {
+	if r == nil || r.sql == nil {
+		return nil, 0, service.ErrServiceUnavailable
+	}
+	if limit <= 0 || limit > 200 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	clauses := make([]string, 0, 3)
+	args := make([]any, 0, 3)
+	if strings.TrimSpace(filter.Operation) != "" {
+		args = append(args, strings.TrimSpace(filter.Operation))
+		clauses = append(clauses, "operation = $"+strconv.Itoa(len(args)))
+	}
+	if filter.AdminID > 0 {
+		args = append(args, filter.AdminID)
+		clauses = append(clauses, "admin_id = $"+strconv.Itoa(len(args)))
+	}
+	if filter.TargetUserID > 0 {
+		args = append(args, filter.TargetUserID)
+		clauses = append(clauses, "target_user_id = $"+strconv.Itoa(len(args)))
+	}
+	where := ""
+	if len(clauses) > 0 {
+		where = "WHERE " + strings.Join(clauses, " AND ")
+	}
+	var total int64
+	if err := scanSingleRow(ctx, r.sql, "SELECT COUNT(*) FROM signup_grant_admin_audit_logs "+where, args, &total); err != nil {
+		return nil, 0, err
+	}
+	queryArgs := append(args, limit, offset)
+	rows, err := r.sql.QueryContext(ctx, `
+		SELECT id, operation, target_user_id, subject_type, subject_value, subject_hash, action, amount, reason, admin_id, metadata, created_at
+		FROM signup_grant_admin_audit_logs
+		`+where+`
+		ORDER BY created_at DESC
+		LIMIT $`+strconv.Itoa(len(args)+1)+` OFFSET $`+strconv.Itoa(len(args)+2),
+		queryArgs...,
+	)
+	if err != nil {
+		return nil, 0, err
+	}
+	defer func() { _ = rows.Close() }()
+	records := make([]service.SignupGrantAdminAuditLog, 0)
+	for rows.Next() {
+		var rec service.SignupGrantAdminAuditLog
+		var targetUserID sql.NullInt64
+		var adminID sql.NullInt64
+		var metadataRaw []byte
+		if err := rows.Scan(
+			&rec.ID, &rec.Operation, &targetUserID, &rec.SubjectType, &rec.SubjectValue, &rec.SubjectHash,
+			&rec.Action, &rec.Amount, &rec.Reason, &adminID, &metadataRaw, &rec.CreatedAt,
+		); err != nil {
+			return nil, 0, err
+		}
+		if targetUserID.Valid {
+			rec.TargetUserID = &targetUserID.Int64
+		}
+		if adminID.Valid {
+			rec.AdminID = &adminID.Int64
+		}
+		if len(metadataRaw) > 0 {
+			_ = json.Unmarshal(metadataRaw, &rec.Metadata)
+		}
+		records = append(records, rec)
+	}
+	return records, total, rows.Err()
+}
+
+func (r *userRepository) hydrateUserBalanceBuckets(ctx context.Context, user *service.User) error {
+	if user == nil {
+		return nil
+	}
+	users := map[int64]*service.User{user.ID: user}
+	return r.hydrateUserBalanceBucketsMap(ctx, users)
+}
+
+func (r *userRepository) hydrateUserBalanceBucketsMap(ctx context.Context, users map[int64]*service.User) error {
+	if r == nil || r.sql == nil || len(users) == 0 {
+		return nil
+	}
+	for id, user := range users {
+		var paidBalance, giftBalance float64
+		if err := scanSingleRow(ctx, r.sql, `
+			SELECT paid_balance, gift_balance
+			FROM users
+			WHERE id = $1
+		`, []any{id}, &paidBalance, &giftBalance); err != nil {
+			return err
+		}
+		user.PaidBalance = paidBalance
+		user.GiftBalance = giftBalance
 	}
 	return nil
 }
@@ -843,29 +1362,10 @@ func (r *userRepository) UpdateBalance(ctx context.Context, id int64, amount flo
 // 透支策略：允许余额变为负数，确保当前请求能够完成
 // 中间件会阻止余额 <= 0 的用户发起后续请求
 func (r *userRepository) DeductBalance(ctx context.Context, id int64, amount float64) error {
-	client := clientFromContext(ctx, r.client)
-	n, err := client.User.Update().
-		Where(dbuser.IDEQ(id), dbuser.BalanceGTE(amount)).
-		AddBalance(-amount).
-		Save(ctx)
-	if err != nil {
-		return err
-	}
-	if n > 0 {
+	if amount == 0 {
 		return nil
 	}
-
-	n, err = client.User.Update().
-		Where(dbuser.IDEQ(id)).
-		AddBalance(-amount).
-		Save(ctx)
-	if err != nil {
-		return err
-	}
-	if n == 0 {
-		return service.ErrUserNotFound
-	}
-	return nil
+	return r.UpdateBalance(ctx, id, -amount)
 }
 
 // DeductBalanceIfEnough deducts balance only when the current balance can cover the amount.
@@ -963,24 +1463,13 @@ func ensureNormalizedEmailAvailableWithClient(ctx context.Context, client *dbent
 		if match.ID == userID {
 			continue
 		}
-		if signupSource == "touch" {
-			if userSignupSourceOrDefault(match.SignupSource) == "touch" {
-				return service.ErrEmailExists
-			}
-			continue
-		}
-		if userSignupSourceOrDefault(match.SignupSource) != "touch" {
-			return service.ErrEmailExists
-		}
+		return service.ErrEmailExists
 	}
 	return nil
 }
 
 func userEmailLookupPredicate(email string) predicate.User {
-	return dbuser.And(
-		dbuser.SignupSourceNEQ("touch"),
-		userNormalizedEmailLookupPredicate(email),
-	)
+	return userNormalizedEmailLookupPredicate(email)
 }
 
 func userNormalizedEmailLookupPredicate(email string) predicate.User {
@@ -1151,7 +1640,7 @@ func userSignupSourceOrDefault(signupSource string) string {
 	switch strings.TrimSpace(strings.ToLower(signupSource)) {
 	case "", "email":
 		return "email"
-	case "linuxdo", "wechat", "oidc", "github", "google", "dingtalk", "touch":
+	case "github", "google":
 		return strings.TrimSpace(strings.ToLower(signupSource))
 	default:
 		return "email"

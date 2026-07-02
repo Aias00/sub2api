@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
+	entsql "entgo.io/ent/dialect/sql"
 	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/lib/pq"
 )
@@ -286,13 +286,20 @@ FROM cleared`, userID)
 			return service.ErrAffiliateQuotaEmpty
 		}
 
-		affected, err := txClient.User.Update().
-			Where(user.IDEQ(userID)).
-			AddBalance(transferred).
-			AddTotalRecharged(transferred).
-			Save(txCtx)
-		if err != nil {
+		var result entsql.Result
+		if err := txClient.Driver().Exec(txCtx, `
+			UPDATE users
+			SET balance = balance + $1,
+				paid_balance = paid_balance + $1,
+				total_recharged = total_recharged + $1,
+				updated_at = CURRENT_TIMESTAMP
+			WHERE id = $2 AND deleted_at IS NULL
+		`, []any{transferred, userID}, &result); err != nil {
 			return fmt.Errorf("credit user balance by affiliate quota: %w", err)
+		}
+		affected, err := result.RowsAffected()
+		if err != nil {
+			return fmt.Errorf("read credited user balance result: %w", err)
 		}
 		if affected == 0 {
 			return service.ErrUserNotFound

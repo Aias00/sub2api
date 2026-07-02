@@ -18,6 +18,8 @@ func UserFromServiceShallow(u *service.User) *User {
 		Username:                   u.Username,
 		Role:                       u.Role,
 		Balance:                    u.Balance,
+		PaidBalance:                u.PaidBalance,
+		GiftBalance:                u.GiftBalance,
 		Concurrency:                u.Concurrency,
 		Status:                     u.Status,
 		SignupSource:               u.SignupSource,

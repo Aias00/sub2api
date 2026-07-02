@@ -14,6 +14,8 @@ type User struct {
 	Username      string     `json:"username"`
 	Role          string     `json:"role"`
 	Balance       float64    `json:"balance"`
+	PaidBalance   float64    `json:"paid_balance"`
+	GiftBalance   float64    `json:"gift_balance"`
 	Concurrency   int        `json:"concurrency"`
 	Status        string     `json:"status"`
 	SignupSource  string     `json:"signup_source,omitempty"`

@@ -19,6 +19,8 @@ type User struct {
 	PasswordHash   string
 	Role           string
 	Balance        float64
+	PaidBalance    float64
+	GiftBalance    float64
 	Concurrency    int
 	Status         string
 	AllowedGroups  []int64

@@ -651,7 +651,7 @@ type GatewayService struct {
 	tlsFPProfileService   *TLSFingerprintProfileService
 	balanceNotifyService  *BalanceNotifyService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
-	ledgerService        *UserBalanceLedgerService
+	ledgerService         *UserBalanceLedgerService
 }
 
 // NewGatewayService creates a new GatewayService
@@ -720,7 +720,7 @@ func NewGatewayService(
 		resolver:              resolver,
 		balanceNotifyService:  balanceNotifyService,
 		userPlatformQuotaRepo: userPlatformQuotaRepo,
-		ledgerService:        ledgerService,
+		ledgerService:         ledgerService,
 	}
 	svc.userGroupRateResolver = newUserGroupRateResolver(
 		userGroupRateRepo,
@@ -9057,6 +9057,9 @@ func buildUsageBillingCommand(requestID string, usageLog *UsageLog, p *postUsage
 		cmd.CacheCreationTokens = usageLog.CacheCreationTokens
 		cmd.CacheReadTokens = usageLog.CacheReadTokens
 		cmd.ImageCount = usageLog.ImageCount
+		if usageLog.ImageSize != nil {
+			cmd.ImageSize = *usageLog.ImageSize
+		}
 		if usageLog.ServiceTier != nil {
 			cmd.ServiceTier = *usageLog.ServiceTier
 		}

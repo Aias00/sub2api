@@ -32,6 +32,7 @@ type UsageBillingCommand struct {
 	CacheCreationTokens int
 	CacheReadTokens     int
 	ImageCount          int
+	ImageSize           string
 	MediaType           string
 
 	BalanceCost         float64
@@ -56,7 +57,7 @@ func buildUsageBillingFingerprint(c *UsageBillingCommand) string {
 		return ""
 	}
 	raw := fmt.Sprintf(
-		"%d|%d|%d|%s|%s|%s|%s|%d|%d|%d|%d|%d|%d|%s|%d|%0.10f|%0.10f|%0.10f|%0.10f|%0.10f",
+		"%d|%d|%d|%s|%s|%s|%s|%d|%d|%d|%d|%d|%d|%s|%s|%d|%0.10f|%0.10f|%0.10f|%0.10f|%0.10f",
 		c.UserID,
 		c.AccountID,
 		c.APIKeyID,
@@ -70,6 +71,7 @@ func buildUsageBillingFingerprint(c *UsageBillingCommand) string {
 		c.CacheCreationTokens,
 		c.CacheReadTokens,
 		c.ImageCount,
+		strings.TrimSpace(c.ImageSize),
 		strings.TrimSpace(c.MediaType),
 		valueOrZero(c.SubscriptionID),
 		c.BalanceCost,
@@ -115,7 +117,7 @@ type UsageBillingApplyResult struct {
 	Applied              bool
 	APIKeyQuotaExhausted bool
 	NewBalance           *float64           // post-deduction balance (nil = no balance deduction)
-	BalanceOverdrafted   bool               // true when the sufficient-balance guard missed and debt was still recorded
+	BalanceOverdrafted   bool               // true when the relevant balance guard rejected the charge
 	QuotaState           *AccountQuotaState // post-increment quota state (nil = no quota increment)
 }
 

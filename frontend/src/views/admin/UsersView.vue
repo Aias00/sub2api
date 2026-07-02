@@ -253,6 +253,164 @@
 
       <!-- Users Table -->
       <template #table>
+        <div class="mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800">
+          <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.users.signupRisk.title') }}</h3>
+              <p class="mt-1 text-xs text-gray-500 dark:text-dark-400">
+                {{ t('admin.users.signupRisk.description') }}
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <select v-model="signupRiskDecision" class="input h-9 w-28 text-sm" @change="loadSignupRiskClaims">
+                <option value="">{{ t('admin.users.signupRisk.all') }}</option>
+                <option value="allowed">{{ t('admin.users.signupRisk.allowed') }}</option>
+                <option value="blocked">{{ t('admin.users.signupRisk.blocked') }}</option>
+              </select>
+              <button class="btn btn-secondary btn-sm" :disabled="signupRiskLoading" @click="loadSignupRiskClaims">
+                <Icon name="refresh" size="sm" :class="signupRiskLoading ? 'animate-spin' : ''" />
+                {{ t('common.refresh') }}
+              </button>
+            </div>
+          </div>
+          <div class="grid gap-4 lg:grid-cols-[1.3fr_1fr]">
+            <div class="space-y-3">
+              <form class="grid gap-2 rounded-lg border border-gray-100 p-3 dark:border-dark-700 md:grid-cols-[100px_140px_1fr_1fr_auto_auto]" @submit.prevent="loadSignupRiskClaims">
+                <input v-model.trim="signupRiskFilters.user_id" class="input h-9 text-sm" :placeholder="t('admin.users.signupRisk.userId')" />
+                <select v-model="signupRiskFilters.subject_type" class="input h-9 text-sm">
+                  <option value="">{{ t('admin.users.signupRisk.hashType') }}</option>
+                  <option value="email">{{ t('admin.users.signupRisk.email') }}</option>
+                  <option value="email_domain">{{ t('admin.users.signupRisk.emailDomain') }}</option>
+                  <option value="ip">IP</option>
+                  <option value="oauth_identity">OAuth Identity</option>
+                  <option value="device">{{ t('admin.users.signupRisk.device') }}</option>
+                </select>
+                <input v-model.trim="signupRiskFilters.subject" class="input h-9 text-sm" :placeholder="t('admin.users.signupRisk.subjectSearch')" />
+                <input v-model.trim="signupRiskFilters.reason" class="input h-9 text-sm" :placeholder="t('admin.users.signupRisk.reason')" />
+                <button class="btn btn-secondary btn-sm justify-center" :disabled="signupRiskLoading">{{ t('admin.users.signupRisk.search') }}</button>
+                <button type="button" class="btn btn-ghost btn-sm justify-center" @click="resetSignupRiskFilters">{{ t('common.reset') }}</button>
+              </form>
+              <div class="overflow-x-auto rounded-lg border border-gray-100 dark:border-dark-700">
+                <div class="grid min-w-[760px] grid-cols-[90px_110px_1fr_120px_140px] bg-gray-50 px-3 py-2 text-xs font-medium text-gray-500 dark:bg-dark-700/60 dark:text-dark-400">
+                  <span>{{ t('admin.users.signupRisk.status') }}</span>
+                  <span>{{ t('admin.users.signupRisk.userId') }}</span>
+                  <span>{{ t('admin.users.signupRisk.reason') }} / Hash</span>
+                  <span>{{ t('admin.users.signupRisk.grant') }}</span>
+                  <span>{{ t('admin.users.signupRisk.time') }}</span>
+                </div>
+                <div v-if="signupRiskClaims.length === 0" class="px-3 py-6 text-center text-sm text-gray-400">
+                  {{ t('admin.users.signupRisk.empty') }}
+                </div>
+                <div
+                  v-for="claim in signupRiskClaims"
+                  :key="claim.id"
+                  class="grid min-w-[760px] grid-cols-[90px_110px_1fr_120px_140px] border-t border-gray-100 px-3 py-2 text-sm dark:border-dark-700"
+                >
+                  <span :class="claim.decision === 'allowed' ? 'text-emerald-600' : 'text-red-600'">
+                    {{ claim.decision === 'allowed' ? t('admin.users.signupRisk.allowed') : t('admin.users.signupRisk.blocked') }}
+                  </span>
+                  <span class="text-gray-600 dark:text-dark-300">{{ claim.user_id || '-' }}</span>
+                  <span class="min-w-0">
+                    <span class="block truncate text-gray-700 dark:text-dark-200" :title="claim.reason">
+                      {{ claim.reason || '-' }}
+                    </span>
+                    <span class="mt-1 block truncate text-xs text-gray-500" :title="claimRawSubject(claim)">
+                      {{ claimRawSubject(claim) || '-' }}
+                    </span>
+                    <span class="mt-1 block truncate font-mono text-[11px] text-gray-400" :title="claimHashSubject(claim)">
+                      {{ claimHashSubject(claim) || '-' }}
+                    </span>
+                  </span>
+                  <span class="text-gray-600 dark:text-dark-300">${{ Number(claim.grant_balance || 0).toFixed(2) }}</span>
+                  <span class="truncate text-xs text-gray-500 dark:text-dark-400">{{ formatDateTime(claim.created_at) }}</span>
+                </div>
+              </div>
+            </div>
+            <div class="space-y-3">
+              <form class="grid gap-3 rounded-lg border border-gray-100 p-3 dark:border-dark-700" @submit.prevent="saveSignupRiskOverride">
+                <div class="grid gap-3 sm:grid-cols-2">
+                  <select v-model="signupRiskOverride.subject_type" class="input h-10 text-sm">
+                    <option value="email">{{ t('admin.users.signupRisk.email') }}</option>
+                    <option value="email_domain">{{ t('admin.users.signupRisk.emailDomain') }}</option>
+                    <option value="ip">IP</option>
+                    <option value="oauth_identity">OAuth Identity</option>
+                    <option value="device">{{ t('admin.users.signupRisk.device') }}</option>
+                  </select>
+                  <select v-model="signupRiskOverride.action" class="input h-10 text-sm">
+                    <option value="allow">{{ t('admin.users.signupRisk.allowlist') }}</option>
+                    <option value="block">{{ t('admin.users.signupRisk.blocklist') }}</option>
+                  </select>
+                </div>
+                <input v-model.trim="signupRiskOverride.subject" class="input h-10 text-sm" :placeholder="t('admin.users.signupRisk.subjectPlaceholder')" />
+                <input v-model.trim="signupRiskOverride.reason" class="input h-10 text-sm" :placeholder="t('admin.users.signupRisk.reasonPlaceholder')" />
+                <button class="btn btn-primary btn-sm justify-center" :disabled="signupRiskOverrideSaving">
+                  {{ t('admin.users.signupRisk.saveRule') }}
+                </button>
+              </form>
+              <div class="rounded-lg border border-gray-100 dark:border-dark-700">
+                <div class="flex items-center justify-between border-b border-gray-100 px-3 py-2 dark:border-dark-700">
+                  <span class="text-sm font-medium text-gray-800 dark:text-dark-100">{{ t('admin.users.signupRisk.overrideRules') }}</span>
+                  <button class="btn btn-ghost btn-xs" :disabled="signupRiskOverridesLoading" @click="loadSignupRiskOverrides">{{ t('common.refresh') }}</button>
+                </div>
+                <div v-if="signupRiskOverrides.length === 0" class="px-3 py-5 text-center text-sm text-gray-400">
+                  {{ t('admin.users.signupRisk.noOverrideRules') }}
+                </div>
+                <div v-for="item in signupRiskOverrides" :key="item.id" class="border-b border-gray-100 px-3 py-2 last:border-b-0 dark:border-dark-700">
+	                  <div class="flex items-center justify-between gap-3 text-sm">
+	                    <span class="font-medium" :class="item.action === 'allow' ? 'text-emerald-600' : 'text-red-600'">
+	                      {{ item.action === 'allow' ? t('admin.users.signupRisk.allowlist') : t('admin.users.signupRisk.blocklist') }}
+	                    </span>
+	                    <span class="flex items-center gap-2">
+	                      <span class="text-xs text-gray-400">{{ formatDateTime(item.updated_at) }}</span>
+	                      <button class="btn btn-ghost btn-xs text-red-600" @click="deleteSignupRiskOverride(item)">
+	                        {{ t('common.delete') }}
+	                      </button>
+	                    </span>
+	                  </div>
+                  <div class="mt-1 truncate text-xs text-gray-600 dark:text-dark-300" :title="item.subject_value">
+                    {{ item.subject_type }} · {{ item.subject_value || '-' }}
+                  </div>
+                  <div class="mt-1 truncate font-mono text-[11px] text-gray-400" :title="item.subject_hash">
+                    {{ item.subject_hash }}
+                  </div>
+                  <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-dark-400">
+                    <span>{{ t('admin.users.signupRisk.reason') }}: {{ item.reason || '-' }}</span>
+                    <span>{{ t('admin.users.signupRisk.createdBy') }}: {{ item.created_by || '-' }}</span>
+                  </div>
+                </div>
+              </div>
+              <div class="rounded-lg border border-gray-100 dark:border-dark-700">
+                <div class="flex items-center justify-between border-b border-gray-100 px-3 py-2 dark:border-dark-700">
+                  <span class="text-sm font-medium text-gray-800 dark:text-dark-100">{{ t('admin.users.signupRisk.auditLogs') }}</span>
+                  <button class="btn btn-ghost btn-xs" :disabled="signupRiskAuditLoading" @click="loadSignupRiskAuditLogs">{{ t('common.refresh') }}</button>
+                </div>
+                <div v-if="signupRiskAuditLogs.length === 0" class="px-3 py-5 text-center text-sm text-gray-400">
+                  {{ t('admin.users.signupRisk.noAuditLogs') }}
+                </div>
+                <div v-for="item in signupRiskAuditLogs" :key="item.id" class="border-b border-gray-100 px-3 py-2 last:border-b-0 dark:border-dark-700">
+                  <div class="flex items-center justify-between gap-3 text-sm">
+                    <span class="font-medium text-gray-800 dark:text-dark-100">{{ item.operation }}</span>
+                    <span class="text-xs text-gray-400">{{ formatDateTime(item.created_at) }}</span>
+                  </div>
+                  <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-dark-400">
+                    <span>{{ t('admin.users.signupRisk.createdBy') }}: {{ item.admin_id || '-' }}</span>
+                    <span>{{ t('admin.users.signupRisk.userId') }}: {{ item.target_user_id || '-' }}</span>
+                    <span v-if="item.amount">${{ Number(item.amount || 0).toFixed(2) }}</span>
+                  </div>
+                  <div class="mt-1 truncate text-xs text-gray-600 dark:text-dark-300" :title="item.subject_value">
+                    {{ item.subject_type || '-' }} · {{ item.subject_value || '-' }}
+                  </div>
+                  <div class="mt-1 truncate font-mono text-[11px] text-gray-400" :title="item.subject_hash">
+                    {{ item.subject_hash || '-' }}
+                  </div>
+                  <div class="mt-1 truncate text-xs text-gray-500 dark:text-dark-400" :title="item.reason">
+                    {{ t('admin.users.signupRisk.reason') }}: {{ item.reason || '-' }}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
         <DataTable
           :columns="columns"
           :data="sortedUsers"
@@ -407,7 +565,7 @@
           </template>
 
           <template #cell-balance="{ value, row }">
-            <div class="flex items-center gap-2">
+            <div class="flex items-start gap-2">
               <div class="group relative">
                 <button
                   class="font-medium text-gray-900 underline decoration-dashed decoration-gray-300 underline-offset-4 transition-colors hover:text-primary-600 dark:text-white dark:decoration-dark-500 dark:hover:text-primary-400"
@@ -415,6 +573,14 @@
                 >
                   ${{ value.toFixed(2) }}
                 </button>
+                <div class="mt-1 flex flex-wrap gap-1 text-[11px] leading-4 text-gray-500 dark:text-gray-400">
+                  <span class="rounded bg-gray-100 px-1.5 dark:bg-dark-700">
+                    paid ${{ Number(row.paid_balance || 0).toFixed(2) }}
+                  </span>
+                  <span class="rounded bg-sky-50 px-1.5 text-sky-700 dark:bg-sky-900/20 dark:text-sky-300">
+                    gift ${{ Number(row.gift_balance || 0).toFixed(2) }}
+                  </span>
+                </div>
                 <!-- Instant tooltip -->
                 <div class="pointer-events-none absolute bottom-full left-1/2 z-50 mb-1.5 -translate-x-1/2 whitespace-nowrap rounded bg-gray-900 px-2 py-1 text-xs text-white opacity-0 shadow-lg transition-opacity duration-75 group-hover:opacity-100 dark:bg-dark-600">
                   {{ t('admin.users.balanceHistoryTip') }}
@@ -715,6 +881,14 @@
                 {{ t('admin.users.balanceHistory') }}
               </button>
 
+              <button
+                @click="openSignupGrantDialog(user); closeActionMenu()"
+                class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
+              >
+                <Icon name="gift" size="sm" class="text-sky-500" :stroke-width="2" />
+                {{ t('admin.users.signupRisk.menuItem') }}
+              </button>
+
               <div class="my-1 border-t border-gray-100 dark:border-dark-700"></div>
 
               <!-- Delete (not for admin) -->
@@ -745,6 +919,56 @@
     <UserAllowedGroupsModal :show="showAllowedGroupsModal" :user="allowedGroupsUser" @close="closeAllowedGroupsModal" @success="loadUsers" />
     <UserBalanceModal :show="showBalanceModal" :user="balanceUser" :operation="balanceOperation" @close="closeBalanceModal" @success="loadUsers" />
     <UserBalanceHistoryModal :show="showBalanceHistoryModal" :user="balanceHistoryUser" @close="closeBalanceHistoryModal" @deposit="handleDepositFromHistory" @withdraw="handleWithdrawFromHistory" />
+    <BaseDialog
+      :show="showSignupGrantDialog"
+      :title="t('admin.users.signupRisk.dialogTitle')"
+      width="normal"
+      @close="closeSignupGrantDialog"
+    >
+      <div v-if="signupGrantUser" class="space-y-4">
+        <div class="rounded-lg border border-gray-100 p-3 dark:border-dark-700">
+          <div class="text-sm font-medium text-gray-900 dark:text-white">{{ signupGrantUser.email }}</div>
+          <div class="mt-2 grid grid-cols-3 gap-2 text-xs text-gray-500 dark:text-dark-400">
+            <div>
+              <div>{{ t('admin.users.signupRisk.totalBalance') }}</div>
+              <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">${{ signupGrantUser.balance.toFixed(2) }}</div>
+            </div>
+            <div>
+              <div>{{ t('admin.users.signupRisk.paidBalance') }}</div>
+              <div class="mt-1 text-sm font-semibold text-gray-900 dark:text-white">${{ Number(signupGrantUser.paid_balance || 0).toFixed(2) }}</div>
+            </div>
+            <div>
+              <div>{{ t('admin.users.signupRisk.giftBalance') }}</div>
+              <div class="mt-1 text-sm font-semibold text-sky-600">${{ Number(signupGrantUser.gift_balance || 0).toFixed(2) }}</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-lg bg-gray-50 p-3 text-sm dark:bg-dark-700/60">
+          <div class="mb-1 text-xs font-medium text-gray-500 dark:text-dark-400">{{ t('admin.users.signupRisk.summaryTitle') }}</div>
+          <div v-if="signupGrantSummaryLoading" class="text-gray-500">{{ t('common.loading') }}</div>
+          <template v-else-if="signupGrantSummary?.has_claim">
+            <div class="font-medium" :class="signupGrantSummary.decision === 'allowed' ? 'text-emerald-600' : 'text-red-600'">
+              {{ signupGrantSummary.decision === 'allowed' ? t('admin.users.signupRisk.summaryAllowed') : t('admin.users.signupRisk.summaryBlocked') }}
+            </div>
+            <div class="mt-1 text-gray-600 dark:text-dark-300">{{ t('admin.users.signupRisk.reason') }}：{{ signupGrantSummary.reason || '-' }}</div>
+            <div class="mt-1 text-gray-600 dark:text-dark-300">{{ t('admin.users.signupRisk.grant') }}：${{ Number(signupGrantSummary.grant_balance || 0).toFixed(2) }}</div>
+            <div class="mt-1 text-xs text-gray-400">{{ signupGrantSummary.created_at ? formatDateTime(signupGrantSummary.created_at) : '-' }}</div>
+          </template>
+          <div v-else class="text-gray-500">{{ t('admin.users.signupRisk.noSummary') }}</div>
+        </div>
+
+        <form class="space-y-3" @submit.prevent="submitManualSignupGrant">
+          <div class="text-sm font-medium text-gray-900 dark:text-white">{{ t('admin.users.signupRisk.manualGrantTitle') }}</div>
+          <input v-model.number="manualSignupGrant.amount" type="number" min="0.01" step="0.01" class="input" :placeholder="t('admin.users.signupRisk.manualAmountPlaceholder')" />
+          <input v-model.trim="manualSignupGrant.reason" class="input" :placeholder="t('admin.users.signupRisk.manualReasonPlaceholder')" />
+          <div class="flex justify-end gap-2">
+            <button type="button" class="btn btn-secondary" @click="closeSignupGrantDialog">{{ t('common.cancel') }}</button>
+            <button type="submit" class="btn btn-primary" :disabled="manualSignupGrantSaving">{{ t('admin.users.signupRisk.manualGrant') }}</button>
+          </div>
+        </form>
+      </div>
+    </BaseDialog>
     <GroupReplaceModal :show="showGroupReplaceModal" :user="groupReplaceUser" :old-group="groupReplaceOldGroup" :all-groups="allGroups" @close="closeGroupReplaceModal" @success="loadUsers" />
     <UserAttributesConfigModal :show="showAttributesModal" @close="handleAttributesModalClose" />
   </AppLayout>
@@ -762,13 +986,21 @@ const { t } = useI18n()
 import { adminAPI } from '@/api/admin'
 import type { AdminUser, AdminGroup, UserAttributeDefinition } from '@/types'
 import type { BatchUserUsageStats } from '@/api/admin/dashboard'
-import type { PlatformQuotaItem } from '@/api/admin/users'
+import type {
+  PlatformQuotaItem,
+  SignupGrantAdminAuditLog,
+  SignupGrantRiskClaimRecord,
+  SignupGrantRiskOverrideRecord,
+  SignupGrantRiskOverrideRequest,
+  SignupGrantRiskUserSummary
+} from '@/api/admin/users'
 import type { Column } from '@/components/common/types'
 import type { SelectOption } from '@/components/common/Select.vue'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import TablePageLayout from '@/components/layout/TablePageLayout.vue'
 import DataTable from '@/components/common/DataTable.vue'
 import Pagination from '@/components/common/Pagination.vue'
+import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
@@ -1288,6 +1520,35 @@ const editingUser = ref<AdminUser | null>(null)
 const deletingUser = ref<AdminUser | null>(null)
 const viewingUser = ref<AdminUser | null>(null)
 const platformQuotaUser = ref<AdminUser | null>(null)
+const signupRiskClaims = ref<SignupGrantRiskClaimRecord[]>([])
+const signupRiskDecision = ref('')
+const signupRiskLoading = ref(false)
+const signupRiskFilters = reactive({
+  user_id: '',
+  subject_type: '' as '' | 'email' | 'email_domain' | 'ip' | 'oauth_identity' | 'device',
+  subject: '',
+  reason: ''
+})
+const signupRiskOverrides = ref<SignupGrantRiskOverrideRecord[]>([])
+const signupRiskOverridesLoading = ref(false)
+const signupRiskAuditLogs = ref<SignupGrantAdminAuditLog[]>([])
+const signupRiskAuditLoading = ref(false)
+const signupRiskOverrideSaving = ref(false)
+const signupRiskOverride = reactive<SignupGrantRiskOverrideRequest>({
+  subject_type: 'email',
+  subject: '',
+  action: 'block',
+  reason: ''
+})
+const showSignupGrantDialog = ref(false)
+const signupGrantUser = ref<AdminUser | null>(null)
+const signupGrantSummary = ref<SignupGrantRiskUserSummary | null>(null)
+const signupGrantSummaryLoading = ref(false)
+const manualSignupGrantSaving = ref(false)
+const manualSignupGrant = reactive({
+  amount: 0,
+  reason: ''
+})
 
 const handlePlatformQuota = (user: AdminUser) => {
   platformQuotaUser.value = user
@@ -1297,6 +1558,174 @@ const handlePlatformQuota = (user: AdminUser) => {
 const closePlatformQuotaModal = () => {
   showPlatformQuotaModal.value = false
   platformQuotaUser.value = null
+}
+
+const loadSignupRiskClaims = async () => {
+  signupRiskLoading.value = true
+  try {
+    const response = await adminAPI.users.listSignupGrantRiskClaims(1, 12, {
+      decision: signupRiskDecision.value || undefined,
+      user_id: signupRiskFilters.user_id || undefined,
+      subject_type: signupRiskFilters.subject_type || undefined,
+      subject: signupRiskFilters.subject || undefined,
+      reason: signupRiskFilters.reason || undefined
+    })
+    signupRiskClaims.value = response.items
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.users.signupRisk.loadFailed'))
+  } finally {
+    signupRiskLoading.value = false
+  }
+}
+
+const claimRawSubject = (claim: SignupGrantRiskClaimRecord) => {
+  switch (signupRiskFilters.subject_type) {
+    case 'email':
+      return claim.email || ''
+    case 'email_domain':
+      return claim.email_domain || ''
+    case 'ip':
+      return claim.ip_address || ''
+    case 'oauth_identity':
+      return claim.provider_subject || ''
+    case 'device':
+      return ''
+    default:
+      return claim.email || claim.ip_address || claim.provider_subject || claim.email_domain || ''
+  }
+}
+
+const claimHashSubject = (claim: SignupGrantRiskClaimRecord) => {
+  switch (signupRiskFilters.subject_type) {
+    case 'email':
+      return claim.email_hash || ''
+    case 'email_domain':
+      return claim.email_domain_hash || ''
+    case 'ip':
+      return claim.ip_hash || ''
+    case 'oauth_identity':
+      return claim.provider_subject_hash || ''
+    case 'device':
+      return claim.device_hash || ''
+    default:
+      return claim.email_hash || claim.ip_hash || claim.provider_subject_hash || claim.email_domain_hash || claim.device_hash || ''
+  }
+}
+
+const resetSignupRiskFilters = () => {
+  signupRiskDecision.value = ''
+  signupRiskFilters.user_id = ''
+  signupRiskFilters.subject_type = ''
+  signupRiskFilters.subject = ''
+  signupRiskFilters.reason = ''
+  loadSignupRiskClaims()
+}
+
+const loadSignupRiskOverrides = async () => {
+  signupRiskOverridesLoading.value = true
+  try {
+    const response = await adminAPI.users.listSignupGrantRiskOverrides(1, 8)
+    signupRiskOverrides.value = response.items
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.users.signupRisk.overridesLoadFailed'))
+  } finally {
+    signupRiskOverridesLoading.value = false
+  }
+}
+
+const loadSignupRiskAuditLogs = async () => {
+  signupRiskAuditLoading.value = true
+  try {
+    const response = await adminAPI.users.listSignupGrantAdminAuditLogs(1, 8)
+    signupRiskAuditLogs.value = response.items
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.users.signupRisk.auditLogsLoadFailed'))
+  } finally {
+    signupRiskAuditLoading.value = false
+  }
+}
+
+const saveSignupRiskOverride = async () => {
+  if (!signupRiskOverride.subject.trim()) {
+    appStore.showError(t('admin.users.signupRisk.subjectRequired'))
+    return
+  }
+  signupRiskOverrideSaving.value = true
+  try {
+    await adminAPI.users.upsertSignupGrantRiskOverride({ ...signupRiskOverride })
+    appStore.showSuccess(t('admin.users.signupRisk.saveSuccess'))
+    signupRiskOverride.subject = ''
+    signupRiskOverride.reason = ''
+    await loadSignupRiskOverrides()
+    await loadSignupRiskAuditLogs()
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.users.signupRisk.saveFailed'))
+  } finally {
+    signupRiskOverrideSaving.value = false
+  }
+}
+
+const deleteSignupRiskOverride = async (item: SignupGrantRiskOverrideRecord) => {
+  const label = item.subject_value || item.subject_hash
+  if (!window.confirm(t('admin.users.signupRisk.deleteRuleConfirm', { subject: label }))) {
+    return
+  }
+  signupRiskOverridesLoading.value = true
+  try {
+    await adminAPI.users.deleteSignupGrantRiskOverride(item.id)
+    appStore.showSuccess(t('admin.users.signupRisk.deleteRuleSuccess'))
+    await loadSignupRiskOverrides()
+    await loadSignupRiskAuditLogs()
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.users.signupRisk.deleteRuleFailed'))
+  } finally {
+    signupRiskOverridesLoading.value = false
+  }
+}
+
+const openSignupGrantDialog = async (user: AdminUser) => {
+  signupGrantUser.value = user
+  signupGrantSummary.value = null
+  manualSignupGrant.amount = 0
+  manualSignupGrant.reason = ''
+  showSignupGrantDialog.value = true
+  signupGrantSummaryLoading.value = true
+  try {
+    signupGrantSummary.value = await adminAPI.users.getSignupGrantRiskSummary(user.id)
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.users.signupRisk.summaryLoadFailed'))
+  } finally {
+    signupGrantSummaryLoading.value = false
+  }
+}
+
+const closeSignupGrantDialog = () => {
+  showSignupGrantDialog.value = false
+  signupGrantUser.value = null
+  signupGrantSummary.value = null
+}
+
+const submitManualSignupGrant = async () => {
+  if (!signupGrantUser.value || manualSignupGrant.amount <= 0) {
+    appStore.showError(t('admin.users.signupRisk.invalidManualAmount'))
+    return
+  }
+  manualSignupGrantSaving.value = true
+  try {
+    const updated = await adminAPI.users.manualGrantSignupGiftBalance(
+      signupGrantUser.value.id,
+      manualSignupGrant.amount,
+      manualSignupGrant.reason
+    )
+    signupGrantUser.value = updated
+    appStore.showSuccess(t('admin.users.signupRisk.manualGrantSuccess'))
+    await loadUsers()
+    await loadSignupRiskAuditLogs()
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.users.signupRisk.manualGrantFailed'))
+  } finally {
+    manualSignupGrantSaving.value = false
+  }
 }
 let abortController: AbortController | null = null
 let secondaryDataSeq = 0
@@ -1790,6 +2219,9 @@ onMounted(async () => {
   loadSavedFilters()
   loadSavedColumns()
   loadUsers()
+  loadSignupRiskClaims()
+  loadSignupRiskOverrides()
+  loadSignupRiskAuditLogs()
   if (hasVisibleGroupsColumn.value || visibleFilters.has('group')) {
     loadAllGroups()
   }

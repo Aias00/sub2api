@@ -250,6 +250,8 @@ func TestAPIKeyService_SnapshotRoundTrip_PreservesMessagesDispatchModelConfig(t 
 			Status:      StatusActive,
 			Role:        RoleUser,
 			Balance:     10,
+			PaidBalance: 7,
+			GiftBalance: 3,
 			Concurrency: 3,
 		},
 		Group: &Group{
@@ -277,6 +279,8 @@ func TestAPIKeyService_SnapshotRoundTrip_PreservesMessagesDispatchModelConfig(t 
 
 	require.NotNil(t, roundTrip)
 	require.Equal(t, apiKey.Name, roundTrip.Name)
+	require.Equal(t, 7.0, roundTrip.User.PaidBalance)
+	require.Equal(t, 3.0, roundTrip.User.GiftBalance)
 	require.NotNil(t, roundTrip.Group)
 	require.Equal(t, apiKey.Group.MessagesDispatchModelConfig, roundTrip.Group.MessagesDispatchModelConfig)
 }

@@ -5,7 +5,9 @@
 -- Add billing columns to wechat_export_tasks
 ALTER TABLE wechat_export_tasks
     ADD COLUMN IF NOT EXISTS cost_estimate NUMERIC(20,8) NOT NULL DEFAULT 0,
-    ADD COLUMN IF NOT EXISTS balance_snapshot NUMERIC(20,8) NOT NULL DEFAULT 0;
+    ADD COLUMN IF NOT EXISTS balance_snapshot NUMERIC(20,8) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS reserved_paid_balance NUMERIC(20,8) NOT NULL DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS reserved_gift_balance NUMERIC(20,8) NOT NULL DEFAULT 0;
 
 -- Usage records for billing audit trail
 CREATE TABLE IF NOT EXISTS wechat_export_usage_records (
