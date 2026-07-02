@@ -53,31 +53,31 @@ func TestAdminServiceBindUserAuthIdentityCreatesCanonicalAndChannelBinding(t *te
 	}
 
 	result, err := svc.BindUserAuthIdentity(ctx, user.ID, AdminBindAuthIdentityInput{
-		ProviderType:    "wechat",
-		ProviderKey:     "wechat-main",
-		ProviderSubject: "union-123",
+		ProviderType:    "github",
+		ProviderKey:     "github",
+		ProviderSubject: "github-123",
 		Metadata:        map[string]any{"source": "admin-repair"},
 		Channel: &AdminBindAuthIdentityChannelInput{
-			Channel:        "open",
-			ChannelAppID:   "wx-open",
-			ChannelSubject: "openid-123",
+			Channel:        "oauth",
+			ChannelAppID:   "github",
+			ChannelSubject: "github-123",
 			Metadata:       map[string]any{"scene": "migration"},
 		},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, result)
 	require.Equal(t, user.ID, result.UserID)
-	require.Equal(t, "wechat", result.ProviderType)
-	require.Equal(t, "wechat-main", result.ProviderKey)
+	require.Equal(t, "github", result.ProviderType)
+	require.Equal(t, "github", result.ProviderKey)
 	require.NotNil(t, result.VerifiedAt)
 	require.NotNil(t, result.Channel)
-	require.Equal(t, "open", result.Channel.Channel)
+	require.Equal(t, "oauth", result.Channel.Channel)
 
 	identity, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("wechat"),
-			authidentity.ProviderKeyEQ("wechat-main"),
-			authidentity.ProviderSubjectEQ("union-123"),
+			authidentity.ProviderTypeEQ("github"),
+			authidentity.ProviderKeyEQ("github"),
+			authidentity.ProviderSubjectEQ("github-123"),
 		).
 		Only(ctx)
 	require.NoError(t, err)
@@ -87,11 +87,11 @@ func TestAdminServiceBindUserAuthIdentityCreatesCanonicalAndChannelBinding(t *te
 
 	channel, err := client.AuthIdentityChannel.Query().
 		Where(
-			authidentitychannel.ProviderTypeEQ("wechat"),
-			authidentitychannel.ProviderKeyEQ("wechat-main"),
-			authidentitychannel.ChannelEQ("open"),
-			authidentitychannel.ChannelAppIDEQ("wx-open"),
-			authidentitychannel.ChannelSubjectEQ("openid-123"),
+			authidentitychannel.ProviderTypeEQ("github"),
+			authidentitychannel.ProviderKeyEQ("github"),
+			authidentitychannel.ChannelEQ("oauth"),
+			authidentitychannel.ChannelAppIDEQ("github"),
+			authidentitychannel.ChannelSubjectEQ("github-123"),
 		).
 		Only(ctx)
 	require.NoError(t, err)
@@ -121,8 +121,8 @@ func TestAdminServiceBindUserAuthIdentityRejectsOtherOwner(t *testing.T) {
 
 	_, err = client.AuthIdentity.Create().
 		SetUserID(owner.ID).
-		SetProviderType("oidc").
-		SetProviderKey("https://issuer.example").
+		SetProviderType("google").
+		SetProviderKey("google").
 		SetProviderSubject("subject-1").
 		Save(ctx)
 	require.NoError(t, err)
@@ -133,8 +133,8 @@ func TestAdminServiceBindUserAuthIdentityRejectsOtherOwner(t *testing.T) {
 	}
 
 	_, err = svc.BindUserAuthIdentity(ctx, target.ID, AdminBindAuthIdentityInput{
-		ProviderType:    "oidc",
-		ProviderKey:     "https://issuer.example",
+		ProviderType:    "google",
+		ProviderKey:     "google",
 		ProviderSubject: "subject-1",
 	})
 	require.Error(t, err)
@@ -159,16 +159,16 @@ func TestAdminServiceBindUserAuthIdentityIsIdempotentForSameUser(t *testing.T) {
 	}
 
 	first, err := svc.BindUserAuthIdentity(ctx, user.ID, AdminBindAuthIdentityInput{
-		ProviderType:    "oidc",
-		ProviderKey:     "https://issuer.example",
+		ProviderType:    "github",
+		ProviderKey:     "github",
 		ProviderSubject: "subject-2",
 		Metadata:        map[string]any{"source": "first"},
 	})
 	require.NoError(t, err)
 
 	second, err := svc.BindUserAuthIdentity(ctx, user.ID, AdminBindAuthIdentityInput{
-		ProviderType:    "oidc",
-		ProviderKey:     "https://issuer.example",
+		ProviderType:    "github",
+		ProviderKey:     "github",
 		ProviderSubject: "subject-2",
 		Metadata:        map[string]any{"source": "second"},
 	})
@@ -178,8 +178,8 @@ func TestAdminServiceBindUserAuthIdentityIsIdempotentForSameUser(t *testing.T) {
 
 	identities, err := client.AuthIdentity.Query().
 		Where(
-			authidentity.ProviderTypeEQ("oidc"),
-			authidentity.ProviderKeyEQ("https://issuer.example"),
+			authidentity.ProviderTypeEQ("github"),
+			authidentity.ProviderKeyEQ("github"),
 			authidentity.ProviderSubjectEQ("subject-2"),
 		).
 		All(ctx)
@@ -188,7 +188,7 @@ func TestAdminServiceBindUserAuthIdentityIsIdempotentForSameUser(t *testing.T) {
 	require.Equal(t, "second", identities[0].Metadata["source"])
 }
 
-func TestAdminServiceBindUserAuthIdentityReusesLegacyWeChatAliasRecords(t *testing.T) {
+func TestAdminServiceBindUserAuthIdentityRejectsLegacyWeChatProvider(t *testing.T) {
 	client := newAdminServiceAuthIdentityBindingTestClient(t)
 	ctx := context.Background()
 
@@ -197,26 +197,6 @@ func TestAdminServiceBindUserAuthIdentityReusesLegacyWeChatAliasRecords(t *testi
 		SetPasswordHash("hash").
 		SetRole(RoleUser).
 		SetStatus(StatusActive).
-		Save(ctx)
-	require.NoError(t, err)
-
-	legacyIdentity, err := client.AuthIdentity.Create().
-		SetUserID(user.ID).
-		SetProviderType("wechat").
-		SetProviderKey("wechat").
-		SetProviderSubject("union-legacy-123").
-		SetMetadata(map[string]any{"source": "legacy"}).
-		Save(ctx)
-	require.NoError(t, err)
-
-	legacyChannel, err := client.AuthIdentityChannel.Create().
-		SetIdentityID(legacyIdentity.ID).
-		SetProviderType("wechat").
-		SetProviderKey("wechat").
-		SetChannel("open").
-		SetChannelAppID("wx-open").
-		SetChannelSubject("openid-legacy-123").
-		SetMetadata(map[string]any{"scene": "legacy"}).
 		Save(ctx)
 	require.NoError(t, err)
 
@@ -229,50 +209,10 @@ func TestAdminServiceBindUserAuthIdentityReusesLegacyWeChatAliasRecords(t *testi
 		ProviderType:    "wechat",
 		ProviderKey:     "wechat-main",
 		ProviderSubject: "union-legacy-123",
-		Metadata:        map[string]any{"source": "admin-repair"},
-		Channel: &AdminBindAuthIdentityChannelInput{
-			Channel:        "open",
-			ChannelAppID:   "wx-open",
-			ChannelSubject: "openid-legacy-123",
-			Metadata:       map[string]any{"scene": "admin-repair"},
-		},
 	})
-	require.NoError(t, err)
-	require.NotNil(t, result)
-	require.Equal(t, "wechat-main", result.ProviderKey)
-	require.NotNil(t, result.Channel)
-	require.Equal(t, "open", result.Channel.Channel)
-
-	identity, err := client.AuthIdentity.Get(ctx, legacyIdentity.ID)
-	require.NoError(t, err)
-	require.Equal(t, "wechat-main", identity.ProviderKey)
-	require.Equal(t, "admin-repair", identity.Metadata["source"])
-
-	channel, err := client.AuthIdentityChannel.Get(ctx, legacyChannel.ID)
-	require.NoError(t, err)
-	require.Equal(t, "wechat-main", channel.ProviderKey)
-	require.Equal(t, legacyIdentity.ID, channel.IdentityID)
-	require.Equal(t, "admin-repair", channel.Metadata["scene"])
-
-	identityCount, err := client.AuthIdentity.Query().
-		Where(
-			authidentity.ProviderTypeEQ("wechat"),
-			authidentity.ProviderSubjectEQ("union-legacy-123"),
-		).
-		Count(ctx)
-	require.NoError(t, err)
-	require.Equal(t, 1, identityCount)
-
-	channelCount, err := client.AuthIdentityChannel.Query().
-		Where(
-			authidentitychannel.ProviderTypeEQ("wechat"),
-			authidentitychannel.ChannelEQ("open"),
-			authidentitychannel.ChannelAppIDEQ("wx-open"),
-			authidentitychannel.ChannelSubjectEQ("openid-legacy-123"),
-		).
-		Count(ctx)
-	require.NoError(t, err)
-	require.Equal(t, 1, channelCount)
+	require.Error(t, err)
+	require.Nil(t, result)
+	require.Equal(t, "INVALID_INPUT", infraerrors.Reason(err))
 }
 
 func TestAdminServiceBindUserAuthIdentityRejectsInvalidProviderType(t *testing.T) {
@@ -293,8 +233,8 @@ func TestAdminServiceBindUserAuthIdentityRejectsInvalidProviderType(t *testing.T
 	}
 
 	_, err = svc.BindUserAuthIdentity(ctx, user.ID, AdminBindAuthIdentityInput{
-		ProviderType:    "github",
-		ProviderKey:     "github-main",
+		ProviderType:    "oidc",
+		ProviderKey:     "oidc-main",
 		ProviderSubject: "subject-3",
 	})
 	require.Error(t, err)

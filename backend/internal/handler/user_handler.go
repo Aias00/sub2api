@@ -95,10 +95,6 @@ type userProfileResponse struct {
 	AuthBindings      map[string]service.UserIdentitySummary `json:"auth_bindings"`
 	IdentityBindings  map[string]service.UserIdentitySummary `json:"identity_bindings"`
 	EmailBound        bool                                   `json:"email_bound"`
-	LinuxDoBound      bool                                   `json:"linuxdo_bound"`
-	OIDCBound         bool                                   `json:"oidc_bound"`
-	WeChatBound       bool                                   `json:"wechat_bound"`
-	DingTalkBound     bool                                   `json:"dingtalk_bound"`
 }
 
 type userProfileSourceContext struct {
@@ -272,11 +268,6 @@ func (h *UserHandler) TransferAffiliateQuota(c *gin.Context) {
 	})
 }
 
-type StartIdentityBindingRequest struct {
-	Provider   string `json:"provider" binding:"required"`
-	RedirectTo string `json:"redirect_to"`
-}
-
 type BindEmailIdentityRequest struct {
 	Email      string `json:"email" binding:"required,email"`
 	VerifyCode string `json:"verify_code" binding:"required"`
@@ -285,32 +276,6 @@ type BindEmailIdentityRequest struct {
 
 type SendEmailBindingCodeRequest struct {
 	Email string `json:"email" binding:"required,email"`
-}
-
-// StartIdentityBinding returns the backend authorize URL for starting a third-party identity bind flow.
-// POST /api/v1/user/auth-identities/bind/start
-func (h *UserHandler) StartIdentityBinding(c *gin.Context) {
-	if _, ok := middleware2.GetAuthSubjectFromContext(c); !ok {
-		response.Unauthorized(c, "User not authenticated")
-		return
-	}
-
-	var req StartIdentityBindingRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequestWithError(c, err)
-		return
-	}
-
-	result, err := h.userService.PrepareIdentityBindingStart(c.Request.Context(), service.StartUserIdentityBindingRequest{
-		Provider:   req.Provider,
-		RedirectTo: req.RedirectTo,
-	})
-	if err != nil {
-		response.ErrorFrom(c, err)
-		return
-	}
-
-	response.Success(c, result)
 }
 
 // BindEmailIdentity verifies and binds a local email identity for the current user.
@@ -597,20 +562,12 @@ func userProfileResponseFromService(user *service.User, identities service.UserI
 		AuthBindings:      bindings,
 		IdentityBindings:  bindings,
 		EmailBound:        identities.Email.Bound,
-		LinuxDoBound:      identities.LinuxDo.Bound,
-		OIDCBound:         identities.OIDC.Bound,
-		WeChatBound:       identities.WeChat.Bound,
-		DingTalkBound:     identities.DingTalk.Bound,
 	}
 }
 
 func userProfileBindingMap(identities service.UserIdentitySummarySet) map[string]service.UserIdentitySummary {
 	return map[string]service.UserIdentitySummary{
-		"email":    identities.Email,
-		"linuxdo":  identities.LinuxDo,
-		"oidc":     identities.OIDC,
-		"wechat":   identities.WeChat,
-		"dingtalk": identities.DingTalk,
+		"email": identities.Email,
 	}
 }
 
@@ -658,13 +615,7 @@ func inferUserProfileSources(user *service.User, identities service.UserIdentity
 }
 
 func thirdPartyIdentityProviders(identities service.UserIdentitySummarySet) []service.UserIdentitySummary {
-	out := make([]service.UserIdentitySummary, 0, 3)
-	for _, summary := range []service.UserIdentitySummary{identities.LinuxDo, identities.OIDC, identities.WeChat, identities.DingTalk} {
-		if summary.Bound {
-			out = append(out, summary)
-		}
-	}
-	return out
+	return nil
 }
 
 func buildUserProfileSourceContext(provider string) *userProfileSourceContext {

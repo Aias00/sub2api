@@ -405,7 +405,7 @@ func TestUpdateBalance_Success(t *testing.T) {
 	require.Equal(t, []int64{42}, cache.invalidatedUserIDs, "应对 userID=42 失效缓存")
 }
 
-func TestGetProfileIdentitySummaries_AllowsUnbindWhenAnotherLoginMethodRemains(t *testing.T) {
+func TestGetProfileIdentitySummaries_DoesNotExposeLegacyOAuthProviders(t *testing.T) {
 	repo := &mockUserRepo{
 		getByIDUser: &User{
 			ID:    7,
@@ -432,29 +432,26 @@ func TestGetProfileIdentitySummaries_AllowsUnbindWhenAnotherLoginMethodRemains(t
 	summaries, err := svc.GetProfileIdentitySummaries(context.Background(), 7, repo.getByIDUser)
 
 	require.NoError(t, err)
-	require.True(t, summaries.LinuxDo.Bound)
-	require.True(t, summaries.LinuxDo.CanUnbind)
-	require.Equal(t, "linuxdo-handle", summaries.LinuxDo.DisplayName)
-	require.NotEmpty(t, summaries.LinuxDo.SubjectHint)
+	require.True(t, summaries.Email.Bound)
 }
 
 func TestUnbindUserAuthProviderRejectsLastRemainingLoginMethod(t *testing.T) {
 	repo := &mockUserRepo{
 		getByIDUser: &User{
 			ID:    9,
-			Email: "only-user@linuxdo-connect.invalid",
+			Email: "only-user@reserved.invalid",
 		},
 		identities: []UserAuthIdentityRecord{
 			{
-				ProviderType:    "linuxdo",
-				ProviderKey:     "linuxdo",
-				ProviderSubject: "linuxdo-only-subject",
+				ProviderType:    "github",
+				ProviderKey:     "github",
+				ProviderSubject: "github-only-subject",
 			},
 		},
 	}
 	svc := NewUserService(repo, nil, nil, nil, nil, nil)
 
-	_, err := svc.UnbindUserAuthProvider(context.Background(), 9, "linuxdo")
+	_, err := svc.UnbindUserAuthProvider(context.Background(), 9, "github")
 
 	require.ErrorIs(t, err, ErrIdentityUnbindLastMethod)
 	require.Empty(t, repo.unboundProviders)
@@ -480,10 +477,10 @@ func TestGetProfileIdentitySummaries_DoesNotTreatOAuthOnlyCompatEmailAsAlternati
 	summaries, err := svc.GetProfileIdentitySummaries(context.Background(), 10, repo.getByIDUser)
 
 	require.NoError(t, err)
-	require.False(t, summaries.OIDC.CanUnbind)
+	require.False(t, summaries.Email.Bound)
 
 	_, err = svc.UnbindUserAuthProvider(context.Background(), 10, "oidc")
-	require.ErrorIs(t, err, ErrIdentityUnbindLastMethod)
+	require.ErrorIs(t, err, ErrIdentityProviderInvalid)
 	require.Empty(t, repo.unboundProviders)
 }
 
@@ -517,10 +514,9 @@ func TestGetProfileIdentitySummaries_DoesNotTreatCompatBackfilledEmailIdentityAs
 
 	require.NoError(t, err)
 	require.False(t, summaries.Email.Bound)
-	require.False(t, summaries.WeChat.CanUnbind)
 
 	_, err = svc.UnbindUserAuthProvider(context.Background(), 11, "wechat")
-	require.ErrorIs(t, err, ErrIdentityUnbindLastMethod)
+	require.ErrorIs(t, err, ErrIdentityProviderInvalid)
 	require.Empty(t, repo.unboundProviders)
 }
 
@@ -568,58 +564,28 @@ func TestUnbindUserAuthProviderRemovesProviderAndReturnsUpdatedProfile(t *testin
 				ProviderSubject: "alice@example.com",
 			},
 			{
-				ProviderType:    "linuxdo",
-				ProviderKey:     "linuxdo",
-				ProviderSubject: "linuxdo-subject-12",
+				ProviderType:    "google",
+				ProviderKey:     "google",
+				ProviderSubject: "google-subject-12",
 			},
 		},
 	}
 	invalidator := &mockAuthCacheInvalidator{}
 	svc := NewUserService(repo, nil, invalidator, nil, nil, nil)
 
-	user, err := svc.UnbindUserAuthProvider(context.Background(), 12, "linuxdo")
+	user, err := svc.UnbindUserAuthProvider(context.Background(), 12, "google")
 
 	require.NoError(t, err)
-	require.Equal(t, []string{"linuxdo"}, repo.unboundProviders)
+	require.Equal(t, []string{"google"}, repo.unboundProviders)
 	require.Equal(t, int64(12), user.ID)
 	require.Equal(t, []int64{12}, invalidator.invalidatedUserIDs)
 
 	summaries, err := svc.GetProfileIdentitySummaries(context.Background(), 12, user)
 	require.NoError(t, err)
-	require.False(t, summaries.LinuxDo.Bound)
-	require.True(t, summaries.LinuxDo.CanBind)
+	require.False(t, summaries.Email.CanUnbind)
 }
 
-func TestGetProfileIdentitySummaries_HidesBindActionWhenProviderExplicitlyDisabled(t *testing.T) {
-	repo := &mockUserRepo{
-		getByIDUser: &User{
-			ID:    15,
-			Email: "alice@example.com",
-		},
-		identities: []UserAuthIdentityRecord{
-			{
-				ProviderType:    "email",
-				ProviderKey:     "email",
-				ProviderSubject: "alice@example.com",
-			},
-		},
-	}
-	settingRepo := &mockUserSettingRepo{
-		values: map[string]string{
-			SettingKeyLinuxDoConnectEnabled: "false",
-		},
-	}
-	svc := NewUserService(repo, settingRepo, nil, nil, nil, nil)
-
-	summaries, err := svc.GetProfileIdentitySummaries(context.Background(), 15, repo.getByIDUser)
-
-	require.NoError(t, err)
-	require.False(t, summaries.LinuxDo.Bound)
-	require.False(t, summaries.LinuxDo.CanBind)
-	require.Empty(t, summaries.LinuxDo.BindStartPath)
-}
-
-func TestGetProfileIdentitySummaries_UsesBindStartRoute(t *testing.T) {
+func TestGetProfileIdentitySummaries_OnlyReturnsEmailBinding(t *testing.T) {
 	repo := &mockUserRepo{
 		getByIDUser: &User{
 			ID:    16,
@@ -638,21 +604,8 @@ func TestGetProfileIdentitySummaries_UsesBindStartRoute(t *testing.T) {
 	summaries, err := svc.GetProfileIdentitySummaries(context.Background(), 16, repo.getByIDUser)
 
 	require.NoError(t, err)
-	require.Equal(
-		t,
-		"/api/v1/auth/oauth/linuxdo/bind/start?intent=bind_current_user&redirect=%2Fsettings%2Fprofile",
-		summaries.LinuxDo.BindStartPath,
-	)
-	require.Equal(
-		t,
-		"/api/v1/auth/oauth/oidc/bind/start?intent=bind_current_user&redirect=%2Fsettings%2Fprofile",
-		summaries.OIDC.BindStartPath,
-	)
-	require.Equal(
-		t,
-		"/api/v1/auth/oauth/wechat/bind/start?intent=bind_current_user&redirect=%2Fsettings%2Fprofile",
-		summaries.WeChat.BindStartPath,
-	)
+	require.True(t, summaries.Email.Bound)
+	require.False(t, summaries.Email.CanBind)
 }
 
 func TestUpdateBalance_NilBillingCache_NoPanic(t *testing.T) {

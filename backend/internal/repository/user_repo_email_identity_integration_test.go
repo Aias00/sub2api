@@ -32,9 +32,9 @@ func (s *UserRepoSuite) TestCreate_CreatesEmailAuthIdentityForNormalEmail() {
 	s.Require().Equal(user.ID, identity.UserID)
 }
 
-func (s *UserRepoSuite) TestCreate_SkipsEmailAuthIdentityForSyntheticLinuxDoEmail() {
+func (s *UserRepoSuite) TestCreate_SkipsEmailAuthIdentityForInvalidReservedEmail() {
 	user := &service.User{
-		Email:        "linuxdo-legacy-user@linuxdo-connect.invalid",
+		Email:        "reserved-user@reserved.invalid",
 		PasswordHash: "test-password-hash",
 		Role:         service.RoleUser,
 		Status:       service.StatusActive,

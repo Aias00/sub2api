@@ -140,13 +140,6 @@
         >
           <ProfileIdentityBindingsSection
             :user="user"
-            :linuxdo-enabled="linuxdoEnabled"
-            :dingtalk-enabled="dingtalkEnabled"
-            :oidc-enabled="oidcEnabled"
-            :oidc-provider-name="oidcProviderName"
-            :wechat-enabled="wechatEnabled"
-            :wechat-open-enabled="wechatOpenEnabled"
-            :wechat-mp-enabled="wechatMpEnabled"
             :labels="labels"
             embedded
             compact
@@ -198,22 +191,8 @@ import type { User, UserAuthBindingStatus, UserAuthProvider, UserProfileSourceCo
 
 const props = withDefaults(defineProps<{
   user: User | null
-  linuxdoEnabled?: boolean
-  dingtalkEnabled?: boolean
-  oidcEnabled?: boolean
-  oidcProviderName?: string
-  wechatEnabled?: boolean
-  wechatOpenEnabled?: boolean
-  wechatMpEnabled?: boolean
   labels?: ProfileViewShellLabels
 }>(), {
-  linuxdoEnabled: false,
-  dingtalkEnabled: false,
-  oidcEnabled: false,
-  oidcProviderName: '',
-  wechatEnabled: false,
-  wechatOpenEnabled: undefined,
-  wechatMpEnabled: undefined,
   labels: () => ({}),
 })
 
@@ -276,13 +255,9 @@ const memberSinceLabel = computed(() => {
 })
 
 const providerLabels = computed<Record<UserAuthProvider, string>>(() => ({
-  email: resolveAuthBindingProviderLabel(props.labels, 'email', props.oidcProviderName),
-  linuxdo: resolveAuthBindingProviderLabel(props.labels, 'linuxdo', props.oidcProviderName),
-  dingtalk: resolveAuthBindingProviderLabel(props.labels, 'dingtalk', props.oidcProviderName),
-  oidc: resolveAuthBindingProviderLabel(props.labels, 'oidc', props.oidcProviderName),
-  wechat: resolveAuthBindingProviderLabel(props.labels, 'wechat', props.oidcProviderName),
-  github: resolveAuthBindingProviderLabel(props.labels, 'github', props.oidcProviderName),
-  google: resolveAuthBindingProviderLabel(props.labels, 'google', props.oidcProviderName),
+  email: resolveAuthBindingProviderLabel(props.labels, 'email'),
+  github: resolveAuthBindingProviderLabel(props.labels, 'github'),
+  google: resolveAuthBindingProviderLabel(props.labels, 'google'),
 }))
 
 function formatCurrency(value: number): string {
@@ -293,15 +268,10 @@ function normalizeProvider(value: string): UserAuthProvider | null {
   const normalized = value.trim().toLowerCase()
   if (
     normalized === 'email' ||
-    normalized === 'linuxdo' ||
-    normalized === 'wechat' ||
     normalized === 'github' ||
     normalized === 'google'
   ) {
     return normalized
-  }
-  if (normalized === 'oidc' || normalized.startsWith('oidc:') || normalized.startsWith('oidc/')) {
-    return 'oidc'
   }
   return null
 }

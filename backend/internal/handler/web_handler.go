@@ -137,7 +137,7 @@ func (h *WebHandler) Register(c *gin.Context) {
 
 	username := firstNonEmptyString(req.Username, req.Name)
 	riskCtx := h.authHandler.signupGrantRiskContext(c, "", "")
-	_, user, err := h.authService.RegisterWithVerificationSourceAndUsername(riskCtx, req.Email, username, req.Password, "", "", "", "", webAuthSource)
+	_, user, err := h.authService.RegisterWithVerificationSourceAndUsername(riskCtx, req.Email, username, req.Password, "", "", "", "", webAccountSignupSource)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -202,7 +202,7 @@ func (h *WebHandler) OAuthSession(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	if user.SignupSource != webAuthSource {
+	if !isWebSessionAccountSource(user.SignupSource) {
 		response.Forbidden(c, "Sub2API token is not valid for this web session")
 		return
 	}
@@ -353,7 +353,7 @@ func (h *WebHandler) ImportTwitter(c *gin.Context) {
 }
 
 func (h *WebHandler) loginWebUser(c *gin.Context, email, password string) (*service.User, error) {
-	_, user, err := h.authService.LoginWithSource(c.Request.Context(), email, password, webAuthSource)
+	_, user, err := h.authService.LoginWithSource(c.Request.Context(), email, password, webAccountSignupSource)
 	if err != nil {
 		return nil, err
 	}
@@ -398,13 +398,22 @@ func (h *WebHandler) currentWebUser(c *gin.Context) (*service.User, error) {
 	if err != nil {
 		return nil, err
 	}
-	if user.SignupSource != webAuthSource {
+	if !isWebSessionAccountSource(user.SignupSource) {
 		return nil, service.ErrInvalidCredentials
 	}
 	if !user.IsActive() {
 		return nil, service.ErrUserNotActive
 	}
 	return user, nil
+}
+
+func isWebSessionAccountSource(source string) bool {
+	switch strings.ToLower(strings.TrimSpace(source)) {
+	case "email", "github", "google":
+		return true
+	default:
+		return false
+	}
 }
 
 func (h *WebHandler) webUserPayload(ctx context.Context, user *service.User) gin.H {

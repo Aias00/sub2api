@@ -33,6 +33,10 @@ func newUserEntRepo(t *testing.T) (*userRepository, *dbent.Client) {
 	drv := entsql.OpenDB(dialect.SQLite, db)
 	client := enttest.NewClient(t, enttest.WithOptions(dbent.Driver(drv)))
 	t.Cleanup(func() { _ = client.Close() })
+	_, err = db.Exec("ALTER TABLE users ADD COLUMN paid_balance REAL NOT NULL DEFAULT 0")
+	require.NoError(t, err)
+	_, err = db.Exec("ALTER TABLE users ADD COLUMN gift_balance REAL NOT NULL DEFAULT 0")
+	require.NoError(t, err)
 
 	return newUserRepositoryWithSQL(client, db), client
 }
@@ -96,85 +100,52 @@ func TestUserRepositoryCreateRejectsNormalizedEmailDuplicate(t *testing.T) {
 	require.ErrorIs(t, err, service.ErrEmailExists)
 }
 
-func TestUserRepositoryAllowsTouchAndEmailUsersToShareEmail(t *testing.T) {
-	repo, _ := newUserEntRepo(t)
-	ctx := context.Background()
-
-	err := repo.Create(ctx, &service.User{
-		Email:        "shared@example.com",
-		Username:     "touch-user",
-		PasswordHash: "hash",
-		Role:         service.RoleUser,
-		Status:       service.StatusActive,
-		SignupSource: "touch",
-	})
-	require.NoError(t, err)
-
-	err = repo.Create(ctx, &service.User{
-		Email:        " shared@example.com ",
-		Username:     "email-user",
-		PasswordHash: "hash",
-		Role:         service.RoleUser,
-		Status:       service.StatusActive,
-		SignupSource: "email",
-	})
-	require.NoError(t, err)
-
-	touchUser, err := repo.GetByEmailAndSignupSource(ctx, "SHARED@example.com", "touch")
-	require.NoError(t, err)
-	require.Equal(t, "touch-user", touchUser.Username)
-
-	emailUser, err := repo.GetByEmailAndSignupSource(ctx, "shared@example.com", "email")
-	require.NoError(t, err)
-	require.Equal(t, "email-user", emailUser.Username)
-}
-
-func TestUserRepositoryRejectsDuplicateTouchEmail(t *testing.T) {
+func TestUserRepositoryRejectsDuplicateUnsupportedSignupSourceEmail(t *testing.T) {
 	repo, _ := newUserEntRepo(t)
 	ctx := context.Background()
 
 	require.NoError(t, repo.Create(ctx, &service.User{
-		Email:        "touch@example.com",
-		Username:     "touch-user-1",
+		Email:        "unsupported@example.com",
+		Username:     "unsupported-user-1",
 		PasswordHash: "hash",
 		Role:         service.RoleUser,
 		Status:       service.StatusActive,
-		SignupSource: "touch",
+		SignupSource: "unsupported",
 	}))
 
 	err := repo.Create(ctx, &service.User{
-		Email:        " TOUCH@example.com ",
-		Username:     "touch-user-2",
+		Email:        " UNSUPPORTED@example.com ",
+		Username:     "unsupported-user-2",
 		PasswordHash: "hash",
 		Role:         service.RoleUser,
 		Status:       service.StatusActive,
-		SignupSource: "touch",
+		SignupSource: "unsupported",
 	})
 	require.ErrorIs(t, err, service.ErrEmailExists)
 }
 
-func TestUserRepositoryUpdatePreservesTouchSourceWhenInputOmitsSignupSource(t *testing.T) {
+func TestUserRepositoryUpdateNormalizesUnsupportedSignupSourceWhenInputOmitsSignupSource(t *testing.T) {
 	repo, client := newUserEntRepo(t)
 	ctx := context.Background()
 
 	user := &service.User{
-		Email:        "touch-update@example.com",
-		Username:     "touch-user",
+		Email:        "unsupported-update@example.com",
+		Username:     "unsupported-user",
 		PasswordHash: "hash",
 		Role:         service.RoleUser,
 		Status:       service.StatusActive,
-		SignupSource: "touch",
+		SignupSource: "unsupported",
 	}
 	require.NoError(t, repo.Create(ctx, user))
 
 	user.SignupSource = ""
-	user.Username = "touch-updated"
+	user.Username = "unsupported-updated"
 	require.NoError(t, repo.Update(ctx, user))
 
 	stored, err := client.User.Get(ctx, user.ID)
 	require.NoError(t, err)
-	require.Equal(t, "touch", stored.SignupSource)
-	require.Equal(t, "touch-updated", stored.Username)
+	require.Equal(t, "email", stored.SignupSource)
+	require.Equal(t, "unsupported-updated", stored.Username)
 
 	emailIdentityCount, err := client.AuthIdentity.Query().
 		Where(
@@ -184,7 +155,7 @@ func TestUserRepositoryUpdatePreservesTouchSourceWhenInputOmitsSignupSource(t *t
 		).
 		Count(ctx)
 	require.NoError(t, err)
-	require.Zero(t, emailIdentityCount)
+	require.Equal(t, 1, emailIdentityCount)
 }
 
 func TestUserRepositoryUpdateRejectsNormalizedEmailDuplicate(t *testing.T) {

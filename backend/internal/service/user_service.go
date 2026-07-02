@@ -38,7 +38,6 @@ var (
 	ErrAvatarTooLarge           = infraerrors.BadRequest("AVATAR_TOO_LARGE", "avatar image must be 100KB or smaller")
 	ErrAvatarNotImage           = infraerrors.BadRequest("AVATAR_NOT_IMAGE", "avatar content must be an image")
 	ErrIdentityProviderInvalid  = infraerrors.BadRequest("IDENTITY_PROVIDER_INVALID", "identity provider is invalid")
-	ErrIdentityRedirectInvalid  = infraerrors.BadRequest("IDENTITY_REDIRECT_INVALID", "identity redirect path is invalid")
 	ErrIdentityUnbindLastMethod = infraerrors.Conflict(
 		"IDENTITY_UNBIND_LAST_METHOD",
 		"bind another sign-in method before unbinding this provider",
@@ -54,9 +53,8 @@ const (
 	notifyCodeUserRateLimit  = 5
 	notifyCodeUserRateWindow = 10 * time.Minute
 
-	defaultUserIdentityRedirect = "/settings/profile"
-	userLastActiveMinTouch      = 10 * time.Minute
-	userLastActiveFailBackoff   = 30 * time.Second
+	userLastActiveMinTouch    = 10 * time.Minute
+	userLastActiveFailBackoff = 30 * time.Second
 )
 
 var (
@@ -151,23 +149,7 @@ type UserIdentitySummary struct {
 }
 
 type UserIdentitySummarySet struct {
-	Email    UserIdentitySummary `json:"email"`
-	LinuxDo  UserIdentitySummary `json:"linuxdo"`
-	OIDC     UserIdentitySummary `json:"oidc"`
-	WeChat   UserIdentitySummary `json:"wechat"`
-	DingTalk UserIdentitySummary `json:"dingtalk"`
-}
-
-type StartUserIdentityBindingRequest struct {
-	Provider   string
-	RedirectTo string
-}
-
-type StartUserIdentityBindingResult struct {
-	Provider           string `json:"provider"`
-	AuthorizeURL       string `json:"authorize_url"`
-	Method             string `json:"method"`
-	UseBrowserRedirect bool   `json:"use_browser_redirect"`
+	Email UserIdentitySummary `json:"email"`
 }
 
 const (
@@ -287,82 +269,10 @@ func (s *UserService) GetProfileIdentitySummaries(ctx context.Context, userID in
 	}
 
 	summaries := UserIdentitySummarySet{
-		Email:    s.buildEmailIdentitySummary(user, records),
-		LinuxDo:  s.buildProviderIdentitySummary("linuxdo", user, records),
-		OIDC:     s.buildProviderIdentitySummary("oidc", user, records),
-		WeChat:   s.buildProviderIdentitySummary("wechat", user, records),
-		DingTalk: s.buildProviderIdentitySummary("dingtalk", user, records),
+		Email: s.buildEmailIdentitySummary(user, records),
 	}
 
-	s.applyExplicitProviderAvailability(ctx, &summaries)
 	return summaries, nil
-}
-
-func (s *UserService) applyExplicitProviderAvailability(ctx context.Context, summaries *UserIdentitySummarySet) {
-	if s == nil || summaries == nil || s.settingRepo == nil {
-		return
-	}
-
-	settings, err := s.settingRepo.GetMultiple(ctx, []string{
-		SettingKeyLinuxDoConnectEnabled,
-		SettingKeyOIDCConnectEnabled,
-		SettingKeyWeChatConnectEnabled,
-		SettingKeyWeChatConnectOpenEnabled,
-		SettingKeyWeChatConnectMPEnabled,
-		SettingKeyWeChatConnectMobileEnabled,
-		SettingKeyWeChatConnectMode,
-		SettingKeyDingTalkConnectEnabled,
-	})
-	if err != nil {
-		return
-	}
-
-	if raw, ok := settings[SettingKeyLinuxDoConnectEnabled]; ok && strings.TrimSpace(raw) != "" && raw != "true" {
-		disableIdentityBindAction(&summaries.LinuxDo)
-	}
-	if raw, ok := settings[SettingKeyDingTalkConnectEnabled]; ok && strings.TrimSpace(raw) != "" && raw != "true" {
-		disableIdentityBindAction(&summaries.DingTalk)
-	}
-	if raw, ok := settings[SettingKeyOIDCConnectEnabled]; ok && strings.TrimSpace(raw) != "" && raw != "true" {
-		disableIdentityBindAction(&summaries.OIDC)
-	}
-	if raw, ok := settings[SettingKeyWeChatConnectEnabled]; ok && strings.TrimSpace(raw) != "" {
-		if raw != "true" {
-			disableIdentityBindAction(&summaries.WeChat)
-			return
-		}
-		openEnabled, mpEnabled, _ := parseWeChatConnectCapabilitySettings(settings, true, settings[SettingKeyWeChatConnectMode])
-		if !openEnabled && !mpEnabled {
-			disableIdentityBindAction(&summaries.WeChat)
-		}
-	}
-}
-
-func disableIdentityBindAction(summary *UserIdentitySummary) {
-	if summary == nil || summary.Bound {
-		return
-	}
-	summary.CanBind = false
-	summary.BindStartPath = ""
-}
-
-func (s *UserService) PrepareIdentityBindingStart(_ context.Context, req StartUserIdentityBindingRequest) (*StartUserIdentityBindingResult, error) {
-	provider := normalizeUserIdentityProvider(req.Provider)
-	if provider == "" {
-		return nil, ErrIdentityProviderInvalid
-	}
-
-	authorizeURL, err := buildUserIdentityBindAuthorizeURL(provider, req.RedirectTo)
-	if err != nil {
-		return nil, err
-	}
-
-	return &StartUserIdentityBindingResult{
-		Provider:           provider,
-		AuthorizeURL:       authorizeURL,
-		Method:             "GET",
-		UseBrowserRedirect: true,
-	}, nil
 }
 
 func (s *UserService) UnbindUserAuthProvider(ctx context.Context, userID int64, provider string) (*User, error) {
@@ -695,11 +605,6 @@ func (s *UserService) buildProviderIdentitySummary(provider string, user *User, 
 	}
 	filtered := filterUserAuthIdentities(records, provider)
 	if len(filtered) == 0 {
-		summary.CanBind = true
-		bindStartPath, err := buildUserIdentityBindAuthorizeURL(provider, "")
-		if err == nil {
-			summary.BindStartPath = bindStartPath
-		}
 		return summary
 	}
 
@@ -731,7 +636,7 @@ func (s *UserService) canUnbindProvider(provider string, user *User, records []U
 		return true
 	}
 
-	for _, candidate := range []string{"linuxdo", "oidc", "wechat", "dingtalk"} {
+	for _, candidate := range []string{"github", "google"} {
 		if candidate == provider {
 			continue
 		}
@@ -788,63 +693,17 @@ func (s *UserService) listUserAuthIdentities(ctx context.Context, userID int64) 
 	return s.userRepo.ListUserAuthIdentities(ctx, userID)
 }
 
-func buildUserIdentityBindAuthorizeURL(provider, redirectTo string) (string, error) {
-	provider = normalizeUserIdentityProvider(provider)
-	if provider == "" || provider == "email" {
-		return "", ErrIdentityProviderInvalid
-	}
-
-	redirectTo, err := normalizeUserIdentityRedirect(redirectTo)
-	if err != nil {
-		return "", err
-	}
-
-	path := ""
-	switch provider {
-	case "linuxdo":
-		path = "/api/v1/auth/oauth/linuxdo/bind/start"
-	case "oidc":
-		path = "/api/v1/auth/oauth/oidc/bind/start"
-	case "wechat":
-		path = "/api/v1/auth/oauth/wechat/bind/start"
-	case "dingtalk":
-		path = "/api/v1/auth/oauth/dingtalk/bind/start"
-	default:
-		return "", ErrIdentityProviderInvalid
-	}
-
-	query := url.Values{}
-	query.Set("redirect", redirectTo)
-	query.Set("intent", "bind_current_user")
-	return path + "?" + query.Encode(), nil
-}
-
 func normalizeUserIdentityProvider(provider string) string {
 	switch strings.ToLower(strings.TrimSpace(provider)) {
-	case "linuxdo":
-		return "linuxdo"
-	case "oidc":
-		return "oidc"
-	case "wechat":
-		return "wechat"
-	case "dingtalk":
-		return "dingtalk"
+	case "github":
+		return "github"
+	case "google":
+		return "google"
 	case "email":
 		return "email"
 	default:
 		return ""
 	}
-}
-
-func normalizeUserIdentityRedirect(raw string) (string, error) {
-	redirect := strings.TrimSpace(raw)
-	if redirect == "" {
-		return defaultUserIdentityRedirect, nil
-	}
-	if len(redirect) > 2048 || !strings.HasPrefix(redirect, "/") || strings.HasPrefix(redirect, "//") {
-		return "", ErrIdentityRedirectInvalid
-	}
-	return redirect, nil
 }
 
 func filterUserAuthIdentities(records []UserAuthIdentityRecord, provider string) []UserAuthIdentityRecord {
