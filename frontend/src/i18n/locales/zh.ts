@@ -4095,7 +4095,7 @@ export default {
           customRequirement: '需管理员配置 Client ID 并加入测试用户白名单。',
           customTitle: '自定义授权（AI Studio OAuth）',
           gcpProjectLink: '创建项目',
-          googleOneDesc: '个人账号，享受 Google One 订阅配额',
+          googleOneDesc: '个人账号，接入 Google One 订阅资源',
           codeAssistDesc: '企业级，需要 GCP 项目',
           codeAssistRequirement: '需要激活 GCP 项目并绑定信用卡',
           showAdvanced: '显示高级选项（自建 OAuth Client）',

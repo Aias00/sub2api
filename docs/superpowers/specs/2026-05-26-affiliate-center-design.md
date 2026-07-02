@@ -38,7 +38,7 @@
 
 ### 用户侧
 
-- `/affiliate` 已存在，当前页面在 [frontend/src/views/user/AffiliateView.vue](/Users/aias/Work/github/sub2api/frontend/src/views/user/AffiliateView.vue)。
+- `/affiliate` 已存在，当前页面在 [frontend/src/views/user/AffiliateView.vue](/Users/aias/Work/github/cloudbase/frontend/src/views/user/AffiliateView.vue)。
 - 当前页面包含：
   - 实际返利比例
   - 邀请人数
@@ -51,20 +51,20 @@
 - 当前用户 API 仅有：
   - `getAffiliateDetail`
   - `transferAffiliateQuota`
-  - 见 [frontend/src/api/user.ts](/Users/aias/Work/github/sub2api/frontend/src/api/user.ts)
+  - 见 [frontend/src/api/user.ts](/Users/aias/Work/github/cloudbase/frontend/src/api/user.ts)
 
 ### 管理员侧
 
-- 管理员已有邀请返利模块命名空间 `/admin/affiliates/*`，见 [frontend/src/router/index.ts](/Users/aias/Work/github/sub2api/frontend/src/router/index.ts)。
+- 管理员已有邀请返利模块命名空间 `/admin/affiliates/*`，见 [frontend/src/router/index.ts](/Users/aias/Work/github/cloudbase/frontend/src/router/index.ts)。
 - 当前仅有三张记录页：
   - `/admin/affiliates/invites`
   - `/admin/affiliates/rebates`
   - `/admin/affiliates/transfers`
-- 当前侧边栏也只暴露三张记录页，见 [frontend/src/components/layout/AppSidebar.vue](/Users/aias/Work/github/sub2api/frontend/src/components/layout/AppSidebar.vue)。
+- 当前侧边栏也只暴露三张记录页，见 [frontend/src/components/layout/AppSidebar.vue](/Users/aias/Work/github/cloudbase/frontend/src/components/layout/AppSidebar.vue)。
 
 ### 规则配置
 
-- 邀请码注册开关仍位于系统设置页注册区域，见 [frontend/src/views/admin/SettingsView.vue](/Users/aias/Work/github/sub2api/frontend/src/views/admin/SettingsView.vue)。
+- 邀请码注册开关仍位于系统设置页注册区域，见 [frontend/src/views/admin/SettingsView.vue](/Users/aias/Work/github/cloudbase/frontend/src/views/admin/SettingsView.vue)。
 - 邀请返利总开关与返利规则仍位于系统设置页功能区，包含：
   - `affiliate_enabled`
   - `invitation_code_enabled`
@@ -75,7 +75,7 @@
 
 ### 后端能力
 
-- 核心服务集中在 [backend/internal/service/affiliate_service.go](/Users/aias/Work/github/sub2api/backend/internal/service/affiliate_service.go)。
+- 核心服务集中在 [backend/internal/service/affiliate_service.go](/Users/aias/Work/github/cloudbase/backend/internal/service/affiliate_service.go)。
 - 已有能力包括：
   - 确保用户 affiliate profile
   - 通过邀请码查邀请人
