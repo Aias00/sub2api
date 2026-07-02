@@ -430,20 +430,15 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 
 	// Determine authentication method and API URL
 	var authToken string
-	var useBearer bool
 	var apiURL string
 
 	if account.IsOAuth() {
-		// OAuth or Setup Token - use Bearer token
-		useBearer = true
 		apiURL = testClaudeAPIURL
 		authToken = account.GetCredential("access_token")
 		if authToken == "" {
 			return s.sendErrorAndEnd(c, "No access token available")
 		}
 	} else if account.Type == "apikey" {
-		// API Key - use x-api-key header
-		useBearer = false
 		authToken = account.GetCredential("api_key")
 		if authToken == "" {
 			return s.sendErrorAndEnd(c, "No API key available")
@@ -503,18 +498,16 @@ func (s *AccountTestService) testClaudeAccountConnection(c *gin.Context, account
 		req.Header.Set(key, value)
 	}
 
-	// Set authentication/header profile
-	if useBearer {
+	// Set authentication header
+	if account.IsOAuth() {
+		req.Header.Set("anthropic-beta", claude.DefaultBetaHeader)
 		req.Header.Set("Authorization", "Bearer "+authToken)
 	} else {
-		req.Header.Set("x-api-key", authToken)
+		req.Header.Set("anthropic-beta", claude.APIKeyBetaHeader)
+		setAnthropicAPIKeyAuthHeader(req.Header, account, authToken)
 	}
 	if mode == AccountTestModeClaudeCode {
-		applyClaudeCodeNativeTestHeaders(req, useBearer)
-	} else if useBearer {
-		req.Header.Set("anthropic-beta", claude.DefaultBetaHeader)
-	} else {
-		req.Header.Set("anthropic-beta", claude.APIKeyBetaHeader)
+		applyClaudeCodeNativeTestHeaders(req, account.IsOAuth())
 	}
 	s.sendEvent(c, TestEvent{Type: "request_debug", Text: formatUpstreamRequestDebugText(req, payloadBytes)})
 

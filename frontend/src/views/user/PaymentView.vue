@@ -137,6 +137,12 @@
                       <span :class="['text-lg font-bold', planTextClass]">×{{ selectedPlan.rate_multiplier ?? 1 }}</span>
                     </div>
                   </div>
+                  <div v-if="planHasPeakRate(selectedPlan)">
+                    <span class="text-xs text-gray-400 dark:text-gray-500">{{ t('payment.planCard.peakRate') }}</span>
+                    <div class="text-sm font-semibold text-amber-700 dark:text-amber-300">
+                      {{ planPeakRateLabel(selectedPlan) }}
+                    </div>
+                  </div>
                   <div v-if="selectedPlan.daily_limit_usd != null">
                     <span class="text-xs text-gray-400 dark:text-gray-500">{{ paymentText('dailyLimit') }}</span>
                     <div class="text-lg font-semibold text-gray-800 dark:text-gray-200">{{ formatUsdLimit(selectedPlan.daily_limit_usd) }}</div>
@@ -213,6 +219,7 @@
                       </div>
                       <div class="flex flex-wrap gap-x-3 text-[11px] text-gray-400 dark:text-gray-500">
                         <span>{{ paymentText('rate') }}: ×{{ sub.group?.rate_multiplier ?? 1 }}</span>
+                        <span v-if="subscriptionHasPeakRate(sub)">{{ t('payment.planCard.peakRate') }}: {{ subscriptionPeakRateLabel(sub) }}</span>
                         <span v-if="sub.group?.daily_limit_usd == null && sub.group?.weekly_limit_usd == null && sub.group?.monthly_limit_usd == null">{{ paymentText('quota') }}: {{ paymentText('unlimited') }}</span>
                         <span v-if="sub.expires_at">{{ paymentText('daysRemaining', { days: getDaysRemaining(sub.expires_at) }) }}</span>
                         <span v-else>{{ paymentText('noExpiration') }}</span>
@@ -276,6 +283,7 @@ import { paymentAPI } from '@/api/payment'
 import { extractApiErrorMessage, extractI18nErrorMessage } from '@/utils/apiError'
 import { isMobileDevice } from '@/utils/device'
 import type { RechargeProduct, SubscriptionPlan, CheckoutInfoResponse, CreateOrderResult, OrderType } from '@/types/payment'
+import { hasPeakRate, formatPeakRateWindow, serverTimezoneLabel, type PeakRateFields } from '@/utils/peak-rate'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector.vue'
 import { METHOD_ORDER, getPaymentPopupFeatures } from '@/components/payment/providerConfig'
@@ -335,6 +343,14 @@ const formatBalanceAmount = (value: number | null | undefined) =>
 function getDaysRemaining(expiresAt: string): number {
   const diff = new Date(expiresAt).getTime() - Date.now()
   return Math.max(0, Math.ceil(diff / (1000 * 60 * 60 * 24)))
+}
+
+function subscriptionHasPeakRate(sub: { group?: PeakRateFields | null }): boolean {
+  return hasPeakRate(sub.group)
+}
+
+function subscriptionPeakRateLabel(sub: { group?: PeakRateFields | null }): string {
+  return formatPeakRateWindow(sub.group, serverTimezoneLabel(appStore.cachedPublicSettings?.server_utc_offset))
 }
 
 const loading = ref(true)
@@ -801,6 +817,14 @@ const planValiditySuffix = computed(() => {
   }
   return ''
 })
+
+function planHasPeakRate(plan: SubscriptionPlan): boolean {
+  return hasPeakRate(plan)
+}
+
+function planPeakRateLabel(plan: SubscriptionPlan): string {
+  return formatPeakRateWindow(plan, serverTimezoneLabel(appStore.cachedPublicSettings?.server_utc_offset))
+}
 
 function selectPlan(plan: SubscriptionPlan) {
   selectedPlan.value = plan

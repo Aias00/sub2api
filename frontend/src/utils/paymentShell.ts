@@ -545,6 +545,7 @@ export function renderPaymentStatusPanelText(
 
 export const subscriptionPlanCardLabelKeys = [
   'rate',
+  'peakRate',
   'dailyLimit',
   'weeklyLimit',
   'monthlyLimit',
