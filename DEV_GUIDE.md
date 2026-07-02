@@ -34,10 +34,10 @@
 ### 开发工具
 
 ```bash
-# golangci-lint v2.7
-go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.7
+# golangci-lint v2.9，与 CI 保持一致
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.9.0
 
-# pnpm (前端包管理)
+# pnpm (前端包管理；版本以根目录 package.json 的 packageManager 为准)
 npm install -g pnpm
 ```
 
@@ -47,14 +47,16 @@ npm install -g pnpm
 
 | Workflow | 触发条件 | 检查内容 |
 |----------|----------|----------|
-| **backend-ci.yml** | push, pull_request | 单元测试 + 集成测试 + golangci-lint v2.7 |
+| **backend-ci.yml** | push, pull_request | 单元测试 + 集成测试 + golangci-lint v2.9 |
 | **security-scan.yml** | push, pull_request, 每周一 | govulncheck + gosec + pnpm audit |
 | **release.yml** | tag `v*` | 构建发布（PR 不触发） |
 
 ### CI 要求
 
-- Go 版本必须是 **1.25.7**
+- Go 版本以 `backend/go.mod` 为准，CI 当前校验 **1.26.4**
 - 前端使用 `pnpm install --frozen-lockfile`，必须提交 `pnpm-lock.yaml`
+- pnpm 版本只在根目录 `package.json` 的 `packageManager` 中声明；GitHub Actions 不要再给 `pnpm/action-setup` 单独配置 `version`
+- Go 格式校验使用 `golangci-lint fmt`，不是只跑标准 `gofmt`
 
 ### 本地测试命令
 
@@ -65,8 +67,11 @@ cd backend && go test -tags=unit ./...
 # 后端集成测试
 cd backend && go test -tags=integration ./...
 
-# 代码质量检查
-cd backend && golangci-lint run ./...
+# 后端格式修复（等同 CI formatter 规则）
+cd backend && make lint-fmt
+
+# 后端格式与代码质量检查（等同 CI lint 参数）
+cd backend && make lint-check
 
 # 前端依赖安装（必须用 pnpm）
 cd frontend && pnpm install
@@ -238,7 +243,8 @@ git add ent/       # 生成的文件也要提交
 
 - [ ] `go test -tags=unit ./...` 通过
 - [ ] `go test -tags=integration ./...` 通过
-- [ ] `golangci-lint run ./...` 无新增问题
+- [ ] `cd backend && make lint-fmt` 已执行，格式化改动已确认
+- [ ] `cd backend && make lint-check` 无新增问题
 - [ ] `pnpm-lock.yaml` 已同步（如果改了 package.json）
 - [ ] 所有 test stub 补全新接口方法（如果改了 interface）
 - [ ] Ent 生成的代码已提交（如果改了 schema）
@@ -306,8 +312,9 @@ go generate ./ent
 go test -tags=unit ./...
 go test -tags=integration ./...
 
-# Lint 检查
-golangci-lint run ./...
+# 格式修复与 Lint 检查
+make lint-fmt
+make lint-check
 ```
 
 ## 六、项目结构速览
