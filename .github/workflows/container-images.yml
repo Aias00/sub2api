@@ -1,0 +1,112 @@
+name: Container Images
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: 'Additional image tag to publish, for example production'
+        required: false
+        default: latest
+        type: string
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  group: container-images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build and push images
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: api
+            dockerfile: Dockerfile
+            context: .
+            suffix: ''
+          - name: business-worker
+            dockerfile: tools/business-worker.Dockerfile
+            context: tools
+            suffix: '-business-worker'
+          - name: content-worker
+            dockerfile: tools/content-worker.Dockerfile
+            context: tools
+            suffix: '-content-worker'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set image metadata
+        id: meta
+        shell: bash
+        env:
+          EXTRA_IMAGE_TAG: ${{ github.event.inputs.image_tag || '' }}
+        run: |
+          set -euo pipefail
+          owner="$(echo "${GITHUB_REPOSITORY_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          repo="cloudbase"
+          image="ghcr.io/${owner}/${repo}${{ matrix.suffix }}"
+          short_sha="${GITHUB_SHA::12}"
+
+          tags=("${image}:sha-${short_sha}")
+          if [[ "${GITHUB_REF_TYPE}" == "branch" ]]; then
+            ref_name="$(echo "${GITHUB_REF_NAME}" | tr '/[:upper:]' '-[:lower:]')"
+            tags+=("${image}:${ref_name}")
+          fi
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+            tags+=("${image}:${GITHUB_REF_NAME}" "${image}:${version}")
+          fi
+          if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${EXTRA_IMAGE_TAG}" ]]; then
+            tags+=("${image}:${EXTRA_IMAGE_TAG}")
+          fi
+          if [[ "${GITHUB_REF_NAME}" == "${{ github.event.repository.default_branch }}" ]]; then
+            tags+=("${image}:latest")
+          fi
+
+          {
+            echo "image=${image}"
+            echo "tags<<EOF"
+            printf '%s\n' "${tags[@]}"
+            echo "EOF"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push ${{ matrix.name }}
+        uses: docker/build-push-action@v6
+        with:
+          context: ${{ matrix.context }}
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.title=cloudbase-${{ matrix.name }}
+          cache-from: type=gha,scope=${{ matrix.name }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.name }}
