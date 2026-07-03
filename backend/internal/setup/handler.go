@@ -9,8 +9,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/sysutil"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
+	"github.com/Aias00/cloudbase/internal/pkg/sysutil"
 
 	"github.com/gin-gonic/gin"
 )

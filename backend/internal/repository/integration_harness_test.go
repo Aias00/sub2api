@@ -15,9 +15,9 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	_ "github.com/Wei-Shaw/cloudbase/ent/runtime"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/timezone"
+	dbent "github.com/Aias00/cloudbase/ent"
+	_ "github.com/Aias00/cloudbase/ent/runtime"
+	"github.com/Aias00/cloudbase/internal/pkg/timezone"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
 

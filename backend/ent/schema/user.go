@@ -3,8 +3,8 @@ package schema
 import (
 	"fmt"
 
-	"github.com/Wei-Shaw/cloudbase/ent/schema/mixins"
-	"github.com/Wei-Shaw/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/ent/schema/mixins"
+	"github.com/Aias00/cloudbase/internal/domain"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"

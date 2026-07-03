@@ -1,6 +1,6 @@
 package logger
 
-import "github.com/Wei-Shaw/cloudbase/internal/config"
+import "github.com/Aias00/cloudbase/internal/config"
 
 func OptionsFromConfig(cfg config.LogConfig) InitOptions {
 	return InitOptions{

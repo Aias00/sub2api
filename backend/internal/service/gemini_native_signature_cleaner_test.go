@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/antigravity"
+	"github.com/Aias00/cloudbase/internal/pkg/antigravity"
 	"github.com/stretchr/testify/require"
 )
 

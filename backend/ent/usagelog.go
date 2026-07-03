@@ -10,12 +10,12 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/account"
-	"github.com/Wei-Shaw/cloudbase/ent/apikey"
-	"github.com/Wei-Shaw/cloudbase/ent/group"
-	"github.com/Wei-Shaw/cloudbase/ent/usagelog"
-	"github.com/Wei-Shaw/cloudbase/ent/user"
-	"github.com/Wei-Shaw/cloudbase/ent/usersubscription"
+	"github.com/Aias00/cloudbase/ent/account"
+	"github.com/Aias00/cloudbase/ent/apikey"
+	"github.com/Aias00/cloudbase/ent/group"
+	"github.com/Aias00/cloudbase/ent/usagelog"
+	"github.com/Aias00/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/ent/usersubscription"
 )
 
 // UsageLog is the model entity for the UsageLog schema.

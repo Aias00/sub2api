@@ -15,19 +15,20 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/authidentity"
-	"github.com/Wei-Shaw/cloudbase/ent/authidentitychannel"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/antigravity"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/claude"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/geminicli"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/httpclient"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/openai"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/xai"
-	"github.com/Wei-Shaw/cloudbase/internal/util/httputil"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/authidentity"
+	"github.com/Aias00/cloudbase/ent/authidentitychannel"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/pkg/antigravity"
+	"github.com/Aias00/cloudbase/internal/pkg/claude"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/pkg/geminicli"
+	"github.com/Aias00/cloudbase/internal/pkg/httpclient"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/openai"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/pkg/xai"
+	"github.com/Aias00/cloudbase/internal/util/httputil"
 )
 
 // AdminService interface defines admin management operations
@@ -583,7 +584,7 @@ type adminServiceImpl struct {
 	runtimeBlocker       AccountRuntimeBlocker
 	tokenRevoker         TokenRevoker
 	keyDisabler          UserKeyDisabler
-	ledgerService        *UserBalanceLedgerService
+	ledgerService        *billingctx.UserBalanceLedgerService
 }
 
 type userGroupRateBatchReader interface {
@@ -623,7 +624,7 @@ func NewAdminService(
 	runtimeBlocker AccountRuntimeBlocker,
 	tokenRevoker TokenRevoker,
 	keyDisabler UserKeyDisabler,
-	ledgerService *UserBalanceLedgerService,
+	ledgerService *billingctx.UserBalanceLedgerService,
 ) AdminService {
 	return &adminServiceImpl{
 		userRepo:             userRepo,
@@ -1110,10 +1111,10 @@ func (s *adminServiceImpl) UpdateUserBalance(ctx context.Context, userID int64, 
 			if err := s.ledgerService.WriteLedger(
 				ctx,
 				userID,
-				EntryTypeAdminAdjustment,
+				billingctx.EntryTypeAdminAdjustment,
 				balanceDiff,
 				&oldBalance,
-				SourceTypeAdminAction,
+				billingctx.SourceTypeAdminAction,
 				nil,
 				notes,
 				map[string]any{
@@ -1313,10 +1314,10 @@ func (s *adminServiceImpl) ManualGrantSignupGiftBalance(ctx context.Context, use
 		if err := s.ledgerService.WriteLedger(
 			txCtx,
 			userID,
-			EntryTypeAdminAdjustment,
+			billingctx.EntryTypeAdminAdjustment,
 			amount,
 			&balanceBefore,
-			SourceTypeAdminAction,
+			billingctx.SourceTypeAdminAction,
 			nil,
 			reason,
 			map[string]any{

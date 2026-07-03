@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
-	"github.com/Wei-Shaw/cloudbase/ent/user"
-	"github.com/Wei-Shaw/cloudbase/ent/userplatformquota"
+	"github.com/Aias00/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/ent/userplatformquota"
 )
 
 // UserPlatformQuotaUpdate is the builder for updating UserPlatformQuota entities.

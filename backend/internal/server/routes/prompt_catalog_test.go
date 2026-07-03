@@ -9,46 +9,46 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/handler"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
-	"github.com/Wei-Shaw/cloudbase/internal/server/middleware"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/handler"
+	imagectx "github.com/Aias00/cloudbase/internal/image"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/server/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
 
 type promptCatalogRouteRepoStub struct {
-	items   []service.PromptCatalogCase
+	items   []imagectx.PromptCatalogCase
 	page    *pagination.PaginationResult
-	summary *service.PromptCatalogSummary
-	filters service.PromptCatalogListFilters
+	summary *imagectx.PromptCatalogSummary
+	filters imagectx.PromptCatalogListFilters
 	params  pagination.PaginationParams
-	upsert  *service.PromptCatalogCase
+	upsert  *imagectx.PromptCatalogCase
 }
 
-func (s *promptCatalogRouteRepoStub) ListCases(ctx context.Context, params pagination.PaginationParams, filters service.PromptCatalogListFilters) ([]service.PromptCatalogCase, *pagination.PaginationResult, error) {
+func (s *promptCatalogRouteRepoStub) ListCases(ctx context.Context, params pagination.PaginationParams, filters imagectx.PromptCatalogListFilters) ([]imagectx.PromptCatalogCase, *pagination.PaginationResult, error) {
 	s.params = params
 	s.filters = filters
 	return s.items, s.page, nil
 }
 
-func (s *promptCatalogRouteRepoStub) GetCaseSummary(ctx context.Context, filters service.PromptCatalogListFilters) (*service.PromptCatalogSummary, error) {
+func (s *promptCatalogRouteRepoStub) GetCaseSummary(ctx context.Context, filters imagectx.PromptCatalogListFilters) (*imagectx.PromptCatalogSummary, error) {
 	if s.summary != nil {
 		return s.summary, nil
 	}
-	return &service.PromptCatalogSummary{}, nil
+	return &imagectx.PromptCatalogSummary{}, nil
 }
 
-func (s *promptCatalogRouteRepoStub) GetCaseByID(ctx context.Context, id string) (*service.PromptCatalogCase, error) {
+func (s *promptCatalogRouteRepoStub) GetCaseByID(ctx context.Context, id string) (*imagectx.PromptCatalogCase, error) {
 	for _, item := range s.items {
 		if item.ID == id {
 			return &item, nil
 		}
 	}
-	return nil, service.ErrPromptCatalogNotFound
+	return nil, imagectx.ErrPromptCatalogNotFound
 }
 
-func (s *promptCatalogRouteRepoStub) UpsertCase(ctx context.Context, item *service.PromptCatalogCase) error {
+func (s *promptCatalogRouteRepoStub) UpsertCase(ctx context.Context, item *imagectx.PromptCatalogCase) error {
 	s.upsert = item
 	return nil
 }
@@ -57,7 +57,7 @@ func TestPromptCasesPublicRouteFiltersAndSummary(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	importedAt := time.Date(2026, 6, 9, 10, 0, 0, 0, time.UTC)
 	repo := &promptCatalogRouteRepoStub{
-		items: []service.PromptCatalogCase{{
+		items: []imagectx.PromptCatalogCase{{
 			ID:            "case-1",
 			Title:         "Toy Portrait",
 			Prompt:        "prompt body",
@@ -72,26 +72,26 @@ func TestPromptCasesPublicRouteFiltersAndSummary(t *testing.T) {
 			SourceLabel:   "X Imports",
 			SourceType:    "case",
 			ImportSource:  "twitter",
-			Status:        service.PromptCatalogStatusPublished,
+			Status:        imagectx.PromptCatalogStatusPublished,
 			ImportedAt:    &importedAt,
 			CreatedAt:     importedAt,
 			UpdatedAt:     importedAt,
 		}},
 		page: &pagination.PaginationResult{Total: 1, Page: 1, PageSize: 20, Pages: 1},
-		summary: &service.PromptCatalogSummary{
+		summary: &imagectx.PromptCatalogSummary{
 			Total:         1,
 			CaseCount:     1,
 			TemplateCount: 0,
 			SourceCount:   1,
 			CategoryCount: 1,
-			Sources:       []service.PromptCatalogFacetCount{{Value: "Twitter Imports", Label: "X Imports", Count: 1}},
-			Categories:    []service.PromptCatalogFacetCount{{Value: "portrait", Count: 1}},
+			Sources:       []imagectx.PromptCatalogFacetCount{{Value: "Twitter Imports", Label: "X Imports", Count: 1}},
+			Categories:    []imagectx.PromptCatalogFacetCount{{Value: "portrait", Count: 1}},
 		},
 	}
 	router := gin.New()
 	v1 := router.Group("/api/v1")
 	RegisterPromptRoutes(v1, &handler.Handlers{
-		PromptCatalog: handler.NewPromptCatalogHandler(service.NewPromptCatalogService(repo)),
+		PromptCatalog: handler.NewPromptCatalogHandler(imagectx.NewPromptCatalogService(repo)),
 	}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/prompts/cases?source_type=case&source_project=Twitter+Imports&category=portrait&featured=true&has_image=true&sort_by=title&sort_order=asc", nil)
@@ -180,7 +180,7 @@ func TestPromptCatalogPublicAliasIsNotRegistered(t *testing.T) {
 	router := gin.New()
 	v1 := router.Group("/api/v1")
 	RegisterPromptRoutes(v1, &handler.Handlers{
-		PromptCatalog: handler.NewPromptCatalogHandler(service.NewPromptCatalogService(&promptCatalogRouteRepoStub{})),
+		PromptCatalog: handler.NewPromptCatalogHandler(imagectx.NewPromptCatalogService(&promptCatalogRouteRepoStub{})),
 	}, nil)
 
 	registered := map[string]bool{}
@@ -199,7 +199,7 @@ func TestPromptCatalogPublicAliasIsNotRegistered(t *testing.T) {
 func TestPromptCasesPublicRoute(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	repo := &promptCatalogRouteRepoStub{
-		items: []service.PromptCatalogCase{{
+		items: []imagectx.PromptCatalogCase{{
 			ID:            "case-public",
 			Title:         "Public Case",
 			Prompt:        "prompt body",
@@ -208,21 +208,21 @@ func TestPromptCasesPublicRoute(t *testing.T) {
 			SourceProject: "Twitter Imports",
 			SourceType:    "case",
 			ImportSource:  "twitter",
-			Status:        service.PromptCatalogStatusPublished,
+			Status:        imagectx.PromptCatalogStatusPublished,
 		}},
 		page: &pagination.PaginationResult{Total: 1, Page: 1, PageSize: 20, Pages: 1},
-		summary: &service.PromptCatalogSummary{
+		summary: &imagectx.PromptCatalogSummary{
 			Total:          1,
 			CaseCount:      1,
 			SourceCount:    1,
-			Sources:        []service.PromptCatalogFacetCount{{Value: "Twitter Imports", Count: 1}},
-			TemplateGroups: []service.PromptCatalogFacetCount{{Value: "portrait", Count: 1}},
+			Sources:        []imagectx.PromptCatalogFacetCount{{Value: "Twitter Imports", Count: 1}},
+			TemplateGroups: []imagectx.PromptCatalogFacetCount{{Value: "portrait", Count: 1}},
 		},
 	}
 	router := gin.New()
 	v1 := router.Group("/api/v1")
 	RegisterPromptRoutes(v1, &handler.Handlers{
-		PromptCatalog: handler.NewPromptCatalogHandler(service.NewPromptCatalogService(repo)),
+		PromptCatalog: handler.NewPromptCatalogHandler(imagectx.NewPromptCatalogService(repo)),
 	}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/prompts/cases?source_type=case&source_project=Twitter+Imports", nil)
@@ -266,7 +266,7 @@ func TestPromptCatalogAdminAliasIsNotRegistered(t *testing.T) {
 		c.Next()
 	})
 	RegisterPromptRoutes(v1, &handler.Handlers{
-		PromptCatalog: handler.NewPromptCatalogHandler(service.NewPromptCatalogService(repo)),
+		PromptCatalog: handler.NewPromptCatalogHandler(imagectx.NewPromptCatalogService(repo)),
 	}, adminAuth)
 
 	registered := map[string]bool{}
@@ -293,7 +293,7 @@ func TestPromptAdminUpsertRouteRequiresAdminAuthAndWrites(t *testing.T) {
 		c.Next()
 	})
 	RegisterPromptRoutes(v1, &handler.Handlers{
-		PromptCatalog: handler.NewPromptCatalogHandler(service.NewPromptCatalogService(repo)),
+		PromptCatalog: handler.NewPromptCatalogHandler(imagectx.NewPromptCatalogService(repo)),
 	}, adminAuth)
 
 	body := []byte(`{

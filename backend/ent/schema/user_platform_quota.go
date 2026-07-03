@@ -10,7 +10,7 @@ import (
 	"entgo.io/ent/schema/edge"
 	"entgo.io/ent/schema/field"
 	"entgo.io/ent/schema/index"
-	"github.com/Wei-Shaw/cloudbase/ent/schema/mixins"
+	"github.com/Aias00/cloudbase/ent/schema/mixins"
 )
 
 // UserPlatformQuota holds the schema definition for per-user per-platform quota.

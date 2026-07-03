@@ -15,9 +15,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/openai"
-	"github.com/Wei-Shaw/cloudbase/internal/util/responseheaders"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/openai"
+	"github.com/Aias00/cloudbase/internal/util/responseheaders"
 	coderws "github.com/coder/websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"

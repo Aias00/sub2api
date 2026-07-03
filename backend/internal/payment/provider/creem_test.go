@@ -10,7 +10,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/payment"
 	"github.com/stretchr/testify/require"
 )
 

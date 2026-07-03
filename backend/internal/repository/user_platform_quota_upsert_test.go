@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/ent/userplatformquota"
+	"github.com/Aias00/cloudbase/ent/userplatformquota"
 	"github.com/stretchr/testify/require"
 )
 

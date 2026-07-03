@@ -6,10 +6,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/handler"
-	servermiddleware "github.com/Wei-Shaw/cloudbase/internal/server/middleware"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/handler"
+	servermiddleware "github.com/Aias00/cloudbase/internal/server/middleware"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )

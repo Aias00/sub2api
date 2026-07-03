@@ -7,8 +7,8 @@ import (
 	"os"
 	"strings"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/setting"
-	dbuser "github.com/Wei-Shaw/cloudbase/ent/user"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/setting"
+	dbuser "github.com/Aias00/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 const (

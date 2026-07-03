@@ -6,9 +6,13 @@ services:
   cloudbase:
     image: ${CLOUDBASE_IMAGE:-ghcr.io/aias00/cloudbase:${CLOUDBASE_IMAGE_TAG:-latest}}
 
-  business-worker:
+  wechat-worker:
     build: !reset null
-    image: ${BUSINESS_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-business-worker:${BUSINESS_WORKER_IMAGE_TAG:-latest}}
+    image: ${WECHAT_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-wechat-worker:${WECHAT_WORKER_IMAGE_TAG:-latest}}
+
+  image-workspace-worker:
+    build: !reset null
+    image: ${IMAGE_WORKSPACE_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-image-workspace-worker:${IMAGE_WORKSPACE_WORKER_IMAGE_TAG:-latest}}
 
   content-worker:
     build: !reset null

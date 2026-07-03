@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/timezone"
-	"github.com/Wei-Shaw/cloudbase/migrations"
+	"github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/pkg/timezone"
+	"github.com/Aias00/cloudbase/migrations"
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"

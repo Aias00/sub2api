@@ -2,7 +2,8 @@
 
 VERSION ?= $(shell ./scripts/resolve-version.sh)
 LDFLAGS ?= -s -w -X main.Version=$(VERSION)
-GOLANGCI_LINT ?= golangci-lint
+LOCAL_GOLANGCI_LINT := $(shell if [ -x "$$(go env GOPATH)/bin/golangci-lint" ]; then printf '%s' "$$(go env GOPATH)/bin/golangci-lint"; else printf '%s' "golangci-lint"; fi)
+GOLANGCI_LINT ?= $(LOCAL_GOLANGCI_LINT)
 
 build:
 	CGO_ENABLED=0 go build -ldflags="$(LDFLAGS)" -trimpath -o bin/server ./cmd/server

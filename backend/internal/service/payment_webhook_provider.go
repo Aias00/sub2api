@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"strings"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentorder"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/paymentorder"
+	"github.com/Aias00/cloudbase/ent/paymentproviderinstance"
+	"github.com/Aias00/cloudbase/internal/payment"
 )
 
 // GetWebhookProvider returns the provider instance that should verify a webhook.

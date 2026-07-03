@@ -12,7 +12,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 func TestUsageBillingRepositoryApply_DeduplicatesBalanceBilling(t *testing.T) {
@@ -37,7 +38,7 @@ func TestUsageBillingRepositoryApply_DeduplicatesBalanceBilling(t *testing.T) {
 	})
 
 	requestID := uuid.NewString()
-	cmd := &service.UsageBillingCommand{
+	cmd := &billingctx.UsageBillingCommand{
 		RequestID:           requestID,
 		APIKeyID:            apiKey.ID,
 		UserID:              user.ID,
@@ -106,7 +107,7 @@ func TestUsageBillingRepositoryApply_DeduplicatesSubscriptionBilling(t *testing.
 	})
 
 	requestID := uuid.NewString()
-	cmd := &service.UsageBillingCommand{
+	cmd := &billingctx.UsageBillingCommand{
 		RequestID:        requestID,
 		APIKeyID:         apiKey.ID,
 		UserID:           user.ID,
@@ -145,7 +146,7 @@ func TestUsageBillingRepositoryApply_RequestFingerprintConflict(t *testing.T) {
 	})
 
 	requestID := uuid.NewString()
-	_, err := repo.Apply(ctx, &service.UsageBillingCommand{
+	_, err := repo.Apply(ctx, &billingctx.UsageBillingCommand{
 		RequestID:   requestID,
 		APIKeyID:    apiKey.ID,
 		UserID:      user.ID,
@@ -153,13 +154,13 @@ func TestUsageBillingRepositoryApply_RequestFingerprintConflict(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	_, err = repo.Apply(ctx, &service.UsageBillingCommand{
+	_, err = repo.Apply(ctx, &billingctx.UsageBillingCommand{
 		RequestID:   requestID,
 		APIKeyID:    apiKey.ID,
 		UserID:      user.ID,
 		BalanceCost: 2.50,
 	})
-	require.ErrorIs(t, err, service.ErrUsageBillingRequestConflict)
+	require.ErrorIs(t, err, billingctx.ErrUsageBillingRequestConflict)
 }
 
 func TestUsageBillingRepositoryApply_UpdatesAccountQuota(t *testing.T) {
@@ -184,7 +185,7 @@ func TestUsageBillingRepositoryApply_UpdatesAccountQuota(t *testing.T) {
 		},
 	})
 
-	_, err := repo.Apply(ctx, &service.UsageBillingCommand{
+	_, err := repo.Apply(ctx, &billingctx.UsageBillingCommand{
 		RequestID:        uuid.NewString(),
 		APIKeyID:         apiKey.ID,
 		UserID:           user.ID,
@@ -238,7 +239,7 @@ func TestUsageBillingRepositoryApply_EnqueuesSchedulerOutboxOnQuotaCrossing(t *t
 			"quota_daily_limit": 10.0,
 		})
 		// 第一次低于日限额：不应入队 outbox
-		_, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		_, err := repo.Apply(ctx, &billingctx.UsageBillingCommand{
 			RequestID:        uuid.NewString(),
 			APIKeyID:         apiKeyID,
 			AccountID:        accountID,
@@ -249,7 +250,7 @@ func TestUsageBillingRepositoryApply_EnqueuesSchedulerOutboxOnQuotaCrossing(t *t
 		require.Equal(t, 0, outboxCountFor(t, accountID), "below limit should not enqueue")
 
 		// 第二次跨越日限额：应入队一次 outbox
-		_, err = repo.Apply(ctx, &service.UsageBillingCommand{
+		_, err = repo.Apply(ctx, &billingctx.UsageBillingCommand{
 			RequestID:        uuid.NewString(),
 			APIKeyID:         apiKeyID,
 			AccountID:        accountID,
@@ -260,7 +261,7 @@ func TestUsageBillingRepositoryApply_EnqueuesSchedulerOutboxOnQuotaCrossing(t *t
 		require.Equal(t, 1, outboxCountFor(t, accountID), "crossing daily limit should enqueue once")
 
 		// 再次递增（已超）：不应重复入队
-		_, err = repo.Apply(ctx, &service.UsageBillingCommand{
+		_, err = repo.Apply(ctx, &billingctx.UsageBillingCommand{
 			RequestID:        uuid.NewString(),
 			APIKeyID:         apiKeyID,
 			AccountID:        accountID,
@@ -275,7 +276,7 @@ func TestUsageBillingRepositoryApply_EnqueuesSchedulerOutboxOnQuotaCrossing(t *t
 		apiKeyID, accountID := newFixture(t, map[string]any{
 			"quota_weekly_limit": 10.0,
 		})
-		_, err := repo.Apply(ctx, &service.UsageBillingCommand{
+		_, err := repo.Apply(ctx, &billingctx.UsageBillingCommand{
 			RequestID:        uuid.NewString(),
 			APIKeyID:         apiKeyID,
 			AccountID:        accountID,
@@ -338,7 +339,7 @@ func TestUsageBillingRepositoryApply_DeduplicatesAgainstArchivedKey(t *testing.T
 	})
 
 	requestID := uuid.NewString()
-	cmd := &service.UsageBillingCommand{
+	cmd := &billingctx.UsageBillingCommand{
 		RequestID:   requestID,
 		APIKeyID:    apiKey.ID,
 		UserID:      user.ID,

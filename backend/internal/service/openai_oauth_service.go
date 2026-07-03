@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/openai"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/pkg/openai"
 )
 
 // OpenAIOAuthService handles OpenAI OAuth authentication flows

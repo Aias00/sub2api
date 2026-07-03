@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 )
 
 // PromoCodeRepository 优惠码仓储接口

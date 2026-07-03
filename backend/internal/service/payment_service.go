@@ -11,10 +11,10 @@ import (
 	"sync"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	"github.com/Wei-Shaw/cloudbase/internal/payment/provider"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/paymentproviderinstance"
+	"github.com/Aias00/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/payment/provider"
 )
 
 // --- Order Status Constants ---
@@ -256,11 +256,7 @@ func (s *PaymentService) loadProviders(ctx context.Context) {
 // --- Helpers ---
 
 func psIsRefundStatus(s string) bool {
-	switch s {
-	case OrderStatusRefundRequested, OrderStatusRefunding, OrderStatusRefundPending, OrderStatusPartiallyRefunded, OrderStatusRefunded, OrderStatusRefundFailed:
-		return true
-	}
-	return false
+	return payment.IsRefundStatus(s)
 }
 
 func psErrMsg(err error) string {
@@ -349,23 +345,8 @@ func psSliceContains(sl []string, s string) bool {
 	return false
 }
 
-// Subscription validity period unit constants.
-const (
-	validityUnitWeek   = "week"
-	validityUnitWeeks  = "weeks"
-	validityUnitMonth  = "month"
-	validityUnitMonths = "months"
-)
-
 func psComputeValidityDays(days int, unit string) int {
-	switch unit {
-	case validityUnitWeek, validityUnitWeeks:
-		return days * 7
-	case validityUnitMonth, validityUnitMonths:
-		return days * 30
-	default:
-		return days
-	}
+	return payment.ComputeSubscriptionValidityDays(days, unit)
 }
 
 func psStartOfDayUTC(t time.Time) time.Time {

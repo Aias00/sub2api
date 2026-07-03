@@ -227,3 +227,49 @@ func TestNormalizePaymentCurrencyRejectsInvalidCodes(t *testing.T) {
 		t.Fatal("expected non-letter currency to fail")
 	}
 }
+
+func TestProviderConfigCurrency(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name        string
+		providerKey string
+		config      map[string]string
+		want        string
+	}{
+		{
+			name:        "stripe uses normalized configured currency",
+			providerKey: TypeStripe,
+			config:      map[string]string{"currency": " hkd "},
+			want:        "HKD",
+		},
+		{
+			name:        "airwallex uses normalized configured currency",
+			providerKey: TypeAirwallex,
+			config:      map[string]string{"currency": "usd"},
+			want:        "USD",
+		},
+		{
+			name:        "invalid configured currency falls back",
+			providerKey: TypeStripe,
+			config:      map[string]string{"currency": "US1"},
+			want:        DefaultPaymentCurrency,
+		},
+		{
+			name:        "non currency provider falls back",
+			providerKey: TypeEasyPay,
+			config:      map[string]string{"currency": "USD"},
+			want:        DefaultPaymentCurrency,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			if got := ProviderConfigCurrency(tt.providerKey, tt.config); got != tt.want {
+				t.Fatalf("ProviderConfigCurrency(%q, %#v) = %q, want %q", tt.providerKey, tt.config, got, tt.want)
+			}
+		})
+	}
+}

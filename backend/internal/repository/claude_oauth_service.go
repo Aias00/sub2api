@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/oauth"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/proxyurl"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
-	"github.com/Wei-Shaw/cloudbase/internal/util/logredact"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/oauth"
+	"github.com/Aias00/cloudbase/internal/pkg/proxyurl"
+	"github.com/Aias00/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/util/logredact"
 
 	"github.com/imroc/req/v3"
 )

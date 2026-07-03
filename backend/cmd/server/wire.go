@@ -10,14 +10,17 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/handler"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	"github.com/Wei-Shaw/cloudbase/internal/repository"
-	"github.com/Wei-Shaw/cloudbase/internal/server"
-	"github.com/Wei-Shaw/cloudbase/internal/server/middleware"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/handler"
+	"github.com/Aias00/cloudbase/internal/hot"
+	"github.com/Aias00/cloudbase/internal/image"
+	"github.com/Aias00/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/repository"
+	"github.com/Aias00/cloudbase/internal/server"
+	"github.com/Aias00/cloudbase/internal/server/middleware"
+	"github.com/Aias00/cloudbase/internal/service"
 
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
@@ -36,7 +39,10 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 		// Business layer ProviderSets
 		repository.ProviderSet,
 		service.ProviderSet,
+		billing.ProviderSet,
 		payment.ProviderSet,
+		hot.ProviderSet,
+		image.ProviderSet,
 		middleware.ProviderSet,
 		handler.ProviderSet,
 

@@ -2,10 +2,7 @@ package service
 
 import (
 	"context"
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
-	"crypto/sha256"
 	"encoding/base64"
 	"encoding/hex"
 	"encoding/json"
@@ -21,174 +18,66 @@ import (
 	"strings"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
+	wechatctx "github.com/Aias00/cloudbase/internal/wechat"
 )
 
 const (
-	WeChatSessionStatusPending       = "pending"
-	WeChatSessionStatusScanConfirmed = "scan_confirmed"
-	WeChatSessionStatusReady         = "ready"
-	WeChatSessionStatusExpired       = "expired"
+	WeChatSessionStatusPending       = wechatctx.SessionStatusPending
+	WeChatSessionStatusScanConfirmed = wechatctx.SessionStatusScanConfirmed
+	WeChatSessionStatusReady         = wechatctx.SessionStatusReady
+	WeChatSessionStatusExpired       = wechatctx.SessionStatusExpired
 
-	WeChatArticleSourceSynced     = "synced"
-	WeChatArticleSourceDirectLink = "direct_link"
+	WeChatArticleSourceSynced     = wechatctx.ArticleSourceSynced
+	WeChatArticleSourceDirectLink = wechatctx.ArticleSourceDirectLink
 
-	WeChatExportTaskStatusQueued              = "queued"
-	WeChatExportTaskStatusRunning             = "running"
-	WeChatExportTaskStatusUploading           = "uploading"
-	WeChatExportTaskStatusCompleted           = "completed"
-	WeChatExportTaskStatusCompletedWithErrors = "completed_with_errors"
-	WeChatExportTaskStatusFailed              = "failed"
-	WeChatExportTaskStatusCancelled           = "cancelled"
+	WeChatExportTaskStatusQueued              = wechatctx.ExportTaskStatusQueued
+	WeChatExportTaskStatusRunning             = wechatctx.ExportTaskStatusRunning
+	WeChatExportTaskStatusUploading           = wechatctx.ExportTaskStatusUploading
+	WeChatExportTaskStatusCompleted           = wechatctx.ExportTaskStatusCompleted
+	WeChatExportTaskStatusCompletedWithErrors = wechatctx.ExportTaskStatusCompletedWithErrors
+	WeChatExportTaskStatusFailed              = wechatctx.ExportTaskStatusFailed
+	WeChatExportTaskStatusCancelled           = wechatctx.ExportTaskStatusCancelled
 )
 
 var (
-	ErrWeChatExportNotConfigured = infraerrors.InternalServer("WECHAT_EXPORT_NOT_CONFIGURED", "wechat export capability is not configured")
-	ErrWeChatSessionNotFound     = infraerrors.NotFound("WECHAT_SESSION_NOT_FOUND", "wechat session not found")
-	ErrWeChatSessionNotReady     = infraerrors.BadRequest("WECHAT_SESSION_NOT_READY", "wechat session is not ready")
-	ErrWeChatAccountNotFound     = infraerrors.NotFound("WECHAT_ACCOUNT_NOT_FOUND", "wechat account not found")
-	ErrWeChatArticleNotFound     = infraerrors.NotFound("WECHAT_ARTICLE_NOT_FOUND", "wechat article not found")
-	ErrWeChatTaskNotFound        = infraerrors.NotFound("WECHAT_EXPORT_TASK_NOT_FOUND", "wechat export task not found")
-	ErrWeChatTaskConflict        = infraerrors.Conflict("WECHAT_EXPORT_TASK_CONFLICT", "wechat export task is in a conflicting state")
-	ErrWeChatInvalidInput        = infraerrors.BadRequest("WECHAT_EXPORT_INVALID_INPUT", "wechat export input is invalid")
-	ErrWeChatInsufficientBalance = infraerrors.BadRequest("INSUFFICIENT_BALANCE", "insufficient balance for wechat export")
-	ErrWeChatArticleVerifyPage   = infraerrors.BadRequest("WECHAT_ARTICLE_VERIFY_PAGE", "微信返回验证页，请通过公众号同步导入")
+	ErrWeChatExportNotConfigured = wechatctx.ErrExportNotConfigured
+	ErrWeChatSessionNotFound     = wechatctx.ErrSessionNotFound
+	ErrWeChatSessionNotReady     = wechatctx.ErrSessionNotReady
+	ErrWeChatAccountNotFound     = wechatctx.ErrAccountNotFound
+	ErrWeChatArticleNotFound     = wechatctx.ErrArticleNotFound
+	ErrWeChatTaskNotFound        = wechatctx.ErrTaskNotFound
+	ErrWeChatTaskConflict        = wechatctx.ErrTaskConflict
+	ErrWeChatInvalidInput        = wechatctx.ErrInvalidInput
+	ErrWeChatInsufficientBalance = wechatctx.ErrInsufficientBalance
+	ErrWeChatArticleVerifyPage   = wechatctx.ErrArticleVerifyPage
 )
 
 const (
 	// DefaultWeChatExportCostPerArticle is the default cost per article per format for wechat export billing.
-	DefaultWeChatExportCostPerArticle = 0.05
+	DefaultWeChatExportCostPerArticle = wechatctx.DefaultExportCostPerArticle
 	// WeChatExportEngagementCostMultiplier is the cost multiplier when engagement data is included.
-	WeChatExportEngagementCostMultiplier = 2.0
+	WeChatExportEngagementCostMultiplier = wechatctx.ExportEngagementCostMultiplier
 )
 
 var weChatDirectImportProbe = probeWeChatDirectArticleLink
+var weChatGatewayClient = wechatctx.NewGatewayClient(nil)
 
-type WeChatExportFormat string
+type WeChatExportFormat = wechatctx.ExportFormat
+type WeChatSession = wechatctx.Session
+type WeChatAccount = wechatctx.Account
+type WeChatArticle = wechatctx.Article
+type WeChatExportTask = wechatctx.ExportTask
+type WeChatExportWorkerStatus = wechatctx.ExportWorkerStatus
+type WeChatExportArtifact = wechatctx.ExportArtifact
+type WeChatExportTaskLog = wechatctx.ExportTaskLog
+type WeChatArticleEngagementResult = wechatctx.ArticleEngagementResult
+type WeChatExportRepository = wechatctx.ExportRepository
 
 const (
-	WeChatExportFormatHTML     WeChatExportFormat = "html"
-	WeChatExportFormatMarkdown WeChatExportFormat = "markdown"
+	WeChatExportFormatHTML     = wechatctx.ExportFormatHTML
+	WeChatExportFormatMarkdown = wechatctx.ExportFormatMarkdown
 )
-
-type WeChatSession struct {
-	ID               int64      `json:"id"`
-	UserID           int64      `json:"user_id"`
-	Status           string     `json:"status"`
-	LoginToken       string     `json:"login_token,omitempty"`
-	CookiesEncrypted string     `json:"-"`
-	LoginAccountName string     `json:"login_account_name"`
-	LastValidatedAt  *time.Time `json:"last_validated_at,omitempty"`
-	ExpiresAt        *time.Time `json:"expires_at,omitempty"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
-}
-
-type WeChatAccount struct {
-	ID           int64      `json:"id"`
-	UserID       int64      `json:"user_id"`
-	FakeID       string     `json:"fakeid"`
-	Nickname     string     `json:"nickname"`
-	Alias        string     `json:"alias"`
-	Avatar       string     `json:"avatar"`
-	Description  string     `json:"description"`
-	IsActive     bool       `json:"is_active"`
-	LastSyncedAt *time.Time `json:"last_synced_at,omitempty"`
-	CreatedAt    time.Time  `json:"created_at"`
-	UpdatedAt    time.Time  `json:"updated_at"`
-}
-
-type WeChatArticle struct {
-	ID             int64      `json:"id"`
-	UserID         int64      `json:"user_id"`
-	AccountFakeID  string     `json:"account_fakeid"`
-	SourceType     string     `json:"source_type"`
-	Title          string     `json:"title"`
-	Author         string     `json:"author"`
-	Link           string     `json:"link"`
-	Cover          string     `json:"cover"`
-	Digest         string     `json:"digest"`
-	PublishAt      *time.Time `json:"publish_at,omitempty"`
-	IsOriginal     bool       `json:"is_original"`
-	IsPaySubscribe bool       `json:"is_pay_subscribe"`
-	ContentStatus  string     `json:"content_status"`
-	MetadataJSON   string     `json:"metadata_json"`
-	CreatedAt      time.Time  `json:"created_at"`
-	UpdatedAt      time.Time  `json:"updated_at"`
-}
-
-type WeChatExportTask struct {
-	ID                     int64                `json:"id"`
-	UserID                 int64                `json:"user_id"`
-	Status                 string               `json:"status"`
-	ArticleIDs             []int64              `json:"article_ids"`
-	Formats                []WeChatExportFormat `json:"formats"`
-	SelectedArticleCount   int                  `json:"selected_article_count"`
-	SuccessfulArticleCount int                  `json:"successful_article_count"`
-	FailedArticleCount     int                  `json:"failed_article_count"`
-	IncludeEngagement      bool                 `json:"include_engagement"`
-	PayloadJSON            string               `json:"payload_json,omitempty"`
-	ResultManifestJSON     string               `json:"result_manifest_json"`
-	ErrorMessage           string               `json:"error_message"`
-	WorkerLeaseUntil       *time.Time           `json:"worker_lease_until,omitempty"`
-	// 新增字段（Phase 2：Worker信任边界重构）
-	WorkerLeaseToken    string     `json:"-"` // 完全隐藏，只在ClaimNextTask响应中单独返回
-	WorkerRunID         string     `json:"-"` // 可选，用于唯一标识一次运行
-	RetentionDays       int        `json:"retention_days"`
-	ExpiresAt           *time.Time `json:"expires_at,omitempty"`
-	CostEstimate        float64    `json:"cost_estimate"`
-	BalanceSnapshot     float64    `json:"balance_snapshot"`
-	ReservedPaidBalance float64    `json:"-"`
-	ReservedGiftBalance float64    `json:"-"`
-	CreatedAt           time.Time  `json:"created_at"`
-	UpdatedAt           time.Time  `json:"updated_at"`
-}
-
-type WeChatExportWorkerStatus struct {
-	Health              string     `json:"health"`
-	Message             string     `json:"message"`
-	TotalCount          int64      `json:"total_count"`
-	QueuedCount         int64      `json:"queued_count"`
-	RunningCount        int64      `json:"running_count"`
-	StaleRunningCount   int64      `json:"stale_running_count"`
-	FailedCount         int64      `json:"failed_count"`
-	CompletedCount      int64      `json:"completed_count"`
-	CancelledCount      int64      `json:"cancelled_count"`
-	LastTaskUpdatedAt   *time.Time `json:"last_task_updated_at,omitempty"`
-	OldestQueuedAt      *time.Time `json:"oldest_queued_at,omitempty"`
-	LastTaskAgeSeconds  *int64     `json:"last_task_age_seconds,omitempty"`
-	OldestQueuedSeconds *int64     `json:"oldest_queued_seconds,omitempty"`
-	AttentionReasons    []string   `json:"attention_reasons,omitempty"`
-}
-
-type WeChatExportArtifact struct {
-	ID              int64      `json:"id"`
-	TaskID          int64      `json:"task_id"`
-	UserID          int64      `json:"user_id"`
-	Format          string     `json:"format"`
-	StorageProvider string     `json:"storage_provider"`
-	StorageKey      string     `json:"storage_key"`
-	DownloadURL     string     `json:"download_url"`
-	FileName        string     `json:"file_name"`
-	FileSize        int64      `json:"file_size"`
-	Checksum        string     `json:"checksum"`
-	ExpiresAt       *time.Time `json:"expires_at,omitempty"`
-	DeletedAt       *time.Time `json:"deleted_at,omitempty"`
-	CreatedAt       time.Time  `json:"created_at"`
-	UpdatedAt       time.Time  `json:"updated_at"`
-}
-
-type WeChatExportTaskLog struct {
-	ID        int64     `json:"id"`
-	TaskID    int64     `json:"task_id"`
-	UserID    int64     `json:"user_id"`
-	Event     string    `json:"event"`
-	Status    string    `json:"status"`
-	Message   string    `json:"message"`
-	MetaJSON  string    `json:"meta_json"`
-	CreatedAt time.Time `json:"created_at"`
-}
 
 type CreateWeChatExportTaskInput struct {
 	ArticleIDs        []int64
@@ -257,16 +146,6 @@ type FetchWeChatArticleEngagementInput struct {
 	MetadataJSON string
 }
 
-type WeChatArticleEngagementResult struct {
-	ReadNum    *int64 `json:"read_num,omitempty"`
-	OldLikeNum *int64 `json:"old_like_num,omitempty"`
-	ShareNum   *int64 `json:"share_num,omitempty"`
-	LikeNum    *int64 `json:"like_num,omitempty"`
-	CommentNum *int64 `json:"comment_num,omitempty"`
-	Status     string `json:"status"`
-	Message    string `json:"message,omitempty"`
-}
-
 type WeChatExportArtifactInput struct {
 	Format          string `json:"format"`
 	StorageProvider string `json:"storage_provider"`
@@ -282,41 +161,6 @@ type AddWeChatExportTaskLogInput struct {
 	Status   string
 	Message  string
 	MetaJSON string
-}
-
-type WeChatExportRepository interface {
-	GetActiveSession(ctx context.Context, userID int64) (*WeChatSession, error)
-	CreateSession(ctx context.Context, session *WeChatSession) error
-	UpdateSession(ctx context.Context, session *WeChatSession) error
-	GetSession(ctx context.Context, userID int64, sessionID int64) (*WeChatSession, error)
-	ExpireUserSessions(ctx context.Context, userID int64) error
-	ExpireLoginAttemptSessions(ctx context.Context, userID int64) error
-	SearchAccounts(ctx context.Context, userID int64, query string, limit int) ([]WeChatAccount, error)
-	GetAccount(ctx context.Context, userID int64, fakeID string) (*WeChatAccount, error)
-	UpsertAccount(ctx context.Context, account *WeChatAccount) error
-	MarkAccountSynced(ctx context.Context, userID int64, fakeID string) (*WeChatAccount, error)
-	UpsertArticle(ctx context.Context, article *WeChatArticle) error
-	UpdateArticleEnrichment(ctx context.Context, article *WeChatArticle) error
-	ListArticles(ctx context.Context, userID int64, params pagination.PaginationParams) ([]WeChatArticle, *pagination.PaginationResult, error)
-	GetArticleByID(ctx context.Context, articleID int64) (*WeChatArticle, error)
-	ListArticlesByIDs(ctx context.Context, userID int64, articleIDs []int64) ([]WeChatArticle, error)
-	CreateTask(ctx context.Context, task *WeChatExportTask) error
-	ListTasks(ctx context.Context, userID int64, params pagination.PaginationParams) ([]WeChatExportTask, *pagination.PaginationResult, error)
-	GetWorkerStatus(ctx context.Context, userID int64) (*WeChatExportWorkerStatus, error)
-	GetTask(ctx context.Context, userID int64, taskID int64) (*WeChatExportTask, error)
-	CancelTask(ctx context.Context, userID int64, taskID int64) (*WeChatExportTask, error)
-	RetryTask(ctx context.Context, userID int64, taskID int64) (*WeChatExportTask, error)
-	// Phase 2：新增leaseToken参数用于Worker信任边界验证
-	AddTaskLog(ctx context.Context, taskID int64, leaseToken string, log WeChatExportTaskLog) (*WeChatExportTaskLog, error)
-	ListTaskLogs(ctx context.Context, userID int64, taskID int64) ([]WeChatExportTaskLog, error)
-	// Phase 2：新增leaseToken参数，ClaimNextTask返回leaseToken给worker
-	ClaimNextTask(ctx context.Context, leaseSeconds int64) (task *WeChatExportTask, articles []WeChatArticle, leaseToken string, err error)
-	// Phase 2：新增leaseToken参数，CompleteTask验证token匹配和lease未过期
-	CompleteTask(ctx context.Context, taskID int64, leaseToken string, artifacts []WeChatExportArtifact, resultManifestJSON string, failedArticleCount int, actualCost float64) (*WeChatExportTask, error)
-	// Phase 2：新增leaseToken参数，FailTask验证token匹配
-	FailTask(ctx context.Context, taskID int64, leaseToken string, message string) (*WeChatExportTask, error)
-	ListArtifacts(ctx context.Context, userID int64, taskID int64) ([]WeChatExportArtifact, error)
-	GetArtifact(ctx context.Context, userID int64, artifactID int64) (*WeChatExportArtifact, error)
 }
 
 type WeChatExportService struct {
@@ -852,11 +696,7 @@ func (s *WeChatExportService) estimateCost(articleCount, formatCount int, includ
 			costPerArticle = v
 		}
 	}
-	engagementMultiplier := 1.0
-	if includeEngagement {
-		engagementMultiplier = WeChatExportEngagementCostMultiplier
-	}
-	return costPerArticle * float64(articleCount) * float64(maxIntValue(1, formatCount)) * engagementMultiplier
+	return wechatctx.EstimateExportCost(articleCount, formatCount, includeEngagement, costPerArticle)
 }
 
 func (s *WeChatExportService) CreateTask(ctx context.Context, userID int64, input CreateWeChatExportTaskInput) (*WeChatExportTask, error) {
@@ -871,10 +711,7 @@ func (s *WeChatExportService) CreateTask(ctx context.Context, userID int64, inpu
 	if err != nil {
 		return nil, err
 	}
-	retentionDays := input.RetentionDays
-	if retentionDays <= 0 {
-		retentionDays = 7
-	}
+	retentionDays := wechatctx.NormalizeExportRetentionDays(input.RetentionDays)
 	payload := map[string]any{
 		"article_ids": input.ArticleIDs,
 		"formats":     formats,
@@ -1157,24 +994,8 @@ func (s *WeChatExportService) requireTaskArticles(ctx context.Context, userID in
 }
 
 func normalizeWeChatExportFormats(raw []string) ([]WeChatExportFormat, error) {
-	if len(raw) == 0 {
-		raw = []string{string(WeChatExportFormatHTML), string(WeChatExportFormatMarkdown)}
-	}
-	formats := make([]WeChatExportFormat, 0, len(raw))
-	seen := make(map[WeChatExportFormat]struct{}, len(raw))
-	for _, item := range raw {
-		format := WeChatExportFormat(strings.ToLower(strings.TrimSpace(item)))
-		switch format {
-		case WeChatExportFormatHTML, WeChatExportFormatMarkdown:
-			if _, ok := seen[format]; !ok {
-				seen[format] = struct{}{}
-				formats = append(formats, format)
-			}
-		default:
-			return nil, ErrWeChatInvalidInput
-		}
-	}
-	if len(formats) == 0 {
+	formats, ok := wechatctx.NormalizeExportFormats(raw)
+	if !ok {
 		return nil, ErrWeChatInvalidInput
 	}
 	return formats, nil
@@ -1254,9 +1075,7 @@ func wechatPtrTime(value time.Time) *time.Time {
 	return &value
 }
 
-type wechatCookiePayload struct {
-	CookieHeader string `json:"cookie_header"`
-}
+type wechatCookiePayload = wechatctx.CookiePayload
 
 type wechatGatewayBaseResp struct {
 	Ret    int    `json:"ret"`
@@ -1726,37 +1545,11 @@ func validateWeChatReadySession(ctx context.Context, token string, cookieHeader 
 }
 
 func requestWeChatGateway(ctx context.Context, method string, path string, query url.Values, form url.Values, cookieHeader string) (*http.Response, error) {
-	return requestWeChatGatewayWithReferer(ctx, method, path, query, form, cookieHeader, "https://mp.weixin.qq.com/")
+	return weChatGatewayClient.Do(ctx, method, path, query, form, cookieHeader)
 }
 
 func requestWeChatGatewayWithReferer(ctx context.Context, method string, path string, query url.Values, form url.Values, cookieHeader string, referer string) (*http.Response, error) {
-	endpoint := url.URL{Scheme: "https", Host: "mp.weixin.qq.com", Path: path}
-	endpoint.RawQuery = query.Encode()
-	var body io.Reader
-	if form != nil {
-		body = strings.NewReader(form.Encode())
-	}
-	req, err := http.NewRequestWithContext(ctx, method, endpoint.String(), body)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36")
-	req.Header.Set("Accept", "*/*")
-	req.Header.Set("Accept-Language", "zh-CN,zh;q=0.9,en;q=0.8")
-	if strings.TrimSpace(referer) == "" {
-		referer = "https://mp.weixin.qq.com/"
-	}
-	req.Header.Set("Referer", referer)
-	req.Header.Set("Origin", "https://mp.weixin.qq.com")
-	req.Header.Set("Accept-Encoding", "identity")
-	if form != nil {
-		req.Header.Set("Content-Type", "application/x-www-form-urlencoded; charset=UTF-8")
-	}
-	if strings.TrimSpace(cookieHeader) != "" {
-		req.Header.Set("Cookie", cookieHeader)
-	}
-	client := &http.Client{Timeout: 15 * time.Second}
-	return client.Do(req)
+	return weChatGatewayClient.DoWithReferer(ctx, method, path, query, form, cookieHeader, referer)
 }
 
 func decodeWeChatJSON(resp *http.Response, target any) error {
@@ -1859,73 +1652,11 @@ func htmlEntityUnescape(value string) string {
 }
 
 func encryptWeChatCookiePayload(payload wechatCookiePayload) (string, error) {
-	secret := wechatSessionSecret()
-	if secret == "" {
-		return "", errors.New("wechat export session secret is not configured")
-	}
-	plain, err := json.Marshal(payload)
-	if err != nil {
-		return "", err
-	}
-	key := sha256.Sum256([]byte(secret))
-	block, err := aes.NewCipher(key[:])
-	if err != nil {
-		return "", err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return "", err
-	}
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
-		return "", err
-	}
-	sealed := gcm.Seal(nonce, nonce, plain, nil)
-	return base64.RawURLEncoding.EncodeToString(sealed), nil
+	return wechatctx.EncryptCookiePayload(payload)
 }
 
 func decryptWeChatCookiePayload(raw string) (wechatCookiePayload, error) {
-	var payload wechatCookiePayload
-	secret := wechatSessionSecret()
-	if secret == "" {
-		return payload, errors.New("wechat export session secret is not configured")
-	}
-	encrypted, err := base64.RawURLEncoding.DecodeString(raw)
-	if err != nil {
-		return payload, err
-	}
-	key := sha256.Sum256([]byte(secret))
-	block, err := aes.NewCipher(key[:])
-	if err != nil {
-		return payload, err
-	}
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return payload, err
-	}
-	if len(encrypted) < gcm.NonceSize() {
-		return payload, errors.New("wechat cookie payload is invalid")
-	}
-	nonce := encrypted[:gcm.NonceSize()]
-	ciphertext := encrypted[gcm.NonceSize():]
-	plain, err := gcm.Open(nil, nonce, ciphertext, nil)
-	if err != nil {
-		return payload, err
-	}
-	if err := json.Unmarshal(plain, &payload); err != nil {
-		return payload, err
-	}
-	if strings.TrimSpace(payload.CookieHeader) == "" {
-		return payload, errors.New("wechat cookie payload is empty")
-	}
-	return payload, nil
-}
-
-func wechatSessionSecret() string {
-	if secret := strings.TrimSpace(os.Getenv("WECHAT_EXPORT_SESSION_SECRET")); secret != "" {
-		return secret
-	}
-	return strings.TrimSpace(os.Getenv("JWT_SECRET"))
+	return wechatctx.DecryptCookiePayload(raw)
 }
 
 func randomWeChatLoginToken() (string, error) {
@@ -1938,18 +1669,10 @@ func randomWeChatLoginToken() (string, error) {
 
 // Phase 2：生成Worker Lease Token（256-bit，64字符hex）- Public for repository
 func GenerateWorkerLeaseToken() (string, error) {
-	var buf [32]byte
-	if _, err := rand.Read(buf[:]); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(buf[:]), nil
+	return wechatctx.GenerateWorkerLeaseToken()
 }
 
 // Phase 2：生成Worker Run ID（128-bit，32字符hex，可选）- Public for repository
 func GenerateWorkerRunID() (string, error) {
-	var buf [16]byte
-	if _, err := rand.Read(buf[:]); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(buf[:]), nil
+	return wechatctx.GenerateWorkerRunID()
 }

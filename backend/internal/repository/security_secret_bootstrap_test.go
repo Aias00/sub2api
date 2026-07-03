@@ -10,10 +10,10 @@ import (
 	"sync"
 	"testing"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/enttest"
-	"github.com/Wei-Shaw/cloudbase/ent/securitysecret"
-	"github.com/Wei-Shaw/cloudbase/internal/config"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/enttest"
+	"github.com/Aias00/cloudbase/ent/securitysecret"
+	"github.com/Aias00/cloudbase/internal/config"
 	"github.com/stretchr/testify/require"
 
 	"entgo.io/ent/dialect"

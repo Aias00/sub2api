@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	dbent "github.com/Aias00/cloudbase/ent"
 )
 
 // fakeInsertRecorder 记录 BulkInsertInitial 调用，实现 UserPlatformQuotaRepository port。

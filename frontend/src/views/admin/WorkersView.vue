@@ -215,8 +215,10 @@ async function copyDeployCommand(node: WorkerNode) {
 
 function nodeTitle(id: string): string {
   switch (id) {
-    case 'business-worker':
-      return '业务 Worker 节点'
+    case 'wechat-worker':
+      return '微信导出 Worker 节点'
+    case 'image-workspace-worker':
+      return '生图工作台 Worker 节点'
     case 'hot-collector':
       return '热点采集 Worker 节点'
     default:

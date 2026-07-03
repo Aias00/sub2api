@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/announcement"
-	"github.com/Wei-Shaw/cloudbase/ent/announcementread"
-	"github.com/Wei-Shaw/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/ent/announcement"
+	"github.com/Aias00/cloudbase/ent/announcementread"
+	"github.com/Aias00/cloudbase/ent/user"
 )
 
 // AnnouncementReadCreate is the builder for creating a AnnouncementRead entity.

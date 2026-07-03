@@ -11,10 +11,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/account"
-	"github.com/Wei-Shaw/cloudbase/ent/group"
-	"github.com/Wei-Shaw/cloudbase/ent/proxy"
-	"github.com/Wei-Shaw/cloudbase/ent/usagelog"
+	"github.com/Aias00/cloudbase/ent/account"
+	"github.com/Aias00/cloudbase/ent/group"
+	"github.com/Aias00/cloudbase/ent/proxy"
+	"github.com/Aias00/cloudbase/ent/usagelog"
 )
 
 // AccountCreate is the builder for creating a Account entity.

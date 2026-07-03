@@ -11,11 +11,11 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/account"
-	"github.com/Wei-Shaw/cloudbase/ent/group"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
-	"github.com/Wei-Shaw/cloudbase/ent/proxy"
-	"github.com/Wei-Shaw/cloudbase/ent/usagelog"
+	"github.com/Aias00/cloudbase/ent/account"
+	"github.com/Aias00/cloudbase/ent/group"
+	"github.com/Aias00/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/proxy"
+	"github.com/Aias00/cloudbase/ent/usagelog"
 )
 
 // AccountUpdate is the builder for updating Account entities.

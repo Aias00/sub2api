@@ -5,9 +5,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 )
 

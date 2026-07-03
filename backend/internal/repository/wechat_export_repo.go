@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/wechat"
 )
 
 type wechatExportRepository struct {
@@ -19,16 +19,16 @@ type wechatExportRepository struct {
 	sql sqlExecutor
 }
 
-func NewWeChatExportRepository(db *sql.DB) service.WeChatExportRepository {
+func NewWeChatExportRepository(db *sql.DB) wechat.ExportRepository {
 	return &wechatExportRepository{db: db, sql: db}
 }
 
 type wechatExportTaskPayload struct {
-	ArticleIDs []int64                      `json:"article_ids"`
-	Formats    []service.WeChatExportFormat `json:"formats"`
+	ArticleIDs []int64               `json:"article_ids"`
+	Formats    []wechat.ExportFormat `json:"formats"`
 }
 
-func (r *wechatExportRepository) GetActiveSession(ctx context.Context, userID int64) (*service.WeChatSession, error) {
+func (r *wechatExportRepository) GetActiveSession(ctx context.Context, userID int64) (*wechat.Session, error) {
 	session, err := scanWeChatSession(ctx, r.sql, `
 		SELECT id, user_id, status, login_token, cookies_encrypted, login_account_name,
 			last_validated_at, expires_at, created_at, updated_at
@@ -38,14 +38,14 @@ func (r *wechatExportRepository) GetActiveSession(ctx context.Context, userID in
 			AND (expires_at IS NULL OR expires_at > NOW())
 		ORDER BY CASE WHEN status = $4 THEN 0 ELSE 1 END, updated_at DESC, id DESC
 		LIMIT 1
-	`, userID, service.WeChatSessionStatusPending, service.WeChatSessionStatusScanConfirmed, service.WeChatSessionStatusReady)
+	`, userID, wechat.SessionStatusPending, wechat.SessionStatusScanConfirmed, wechat.SessionStatusReady)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	return session, err
 }
 
-func (r *wechatExportRepository) CreateSession(ctx context.Context, session *service.WeChatSession) error {
+func (r *wechatExportRepository) CreateSession(ctx context.Context, session *wechat.Session) error {
 	if session == nil {
 		return nil
 	}
@@ -64,7 +64,7 @@ func (r *wechatExportRepository) CreateSession(ctx context.Context, session *ser
 	}, &session.ID, &session.CreatedAt, &session.UpdatedAt)
 }
 
-func (r *wechatExportRepository) UpdateSession(ctx context.Context, session *service.WeChatSession) error {
+func (r *wechatExportRepository) UpdateSession(ctx context.Context, session *wechat.Session) error {
 	if session == nil {
 		return nil
 	}
@@ -83,7 +83,7 @@ func (r *wechatExportRepository) UpdateSession(ctx context.Context, session *ser
 	`, session.UserID, session.ID, session.Status, session.LoginToken, session.CookiesEncrypted,
 		session.LoginAccountName, session.LastValidatedAt, session.ExpiresAt)
 	if errors.Is(err, sql.ErrNoRows) {
-		return service.ErrWeChatSessionNotFound
+		return wechat.ErrSessionNotFound
 	}
 	if err != nil {
 		return err
@@ -92,7 +92,7 @@ func (r *wechatExportRepository) UpdateSession(ctx context.Context, session *ser
 	return nil
 }
 
-func (r *wechatExportRepository) GetSession(ctx context.Context, userID int64, sessionID int64) (*service.WeChatSession, error) {
+func (r *wechatExportRepository) GetSession(ctx context.Context, userID int64, sessionID int64) (*wechat.Session, error) {
 	session, err := scanWeChatSession(ctx, r.sql, `
 		SELECT id, user_id, status, login_token, cookies_encrypted, login_account_name,
 			last_validated_at, expires_at, created_at, updated_at
@@ -100,7 +100,7 @@ func (r *wechatExportRepository) GetSession(ctx context.Context, userID int64, s
 		WHERE user_id = $1 AND id = $2
 	`, userID, sessionID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatSessionNotFound
+		return nil, wechat.ErrSessionNotFound
 	}
 	return session, err
 }
@@ -112,7 +112,7 @@ func (r *wechatExportRepository) ExpireUserSessions(ctx context.Context, userID 
 			updated_at = NOW()
 		WHERE user_id = $2
 			AND status IN ($3, $4, $5)
-	`, service.WeChatSessionStatusExpired, userID, service.WeChatSessionStatusPending, service.WeChatSessionStatusScanConfirmed, service.WeChatSessionStatusReady)
+	`, wechat.SessionStatusExpired, userID, wechat.SessionStatusPending, wechat.SessionStatusScanConfirmed, wechat.SessionStatusReady)
 	return err
 }
 
@@ -123,11 +123,11 @@ func (r *wechatExportRepository) ExpireLoginAttemptSessions(ctx context.Context,
 			updated_at = NOW()
 		WHERE user_id = $2
 			AND status IN ($3, $4)
-	`, service.WeChatSessionStatusExpired, userID, service.WeChatSessionStatusPending, service.WeChatSessionStatusScanConfirmed)
+	`, wechat.SessionStatusExpired, userID, wechat.SessionStatusPending, wechat.SessionStatusScanConfirmed)
 	return err
 }
 
-func (r *wechatExportRepository) SearchAccounts(ctx context.Context, userID int64, query string, limit int) ([]service.WeChatAccount, error) {
+func (r *wechatExportRepository) SearchAccounts(ctx context.Context, userID int64, query string, limit int) ([]wechat.Account, error) {
 	args := []any{userID, limit}
 	where := "binding.user_id = $1"
 	if strings.TrimSpace(query) != "" {
@@ -151,7 +151,7 @@ func (r *wechatExportRepository) SearchAccounts(ctx context.Context, userID int6
 	return scanWeChatAccountRows(rows)
 }
 
-func (r *wechatExportRepository) GetAccount(ctx context.Context, userID int64, fakeID string) (*service.WeChatAccount, error) {
+func (r *wechatExportRepository) GetAccount(ctx context.Context, userID int64, fakeID string) (*wechat.Account, error) {
 	account, err := scanWeChatAccount(ctx, r.sql, `
 		SELECT binding.id, binding.user_id, account.fakeid, account.nickname, account.alias,
 			account.avatar, account.description, binding.is_active, binding.last_synced_at,
@@ -161,12 +161,12 @@ func (r *wechatExportRepository) GetAccount(ctx context.Context, userID int64, f
 		WHERE binding.user_id = $1 AND account.fakeid = $2
 	`, userID, fakeID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatAccountNotFound
+		return nil, wechat.ErrAccountNotFound
 	}
 	return account, err
 }
 
-func (r *wechatExportRepository) UpsertAccount(ctx context.Context, account *service.WeChatAccount) error {
+func (r *wechatExportRepository) UpsertAccount(ctx context.Context, account *wechat.Account) error {
 	if account == nil {
 		return nil
 	}
@@ -208,7 +208,7 @@ func (r *wechatExportRepository) UpsertAccount(ctx context.Context, account *ser
 	}, &account.ID, &account.CreatedAt, &account.UpdatedAt)
 }
 
-func (r *wechatExportRepository) MarkAccountSynced(ctx context.Context, userID int64, fakeID string) (*service.WeChatAccount, error) {
+func (r *wechatExportRepository) MarkAccountSynced(ctx context.Context, userID int64, fakeID string) (*wechat.Account, error) {
 	account, err := scanWeChatAccount(ctx, r.sql, `
 		WITH updated AS (
 			UPDATE wechat_account_bindings binding
@@ -227,12 +227,12 @@ func (r *wechatExportRepository) MarkAccountSynced(ctx context.Context, userID i
 		FROM updated
 	`, userID, fakeID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatAccountNotFound
+		return nil, wechat.ErrAccountNotFound
 	}
 	return account, err
 }
 
-func (r *wechatExportRepository) UpsertArticle(ctx context.Context, article *service.WeChatArticle) error {
+func (r *wechatExportRepository) UpsertArticle(ctx context.Context, article *wechat.Article) error {
 	if article == nil {
 		return nil
 	}
@@ -307,7 +307,7 @@ func (r *wechatExportRepository) UpsertArticle(ctx context.Context, article *ser
 	}, &article.ID, &article.CreatedAt, &article.UpdatedAt)
 }
 
-func (r *wechatExportRepository) UpdateArticleEnrichment(ctx context.Context, article *service.WeChatArticle) error {
+func (r *wechatExportRepository) UpdateArticleEnrichment(ctx context.Context, article *wechat.Article) error {
 	if article == nil {
 		return nil
 	}
@@ -361,13 +361,13 @@ func (r *wechatExportRepository) UpdateArticleEnrichment(ctx context.Context, ar
 	}, &article.CreatedAt, &article.UpdatedAt)
 }
 
-func (r *wechatExportRepository) ListArticles(ctx context.Context, userID int64, params pagination.PaginationParams) ([]service.WeChatArticle, *pagination.PaginationResult, error) {
+func (r *wechatExportRepository) ListArticles(ctx context.Context, userID int64, params pagination.PaginationParams) ([]wechat.Article, *pagination.PaginationResult, error) {
 	var total int64
 	if err := scanSingleRow(ctx, r.sql, "SELECT COUNT(*) FROM wechat_article_bindings WHERE user_id = $1", []any{userID}, &total); err != nil {
 		return nil, nil, err
 	}
 	if total == 0 {
-		return []service.WeChatArticle{}, paginationResultFromTotal(0, params), nil
+		return []wechat.Article{}, paginationResultFromTotal(0, params), nil
 	}
 	query := `
 		SELECT article.id, binding.user_id, COALESCE(account.fakeid, ''), binding.source_type,
@@ -394,7 +394,7 @@ func (r *wechatExportRepository) ListArticles(ctx context.Context, userID int64,
 	return articles, paginationResultFromTotal(total, params), nil
 }
 
-func (r *wechatExportRepository) GetArticleByID(ctx context.Context, articleID int64) (*service.WeChatArticle, error) {
+func (r *wechatExportRepository) GetArticleByID(ctx context.Context, articleID int64) (*wechat.Article, error) {
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT article.id, binding.user_id, COALESCE(account.fakeid, ''), binding.source_type,
 			article.title, article.author, article.link, article.cover, article.digest,
@@ -417,14 +417,14 @@ func (r *wechatExportRepository) GetArticleByID(ctx context.Context, articleID i
 		return nil, err
 	}
 	if len(articles) == 0 {
-		return nil, service.ErrWeChatArticleNotFound
+		return nil, wechat.ErrArticleNotFound
 	}
 	return &articles[0], nil
 }
 
-func (r *wechatExportRepository) ListArticlesByIDs(ctx context.Context, userID int64, articleIDs []int64) ([]service.WeChatArticle, error) {
+func (r *wechatExportRepository) ListArticlesByIDs(ctx context.Context, userID int64, articleIDs []int64) ([]wechat.Article, error) {
 	if len(articleIDs) == 0 {
-		return []service.WeChatArticle{}, nil
+		return []wechat.Article{}, nil
 	}
 	placeholders := make([]string, 0, len(articleIDs))
 	args := []any{userID}
@@ -452,7 +452,7 @@ func (r *wechatExportRepository) ListArticlesByIDs(ctx context.Context, userID i
 	return scanWeChatArticleRows(rows)
 }
 
-func (r *wechatExportRepository) CreateTask(ctx context.Context, task *service.WeChatExportTask) error {
+func (r *wechatExportRepository) CreateTask(ctx context.Context, task *wechat.ExportTask) error {
 	if task == nil {
 		return nil
 	}
@@ -480,7 +480,7 @@ func (r *wechatExportRepository) CreateTask(ctx context.Context, task *service.W
 	var formatsForDB []byte
 	if task.PayloadJSON != "" {
 		var payload struct {
-			Formats []service.WeChatExportFormat `json:"formats"`
+			Formats []wechat.ExportFormat `json:"formats"`
 		}
 		if err := json.Unmarshal([]byte(task.PayloadJSON), &payload); err == nil && len(payload.Formats) > 0 {
 			formatsForDB, _ = json.Marshal(payload.Formats)
@@ -515,7 +515,7 @@ func (r *wechatExportRepository) CreateTask(ctx context.Context, task *service.W
 	}, &task.ID, &task.CreatedAt, &task.UpdatedAt); err != nil {
 		return err
 	}
-	if err := insertWeChatTaskLog(ctx, q, service.WeChatExportTaskLog{
+	if err := insertWeChatTaskLog(ctx, q, wechat.ExportTaskLog{
 		TaskID:  task.ID,
 		UserID:  task.UserID,
 		Event:   "task_created",
@@ -532,13 +532,13 @@ func (r *wechatExportRepository) CreateTask(ctx context.Context, task *service.W
 	return nil
 }
 
-func (r *wechatExportRepository) ListTasks(ctx context.Context, userID int64, params pagination.PaginationParams) ([]service.WeChatExportTask, *pagination.PaginationResult, error) {
+func (r *wechatExportRepository) ListTasks(ctx context.Context, userID int64, params pagination.PaginationParams) ([]wechat.ExportTask, *pagination.PaginationResult, error) {
 	var total int64
 	if err := scanSingleRow(ctx, r.sql, "SELECT COUNT(*) FROM wechat_export_tasks WHERE user_id = $1", []any{userID}, &total); err != nil {
 		return nil, nil, err
 	}
 	if total == 0 {
-		return []service.WeChatExportTask{}, paginationResultFromTotal(0, params), nil
+		return []wechat.ExportTask{}, paginationResultFromTotal(0, params), nil
 	}
 	query := `
 		SELECT id, user_id, status, selected_article_count, successful_article_count, failed_article_count,
@@ -562,8 +562,8 @@ func (r *wechatExportRepository) ListTasks(ctx context.Context, userID int64, pa
 	return tasks, paginationResultFromTotal(total, params), nil
 }
 
-func (r *wechatExportRepository) GetWorkerStatus(ctx context.Context, userID int64) (*service.WeChatExportWorkerStatus, error) {
-	var status service.WeChatExportWorkerStatus
+func (r *wechatExportRepository) GetWorkerStatus(ctx context.Context, userID int64) (*wechat.ExportWorkerStatus, error) {
+	var status wechat.ExportWorkerStatus
 	var lastTaskUpdatedAt sql.NullTime
 	var oldestQueuedAt sql.NullTime
 	err := scanSingleRow(ctx, r.sql, `
@@ -581,12 +581,12 @@ func (r *wechatExportRepository) GetWorkerStatus(ctx context.Context, userID int
 		WHERE user_id = $1
 	`, []any{
 		userID,
-		service.WeChatExportTaskStatusQueued,
-		service.WeChatExportTaskStatusRunning,
-		service.WeChatExportTaskStatusFailed,
-		service.WeChatExportTaskStatusCompletedWithErrors,
-		service.WeChatExportTaskStatusCompleted,
-		service.WeChatExportTaskStatusCancelled,
+		wechat.ExportTaskStatusQueued,
+		wechat.ExportTaskStatusRunning,
+		wechat.ExportTaskStatusFailed,
+		wechat.ExportTaskStatusCompletedWithErrors,
+		wechat.ExportTaskStatusCompleted,
+		wechat.ExportTaskStatusCancelled,
 	},
 		&status.TotalCount,
 		&status.QueuedCount,
@@ -610,7 +610,7 @@ func (r *wechatExportRepository) GetWorkerStatus(ctx context.Context, userID int
 	return &status, nil
 }
 
-func (r *wechatExportRepository) GetTask(ctx context.Context, userID int64, taskID int64) (*service.WeChatExportTask, error) {
+func (r *wechatExportRepository) GetTask(ctx context.Context, userID int64, taskID int64) (*wechat.ExportTask, error) {
 	where := "id = $1"
 	args := []any{taskID}
 	if userID > 0 {
@@ -627,12 +627,12 @@ func (r *wechatExportRepository) GetTask(ctx context.Context, userID int64, task
 	`
 	task, err := scanWeChatTask(ctx, r.sql, query, args...)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatTaskNotFound
+		return nil, wechat.ErrTaskNotFound
 	}
 	return task, err
 }
 
-func (r *wechatExportRepository) CancelTask(ctx context.Context, userID int64, taskID int64) (*service.WeChatExportTask, error) {
+func (r *wechatExportRepository) CancelTask(ctx context.Context, userID int64, taskID int64) (*wechat.ExportTask, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -650,14 +650,14 @@ func (r *wechatExportRepository) CancelTask(ctx context.Context, userID int64, t
 		FOR UPDATE
 	`, userID, taskID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatTaskNotFound
+		return nil, wechat.ErrTaskNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
 	// Only allow cancellation of queued or running tasks
-	if task.Status != service.WeChatExportTaskStatusQueued && task.Status != service.WeChatExportTaskStatusRunning {
-		return nil, service.ErrWeChatTaskNotFound
+	if task.Status != wechat.ExportTaskStatusQueued && task.Status != wechat.ExportTaskStatusRunning {
+		return nil, wechat.ErrTaskNotFound
 	}
 	// Refund reserved credits if any
 	if task.CostEstimate > 0 {
@@ -698,14 +698,14 @@ func (r *wechatExportRepository) CancelTask(ctx context.Context, userID int64, t
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
 			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
-	`, service.WeChatExportTaskStatusCancelled, "cancelled by user", userID, taskID, service.WeChatExportTaskStatusQueued, service.WeChatExportTaskStatusRunning)
+	`, wechat.ExportTaskStatusCancelled, "cancelled by user", userID, taskID, wechat.ExportTaskStatusQueued, wechat.ExportTaskStatusRunning)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatTaskNotFound
+		return nil, wechat.ErrTaskNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	if logErr := insertWeChatTaskLog(ctx, tx, service.WeChatExportTaskLog{
+	if logErr := insertWeChatTaskLog(ctx, tx, wechat.ExportTaskLog{
 		TaskID:  task.ID,
 		UserID:  task.UserID,
 		Event:   "task_cancelled",
@@ -720,7 +720,7 @@ func (r *wechatExportRepository) CancelTask(ctx context.Context, userID int64, t
 	return task, nil
 }
 
-func (r *wechatExportRepository) RetryTask(ctx context.Context, userID int64, taskID int64) (*service.WeChatExportTask, error) {
+func (r *wechatExportRepository) RetryTask(ctx context.Context, userID int64, taskID int64) (*wechat.ExportTask, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -738,17 +738,17 @@ func (r *wechatExportRepository) RetryTask(ctx context.Context, userID int64, ta
 		FOR UPDATE
 	`, userID, taskID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatTaskNotFound
+		return nil, wechat.ErrTaskNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	retryable := task.Status == service.WeChatExportTaskStatusFailed ||
-		task.Status == service.WeChatExportTaskStatusCompletedWithErrors ||
-		task.Status == service.WeChatExportTaskStatusCancelled ||
-		task.Status == service.WeChatExportTaskStatusCompleted
+	retryable := task.Status == wechat.ExportTaskStatusFailed ||
+		task.Status == wechat.ExportTaskStatusCompletedWithErrors ||
+		task.Status == wechat.ExportTaskStatusCancelled ||
+		task.Status == wechat.ExportTaskStatusCompleted
 	if !retryable {
-		return nil, service.ErrWeChatTaskConflict
+		return nil, wechat.ErrTaskConflict
 	}
 	// For completed/failed-with-errors tasks, credits were already settled by
 	// CompleteTask (actual cost adjustment) or FailTask/CancelTask (full refund).
@@ -787,11 +787,11 @@ func (r *wechatExportRepository) RetryTask(ctx context.Context, userID int64, ta
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
 			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
-	`, service.WeChatExportTaskStatusQueued, costEstimate, reservation.BalanceSnapshot, reservation.Paid, reservation.Gift, task.ID,
-		service.WeChatExportTaskStatusFailed, service.WeChatExportTaskStatusCompletedWithErrors,
-		service.WeChatExportTaskStatusCancelled, service.WeChatExportTaskStatusCompleted)
+	`, wechat.ExportTaskStatusQueued, costEstimate, reservation.BalanceSnapshot, reservation.Paid, reservation.Gift, task.ID,
+		wechat.ExportTaskStatusFailed, wechat.ExportTaskStatusCompletedWithErrors,
+		wechat.ExportTaskStatusCancelled, wechat.ExportTaskStatusCompleted)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatTaskConflict
+		return nil, wechat.ErrTaskConflict
 	}
 	if err != nil {
 		return nil, err
@@ -810,7 +810,7 @@ func (r *wechatExportRepository) RetryTask(ctx context.Context, userID int64, ta
 	`, userID, taskID); err != nil {
 		return nil, err
 	}
-	if err := insertWeChatTaskLog(ctx, tx, service.WeChatExportTaskLog{
+	if err := insertWeChatTaskLog(ctx, tx, wechat.ExportTaskLog{
 		TaskID:  task.ID,
 		UserID:  task.UserID,
 		Event:   "task_retried",
@@ -825,13 +825,13 @@ func (r *wechatExportRepository) RetryTask(ctx context.Context, userID int64, ta
 	return task, nil
 }
 
-func (r *wechatExportRepository) ClaimNextTask(ctx context.Context, leaseSeconds int64) (*service.WeChatExportTask, []service.WeChatArticle, string, error) {
+func (r *wechatExportRepository) ClaimNextTask(ctx context.Context, leaseSeconds int64) (*wechat.ExportTask, []wechat.Article, string, error) {
 	// Phase 3：生成lease_token和run_id
-	leaseToken, err := service.GenerateWorkerLeaseToken()
+	leaseToken, err := wechat.GenerateWorkerLeaseToken()
 	if err != nil {
 		return nil, nil, "", err
 	}
-	runID, err := service.GenerateWorkerRunID()
+	runID, err := wechat.GenerateWorkerRunID()
 	if err != nil {
 		return nil, nil, "", err
 	}
@@ -861,14 +861,14 @@ func (r *wechatExportRepository) ClaimNextTask(ctx context.Context, leaseSeconds
 			tasks.reserved_paid_balance, tasks.reserved_gift_balance,
 			tasks.worker_lease_token, tasks.worker_run_id, tasks.created_at, tasks.updated_at
 	`
-	task, err := scanWeChatTask(ctx, r.sql, query, service.WeChatExportTaskStatusQueued, service.WeChatExportTaskStatusRunning, leaseSeconds, service.WeChatExportTaskStatusRunning, leaseToken, runID)
+	task, err := scanWeChatTask(ctx, r.sql, query, wechat.ExportTaskStatusQueued, wechat.ExportTaskStatusRunning, leaseSeconds, wechat.ExportTaskStatusRunning, leaseToken, runID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil, "", nil
 	}
 	if err != nil {
 		return nil, nil, "", err
 	}
-	if err := insertWeChatTaskLog(ctx, r.sql, service.WeChatExportTaskLog{
+	if err := insertWeChatTaskLog(ctx, r.sql, wechat.ExportTaskLog{
 		TaskID:  task.ID,
 		UserID:  task.UserID,
 		Event:   "task_claimed",
@@ -885,7 +885,7 @@ func (r *wechatExportRepository) ClaimNextTask(ctx context.Context, leaseSeconds
 	return task, articles, leaseToken, nil
 }
 
-func (r *wechatExportRepository) CompleteTask(ctx context.Context, taskID int64, leaseToken string, artifacts []service.WeChatExportArtifact, resultManifestJSON string, failedArticleCount int, actualCost float64) (*service.WeChatExportTask, error) {
+func (r *wechatExportRepository) CompleteTask(ctx context.Context, taskID int64, leaseToken string, artifacts []wechat.ExportArtifact, resultManifestJSON string, failedArticleCount int, actualCost float64) (*wechat.ExportTask, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -904,13 +904,13 @@ func (r *wechatExportRepository) CompleteTask(ctx context.Context, taskID int64,
 		FOR UPDATE
 	`, taskID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatTaskNotFound
+		return nil, wechat.ErrTaskNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	if existing.Status != service.WeChatExportTaskStatusRunning {
-		return nil, fmt.Errorf("cannot complete task in status %q: %w", existing.Status, service.ErrWeChatTaskConflict)
+	if existing.Status != wechat.ExportTaskStatusRunning {
+		return nil, fmt.Errorf("cannot complete task in status %q: %w", existing.Status, wechat.ErrTaskConflict)
 	}
 	// Phase 3：新增lease_token验证
 	if existing.WorkerLeaseToken != leaseToken {
@@ -922,9 +922,9 @@ func (r *wechatExportRepository) CompleteTask(ctx context.Context, taskID int64,
 		return nil, infraerrors.Conflict("LEASE_EXPIRED",
 			"worker lease has expired, task may have been reclaimed")
 	}
-	status := service.WeChatExportTaskStatusCompleted
+	status := wechat.ExportTaskStatusCompleted
 	if failedArticleCount > 0 {
-		status = service.WeChatExportTaskStatusCompletedWithErrors
+		status = wechat.ExportTaskStatusCompletedWithErrors
 	}
 	task, err := scanWeChatTask(ctx, tx, `
 		UPDATE wechat_export_tasks
@@ -942,9 +942,9 @@ func (r *wechatExportRepository) CompleteTask(ctx context.Context, taskID int64,
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
 			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
-	`, status, failedArticleCount, resultManifestJSON, taskID, service.WeChatExportTaskStatusRunning)
+	`, status, failedArticleCount, resultManifestJSON, taskID, wechat.ExportTaskStatusRunning)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatTaskConflict
+		return nil, wechat.ErrTaskConflict
 	}
 	if err != nil {
 		return nil, err
@@ -991,7 +991,7 @@ func (r *wechatExportRepository) CompleteTask(ctx context.Context, taskID int64,
 			return nil, err
 		}
 	}
-	if err := insertWeChatTaskLog(ctx, tx, service.WeChatExportTaskLog{
+	if err := insertWeChatTaskLog(ctx, tx, wechat.ExportTaskLog{
 		TaskID:  task.ID,
 		UserID:  task.UserID,
 		Event:   "task_completed",
@@ -1010,7 +1010,7 @@ func (r *wechatExportRepository) CompleteTask(ctx context.Context, taskID int64,
 	return task, nil
 }
 
-func (r *wechatExportRepository) FailTask(ctx context.Context, taskID int64, leaseToken string, message string) (*service.WeChatExportTask, error) {
+func (r *wechatExportRepository) FailTask(ctx context.Context, taskID int64, leaseToken string, message string) (*wechat.ExportTask, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -1028,18 +1028,18 @@ func (r *wechatExportRepository) FailTask(ctx context.Context, taskID int64, lea
 		FOR UPDATE
 	`, taskID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatTaskNotFound
+		return nil, wechat.ErrTaskNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
 	// Only allow failing tasks that are still running or queued.
 	// This prevents double-refunding already completed or cancelled tasks.
-	if task.Status != service.WeChatExportTaskStatusRunning && task.Status != service.WeChatExportTaskStatusQueued {
-		return nil, fmt.Errorf("cannot fail task in status %q: %w", task.Status, service.ErrWeChatTaskConflict)
+	if task.Status != wechat.ExportTaskStatusRunning && task.Status != wechat.ExportTaskStatusQueued {
+		return nil, fmt.Errorf("cannot fail task in status %q: %w", task.Status, wechat.ErrTaskConflict)
 	}
 	// Phase 3：新增lease_token验证（仅running状态）
-	if task.Status == service.WeChatExportTaskStatusRunning {
+	if task.Status == wechat.ExportTaskStatusRunning {
 		if task.WorkerLeaseToken != leaseToken {
 			return nil, infraerrors.Unauthorized("LEASE_TOKEN_MISMATCH",
 				"lease token does not match the running task")
@@ -1081,14 +1081,14 @@ func (r *wechatExportRepository) FailTask(ctx context.Context, taskID int64, lea
 			formats_json, include_engagement, payload_json, result_manifest_json, error_message,
 			worker_lease_until, retention_days, expires_at, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance,
 			worker_lease_token, worker_run_id, created_at, updated_at
-	`, service.WeChatExportTaskStatusFailed, message, taskID, task.BalanceSnapshot, service.WeChatExportTaskStatusRunning, service.WeChatExportTaskStatusQueued)
+	`, wechat.ExportTaskStatusFailed, message, taskID, task.BalanceSnapshot, wechat.ExportTaskStatusRunning, wechat.ExportTaskStatusQueued)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatTaskConflict
+		return nil, wechat.ErrTaskConflict
 	}
 	if err != nil {
 		return nil, err
 	}
-	if logErr := insertWeChatTaskLog(ctx, tx, service.WeChatExportTaskLog{
+	if logErr := insertWeChatTaskLog(ctx, tx, wechat.ExportTaskLog{
 		TaskID:  task.ID,
 		UserID:  task.UserID,
 		Event:   "task_failed",
@@ -1103,7 +1103,7 @@ func (r *wechatExportRepository) FailTask(ctx context.Context, taskID int64, lea
 	return task, nil
 }
 
-func (r *wechatExportRepository) AddTaskLog(ctx context.Context, taskID int64, leaseToken string, log service.WeChatExportTaskLog) (*service.WeChatExportTaskLog, error) {
+func (r *wechatExportRepository) AddTaskLog(ctx context.Context, taskID int64, leaseToken string, log wechat.ExportTaskLog) (*wechat.ExportTaskLog, error) {
 	// Phase 3：验证lease_token（强制验证，用户决策）
 	if strings.TrimSpace(leaseToken) == "" {
 		return nil, infraerrors.BadRequest("LEASE_TOKEN_REQUIRED", "lease token is required for adding task log")
@@ -1120,14 +1120,14 @@ func (r *wechatExportRepository) AddTaskLog(ctx context.Context, taskID int64, l
 	`, []any{taskID}, &status, &actualToken, &leaseUntil)
 
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatTaskNotFound
+		return nil, wechat.ErrTaskNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
 
 	// Phase 3：running状态强制验证lease_token
-	if status == service.WeChatExportTaskStatusRunning {
+	if status == wechat.ExportTaskStatusRunning {
 		if actualToken != leaseToken {
 			return nil, infraerrors.Unauthorized("LEASE_TOKEN_MISMATCH",
 				"lease token does not match the running task")
@@ -1140,7 +1140,7 @@ func (r *wechatExportRepository) AddTaskLog(ctx context.Context, taskID int64, l
 	}
 
 	// 原有INSERT逻辑
-	var inserted service.WeChatExportTaskLog
+	var inserted wechat.ExportTaskLog
 	var metaJSON []byte
 	err = scanSingleRow(ctx, r.sql, `
 		INSERT INTO wechat_export_task_logs (
@@ -1167,7 +1167,7 @@ func (r *wechatExportRepository) AddTaskLog(ctx context.Context, taskID int64, l
 		&inserted.CreatedAt,
 	)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrWeChatTaskNotFound
+		return nil, wechat.ErrTaskNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -1176,7 +1176,7 @@ func (r *wechatExportRepository) AddTaskLog(ctx context.Context, taskID int64, l
 	return &inserted, nil
 }
 
-func (r *wechatExportRepository) ListTaskLogs(ctx context.Context, userID int64, taskID int64) ([]service.WeChatExportTaskLog, error) {
+func (r *wechatExportRepository) ListTaskLogs(ctx context.Context, userID int64, taskID int64) ([]wechat.ExportTaskLog, error) {
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT logs.id, logs.task_id, logs.user_id, logs.event, logs.status, logs.message,
 			logs.meta_json, logs.created_at
@@ -1192,7 +1192,7 @@ func (r *wechatExportRepository) ListTaskLogs(ctx context.Context, userID int64,
 	return scanWeChatTaskLogRows(rows)
 }
 
-func (r *wechatExportRepository) ListArtifacts(ctx context.Context, userID int64, taskID int64) ([]service.WeChatExportArtifact, error) {
+func (r *wechatExportRepository) ListArtifacts(ctx context.Context, userID int64, taskID int64) ([]wechat.ExportArtifact, error) {
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id, task_id, user_id, format, storage_provider, storage_key, download_url,
 			file_name, file_size, checksum, expires_at, deleted_at, created_at, updated_at
@@ -1207,7 +1207,7 @@ func (r *wechatExportRepository) ListArtifacts(ctx context.Context, userID int64
 	return scanWeChatArtifactRows(rows)
 }
 
-func (r *wechatExportRepository) GetArtifact(ctx context.Context, userID int64, artifactID int64) (*service.WeChatExportArtifact, error) {
+func (r *wechatExportRepository) GetArtifact(ctx context.Context, userID int64, artifactID int64) (*wechat.ExportArtifact, error) {
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id, task_id, user_id, format, storage_provider, storage_key, download_url,
 			file_name, file_size, checksum, expires_at, deleted_at, created_at, updated_at
@@ -1223,12 +1223,12 @@ func (r *wechatExportRepository) GetArtifact(ctx context.Context, userID int64, 
 		return nil, err
 	}
 	if len(artifacts) == 0 {
-		return nil, service.ErrWeChatTaskNotFound
+		return nil, wechat.ErrTaskNotFound
 	}
 	return &artifacts[0], nil
 }
 
-func scanWeChatTask(ctx context.Context, q sqlQueryer, query string, args ...any) (*service.WeChatExportTask, error) {
+func scanWeChatTask(ctx context.Context, q sqlQueryer, query string, args ...any) (*wechat.ExportTask, error) {
 	rows, err := q.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -1245,10 +1245,10 @@ func scanWeChatTask(ctx context.Context, q sqlQueryer, query string, args ...any
 }
 
 func reserveWeChatExportBalance(ctx context.Context, q sqlExecutor, userID int64, amount float64) (userBalanceReservation, error) {
-	return reserveUserBalanceWithComponents(ctx, q, userID, amount, service.ErrWeChatInsufficientBalance)
+	return reserveUserBalanceWithComponents(ctx, q, userID, amount, wechat.ErrInsufficientBalance)
 }
 
-func weChatExportTaskReservation(task *service.WeChatExportTask) userBalanceReservation {
+func weChatExportTaskReservation(task *wechat.ExportTask) userBalanceReservation {
 	if task == nil {
 		return userBalanceReservation{}
 	}
@@ -1259,7 +1259,7 @@ func weChatExportTaskReservation(task *service.WeChatExportTask) userBalanceRese
 	}
 }
 
-func upsertWeChatExportUsageRecord(ctx context.Context, q sqlExecutor, task *service.WeChatExportTask, articleCount int, reservedCost float64, actualCost float64, billingStatus string, metadataJSON string) error {
+func upsertWeChatExportUsageRecord(ctx context.Context, q sqlExecutor, task *wechat.ExportTask, articleCount int, reservedCost float64, actualCost float64, billingStatus string, metadataJSON string) error {
 	if task == nil {
 		return nil
 	}
@@ -1283,7 +1283,7 @@ func upsertWeChatExportUsageRecord(ctx context.Context, q sqlExecutor, task *ser
 	return err
 }
 
-func scanWeChatSession(ctx context.Context, q sqlQueryer, query string, args ...any) (*service.WeChatSession, error) {
+func scanWeChatSession(ctx context.Context, q sqlQueryer, query string, args ...any) (*wechat.Session, error) {
 	rows, err := q.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -1295,7 +1295,7 @@ func scanWeChatSession(ctx context.Context, q sqlQueryer, query string, args ...
 		}
 		return nil, sql.ErrNoRows
 	}
-	var session service.WeChatSession
+	var session wechat.Session
 	var lastValidatedAt sql.NullTime
 	var expiresAt sql.NullTime
 	if err := rows.Scan(
@@ -1321,7 +1321,7 @@ func scanWeChatSession(ctx context.Context, q sqlQueryer, query string, args ...
 	return &session, rows.Err()
 }
 
-func scanWeChatAccount(ctx context.Context, q sqlQueryer, query string, args ...any) (*service.WeChatAccount, error) {
+func scanWeChatAccount(ctx context.Context, q sqlQueryer, query string, args ...any) (*wechat.Account, error) {
 	rows, err := q.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -1337,10 +1337,10 @@ func scanWeChatAccount(ctx context.Context, q sqlQueryer, query string, args ...
 	return &accounts[0], nil
 }
 
-func scanWeChatAccountRows(rows *sql.Rows) ([]service.WeChatAccount, error) {
-	items := make([]service.WeChatAccount, 0)
+func scanWeChatAccountRows(rows *sql.Rows) ([]wechat.Account, error) {
+	items := make([]wechat.Account, 0)
 	for rows.Next() {
-		var item service.WeChatAccount
+		var item wechat.Account
 		var lastSyncedAt sql.NullTime
 		if err := rows.Scan(
 			&item.ID,
@@ -1368,10 +1368,10 @@ func scanWeChatAccountRows(rows *sql.Rows) ([]service.WeChatAccount, error) {
 	return items, nil
 }
 
-func scanWeChatArticleRows(rows *sql.Rows) ([]service.WeChatArticle, error) {
-	items := make([]service.WeChatArticle, 0)
+func scanWeChatArticleRows(rows *sql.Rows) ([]wechat.Article, error) {
+	items := make([]wechat.Article, 0)
 	for rows.Next() {
-		var item service.WeChatArticle
+		var item wechat.Article
 		var publishAt sql.NullTime
 		var metadataJSON []byte
 		if err := rows.Scan(
@@ -1406,10 +1406,10 @@ func scanWeChatArticleRows(rows *sql.Rows) ([]service.WeChatArticle, error) {
 	return items, nil
 }
 
-func scanWeChatTaskRows(rows *sql.Rows) ([]service.WeChatExportTask, error) {
-	items := make([]service.WeChatExportTask, 0)
+func scanWeChatTaskRows(rows *sql.Rows) ([]wechat.ExportTask, error) {
+	items := make([]wechat.ExportTask, 0)
 	for rows.Next() {
-		var item service.WeChatExportTask
+		var item wechat.ExportTask
 		var formatsJSON []byte
 		var payloadJSON []byte
 		var manifestJSON []byte
@@ -1466,7 +1466,7 @@ func scanWeChatTaskRows(rows *sql.Rows) ([]service.WeChatExportTask, error) {
 	return items, nil
 }
 
-func hydrateWeChatTaskPayload(task *service.WeChatExportTask) error {
+func hydrateWeChatTaskPayload(task *wechat.ExportTask) error {
 	if task == nil {
 		return nil
 	}
@@ -1482,7 +1482,7 @@ func hydrateWeChatTaskPayload(task *service.WeChatExportTask) error {
 	return nil
 }
 
-func insertWeChatArtifact(ctx context.Context, q sqlQueryer, artifact *service.WeChatExportArtifact) error {
+func insertWeChatArtifact(ctx context.Context, q sqlQueryer, artifact *wechat.ExportArtifact) error {
 	return scanSingleRow(ctx, q, `
 		INSERT INTO wechat_export_artifacts (
 			task_id, user_id, format, storage_provider, storage_key, download_url,
@@ -1504,7 +1504,7 @@ func insertWeChatArtifact(ctx context.Context, q sqlQueryer, artifact *service.W
 	}, &artifact.ID, &artifact.CreatedAt, &artifact.UpdatedAt)
 }
 
-func insertWeChatTaskLog(ctx context.Context, q sqlQueryer, log service.WeChatExportTaskLog) error {
+func insertWeChatTaskLog(ctx context.Context, q sqlQueryer, log wechat.ExportTaskLog) error {
 	message := strings.TrimSpace(log.Message)
 	return scanSingleRow(ctx, q, `
 		INSERT INTO wechat_export_task_logs (
@@ -1530,10 +1530,10 @@ func normalizeWeChatTaskLogMetaJSON(value string) string {
 	return value
 }
 
-func scanWeChatTaskLogRows(rows *sql.Rows) ([]service.WeChatExportTaskLog, error) {
-	items := make([]service.WeChatExportTaskLog, 0)
+func scanWeChatTaskLogRows(rows *sql.Rows) ([]wechat.ExportTaskLog, error) {
+	items := make([]wechat.ExportTaskLog, 0)
 	for rows.Next() {
-		var item service.WeChatExportTaskLog
+		var item wechat.ExportTaskLog
 		var metaJSON []byte
 		if err := rows.Scan(
 			&item.ID,
@@ -1556,10 +1556,10 @@ func scanWeChatTaskLogRows(rows *sql.Rows) ([]service.WeChatExportTaskLog, error
 	return items, nil
 }
 
-func scanWeChatArtifactRows(rows *sql.Rows) ([]service.WeChatExportArtifact, error) {
-	items := make([]service.WeChatExportArtifact, 0)
+func scanWeChatArtifactRows(rows *sql.Rows) ([]wechat.ExportArtifact, error) {
+	items := make([]wechat.ExportArtifact, 0)
 	for rows.Next() {
-		var item service.WeChatExportArtifact
+		var item wechat.ExportArtifact
 		var expiresAt sql.NullTime
 		var deletedAt sql.NullTime
 		if err := rows.Scan(

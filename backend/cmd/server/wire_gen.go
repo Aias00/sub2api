@@ -8,15 +8,18 @@ package main
 
 import (
 	"context"
-	"github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/handler"
-	"github.com/Wei-Shaw/cloudbase/internal/handler/admin"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	"github.com/Wei-Shaw/cloudbase/internal/repository"
-	"github.com/Wei-Shaw/cloudbase/internal/server"
-	"github.com/Wei-Shaw/cloudbase/internal/server/middleware"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/ent"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/handler"
+	"github.com/Aias00/cloudbase/internal/handler/admin"
+	"github.com/Aias00/cloudbase/internal/hot"
+	imagectx "github.com/Aias00/cloudbase/internal/image"
+	"github.com/Aias00/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/repository"
+	"github.com/Aias00/cloudbase/internal/server"
+	"github.com/Aias00/cloudbase/internal/server/middleware"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/redis/go-redis/v9"
 	"log"
 	"net/http"
@@ -26,7 +29,7 @@ import (
 
 import (
 	_ "embed"
-	_ "github.com/Wei-Shaw/cloudbase/ent/runtime"
+	_ "github.com/Aias00/cloudbase/ent/runtime"
 )
 
 // Injectors from wire.go:
@@ -76,8 +79,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	authService := service.NewAuthService(client, userRepository, redeemCodeRepository, refreshTokenCache, configConfig, settingService, emailService, turnstileService, emailQueueService, promoService, subscriptionService, affiliateService, serviceUserPlatformQuotaRepository)
 	userService := service.NewUserService(userRepository, settingRepository, apiKeyAuthCacheInvalidator, billingCache, authService, apiKeyService)
 	redeemCache := repository.NewRedeemCache(redisClient)
-	userBalanceLedgerRepository := repository.NewUserBalanceLedgerRepository(client, db)
-	userBalanceLedgerService := service.NewUserBalanceLedgerService(userBalanceLedgerRepository, userRepository)
+	userBalanceLedgerRepository := billingctx.NewUserBalanceLedgerRepository(client, db)
+	userBalanceLedgerService := billingctx.NewUserBalanceLedgerService(userBalanceLedgerRepository)
 	redeemService := service.NewRedeemService(redeemCodeRepository, userRepository, subscriptionService, redeemCache, billingCacheService, client, apiKeyAuthCacheInvalidator, affiliateService, userBalanceLedgerService)
 	secretEncryptor, err := repository.NewAESEncryptor(configConfig)
 	if err != nil {
@@ -249,8 +252,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	contentModerationHandler := admin.NewContentModerationHandler(contentModerationService)
 	paymentHandler := admin.NewPaymentHandler(paymentService, paymentConfigService)
 	affiliateHandler := admin.NewAffiliateHandler(affiliateService, adminService)
-	complianceHandler := admin.NewComplianceHandler(settingService)
-	adminHandlers := handler.ProvideAdminHandlers(dashboardHandler, adminUserHandler, groupHandler, accountHandler, adminAnnouncementHandler, dataManagementHandler, backupHandler, oAuthHandler, openAIOAuthHandler, geminiOAuthHandler, antigravityOAuthHandler, grokOAuthHandler, proxyHandler, adminRedeemHandler, promoHandler, settingHandler, opsHandler, systemHandler, adminSubscriptionHandler, adminUsageHandler, userAttributeHandler, errorPassthroughHandler, tlsFingerprintProfileHandler, adminAPIKeyHandler, scheduledTestHandler, channelHandler, channelMonitorHandler, channelMonitorRequestTemplateHandler, contentModerationHandler, paymentHandler, affiliateHandler, complianceHandler)
+	adminHandlers := handler.ProvideAdminHandlers(dashboardHandler, adminUserHandler, groupHandler, accountHandler, adminAnnouncementHandler, dataManagementHandler, backupHandler, oAuthHandler, openAIOAuthHandler, geminiOAuthHandler, antigravityOAuthHandler, grokOAuthHandler, proxyHandler, adminRedeemHandler, promoHandler, settingHandler, opsHandler, systemHandler, adminSubscriptionHandler, adminUsageHandler, userAttributeHandler, errorPassthroughHandler, tlsFingerprintProfileHandler, adminAPIKeyHandler, scheduledTestHandler, channelHandler, channelMonitorHandler, channelMonitorRequestTemplateHandler, contentModerationHandler, paymentHandler, affiliateHandler)
 	usageRecordWorkerPool := service.NewUsageRecordWorkerPool(configConfig)
 	userMsgQueueCache := repository.NewUserMsgQueueCache(redisClient)
 	userMessageQueueService := service.ProvideUserMessageQueueService(userMsgQueueCache, rpmCache, configConfig)
@@ -261,10 +263,10 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	handlerPaymentHandler := handler.NewPaymentHandler(paymentService, paymentConfigService, channelService)
 	paymentWebhookHandler := handler.NewPaymentWebhookHandler(paymentService, registry)
 	availableChannelHandler := handler.NewAvailableChannelHandler(channelService, apiKeyService, settingService)
-	promptCatalogRepository := repository.NewPromptCatalogRepository(db)
-	promptCatalogService := service.NewPromptCatalogService(promptCatalogRepository)
+	promptCatalogRepository := imagectx.NewPromptCatalogRepository(db)
+	promptCatalogService := imagectx.NewPromptCatalogService(promptCatalogRepository)
 	promptCatalogHandler := handler.NewPromptCatalogHandler(promptCatalogService)
-	twitterImportService := service.NewTwitterImportService(promptCatalogService)
+	twitterImportService := imagectx.NewTwitterImportService(promptCatalogService)
 	twitterImportHandler := handler.NewTwitterImportHandler(twitterImportService)
 	weChatExportRepository := repository.NewWeChatExportRepository(db)
 	weChatExportService := service.NewWeChatExportService(weChatExportRepository, settingService)
@@ -272,8 +274,8 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	imageWorkspaceRepository := repository.NewImageWorkspaceRepository(db)
 	imageWorkspaceService := service.NewImageWorkspaceService(imageWorkspaceRepository, settingRepository)
 	imageWorkspaceHandler := handler.NewImageWorkspaceHandler(imageWorkspaceService)
-	hotContentRepository := repository.NewHotContentRepository(db)
-	hotContentService := service.NewHotContentService(hotContentRepository)
+	hotContentRepository := hot.NewRepository(db)
+	hotContentService := hot.NewService(hotContentRepository)
 	hotContentHandler := handler.NewHotContentHandler(hotContentService)
 	homeBusinessCapabilityHandler := handler.NewHomeBusinessCapabilityHandler(promptCatalogHandler, weChatExportHandler, imageWorkspaceHandler, hotContentHandler)
 	webHandler := handler.NewWebHandler(authHandler, userService, paymentService, paymentConfigService, settingService, twitterImportService)

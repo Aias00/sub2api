@@ -10,32 +10,34 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/hot"
+	imagectx "github.com/Aias00/cloudbase/internal/image"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
 
 type homeBusinessPromptRepoStub struct {
-	summary *service.PromptCatalogSummary
+	summary *imagectx.PromptCatalogSummary
 }
 
-func (s *homeBusinessPromptRepoStub) ListCases(context.Context, pagination.PaginationParams, service.PromptCatalogListFilters) ([]service.PromptCatalogCase, *pagination.PaginationResult, error) {
+func (s *homeBusinessPromptRepoStub) ListCases(context.Context, pagination.PaginationParams, imagectx.PromptCatalogListFilters) ([]imagectx.PromptCatalogCase, *pagination.PaginationResult, error) {
 	return nil, &pagination.PaginationResult{}, nil
 }
 
-func (s *homeBusinessPromptRepoStub) GetCaseSummary(context.Context, service.PromptCatalogListFilters) (*service.PromptCatalogSummary, error) {
+func (s *homeBusinessPromptRepoStub) GetCaseSummary(context.Context, imagectx.PromptCatalogListFilters) (*imagectx.PromptCatalogSummary, error) {
 	if s.summary != nil {
 		return s.summary, nil
 	}
-	return &service.PromptCatalogSummary{}, nil
+	return &imagectx.PromptCatalogSummary{}, nil
 }
 
-func (s *homeBusinessPromptRepoStub) GetCaseByID(context.Context, string) (*service.PromptCatalogCase, error) {
-	return nil, service.ErrPromptCatalogNotFound
+func (s *homeBusinessPromptRepoStub) GetCaseByID(context.Context, string) (*imagectx.PromptCatalogCase, error) {
+	return nil, imagectx.ErrPromptCatalogNotFound
 }
 
-func (s *homeBusinessPromptRepoStub) UpsertCase(context.Context, *service.PromptCatalogCase) error {
+func (s *homeBusinessPromptRepoStub) UpsertCase(context.Context, *imagectx.PromptCatalogCase) error {
 	return nil
 }
 
@@ -43,16 +45,16 @@ type homeBusinessHotRepoStub struct {
 	total int64
 }
 
-func (s *homeBusinessHotRepoStub) ListSources(context.Context) ([]service.HotSource, error) {
-	return []service.HotSource{}, nil
+func (s *homeBusinessHotRepoStub) ListSources(context.Context) ([]hot.Source, error) {
+	return []hot.Source{}, nil
 }
 
-func (s *homeBusinessHotRepoStub) ListItems(context.Context, pagination.PaginationParams, service.HotContentListFilters) ([]service.HotItem, *pagination.PaginationResult, error) {
-	return []service.HotItem{}, &pagination.PaginationResult{Total: s.total, Page: 1, PageSize: 1, Pages: 1}, nil
+func (s *homeBusinessHotRepoStub) ListItems(context.Context, pagination.PaginationParams, hot.ListFilters) ([]hot.Item, *pagination.PaginationResult, error) {
+	return []hot.Item{}, &pagination.PaginationResult{Total: s.total, Page: 1, PageSize: 1, Pages: 1}, nil
 }
 
-func (s *homeBusinessHotRepoStub) ListRunEvents(context.Context, string, pagination.PaginationParams) ([]service.HotRunEvent, *pagination.PaginationResult, error) {
-	return []service.HotRunEvent{}, &pagination.PaginationResult{}, nil
+func (s *homeBusinessHotRepoStub) ListRunEvents(context.Context, string, pagination.PaginationParams) ([]hot.RunEvent, *pagination.PaginationResult, error) {
+	return []hot.RunEvent{}, &pagination.PaginationResult{}, nil
 }
 
 type homeBusinessImageWorkspaceRepoStub struct {
@@ -217,11 +219,11 @@ func TestHomeBusinessCapabilityStatuses(t *testing.T) {
 	t.Setenv("HOT_CONTENT_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY", "true")
 
 	gin.SetMode(gin.TestMode)
-	prompt := NewPromptCatalogHandler(service.NewPromptCatalogService(&homeBusinessPromptRepoStub{
-		summary: &service.PromptCatalogSummary{Total: 3, CaseCount: 3},
+	prompt := NewPromptCatalogHandler(imagectx.NewPromptCatalogService(&homeBusinessPromptRepoStub{
+		summary: &imagectx.PromptCatalogSummary{Total: 3, CaseCount: 3},
 	}))
-	hot := NewHotContentHandler(service.NewHotContentService(&homeBusinessHotRepoStub{total: 2}))
-	h := NewHomeBusinessCapabilityHandler(prompt, nil, nil, hot)
+	hotHandler := NewHotContentHandler(hot.NewService(&homeBusinessHotRepoStub{total: 2}))
+	h := NewHomeBusinessCapabilityHandler(prompt, nil, nil, hotHandler)
 
 	router := gin.New()
 	router.GET("/api/v1/home/business-capabilities", h.GetStatuses)
@@ -254,8 +256,8 @@ func TestHomeBusinessCapabilityHotContentRequiresWorkerStatus(t *testing.T) {
 	t.Setenv("HOT_CONTENT_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY", "false")
 	t.Setenv("HOT_WORKER_STATUS_PATH", "")
 
-	hot := NewHotContentHandler(service.NewHotContentService(&homeBusinessHotRepoStub{total: 2}))
-	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hot)
+	hotHandler := NewHotContentHandler(hot.NewService(&homeBusinessHotRepoStub{total: 2}))
+	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hotHandler)
 
 	status := h.hotContentStatus(context.Background())
 
@@ -268,8 +270,8 @@ func TestHomeBusinessCapabilityHotContentReportsUnhealthyWorker(t *testing.T) {
 	t.Setenv("HOT_CONTENT_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY", "false")
 	t.Setenv("HOT_WORKER_STATUS_PATH", statusPath)
 
-	hot := NewHotContentHandler(service.NewHotContentService(&homeBusinessHotRepoStub{total: 2}))
-	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hot)
+	hotHandler := NewHotContentHandler(hot.NewService(&homeBusinessHotRepoStub{total: 2}))
+	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hotHandler)
 
 	status := h.hotContentStatus(context.Background())
 
@@ -283,8 +285,8 @@ func TestHomeBusinessCapabilityHotContentReportsStaleWorker(t *testing.T) {
 	t.Setenv("HOT_WORKER_STATUS_PATH", statusPath)
 	t.Setenv("HOT_WORKER_HEALTH_MAX_AGE_MS", "1000")
 
-	hot := NewHotContentHandler(service.NewHotContentService(&homeBusinessHotRepoStub{total: 2}))
-	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hot)
+	hotHandler := NewHotContentHandler(hot.NewService(&homeBusinessHotRepoStub{total: 2}))
+	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hotHandler)
 
 	status := h.hotContentStatus(context.Background())
 
@@ -297,8 +299,8 @@ func TestHomeBusinessCapabilityHotContentRejectsDryRunWorker(t *testing.T) {
 	t.Setenv("HOT_CONTENT_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY", "false")
 	t.Setenv("HOT_WORKER_STATUS_PATH", statusPath)
 
-	hot := NewHotContentHandler(service.NewHotContentService(&homeBusinessHotRepoStub{total: 2}))
-	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hot)
+	hotHandler := NewHotContentHandler(hot.NewService(&homeBusinessHotRepoStub{total: 2}))
+	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hotHandler)
 
 	status := h.hotContentStatus(context.Background())
 
@@ -311,8 +313,8 @@ func TestHomeBusinessCapabilityHotContentReportsWorkerFailures(t *testing.T) {
 	t.Setenv("HOT_CONTENT_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY", "false")
 	t.Setenv("HOT_WORKER_STATUS_PATH", statusPath)
 
-	hot := NewHotContentHandler(service.NewHotContentService(&homeBusinessHotRepoStub{total: 2}))
-	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hot)
+	hotHandler := NewHotContentHandler(hot.NewService(&homeBusinessHotRepoStub{total: 2}))
+	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hotHandler)
 
 	status := h.hotContentStatus(context.Background())
 
@@ -325,8 +327,8 @@ func TestHomeBusinessCapabilityHotContentAvailableWhenWorkerReady(t *testing.T) 
 	t.Setenv("HOT_CONTENT_CAPABILITY_ASSUME_EXTERNAL_WORKER_READY", "false")
 	t.Setenv("HOT_WORKER_STATUS_PATH", statusPath)
 
-	hot := NewHotContentHandler(service.NewHotContentService(&homeBusinessHotRepoStub{total: 2}))
-	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hot)
+	hotHandler := NewHotContentHandler(hot.NewService(&homeBusinessHotRepoStub{total: 2}))
+	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, hotHandler)
 
 	status := h.hotContentStatus(context.Background())
 

@@ -13,7 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/config"
 	"golang.org/x/sync/errgroup"
 )
 

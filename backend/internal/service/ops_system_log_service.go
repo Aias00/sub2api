@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 func (s *OpsService) ListSystemLogs(ctx context.Context, filter *OpsSystemLogFilter) (*OpsSystemLogList, error) {

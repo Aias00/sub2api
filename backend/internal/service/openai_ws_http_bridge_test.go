@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/xai"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/pkg/xai"
 	coderws "github.com/coder/websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"

@@ -25,16 +25,17 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/anthropicfp"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/claude"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/ctxkey"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/timezone"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/usagestats"
-	"github.com/Wei-Shaw/cloudbase/internal/util/responseheaders"
-	"github.com/Wei-Shaw/cloudbase/internal/util/urlvalidator"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/pkg/anthropicfp"
+	"github.com/Aias00/cloudbase/internal/pkg/claude"
+	"github.com/Aias00/cloudbase/internal/pkg/ctxkey"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/timezone"
+	"github.com/Aias00/cloudbase/internal/pkg/usagestats"
+	"github.com/Aias00/cloudbase/internal/util/responseheaders"
+	"github.com/Aias00/cloudbase/internal/util/urlvalidator"
 	"github.com/cespare/xxhash/v2"
 	"github.com/google/uuid"
 	gocache "github.com/patrickmn/go-cache"
@@ -653,7 +654,7 @@ type GatewayService struct {
 	tlsFPProfileService   *TLSFingerprintProfileService
 	balanceNotifyService  *BalanceNotifyService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
-	ledgerService         *UserBalanceLedgerService
+	ledgerService         *billingctx.UserBalanceLedgerService
 }
 
 // NewGatewayService creates a new GatewayService
@@ -685,7 +686,7 @@ func NewGatewayService(
 	resolver *ModelPricingResolver,
 	balanceNotifyService *BalanceNotifyService,
 	userPlatformQuotaRepo UserPlatformQuotaRepository,
-	ledgerService *UserBalanceLedgerService,
+	ledgerService *billingctx.UserBalanceLedgerService,
 ) *GatewayService {
 	userGroupRateTTL := resolveUserGroupRateCacheTTL(cfg)
 	modelsListTTL := resolveModelsListCacheTTL(cfg)
@@ -9454,7 +9455,7 @@ type billingDeps struct {
 	balanceNotifyService  *BalanceNotifyService
 	userPlatformQuotaRepo UserPlatformQuotaRepository
 	cfg                   *config.Config
-	ledgerService         *UserBalanceLedgerService
+	ledgerService         *billingctx.UserBalanceLedgerService
 }
 
 func (s *GatewayService) billingDeps() *billingDeps {

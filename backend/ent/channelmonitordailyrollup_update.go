@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/channelmonitor"
-	"github.com/Wei-Shaw/cloudbase/ent/channelmonitordailyrollup"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/channelmonitor"
+	"github.com/Aias00/cloudbase/ent/channelmonitordailyrollup"
+	"github.com/Aias00/cloudbase/ent/predicate"
 )
 
 // ChannelMonitorDailyRollupUpdate is the builder for updating ChannelMonitorDailyRollup entities.

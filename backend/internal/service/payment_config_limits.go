@@ -2,13 +2,12 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/paymentproviderinstance"
+	"github.com/Aias00/cloudbase/internal/payment"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 // GetAvailableMethodLimits collects all payment types from enabled provider
@@ -168,25 +167,19 @@ func (s *PaymentConfigService) pcInstancePaymentCurrency(inst *dbent.PaymentProv
 // because the user sees a single "Stripe" button, not individual sub-methods.
 // Uses a seen set to avoid counting one instance twice.
 func pcGroupByPaymentType(instances []*dbent.PaymentProviderInstance) map[string][]*dbent.PaymentProviderInstance {
-	typeInstances := make(map[string][]*dbent.PaymentProviderInstance)
-	seen := make(map[string]map[int64]bool)
-	add := func(key string, inst *dbent.PaymentProviderInstance) {
-		if seen[key] == nil {
-			seen[key] = make(map[int64]bool)
-		}
-		if !seen[key][int64(inst.ID)] {
-			seen[key][int64(inst.ID)] = true
-			typeInstances[key] = append(typeInstances[key], inst)
+	sourceGroups := payment.GroupProviderLimitSourcesByPaymentType(paymentLimitSourcesFromEnt(instances))
+	byID := make(map[int64]*dbent.PaymentProviderInstance, len(instances))
+	for _, inst := range instances {
+		if inst != nil {
+			byID[int64(inst.ID)] = inst
 		}
 	}
-	for _, inst := range instances {
-		// Stripe provider: all sub-types → single "stripe" group
-		if inst.ProviderKey == payment.TypeStripe {
-			add(payment.TypeStripe, inst)
-			continue
-		}
-		for _, t := range splitTypes(inst.SupportedTypes) {
-			add(t, inst)
+	typeInstances := make(map[string][]*dbent.PaymentProviderInstance, len(sourceGroups))
+	for paymentType, sources := range sourceGroups {
+		for _, source := range sources {
+			if inst := byID[source.ID]; inst != nil {
+				typeInstances[paymentType] = append(typeInstances[paymentType], inst)
+			}
 		}
 	}
 	return typeInstances
@@ -196,15 +189,10 @@ func pcGroupByPaymentType(instances []*dbent.PaymentProviderInstance) map[string
 // Returns (limits, true) if configured; (zero, false) if unlimited.
 // For Stripe instances, limits are stored under "stripe" key regardless of sub-types.
 func pcInstanceTypeLimits(inst *dbent.PaymentProviderInstance, pt string) (payment.ChannelLimits, bool) {
-	if inst.Limits == "" {
+	if inst == nil {
 		return payment.ChannelLimits{}, false
 	}
-	var limits payment.InstanceLimits
-	if err := json.Unmarshal([]byte(inst.Limits), &limits); err != nil {
-		return payment.ChannelLimits{}, false
-	}
-	cl, ok := limits[pt]
-	return cl, ok
+	return payment.InstanceTypeLimits(inst.Limits, pt)
 }
 
 // unionFloat merges a single limit value into the aggregate using UNION semantics.
@@ -214,22 +202,7 @@ func pcInstanceTypeLimits(inst *dbent.PaymentProviderInstance, pt string) (payme
 //
 // Returns (aggregated value, still limited).
 func unionFloat(agg float64, limited bool, val float64, wantMin bool) (float64, bool) {
-	if val == 0 {
-		return agg, false
-	}
-	if !limited {
-		return agg, false
-	}
-	if agg == 0 {
-		return val, true
-	}
-	if wantMin && val < agg {
-		return val, true
-	}
-	if !wantMin && val > agg {
-		return val, true
-	}
-	return agg, true
+	return payment.UnionFloat(agg, limited, val, wantMin)
 }
 
 // pcAggregateMethodLimits computes the UNION (least restrictive) of limits
@@ -241,44 +214,27 @@ func unionFloat(agg float64, limited bool, val float64, wantMin bool) (float64, 
 //   - SingleMax: highest ceiling across instances; 0 if any is unlimited
 //   - DailyLimit: highest cap across instances; 0 if any is unlimited
 func pcAggregateMethodLimits(pt string, instances []*dbent.PaymentProviderInstance) MethodLimits {
-	ml := MethodLimits{PaymentType: pt}
-	minLimited, maxLimited, dailyLimited := true, true, true
-
-	for _, inst := range instances {
-		cl, hasLimits := pcInstanceTypeLimits(inst, pt)
-		if !hasLimits {
-			return MethodLimits{PaymentType: pt} // any unlimited instance → all zeros
-		}
-		ml.SingleMin, minLimited = unionFloat(ml.SingleMin, minLimited, cl.SingleMin, true)
-		ml.SingleMax, maxLimited = unionFloat(ml.SingleMax, maxLimited, cl.SingleMax, false)
-		ml.DailyLimit, dailyLimited = unionFloat(ml.DailyLimit, dailyLimited, cl.DailyLimit, false)
-	}
-
-	if !minLimited {
-		ml.SingleMin = 0
-	}
-	if !maxLimited {
-		ml.SingleMax = 0
-	}
-	if !dailyLimited {
-		ml.DailyLimit = 0
-	}
-	return ml
+	return payment.AggregateMethodLimits(pt, paymentLimitSourcesFromEnt(instances))
 }
 
 // pcComputeGlobalRange computes the widest [min, max] across all methods.
 // Uses the same union logic: lowest min, highest max, 0 if any is unlimited.
 func pcComputeGlobalRange(methods map[string]MethodLimits) (globalMin, globalMax float64) {
-	minLimited, maxLimited := true, true
-	for _, ml := range methods {
-		globalMin, minLimited = unionFloat(globalMin, minLimited, ml.SingleMin, true)
-		globalMax, maxLimited = unionFloat(globalMax, maxLimited, ml.SingleMax, false)
+	return payment.ComputeGlobalRange(methods)
+}
+
+func paymentLimitSourcesFromEnt(instances []*dbent.PaymentProviderInstance) []payment.ProviderLimitSource {
+	sources := make([]payment.ProviderLimitSource, 0, len(instances))
+	for _, inst := range instances {
+		if inst == nil {
+			continue
+		}
+		sources = append(sources, payment.ProviderLimitSource{
+			ID:             int64(inst.ID),
+			ProviderKey:    inst.ProviderKey,
+			SupportedTypes: inst.SupportedTypes,
+			Limits:         inst.Limits,
+		})
 	}
-	if !minLimited {
-		globalMin = 0
-	}
-	if !maxLimited {
-		globalMax = 0
-	}
-	return globalMin, globalMax
+	return sources
 }

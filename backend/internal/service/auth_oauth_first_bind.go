@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
+	dbent "github.com/Aias00/cloudbase/ent"
 
 	entsql "entgo.io/ent/dialect/sql"
 )

@@ -15,7 +15,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/xai"
+	"github.com/Aias00/cloudbase/internal/pkg/xai"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"

@@ -9,9 +9,9 @@ import (
 	"strings"
 	"sync/atomic"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/openai"
-	openaiwsv2 "github.com/Wei-Shaw/cloudbase/internal/service/openai_ws_v2"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/openai"
+	openaiwsv2 "github.com/Aias00/cloudbase/internal/service/openai_ws_v2"
 	coderws "github.com/coder/websocket"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"

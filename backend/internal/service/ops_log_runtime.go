@@ -8,21 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/config"
+	opsctx "github.com/Aias00/cloudbase/internal/ops"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"go.uber.org/zap"
 )
 
 func defaultOpsRuntimeLogConfig(cfg *config.Config) *OpsRuntimeLogConfig {
-	out := &OpsRuntimeLogConfig{
-		Level:           "info",
-		EnableSampling:  false,
-		SamplingInitial: 100,
-		SamplingNext:    100,
-		Caller:          true,
-		StacktraceLevel: "error",
-		RetentionDays:   30,
-	}
+	out := opsctx.DefaultRuntimeLogConfig()
 	if cfg == nil {
 		return out
 	}
@@ -39,52 +32,11 @@ func defaultOpsRuntimeLogConfig(cfg *config.Config) *OpsRuntimeLogConfig {
 }
 
 func normalizeOpsRuntimeLogConfig(cfg *OpsRuntimeLogConfig, defaults *OpsRuntimeLogConfig) {
-	if cfg == nil || defaults == nil {
-		return
-	}
-	cfg.Level = strings.ToLower(strings.TrimSpace(cfg.Level))
-	if cfg.Level == "" {
-		cfg.Level = defaults.Level
-	}
-	cfg.StacktraceLevel = strings.ToLower(strings.TrimSpace(cfg.StacktraceLevel))
-	if cfg.StacktraceLevel == "" {
-		cfg.StacktraceLevel = defaults.StacktraceLevel
-	}
-	if cfg.SamplingInitial <= 0 {
-		cfg.SamplingInitial = defaults.SamplingInitial
-	}
-	if cfg.SamplingNext <= 0 {
-		cfg.SamplingNext = defaults.SamplingNext
-	}
-	if cfg.RetentionDays <= 0 {
-		cfg.RetentionDays = defaults.RetentionDays
-	}
+	opsctx.NormalizeRuntimeLogConfig(cfg, defaults)
 }
 
 func validateOpsRuntimeLogConfig(cfg *OpsRuntimeLogConfig) error {
-	if cfg == nil {
-		return errors.New("invalid config")
-	}
-	switch strings.ToLower(strings.TrimSpace(cfg.Level)) {
-	case "debug", "info", "warn", "error":
-	default:
-		return errors.New("level must be one of: debug/info/warn/error")
-	}
-	switch strings.ToLower(strings.TrimSpace(cfg.StacktraceLevel)) {
-	case "none", "error", "fatal":
-	default:
-		return errors.New("stacktrace_level must be one of: none/error/fatal")
-	}
-	if cfg.SamplingInitial <= 0 {
-		return errors.New("sampling_initial must be positive")
-	}
-	if cfg.SamplingNext <= 0 {
-		return errors.New("sampling_thereafter must be positive")
-	}
-	if cfg.RetentionDays < 1 || cfg.RetentionDays > 3650 {
-		return errors.New("retention_days must be between 1 and 3650")
-	}
-	return nil
+	return opsctx.ValidateRuntimeLogConfig(cfg)
 }
 
 func (s *OpsService) GetRuntimeLogConfig(ctx context.Context) (*OpsRuntimeLogConfig, error) {

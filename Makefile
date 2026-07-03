@@ -105,8 +105,9 @@ validate-image-workspace-production-preflight:
 	@tools/image-workspace-production-preflight.sh
 
 validate-business-worker:
-	@node --check tools/business-worker.mjs
-	@POSTGRES_PASSWORD="$${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/cloudbase-business-worker-compose.yml
+	@npm --prefix tools/wechat-worker run typecheck
+	@node --check tools/image-workspace-worker/src/worker.mjs
+	@POSTGRES_PASSWORD="$${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/cloudbase-business-workers-compose.yml
 
 validate-home-business-capabilities:
 	@node tools/home-business-capabilities-smoke.mjs

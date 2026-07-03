@@ -5,11 +5,11 @@ import (
 	"database/sql"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/antigravity"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/pkg/antigravity"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
@@ -608,12 +608,9 @@ var ProviderSet = wire.NewSet(
 	ProvideUserMessageQueueService,
 	NewUsageRecordWorkerPool,
 	ProvideSchedulerSnapshotService,
-	NewPromptCatalogService,
-	NewTwitterImportService,
 	NewWeChatExportService,
 	wire.Bind(new(CostPerArticleGetter), new(*SettingService)),
 	NewImageWorkspaceService,
-	NewHotContentService,
 	NewIdentityService,
 	NewCRSSyncService,
 	ProvideUpdateService,
@@ -643,7 +640,6 @@ var ProviderSet = wire.NewSet(
 	NewModelPricingResolver,
 	NewContentModerationService,
 	NewAffiliateService,
-	NewUserBalanceLedgerService,
 	ProvidePaymentConfigService,
 	ProvidePaymentService,
 	ProvidePaymentOrderExpiryService,

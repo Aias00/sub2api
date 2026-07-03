@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/user"
-	"github.com/Wei-Shaw/cloudbase/ent/userattributedefinition"
-	"github.com/Wei-Shaw/cloudbase/ent/userattributevalue"
+	"github.com/Aias00/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/ent/userattributedefinition"
+	"github.com/Aias00/cloudbase/ent/userattributevalue"
 )
 
 // UserAttributeValue is the model entity for the UserAttributeValue schema.

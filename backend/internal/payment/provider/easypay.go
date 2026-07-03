@@ -16,7 +16,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/payment"
 )
 
 // EasyPay constants.

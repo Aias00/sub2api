@@ -20,8 +20,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/antigravity"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/antigravity"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"github.com/tidwall/gjson"

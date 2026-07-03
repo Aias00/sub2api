@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/usagestats"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/pkg/usagestats"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/stretchr/testify/require"
 )
 

@@ -6,129 +6,95 @@ import (
 	"fmt"
 	"strings"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/paymentproviderinstance"
+	"github.com/Aias00/cloudbase/internal/payment"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 func enabledVisibleMethodsForProvider(providerKey, supportedTypes string) []string {
-	methodSet := make(map[string]struct{}, 2)
-	addMethod := func(method string) {
-		method = NormalizeVisibleMethod(method)
-		switch method {
-		case payment.TypeAlipay, payment.TypeWxpay:
-			methodSet[method] = struct{}{}
-		}
-	}
-
-	switch strings.TrimSpace(providerKey) {
-	case payment.TypeAlipay:
-		if strings.TrimSpace(supportedTypes) == "" {
-			addMethod(payment.TypeAlipay)
-			break
-		}
-		for _, supportedType := range splitTypes(supportedTypes) {
-			if NormalizeVisibleMethod(supportedType) == payment.TypeAlipay {
-				addMethod(payment.TypeAlipay)
-				break
-			}
-		}
-	case payment.TypeWxpay:
-		if strings.TrimSpace(supportedTypes) == "" {
-			addMethod(payment.TypeWxpay)
-			break
-		}
-		for _, supportedType := range splitTypes(supportedTypes) {
-			if NormalizeVisibleMethod(supportedType) == payment.TypeWxpay {
-				addMethod(payment.TypeWxpay)
-				break
-			}
-		}
-	case payment.TypeEasyPay:
-		for _, supportedType := range splitTypes(supportedTypes) {
-			addMethod(supportedType)
-		}
-	}
-
-	methods := make([]string, 0, len(methodSet))
-	for _, method := range []string{payment.TypeAlipay, payment.TypeWxpay} {
-		if _, ok := methodSet[method]; ok {
-			methods = append(methods, method)
-		}
-	}
-	return methods
+	return payment.EnabledVisibleMethodsForProvider(providerKey, supportedTypes)
 }
 
 func providerSupportsVisibleMethod(inst *dbent.PaymentProviderInstance, method string) bool {
-	if inst == nil || !inst.Enabled {
+	source, ok := visibleMethodSourceFromEnt(inst)
+	if !ok {
 		return false
 	}
-	method = NormalizeVisibleMethod(method)
-	for _, candidate := range enabledVisibleMethodsForProvider(inst.ProviderKey, inst.SupportedTypes) {
-		if candidate == method {
-			return true
-		}
-	}
-	return false
+	return payment.ProviderSupportsVisibleMethod(source, method)
 }
 
 func filterEnabledVisibleMethodInstances(instances []*dbent.PaymentProviderInstance, method string) []*dbent.PaymentProviderInstance {
-	filtered := make([]*dbent.PaymentProviderInstance, 0, len(instances))
-	for _, inst := range instances {
-		if providerSupportsVisibleMethod(inst, method) {
-			filtered = append(filtered, inst)
-		}
-	}
-	return filtered
+	sources := payment.FilterEnabledVisibleMethodSources(visibleMethodSourcesFromEnt(instances), method)
+	return visibleMethodInstancesFromSources(instances, sources)
 }
 
 func filterVisibleMethodInstancesByProviderKey(instances []*dbent.PaymentProviderInstance, method string, providerKey string) []*dbent.PaymentProviderInstance {
-	filtered := make([]*dbent.PaymentProviderInstance, 0, len(instances))
-	for _, inst := range instances {
-		if !providerSupportsVisibleMethod(inst, method) {
-			continue
-		}
-		if !strings.EqualFold(strings.TrimSpace(inst.ProviderKey), strings.TrimSpace(providerKey)) {
-			continue
-		}
-		filtered = append(filtered, inst)
-	}
-	return filtered
+	sources := payment.FilterVisibleMethodSourcesByProviderKey(visibleMethodSourcesFromEnt(instances), method, providerKey)
+	return visibleMethodInstancesFromSources(instances, sources)
 }
 
 func distinctVisibleMethodProviderKeys(instances []*dbent.PaymentProviderInstance) []string {
-	seen := make(map[string]struct{}, len(instances))
-	keys := make([]string, 0, len(instances))
-	for _, inst := range instances {
-		if inst == nil {
-			continue
-		}
-		key := strings.TrimSpace(inst.ProviderKey)
-		if key == "" {
-			continue
-		}
-		normalized := strings.ToLower(key)
-		if _, ok := seen[normalized]; ok {
-			continue
-		}
-		seen[normalized] = struct{}{}
-		keys = append(keys, key)
-	}
-	return keys
+	return payment.DistinctVisibleMethodProviderKeys(visibleMethodSourcesFromEnt(instances))
 }
 
 func selectVisibleMethodInstanceByProviderKey(instances []*dbent.PaymentProviderInstance, providerKey string) *dbent.PaymentProviderInstance {
-	providerKey = strings.TrimSpace(providerKey)
-	if providerKey == "" {
+	source, ok := payment.SelectVisibleMethodSourceByProviderKey(visibleMethodSourcesFromEnt(instances), providerKey)
+	if !ok {
 		return nil
 	}
 	for _, inst := range instances {
-		if strings.EqualFold(strings.TrimSpace(inst.ProviderKey), providerKey) {
+		if inst != nil && int64(inst.ID) == source.ID {
 			return inst
 		}
 	}
 	return nil
+}
+
+func visibleMethodSourceFromEnt(inst *dbent.PaymentProviderInstance) (payment.VisibleMethodProviderSource, bool) {
+	if inst == nil {
+		return payment.VisibleMethodProviderSource{}, false
+	}
+	return payment.VisibleMethodProviderSource{
+		ID:             int64(inst.ID),
+		ProviderKey:    inst.ProviderKey,
+		SupportedTypes: inst.SupportedTypes,
+		Enabled:        inst.Enabled,
+	}, true
+}
+
+func visibleMethodSourcesFromEnt(instances []*dbent.PaymentProviderInstance) []payment.VisibleMethodProviderSource {
+	sources := make([]payment.VisibleMethodProviderSource, 0, len(instances))
+	for _, inst := range instances {
+		if source, ok := visibleMethodSourceFromEnt(inst); ok {
+			sources = append(sources, source)
+		}
+	}
+	return sources
+}
+
+func visibleMethodInstancesFromSources(instances []*dbent.PaymentProviderInstance, sources []payment.VisibleMethodProviderSource) []*dbent.PaymentProviderInstance {
+	sourceIDs := make(map[int64]struct{}, len(sources))
+	for _, source := range sources {
+		sourceIDs[source.ID] = struct{}{}
+	}
+	filtered := make([]*dbent.PaymentProviderInstance, 0, len(sources))
+	seen := make(map[int64]struct{}, len(instances))
+	for _, inst := range instances {
+		if inst == nil {
+			continue
+		}
+		id := int64(inst.ID)
+		if _, ok := sourceIDs[id]; !ok {
+			continue
+		}
+		if _, ok := seen[id]; ok {
+			continue
+		}
+		seen[id] = struct{}{}
+		filtered = append(filtered, inst)
+	}
+	return filtered
 }
 
 func (s *PaymentConfigService) validateVisibleMethodEnablementConflicts(

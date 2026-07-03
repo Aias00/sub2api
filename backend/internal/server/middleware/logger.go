@@ -3,9 +3,9 @@ package middleware
 import (
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/ctxkey"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/ip"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/ctxkey"
+	"github.com/Aias00/cloudbase/internal/pkg/ip"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

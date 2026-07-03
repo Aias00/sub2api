@@ -1,39 +1,17 @@
 package service
 
-import (
-	"math"
+import "github.com/Aias00/cloudbase/internal/payment"
 
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	"github.com/shopspring/decimal"
-)
-
-const defaultBalanceRechargeMultiplier = 1.0
+const defaultBalanceRechargeMultiplier = payment.DefaultBalanceRechargeMultiplier
 
 func normalizeBalanceRechargeMultiplier(multiplier float64) float64 {
-	if math.IsNaN(multiplier) || math.IsInf(multiplier, 0) || multiplier <= 0 {
-		return defaultBalanceRechargeMultiplier
-	}
-	return multiplier
+	return payment.NormalizeBalanceRechargeMultiplier(multiplier)
 }
 
 func calculateCreditedBalance(paymentAmount, multiplier float64) float64 {
-	return decimal.NewFromFloat(paymentAmount).
-		Mul(decimal.NewFromFloat(normalizeBalanceRechargeMultiplier(multiplier))).
-		Round(2).
-		InexactFloat64()
+	return payment.CalculateCreditedBalance(paymentAmount, multiplier)
 }
 
 func calculateGatewayRefundAmount(orderAmount, payAmount, refundAmount float64, currency string) float64 {
-	if orderAmount <= 0 || payAmount <= 0 || refundAmount <= 0 {
-		return 0
-	}
-	fractionDigits := int32(payment.CurrencyMaxFractionDigits(currency))
-	if math.Abs(refundAmount-orderAmount) <= paymentAmountToleranceForCurrency(currency) {
-		return decimal.NewFromFloat(payAmount).Round(fractionDigits).InexactFloat64()
-	}
-	return decimal.NewFromFloat(payAmount).
-		Mul(decimal.NewFromFloat(refundAmount)).
-		Div(decimal.NewFromFloat(orderAmount)).
-		Round(fractionDigits).
-		InexactFloat64()
+	return payment.CalculateGatewayRefundAmount(orderAmount, payAmount, refundAmount, currency, paymentAmountToleranceForCurrency(currency))
 }

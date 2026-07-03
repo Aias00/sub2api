@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/handler"
+	"github.com/Aias00/cloudbase/internal/handler"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )

@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/model"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/model"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
 )
 
 // ErrorPassthroughRepository 定义错误透传规则的数据访问接口

@@ -3,12 +3,11 @@ package admin
 import (
 	"encoding/json"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	opsctx "github.com/Aias00/cloudbase/internal/ops"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/sync/errgroup"
 )
@@ -50,21 +49,13 @@ func (h *OpsHandler) GetDashboardSnapshotV2(c *gin.Context) {
 		return
 	}
 
-	filter := &service.OpsDashboardFilter{
-		StartTime: startTime,
-		EndTime:   endTime,
-		Platform:  strings.TrimSpace(c.Query("platform")),
-		QueryMode: parseOpsQueryMode(c),
+	filter, err := parseOpsDashboardFilter(c, startTime, endTime)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid group_id")
-			return
-		}
-		filter.GroupID = &id
-	}
-	bucketSeconds := pickThroughputBucketSeconds(endTime.Sub(startTime))
+
+	bucketSeconds := opsctx.PickThroughputBucketSeconds(endTime.Sub(startTime))
 
 	keyRaw, _ := json.Marshal(opsDashboardSnapshotV2CacheKey{
 		StartTime:    startTime.UTC().Format(time.RFC3339),

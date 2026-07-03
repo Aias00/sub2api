@@ -12,8 +12,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/paymentproviderinstance"
+	"github.com/Aias00/cloudbase/ent/predicate"
 )
 
 // PaymentProviderInstanceQuery is the builder for querying PaymentProviderInstance entities.

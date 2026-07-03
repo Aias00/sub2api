@@ -4,9 +4,9 @@ import (
 	"context"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/setting"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/setting"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 type settingRepository struct {

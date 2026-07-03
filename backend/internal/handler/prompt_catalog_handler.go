@@ -7,17 +7,17 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	imagectx "github.com/Aias00/cloudbase/internal/image"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 
 type PromptCatalogHandler struct {
-	service *service.PromptCatalogService
+	service *imagectx.PromptCatalogService
 }
 
-func NewPromptCatalogHandler(service *service.PromptCatalogService) *PromptCatalogHandler {
+func NewPromptCatalogHandler(service *imagectx.PromptCatalogService) *PromptCatalogHandler {
 	return &PromptCatalogHandler{service: service}
 }
 
@@ -111,7 +111,7 @@ type promptCatalogCaseUpsertRequest struct {
 
 func (h *PromptCatalogHandler) ListCases(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
-	filters := service.PromptCatalogListFilters{
+	filters := imagectx.PromptCatalogListFilters{
 		SourceType:    c.Query("source_type"),
 		SourceProject: c.Query("source_project"),
 		Category:      c.Query("category"),
@@ -177,7 +177,7 @@ func (h *PromptCatalogHandler) UpsertCase(c *gin.Context) {
 	response.Success(c, promptCatalogCaseDTOFromService(item))
 }
 
-func promptCatalogCaseDTOs(items []service.PromptCatalogCase) []promptCatalogCaseDTO {
+func promptCatalogCaseDTOs(items []imagectx.PromptCatalogCase) []promptCatalogCaseDTO {
 	out := make([]promptCatalogCaseDTO, 0, len(items))
 	for _, item := range items {
 		out = append(out, promptCatalogCaseDTOFromService(item))
@@ -185,7 +185,7 @@ func promptCatalogCaseDTOs(items []service.PromptCatalogCase) []promptCatalogCas
 	return out
 }
 
-func promptCatalogSummaryDTOFromService(summary *service.PromptCatalogSummary) promptCatalogSummaryDTO {
+func promptCatalogSummaryDTOFromService(summary *imagectx.PromptCatalogSummary) promptCatalogSummaryDTO {
 	if summary == nil {
 		return promptCatalogSummaryDTO{
 			Sources:        []promptCatalogFacetCountDTO{},
@@ -205,7 +205,7 @@ func promptCatalogSummaryDTOFromService(summary *service.PromptCatalogSummary) p
 	}
 }
 
-func promptCatalogFacetCountDTOs(items []service.PromptCatalogFacetCount) []promptCatalogFacetCountDTO {
+func promptCatalogFacetCountDTOs(items []imagectx.PromptCatalogFacetCount) []promptCatalogFacetCountDTO {
 	out := make([]promptCatalogFacetCountDTO, 0, len(items))
 	for _, item := range items {
 		out = append(out, promptCatalogFacetCountDTO{
@@ -218,7 +218,7 @@ func promptCatalogFacetCountDTOs(items []service.PromptCatalogFacetCount) []prom
 	return out
 }
 
-func promptCatalogFacetDisplayLabel(item service.PromptCatalogFacetCount) string {
+func promptCatalogFacetDisplayLabel(item imagectx.PromptCatalogFacetCount) string {
 	label := strings.TrimSpace(item.Label)
 	if label == "" {
 		label = strings.TrimSpace(item.Value)
@@ -229,7 +229,7 @@ func promptCatalogFacetDisplayLabel(item service.PromptCatalogFacetCount) string
 	return label + " (" + strconv.FormatInt(item.Count, 10) + ")"
 }
 
-func promptCatalogCaseDTOFromService(item service.PromptCatalogCase) promptCatalogCaseDTO {
+func promptCatalogCaseDTOFromService(item imagectx.PromptCatalogCase) promptCatalogCaseDTO {
 	var importedAt *string
 	if item.ImportedAt != nil {
 		value := item.ImportedAt.UTC().Format(time.RFC3339)
@@ -270,14 +270,14 @@ func promptCatalogCaseDTOFromService(item service.PromptCatalogCase) promptCatal
 	}
 }
 
-func promptCatalogSourceDisplayLabel(item service.PromptCatalogCase) string {
+func promptCatalogSourceDisplayLabel(item imagectx.PromptCatalogCase) string {
 	if label := strings.TrimSpace(item.SourceLabel); label != "" {
 		return label
 	}
 	return strings.TrimSpace(item.SourceProject)
 }
 
-func promptCatalogVisibleTags(item service.PromptCatalogCase) []string {
+func promptCatalogVisibleTags(item imagectx.PromptCatalogCase) []string {
 	tags := promptCatalogAllTags(item)
 	if len(tags) > 6 {
 		return tags[:6]
@@ -285,7 +285,7 @@ func promptCatalogVisibleTags(item service.PromptCatalogCase) []string {
 	return tags
 }
 
-func promptCatalogAllTags(item service.PromptCatalogCase) []string {
+func promptCatalogAllTags(item imagectx.PromptCatalogCase) []string {
 	values := make([]string, 0, len(item.ModelTags)+len(item.DisplayTags)+len(item.Tags))
 	values = append(values, item.ModelTags...)
 	values = append(values, item.DisplayTags...)
@@ -303,7 +303,7 @@ func promptCatalogAllTags(item service.PromptCatalogCase) []string {
 	return out
 }
 
-func promptCatalogPrimaryImageURL(item service.PromptCatalogCase) string {
+func promptCatalogPrimaryImageURL(item imagectx.PromptCatalogCase) string {
 	for _, candidate := range []string{
 		item.ImageThumbURL,
 		item.ImagePreviewURL,
@@ -321,12 +321,12 @@ func promptCatalogPrimaryImageURL(item service.PromptCatalogCase) string {
 	return ""
 }
 
-func promptCatalogCaseFromUpsertRequest(req promptCatalogCaseUpsertRequest) service.PromptCatalogCase {
+func promptCatalogCaseFromUpsertRequest(req promptCatalogCaseUpsertRequest) imagectx.PromptCatalogCase {
 	rawJSON := string(req.RawJSON)
 	if rawJSON == "" {
 		rawJSON = "{}"
 	}
-	return service.PromptCatalogCase{
+	return imagectx.PromptCatalogCase{
 		ID:               req.ID,
 		Title:            req.Title,
 		Prompt:           req.Prompt,

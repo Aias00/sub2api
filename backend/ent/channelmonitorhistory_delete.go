@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/channelmonitorhistory"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/channelmonitorhistory"
+	"github.com/Aias00/cloudbase/ent/predicate"
 )
 
 // ChannelMonitorHistoryDelete is the builder for deleting a ChannelMonitorHistory entity.

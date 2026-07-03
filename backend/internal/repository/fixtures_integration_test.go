@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	dbaccount "github.com/Wei-Shaw/cloudbase/ent/account"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	dbent "github.com/Aias00/cloudbase/ent"
+	dbaccount "github.com/Aias00/cloudbase/ent/account"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/stretchr/testify/require"
 )
 

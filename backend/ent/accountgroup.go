@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/account"
-	"github.com/Wei-Shaw/cloudbase/ent/accountgroup"
-	"github.com/Wei-Shaw/cloudbase/ent/group"
+	"github.com/Aias00/cloudbase/ent/account"
+	"github.com/Aias00/cloudbase/ent/accountgroup"
+	"github.com/Aias00/cloudbase/ent/group"
 )
 
 // AccountGroup is the model entity for the AccountGroup schema.

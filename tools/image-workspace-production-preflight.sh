@@ -185,14 +185,14 @@ section "Worker static checks"
 node --check tools/image-workspace-acceptance.mjs
 npm --prefix tools/image-workspace-worker run check
 npm --prefix tools/image-workspace-worker run storage-check
-if [[ ! -f tools/business-worker.Dockerfile ]]; then
-  warn_or_fail "tools/business-worker.Dockerfile is missing"
+if [[ ! -f tools/image-workspace-worker.Dockerfile ]]; then
+  warn_or_fail "tools/image-workspace-worker.Dockerfile is missing"
 else
-  if grep -q "HEALTHCHECK" tools/business-worker.Dockerfile \
-    && grep -q "business-worker.mjs --healthcheck" tools/business-worker.Dockerfile; then
-    echo "business_worker_docker_healthcheck=ok"
+  if grep -q "HEALTHCHECK" tools/image-workspace-worker.Dockerfile \
+    && grep -q "worker.mjs --healthcheck" tools/image-workspace-worker.Dockerfile; then
+    echo "image_workspace_worker_docker_healthcheck=ok"
   else
-    warn_or_fail "tools/business-worker.Dockerfile must include a worker healthcheck"
+    warn_or_fail "tools/image-workspace-worker.Dockerfile must include a worker healthcheck"
   fi
 fi
 
@@ -235,13 +235,13 @@ fi
 
 section "Docker compose overlay"
 if command -v docker >/dev/null 2>&1; then
-  if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker config >/tmp/cloudbase-business-worker-compose.yml; then
-    echo "docker_compose_business_worker_config=ok"
+  if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile image-workspace-worker config >/tmp/cloudbase-image-workspace-worker-compose.yml; then
+    echo "docker_compose_image_workspace_worker_config=ok"
   else
-    warn_or_fail "docker compose business worker overlay does not render"
+    warn_or_fail "docker compose image workspace worker overlay does not render"
   fi
 else
-  warn_or_fail "docker is not available; cannot validate business worker compose overlay"
+  warn_or_fail "docker is not available; cannot validate Image Workspace worker compose overlay"
 fi
 
 if [[ "$RUN_REAL_PROVIDER_CHECK" == "1" ]]; then

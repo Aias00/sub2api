@@ -1,6 +1,6 @@
 package service
 
-import "github.com/Wei-Shaw/cloudbase/internal/config"
+import "github.com/Aias00/cloudbase/internal/config"
 
 // OpenAIUpstreamTransport 表示 OpenAI 上游传输协议。
 type OpenAIUpstreamTransport string

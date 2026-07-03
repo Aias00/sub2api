@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/handler/dto"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/handler/dto"
+	opsctx "github.com/Aias00/cloudbase/internal/ops"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -30,54 +31,6 @@ func TestParseTimeRange(t *testing.T) {
 	start, end = parseTimeRange(c)
 	require.False(t, start.IsZero())
 	require.False(t, end.IsZero())
-}
-
-func TestParseOpsViewParam(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodGet, "/?view=excluded", nil)
-	require.Equal(t, opsListViewExcluded, parseOpsViewParam(c))
-
-	c2, _ := gin.CreateTestContext(w)
-	c2.Request = httptest.NewRequest(http.MethodGet, "/?view=all", nil)
-	require.Equal(t, opsListViewAll, parseOpsViewParam(c2))
-
-	c3, _ := gin.CreateTestContext(w)
-	c3.Request = httptest.NewRequest(http.MethodGet, "/?view=unknown", nil)
-	require.Equal(t, opsListViewErrors, parseOpsViewParam(c3))
-
-	require.Equal(t, "", parseOpsViewParam(nil))
-}
-
-func TestParseOpsDuration(t *testing.T) {
-	dur, ok := parseOpsDuration("1h")
-	require.True(t, ok)
-	require.Equal(t, time.Hour, dur)
-
-	_, ok = parseOpsDuration("invalid")
-	require.False(t, ok)
-}
-
-func TestParseOpsOpenAITokenStatsDuration(t *testing.T) {
-	tests := []struct {
-		input string
-		want  time.Duration
-		ok    bool
-	}{
-		{input: "30m", want: 30 * time.Minute, ok: true},
-		{input: "1h", want: time.Hour, ok: true},
-		{input: "1d", want: 24 * time.Hour, ok: true},
-		{input: "15d", want: 15 * 24 * time.Hour, ok: true},
-		{input: "30d", want: 30 * 24 * time.Hour, ok: true},
-		{input: "7d", want: 0, ok: false},
-	}
-
-	for _, tt := range tests {
-		got, ok := parseOpsOpenAITokenStatsDuration(tt.input)
-		require.Equal(t, tt.ok, ok, "input=%s", tt.input)
-		require.Equal(t, tt.want, got, "input=%s", tt.input)
-	}
 }
 
 func TestParseOpsOpenAITokenStatsFilter_Defaults(t *testing.T) {
@@ -167,22 +120,6 @@ func TestParseOpsTimeRange(t *testing.T) {
 	require.Error(t, err)
 }
 
-func TestParseOpsRealtimeWindow(t *testing.T) {
-	dur, label, ok := parseOpsRealtimeWindow("5m")
-	require.True(t, ok)
-	require.Equal(t, 5*time.Minute, dur)
-	require.Equal(t, "5min", label)
-
-	_, _, ok = parseOpsRealtimeWindow("invalid")
-	require.False(t, ok)
-}
-
-func TestPickThroughputBucketSeconds(t *testing.T) {
-	require.Equal(t, 60, pickThroughputBucketSeconds(30*time.Minute))
-	require.Equal(t, 300, pickThroughputBucketSeconds(6*time.Hour))
-	require.Equal(t, 3600, pickThroughputBucketSeconds(48*time.Hour))
-}
-
 func TestParseOpsQueryMode(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()
@@ -200,28 +137,28 @@ func TestOpsAlertRuleValidation(t *testing.T) {
 		"threshold":   json.RawMessage(`90`),
 	}
 
-	validated, err := validateOpsAlertRulePayload(raw)
+	validated, err := opsctx.ValidateAlertRulePayload(raw)
 	require.NoError(t, err)
 	require.Equal(t, "High error rate", validated.Name)
 
-	_, err = validateOpsAlertRulePayload(map[string]json.RawMessage{})
+	_, err = opsctx.ValidateAlertRulePayload(map[string]json.RawMessage{})
 	require.Error(t, err)
 
-	require.True(t, isPercentOrRateMetric("error_rate"))
-	require.False(t, isPercentOrRateMetric("concurrency_queue_depth"))
+	require.True(t, opsctx.IsPercentOrRateMetric("error_rate"))
+	require.False(t, opsctx.IsPercentOrRateMetric("concurrency_queue_depth"))
 }
 
 func TestOpsWSHelpers(t *testing.T) {
-	prefixes, invalid := parseTrustedProxyList("10.0.0.0/8,invalid")
+	prefixes, invalid := opsctx.ParseWSTrustedProxyList("10.0.0.0/8,invalid")
 	require.Len(t, prefixes, 1)
 	require.Len(t, invalid, 1)
 
-	host := hostWithoutPort("example.com:443")
+	host := opsctx.WSHostWithoutPort("example.com:443")
 	require.Equal(t, "example.com", host)
 
 	addr := netip.MustParseAddr("10.0.0.1")
-	require.True(t, isAddrInTrustedProxies(addr, prefixes))
-	require.False(t, isAddrInTrustedProxies(netip.MustParseAddr("192.168.0.1"), prefixes))
+	require.True(t, opsctx.WSAddrInTrustedProxies(addr, prefixes))
+	require.False(t, opsctx.WSAddrInTrustedProxies(netip.MustParseAddr("192.168.0.1"), prefixes))
 }
 
 // TestOpenAIFastPolicySettingsFromDTO_NormalizesServiceTier 验证 admin

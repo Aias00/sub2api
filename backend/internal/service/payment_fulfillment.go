@@ -13,11 +13,11 @@ import (
 
 	"entgo.io/ent/dialect"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentauditlog"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentorder"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/paymentauditlog"
+	"github.com/Aias00/cloudbase/ent/paymentorder"
+	"github.com/Aias00/cloudbase/internal/payment"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 // ErrOrderNotFound is returned by HandlePaymentNotification when the webhook
@@ -118,15 +118,11 @@ func (s *PaymentService) confirmPayment(ctx context.Context, oid int64, tradeNo 
 }
 
 func paymentAmountToleranceForCurrency(currency string) float64 {
-	minorUnit := payment.CurrencyMinorUnit(currency)
-	if minorUnit <= 2 {
-		return amountToleranceCNY
-	}
-	return math.Pow10(-minorUnit) / 2
+	return payment.PaymentAmountToleranceForCurrency(currency, amountToleranceCNY)
 }
 
 func isValidProviderAmount(amount float64) bool {
-	return amount > 0 && !math.IsNaN(amount) && !math.IsInf(amount, 0)
+	return payment.IsValidProviderAmount(amount)
 }
 
 func validateProviderNotificationMetadata(order *dbent.PaymentOrder, providerKey string, metadata map[string]string) error {

@@ -1,7 +1,10 @@
 package payment
 
 import (
+	"math"
 	"testing"
+
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 func TestCalculatePayAmount(t *testing.T) {
@@ -159,5 +162,77 @@ func TestCalculatePayAmountForCurrency(t *testing.T) {
 				t.Fatalf("CalculatePayAmountForCurrency(%v, %v, %q) = %q, want %q", tt.amount, tt.feeRate, tt.currency, got, tt.expected)
 			}
 		})
+	}
+}
+
+func TestCalculateCreateOrderPayAmountUsesCurrencyPrecision(t *testing.T) {
+	t.Parallel()
+
+	amountStr, amount, err := CalculateCreateOrderPayAmount(100, 2.5, "JPY")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if amountStr != "103" || amount != 103 {
+		t.Fatalf("JPY pay amount = (%q, %v), want (103, 103)", amountStr, amount)
+	}
+
+	amountStr, amount, err = CalculateCreateOrderPayAmount(12.345, 1, "KWD")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if amountStr != "12.469" || amount != 12.469 {
+		t.Fatalf("KWD pay amount = (%q, %v), want (12.469, 12.469)", amountStr, amount)
+	}
+}
+
+func TestCalculateCreateOrderPayAmountRejectsFractionalZeroDecimal(t *testing.T) {
+	t.Parallel()
+
+	_, _, err := CalculateCreateOrderPayAmount(100.5, 0, "JPY")
+	if err == nil {
+		t.Fatal("expected fractional JPY amount to fail")
+	}
+	if appErr := infraerrors.FromError(err); appErr.Reason != "INVALID_AMOUNT" {
+		t.Fatalf("reason = %q, want INVALID_AMOUNT", appErr.Reason)
+	}
+}
+
+func TestValidatePayAmountCurrencyRejectsFractionalZeroDecimal(t *testing.T) {
+	t.Parallel()
+
+	err := ValidatePayAmountCurrency("100.50", "JPY")
+	if err == nil {
+		t.Fatal("expected fractional JPY amount to fail")
+	}
+	if appErr := infraerrors.FromError(err); appErr.Reason != "INVALID_AMOUNT" {
+		t.Fatalf("reason = %q, want INVALID_AMOUNT", appErr.Reason)
+	}
+}
+
+func TestValidateBalanceRechargeAmount(t *testing.T) {
+	t.Parallel()
+
+	if err := ValidateBalanceRechargeAmount(10, 1, 100); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	err := ValidateBalanceRechargeAmount(math.NaN(), 1, 100)
+	if err == nil {
+		t.Fatal("expected NaN amount to fail")
+	}
+	if appErr := infraerrors.FromError(err); appErr.Reason != "INVALID_AMOUNT" {
+		t.Fatalf("reason = %q, want INVALID_AMOUNT", appErr.Reason)
+	}
+
+	err = ValidateBalanceRechargeAmount(0.5, 1, 100)
+	if err == nil {
+		t.Fatal("expected below-min amount to fail")
+	}
+	appErr := infraerrors.FromError(err)
+	if appErr.Reason != "INVALID_AMOUNT" {
+		t.Fatalf("reason = %q, want INVALID_AMOUNT", appErr.Reason)
+	}
+	if appErr.Metadata["min"] != "1.00" || appErr.Metadata["max"] != "100.00" {
+		t.Fatalf("metadata = %#v, want min/max bounds", appErr.Metadata)
 	}
 }

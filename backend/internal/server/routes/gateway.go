@@ -3,10 +3,10 @@ package routes
 import (
 	"net/http"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/handler"
-	"github.com/Wei-Shaw/cloudbase/internal/server/middleware"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/handler"
+	"github.com/Aias00/cloudbase/internal/server/middleware"
+	"github.com/Aias00/cloudbase/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

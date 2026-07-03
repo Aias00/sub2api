@@ -7,8 +7,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/domain"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 )
 
 type AnnouncementService struct {

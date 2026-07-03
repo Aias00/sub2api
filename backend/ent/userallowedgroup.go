@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/group"
-	"github.com/Wei-Shaw/cloudbase/ent/user"
-	"github.com/Wei-Shaw/cloudbase/ent/userallowedgroup"
+	"github.com/Aias00/cloudbase/ent/group"
+	"github.com/Aias00/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/ent/userallowedgroup"
 )
 
 // UserAllowedGroup is the model entity for the UserAllowedGroup schema.

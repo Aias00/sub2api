@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	dbusagecleanuptask "github.com/Wei-Shaw/cloudbase/ent/usagecleanuptask"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	dbent "github.com/Aias00/cloudbase/ent"
+	dbusagecleanuptask "github.com/Aias00/cloudbase/ent/usagecleanuptask"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 type usageCleanupRepository struct {

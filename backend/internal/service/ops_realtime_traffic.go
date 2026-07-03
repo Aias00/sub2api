@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 // GetRealtimeTrafficSummary returns QPS/TPS current/peak/avg for the provided window.

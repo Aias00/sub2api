@@ -8,8 +8,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/ctxkey"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/ctxkey"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
 )
 

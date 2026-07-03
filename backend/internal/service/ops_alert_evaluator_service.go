@@ -3,14 +3,13 @@ package service
 import (
 	"context"
 	"fmt"
-	"math"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/config"
+	opsctx "github.com/Aias00/cloudbase/internal/ops"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 )
@@ -375,61 +374,12 @@ func (s *OpsAlertEvaluatorService) updateRuleBreaches(ruleID int64, now time.Tim
 }
 
 func requiredSustainedBreaches(sustainedMinutes int, interval time.Duration) int {
-	if sustainedMinutes <= 0 {
-		return 1
-	}
-	if interval <= 0 {
-		return sustainedMinutes
-	}
-	required := int(math.Ceil(float64(sustainedMinutes*60) / interval.Seconds()))
-	if required < 1 {
-		return 1
-	}
-	return required
+	return opsctx.RequiredSustainedBreaches(sustainedMinutes, interval)
 }
 
 func parseOpsAlertRuleScope(filters map[string]any) (platform string, groupID *int64, region *string) {
-	if filters == nil {
-		return "", nil, nil
-	}
-	if v, ok := filters["platform"]; ok {
-		if s, ok := v.(string); ok {
-			platform = strings.TrimSpace(s)
-		}
-	}
-	if v, ok := filters["group_id"]; ok {
-		switch t := v.(type) {
-		case float64:
-			if t > 0 {
-				id := int64(t)
-				groupID = &id
-			}
-		case int64:
-			if t > 0 {
-				id := t
-				groupID = &id
-			}
-		case int:
-			if t > 0 {
-				id := int64(t)
-				groupID = &id
-			}
-		case string:
-			n, err := strconv.ParseInt(strings.TrimSpace(t), 10, 64)
-			if err == nil && n > 0 {
-				groupID = &n
-			}
-		}
-	}
-	if v, ok := filters["region"]; ok {
-		if s, ok := v.(string); ok {
-			vv := strings.TrimSpace(s)
-			if vv != "" {
-				region = &vv
-			}
-		}
-	}
-	return platform, groupID, region
+	scope := opsctx.ParseAlertRuleScope(filters)
+	return scope.Platform, scope.GroupID, scope.Region
 }
 
 func (s *OpsAlertEvaluatorService) computeRuleMetric(
@@ -619,60 +569,22 @@ func (s *OpsAlertEvaluatorService) computeRuleMetric(
 }
 
 func compareMetric(value float64, operator string, threshold float64) bool {
-	switch strings.TrimSpace(operator) {
-	case ">":
-		return value > threshold
-	case ">=":
-		return value >= threshold
-	case "<":
-		return value < threshold
-	case "<=":
-		return value <= threshold
-	case "==":
-		return value == threshold
-	case "!=":
-		return value != threshold
-	default:
-		return false
-	}
+	return opsctx.CompareAlertMetric(value, strings.TrimSpace(operator), threshold)
 }
 
 func buildOpsAlertDimensions(platform string, groupID *int64) map[string]any {
-	dims := map[string]any{}
-	if strings.TrimSpace(platform) != "" {
-		dims["platform"] = strings.TrimSpace(platform)
-	}
-	if groupID != nil && *groupID > 0 {
-		dims["group_id"] = *groupID
-	}
-	if len(dims) == 0 {
-		return nil
-	}
-	return dims
+	return opsctx.BuildAlertDimensions(platform, groupID)
 }
 
 func buildOpsAlertDescription(rule *OpsAlertRule, value float64, windowMinutes int, platform string, groupID *int64) string {
 	if rule == nil {
 		return ""
 	}
-	scope := "overall"
-	if strings.TrimSpace(platform) != "" {
-		scope = fmt.Sprintf("platform=%s", strings.TrimSpace(platform))
-	}
-	if groupID != nil && *groupID > 0 {
-		scope = fmt.Sprintf("%s group_id=%d", scope, *groupID)
-	}
-	if windowMinutes <= 0 {
-		windowMinutes = 1
-	}
-	return fmt.Sprintf("%s %s %.2f (current %.2f) over last %dm (%s)",
-		strings.TrimSpace(rule.MetricType),
-		strings.TrimSpace(rule.Operator),
-		rule.Threshold,
-		value,
-		windowMinutes,
-		strings.TrimSpace(scope),
-	)
+	return opsctx.BuildAlertDescription(opsctx.AlertDescriptionRule{
+		MetricType: rule.MetricType,
+		Operator:   rule.Operator,
+		Threshold:  rule.Threshold,
+	}, value, windowMinutes, platform, groupID)
 }
 
 func (s *OpsAlertEvaluatorService) maybeSendAlertEmail(ctx context.Context, runtimeCfg *OpsAlertRuntimeSettings, rule *OpsAlertRule, event *OpsAlertEvent) bool {
@@ -817,86 +729,23 @@ func buildOpsAlertEmailBody(rule *OpsAlertRule, event *OpsAlertEvent) string {
 }
 
 func shouldSendOpsAlertEmailByMinSeverity(minSeverity string, ruleSeverity string) bool {
-	minSeverity = strings.ToLower(strings.TrimSpace(minSeverity))
-	if minSeverity == "" {
-		return true
-	}
-
-	eventLevel := opsEmailSeverityForOps(ruleSeverity)
-	minLevel := strings.ToLower(minSeverity)
-
-	rank := func(level string) int {
-		switch level {
-		case "critical":
-			return 3
-		case "warning":
-			return 2
-		case "info":
-			return 1
-		default:
-			return 0
-		}
-	}
-	return rank(eventLevel) >= rank(minLevel)
+	return opsctx.ShouldSendAlertEmailByMinSeverity(minSeverity, ruleSeverity)
 }
 
 func opsEmailSeverityForOps(severity string) string {
-	switch strings.ToUpper(strings.TrimSpace(severity)) {
-	case "P0":
-		return "critical"
-	case "P1":
-		return "warning"
-	default:
-		return "info"
-	}
+	return opsctx.AlertEmailSeverityForOps(severity)
 }
 
 func isOpsAlertSilenced(now time.Time, rule *OpsAlertRule, event *OpsAlertEvent, silencing OpsAlertSilencingSettings) bool {
-	if !silencing.Enabled {
-		return false
+	target := opsctx.AlertSilenceTarget{}
+	if rule != nil {
+		target.RuleID = rule.ID
+		target.RuleSeverity = rule.Severity
 	}
-	if now.IsZero() {
-		now = time.Now().UTC()
+	if event != nil {
+		target.EventSeverity = event.Severity
 	}
-	if strings.TrimSpace(silencing.GlobalUntilRFC3339) != "" {
-		if t, err := time.Parse(time.RFC3339, strings.TrimSpace(silencing.GlobalUntilRFC3339)); err == nil {
-			if now.Before(t) {
-				return true
-			}
-		}
-	}
-
-	for _, entry := range silencing.Entries {
-		untilRaw := strings.TrimSpace(entry.UntilRFC3339)
-		if untilRaw == "" {
-			continue
-		}
-		until, err := time.Parse(time.RFC3339, untilRaw)
-		if err != nil {
-			continue
-		}
-		if now.After(until) {
-			continue
-		}
-		if entry.RuleID != nil && rule != nil && rule.ID > 0 && *entry.RuleID != rule.ID {
-			continue
-		}
-		if len(entry.Severities) > 0 {
-			match := false
-			for _, s := range entry.Severities {
-				if strings.EqualFold(strings.TrimSpace(s), strings.TrimSpace(event.Severity)) || strings.EqualFold(strings.TrimSpace(s), strings.TrimSpace(rule.Severity)) {
-					match = true
-					break
-				}
-			}
-			if !match {
-				continue
-			}
-		}
-		return true
-	}
-
-	return false
+	return opsctx.IsAlertRuntimeSilenced(now, target, silencing)
 }
 
 func (s *OpsAlertEvaluatorService) tryAcquireLeaderLock(ctx context.Context, lock OpsDistributedLockSettings) (func(), bool) {
@@ -1051,22 +900,16 @@ func (l *slidingWindowLimiter) Allow(now time.Time) bool {
 // Formula: (AvailableCount / TotalAccounts) * 100.
 // Returns 0 when TotalAccounts is 0.
 func computeGroupAvailableRatio(group *GroupAvailability) float64 {
-	if group == nil || group.TotalAccounts <= 0 {
-		return 0
+	if group == nil {
+		return opsctx.ComputeGroupAvailableRatio(nil)
 	}
-	return (float64(group.AvailableCount) / float64(group.TotalAccounts)) * 100
+	return opsctx.ComputeGroupAvailableRatio(&opsctx.GroupAvailabilityCounts{
+		TotalAccounts:  group.TotalAccounts,
+		AvailableCount: group.AvailableCount,
+	})
 }
 
 // countAccountsByCondition counts accounts that satisfy the given condition.
 func countAccountsByCondition(accounts map[int64]*AccountAvailability, condition func(*AccountAvailability) bool) int64 {
-	if len(accounts) == 0 || condition == nil {
-		return 0
-	}
-	var count int64
-	for _, account := range accounts {
-		if account != nil && condition(account) {
-			count++
-		}
-	}
-	return count
+	return opsctx.CountByCondition(accounts, condition)
 }

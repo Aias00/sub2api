@@ -3,7 +3,7 @@ package service
 import (
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/ip"
+	"github.com/Aias00/cloudbase/internal/pkg/ip"
 )
 
 // API Key status constants

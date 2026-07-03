@@ -7,10 +7,10 @@ import (
 	"strings"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/xai"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
-	"github.com/Wei-Shaw/cloudbase/internal/util/logredact"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/pkg/xai"
+	"github.com/Aias00/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/util/logredact"
 	"github.com/imroc/req/v3"
 )
 

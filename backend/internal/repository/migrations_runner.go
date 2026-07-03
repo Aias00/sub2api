@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/migrations"
+	"github.com/Aias00/cloudbase/migrations"
 )
 
 // schemaMigrationsTableDDL 定义迁移记录表的 DDL。

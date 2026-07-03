@@ -3,10 +3,10 @@ package routes
 import (
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/handler"
-	"github.com/Wei-Shaw/cloudbase/internal/middleware"
-	servermiddleware "github.com/Wei-Shaw/cloudbase/internal/server/middleware"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/handler"
+	"github.com/Aias00/cloudbase/internal/middleware"
+	servermiddleware "github.com/Aias00/cloudbase/internal/server/middleware"
+	"github.com/Aias00/cloudbase/internal/service"
 
 	"github.com/gin-gonic/gin"
 	"github.com/redis/go-redis/v9"

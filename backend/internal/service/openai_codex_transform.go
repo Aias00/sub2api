@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/openai"
+	"github.com/Aias00/cloudbase/internal/pkg/openai"
 )
 
 var codexModelMap = map[string]string{

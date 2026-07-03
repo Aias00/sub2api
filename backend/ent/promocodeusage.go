@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/promocode"
-	"github.com/Wei-Shaw/cloudbase/ent/promocodeusage"
-	"github.com/Wei-Shaw/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/ent/promocode"
+	"github.com/Aias00/cloudbase/ent/promocodeusage"
+	"github.com/Aias00/cloudbase/ent/user"
 )
 
 // PromoCodeUsage is the model entity for the PromoCodeUsage schema.

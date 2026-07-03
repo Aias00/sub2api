@@ -10,10 +10,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/account"
-	"github.com/Wei-Shaw/cloudbase/ent/accountgroup"
-	"github.com/Wei-Shaw/cloudbase/ent/group"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/account"
+	"github.com/Aias00/cloudbase/ent/accountgroup"
+	"github.com/Aias00/cloudbase/ent/group"
+	"github.com/Aias00/cloudbase/ent/predicate"
 )
 
 // AccountGroupUpdate is the builder for updating AccountGroup entities.

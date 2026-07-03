@@ -7,23 +7,24 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/timezone"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	dbent "github.com/Aias00/cloudbase/ent"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/timezone"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 type usageBillingRepository struct {
 	db *sql.DB
 }
 
-func NewUsageBillingRepository(_ *dbent.Client, sqlDB *sql.DB) service.UsageBillingRepository {
+func NewUsageBillingRepository(_ *dbent.Client, sqlDB *sql.DB) billingctx.UsageBillingRepository {
 	return &usageBillingRepository{db: sqlDB}
 }
 
-func (r *usageBillingRepository) Apply(ctx context.Context, cmd *service.UsageBillingCommand) (_ *service.UsageBillingApplyResult, err error) {
+func (r *usageBillingRepository) Apply(ctx context.Context, cmd *billingctx.UsageBillingCommand) (_ *billingctx.UsageBillingApplyResult, err error) {
 	if cmd == nil {
-		return &service.UsageBillingApplyResult{}, nil
+		return &billingctx.UsageBillingApplyResult{}, nil
 	}
 	if r == nil || r.db == nil {
 		return nil, errors.New("usage billing repository db is nil")
@@ -31,7 +32,7 @@ func (r *usageBillingRepository) Apply(ctx context.Context, cmd *service.UsageBi
 
 	cmd.Normalize()
 	if cmd.RequestID == "" {
-		return nil, service.ErrUsageBillingRequestIDRequired
+		return nil, billingctx.ErrUsageBillingRequestIDRequired
 	}
 
 	tx, err := r.db.BeginTx(ctx, nil)
@@ -49,10 +50,10 @@ func (r *usageBillingRepository) Apply(ctx context.Context, cmd *service.UsageBi
 		return nil, err
 	}
 	if !applied {
-		return &service.UsageBillingApplyResult{Applied: false}, nil
+		return &billingctx.UsageBillingApplyResult{Applied: false}, nil
 	}
 
-	result := &service.UsageBillingApplyResult{Applied: true}
+	result := &billingctx.UsageBillingApplyResult{Applied: true}
 	if err := r.applyUsageBillingEffects(ctx, tx, cmd, result); err != nil {
 		return nil, err
 	}
@@ -64,7 +65,7 @@ func (r *usageBillingRepository) Apply(ctx context.Context, cmd *service.UsageBi
 	return result, nil
 }
 
-func (r *usageBillingRepository) claimUsageBillingKey(ctx context.Context, tx *sql.Tx, cmd *service.UsageBillingCommand) (bool, error) {
+func (r *usageBillingRepository) claimUsageBillingKey(ctx context.Context, tx *sql.Tx, cmd *billingctx.UsageBillingCommand) (bool, error) {
 	var id int64
 	err := tx.QueryRowContext(ctx, `
 		INSERT INTO usage_billing_dedup (request_id, api_key_id, request_fingerprint)
@@ -82,7 +83,7 @@ func (r *usageBillingRepository) claimUsageBillingKey(ctx context.Context, tx *s
 			return false, err
 		}
 		if strings.TrimSpace(existingFingerprint) != strings.TrimSpace(cmd.RequestFingerprint) {
-			return false, service.ErrUsageBillingRequestConflict
+			return false, billingctx.ErrUsageBillingRequestConflict
 		}
 		return false, nil
 	}
@@ -97,7 +98,7 @@ func (r *usageBillingRepository) claimUsageBillingKey(ctx context.Context, tx *s
 	`, cmd.RequestID, cmd.APIKeyID).Scan(&archivedFingerprint)
 	if err == nil {
 		if strings.TrimSpace(archivedFingerprint) != strings.TrimSpace(cmd.RequestFingerprint) {
-			return false, service.ErrUsageBillingRequestConflict
+			return false, billingctx.ErrUsageBillingRequestConflict
 		}
 		return false, nil
 	}
@@ -107,7 +108,7 @@ func (r *usageBillingRepository) claimUsageBillingKey(ctx context.Context, tx *s
 	return true, nil
 }
 
-func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, tx *sql.Tx, cmd *service.UsageBillingCommand, result *service.UsageBillingApplyResult) error {
+func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, tx *sql.Tx, cmd *billingctx.UsageBillingCommand, result *billingctx.UsageBillingApplyResult) error {
 	if cmd.SubscriptionCost > 0 && cmd.SubscriptionID != nil {
 		if err := incrementUsageBillingSubscription(ctx, tx, *cmd.SubscriptionID, cmd.SubscriptionCost); err != nil {
 			return err
@@ -363,7 +364,7 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 	return newBalance, false, nil
 }
 
-func signupGiftBalanceEligible(cmd *service.UsageBillingCommand) bool {
+func signupGiftBalanceEligible(cmd *billingctx.UsageBillingCommand) bool {
 	if cmd == nil || cmd.BalanceCost <= 0 {
 		return false
 	}
@@ -462,7 +463,7 @@ func incrementUsageBillingAPIKeyRateLimit(ctx context.Context, tx *sql.Tx, apiKe
 	return nil
 }
 
-func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountID int64, amount float64) (*service.AccountQuotaState, error) {
+func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountID int64, amount float64) (*billingctx.AccountQuotaState, error) {
 	rows, err := tx.QueryContext(ctx,
 		`UPDATE accounts SET extra = (
 			COALESCE(extra, '{}'::jsonb)
@@ -511,7 +512,7 @@ func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountI
 		return nil, err
 	}
 
-	var state service.AccountQuotaState
+	var state billingctx.AccountQuotaState
 	if rows.Next() {
 		if err := rows.Scan(
 			&state.TotalUsed, &state.TotalLimit,

@@ -3,7 +3,7 @@ package service
 import (
 	"fmt"
 
-	"github.com/Wei-Shaw/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/domain"
 )
 
 // Status constants

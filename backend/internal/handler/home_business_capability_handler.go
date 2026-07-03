@@ -13,9 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/hot"
+	imagectx "github.com/Aias00/cloudbase/internal/image"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -27,8 +29,9 @@ type HomeBusinessCapabilityHandler struct {
 }
 
 const (
-	workerNodeBusiness = "business-worker"
-	workerNodeContent  = "content-worker"
+	workerNodeWeChatExport   = "wechat-worker"
+	workerNodeImageWorkspace = "image-workspace-worker"
+	workerNodeContent        = "content-worker"
 )
 
 func NewHomeBusinessCapabilityHandler(
@@ -164,7 +167,7 @@ func (h *HomeBusinessCapabilityHandler) promptCatalogStatus(ctx context.Context)
 		return homeBusinessInProgress("Prompt Catalog service is not configured.")
 	}
 	hasImage := true
-	summary, err := h.promptCatalog.service.GetCaseSummary(ctx, service.PromptCatalogListFilters{
+	summary, err := h.promptCatalog.service.GetCaseSummary(ctx, imagectx.PromptCatalogListFilters{
 		SourceType: "case",
 		HasImage:   &hasImage,
 	})
@@ -185,7 +188,7 @@ func (h *HomeBusinessCapabilityHandler) hotContentStatus(ctx context.Context) ho
 	_, result, err := h.hotContent.service.ListItems(ctx, pagination.PaginationParams{
 		Page:     1,
 		PageSize: 1,
-	}, service.HotContentListFilters{Status: "published"})
+	}, hot.ListFilters{Status: "published"})
 	if err != nil {
 		return homeBusinessInProgress("Hot content data is not reachable.")
 	}
@@ -268,7 +271,7 @@ func (h *HomeBusinessCapabilityHandler) weChatExportStatus(ctx context.Context) 
 	return homeBusinessAvailable(0)
 }
 
-func summaryCount(summary *service.PromptCatalogSummary) int64 {
+func summaryCount(summary *imagectx.PromptCatalogSummary) int64 {
 	if summary == nil {
 		return 0
 	}
@@ -296,7 +299,7 @@ func (h *HomeBusinessCapabilityHandler) adminImageWorkspaceWorkerStatus(ctx cont
 	result := adminWorkerRuntimeStatusDTO{
 		ID:         "image-workspace",
 		Name:       "生图工作台 Worker",
-		NodeID:     workerNodeBusiness,
+		NodeID:     workerNodeImageWorkspace,
 		Health:     "unknown",
 		Configured: h != nil && h.imageWorkspace != nil && h.imageWorkspace.service != nil,
 	}
@@ -339,7 +342,7 @@ func (h *HomeBusinessCapabilityHandler) adminWeChatExportWorkerStatus(ctx contex
 	result := adminWorkerRuntimeStatusDTO{
 		ID:         "wechat-export",
 		Name:       "微信导出 Worker",
-		NodeID:     workerNodeBusiness,
+		NodeID:     workerNodeWeChatExport,
 		Health:     "unknown",
 		Configured: h != nil && h.weChatExport != nil && h.weChatExport.service != nil,
 	}
@@ -700,11 +703,17 @@ type runtimeWorkerDockerManager struct {
 
 func runtimeWorkerTarget(id string) (runtimeWorkerTargetInfo, bool) {
 	switch strings.ToLower(strings.TrimSpace(id)) {
-	case workerNodeBusiness, "wechat-export", "image-workspace":
+	case workerNodeWeChatExport, "wechat-export":
 		return runtimeWorkerTargetInfo{
-			ID:            workerNodeBusiness,
-			ContainerName: envOrDefault("BUSINESS_WORKER_CONTAINER_NAME", "cloudbase-business-worker"),
-			DeployCommand: "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile business-worker up -d --build",
+			ID:            workerNodeWeChatExport,
+			ContainerName: envOrDefault("WECHAT_WORKER_CONTAINER_NAME", "cloudbase-wechat-worker"),
+			DeployCommand: "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile wechat-worker up -d --build wechat-worker",
+		}, true
+	case workerNodeImageWorkspace, "image-workspace":
+		return runtimeWorkerTargetInfo{
+			ID:            workerNodeImageWorkspace,
+			ContainerName: envOrDefault("IMAGE_WORKSPACE_WORKER_CONTAINER_NAME", "cloudbase-image-workspace-worker"),
+			DeployCommand: "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile image-workspace-worker up -d --build image-workspace-worker",
 		}, true
 	case workerNodeContent, "hot-collector", "hot-rss-collector", "x-auto", "xauto":
 		return runtimeWorkerTargetInfo{

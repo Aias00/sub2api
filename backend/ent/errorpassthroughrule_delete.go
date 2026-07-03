@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/errorpassthroughrule"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/errorpassthroughrule"
+	"github.com/Aias00/cloudbase/ent/predicate"
 )
 
 // ErrorPassthroughRuleDelete is the builder for deleting a ErrorPassthroughRule entity.

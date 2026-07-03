@@ -6,9 +6,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/geminicli"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/googleapi"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/pkg/geminicli"
+	"github.com/Aias00/cloudbase/internal/pkg/googleapi"
+	"github.com/Aias00/cloudbase/internal/service"
 
 	"github.com/imroc/req/v3"
 )

@@ -4,9 +4,9 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/googleapi"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/pkg/googleapi"
+	"github.com/Aias00/cloudbase/internal/service"
 
 	"github.com/gin-gonic/gin"
 )

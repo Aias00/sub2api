@@ -1,6 +1,6 @@
 package repository
 
-import "github.com/Wei-Shaw/cloudbase/internal/pkg/geminicli"
+import "github.com/Aias00/cloudbase/internal/pkg/geminicli"
 
 // NewGeminiDriveClient creates a concrete DriveClient for Google Drive API operations.
 // Returned as geminicli.DriveClient interface for DI (Strategy A).

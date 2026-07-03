@@ -10,8 +10,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/group"
-	"github.com/Wei-Shaw/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/ent/group"
+	"github.com/Aias00/cloudbase/internal/domain"
 )
 
 // Group is the model entity for the Group schema.

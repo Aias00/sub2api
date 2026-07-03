@@ -12,9 +12,9 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/dialect/sql/sqljson"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
-	"github.com/Wei-Shaw/cloudbase/ent/userattributedefinition"
-	"github.com/Wei-Shaw/cloudbase/ent/userattributevalue"
+	"github.com/Aias00/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/userattributedefinition"
+	"github.com/Aias00/cloudbase/ent/userattributevalue"
 )
 
 // UserAttributeDefinitionUpdate is the builder for updating UserAttributeDefinition entities.

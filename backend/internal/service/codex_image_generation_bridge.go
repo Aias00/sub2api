@@ -1,44 +1,15 @@
 package service
 
-import "strings"
+import imagecore "github.com/Aias00/cloudbase/internal/image"
 
-const featureKeyCodexImageGenerationBridge = "codex_image_generation_bridge"
-
-func boolOverridePtr(v bool) *bool {
-	return &v
-}
+const featureKeyCodexImageGenerationBridge = imagecore.FeatureKeyCodexImageGenerationBridge
 
 func boolOverrideFromMap(values map[string]any, keys ...string) *bool {
-	if values == nil {
-		return nil
-	}
-	for _, key := range keys {
-		if v, ok := values[key].(bool); ok {
-			return boolOverridePtr(v)
-		}
-	}
-	return nil
+	return imagecore.BoolOverrideFromMap(values, keys...)
 }
 
 func platformBoolOverride(values map[string]any, key string, platform string) *bool {
-	if values == nil {
-		return nil
-	}
-	if v, ok := values[key].(bool); ok {
-		return boolOverridePtr(v)
-	}
-	raw, ok := values[key].(map[string]any)
-	if !ok {
-		return nil
-	}
-	platform = strings.TrimSpace(platform)
-	if platform == "" {
-		return nil
-	}
-	if v, ok := raw[platform].(bool); ok {
-		return boolOverridePtr(v)
-	}
-	return nil
+	return imagecore.PlatformBoolOverride(values, key, platform)
 }
 
 // CodexImageGenerationBridgeOverride returns the channel-level override for Codex

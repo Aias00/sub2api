@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"github.com/Wei-Shaw/cloudbase/internal/handler"
-	"github.com/Wei-Shaw/cloudbase/internal/server/middleware"
+	"github.com/Aias00/cloudbase/internal/handler"
+	"github.com/Aias00/cloudbase/internal/server/middleware"
 	"github.com/gin-gonic/gin"
 )
 

@@ -6,7 +6,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/domain"
 	"github.com/stretchr/testify/require"
 )
 

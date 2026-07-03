@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/group"
-	"github.com/Wei-Shaw/cloudbase/ent/redeemcode"
-	"github.com/Wei-Shaw/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/ent/group"
+	"github.com/Aias00/cloudbase/ent/redeemcode"
+	"github.com/Aias00/cloudbase/ent/user"
 )
 
 // RedeemCode is the model entity for the RedeemCode schema.

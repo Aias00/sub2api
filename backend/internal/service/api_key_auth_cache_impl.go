@@ -10,7 +10,7 @@ import (
 	"math/rand/v2"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/config"
 	"github.com/dgraph-io/ristretto"
 )
 

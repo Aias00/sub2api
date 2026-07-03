@@ -3,7 +3,7 @@ package handler
 import (
 	"strings"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/ip"
+	"github.com/Aias00/cloudbase/internal/pkg/ip"
 	"github.com/gin-gonic/gin"
 )
 

@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/authidentity"
-	"github.com/Wei-Shaw/cloudbase/ent/redeemcode"
-	dbuser "github.com/Wei-Shaw/cloudbase/ent/user"
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/authidentity"
+	"github.com/Aias00/cloudbase/ent/redeemcode"
+	dbuser "github.com/Aias00/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )

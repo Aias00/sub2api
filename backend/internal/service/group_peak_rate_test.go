@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/timezone"
+	"github.com/Aias00/cloudbase/internal/pkg/timezone"
 )
 
 func init() {

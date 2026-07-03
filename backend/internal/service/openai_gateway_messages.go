@@ -13,11 +13,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/apicompat"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/claude"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/xai"
-	"github.com/Wei-Shaw/cloudbase/internal/util/responseheaders"
+	"github.com/Aias00/cloudbase/internal/pkg/apicompat"
+	"github.com/Aias00/cloudbase/internal/pkg/claude"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/xai"
+	"github.com/Aias00/cloudbase/internal/util/responseheaders"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )

@@ -8,10 +8,10 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/enttest"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/enttest"
+	"github.com/Aias00/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
 
 	"entgo.io/ent/dialect"

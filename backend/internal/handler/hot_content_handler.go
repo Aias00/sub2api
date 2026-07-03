@@ -1,17 +1,17 @@
 package handler
 
 import (
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/hot"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 
 type HotContentHandler struct {
-	service *service.HotContentService
+	service *hot.Service
 }
 
-func NewHotContentHandler(service *service.HotContentService) *HotContentHandler {
+func NewHotContentHandler(service *hot.Service) *HotContentHandler {
 	return &HotContentHandler{service: service}
 }
 
@@ -26,7 +26,7 @@ func (h *HotContentHandler) ListSources(c *gin.Context) {
 
 func (h *HotContentHandler) ListItems(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
-	items, result, err := h.service.ListItems(c.Request.Context(), pagination.PaginationParams{Page: page, PageSize: pageSize}, service.HotContentListFilters{
+	items, result, err := h.service.ListItems(c.Request.Context(), pagination.PaginationParams{Page: page, PageSize: pageSize}, hot.ListFilters{
 		SourceID: c.Query("source_id"),
 		Query:    c.Query("q"),
 		Status:   c.Query("status"),

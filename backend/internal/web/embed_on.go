@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/server/middleware"
+	"github.com/Aias00/cloudbase/internal/server/middleware"
 	"github.com/gin-gonic/gin"
 )
 

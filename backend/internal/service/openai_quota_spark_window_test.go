@@ -15,7 +15,7 @@ import (
 	"github.com/imroc/req/v3"
 	"github.com/stretchr/testify/require"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 // ── stub helpers ─────────────────────────────────────────────────────────────

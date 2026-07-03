@@ -9,7 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/securitysecret"
+	"github.com/Aias00/cloudbase/ent/securitysecret"
 )
 
 // SecuritySecret is the model entity for the SecuritySecret schema.

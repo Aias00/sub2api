@@ -7,9 +7,9 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/userplatformquota"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/timezone"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/userplatformquota"
+	"github.com/Aias00/cloudbase/internal/pkg/timezone"
 	"github.com/lib/pq"
 )
 

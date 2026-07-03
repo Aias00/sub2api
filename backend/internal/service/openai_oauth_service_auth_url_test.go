@@ -6,7 +6,7 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/openai"
+	"github.com/Aias00/cloudbase/internal/pkg/openai"
 	"github.com/stretchr/testify/require"
 )
 

@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/xai"
+	"github.com/Aias00/cloudbase/internal/pkg/xai"
 	"github.com/stretchr/testify/require"
 )
 

@@ -9,41 +9,41 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/hot"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
 
-// stubHotContentRepo implements service.HotContentRepository for handler tests.
+// stubHotContentRepo implements hot.Repository for handler tests.
 type stubHotContentRepo struct {
-	sources    []service.HotSource
-	items      []service.HotItem
+	sources    []hot.Source
+	items      []hot.Item
 	itemsTotal int64
-	runEvents  []service.HotRunEvent
+	runEvents  []hot.RunEvent
 	runTotal   int64
 }
 
-func (r *stubHotContentRepo) ListSources(_ context.Context) ([]service.HotSource, error) {
+func (r *stubHotContentRepo) ListSources(_ context.Context) ([]hot.Source, error) {
 	return r.sources, nil
 }
 
-func (r *stubHotContentRepo) ListItems(_ context.Context, params pagination.PaginationParams, filters service.HotContentListFilters) ([]service.HotItem, *pagination.PaginationResult, error) {
+func (r *stubHotContentRepo) ListItems(_ context.Context, params pagination.PaginationParams, filters hot.ListFilters) ([]hot.Item, *pagination.PaginationResult, error) {
 	return r.items, &pagination.PaginationResult{Total: r.itemsTotal, Page: params.Page, PageSize: params.PageSize}, nil
 }
 
-func (r *stubHotContentRepo) ListRunEvents(_ context.Context, _ string, params pagination.PaginationParams) ([]service.HotRunEvent, *pagination.PaginationResult, error) {
+func (r *stubHotContentRepo) ListRunEvents(_ context.Context, _ string, params pagination.PaginationParams) ([]hot.RunEvent, *pagination.PaginationResult, error) {
 	return r.runEvents, &pagination.PaginationResult{Total: r.runTotal, Page: params.Page, PageSize: params.PageSize}, nil
 }
 
-func newTestHotContentHandler(repo service.HotContentRepository) *HotContentHandler {
-	return NewHotContentHandler(service.NewHotContentService(repo))
+func newTestHotContentHandler(repo hot.Repository) *HotContentHandler {
+	return NewHotContentHandler(hot.NewService(repo))
 }
 
 func TestHotContentHandler_ListSources(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler := newTestHotContentHandler(&stubHotContentRepo{
-		sources: []service.HotSource{{ID: 1, SourceID: "rss-test", Title: "Test RSS", Enabled: true}},
+		sources: []hot.Source{{ID: 1, SourceID: "rss-test", Title: "Test RSS", Enabled: true}},
 	})
 
 	w := httptest.NewRecorder()
@@ -65,7 +65,7 @@ func TestHotContentHandler_ListSources(t *testing.T) {
 func TestHotContentHandler_ListItems(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler := newTestHotContentHandler(&stubHotContentRepo{
-		items:      []service.HotItem{{ID: 1, Title: "Hot Item 1", Status: "published"}},
+		items:      []hot.Item{{ID: 1, Title: "Hot Item 1", Status: "published"}},
 		itemsTotal: 1,
 	})
 
@@ -82,7 +82,7 @@ func TestHotContentHandler_ListItems(t *testing.T) {
 func TestHotContentHandler_ListRunEvents(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	handler := newTestHotContentHandler(&stubHotContentRepo{
-		runEvents: []service.HotRunEvent{{ID: 1, RunID: "run-1", Message: "completed"}},
+		runEvents: []hot.RunEvent{{ID: 1, RunID: "run-1", Message: "completed"}},
 		runTotal:  1,
 	})
 

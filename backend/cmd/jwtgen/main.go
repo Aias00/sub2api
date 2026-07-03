@@ -7,10 +7,10 @@ import (
 	"log"
 	"time"
 
-	_ "github.com/Wei-Shaw/cloudbase/ent/runtime"
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/repository"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	_ "github.com/Aias00/cloudbase/ent/runtime"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/repository"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 func main() {

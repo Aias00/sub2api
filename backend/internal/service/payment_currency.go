@@ -1,21 +1,12 @@
 package service
 
 import (
-	"strings"
-
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/internal/payment"
 )
 
 func paymentProviderConfigCurrency(providerKey string, cfg map[string]string) string {
-	switch strings.TrimSpace(providerKey) {
-	case payment.TypeStripe, payment.TypeAirwallex:
-		currency, err := payment.NormalizePaymentCurrency(cfg["currency"])
-		if err == nil {
-			return currency
-		}
-	}
-	return payment.DefaultPaymentCurrency
+	return payment.ProviderConfigCurrency(providerKey, cfg)
 }
 
 func PaymentOrderCurrency(order *dbent.PaymentOrder) string {

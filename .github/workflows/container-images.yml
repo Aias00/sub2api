@@ -36,10 +36,14 @@ jobs:
             dockerfile: Dockerfile
             context: .
             suffix: ''
-          - name: business-worker
-            dockerfile: tools/business-worker.Dockerfile
+          - name: wechat-worker
+            dockerfile: tools/wechat-worker.Dockerfile
             context: tools
-            suffix: '-business-worker'
+            suffix: '-wechat-worker'
+          - name: image-workspace-worker
+            dockerfile: tools/image-workspace-worker.Dockerfile
+            context: tools
+            suffix: '-image-workspace-worker'
           - name: content-worker
             dockerfile: tools/content-worker.Dockerfile
             context: tools

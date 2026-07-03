@@ -12,10 +12,10 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/authidentity"
-	"github.com/Wei-Shaw/cloudbase/ent/identityadoptiondecision"
-	"github.com/Wei-Shaw/cloudbase/ent/pendingauthsession"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/authidentity"
+	"github.com/Aias00/cloudbase/ent/identityadoptiondecision"
+	"github.com/Aias00/cloudbase/ent/pendingauthsession"
+	"github.com/Aias00/cloudbase/ent/predicate"
 )
 
 // IdentityAdoptionDecisionQuery is the builder for querying IdentityAdoptionDecision entities.

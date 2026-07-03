@@ -5,14 +5,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"sort"
 	"strconv"
 	"strings"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/paymentproviderinstance"
+	"github.com/Aias00/cloudbase/internal/payment"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 const (
@@ -77,18 +76,7 @@ type PaymentConfig struct {
 	AlipayForceQRCode bool `json:"alipay_force_qrcode"`
 }
 
-type RechargeProduct struct {
-	ID             string   `json:"id"`
-	Name           string   `json:"name"`
-	Description    string   `json:"description"`
-	Amount         float64  `json:"amount"`
-	CreditedAmount float64  `json:"credited_amount"`
-	CreemProductID string   `json:"creem_product_id,omitempty"`
-	Badge          string   `json:"badge"`
-	Recommended    bool     `json:"recommended"`
-	Features       []string `json:"features"`
-	SortOrder      int      `json:"sort_order"`
-}
+type RechargeProduct = payment.RechargeProduct
 
 // UpdatePaymentConfigRequest contains fields to update payment configuration.
 type UpdatePaymentConfigRequest struct {
@@ -125,23 +113,8 @@ type UpdatePaymentConfigRequest struct {
 	VisibleMethodWxpayEnabled  *bool   `json:"payment_visible_method_wxpay_enabled"`
 }
 
-// MethodLimits holds per-payment-type limits.
-type MethodLimits struct {
-	PaymentType string  `json:"payment_type"`
-	Currency    string  `json:"currency"`
-	FeeRate     float64 `json:"fee_rate"`
-	DailyLimit  float64 `json:"daily_limit"`
-	SingleMin   float64 `json:"single_min"`
-	SingleMax   float64 `json:"single_max"`
-}
-
-// MethodLimitsResponse is the full response for the user-facing /limits API.
-// It includes per-method limits and the global widest range (union of all methods).
-type MethodLimitsResponse struct {
-	Methods   map[string]MethodLimits `json:"methods"`
-	GlobalMin float64                 `json:"global_min"` // 0 = no minimum
-	GlobalMax float64                 `json:"global_max"` // 0 = no maximum
-}
+type MethodLimits = payment.MethodLimits
+type MethodLimitsResponse = payment.MethodLimitsResponse
 
 type CreateProviderInstanceRequest struct {
 	ProviderKey     string            `json:"provider_key"`
@@ -375,67 +348,11 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 }
 
 func parseRechargeProducts(raw string, multiplier float64) []RechargeProduct {
-	if strings.TrimSpace(raw) == "" {
-		return []RechargeProduct{}
-	}
-	var products []RechargeProduct
-	if err := json.Unmarshal([]byte(raw), &products); err != nil {
-		return []RechargeProduct{}
-	}
-	normalized, err := normalizeRechargeProducts(products, &multiplier)
-	if err != nil {
-		return []RechargeProduct{}
-	}
-	return normalized
+	return payment.ParseRechargeProducts(raw, multiplier)
 }
 
 func normalizeRechargeProducts(products []RechargeProduct, multiplier *float64) ([]RechargeProduct, error) {
-	if len(products) == 0 {
-		return []RechargeProduct{}, nil
-	}
-	resolvedMultiplier := defaultBalanceRechargeMultiplier
-	if multiplier != nil {
-		resolvedMultiplier = normalizeBalanceRechargeMultiplier(*multiplier)
-	}
-	seenIDs := make(map[string]struct{}, len(products))
-	normalized := make([]RechargeProduct, 0, len(products))
-	for _, product := range products {
-		product.ID = strings.TrimSpace(product.ID)
-		product.Name = strings.TrimSpace(product.Name)
-		product.Description = strings.TrimSpace(product.Description)
-		product.Badge = strings.TrimSpace(product.Badge)
-		if product.ID == "" {
-			return nil, infraerrors.BadRequest("INVALID_RECHARGE_PRODUCT_ID", "recharge product id is required")
-		}
-		if _, exists := seenIDs[product.ID]; exists {
-			return nil, infraerrors.BadRequest("DUPLICATE_RECHARGE_PRODUCT_ID", "recharge product ids must be unique")
-		}
-		if product.Name == "" {
-			return nil, infraerrors.BadRequest("INVALID_RECHARGE_PRODUCT_NAME", "recharge product name is required")
-		}
-		if math.IsNaN(product.Amount) || math.IsInf(product.Amount, 0) || product.Amount <= 0 {
-			return nil, infraerrors.BadRequest("INVALID_RECHARGE_PRODUCT_AMOUNT", "recharge product amount must be greater than 0")
-		}
-		product.Amount = math.Round(product.Amount*100) / 100
-		product.CreditedAmount = calculateCreditedBalance(product.Amount, resolvedMultiplier)
-		cleanFeatures := make([]string, 0, len(product.Features))
-		for _, feature := range product.Features {
-			feature = strings.TrimSpace(feature)
-			if feature != "" {
-				cleanFeatures = append(cleanFeatures, feature)
-			}
-		}
-		product.Features = cleanFeatures
-		seenIDs[product.ID] = struct{}{}
-		normalized = append(normalized, product)
-	}
-	sort.SliceStable(normalized, func(i, j int) bool {
-		if normalized[i].SortOrder == normalized[j].SortOrder {
-			return normalized[i].Name < normalized[j].Name
-		}
-		return normalized[i].SortOrder < normalized[j].SortOrder
-	})
-	return normalized, nil
+	return payment.NormalizeRechargeProducts(products, multiplier)
 }
 
 func formatBoolOrEmpty(v *bool) string {
@@ -474,18 +391,7 @@ func derefStr(v *string) string {
 }
 
 func splitTypes(s string) []string {
-	if s == "" {
-		return nil
-	}
-	parts := strings.Split(s, ",")
-	result := make([]string, 0, len(parts))
-	for _, p := range parts {
-		p = strings.TrimSpace(p)
-		if p != "" {
-			result = append(result, p)
-		}
-	}
-	return result
+	return payment.SplitTypes(s)
 }
 
 func joinTypes(types []string) string {
@@ -515,77 +421,13 @@ func pcParseInt(s string, defaultVal int) int {
 }
 
 func buildVisibleMethodSourceAvailability(instances []*dbent.PaymentProviderInstance) map[string]bool {
-	available := make(map[string]bool, 4)
-	for _, inst := range instances {
-		switch inst.ProviderKey {
-		case payment.TypeAlipay:
-			if inst.SupportedTypes == "" || payment.InstanceSupportsType(inst.SupportedTypes, payment.TypeAlipay) || payment.InstanceSupportsType(inst.SupportedTypes, payment.TypeAlipayDirect) {
-				available[VisibleMethodSourceOfficialAlipay] = true
-			}
-		case payment.TypeWxpay:
-			if inst.SupportedTypes == "" || payment.InstanceSupportsType(inst.SupportedTypes, payment.TypeWxpay) || payment.InstanceSupportsType(inst.SupportedTypes, payment.TypeWxpayDirect) {
-				available[VisibleMethodSourceOfficialWechat] = true
-			}
-		case payment.TypeEasyPay:
-			for _, supportedType := range splitTypes(inst.SupportedTypes) {
-				switch NormalizeVisibleMethod(supportedType) {
-				case payment.TypeAlipay:
-					available[VisibleMethodSourceEasyPayAlipay] = true
-				case payment.TypeWxpay:
-					available[VisibleMethodSourceEasyPayWechat] = true
-				}
-			}
-		}
-	}
-	return available
+	return payment.BuildVisibleMethodSourceAvailability(visibleMethodSourcesFromEnt(instances))
 }
 
 func applyVisibleMethodRoutingToEnabledTypes(base []string, vals map[string]string, available map[string]bool) []string {
-	shouldExpose := map[string]bool{
-		payment.TypeAlipay: visibleMethodShouldBeExposed(payment.TypeAlipay, vals, available),
-		payment.TypeWxpay:  visibleMethodShouldBeExposed(payment.TypeWxpay, vals, available),
-	}
-
-	seen := make(map[string]struct{}, len(base)+2)
-	out := make([]string, 0, len(base)+2)
-	appendType := func(paymentType string) {
-		paymentType = NormalizeVisibleMethod(paymentType)
-		if paymentType == "" {
-			return
-		}
-		if _, ok := seen[paymentType]; ok {
-			return
-		}
-		seen[paymentType] = struct{}{}
-		out = append(out, paymentType)
-	}
-
-	for _, paymentType := range base {
-		visibleMethod := NormalizeVisibleMethod(paymentType)
-		switch visibleMethod {
-		case payment.TypeAlipay, payment.TypeWxpay:
-			if shouldExpose[visibleMethod] {
-				appendType(visibleMethod)
-			}
-		default:
-			appendType(visibleMethod)
-		}
-	}
-
-	for _, visibleMethod := range []string{payment.TypeAlipay, payment.TypeWxpay} {
-		if shouldExpose[visibleMethod] {
-			appendType(visibleMethod)
-		}
-	}
-	return out
+	return payment.ApplyVisibleMethodRoutingToEnabledTypes(base, vals, available)
 }
 
 func visibleMethodShouldBeExposed(method string, vals map[string]string, available map[string]bool) bool {
-	enabledKey := visibleMethodEnabledSettingKey(method)
-	sourceKey := visibleMethodSourceSettingKey(method)
-	if enabledKey == "" || sourceKey == "" || vals[enabledKey] != "true" {
-		return false
-	}
-	source := NormalizeVisibleMethodSource(method, vals[sourceKey])
-	return source != "" && available[source]
+	return payment.VisibleMethodShouldBeExposed(method, vals, available)
 }

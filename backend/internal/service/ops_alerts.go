@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 func (s *OpsService) ListAlertRules(ctx context.Context) ([]*OpsAlertRule, error) {

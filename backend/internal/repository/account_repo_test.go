@@ -9,9 +9,9 @@ import (
 	"sync"
 	"testing"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	_ "github.com/Wei-Shaw/cloudbase/ent/runtime"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	dbent "github.com/Aias00/cloudbase/ent"
+	_ "github.com/Aias00/cloudbase/ent/runtime"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/stretchr/testify/require"
 
 	"entgo.io/ent/dialect"

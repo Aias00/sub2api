@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/apicompat"
+	"github.com/Aias00/cloudbase/internal/pkg/apicompat"
 )
 
 type openAICompatAnthropicDigestBinding struct {

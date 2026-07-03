@@ -10,8 +10,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/authidentity"
-	"github.com/Wei-Shaw/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/ent/authidentity"
+	"github.com/Aias00/cloudbase/ent/user"
 )
 
 // AuthIdentity is the model entity for the AuthIdentity schema.

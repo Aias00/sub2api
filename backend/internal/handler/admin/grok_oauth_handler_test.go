@@ -14,9 +14,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/tlsfingerprint"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/xai"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/pkg/tlsfingerprint"
+	"github.com/Aias00/cloudbase/internal/pkg/xai"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 type grokQuotaHandlerAccountRepo struct {

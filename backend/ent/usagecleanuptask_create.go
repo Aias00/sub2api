@@ -12,7 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/usagecleanuptask"
+	"github.com/Aias00/cloudbase/ent/usagecleanuptask"
 )
 
 // UsageCleanupTaskCreate is the builder for creating a UsageCleanupTask entity.

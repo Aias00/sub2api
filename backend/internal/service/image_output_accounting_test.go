@@ -225,7 +225,7 @@ func TestOpenAIImageOutputCounter_AddDataArray_FromVariousSources(t *testing.T) 
 			counter := newOpenAIImageOutputCounter()
 			counter.AddSSEData([]byte(tt.json))
 			count := counter.Count()
-			t.Logf("  count=%d (maxDataCount=%d, count=%d)", count, counter.maxDataCount, counter.count)
+			t.Logf("  count=%d", count)
 		})
 	}
 }

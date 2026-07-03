@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/ctxkey"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/pkg/ctxkey"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
 )
 

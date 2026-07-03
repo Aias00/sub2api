@@ -5,10 +5,10 @@ import (
 	"database/sql"
 	"fmt"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/channelmonitor"
-	"github.com/Wei-Shaw/cloudbase/ent/channelmonitorrequesttemplate"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/channelmonitor"
+	"github.com/Aias00/cloudbase/ent/channelmonitorrequesttemplate"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 // channelMonitorRequestTemplateRepository 实现 service.ChannelMonitorRequestTemplateRepository。

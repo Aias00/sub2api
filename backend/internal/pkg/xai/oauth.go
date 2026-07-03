@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/util/logredact"
-	"github.com/Wei-Shaw/cloudbase/internal/util/urlvalidator"
+	"github.com/Aias00/cloudbase/internal/util/logredact"
+	"github.com/Aias00/cloudbase/internal/util/urlvalidator"
 )
 
 const (
