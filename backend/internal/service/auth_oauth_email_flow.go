@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/redeemcode"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/redeemcode"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 func normalizeOAuthSignupSource(signupSource string) string {

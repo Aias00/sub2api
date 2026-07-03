@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/oauth"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/pkg/oauth"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 )
 
 // --- mock: ClaudeOAuthClient ---

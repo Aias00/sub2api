@@ -5,9 +5,9 @@ import (
 	"errors"
 
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/google/wire"
 	"github.com/redis/go-redis/v9"
 )
@@ -93,13 +93,10 @@ var ProviderSet = wire.NewSet(
 	NewChannelMonitorRequestTemplateRepository,
 	NewContentModerationRepository,
 	NewAffiliateRepository,
-	NewPromptCatalogRepository,
 	NewWeChatExportRepository,
 	NewImageWorkspaceRepository,
-	NewHotContentRepository,
 	NewUserPlatformQuotaRepository,     // T14: user × platform quota
 	NewUserPlatformQuotaServiceAdapter, // T14: adapter → service.UserPlatformQuotaRepository
-	NewUserBalanceLedgerRepository,     // 用户余额流水仓储
 
 	// Cache implementations
 	NewGatewayCache,

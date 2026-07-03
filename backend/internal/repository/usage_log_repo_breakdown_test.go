@@ -5,7 +5,7 @@ package repository
 import (
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/usagestats"
+	"github.com/Aias00/cloudbase/internal/pkg/usagestats"
 	"github.com/stretchr/testify/require"
 )
 

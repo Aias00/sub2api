@@ -1,16 +1,16 @@
 package handler
 
 import (
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	imagectx "github.com/Aias00/cloudbase/internal/image"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
 	"github.com/gin-gonic/gin"
 )
 
 type TwitterImportHandler struct {
-	service *service.TwitterImportService
+	service *imagectx.TwitterImportService
 }
 
-func NewTwitterImportHandler(service *service.TwitterImportService) *TwitterImportHandler {
+func NewTwitterImportHandler(service *imagectx.TwitterImportService) *TwitterImportHandler {
 	return &TwitterImportHandler{service: service}
 }
 
@@ -37,7 +37,7 @@ func (h *TwitterImportHandler) Import(c *gin.Context) {
 		return
 	}
 
-	result, err := h.service.Import(c.Request.Context(), service.TwitterImportInput{
+	result, err := h.service.Import(c.Request.Context(), imagectx.TwitterImportInput{
 		URL:       req.URL,
 		Prompt:    req.Prompt,
 		Title:     req.Title,

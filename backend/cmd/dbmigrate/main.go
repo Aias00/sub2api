@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/repository"
+	"github.com/Aias00/cloudbase/internal/repository"
 	_ "github.com/lib/pq"
 )
 

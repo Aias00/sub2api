@@ -14,10 +14,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/openai"
-	"github.com/Wei-Shaw/cloudbase/internal/util/urlvalidator"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/openai"
+	"github.com/Aias00/cloudbase/internal/util/urlvalidator"
 	"go.uber.org/zap"
 )
 
@@ -54,26 +55,7 @@ var (
 )
 
 // LiteLLMModelPricing LiteLLM价格数据结构
-// 只保留我们需要的字段，使用指针来处理可能缺失的值
-type LiteLLMModelPricing struct {
-	InputCostPerToken                   float64 `json:"input_cost_per_token"`
-	InputCostPerTokenPriority           float64 `json:"input_cost_per_token_priority"`
-	OutputCostPerToken                  float64 `json:"output_cost_per_token"`
-	OutputCostPerTokenPriority          float64 `json:"output_cost_per_token_priority"`
-	CacheCreationInputTokenCost         float64 `json:"cache_creation_input_token_cost"`
-	CacheCreationInputTokenCostAbove1hr float64 `json:"cache_creation_input_token_cost_above_1hr"`
-	CacheReadInputTokenCost             float64 `json:"cache_read_input_token_cost"`
-	CacheReadInputTokenCostPriority     float64 `json:"cache_read_input_token_cost_priority"`
-	LongContextInputTokenThreshold      int     `json:"long_context_input_token_threshold,omitempty"`
-	LongContextInputCostMultiplier      float64 `json:"long_context_input_cost_multiplier,omitempty"`
-	LongContextOutputCostMultiplier     float64 `json:"long_context_output_cost_multiplier,omitempty"`
-	SupportsServiceTier                 bool    `json:"supports_service_tier"`
-	LiteLLMProvider                     string  `json:"litellm_provider"`
-	Mode                                string  `json:"mode"`
-	SupportsPromptCaching               bool    `json:"supports_prompt_caching"`
-	OutputCostPerImage                  float64 `json:"output_cost_per_image"`       // 图片生成模型每张图片价格
-	OutputCostPerImageToken             float64 `json:"output_cost_per_image_token"` // 图片输出 token 价格
-}
+type LiteLLMModelPricing = billingctx.LiteLLMModelPricing
 
 // PricingRemoteClient 远程价格数据获取接口
 type PricingRemoteClient interface {
@@ -155,6 +137,11 @@ func (s *PricingService) Stop() {
 
 // startUpdateScheduler 启动定时更新调度器
 func (s *PricingService) startUpdateScheduler() {
+	if !s.hasRemotePricingSource() {
+		logger.LegacyPrintf("service.pricing", "%s", "[Pricing] Remote pricing sync disabled")
+		return
+	}
+
 	// 定期检查哈希更新
 	hashInterval := time.Duration(s.cfg.Pricing.HashCheckIntervalMinutes) * time.Minute
 	if hashInterval < time.Minute {
@@ -185,17 +172,30 @@ func (s *PricingService) startUpdateScheduler() {
 // checkAndUpdatePricing 检查并更新价格数据
 func (s *PricingService) checkAndUpdatePricing() error {
 	pricingFile := s.getPricingFilePath()
+	hasRemote := s.hasRemotePricingSource()
 
 	// 检查本地文件是否存在
 	if _, err := os.Stat(pricingFile); os.IsNotExist(err) {
+		if !hasRemote {
+			logger.LegacyPrintf("service.pricing", "%s", "[Pricing] Local pricing file not found, using fallback file")
+			return s.useFallbackPricing()
+		}
 		logger.LegacyPrintf("service.pricing", "%s", "[Pricing] Local pricing file not found, downloading...")
 		return s.downloadPricingData()
 	}
 
 	// 先加载本地文件（确保服务可用），再检查是否需要更新
 	if err := s.loadPricingData(pricingFile); err != nil {
+		if !hasRemote {
+			logger.LegacyPrintf("service.pricing", "[Pricing] Failed to load local file, using fallback: %v", err)
+			return s.useFallbackPricing()
+		}
 		logger.LegacyPrintf("service.pricing", "[Pricing] Failed to load local file, downloading: %v", err)
 		return s.downloadPricingData()
+	}
+
+	if !hasRemote {
+		return nil
 	}
 
 	// 如果配置了哈希URL，通过远程哈希检查是否有更新
@@ -241,6 +241,10 @@ func (s *PricingService) checkAndUpdatePricing() error {
 
 // syncWithRemote 与远程同步（基于哈希校验）
 func (s *PricingService) syncWithRemote() error {
+	if !s.hasRemotePricingSource() {
+		return nil
+	}
+
 	// 如果配置了哈希URL，从远程获取哈希进行比对
 	if s.cfg.Pricing.HashURL != "" {
 		remoteHash, err := s.fetchRemoteHash()
@@ -282,6 +286,10 @@ func (s *PricingService) syncWithRemote() error {
 
 // downloadPricingData 从远程下载价格数据
 func (s *PricingService) downloadPricingData() error {
+	if !s.hasRemotePricingSource() {
+		return fmt.Errorf("pricing remote_url is empty")
+	}
+
 	remoteURL, err := s.validatePricingURL(s.cfg.Pricing.RemoteURL)
 	if err != nil {
 		return err
@@ -501,6 +509,13 @@ func (s *PricingService) fetchRemoteHash() (string, error) {
 		return "", err
 	}
 	return strings.TrimSpace(hash), nil
+}
+
+func (s *PricingService) hasRemotePricingSource() bool {
+	if s == nil || s.cfg == nil {
+		return false
+	}
+	return strings.TrimSpace(s.cfg.Pricing.RemoteURL) != ""
 }
 
 func (s *PricingService) validatePricingURL(raw string) (string, error) {

@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 func (s *OpsService) GetThroughputTrend(ctx context.Context, filter *OpsDashboardFilter, bucketSeconds int) (*OpsThroughputTrendResponse, error) {

@@ -9,7 +9,7 @@ import (
 	"strings"
 	"testing"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 

@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentauditlog"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentorder"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/paymentauditlog"
+	"github.com/Aias00/cloudbase/ent/paymentorder"
+	"github.com/Aias00/cloudbase/internal/payment"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 // --- Cancel & Expire ---
@@ -236,33 +236,22 @@ func paymentOrderQueryReference(order *dbent.PaymentOrder, prov payment.Provider
 	if providerKey == "" {
 		providerKey = strings.TrimSpace(psStringValue(order.ProviderKey))
 	}
-	if providerKey == "" {
-		providerKey = strings.TrimSpace(order.PaymentType)
+	snapshotProviderKey := ""
+	if snapshot := psOrderProviderSnapshot(order); snapshot != nil {
+		snapshotProviderKey = snapshot.ProviderKey
 	}
-
-	switch payment.GetBasePaymentType(providerKey) {
-	case payment.TypeAlipay, payment.TypeEasyPay, payment.TypeWxpay:
-		return strings.TrimSpace(order.OutTradeNo)
-	default:
-		if tradeNo := strings.TrimSpace(order.PaymentTradeNo); tradeNo != "" {
-			return tradeNo
-		}
-		return strings.TrimSpace(order.OutTradeNo)
-	}
+	return payment.OrderQueryReference(
+		providerKey,
+		snapshotProviderKey,
+		psStringValue(order.ProviderKey),
+		order.PaymentType,
+		order.OutTradeNo,
+		order.PaymentTradeNo,
+	)
 }
 
 func paymentOrderShouldPersistUpstreamTradeNo(queryRef, upstreamTradeNo, currentTradeNo string) bool {
-	upstreamTradeNo = strings.TrimSpace(upstreamTradeNo)
-	if upstreamTradeNo == "" {
-		return false
-	}
-	if strings.EqualFold(upstreamTradeNo, strings.TrimSpace(currentTradeNo)) {
-		return false
-	}
-	if strings.EqualFold(upstreamTradeNo, strings.TrimSpace(queryRef)) {
-		return false
-	}
-	return true
+	return payment.ShouldPersistUpstreamTradeNo(queryRef, upstreamTradeNo, currentTradeNo)
 }
 
 // VerifyOrderByOutTradeNo actively queries the upstream provider to check
@@ -415,28 +404,22 @@ func paymentOrderAllowsRegistryFallback(order *dbent.PaymentOrder) bool {
 	if order == nil {
 		return false
 	}
-	if psOrderProviderSnapshot(order) != nil {
-		return false
-	}
-	if strings.TrimSpace(psStringValue(order.ProviderInstanceID)) != "" {
-		return false
-	}
-	if strings.TrimSpace(psStringValue(order.ProviderKey)) != "" {
-		return false
-	}
-	return true
+	return payment.AllowsRegistryFallback(
+		psOrderProviderSnapshot(order) != nil,
+		psStringValue(order.ProviderInstanceID),
+		psStringValue(order.ProviderKey),
+	)
 }
 
 func paymentOrderFallbackProviderKey(registry *payment.Registry, order *dbent.PaymentOrder) string {
 	if order == nil {
 		return ""
 	}
+	registryProviderKey := ""
 	if registry != nil {
-		if key := strings.TrimSpace(registry.GetProviderKey(payment.PaymentType(order.PaymentType))); key != "" {
-			return key
-		}
+		registryProviderKey = registry.GetProviderKey(payment.PaymentType(order.PaymentType))
 	}
-	return strings.TrimSpace(payment.GetBasePaymentType(strings.TrimSpace(order.PaymentType)))
+	return payment.FallbackProviderKey(registryProviderKey, order.PaymentType)
 }
 
 func (s *PaymentService) createProviderFromInstance(ctx context.Context, inst *dbent.PaymentProviderInstance) (payment.Provider, error) {

@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/proxyutil"
+	"github.com/Aias00/cloudbase/internal/pkg/proxyutil"
 	"github.com/redis/go-redis/v9"
 )
 

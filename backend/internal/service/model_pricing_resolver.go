@@ -3,13 +3,15 @@ package service
 import (
 	"context"
 	"log/slog"
+
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
 )
 
 // PricingSource 定价来源标识
 const (
-	PricingSourceChannel  = "channel"
-	PricingSourceLiteLLM  = "litellm"
-	PricingSourceFallback = "fallback"
+	PricingSourceChannel  = billingctx.PricingSourceChannel
+	PricingSourceLiteLLM  = billingctx.PricingSourceLiteLLM
+	PricingSourceFallback = billingctx.PricingSourceFallback
 )
 
 // ResolvedPricing 统一定价解析结果
@@ -55,10 +57,7 @@ func NewModelPricingResolver(channelService *ChannelService, billingService *Bil
 }
 
 // PricingInput 定价解析输入
-type PricingInput struct {
-	Model   string
-	GroupID *int64 // nil 表示不检查渠道
-}
+type PricingInput = billingctx.PricingInput
 
 // Resolve 解析模型定价。
 // 1. 获取基础定价（LiteLLM → Fallback）

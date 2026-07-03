@@ -10,8 +10,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentauditlog"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/paymentauditlog"
+	"github.com/Aias00/cloudbase/ent/predicate"
 )
 
 // PaymentAuditLogUpdate is the builder for updating PaymentAuditLog entities.

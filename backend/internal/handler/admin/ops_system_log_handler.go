@@ -1,14 +1,9 @@
 package admin
 
 import (
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
-
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/server/middleware"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	opsctx "github.com/Aias00/cloudbase/internal/ops"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -28,22 +23,58 @@ type opsSystemLogCleanupRequest struct {
 	Query           string `json:"q"`
 }
 
+func opsSystemLogFilterFromParsed(parsed *opsctx.SystemLogListFilter) *service.OpsSystemLogFilter {
+	if parsed == nil {
+		return &service.OpsSystemLogFilter{}
+	}
+	return &service.OpsSystemLogFilter{
+		Page:            parsed.Page,
+		PageSize:        parsed.PageSize,
+		StartTime:       parsed.StartTime,
+		EndTime:         parsed.EndTime,
+		Level:           parsed.Level,
+		Component:       parsed.Component,
+		RequestID:       parsed.RequestID,
+		ClientRequestID: parsed.ClientRequestID,
+		UserID:          parsed.UserID,
+		APIKeyID:        parsed.APIKeyID,
+		AccountID:       parsed.AccountID,
+		Platform:        parsed.Platform,
+		Model:           parsed.Model,
+		Query:           parsed.Query,
+	}
+}
+
+func opsSystemLogCleanupFilterFromParsed(parsed *opsctx.SystemLogCleanupFilter) *service.OpsSystemLogCleanupFilter {
+	if parsed == nil {
+		return &service.OpsSystemLogCleanupFilter{}
+	}
+	return &service.OpsSystemLogCleanupFilter{
+		StartTime:       parsed.StartTime,
+		EndTime:         parsed.EndTime,
+		Level:           parsed.Level,
+		Component:       parsed.Component,
+		RequestID:       parsed.RequestID,
+		ClientRequestID: parsed.ClientRequestID,
+		UserID:          parsed.UserID,
+		APIKeyID:        parsed.APIKeyID,
+		AccountID:       parsed.AccountID,
+		Platform:        parsed.Platform,
+		Model:           parsed.Model,
+		Query:           parsed.Query,
+	}
+}
+
 // ListSystemLogs returns indexed system logs.
 // GET /api/v1/admin/ops/system-logs
 func (h *OpsHandler) ListSystemLogs(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
 	page, pageSize := response.ParsePagination(c)
-	if pageSize > 200 {
-		pageSize = 200
-	}
+	pageSize = opsctx.CapPageSize(pageSize, 200)
 
 	start, end, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
@@ -51,45 +82,29 @@ func (h *OpsHandler) ListSystemLogs(c *gin.Context) {
 		return
 	}
 
-	filter := &service.OpsSystemLogFilter{
-		Page:            page,
-		PageSize:        pageSize,
-		StartTime:       &start,
-		EndTime:         &end,
-		Level:           strings.TrimSpace(c.Query("level")),
-		Component:       strings.TrimSpace(c.Query("component")),
-		RequestID:       strings.TrimSpace(c.Query("request_id")),
-		ClientRequestID: strings.TrimSpace(c.Query("client_request_id")),
-		Platform:        strings.TrimSpace(c.Query("platform")),
-		Model:           strings.TrimSpace(c.Query("model")),
-		Query:           strings.TrimSpace(c.Query("q")),
+	parsed, err := opsctx.ParseSystemLogListFilter(opsctx.SystemLogListFilterInput{
+		StartTime:          start,
+		EndTime:            end,
+		Page:               page,
+		PageSize:           pageSize,
+		LevelRaw:           c.Query("level"),
+		ComponentRaw:       c.Query("component"),
+		RequestIDRaw:       c.Query("request_id"),
+		ClientRequestIDRaw: c.Query("client_request_id"),
+		UserIDRaw:          c.Query("user_id"),
+		APIKeyIDRaw:        c.Query("api_key_id"),
+		AccountIDRaw:       c.Query("account_id"),
+		PlatformRaw:        c.Query("platform"),
+		ModelRaw:           c.Query("model"),
+		QueryRaw:           c.Query("q"),
+	})
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
-	if v := strings.TrimSpace(c.Query("user_id")); v != "" {
-		id, parseErr := strconv.ParseInt(v, 10, 64)
-		if parseErr != nil || id <= 0 {
-			response.BadRequest(c, "Invalid user_id")
-			return
-		}
-		filter.UserID = &id
-	}
-	if v := strings.TrimSpace(c.Query("api_key_id")); v != "" {
-		id, parseErr := strconv.ParseInt(v, 10, 64)
-		if parseErr != nil || id <= 0 {
-			response.BadRequest(c, "Invalid api_key_id")
-			return
-		}
-		filter.APIKeyID = &id
-	}
-	if v := strings.TrimSpace(c.Query("account_id")); v != "" {
-		id, parseErr := strconv.ParseInt(v, 10, 64)
-		if parseErr != nil || id <= 0 {
-			response.BadRequest(c, "Invalid account_id")
-			return
-		}
-		filter.AccountID = &id
-	}
+	filter := opsSystemLogFilterFromParsed(parsed)
 
-	result, err := h.opsService.ListSystemLogs(c.Request.Context(), filter)
+	result, err := opsService.ListSystemLogs(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -100,72 +115,43 @@ func (h *OpsHandler) ListSystemLogs(c *gin.Context) {
 // CleanupSystemLogs deletes indexed system logs by filter.
 // POST /api/v1/admin/ops/system-logs/cleanup
 func (h *OpsHandler) CleanupSystemLogs(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
-	subject, ok := middleware.GetAuthSubjectFromContext(c)
-	if !ok || subject.UserID <= 0 {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized")
+	uid, ok := requireOpsUserID(c)
+	if !ok {
 		return
 	}
 
-	var req opsSystemLogCleanupRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "Invalid request body")
+	req, ok := bindOpsJSON[opsSystemLogCleanupRequest](c)
+	if !ok {
 		return
 	}
 
-	parseTS := func(raw string) (*time.Time, error) {
-		raw = strings.TrimSpace(raw)
-		if raw == "" {
-			return nil, nil
-		}
-		if t, err := time.Parse(time.RFC3339Nano, raw); err == nil {
-			return &t, nil
-		}
-		t, err := time.Parse(time.RFC3339, raw)
-		if err != nil {
-			return nil, err
-		}
-		return &t, nil
-	}
-	start, err := parseTS(req.StartTime)
+	parsed, err := opsctx.ParseSystemLogCleanupFilter(opsctx.SystemLogCleanupFilterInput{
+		StartTimeRaw:       req.StartTime,
+		EndTimeRaw:         req.EndTime,
+		LevelRaw:           req.Level,
+		ComponentRaw:       req.Component,
+		RequestIDRaw:       req.RequestID,
+		ClientRequestIDRaw: req.ClientRequestID,
+		UserID:             req.UserID,
+		APIKeyID:           req.APIKeyID,
+		AccountID:          req.AccountID,
+		PlatformRaw:        req.Platform,
+		ModelRaw:           req.Model,
+		QueryRaw:           req.Query,
+	})
 	if err != nil {
-		response.BadRequest(c, "Invalid start_time")
-		return
-	}
-	end, err := parseTS(req.EndTime)
-	if err != nil {
-		response.BadRequest(c, "Invalid end_time")
-		return
-	}
-	if req.APIKeyID != nil && *req.APIKeyID <= 0 {
-		response.BadRequest(c, "Invalid api_key_id")
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	filter := &service.OpsSystemLogCleanupFilter{
-		StartTime:       start,
-		EndTime:         end,
-		Level:           strings.TrimSpace(req.Level),
-		Component:       strings.TrimSpace(req.Component),
-		RequestID:       strings.TrimSpace(req.RequestID),
-		ClientRequestID: strings.TrimSpace(req.ClientRequestID),
-		UserID:          req.UserID,
-		APIKeyID:        req.APIKeyID,
-		AccountID:       req.AccountID,
-		Platform:        strings.TrimSpace(req.Platform),
-		Model:           strings.TrimSpace(req.Model),
-		Query:           strings.TrimSpace(req.Query),
-	}
+	filter := opsSystemLogCleanupFilterFromParsed(parsed)
 
-	deleted, err := h.opsService.CleanupSystemLogs(c.Request.Context(), filter, subject.UserID)
+	deleted, err := opsService.CleanupSystemLogs(c.Request.Context(), filter, uid)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -176,13 +162,9 @@ func (h *OpsHandler) CleanupSystemLogs(c *gin.Context) {
 // GetSystemLogIngestionHealth returns sink health metrics.
 // GET /api/v1/admin/ops/system-logs/health
 func (h *OpsHandler) GetSystemLogIngestionHealth(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
-		return
-	}
-	response.Success(c, h.opsService.GetSystemLogSinkHealth())
+	response.Success(c, opsService.GetSystemLogSinkHealth())
 }

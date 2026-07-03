@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/domain"
 )
 
 type User struct {

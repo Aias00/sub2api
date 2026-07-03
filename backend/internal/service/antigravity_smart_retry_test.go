@@ -5,7 +5,7 @@ package service
 import (
 	"bytes"
 	"context"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/tlsfingerprint"
+	"github.com/Aias00/cloudbase/internal/pkg/tlsfingerprint"
 	"github.com/stretchr/testify/require"
 	"io"
 	"net/http"

@@ -2,14 +2,14 @@ package service
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"log"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/config"
 )
 
 // APIKeyRateLimitCacheData holds rate limit usage data cached in Redis.
@@ -89,24 +89,7 @@ type BillingCache interface {
 }
 
 // ModelPricing 模型价格配置（per-token价格，与LiteLLM格式一致）
-type ModelPricing struct {
-	InputPricePerToken             float64 // 每token输入价格 (USD)
-	InputPricePerTokenPriority     float64 // priority service tier 下每token输入价格 (USD)
-	ImageInputPricePerToken        float64 // 图片输入 token 价格 (USD)，用于多模态 embedding 等图文不同价场景；为 0 时回退到 InputPricePerToken
-	OutputPricePerToken            float64 // 每token输出价格 (USD)
-	OutputPricePerTokenPriority    float64 // priority service tier 下每token输出价格 (USD)
-	CacheCreationPricePerToken     float64 // 缓存创建每token价格 (USD)
-	CacheReadPricePerToken         float64 // 缓存读取每token价格 (USD)
-	CacheReadPricePerTokenPriority float64 // priority service tier 下缓存读取每token价格 (USD)
-	CacheCreation5mPrice           float64 // 5分钟缓存创建每token价格 (USD)
-	CacheCreation1hPrice           float64 // 1小时缓存创建每token价格 (USD)
-	SupportsCacheBreakdown         bool    // 是否支持详细的缓存分类
-	LongContextInputThreshold      int     // 超过阈值后按整次会话提升输入价格
-	LongContextInputMultiplier     float64 // 长上下文整次会话输入倍率
-	LongContextOutputMultiplier    float64 // 长上下文整次会话输出倍率
-	ImageOutputPricePerToken       float64 // 图片输出 token 价格 (USD)
-	ImageOutputPriceExplicit       bool    // 是否由渠道定价显式设定（为 true 时即使 == 0 也不回退）
-}
+type ModelPricing = billingctx.ModelPricing
 
 const (
 	openAIGPT54LongContextInputThreshold   = 272000
@@ -137,37 +120,19 @@ func serviceTierCostMultiplier(serviceTier string) float64 {
 }
 
 // UsageTokens 使用的token数量
-type UsageTokens struct {
-	InputTokens           int
-	ImageInputTokens      int
-	OutputTokens          int
-	CacheCreationTokens   int
-	CacheReadTokens       int
-	CacheCreation5mTokens int
-	CacheCreation1hTokens int
-	ImageOutputTokens     int
-}
+type UsageTokens = billingctx.UsageTokens
 
 // CostBreakdown 费用明细
-type CostBreakdown struct {
-	InputCost         float64
-	OutputCost        float64
-	ImageOutputCost   float64
-	CacheCreationCost float64
-	CacheReadCost     float64
-	TotalCost         float64
-	ActualCost        float64 // 应用倍率后的实际费用
-	BillingMode       string  // 计费模式（"token"/"per_request"/"image"），由 CalculateCostUnified 填充
-}
+type CostBreakdown = billingctx.CostBreakdown
 
 // ErrModelPricingUnavailable indicates that none of the configured pricing
 // sources can price the requested model.
-var ErrModelPricingUnavailable = errors.New("pricing not found")
+var ErrModelPricingUnavailable = billingctx.ErrModelPricingUnavailable
 
 // BillingService 计费服务
 type BillingService struct {
 	cfg            *config.Config
-	pricingService *PricingService
+	pricingService billingctx.PricingProvider
 	fallbackPrices map[string]*ModelPricing // 硬编码回退价格
 
 	// fallbackWarnSeen 记录已打过 fallback 警告日志的(已小写化)模型名,
@@ -178,9 +143,14 @@ type BillingService struct {
 
 // NewBillingService 创建计费服务实例
 func NewBillingService(cfg *config.Config, pricingService *PricingService) *BillingService {
+	var pricingProvider billingctx.PricingProvider
+	if pricingService != nil {
+		pricingProvider = pricingService
+	}
+
 	s := &BillingService{
 		cfg:            cfg,
-		pricingService: pricingService,
+		pricingService: pricingProvider,
 		fallbackPrices: make(map[string]*ModelPricing),
 	}
 

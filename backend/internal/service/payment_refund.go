@@ -12,13 +12,13 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentauditlog"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentorder"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	"github.com/Wei-Shaw/cloudbase/internal/payment/provider"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/paymentauditlog"
+	"github.com/Aias00/cloudbase/ent/paymentorder"
+	"github.com/Aias00/cloudbase/ent/paymentproviderinstance"
+	"github.com/Aias00/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/payment/provider"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 // --- Refund Flow ---
@@ -134,23 +134,7 @@ func psLegacyOrderMatchesInstance(orderPaymentType string, inst *dbent.PaymentPr
 	if inst == nil {
 		return false
 	}
-
-	baseType := payment.GetBasePaymentType(strings.TrimSpace(orderPaymentType))
-	instanceProviderKey := strings.TrimSpace(inst.ProviderKey)
-	if baseType == "" {
-		return false
-	}
-
-	if baseType == payment.TypeStripe {
-		return instanceProviderKey == payment.TypeStripe
-	}
-	if instanceProviderKey == payment.TypeStripe {
-		return false
-	}
-	if instanceProviderKey == baseType {
-		return true
-	}
-	return payment.InstanceSupportsType(inst.SupportedTypes, baseType)
+	return payment.LegacyOrderMatchesProviderInstanceFields(orderPaymentType, inst.ProviderKey, inst.SupportedTypes)
 }
 
 func (s *PaymentService) RequestRefund(ctx context.Context, oid, uid int64, reason string) error {
@@ -366,22 +350,11 @@ func (s *PaymentService) gwRefund(ctx context.Context, p *RefundPlan) (*payment.
 }
 
 func formatGatewayRefundAmount(amount float64, order *dbent.PaymentOrder) string {
-	return payment.FormatAmountForCurrency(amount, PaymentOrderCurrency(order))
+	return payment.FormatGatewayRefundAmount(amount, PaymentOrderCurrency(order))
 }
 
 func validateRefundProviderResponse(resp *payment.RefundResponse) error {
-	if resp == nil {
-		return fmt.Errorf("payment refund response missing")
-	}
-	status := strings.TrimSpace(resp.Status)
-	switch status {
-	case payment.ProviderStatusSuccess, payment.ProviderStatusRefunded, payment.ProviderStatusPending:
-		return nil
-	case payment.ProviderStatusFailed:
-		return fmt.Errorf("payment refund failed: status %s", status)
-	default:
-		return fmt.Errorf("payment refund returned unknown status: %s", status)
-	}
+	return payment.ValidateRefundProviderResponse(resp)
 }
 
 func (s *PaymentService) finishRefund(ctx context.Context, p *RefundPlan, resp *payment.RefundResponse) (*RefundResult, error) {
@@ -610,10 +583,7 @@ func (s *PaymentService) markRefundPending(ctx context.Context, p *RefundPlan, r
 }
 
 func refundResponseID(resp *payment.RefundResponse) string {
-	if resp == nil {
-		return ""
-	}
-	return strings.TrimSpace(resp.RefundID)
+	return payment.RefundResponseID(resp)
 }
 
 func (s *PaymentService) RollbackRefund(ctx context.Context, p *RefundPlan, gErr error) bool {

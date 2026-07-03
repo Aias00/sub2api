@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/payment"
 )
 
 func TestNormalizeEasyPayAPIBase(t *testing.T) {

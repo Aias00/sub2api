@@ -8,7 +8,7 @@
 [![Redis](https://img.shields.io/badge/Redis-8+-DC382D.svg)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
-<a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Wei-Shaw%2Fcloudbase | Trendshift" width="250" height="55"/></a>
+<a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Aias00%2Fcloudbase | Trendshift" width="250" height="55"/></a>
 
 **自托管 AI 网关与业务运营平台**
 
@@ -82,7 +82,7 @@ Nginx 默认会丢弃名称中含下划线的请求头（如 `session_id`），�
 #### 安装步骤
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/Aias00/cloudbase/main/deploy/install.sh | sudo bash
 ```
 
 脚本会自动：
@@ -132,7 +132,7 @@ sudo journalctl -u cloudbase -f
 sudo systemctl restart cloudbase
 
 # 卸载
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/install.sh | sudo bash -s -- uninstall -y
+curl -sSL https://raw.githubusercontent.com/Aias00/cloudbase/main/deploy/install.sh | sudo bash -s -- uninstall -y
 ```
 
 ---
@@ -155,7 +155,7 @@ curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/insta
 mkdir -p cloudbase-deploy && cd cloudbase-deploy
 
 # 下载并运行部署准备脚本
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/docker-deploy.sh | bash
+curl -sSL https://raw.githubusercontent.com/Aias00/cloudbase/main/deploy/docker-deploy.sh | bash
 
 # 启动服务
 docker compose up -d
@@ -177,7 +177,7 @@ docker compose logs -f cloudbase
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/Wei-Shaw/cloudbase.git
+git clone https://github.com/Aias00/cloudbase.git
 cd cloudbase/deploy
 
 # 2. 复制环境配置文件
@@ -328,7 +328,7 @@ rm -rf data/ postgres_data/ redis_data/
 
 ```bash
 # 1. 克隆仓库
-git clone https://github.com/Wei-Shaw/cloudbase.git
+git clone https://github.com/Aias00/cloudbase.git
 cd cloudbase
 
 # 2. 安装 pnpm（如果还没有安装）
@@ -622,11 +622,11 @@ cloudbase/
 
 ## Star History
 
-<a href="https://star-history.com/#Wei-Shaw/cloudbase&Date">
+<a href="https://star-history.com/#Aias00/cloudbase&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Wei-Shaw/cloudbase&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Wei-Shaw/cloudbase&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Wei-Shaw/cloudbase&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Aias00/cloudbase&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Aias00/cloudbase&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Aias00/cloudbase&type=Date" />
  </picture>
 </a>
 

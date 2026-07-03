@@ -14,10 +14,10 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	dbuser "github.com/Wei-Shaw/cloudbase/ent/user"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
+	dbent "github.com/Aias00/cloudbase/ent"
+	dbuser "github.com/Aias00/cloudbase/ent/user"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
 )
 
 const emailPreferenceTokenVersion = "v1"

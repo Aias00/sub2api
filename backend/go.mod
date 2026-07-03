@@ -1,4 +1,4 @@
-module github.com/Wei-Shaw/cloudbase
+module github.com/Aias00/cloudbase
 
 go 1.26.4
 

@@ -14,13 +14,13 @@ import (
 
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/authidentity"
-	"github.com/Wei-Shaw/cloudbase/ent/authidentitychannel"
-	"github.com/Wei-Shaw/cloudbase/ent/identityadoptiondecision"
-	dbpredicate "github.com/Wei-Shaw/cloudbase/ent/predicate"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/authidentity"
+	"github.com/Aias00/cloudbase/ent/authidentitychannel"
+	"github.com/Aias00/cloudbase/ent/identityadoptiondecision"
+	dbpredicate "github.com/Aias00/cloudbase/ent/predicate"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 var (

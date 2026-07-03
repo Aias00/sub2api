@@ -4,20 +4,20 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	middleware "github.com/Wei-Shaw/cloudbase/internal/server/middleware"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
+	middleware "github.com/Aias00/cloudbase/internal/server/middleware"
 
 	"github.com/gin-gonic/gin"
 )
 
 // UserBalanceLedgerHandler 用户余额流水 Handler
 type UserBalanceLedgerHandler struct {
-	ledgerService *service.UserBalanceLedgerService
+	ledgerService *billingctx.UserBalanceLedgerService
 }
 
 // NewUserBalanceLedgerHandler 创建余额流水 Handler
-func NewUserBalanceLedgerHandler(ledgerService *service.UserBalanceLedgerService) *UserBalanceLedgerHandler {
+func NewUserBalanceLedgerHandler(ledgerService *billingctx.UserBalanceLedgerService) *UserBalanceLedgerHandler {
 	return &UserBalanceLedgerHandler{
 		ledgerService: ledgerService,
 	}
@@ -70,7 +70,7 @@ func (h *UserBalanceLedgerHandler) GetUserBalanceLedger(c *gin.Context) {
 	}
 
 	// 构建过滤器
-	filter := service.BalanceLedgerFilter{
+	filter := billingctx.BalanceLedgerFilter{
 		Page:     req.Page,
 		PageSize: req.PageSize,
 	}
@@ -120,20 +120,20 @@ func (h *UserBalanceLedgerHandler) GetUserBalanceLedger(c *gin.Context) {
 }
 
 // parseEntryTypes 解析逗号分隔的 entry_type 列表
-func parseEntryTypes(s string) []service.BalanceLedgerEntryType {
+func parseEntryTypes(s string) []billingctx.BalanceLedgerEntryType {
 	parts := splitString(s, ",")
-	types := make([]service.BalanceLedgerEntryType, 0, len(parts))
+	types := make([]billingctx.BalanceLedgerEntryType, 0, len(parts))
 	for _, p := range parts {
 		p = trimSpace(p)
 		if p != "" {
-			types = append(types, service.BalanceLedgerEntryType(p))
+			types = append(types, billingctx.BalanceLedgerEntryType(p))
 		}
 	}
 	return types
 }
 
 // convertEntryToResponse 转换流水记录为响应格式
-func convertEntryToResponse(entry service.UserBalanceLedgerEntry) BalanceLedgerEntryResponse {
+func convertEntryToResponse(entry billingctx.UserBalanceLedgerEntry) BalanceLedgerEntryResponse {
 	resp := BalanceLedgerEntryResponse{
 		ID:            entry.ID,
 		EntryType:     string(entry.EntryType),

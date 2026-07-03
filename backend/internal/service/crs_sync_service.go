@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/httpclient"
-	"github.com/Wei-Shaw/cloudbase/internal/util/urlvalidator"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/pkg/httpclient"
+	"github.com/Aias00/cloudbase/internal/util/urlvalidator"
 )
 
 type CRSSyncService struct {

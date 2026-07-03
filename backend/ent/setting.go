@@ -9,7 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/setting"
+	"github.com/Aias00/cloudbase/ent/setting"
 )
 
 // Setting is the model entity for the Setting schema.

@@ -5,12 +5,12 @@ package enttest
 import (
 	"context"
 
-	"github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent"
 	// required by schema hooks.
-	_ "github.com/Wei-Shaw/cloudbase/ent/runtime"
+	_ "github.com/Aias00/cloudbase/ent/runtime"
 
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/Wei-Shaw/cloudbase/ent/migrate"
+	"github.com/Aias00/cloudbase/ent/migrate"
 )
 
 type (

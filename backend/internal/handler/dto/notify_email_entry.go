@@ -1,6 +1,6 @@
 package dto
 
-import "github.com/Wei-Shaw/cloudbase/internal/service"
+import "github.com/Aias00/cloudbase/internal/service"
 
 // NotifyEmailEntry represents a notification email with enable/disable and verification state.
 // All emails are user-managed; maximum 3 entries per user.

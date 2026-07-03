@@ -15,8 +15,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/proxyurl"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/proxyutil"
+	"github.com/Aias00/cloudbase/internal/pkg/proxyurl"
+	"github.com/Aias00/cloudbase/internal/pkg/proxyutil"
 )
 
 // ForbiddenError 表示上游返回 403 Forbidden

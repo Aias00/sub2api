@@ -18,7 +18,7 @@ import (
 	"strings"
 	"time"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 var (
@@ -28,7 +28,7 @@ var (
 const (
 	updateCacheKey = "update_check_cache"
 	updateCacheTTL = 1200 // 20 minutes
-	githubRepo     = "Wei-Shaw/cloudbase"
+	githubRepo     = "Aias00/cloudbase"
 
 	// Security: allowed download domains for updates
 	allowedDownloadHost = "github.com"

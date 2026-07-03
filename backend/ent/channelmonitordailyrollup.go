@@ -9,8 +9,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/channelmonitor"
-	"github.com/Wei-Shaw/cloudbase/ent/channelmonitordailyrollup"
+	"github.com/Aias00/cloudbase/ent/channelmonitor"
+	"github.com/Aias00/cloudbase/ent/channelmonitordailyrollup"
 )
 
 // ChannelMonitorDailyRollup is the model entity for the ChannelMonitorDailyRollup schema.

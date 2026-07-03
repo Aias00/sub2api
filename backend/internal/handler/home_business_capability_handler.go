@@ -13,9 +13,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/hot"
+	imagectx "github.com/Aias00/cloudbase/internal/image"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -165,7 +167,7 @@ func (h *HomeBusinessCapabilityHandler) promptCatalogStatus(ctx context.Context)
 		return homeBusinessInProgress("Prompt Catalog service is not configured.")
 	}
 	hasImage := true
-	summary, err := h.promptCatalog.service.GetCaseSummary(ctx, service.PromptCatalogListFilters{
+	summary, err := h.promptCatalog.service.GetCaseSummary(ctx, imagectx.PromptCatalogListFilters{
 		SourceType: "case",
 		HasImage:   &hasImage,
 	})
@@ -186,7 +188,7 @@ func (h *HomeBusinessCapabilityHandler) hotContentStatus(ctx context.Context) ho
 	_, result, err := h.hotContent.service.ListItems(ctx, pagination.PaginationParams{
 		Page:     1,
 		PageSize: 1,
-	}, service.HotContentListFilters{Status: "published"})
+	}, hot.ListFilters{Status: "published"})
 	if err != nil {
 		return homeBusinessInProgress("Hot content data is not reachable.")
 	}
@@ -269,7 +271,7 @@ func (h *HomeBusinessCapabilityHandler) weChatExportStatus(ctx context.Context) 
 	return homeBusinessAvailable(0)
 }
 
-func summaryCount(summary *service.PromptCatalogSummary) int64 {
+func summaryCount(summary *imagectx.PromptCatalogSummary) int64 {
 	if summary == nil {
 		return 0
 	}

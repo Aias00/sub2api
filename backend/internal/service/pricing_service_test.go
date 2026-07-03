@@ -6,8 +6,39 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/Aias00/cloudbase/internal/config"
 	"github.com/stretchr/testify/require"
 )
+
+func TestPricingServiceInitializeUsesFallbackWhenRemoteURLIsEmpty(t *testing.T) {
+	tempDir := t.TempDir()
+	fallbackFile := filepath.Join(tempDir, "fallback.json")
+	require.NoError(t, os.WriteFile(fallbackFile, []byte(`{
+		"fallback-model": {
+			"input_cost_per_token": 0.000001,
+			"output_cost_per_token": 0.000002,
+			"litellm_provider": "openai",
+			"mode": "chat"
+		}
+	}`), 0644))
+
+	cfg := &config.Config{}
+	cfg.Pricing.RemoteURL = ""
+	cfg.Pricing.HashURL = ""
+	cfg.Pricing.DataDir = tempDir
+	cfg.Pricing.FallbackFile = fallbackFile
+	cfg.Pricing.UpdateIntervalHours = 24
+	cfg.Pricing.HashCheckIntervalMinutes = 10
+
+	svc := NewPricingService(cfg, nil)
+	require.NoError(t, svc.Initialize())
+	require.FileExists(t, filepath.Join(tempDir, "model_pricing.json"))
+
+	got := svc.GetModelPricing("fallback-model")
+	require.NotNil(t, got)
+	require.InDelta(t, 0.000001, got.InputCostPerToken, 1e-12)
+	require.InDelta(t, 0.000002, got.OutputCostPerToken, 1e-12)
+}
 
 func TestParsePricingData_ParsesPriorityAndServiceTierFields(t *testing.T) {
 	svc := &PricingService{}

@@ -7,8 +7,8 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/Wei-Shaw/cloudbase/ent/accountgroup"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/accountgroup"
+	"github.com/Aias00/cloudbase/ent/predicate"
 )
 
 // AccountGroupDelete is the builder for deleting a AccountGroup entity.

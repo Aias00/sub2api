@@ -3,29 +3,22 @@ package admin
 import (
 	"context"
 	"encoding/json"
-	"math"
-	"net"
 	"net/http"
 	"net/netip"
-	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	opsctx "github.com/Aias00/cloudbase/internal/ops"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
 
-type OpsWSProxyConfig struct {
-	TrustProxy     bool
-	TrustedProxies []netip.Prefix
-	OriginPolicy   string
-}
+type OpsWSProxyConfig = opsctx.WSProxyConfig
 
 const (
 	envOpsWSTrustProxy     = "OPS_WS_TRUST_PROXY"
@@ -36,8 +29,8 @@ const (
 )
 
 const (
-	OriginPolicyStrict     = "strict"
-	OriginPolicyPermissive = "permissive"
+	OriginPolicyStrict     = opsctx.WSOriginPolicyStrict
+	OriginPolicyPermissive = opsctx.WSOriginPolicyPermissive
 )
 
 var opsWSProxyConfig = loadOpsWSProxyConfigFromEnv()
@@ -101,10 +94,7 @@ func scheduleQPSWSIdleStop() {
 	qpsWSIdleStopMu.Unlock()
 }
 
-type opsWSRuntimeLimits struct {
-	MaxConns      int32
-	MaxConnsPerIP int32
-}
+type opsWSRuntimeLimits = opsctx.WSRuntimeLimits
 
 var opsWSLimits = loadOpsWSRuntimeLimitsFromEnv()
 
@@ -263,8 +253,8 @@ func (c *opsWSQPSCache) refresh(parentCtx context.Context) {
 	tps := 0.0
 	if c.requestCountWindow > 0 {
 		seconds := c.requestCountWindow.Seconds()
-		qps = roundTo1DP(float64(requestCount) / seconds)
-		tps = roundTo1DP(float64(stats.TokenConsumed) / seconds)
+		qps = opsctx.RoundTo1DP(float64(requestCount) / seconds)
+		tps = opsctx.RoundTo1DP(float64(stats.TokenConsumed) / seconds)
 	}
 
 	payload := gin.H{
@@ -285,10 +275,6 @@ func (c *opsWSQPSCache) refresh(parentCtx context.Context) {
 
 	c.payload.Store(msg)
 	c.lastUpdatedUnixNano.Store(now.UnixNano())
-}
-
-func roundTo1DP(v float64) float64 {
-	return math.Round(v*10) / 10
 }
 
 func (c *opsWSQPSCache) getPayload() []byte {
@@ -387,34 +373,36 @@ func tryAcquireOpsWSTotalSlot(limit int32) bool {
 }
 
 func tryAcquireOpsWSIPSlot(clientIP string, limit int32) bool {
-	if strings.TrimSpace(clientIP) == "" || limit <= 0 {
+	slotKey, ok := opsctx.WSClientIPSlotKey(clientIP)
+	if !ok || limit <= 0 {
 		return true
 	}
 	wsConnCountByIPMu.Lock()
 	defer wsConnCountByIPMu.Unlock()
-	current := wsConnCountByIP[clientIP]
+	current := wsConnCountByIP[slotKey]
 	if current >= limit {
 		return false
 	}
-	wsConnCountByIP[clientIP] = current + 1
+	wsConnCountByIP[slotKey] = current + 1
 	return true
 }
 
 func releaseOpsWSIPSlot(clientIP string) {
-	if strings.TrimSpace(clientIP) == "" {
+	slotKey, ok := opsctx.WSClientIPSlotKey(clientIP)
+	if !ok {
 		return
 	}
 	wsConnCountByIPMu.Lock()
 	defer wsConnCountByIPMu.Unlock()
-	current, ok := wsConnCountByIP[clientIP]
+	current, ok := wsConnCountByIP[slotKey]
 	if !ok {
 		return
 	}
 	if current <= 1 {
-		delete(wsConnCountByIP, clientIP)
+		delete(wsConnCountByIP, slotKey)
 		return
 	}
-	wsConnCountByIP[clientIP] = current - 1
+	wsConnCountByIP[slotKey] = current - 1
 }
 
 func handleQPSWebSocket(parentCtx context.Context, conn *websocket.Conn) {
@@ -539,39 +527,14 @@ func isAllowedOpsWSOrigin(r *http.Request) bool {
 	if r == nil {
 		return false
 	}
-	origin := strings.TrimSpace(r.Header.Get("Origin"))
-	if origin == "" {
-		switch strings.ToLower(strings.TrimSpace(opsWSProxyConfig.OriginPolicy)) {
-		case OriginPolicyStrict:
-			return false
-		case OriginPolicyPermissive, "":
-			return true
-		default:
-			return true
-		}
-	}
-	parsed, err := url.Parse(origin)
-	if err != nil || parsed.Hostname() == "" {
-		return false
-	}
-	originHost := strings.ToLower(parsed.Hostname())
-
 	trustProxyHeaders := shouldTrustOpsWSProxyHeaders(r)
-	reqHost := hostWithoutPort(r.Host)
+	reqHost := r.Host
 	if trustProxyHeaders {
-		xfHost := strings.TrimSpace(r.Header.Get("X-Forwarded-Host"))
-		if xfHost != "" {
-			xfHost = strings.TrimSpace(strings.Split(xfHost, ",")[0])
-			if xfHost != "" {
-				reqHost = hostWithoutPort(xfHost)
-			}
+		if xfHost, ok := opsctx.ParseWSForwardedHost(r.Header.Get("X-Forwarded-Host")); ok {
+			reqHost = xfHost
 		}
 	}
-	reqHost = strings.ToLower(reqHost)
-	if reqHost == "" {
-		return false
-	}
-	return originHost == reqHost
+	return opsctx.IsWSOriginAllowed(r.Header.Get("Origin"), reqHost, opsWSProxyConfig.OriginPolicy)
 }
 
 func shouldTrustOpsWSProxyHeaders(r *http.Request) bool {
@@ -585,27 +548,14 @@ func shouldTrustOpsWSProxyHeaders(r *http.Request) bool {
 	if !ok {
 		return false
 	}
-	return isAddrInTrustedProxies(peerIP, opsWSProxyConfig.TrustedProxies)
+	return opsctx.WSAddrInTrustedProxies(peerIP, opsWSProxyConfig.TrustedProxies)
 }
 
 func requestPeerIP(r *http.Request) (netip.Addr, bool) {
 	if r == nil {
 		return netip.Addr{}, false
 	}
-	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
-	if err != nil {
-		host = strings.TrimSpace(r.RemoteAddr)
-	}
-	host = strings.TrimPrefix(host, "[")
-	host = strings.TrimSuffix(host, "]")
-	if host == "" {
-		return netip.Addr{}, false
-	}
-	addr, err := netip.ParseAddr(host)
-	if err != nil {
-		return netip.Addr{}, false
-	}
-	return addr.Unmap(), true
+	return opsctx.ParseWSPeerAddr(r.RemoteAddr)
 }
 
 func requestClientIP(r *http.Request) string {
@@ -615,15 +565,8 @@ func requestClientIP(r *http.Request) string {
 
 	trustProxyHeaders := shouldTrustOpsWSProxyHeaders(r)
 	if trustProxyHeaders {
-		xff := strings.TrimSpace(r.Header.Get("X-Forwarded-For"))
-		if xff != "" {
-			// Use the left-most entry (original client). If multiple proxies add values, they are comma-separated.
-			xff = strings.TrimSpace(strings.Split(xff, ",")[0])
-			xff = strings.TrimPrefix(xff, "[")
-			xff = strings.TrimSuffix(xff, "]")
-			if addr, err := netip.ParseAddr(xff); err == nil && addr.IsValid() {
-				return addr.Unmap().String()
-			}
+		if clientIP, ok := opsctx.ParseWSForwardedForClientIP(r.Header.Get("X-Forwarded-For")); ok {
+			return clientIP
 		}
 	}
 
@@ -633,129 +576,47 @@ func requestClientIP(r *http.Request) string {
 	return ""
 }
 
-func isAddrInTrustedProxies(addr netip.Addr, trusted []netip.Prefix) bool {
-	if !addr.IsValid() {
-		return false
-	}
-	for _, p := range trusted {
-		if p.Contains(addr) {
-			return true
-		}
-	}
-	return false
-}
-
 func loadOpsWSProxyConfigFromEnv() OpsWSProxyConfig {
-	cfg := OpsWSProxyConfig{
-		TrustProxy:     true,
-		TrustedProxies: defaultTrustedProxies(),
-		OriginPolicy:   OriginPolicyPermissive,
-	}
+	cfg, invalid := opsctx.ParseWSProxyConfig(opsctx.WSProxyConfigInput{
+		TrustProxyRaw:     os.Getenv(envOpsWSTrustProxy),
+		TrustedProxiesRaw: os.Getenv(envOpsWSTrustedProxies),
+		OriginPolicyRaw:   os.Getenv(envOpsWSOriginPolicy),
+		DefaultTrustProxy: true,
+		DefaultProxies:    defaultTrustedProxies(),
+		DefaultPolicy:     OriginPolicyPermissive,
+	})
 
-	if v := strings.TrimSpace(os.Getenv(envOpsWSTrustProxy)); v != "" {
-		if parsed, err := strconv.ParseBool(v); err == nil {
-			cfg.TrustProxy = parsed
-		} else {
-			logger.LegacyPrintf("handler.admin.ops_ws", "[OpsWS] invalid %s=%q (expected bool); using default=%v", envOpsWSTrustProxy, v, cfg.TrustProxy)
-		}
+	if invalid.TrustProxy {
+		logger.LegacyPrintf("handler.admin.ops_ws", "[OpsWS] invalid %s=%q (expected bool); using default=%v", envOpsWSTrustProxy, os.Getenv(envOpsWSTrustProxy), cfg.TrustProxy)
 	}
-
-	if raw := strings.TrimSpace(os.Getenv(envOpsWSTrustedProxies)); raw != "" {
-		prefixes, invalid := parseTrustedProxyList(raw)
-		if len(invalid) > 0 {
-			logger.LegacyPrintf("handler.admin.ops_ws", "[OpsWS] invalid %s entries ignored: %s", envOpsWSTrustedProxies, strings.Join(invalid, ", "))
-		}
-		cfg.TrustedProxies = prefixes
+	if len(invalid.TrustedProxies) > 0 {
+		logger.LegacyPrintf("handler.admin.ops_ws", "[OpsWS] invalid %s entries ignored: %s", envOpsWSTrustedProxies, strings.Join(invalid.TrustedProxies, ", "))
 	}
-
-	if v := strings.TrimSpace(os.Getenv(envOpsWSOriginPolicy)); v != "" {
-		normalized := strings.ToLower(v)
-		switch normalized {
-		case OriginPolicyStrict, OriginPolicyPermissive:
-			cfg.OriginPolicy = normalized
-		default:
-			logger.LegacyPrintf("handler.admin.ops_ws", "[OpsWS] invalid %s=%q (expected %q or %q); using default=%q", envOpsWSOriginPolicy, v, OriginPolicyStrict, OriginPolicyPermissive, cfg.OriginPolicy)
-		}
+	if invalid.OriginPolicy {
+		logger.LegacyPrintf("handler.admin.ops_ws", "[OpsWS] invalid %s=%q (expected %q or %q); using default=%q", envOpsWSOriginPolicy, os.Getenv(envOpsWSOriginPolicy), OriginPolicyStrict, OriginPolicyPermissive, cfg.OriginPolicy)
 	}
 
 	return cfg
 }
 
 func loadOpsWSRuntimeLimitsFromEnv() opsWSRuntimeLimits {
-	cfg := opsWSRuntimeLimits{
-		MaxConns:      defaultMaxWSConns,
-		MaxConnsPerIP: defaultMaxWSConnsPerIP,
-	}
+	cfg, invalid := opsctx.ParseWSRuntimeLimits(opsctx.WSRuntimeLimitsInput{
+		MaxConnsRaw:          os.Getenv(envOpsWSMaxConns),
+		MaxConnsPerIPRaw:     os.Getenv(envOpsWSMaxConnsPerIP),
+		DefaultMaxConns:      defaultMaxWSConns,
+		DefaultMaxConnsPerIP: defaultMaxWSConnsPerIP,
+	})
 
-	if v := strings.TrimSpace(os.Getenv(envOpsWSMaxConns)); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
-			cfg.MaxConns = int32(parsed)
-		} else {
-			logger.LegacyPrintf("handler.admin.ops_ws", "[OpsWS] invalid %s=%q (expected int>0); using default=%d", envOpsWSMaxConns, v, cfg.MaxConns)
-		}
+	if invalid.MaxConns {
+		logger.LegacyPrintf("handler.admin.ops_ws", "[OpsWS] invalid %s=%q (expected int>0); using default=%d", envOpsWSMaxConns, os.Getenv(envOpsWSMaxConns), cfg.MaxConns)
 	}
-	if v := strings.TrimSpace(os.Getenv(envOpsWSMaxConnsPerIP)); v != "" {
-		if parsed, err := strconv.Atoi(v); err == nil && parsed >= 0 {
-			cfg.MaxConnsPerIP = int32(parsed)
-		} else {
-			logger.LegacyPrintf("handler.admin.ops_ws", "[OpsWS] invalid %s=%q (expected int>=0); using default=%d", envOpsWSMaxConnsPerIP, v, cfg.MaxConnsPerIP)
-		}
+	if invalid.MaxConnsPerIP {
+		logger.LegacyPrintf("handler.admin.ops_ws", "[OpsWS] invalid %s=%q (expected int>=0); using default=%d", envOpsWSMaxConnsPerIP, os.Getenv(envOpsWSMaxConnsPerIP), cfg.MaxConnsPerIP)
 	}
 	return cfg
 }
 
 func defaultTrustedProxies() []netip.Prefix {
-	prefixes, _ := parseTrustedProxyList("127.0.0.0/8,::1/128")
+	prefixes, _ := opsctx.ParseWSTrustedProxyList("127.0.0.0/8,::1/128")
 	return prefixes
-}
-
-func parseTrustedProxyList(raw string) (prefixes []netip.Prefix, invalid []string) {
-	for _, token := range strings.Split(raw, ",") {
-		item := strings.TrimSpace(token)
-		if item == "" {
-			continue
-		}
-
-		var (
-			p   netip.Prefix
-			err error
-		)
-		if strings.Contains(item, "/") {
-			p, err = netip.ParsePrefix(item)
-		} else {
-			var addr netip.Addr
-			addr, err = netip.ParseAddr(item)
-			if err == nil {
-				addr = addr.Unmap()
-				bits := 128
-				if addr.Is4() {
-					bits = 32
-				}
-				p = netip.PrefixFrom(addr, bits)
-			}
-		}
-
-		if err != nil || !p.IsValid() {
-			invalid = append(invalid, item)
-			continue
-		}
-
-		prefixes = append(prefixes, p.Masked())
-	}
-	return prefixes, invalid
-}
-
-func hostWithoutPort(hostport string) string {
-	hostport = strings.TrimSpace(hostport)
-	if hostport == "" {
-		return ""
-	}
-	if host, _, err := net.SplitHostPort(hostport); err == nil {
-		return host
-	}
-	if strings.HasPrefix(hostport, "[") && strings.HasSuffix(hostport, "]") {
-		return strings.Trim(hostport, "[]")
-	}
-	parts := strings.Split(hostport, ":")
-	return parts[0]
 }

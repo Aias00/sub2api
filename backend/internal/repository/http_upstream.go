@@ -21,12 +21,12 @@ import (
 	"github.com/andybalholm/brotli"
 	"github.com/klauspost/compress/zstd"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/proxyurl"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/proxyutil"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/tlsfingerprint"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
-	"github.com/Wei-Shaw/cloudbase/internal/util/urlvalidator"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/pkg/proxyurl"
+	"github.com/Aias00/cloudbase/internal/pkg/proxyutil"
+	"github.com/Aias00/cloudbase/internal/pkg/tlsfingerprint"
+	"github.com/Aias00/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/util/urlvalidator"
 )
 
 // 默认配置常量

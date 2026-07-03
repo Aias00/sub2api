@@ -2,25 +2,47 @@ package admin
 
 import (
 	"fmt"
-	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	opsctx "github.com/Aias00/cloudbase/internal/ops"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 )
+
+func parseOpsDashboardFilter(c *gin.Context, startTime, endTime time.Time) (*service.OpsDashboardFilter, error) {
+	scoped, err := parseOpsPlatformGroupFilter(c)
+	if err != nil {
+		return nil, err
+	}
+	return opsDashboardFilterFromScope(startTime, endTime, scoped, parseOpsQueryMode(c)), nil
+}
+
+func opsDashboardFilterFromScope(startTime, endTime time.Time, scoped *opsctx.PlatformGroupFilter, queryMode service.OpsQueryMode) *service.OpsDashboardFilter {
+	if scoped == nil {
+		scoped = &opsctx.PlatformGroupFilter{}
+	}
+	return &service.OpsDashboardFilter{
+		StartTime: startTime,
+		EndTime:   endTime,
+		Platform:  scoped.Platform,
+		GroupID:   scoped.GroupID,
+		QueryMode: queryMode,
+	}
+}
+
+func parseOpsPlatformGroupFilter(c *gin.Context) (*opsctx.PlatformGroupFilter, error) {
+	return opsctx.ParsePlatformGroupFilter(opsctx.PlatformGroupFilterInput{
+		PlatformRaw: c.Query("platform"),
+		GroupIDRaw:  c.Query("group_id"),
+	})
+}
 
 // GetDashboardOverview returns vNext ops dashboard overview (raw path).
 // GET /api/v1/admin/ops/dashboard/overview
 func (h *OpsHandler) GetDashboardOverview(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
@@ -30,22 +52,13 @@ func (h *OpsHandler) GetDashboardOverview(c *gin.Context) {
 		return
 	}
 
-	filter := &service.OpsDashboardFilter{
-		StartTime: startTime,
-		EndTime:   endTime,
-		Platform:  strings.TrimSpace(c.Query("platform")),
-		QueryMode: parseOpsQueryMode(c),
-	}
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid group_id")
-			return
-		}
-		filter.GroupID = &id
+	filter, err := parseOpsDashboardFilter(c, startTime, endTime)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
 
-	data, err := h.opsService.GetDashboardOverview(c.Request.Context(), filter)
+	data, err := opsService.GetDashboardOverview(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -56,12 +69,8 @@ func (h *OpsHandler) GetDashboardOverview(c *gin.Context) {
 // GetDashboardThroughputTrend returns throughput time series (raw path).
 // GET /api/v1/admin/ops/dashboard/throughput-trend
 func (h *OpsHandler) GetDashboardThroughputTrend(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
@@ -71,23 +80,14 @@ func (h *OpsHandler) GetDashboardThroughputTrend(c *gin.Context) {
 		return
 	}
 
-	filter := &service.OpsDashboardFilter{
-		StartTime: startTime,
-		EndTime:   endTime,
-		Platform:  strings.TrimSpace(c.Query("platform")),
-		QueryMode: parseOpsQueryMode(c),
-	}
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid group_id")
-			return
-		}
-		filter.GroupID = &id
+	filter, err := parseOpsDashboardFilter(c, startTime, endTime)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
 
-	bucketSeconds := pickThroughputBucketSeconds(endTime.Sub(startTime))
-	data, err := h.opsService.GetThroughputTrend(c.Request.Context(), filter, bucketSeconds)
+	bucketSeconds := opsctx.PickThroughputBucketSeconds(endTime.Sub(startTime))
+	data, err := opsService.GetThroughputTrend(c.Request.Context(), filter, bucketSeconds)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -98,12 +98,8 @@ func (h *OpsHandler) GetDashboardThroughputTrend(c *gin.Context) {
 // GetDashboardLatencyHistogram returns the latency distribution histogram (success requests).
 // GET /api/v1/admin/ops/dashboard/latency-histogram
 func (h *OpsHandler) GetDashboardLatencyHistogram(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
@@ -113,22 +109,13 @@ func (h *OpsHandler) GetDashboardLatencyHistogram(c *gin.Context) {
 		return
 	}
 
-	filter := &service.OpsDashboardFilter{
-		StartTime: startTime,
-		EndTime:   endTime,
-		Platform:  strings.TrimSpace(c.Query("platform")),
-		QueryMode: parseOpsQueryMode(c),
-	}
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid group_id")
-			return
-		}
-		filter.GroupID = &id
+	filter, err := parseOpsDashboardFilter(c, startTime, endTime)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
 
-	data, err := h.opsService.GetLatencyHistogram(c.Request.Context(), filter)
+	data, err := opsService.GetLatencyHistogram(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -139,12 +126,8 @@ func (h *OpsHandler) GetDashboardLatencyHistogram(c *gin.Context) {
 // GetDashboardErrorTrend returns error counts time series (raw path).
 // GET /api/v1/admin/ops/dashboard/error-trend
 func (h *OpsHandler) GetDashboardErrorTrend(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
@@ -154,23 +137,14 @@ func (h *OpsHandler) GetDashboardErrorTrend(c *gin.Context) {
 		return
 	}
 
-	filter := &service.OpsDashboardFilter{
-		StartTime: startTime,
-		EndTime:   endTime,
-		Platform:  strings.TrimSpace(c.Query("platform")),
-		QueryMode: parseOpsQueryMode(c),
-	}
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid group_id")
-			return
-		}
-		filter.GroupID = &id
+	filter, err := parseOpsDashboardFilter(c, startTime, endTime)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
 
-	bucketSeconds := pickThroughputBucketSeconds(endTime.Sub(startTime))
-	data, err := h.opsService.GetErrorTrend(c.Request.Context(), filter, bucketSeconds)
+	bucketSeconds := opsctx.PickThroughputBucketSeconds(endTime.Sub(startTime))
+	data, err := opsService.GetErrorTrend(c.Request.Context(), filter, bucketSeconds)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -181,12 +155,8 @@ func (h *OpsHandler) GetDashboardErrorTrend(c *gin.Context) {
 // GetDashboardErrorDistribution returns error distribution by status code (raw path).
 // GET /api/v1/admin/ops/dashboard/error-distribution
 func (h *OpsHandler) GetDashboardErrorDistribution(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
@@ -196,22 +166,13 @@ func (h *OpsHandler) GetDashboardErrorDistribution(c *gin.Context) {
 		return
 	}
 
-	filter := &service.OpsDashboardFilter{
-		StartTime: startTime,
-		EndTime:   endTime,
-		Platform:  strings.TrimSpace(c.Query("platform")),
-		QueryMode: parseOpsQueryMode(c),
-	}
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid group_id")
-			return
-		}
-		filter.GroupID = &id
+	filter, err := parseOpsDashboardFilter(c, startTime, endTime)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
 
-	data, err := h.opsService.GetErrorDistribution(c.Request.Context(), filter)
+	data, err := opsService.GetErrorDistribution(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -222,12 +183,8 @@ func (h *OpsHandler) GetDashboardErrorDistribution(c *gin.Context) {
 // GetDashboardOpenAITokenStats returns OpenAI token efficiency stats grouped by model.
 // GET /api/v1/admin/ops/dashboard/openai-token-stats
 func (h *OpsHandler) GetDashboardOpenAITokenStats(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
@@ -237,7 +194,7 @@ func (h *OpsHandler) GetDashboardOpenAITokenStats(c *gin.Context) {
 		return
 	}
 
-	data, err := h.opsService.GetOpenAITokenStats(c.Request.Context(), filter)
+	data, err := opsService.GetOpenAITokenStats(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -249,94 +206,34 @@ func parseOpsOpenAITokenStatsFilter(c *gin.Context) (*service.OpsOpenAITokenStat
 	if c == nil {
 		return nil, fmt.Errorf("invalid request")
 	}
-
-	timeRange := strings.TrimSpace(c.Query("time_range"))
-	if timeRange == "" {
-		timeRange = "30d"
+	filter, err := opsctx.ParseOpenAITokenStatsFilter(opsctx.OpenAITokenStatsFilterInput{
+		TimeRangeRaw: c.Query("time_range"),
+		PlatformRaw:  c.Query("platform"),
+		GroupIDRaw:   c.Query("group_id"),
+		TopNRaw:      c.Query("top_n"),
+		PageRaw:      c.Query("page"),
+		PageSizeRaw:  c.Query("page_size"),
+		Now:          time.Now(),
+	})
+	if err != nil {
+		return nil, err
 	}
-	dur, ok := parseOpsOpenAITokenStatsDuration(timeRange)
-	if !ok {
-		return nil, fmt.Errorf("invalid time_range")
-	}
-	end := time.Now().UTC()
-	start := end.Add(-dur)
-
-	filter := &service.OpsOpenAITokenStatsFilter{
-		TimeRange: timeRange,
-		StartTime: start,
-		EndTime:   end,
-		Platform:  strings.TrimSpace(c.Query("platform")),
-	}
-
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			return nil, fmt.Errorf("invalid group_id")
-		}
-		filter.GroupID = &id
-	}
-
-	topNRaw := strings.TrimSpace(c.Query("top_n"))
-	pageRaw := strings.TrimSpace(c.Query("page"))
-	pageSizeRaw := strings.TrimSpace(c.Query("page_size"))
-	if topNRaw != "" && (pageRaw != "" || pageSizeRaw != "") {
-		return nil, fmt.Errorf("invalid query: top_n cannot be used with page/page_size")
-	}
-
-	if topNRaw != "" {
-		topN, err := strconv.Atoi(topNRaw)
-		if err != nil || topN < 1 || topN > 100 {
-			return nil, fmt.Errorf("invalid top_n")
-		}
-		filter.TopN = topN
-		return filter, nil
-	}
-
-	filter.Page = 1
-	filter.PageSize = 20
-	if pageRaw != "" {
-		page, err := strconv.Atoi(pageRaw)
-		if err != nil || page < 1 {
-			return nil, fmt.Errorf("invalid page")
-		}
-		filter.Page = page
-	}
-	if pageSizeRaw != "" {
-		pageSize, err := strconv.Atoi(pageSizeRaw)
-		if err != nil || pageSize < 1 || pageSize > 100 {
-			return nil, fmt.Errorf("invalid page_size")
-		}
-		filter.PageSize = pageSize
-	}
-	return filter, nil
+	return opsOpenAITokenStatsFilterFromParsed(filter), nil
 }
 
-func parseOpsOpenAITokenStatsDuration(v string) (time.Duration, bool) {
-	switch strings.TrimSpace(v) {
-	case "30m":
-		return 30 * time.Minute, true
-	case "1h":
-		return time.Hour, true
-	case "1d":
-		return 24 * time.Hour, true
-	case "15d":
-		return 15 * 24 * time.Hour, true
-	case "30d":
-		return 30 * 24 * time.Hour, true
-	default:
-		return 0, false
+func opsOpenAITokenStatsFilterFromParsed(filter *opsctx.OpenAITokenStatsFilter) *service.OpsOpenAITokenStatsFilter {
+	if filter == nil {
+		return &service.OpsOpenAITokenStatsFilter{}
 	}
-}
-
-func pickThroughputBucketSeconds(window time.Duration) int {
-	// Keep buckets predictable and avoid huge responses.
-	switch {
-	case window <= 2*time.Hour:
-		return 60
-	case window <= 24*time.Hour:
-		return 300
-	default:
-		return 3600
+	return &service.OpsOpenAITokenStatsFilter{
+		TimeRange: filter.TimeRange,
+		StartTime: filter.StartTime,
+		EndTime:   filter.EndTime,
+		Platform:  filter.Platform,
+		GroupID:   filter.GroupID,
+		Page:      filter.Page,
+		PageSize:  filter.PageSize,
+		TopN:      filter.TopN,
 	}
 }
 
@@ -344,10 +241,6 @@ func parseOpsQueryMode(c *gin.Context) service.OpsQueryMode {
 	if c == nil {
 		return ""
 	}
-	raw := strings.TrimSpace(c.Query("mode"))
-	if raw == "" {
-		// Empty means "use server default" (DB setting ops_query_mode_default).
-		return ""
-	}
-	return service.ParseOpsQueryMode(raw)
+	// Empty means "use server default" (DB setting ops_query_mode_default).
+	return service.OpsQueryMode(opsctx.ParseOptionalQueryMode(c.Query("mode")))
 }

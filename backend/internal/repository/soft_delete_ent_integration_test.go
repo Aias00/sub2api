@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/apikey"
-	"github.com/Wei-Shaw/cloudbase/ent/schema/mixins"
-	"github.com/Wei-Shaw/cloudbase/ent/usersubscription"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/apikey"
+	"github.com/Aias00/cloudbase/ent/schema/mixins"
+	"github.com/Aias00/cloudbase/ent/usersubscription"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/stretchr/testify/require"
 )
 

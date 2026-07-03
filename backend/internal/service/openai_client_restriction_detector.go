@@ -3,8 +3,8 @@ package service
 import (
 	"net/http"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/openai"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/pkg/openai"
 	"github.com/gin-gonic/gin"
 )
 

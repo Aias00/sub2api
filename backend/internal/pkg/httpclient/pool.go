@@ -23,9 +23,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/proxyurl"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/proxyutil"
-	"github.com/Wei-Shaw/cloudbase/internal/util/urlvalidator"
+	"github.com/Aias00/cloudbase/internal/pkg/proxyurl"
+	"github.com/Aias00/cloudbase/internal/pkg/proxyutil"
+	"github.com/Aias00/cloudbase/internal/util/urlvalidator"
 )
 
 // Transport 连接池默认配置

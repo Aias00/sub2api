@@ -7,9 +7,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	imagectx "github.com/Aias00/cloudbase/internal/image"
+	"github.com/Aias00/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -26,7 +27,7 @@ type WebHandler struct {
 	paymentService  webPaymentOrderCreator
 	configService   webPaymentConfigReader
 	settingService  *service.SettingService
-	twitterImporter *service.TwitterImportService
+	twitterImporter *imagectx.TwitterImportService
 }
 
 type webPaymentOrderCreator interface {
@@ -37,7 +38,7 @@ type webPaymentConfigReader interface {
 	GetPaymentConfig(ctx context.Context) (*service.PaymentConfig, error)
 }
 
-func NewWebHandler(authHandler *AuthHandler, userService *service.UserService, paymentService *service.PaymentService, configService *service.PaymentConfigService, settingService *service.SettingService, twitterImporter *service.TwitterImportService) *WebHandler {
+func NewWebHandler(authHandler *AuthHandler, userService *service.UserService, paymentService *service.PaymentService, configService *service.PaymentConfigService, settingService *service.SettingService, twitterImporter *imagectx.TwitterImportService) *WebHandler {
 	return &WebHandler{
 		authHandler:     authHandler,
 		authService:     authHandler.authService,
@@ -332,7 +333,7 @@ func (h *WebHandler) ImportTwitter(c *gin.Context) {
 		response.BadRequest(c, "unsupported provider")
 		return
 	}
-	result, err := h.twitterImporter.Import(c.Request.Context(), service.TwitterImportInput{
+	result, err := h.twitterImporter.Import(c.Request.Context(), imagectx.TwitterImportInput{
 		URL:       req.URL,
 		Prompt:    req.Prompt,
 		Title:     req.Title,

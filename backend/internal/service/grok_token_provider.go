@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/util/logredact"
+	"github.com/Aias00/cloudbase/internal/util/logredact"
 )
 
 const (

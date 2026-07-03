@@ -3,10 +3,10 @@ package repository
 import (
 	"context"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/userattributedefinition"
-	"github.com/Wei-Shaw/cloudbase/ent/userattributevalue"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/userattributedefinition"
+	"github.com/Aias00/cloudbase/ent/userattributevalue"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 // UserAttributeDefinitionRepository implementation

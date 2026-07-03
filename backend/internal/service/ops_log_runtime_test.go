@@ -6,8 +6,8 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
 )
 
 type runtimeSettingRepoStub struct {

@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/securitysecret"
-	"github.com/Wei-Shaw/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/securitysecret"
+	"github.com/Aias00/cloudbase/internal/config"
 )
 
 const (

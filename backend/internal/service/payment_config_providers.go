@@ -8,12 +8,12 @@ import (
 	"strconv"
 	"strings"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentorder"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentproviderinstance"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	"github.com/Wei-Shaw/cloudbase/internal/payment/provider"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/paymentorder"
+	"github.com/Aias00/cloudbase/ent/paymentproviderinstance"
+	"github.com/Aias00/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/payment/provider"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 // validateProviderConfig runs the provider's constructor to surface config-level
@@ -102,66 +102,16 @@ var pendingOrderStatuses = []string{
 	payment.OrderStatusRecharging,
 }
 
-// providerSensitiveConfigFields is the authoritative list of config keys that
-// are treated as secrets per provider. Must stay in sync with the frontend
-// definition at frontend/src/components/payment/providerConfig.ts
-// (PROVIDER_CONFIG_FIELDS, fields with sensitive: true).
-//
-// Key matching is case-insensitive. Non-listed keys (e.g. appId, notifyUrl,
-// stripe publishableKey) are returned in plaintext by the admin GET API.
-var providerSensitiveConfigFields = map[string]map[string]struct{}{
-	payment.TypeEasyPay:   {"pkey": {}},
-	payment.TypeAlipay:    {"privatekey": {}, "publickey": {}, "alipaypublickey": {}},
-	payment.TypeWxpay:     {"privatekey": {}, "apiv3key": {}, "publickey": {}},
-	payment.TypeStripe:    {"secretkey": {}, "webhooksecret": {}},
-	payment.TypeCreem:     {"apikey": {}, "webhooksecret": {}},
-	payment.TypeWaffo:     {"apikey": {}, "privatekey": {}, "waffopublickey": {}},
-	payment.TypeAirwallex: {"apikey": {}, "webhooksecret": {}},
-}
-
-// providerPendingOrderProtectedConfigFields lists config keys that cannot be
-// changed while the instance has in-progress orders. This includes secrets plus
-// all provider identity fields that are snapshotted into orders or used by
-// webhook/refund verification.
-var providerPendingOrderProtectedConfigFields = map[string]map[string]struct{}{
-	payment.TypeEasyPay:   {"pkey": {}, "pid": {}},
-	payment.TypeAlipay:    {"privatekey": {}, "publickey": {}, "alipaypublickey": {}, "appid": {}},
-	payment.TypeWxpay:     {"privatekey": {}, "apiv3key": {}, "publickey": {}, "appid": {}, "mpappid": {}, "mchid": {}, "publickeyid": {}, "certserial": {}},
-	payment.TypeStripe:    {"secretkey": {}, "webhooksecret": {}, "currency": {}},
-	payment.TypeCreem:     {"apikey": {}, "webhooksecret": {}},
-	payment.TypeWaffo:     {"apikey": {}, "privatekey": {}, "waffopublickey": {}, "merchantid": {}},
-	payment.TypeAirwallex: {"apikey": {}, "webhooksecret": {}, "clientid": {}, "accountid": {}, "currency": {}},
-}
-
 func isSensitiveProviderConfigField(providerKey, fieldName string) bool {
-	fields, ok := providerSensitiveConfigFields[providerKey]
-	if !ok {
-		return false
-	}
-	_, found := fields[strings.ToLower(fieldName)]
-	return found
+	return payment.IsSensitiveProviderConfigField(providerKey, fieldName)
 }
 
 func hasPendingOrderProtectedConfigChange(providerKey string, currentConfig, nextConfig map[string]string) bool {
-	fields, ok := providerPendingOrderProtectedConfigFields[providerKey]
-	if !ok {
-		return false
-	}
-	for fieldName := range fields {
-		if providerConfigFieldValue(currentConfig, fieldName) != providerConfigFieldValue(nextConfig, fieldName) {
-			return true
-		}
-	}
-	return false
+	return payment.HasPendingOrderProtectedConfigChange(providerKey, currentConfig, nextConfig)
 }
 
 func providerConfigFieldValue(config map[string]string, fieldName string) string {
-	for key, value := range config {
-		if strings.EqualFold(key, fieldName) {
-			return value
-		}
-	}
-	return ""
+	return payment.ProviderConfigFieldValue(config, fieldName)
 }
 
 func (s *PaymentConfigService) countPendingOrders(ctx context.Context, providerInstanceID int64) (int, error) {
@@ -178,10 +128,6 @@ func (s *PaymentConfigService) countPendingOrdersByPlan(ctx context.Context, pla
 			paymentorder.PlanIDEQ(planID),
 			paymentorder.StatusIn(pendingOrderStatuses...),
 		).Count(ctx)
-}
-
-var validProviderKeys = map[string]bool{
-	payment.TypeEasyPay: true, payment.TypeAlipay: true, payment.TypeWxpay: true, payment.TypeStripe: true, payment.TypeCreem: true, payment.TypeWaffo: true, payment.TypeAirwallex: true,
 }
 
 func (s *PaymentConfigService) CreateProviderInstance(ctx context.Context, req CreateProviderInstanceRequest) (*dbent.PaymentProviderInstance, error) {
@@ -211,14 +157,9 @@ func (s *PaymentConfigService) CreateProviderInstance(ctx context.Context, req C
 }
 
 func validateProviderRequest(providerKey, name, supportedTypes string) error {
-	if strings.TrimSpace(name) == "" {
-		return infraerrors.BadRequest("VALIDATION_ERROR", "provider name is required")
-	}
-	if !validProviderKeys[providerKey] {
-		return infraerrors.BadRequest("VALIDATION_ERROR", fmt.Sprintf("invalid provider key: %s", providerKey))
-	}
 	// supported_types can be empty (provider accepts no payment types until configured)
-	return nil
+	_ = supportedTypes
+	return payment.ValidateProviderRequest(providerKey, name)
 }
 
 // UpdateProviderInstance updates a provider instance by ID (patch semantics).

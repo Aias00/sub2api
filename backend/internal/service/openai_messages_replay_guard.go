@@ -3,7 +3,7 @@ package service
 import (
 	"encoding/json"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/apicompat"
+	"github.com/Aias00/cloudbase/internal/pkg/apicompat"
 )
 
 const openAICompatAnthropicReplayMaxTailMessages = 12

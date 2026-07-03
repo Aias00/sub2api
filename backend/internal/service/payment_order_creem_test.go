@@ -5,8 +5,8 @@ package service
 import (
 	"testing"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/internal/payment"
 	"github.com/stretchr/testify/require"
 )
 

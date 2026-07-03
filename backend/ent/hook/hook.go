@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Wei-Shaw/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent"
 )
 
 // The APIKeyFunc type is an adapter to allow the use of ordinary

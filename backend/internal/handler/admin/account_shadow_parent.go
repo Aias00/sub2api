@@ -3,7 +3,7 @@ package admin
 import (
 	"context"
 
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 // enrichShadowParentInfo 把母账号的展示信息回填到影子行的 parent_* 字段。

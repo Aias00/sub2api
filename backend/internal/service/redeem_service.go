@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/logger"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+	dbent "github.com/Aias00/cloudbase/ent"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/pkg/logger"
+	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 )
 
 var (
@@ -140,7 +141,7 @@ type RedeemService struct {
 	entClient            *dbent.Client
 	authCacheInvalidator APIKeyAuthCacheInvalidator
 	affiliateService     *AffiliateService
-	ledgerService        *UserBalanceLedgerService
+	ledgerService        *billingctx.UserBalanceLedgerService
 }
 
 // NewRedeemService 创建兑换码服务实例
@@ -153,7 +154,7 @@ func NewRedeemService(
 	entClient *dbent.Client,
 	authCacheInvalidator APIKeyAuthCacheInvalidator,
 	affiliateService *AffiliateService,
-	ledgerService *UserBalanceLedgerService,
+	ledgerService *billingctx.UserBalanceLedgerService,
 ) *RedeemService {
 	return &RedeemService{
 		redeemRepo:           redeemRepo,
@@ -444,9 +445,9 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 
 		// 写入余额流水
 		if s.ledgerService != nil {
-			entryType := EntryTypeRedeem
+			entryType := billingctx.EntryTypeRedeem
 			if redeemCode.Notes != "" && strings.HasPrefix(redeemCode.Notes, "admin:") {
-				entryType = EntryTypeAdminAdjustment
+				entryType = billingctx.EntryTypeAdminAdjustment
 			}
 			if err := s.ledgerService.WriteLedgerTx(
 				txCtx,
@@ -456,7 +457,7 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 				amount,
 				balanceBefore,
 				balanceAfter,
-				SourceTypeRedeemCode,
+				billingctx.SourceTypeRedeemCode,
 				&redeemCode.ID,
 				fmt.Sprintf("兑换码 %s", substringCode(redeemCode.Code, 8)),
 				map[string]any{

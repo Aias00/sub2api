@@ -15,7 +15,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/payment"
 	"github.com/google/uuid"
 	"github.com/shopspring/decimal"
 )

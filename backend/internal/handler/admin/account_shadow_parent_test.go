@@ -3,8 +3,8 @@ package admin
 import (
 	"testing"
 
-	"github.com/Wei-Shaw/cloudbase/internal/handler/dto"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/handler/dto"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/stretchr/testify/require"
 )
 

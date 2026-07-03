@@ -11,7 +11,7 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/tlsfingerprintprofile"
+	"github.com/Aias00/cloudbase/ent/tlsfingerprintprofile"
 )
 
 // TLSFingerprintProfileCreate is the builder for creating a TLSFingerprintProfile entity.

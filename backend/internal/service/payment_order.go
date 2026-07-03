@@ -11,11 +11,11 @@ import (
 	"strings"
 	"time"
 
-	dbent "github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/paymentorder"
-	"github.com/Wei-Shaw/cloudbase/internal/payment"
-	"github.com/Wei-Shaw/cloudbase/internal/payment/provider"
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
+	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/paymentorder"
+	"github.com/Aias00/cloudbase/internal/payment"
+	"github.com/Aias00/cloudbase/internal/payment/provider"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
 // --- Order Creation ---
@@ -125,45 +125,26 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 }
 
 func resolveCreemRechargeProduct(req CreateOrderRequest, cfg *PaymentConfig) (*RechargeProduct, error) {
-	if payment.GetBasePaymentType(req.PaymentType) != payment.TypeCreem || req.OrderType == payment.OrderTypeSubscription {
-		return nil, nil
+	var products []RechargeProduct
+	if cfg != nil {
+		products = cfg.RechargeProducts
 	}
-
-	selectedProductID := strings.TrimSpace(req.ProductID)
-	if selectedProductID == "" {
-		return nil, infraerrors.BadRequest("CREEM_PRODUCT_REQUIRED", "creem recharge requires selecting a configured recharge product")
-	}
-	for idx := range cfg.RechargeProducts {
-		product := &cfg.RechargeProducts[idx]
-		if strings.TrimSpace(product.ID) != selectedProductID {
-			continue
-		}
-		if strings.TrimSpace(product.CreemProductID) == "" {
-			return nil, infraerrors.BadRequest("CREEM_PRODUCT_NOT_CONFIGURED", "selected recharge product is not configured for Creem")
-		}
-		return product, nil
-	}
-	return nil, infraerrors.BadRequest("CREEM_PRODUCT_NOT_FOUND", "selected recharge product does not exist")
+	return payment.ResolveCreemRechargeProduct(req.PaymentType, req.OrderType, req.ProductID, products)
 }
 
 func resolveProviderProductID(req CreateOrderRequest, plan *dbent.SubscriptionPlan, cfg *PaymentConfig) (string, error) {
-	if payment.GetBasePaymentType(req.PaymentType) != payment.TypeCreem {
-		return "", nil
-	}
-
+	hasSubscriptionPlan := plan != nil
+	subscriptionProductID := ""
 	if plan != nil {
-		productID := strings.TrimSpace(plan.CreemProductID)
-		if productID == "" {
-			return "", infraerrors.BadRequest("CREEM_PRODUCT_NOT_CONFIGURED", "selected subscription plan is not configured for Creem")
-		}
-		return productID, nil
+		subscriptionProductID = plan.CreemProductID
+		return payment.ResolveCreemProviderProductID(req.PaymentType, subscriptionProductID, hasSubscriptionPlan, nil)
 	}
 
 	product, err := resolveCreemRechargeProduct(req, cfg)
 	if err != nil {
 		return "", err
 	}
-	return strings.TrimSpace(product.CreemProductID), nil
+	return payment.ResolveCreemProviderProductID(req.PaymentType, subscriptionProductID, hasSubscriptionPlan, product)
 }
 
 func (s *PaymentService) validateOrderInput(ctx context.Context, req CreateOrderRequest, cfg *PaymentConfig) (*dbent.SubscriptionPlan, error) {
@@ -173,12 +154,8 @@ func (s *PaymentService) validateOrderInput(ctx context.Context, req CreateOrder
 	if req.OrderType == payment.OrderTypeSubscription {
 		return s.validateSubOrder(ctx, req)
 	}
-	if math.IsNaN(req.Amount) || math.IsInf(req.Amount, 0) || req.Amount <= 0 {
-		return nil, infraerrors.BadRequest("INVALID_AMOUNT", "amount must be a positive number")
-	}
-	if (cfg.MinAmount > 0 && req.Amount < cfg.MinAmount) || (cfg.MaxAmount > 0 && req.Amount > cfg.MaxAmount) {
-		return nil, infraerrors.BadRequest("INVALID_AMOUNT", "amount out of range").
-			WithMetadata(map[string]string{"min": fmt.Sprintf("%.2f", cfg.MinAmount), "max": fmt.Sprintf("%.2f", cfg.MaxAmount)})
+	if err := payment.ValidateBalanceRechargeAmount(req.Amount, cfg.MinAmount, cfg.MaxAmount); err != nil {
+		return nil, err
 	}
 	return nil, nil
 }
@@ -473,7 +450,7 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 	}
 	resumeToken := ""
 	if resume := s.paymentResume(); resume != nil {
-		if canonicalReturnURL != "" && resume.isSigningConfigured() {
+		if canonicalReturnURL != "" && resume.IsSigningConfigured() {
 			resumeToken, err = resume.CreateToken(ResumeTokenClaims{
 				OrderID:            order.ID,
 				UserID:             order.UserID,
@@ -587,18 +564,14 @@ func hasPaymentProductNameAffix(cfg *PaymentConfig) bool {
 	if cfg == nil {
 		return false
 	}
-	pf := strings.TrimSpace(cfg.ProductNamePrefix)
-	sf := strings.TrimSpace(cfg.ProductNameSuffix)
-	return pf != "" || sf != ""
+	return payment.HasProductNameAffix(cfg.ProductNamePrefix, cfg.ProductNameSuffix)
 }
 
 func applyPaymentProductNameAffix(productName string, cfg *PaymentConfig) string {
 	if !hasPaymentProductNameAffix(cfg) {
 		return productName
 	}
-	pf := strings.TrimSpace(cfg.ProductNamePrefix)
-	sf := strings.TrimSpace(cfg.ProductNameSuffix)
-	return strings.TrimSpace(pf + " " + productName + " " + sf)
+	return payment.ApplyProductNameAffix(productName, cfg.ProductNamePrefix, cfg.ProductNameSuffix)
 }
 
 func (s *PaymentService) maybeBuildWeChatOAuthRequiredResponse(ctx context.Context, req CreateOrderRequest, amount, payAmount, feeRate float64) (*CreateOrderResponse, error) {
@@ -620,7 +593,7 @@ func (s *PaymentService) buildWeChatOAuthRequiredResponse(ctx context.Context, r
 	if err != nil {
 		return nil, err
 	}
-	if err := s.paymentResume().ensureSigningKey(); err != nil {
+	if err := s.paymentResume().EnsureSigningKey(); err != nil {
 		return nil, err
 	}
 
@@ -660,29 +633,11 @@ func (s *PaymentService) validateSelectedCreateOrderInstance(ctx context.Context
 }
 
 func calculateCreateOrderPayAmount(limitAmount, feeRate float64, currency string) (string, float64, error) {
-	if err := validateCreateOrderAmountCurrency(limitAmount, currency); err != nil {
-		return "", 0, err
-	}
-	payAmountStr := payment.CalculatePayAmountForCurrency(limitAmount, feeRate, currency)
-	if _, err := payment.AmountToMinorUnit(payAmountStr, currency); err != nil {
-		return "", 0, infraerrors.BadRequest("INVALID_AMOUNT", err.Error()).
-			WithMetadata(map[string]string{"currency": currency})
-	}
-	payAmount, err := strconv.ParseFloat(payAmountStr, 64)
-	if err != nil {
-		return "", 0, infraerrors.BadRequest("INVALID_AMOUNT", "invalid payment amount").
-			WithMetadata(map[string]string{"currency": currency})
-	}
-	return payAmountStr, payAmount, nil
+	return payment.CalculateCreateOrderPayAmount(limitAmount, feeRate, currency)
 }
 
 func validateCreateOrderAmountCurrency(amount float64, currency string) error {
-	amountStr := strconv.FormatFloat(amount, 'f', -1, 64)
-	if _, err := payment.AmountToMinorUnit(amountStr, currency); err != nil {
-		return infraerrors.BadRequest("INVALID_AMOUNT", err.Error()).
-			WithMetadata(map[string]string{"currency": currency})
-	}
-	return nil
+	return payment.ValidateAmountCurrency(amount, currency)
 }
 
 func validateSelectedCreateOrderAmountCurrency(payAmount string, sel *payment.InstanceSelection) error {
@@ -690,11 +645,7 @@ func validateSelectedCreateOrderAmountCurrency(payAmount string, sel *payment.In
 		return nil
 	}
 	currency := paymentProviderConfigCurrency(sel.ProviderKey, sel.Config)
-	if _, err := payment.AmountToMinorUnit(payAmount, currency); err != nil {
-		return infraerrors.BadRequest("INVALID_AMOUNT", err.Error()).
-			WithMetadata(map[string]string{"currency": currency})
-	}
-	return nil
+	return payment.ValidatePayAmountCurrency(payAmount, currency)
 }
 
 func requiresWeChatJSAPICompatibleSelection(req CreateOrderRequest, sel *payment.InstanceSelection) bool {

@@ -11,8 +11,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/userattributedefinition"
-	"github.com/Wei-Shaw/cloudbase/ent/userattributevalue"
+	"github.com/Aias00/cloudbase/ent/userattributedefinition"
+	"github.com/Aias00/cloudbase/ent/userattributevalue"
 )
 
 // UserAttributeDefinitionCreate is the builder for creating a UserAttributeDefinition entity.

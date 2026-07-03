@@ -8,7 +8,7 @@
 [![Redis](https://img.shields.io/badge/Redis-8+-DC382D.svg)](https://redis.io/)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED.svg)](https://www.docker.com/)
 
-<a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Wei-Shaw%2Fcloudbase | Trendshift" width="250" height="55"/></a>
+<a href="https://trendshift.io/repositories/21823" target="_blank"><img src="https://trendshift.io/api/badge/repositories/21823" alt="Aias00%2Fcloudbase | Trendshift" width="250" height="55"/></a>
 
 **セルフホスト型 AI ゲートウェイと業務運用プラットフォーム**
 
@@ -82,7 +82,7 @@ GitHub Releases からビルド済みバイナリをダウンロードするワ�
 #### インストール手順
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/Aias00/cloudbase/main/deploy/install.sh | sudo bash
 ```
 
 スクリプトは以下を実行します:
@@ -132,7 +132,7 @@ sudo journalctl -u cloudbase -f
 sudo systemctl restart cloudbase
 
 # アンインストール
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/install.sh | sudo bash -s -- uninstall -y
+curl -sSL https://raw.githubusercontent.com/Aias00/cloudbase/main/deploy/install.sh | sudo bash -s -- uninstall -y
 ```
 
 ---
@@ -155,7 +155,7 @@ PostgreSQL と Redis のコンテナを含む Docker Compose でデプロイし�
 mkdir -p cloudbase-deploy && cd cloudbase-deploy
 
 # デプロイ準備スクリプトをダウンロードして実行
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/cloudbase/main/deploy/docker-deploy.sh | bash
+curl -sSL https://raw.githubusercontent.com/Aias00/cloudbase/main/deploy/docker-deploy.sh | bash
 
 # サービスを起動
 docker compose up -d
@@ -177,7 +177,7 @@ docker compose logs -f cloudbase
 
 ```bash
 # 1. リポジトリをクローン
-git clone https://github.com/Wei-Shaw/cloudbase.git
+git clone https://github.com/Aias00/cloudbase.git
 cd cloudbase/deploy
 
 # 2. 環境設定ファイルをコピー
@@ -316,7 +316,7 @@ rm -rf data/ postgres_data/ redis_data/
 
 ```bash
 # 1. リポジトリをクローン
-git clone https://github.com/Wei-Shaw/cloudbase.git
+git clone https://github.com/Aias00/cloudbase.git
 cd cloudbase
 
 # 2. pnpm をインストール（未インストールの場合）
@@ -560,11 +560,11 @@ cloudbase/
 
 ## スター履歴
 
-<a href="https://star-history.com/#Wei-Shaw/cloudbase&Date">
+<a href="https://star-history.com/#Aias00/cloudbase&Date">
  <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Wei-Shaw/cloudbase&type=Date&theme=dark" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Wei-Shaw/cloudbase&type=Date" />
-   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Wei-Shaw/cloudbase&type=Date" />
+   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=Aias00/cloudbase&type=Date&theme=dark" />
+   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=Aias00/cloudbase&type=Date" />
+   <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=Aias00/cloudbase&type=Date" />
  </picture>
 </a>
 

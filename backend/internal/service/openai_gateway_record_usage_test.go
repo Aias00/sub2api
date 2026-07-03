@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/config"
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/ctxkey"
+	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/pkg/ctxkey"
 	"github.com/stretchr/testify/require"
 )
 
@@ -1851,7 +1851,14 @@ func newOpenAITokenImageChannelPricingResolverForTest(t *testing.T, groupID int6
 	cache.loadedAt = time.Now()
 	cs := &ChannelService{}
 	cs.cache.Store(cache)
-	return NewModelPricingResolver(cs, NewBillingService(&config.Config{}, nil))
+	pricingService := &PricingService{pricingData: map[string]*LiteLLMModelPricing{
+		strings.ToLower(model): {
+			InputCostPerToken:       inputPrice,
+			OutputCostPerToken:      outputPrice,
+			OutputCostPerImageToken: imageOutputPrice,
+		},
+	}}
+	return NewModelPricingResolver(cs, NewBillingService(&config.Config{}, pricingService))
 }
 
 func TestGatewayServiceCalculateRecordUsageCost_ChannelImageBillingUsesImageCount(t *testing.T) {

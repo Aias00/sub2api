@@ -1,7 +1,7 @@
 package handler
 
 import (
-	"github.com/Wei-Shaw/cloudbase/internal/handler/admin"
+	"github.com/Aias00/cloudbase/internal/handler/admin"
 )
 
 // AdminHandlers contains all admin-related HTTP handlers
@@ -37,7 +37,6 @@ type AdminHandlers struct {
 	ContentModeration      *admin.ContentModerationHandler
 	Payment                *admin.PaymentHandler
 	Affiliate              *admin.AffiliateHandler
-	Compliance             *admin.ComplianceHandler
 }
 
 // Handlers contains all HTTP handlers

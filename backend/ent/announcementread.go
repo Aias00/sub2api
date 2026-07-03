@@ -9,9 +9,9 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/cloudbase/ent/announcement"
-	"github.com/Wei-Shaw/cloudbase/ent/announcementread"
-	"github.com/Wei-Shaw/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/ent/announcement"
+	"github.com/Aias00/cloudbase/ent/announcementread"
+	"github.com/Aias00/cloudbase/ent/user"
 )
 
 // AnnouncementRead is the model entity for the AnnouncementRead schema.

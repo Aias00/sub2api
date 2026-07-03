@@ -3,10 +3,10 @@ package repository
 import (
 	"context"
 
-	"github.com/Wei-Shaw/cloudbase/ent"
-	"github.com/Wei-Shaw/cloudbase/ent/tlsfingerprintprofile"
-	"github.com/Wei-Shaw/cloudbase/internal/model"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/ent/tlsfingerprintprofile"
+	"github.com/Aias00/cloudbase/internal/model"
+	"github.com/Aias00/cloudbase/internal/service"
 )
 
 type tlsFingerprintProfileRepository struct {

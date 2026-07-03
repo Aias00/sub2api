@@ -3,7 +3,7 @@ package schema
 import (
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/domain"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"

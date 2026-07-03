@@ -1,15 +1,13 @@
 package admin
 
 import (
-	"fmt"
 	"net/http"
-	"strconv"
-	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/response"
-	"github.com/Wei-Shaw/cloudbase/internal/server/middleware"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	opsctx "github.com/Aias00/cloudbase/internal/ops"
+	"github.com/Aias00/cloudbase/internal/pkg/response"
+	"github.com/Aias00/cloudbase/internal/server/middleware"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/gin-gonic/gin"
 )
 
@@ -20,23 +18,18 @@ type OpsHandler struct {
 // GetErrorLogByID returns ops error log detail.
 // GET /api/v1/admin/ops/errors/:id
 func (h *OpsHandler) GetErrorLogByID(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
-	idStr := strings.TrimSpace(c.Param("id"))
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil || id <= 0 {
-		response.BadRequest(c, "Invalid error id")
+	id, err := opsctx.ParsePositiveID(c.Param("id"), "Invalid error id")
+	if err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
-	detail, err := h.opsService.GetErrorLogByID(c.Request.Context(), id)
+	detail, err := opsService.GetErrorLogByID(c.Request.Context(), id)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -45,26 +38,95 @@ func (h *OpsHandler) GetErrorLogByID(c *gin.Context) {
 	response.Success(c, detail)
 }
 
-const (
-	opsListViewErrors   = "errors"
-	opsListViewExcluded = "excluded"
-	opsListViewAll      = "all"
-)
+type opsErrorLogFilterOptions struct {
+	IncludeUserAPI       bool
+	IncludeModel         bool
+	ClearUpstreamPhase   bool
+	FixedView            string
+	FixedPhase           string
+	FixedOwner           string
+	FixedRequestID       string
+	FixedClientRequestID string
+}
 
-func parseOpsViewParam(c *gin.Context) string {
-	if c == nil {
-		return ""
+func parseOpsErrorLogFilter(c *gin.Context, page, pageSize int, startTime, endTime time.Time, opts opsErrorLogFilterOptions) (*service.OpsErrorLogFilter, error) {
+	viewRaw := c.Query("view")
+	if opts.FixedView != "" {
+		viewRaw = opts.FixedView
 	}
-	v := strings.ToLower(strings.TrimSpace(c.Query("view")))
-	switch v {
-	case "", opsListViewErrors:
-		return opsListViewErrors
-	case opsListViewExcluded:
-		return opsListViewExcluded
-	case opsListViewAll:
-		return opsListViewAll
-	default:
-		return opsListViewErrors
+	phaseRaw := c.Query("phase")
+	if opts.FixedPhase != "" {
+		phaseRaw = opts.FixedPhase
+	}
+	ownerRaw := c.Query("error_owner")
+	if opts.FixedOwner != "" {
+		ownerRaw = opts.FixedOwner
+	}
+	modelRaw := ""
+	if opts.IncludeModel {
+		modelRaw = c.Query("model")
+	}
+	userIDRaw := ""
+	apiKeyIDRaw := ""
+	if opts.IncludeUserAPI {
+		userIDRaw = c.Query("user_id")
+		apiKeyIDRaw = c.Query("api_key_id")
+	}
+
+	parsed, err := opsctx.ParseErrorLogFilter(opsctx.ErrorLogFilterInput{
+		StartTime:          startTime,
+		EndTime:            endTime,
+		Page:               page,
+		PageSize:           pageSize,
+		ViewRaw:            viewRaw,
+		PhaseRaw:           phaseRaw,
+		OwnerRaw:           ownerRaw,
+		SourceRaw:          c.Query("error_source"),
+		QueryRaw:           c.Query("q"),
+		UserQueryRaw:       c.Query("user_query"),
+		ModelRaw:           modelRaw,
+		RequestIDRaw:       opts.FixedRequestID,
+		ClientRequestIDRaw: opts.FixedClientRequestID,
+		PlatformRaw:        c.Query("platform"),
+		GroupIDRaw:         c.Query("group_id"),
+		AccountIDRaw:       c.Query("account_id"),
+		UserIDRaw:          userIDRaw,
+		APIKeyIDRaw:        apiKeyIDRaw,
+		ResolvedRaw:        c.Query("resolved"),
+		StatusCodesRaw:     c.Query("status_codes"),
+		ClearUpstreamPhase: opts.ClearUpstreamPhase,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return opsErrorLogFilterFromParsed(parsed), nil
+}
+
+func opsErrorLogFilterFromParsed(parsed *opsctx.ErrorLogFilter) *service.OpsErrorLogFilter {
+	if parsed == nil {
+		return &service.OpsErrorLogFilter{}
+	}
+	return &service.OpsErrorLogFilter{
+		StartTime:       parsed.StartTime,
+		EndTime:         parsed.EndTime,
+		Page:            parsed.Page,
+		PageSize:        parsed.PageSize,
+		Platform:        parsed.Platform,
+		GroupID:         parsed.GroupID,
+		AccountID:       parsed.AccountID,
+		StatusCodes:     parsed.StatusCodes,
+		Phase:           parsed.Phase,
+		Owner:           parsed.Owner,
+		Source:          parsed.Source,
+		Resolved:        parsed.Resolved,
+		Query:           parsed.Query,
+		UserQuery:       parsed.UserQuery,
+		RequestID:       parsed.RequestID,
+		ClientRequestID: parsed.ClientRequestID,
+		UserID:          parsed.UserID,
+		APIKeyID:        parsed.APIKeyID,
+		Model:           parsed.Model,
+		View:            parsed.View,
 	}
 }
 
@@ -72,23 +134,71 @@ func NewOpsHandler(opsService *service.OpsService) *OpsHandler {
 	return &OpsHandler{opsService: opsService}
 }
 
-// GetErrorLogs lists ops error logs.
-// GET /api/v1/admin/ops/errors
-func (h *OpsHandler) GetErrorLogs(c *gin.Context) {
+func (h *OpsHandler) requireOpsService(c *gin.Context) (*service.OpsService, bool) {
 	if h.opsService == nil {
 		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
+		return nil, false
 	}
 	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
 		response.ErrorFrom(c, err)
+		return nil, false
+	}
+	return h.opsService, true
+}
+
+func bindOpsJSON[T any](c *gin.Context) (*T, bool) {
+	var req T
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request body")
+		return nil, false
+	}
+	return &req, true
+}
+
+func requireOpsUserID(c *gin.Context) (int64, bool) {
+	subject, ok := middleware.GetAuthSubjectFromContext(c)
+	if !ok || subject.UserID <= 0 {
+		response.Error(c, http.StatusUnauthorized, "Unauthorized")
+		return 0, false
+	}
+	return subject.UserID, true
+}
+
+func opsRequestDetailFilterFromParsed(parsed *opsctx.RequestDetailFilter) *service.OpsRequestDetailFilter {
+	if parsed == nil {
+		return &service.OpsRequestDetailFilter{}
+	}
+	return &service.OpsRequestDetailFilter{
+		StartTime:     parsed.StartTime,
+		EndTime:       parsed.EndTime,
+		Kind:          parsed.Kind,
+		Platform:      parsed.Platform,
+		GroupID:       parsed.GroupID,
+		UserID:        parsed.UserID,
+		APIKeyID:      parsed.APIKeyID,
+		AccountID:     parsed.AccountID,
+		Model:         parsed.Model,
+		RequestID:     parsed.RequestID,
+		Query:         parsed.Query,
+		MinDurationMs: parsed.MinDurationMs,
+		MaxDurationMs: parsed.MaxDurationMs,
+		Sort:          parsed.Sort,
+		Page:          parsed.Page,
+		PageSize:      parsed.PageSize,
+	}
+}
+
+// GetErrorLogs lists ops error logs.
+// GET /api/v1/admin/ops/errors
+func (h *OpsHandler) GetErrorLogs(c *gin.Context) {
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
 	page, pageSize := response.ParsePagination(c)
 	// Ops list can be larger than standard admin tables.
-	if pageSize > 500 {
-		pageSize = 500
-	}
+	pageSize = opsctx.CapPageSize(pageSize, 500)
 
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
@@ -96,98 +206,17 @@ func (h *OpsHandler) GetErrorLogs(c *gin.Context) {
 		return
 	}
 
-	filter := &service.OpsErrorLogFilter{Page: page, PageSize: pageSize}
-
-	if !startTime.IsZero() {
-		filter.StartTime = &startTime
-	}
-	if !endTime.IsZero() {
-		filter.EndTime = &endTime
-	}
-	filter.View = parseOpsViewParam(c)
-	filter.Phase = strings.TrimSpace(c.Query("phase"))
-	filter.Owner = strings.TrimSpace(c.Query("error_owner"))
-	filter.Source = strings.TrimSpace(c.Query("error_source"))
-	filter.Query = strings.TrimSpace(c.Query("q"))
-	filter.UserQuery = strings.TrimSpace(c.Query("user_query"))
-	// Model 过滤：admin 走精确匹配（ModelFuzzy 默认 false，保持管理端语义）。
-	// buildOpsErrorLogsWhere 以 COALESCE(requested_model, model) 比对。
-	filter.Model = strings.TrimSpace(c.Query("model"))
-
-	// Force request errors: client-visible status >= 400.
-	// buildOpsErrorLogsWhere already applies this for non-upstream phase.
-	if strings.EqualFold(strings.TrimSpace(filter.Phase), "upstream") {
-		filter.Phase = ""
+	filter, err := parseOpsErrorLogFilter(c, page, pageSize, startTime, endTime, opsErrorLogFilterOptions{
+		IncludeUserAPI:     true,
+		IncludeModel:       true,
+		ClearUpstreamPhase: true,
+	})
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
 
-	if platform := strings.TrimSpace(c.Query("platform")); platform != "" {
-		filter.Platform = platform
-	}
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid group_id")
-			return
-		}
-		filter.GroupID = &id
-	}
-	if v := strings.TrimSpace(c.Query("account_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid account_id")
-			return
-		}
-		filter.AccountID = &id
-	}
-
-	if v := strings.TrimSpace(c.Query("user_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid user_id")
-			return
-		}
-		filter.UserID = &id
-	}
-	if v := strings.TrimSpace(c.Query("api_key_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid api_key_id")
-			return
-		}
-		filter.APIKeyID = &id
-	}
-	if v := strings.TrimSpace(c.Query("resolved")); v != "" {
-		switch strings.ToLower(v) {
-		case "1", "true", "yes":
-			b := true
-			filter.Resolved = &b
-		case "0", "false", "no":
-			b := false
-			filter.Resolved = &b
-		default:
-			response.BadRequest(c, "Invalid resolved")
-			return
-		}
-	}
-	if statusCodesStr := strings.TrimSpace(c.Query("status_codes")); statusCodesStr != "" {
-		parts := strings.Split(statusCodesStr, ",")
-		out := make([]int, 0, len(parts))
-		for _, part := range parts {
-			p := strings.TrimSpace(part)
-			if p == "" {
-				continue
-			}
-			n, err := strconv.Atoi(p)
-			if err != nil || n < 0 {
-				response.BadRequest(c, "Invalid status_codes")
-				return
-			}
-			out = append(out, n)
-		}
-		filter.StatusCodes = out
-	}
-
-	result, err := h.opsService.GetErrorLogs(c.Request.Context(), filter)
+	result, err := opsService.GetErrorLogs(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -198,100 +227,29 @@ func (h *OpsHandler) GetErrorLogs(c *gin.Context) {
 // ListRequestErrors lists client-visible request errors.
 // GET /api/v1/admin/ops/request-errors
 func (h *OpsHandler) ListRequestErrors(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
 	page, pageSize := response.ParsePagination(c)
-	if pageSize > 500 {
-		pageSize = 500
-	}
+	pageSize = opsctx.CapPageSize(pageSize, 500)
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
 		response.BadRequestWithError(c, err)
 		return
 	}
 
-	filter := &service.OpsErrorLogFilter{Page: page, PageSize: pageSize}
-	if !startTime.IsZero() {
-		filter.StartTime = &startTime
-	}
-	if !endTime.IsZero() {
-		filter.EndTime = &endTime
-	}
-	filter.View = parseOpsViewParam(c)
-	filter.Phase = strings.TrimSpace(c.Query("phase"))
-	filter.Owner = strings.TrimSpace(c.Query("error_owner"))
-	filter.Source = strings.TrimSpace(c.Query("error_source"))
-	filter.Query = strings.TrimSpace(c.Query("q"))
-	filter.UserQuery = strings.TrimSpace(c.Query("user_query"))
-	// Model 过滤：admin 走精确匹配（ModelFuzzy 默认 false，保持管理端语义）。
-	// buildOpsErrorLogsWhere 以 COALESCE(requested_model, model) 比对。
-	filter.Model = strings.TrimSpace(c.Query("model"))
-
-	// Force request errors: client-visible status >= 400.
-	// buildOpsErrorLogsWhere already applies this for non-upstream phase.
-	if strings.EqualFold(strings.TrimSpace(filter.Phase), "upstream") {
-		filter.Phase = ""
+	filter, err := parseOpsErrorLogFilter(c, page, pageSize, startTime, endTime, opsErrorLogFilterOptions{
+		IncludeModel:       true,
+		ClearUpstreamPhase: true,
+	})
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
 
-	if platform := strings.TrimSpace(c.Query("platform")); platform != "" {
-		filter.Platform = platform
-	}
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid group_id")
-			return
-		}
-		filter.GroupID = &id
-	}
-	if v := strings.TrimSpace(c.Query("account_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid account_id")
-			return
-		}
-		filter.AccountID = &id
-	}
-
-	if v := strings.TrimSpace(c.Query("resolved")); v != "" {
-		switch strings.ToLower(v) {
-		case "1", "true", "yes":
-			b := true
-			filter.Resolved = &b
-		case "0", "false", "no":
-			b := false
-			filter.Resolved = &b
-		default:
-			response.BadRequest(c, "Invalid resolved")
-			return
-		}
-	}
-	if statusCodesStr := strings.TrimSpace(c.Query("status_codes")); statusCodesStr != "" {
-		parts := strings.Split(statusCodesStr, ",")
-		out := make([]int, 0, len(parts))
-		for _, part := range parts {
-			p := strings.TrimSpace(part)
-			if p == "" {
-				continue
-			}
-			n, err := strconv.Atoi(p)
-			if err != nil || n < 0 {
-				response.BadRequest(c, "Invalid status_codes")
-				return
-			}
-			out = append(out, n)
-		}
-		filter.StatusCodes = out
-	}
-
-	result, err := h.opsService.GetErrorLogs(c.Request.Context(), filter)
+	result, err := opsService.GetErrorLogs(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -309,41 +267,33 @@ func (h *OpsHandler) GetRequestError(c *gin.Context) {
 // ListRequestErrorUpstreamErrors lists upstream error logs correlated to a request error.
 // GET /api/v1/admin/ops/request-errors/:id/upstream-errors
 func (h *OpsHandler) ListRequestErrorUpstreamErrors(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
-	idStr := strings.TrimSpace(c.Param("id"))
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil || id <= 0 {
-		response.BadRequest(c, "Invalid error id")
+	id, err := opsctx.ParsePositiveID(c.Param("id"), "Invalid error id")
+	if err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
 	// Load request error to get correlation keys.
-	detail, err := h.opsService.GetErrorLogByID(c.Request.Context(), id)
+	detail, err := opsService.GetErrorLogByID(c.Request.Context(), id)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 
 	// Correlate by request_id/client_request_id.
-	requestID := strings.TrimSpace(detail.RequestID)
-	clientRequestID := strings.TrimSpace(detail.ClientRequestID)
-	if requestID == "" && clientRequestID == "" {
+	correlationKey := opsctx.PickErrorCorrelationKey(detail.RequestID, detail.ClientRequestID)
+	if correlationKey.RequestID == "" && correlationKey.ClientRequestID == "" {
 		response.Paginated(c, []*service.OpsErrorLog{}, 0, 1, 10)
 		return
 	}
 
 	page, pageSize := response.ParsePagination(c)
-	if pageSize > 500 {
-		pageSize = 500
-	}
+	pageSize = opsctx.CapPageSize(pageSize, 500)
 
 	// Keep correlation window wide enough so linked upstream errors
 	// are discoverable even when UI defaults to 1h elsewhere.
@@ -353,45 +303,36 @@ func (h *OpsHandler) ListRequestErrorUpstreamErrors(c *gin.Context) {
 		return
 	}
 
-	filter := &service.OpsErrorLogFilter{Page: page, PageSize: pageSize}
-	if !startTime.IsZero() {
-		filter.StartTime = &startTime
+	opts := opsErrorLogFilterOptions{
+		FixedView:  "all",
+		FixedPhase: "upstream",
+		FixedOwner: "provider",
 	}
-	if !endTime.IsZero() {
-		filter.EndTime = &endTime
-	}
-	filter.View = "all"
-	filter.Phase = "upstream"
-	filter.Owner = "provider"
-	filter.Source = strings.TrimSpace(c.Query("error_source"))
-	filter.Query = strings.TrimSpace(c.Query("q"))
-
-	if platform := strings.TrimSpace(c.Query("platform")); platform != "" {
-		filter.Platform = platform
-	}
-
-	// Prefer exact match on request_id; if missing, fall back to client_request_id.
-	if requestID != "" {
-		filter.RequestID = requestID
+	if correlationKey.RequestID != "" {
+		opts.FixedRequestID = correlationKey.RequestID
 	} else {
-		filter.ClientRequestID = clientRequestID
+		opts.FixedClientRequestID = correlationKey.ClientRequestID
+	}
+	filter, err := parseOpsErrorLogFilter(c, page, pageSize, startTime, endTime, opts)
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
 
-	result, err := h.opsService.GetErrorLogs(c.Request.Context(), filter)
+	result, err := opsService.GetErrorLogs(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 
 	// If client asks for details, expand each upstream error log to include upstream response fields.
-	includeDetail := strings.TrimSpace(c.Query("include_detail"))
-	if includeDetail == "1" || strings.EqualFold(includeDetail, "true") || strings.EqualFold(includeDetail, "yes") {
+	if opsctx.ParseTruthyFlag(c.Query("include_detail")) {
 		details := make([]*service.OpsErrorLogDetail, 0, len(result.Errors))
 		for _, item := range result.Errors {
 			if item == nil {
 				continue
 			}
-			d, err := h.opsService.GetErrorLogByID(c.Request.Context(), item.ID)
+			d, err := opsService.GetErrorLogByID(c.Request.Context(), item.ID)
 			if err != nil || d == nil {
 				continue
 			}
@@ -413,91 +354,29 @@ func (h *OpsHandler) ResolveRequestError(c *gin.Context) {
 // ListUpstreamErrors lists independent upstream errors.
 // GET /api/v1/admin/ops/upstream-errors
 func (h *OpsHandler) ListUpstreamErrors(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
 	page, pageSize := response.ParsePagination(c)
-	if pageSize > 500 {
-		pageSize = 500
-	}
+	pageSize = opsctx.CapPageSize(pageSize, 500)
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
 		response.BadRequestWithError(c, err)
 		return
 	}
 
-	filter := &service.OpsErrorLogFilter{Page: page, PageSize: pageSize}
-	if !startTime.IsZero() {
-		filter.StartTime = &startTime
-	}
-	if !endTime.IsZero() {
-		filter.EndTime = &endTime
-	}
-
-	filter.View = parseOpsViewParam(c)
-	filter.Phase = "upstream"
-	filter.Owner = "provider"
-	filter.Source = strings.TrimSpace(c.Query("error_source"))
-	filter.Query = strings.TrimSpace(c.Query("q"))
-
-	if platform := strings.TrimSpace(c.Query("platform")); platform != "" {
-		filter.Platform = platform
-	}
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid group_id")
-			return
-		}
-		filter.GroupID = &id
-	}
-	if v := strings.TrimSpace(c.Query("account_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid account_id")
-			return
-		}
-		filter.AccountID = &id
+	filter, err := parseOpsErrorLogFilter(c, page, pageSize, startTime, endTime, opsErrorLogFilterOptions{
+		FixedPhase: "upstream",
+		FixedOwner: "provider",
+	})
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
 
-	if v := strings.TrimSpace(c.Query("resolved")); v != "" {
-		switch strings.ToLower(v) {
-		case "1", "true", "yes":
-			b := true
-			filter.Resolved = &b
-		case "0", "false", "no":
-			b := false
-			filter.Resolved = &b
-		default:
-			response.BadRequest(c, "Invalid resolved")
-			return
-		}
-	}
-	if statusCodesStr := strings.TrimSpace(c.Query("status_codes")); statusCodesStr != "" {
-		parts := strings.Split(statusCodesStr, ",")
-		out := make([]int, 0, len(parts))
-		for _, part := range parts {
-			p := strings.TrimSpace(part)
-			if p == "" {
-				continue
-			}
-			n, err := strconv.Atoi(p)
-			if err != nil || n < 0 {
-				response.BadRequest(c, "Invalid status_codes")
-				return
-			}
-			out = append(out, n)
-		}
-		filter.StatusCodes = out
-	}
-
-	result, err := h.opsService.GetErrorLogs(c.Request.Context(), filter)
+	result, err := opsService.GetErrorLogs(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -522,19 +401,13 @@ func (h *OpsHandler) ResolveUpstreamError(c *gin.Context) {
 // ListRequestDetails returns a request-level list (success + error) for drill-down.
 // GET /api/v1/admin/ops/requests
 func (h *OpsHandler) ListRequestDetails(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
 	page, pageSize := response.ParsePagination(c)
-	if pageSize > 100 {
-		pageSize = 100
-	}
+	pageSize = opsctx.CapPageSize(pageSize, 100)
 
 	startTime, endTime, err := parseOpsTimeRange(c, "1h")
 	if err != nil {
@@ -542,74 +415,34 @@ func (h *OpsHandler) ListRequestDetails(c *gin.Context) {
 		return
 	}
 
-	filter := &service.OpsRequestDetailFilter{
-		Page:      page,
-		PageSize:  pageSize,
-		StartTime: &startTime,
-		EndTime:   &endTime,
+	parsed, err := opsctx.ParseRequestDetailFilter(opsctx.RequestDetailFilterInput{
+		StartTime:        startTime,
+		EndTime:          endTime,
+		Page:             page,
+		PageSize:         pageSize,
+		KindRaw:          c.Query("kind"),
+		PlatformRaw:      c.Query("platform"),
+		ModelRaw:         c.Query("model"),
+		RequestIDRaw:     c.Query("request_id"),
+		QueryRaw:         c.Query("q"),
+		SortRaw:          c.Query("sort"),
+		UserIDRaw:        c.Query("user_id"),
+		APIKeyIDRaw:      c.Query("api_key_id"),
+		AccountIDRaw:     c.Query("account_id"),
+		GroupIDRaw:       c.Query("group_id"),
+		MinDurationMsRaw: c.Query("min_duration_ms"),
+		MaxDurationMsRaw: c.Query("max_duration_ms"),
+	})
+	if err != nil {
+		response.BadRequest(c, err.Error())
+		return
 	}
+	filter := opsRequestDetailFilterFromParsed(parsed)
 
-	filter.Kind = strings.TrimSpace(c.Query("kind"))
-	filter.Platform = strings.TrimSpace(c.Query("platform"))
-	filter.Model = strings.TrimSpace(c.Query("model"))
-	filter.RequestID = strings.TrimSpace(c.Query("request_id"))
-	filter.Query = strings.TrimSpace(c.Query("q"))
-	filter.Sort = strings.TrimSpace(c.Query("sort"))
-
-	if v := strings.TrimSpace(c.Query("user_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid user_id")
-			return
-		}
-		filter.UserID = &id
-	}
-	if v := strings.TrimSpace(c.Query("api_key_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid api_key_id")
-			return
-		}
-		filter.APIKeyID = &id
-	}
-	if v := strings.TrimSpace(c.Query("account_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid account_id")
-			return
-		}
-		filter.AccountID = &id
-	}
-	if v := strings.TrimSpace(c.Query("group_id")); v != "" {
-		id, err := strconv.ParseInt(v, 10, 64)
-		if err != nil || id <= 0 {
-			response.BadRequest(c, "Invalid group_id")
-			return
-		}
-		filter.GroupID = &id
-	}
-
-	if v := strings.TrimSpace(c.Query("min_duration_ms")); v != "" {
-		parsed, err := strconv.Atoi(v)
-		if err != nil || parsed < 0 {
-			response.BadRequest(c, "Invalid min_duration_ms")
-			return
-		}
-		filter.MinDurationMs = &parsed
-	}
-	if v := strings.TrimSpace(c.Query("max_duration_ms")); v != "" {
-		parsed, err := strconv.Atoi(v)
-		if err != nil || parsed < 0 {
-			response.BadRequest(c, "Invalid max_duration_ms")
-			return
-		}
-		filter.MaxDurationMs = &parsed
-	}
-
-	out, err := h.opsService.ListRequestDetails(c.Request.Context(), filter)
+	out, err := opsService.ListRequestDetails(c.Request.Context(), filter)
 	if err != nil {
 		// Invalid sort/kind/platform etc should be a bad request; keep it simple.
-		if strings.Contains(strings.ToLower(err.Error()), "invalid") {
+		if opsctx.IsInvalidInputError(err) {
 			response.BadRequestWithError(c, err)
 			return
 		}
@@ -627,25 +460,19 @@ type opsResolveRequest struct {
 // UpdateErrorResolution allows manual resolve/unresolve.
 // PUT /api/v1/admin/ops/errors/:id/resolve
 func (h *OpsHandler) UpdateErrorResolution(c *gin.Context) {
-	if h.opsService == nil {
-		response.Error(c, http.StatusServiceUnavailable, "Ops service not available")
-		return
-	}
-	if err := h.opsService.RequireMonitoringEnabled(c.Request.Context()); err != nil {
-		response.ErrorFrom(c, err)
+	opsService, ok := h.requireOpsService(c)
+	if !ok {
 		return
 	}
 
-	subject, ok := middleware.GetAuthSubjectFromContext(c)
-	if !ok || subject.UserID <= 0 {
-		response.Error(c, http.StatusUnauthorized, "Unauthorized")
+	uid, ok := requireOpsUserID(c)
+	if !ok {
 		return
 	}
 
-	idStr := strings.TrimSpace(c.Param("id"))
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil || id <= 0 {
-		response.BadRequest(c, "Invalid error id")
+	id, err := opsctx.ParsePositiveID(c.Param("id"), "Invalid error id")
+	if err != nil {
+		response.BadRequest(c, err.Error())
 		return
 	}
 
@@ -654,8 +481,7 @@ func (h *OpsHandler) UpdateErrorResolution(c *gin.Context) {
 		response.BadRequestWithError(c, err)
 		return
 	}
-	uid := subject.UserID
-	if err := h.opsService.UpdateErrorResolution(c.Request.Context(), id, req.Resolved, &uid); err != nil {
+	if err := opsService.UpdateErrorResolution(c.Request.Context(), id, req.Resolved, &uid); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -663,81 +489,16 @@ func (h *OpsHandler) UpdateErrorResolution(c *gin.Context) {
 }
 
 func parseOpsTimeRange(c *gin.Context, defaultRange string) (time.Time, time.Time, error) {
-	startStr := strings.TrimSpace(c.Query("start_time"))
-	endStr := strings.TrimSpace(c.Query("end_time"))
-
-	parseTS := func(s string) (time.Time, error) {
-		if s == "" {
-			return time.Time{}, nil
-		}
-		if t, err := time.Parse(time.RFC3339Nano, s); err == nil {
-			return t, nil
-		}
-		return time.Parse(time.RFC3339, s)
-	}
-
-	start, err := parseTS(startStr)
-	if err != nil {
-		return time.Time{}, time.Time{}, err
-	}
-	end, err := parseTS(endStr)
-	if err != nil {
-		return time.Time{}, time.Time{}, err
-	}
-
-	// start/end explicitly provided (even partially)
-	if startStr != "" || endStr != "" {
-		if end.IsZero() {
-			end = time.Now()
-		}
-		if start.IsZero() {
-			dur, _ := parseOpsDuration(defaultRange)
-			start = end.Add(-dur)
-		}
-		if start.After(end) {
-			return time.Time{}, time.Time{}, fmt.Errorf("invalid time range: start_time must be <= end_time")
-		}
-		if end.Sub(start) > 30*24*time.Hour {
-			return time.Time{}, time.Time{}, fmt.Errorf("invalid time range: max window is 30 days")
-		}
-		return start, end, nil
-	}
-
-	// time_range fallback
-	tr := strings.TrimSpace(c.Query("time_range"))
-	if tr == "" {
-		tr = defaultRange
-	}
-	dur, ok := parseOpsDuration(tr)
-	if !ok {
-		dur, _ = parseOpsDuration(defaultRange)
-	}
-
-	end = time.Now()
-	start = end.Add(-dur)
-	if end.Sub(start) > 30*24*time.Hour {
-		return time.Time{}, time.Time{}, fmt.Errorf("invalid time range: max window is 30 days")
-	}
-	return start, end, nil
+	input := opsTimeRangeInputFromQuery(c, defaultRange)
+	return opsctx.ParseTimeRange(input)
 }
 
-func parseOpsDuration(v string) (time.Duration, bool) {
-	switch strings.TrimSpace(v) {
-	case "5m":
-		return 5 * time.Minute, true
-	case "30m":
-		return 30 * time.Minute, true
-	case "1h":
-		return time.Hour, true
-	case "6h":
-		return 6 * time.Hour, true
-	case "24h":
-		return 24 * time.Hour, true
-	case "7d":
-		return 7 * 24 * time.Hour, true
-	case "30d":
-		return 30 * 24 * time.Hour, true
-	default:
-		return 0, false
+func opsTimeRangeInputFromQuery(c *gin.Context, defaultRange string) opsctx.TimeRangeInput {
+	return opsctx.TimeRangeInput{
+		StartTimeRaw: c.Query("start_time"),
+		EndTimeRaw:   c.Query("end_time"),
+		TimeRangeRaw: c.Query("time_range"),
+		DefaultRange: defaultRange,
+		Now:          time.Now(),
 	}
 }

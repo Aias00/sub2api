@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Wei-Shaw/cloudbase/internal/pkg/timezone"
-	"github.com/Wei-Shaw/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/pkg/timezone"
+	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/lib/pq"
 )
 

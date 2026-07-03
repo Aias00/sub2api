@@ -13,9 +13,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/cloudbase/ent/predicate"
-	"github.com/Wei-Shaw/cloudbase/ent/promocode"
-	"github.com/Wei-Shaw/cloudbase/ent/promocodeusage"
+	"github.com/Aias00/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/ent/promocode"
+	"github.com/Aias00/cloudbase/ent/promocodeusage"
 )
 
 // PromoCodeQuery is the builder for querying PromoCode entities.

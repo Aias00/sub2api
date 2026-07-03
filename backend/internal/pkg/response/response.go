@@ -6,8 +6,8 @@ import (
 	"math"
 	"net/http"
 
-	infraerrors "github.com/Wei-Shaw/cloudbase/internal/pkg/errors"
-	"github.com/Wei-Shaw/cloudbase/internal/util/logredact"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/util/logredact"
 	"github.com/gin-gonic/gin"
 )
 

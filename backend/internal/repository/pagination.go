@@ -1,6 +1,6 @@
 package repository
 
-import "github.com/Wei-Shaw/cloudbase/internal/pkg/pagination"
+import "github.com/Aias00/cloudbase/internal/pkg/pagination"
 
 func paginationResultFromTotal(total int64, params pagination.PaginationParams) *pagination.PaginationResult {
 	pages := int(total) / params.Limit()
