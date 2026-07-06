@@ -92,6 +92,8 @@ LABEL org.opencontainers.image.source="https://github.com/Aias00/cloudbase"
 RUN apk add --no-cache \
     ca-certificates \
     tzdata \
+    docker-cli \
+    docker-cli-compose \
     su-exec \
     libpq \
     zstd-libs \
