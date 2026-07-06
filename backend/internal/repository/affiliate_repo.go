@@ -11,6 +11,7 @@ import (
 
 	entsql "entgo.io/ent/dialect/sql"
 	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/internal/identity"
 	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/lib/pq"
 )
@@ -65,7 +66,7 @@ func NewAffiliateRepository(client *dbent.Client, _ *sql.DB) service.AffiliateRe
 
 func (r *affiliateRepository) EnsureUserAffiliate(ctx context.Context, userID int64) (*service.AffiliateSummary, error) {
 	if userID <= 0 {
-		return nil, service.ErrUserNotFound
+		return nil, identity.ErrUserNotFound
 	}
 	client := clientFromContext(ctx, r.client)
 	return ensureUserAffiliateWithClient(ctx, client, userID)
@@ -302,7 +303,7 @@ FROM cleared`, userID)
 			return fmt.Errorf("read credited user balance result: %w", err)
 		}
 		if affected == 0 {
-			return service.ErrUserNotFound
+			return identity.ErrUserNotFound
 		}
 
 		newBalance, err = queryUserBalance(txCtx, txClient, userID)
@@ -393,7 +394,7 @@ LIMIT $2`, inviterID, limit)
 func (r *affiliateRepository) ListUserRebateRecords(ctx context.Context, inviterID int64, filter service.AffiliateRecordFilter) ([]service.AffiliateRebateRecord, int64, error) {
 	client := clientFromContext(ctx, r.client)
 	if inviterID <= 0 {
-		return nil, 0, service.ErrUserNotFound
+		return nil, 0, identity.ErrUserNotFound
 	}
 	filter = service.AffiliateRecordFilter{
 		Page:     filter.Page,
@@ -477,7 +478,7 @@ LIMIT $2 OFFSET $3`, inviterID, filter.PageSize, offset)
 func (r *affiliateRepository) ListUserTransferRecords(ctx context.Context, userID int64, filter service.AffiliateRecordFilter) ([]service.AffiliateTransferRecord, int64, error) {
 	client := clientFromContext(ctx, r.client)
 	if userID <= 0 {
-		return nil, 0, service.ErrUserNotFound
+		return nil, 0, identity.ErrUserNotFound
 	}
 	filter = service.AffiliateRecordFilter{
 		Page:     filter.Page,
@@ -842,7 +843,7 @@ LIMIT $`+fmt.Sprint(len(args)-1)+` OFFSET $`+fmt.Sprint(len(args)), args...)
 
 func (r *affiliateRepository) GetAffiliateUserOverview(ctx context.Context, userID int64) (*service.AffiliateUserOverview, error) {
 	if userID <= 0 {
-		return nil, service.ErrUserNotFound
+		return nil, identity.ErrUserNotFound
 	}
 	client := clientFromContext(ctx, r.client)
 	rows, err := client.QueryContext(ctx, affiliateUserOverviewSQL, userID)
@@ -855,7 +856,7 @@ func (r *affiliateRepository) GetAffiliateUserOverview(ctx context.Context, user
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		return nil, service.ErrUserNotFound
+		return nil, identity.ErrUserNotFound
 	}
 
 	var overview service.AffiliateUserOverview
@@ -1111,7 +1112,7 @@ func queryUserBalance(ctx context.Context, client affiliateQueryExecer, userID i
 		if err := rows.Err(); err != nil {
 			return 0, err
 		}
-		return 0, service.ErrUserNotFound
+		return 0, identity.ErrUserNotFound
 	}
 	var balance float64
 	if err := rows.Scan(&balance); err != nil {
@@ -1146,7 +1147,7 @@ LIMIT 1`, userID)
 		if err := rows.Err(); err != nil {
 			return nil, err
 		}
-		return nil, service.ErrUserNotFound
+		return nil, identity.ErrUserNotFound
 	}
 
 	var snapshot affiliateTransferSnapshot
@@ -1191,7 +1192,7 @@ func isAffiliateUniqueViolation(err error) bool {
 // 唯一性冲突返回 ErrAffiliateCodeTaken。
 func (r *affiliateRepository) UpdateUserAffCode(ctx context.Context, userID int64, newCode string) error {
 	if userID <= 0 {
-		return service.ErrUserNotFound
+		return identity.ErrUserNotFound
 	}
 	code := strings.ToUpper(strings.TrimSpace(newCode))
 	if code == "" {
@@ -1216,7 +1217,7 @@ WHERE user_id = $2`, code, userID)
 		}
 		affected, _ := res.RowsAffected()
 		if affected == 0 {
-			return service.ErrUserNotFound
+			return identity.ErrUserNotFound
 		}
 		return nil
 	})
@@ -1225,7 +1226,7 @@ WHERE user_id = $2`, code, userID)
 // ResetUserAffCode 把 aff_code 还原为系统随机码，并清除 aff_code_custom 标记。
 func (r *affiliateRepository) ResetUserAffCode(ctx context.Context, userID int64) (string, error) {
 	if userID <= 0 {
-		return "", service.ErrUserNotFound
+		return "", identity.ErrUserNotFound
 	}
 	var newCode string
 	err := r.withTx(ctx, func(txCtx context.Context, txClient *dbent.Client) error {
@@ -1251,7 +1252,7 @@ WHERE user_id = $2`, candidate, userID)
 			}
 			affected, _ := res.RowsAffected()
 			if affected == 0 {
-				return service.ErrUserNotFound
+				return identity.ErrUserNotFound
 			}
 			newCode = candidate
 			return nil
@@ -1267,7 +1268,7 @@ WHERE user_id = $2`, candidate, userID)
 // SetUserRebateRate 设置或清除用户专属返利比例。ratePercent==nil 表示清除（沿用全局）。
 func (r *affiliateRepository) SetUserRebateRate(ctx context.Context, userID int64, ratePercent *float64) error {
 	if userID <= 0 {
-		return service.ErrUserNotFound
+		return identity.ErrUserNotFound
 	}
 	return r.withTx(ctx, func(txCtx context.Context, txClient *dbent.Client) error {
 		if _, err := ensureUserAffiliateWithClient(txCtx, txClient, userID); err != nil {
@@ -1285,7 +1286,7 @@ WHERE user_id = $2`, nullableArg(ratePercent), userID)
 		}
 		affected, _ := res.RowsAffected()
 		if affected == 0 {
-			return service.ErrUserNotFound
+			return identity.ErrUserNotFound
 		}
 		return nil
 	})

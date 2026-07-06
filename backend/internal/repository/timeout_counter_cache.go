@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -30,7 +29,7 @@ type timeoutCounterCache struct {
 }
 
 // NewTimeoutCounterCache 创建超时计数器缓存实例
-func NewTimeoutCounterCache(rdb *redis.Client) service.TimeoutCounterCache {
+func NewTimeoutCounterCache(rdb *redis.Client) *timeoutCounterCache {
 	return &timeoutCounterCache{rdb: rdb}
 }
 

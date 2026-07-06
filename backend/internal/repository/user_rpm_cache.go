@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -29,7 +28,7 @@ type userRPMCacheImpl struct {
 }
 
 // NewUserRPMCache 创建用户/分组级 RPM 计数器。
-func NewUserRPMCache(rdb *redis.Client) service.UserRPMCache {
+func NewUserRPMCache(rdb *redis.Client) *userRPMCacheImpl {
 	return &userRPMCacheImpl{rdb: rdb}
 }
 

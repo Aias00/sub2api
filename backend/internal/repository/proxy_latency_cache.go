@@ -20,7 +20,7 @@ type proxyLatencyCache struct {
 	rdb *redis.Client
 }
 
-func NewProxyLatencyCache(rdb *redis.Client) service.ProxyLatencyCache {
+func NewProxyLatencyCache(rdb *redis.Client) *proxyLatencyCache {
 	return &proxyLatencyCache{rdb: rdb}
 }
 

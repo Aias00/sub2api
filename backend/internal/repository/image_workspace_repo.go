@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Aias00/cloudbase/internal/billing"
+	contentimage "github.com/Aias00/cloudbase/internal/image"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
-	"github.com/Aias00/cloudbase/internal/service"
 )
 
 type imageWorkspaceRepository struct {
@@ -18,11 +19,11 @@ type imageWorkspaceRepository struct {
 	sql sqlExecutor
 }
 
-func NewImageWorkspaceRepository(db *sql.DB) service.ImageWorkspaceRepository {
+func NewImageWorkspaceRepository(db *sql.DB) *imageWorkspaceRepository {
 	return &imageWorkspaceRepository{db: db, sql: db}
 }
 
-func (r *imageWorkspaceRepository) CreateTask(ctx context.Context, task *service.ImageWorkspaceTask) error {
+func (r *imageWorkspaceRepository) CreateTask(ctx context.Context, task *contentimage.ImageWorkspaceTask) error {
 	if task == nil {
 		return nil
 	}
@@ -86,7 +87,7 @@ func (r *imageWorkspaceRepository) CreateTask(ctx context.Context, task *service
 	return nil
 }
 
-func (r *imageWorkspaceRepository) ListTasks(ctx context.Context, userID int64, params pagination.PaginationParams, filters service.ImageWorkspaceTaskFilters) ([]service.ImageWorkspaceTask, *pagination.PaginationResult, error) {
+func (r *imageWorkspaceRepository) ListTasks(ctx context.Context, userID int64, params pagination.PaginationParams, filters contentimage.ImageWorkspaceTaskFilters) ([]contentimage.ImageWorkspaceTask, *pagination.PaginationResult, error) {
 	whereClauses := []string{"user_id = $1"}
 	args := []any{userID}
 	argIdx := 2
@@ -103,7 +104,7 @@ func (r *imageWorkspaceRepository) ListTasks(ctx context.Context, userID int64, 
 		return nil, nil, err
 	}
 	if total == 0 {
-		return []service.ImageWorkspaceTask{}, paginationResultFromTotal(0, params), nil
+		return []contentimage.ImageWorkspaceTask{}, paginationResultFromTotal(0, params), nil
 	}
 	dataQuery := fmt.Sprintf(`
 		SELECT id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
@@ -130,7 +131,7 @@ func (r *imageWorkspaceRepository) ListTasks(ctx context.Context, userID int64, 
 	return items, paginationResultFromTotal(total, params), nil
 }
 
-func (r *imageWorkspaceRepository) GetTask(ctx context.Context, userID int64, taskID int64) (*service.ImageWorkspaceTask, error) {
+func (r *imageWorkspaceRepository) GetTask(ctx context.Context, userID int64, taskID int64) (*contentimage.ImageWorkspaceTask, error) {
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
 			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
@@ -147,12 +148,12 @@ func (r *imageWorkspaceRepository) GetTask(ctx context.Context, userID int64, ta
 		return nil, err
 	}
 	if len(items) == 0 {
-		return nil, service.ErrImageWorkspaceTaskNotFound
+		return nil, contentimage.ErrImageWorkspaceTaskNotFound
 	}
 	return &items[0], nil
 }
 
-func (r *imageWorkspaceRepository) ListArtifacts(ctx context.Context, userID int64, taskID int64) ([]service.ImageWorkspaceArtifact, error) {
+func (r *imageWorkspaceRepository) ListArtifacts(ctx context.Context, userID int64, taskID int64) ([]contentimage.ImageWorkspaceArtifact, error) {
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id, task_id, user_id, storage_provider, storage_key, image_url, prompt,
 			mime_type, width, height, file_size, checksum, metadata_json, created_at
@@ -167,7 +168,7 @@ func (r *imageWorkspaceRepository) ListArtifacts(ctx context.Context, userID int
 	return scanImageWorkspaceArtifactRows(rows)
 }
 
-func (r *imageWorkspaceRepository) GetArtifact(ctx context.Context, userID int64, artifactID int64) (*service.ImageWorkspaceArtifact, error) {
+func (r *imageWorkspaceRepository) GetArtifact(ctx context.Context, userID int64, artifactID int64) (*contentimage.ImageWorkspaceArtifact, error) {
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id, task_id, user_id, storage_provider, storage_key, image_url, prompt,
 			mime_type, width, height, file_size, checksum, metadata_json, created_at
@@ -183,12 +184,12 @@ func (r *imageWorkspaceRepository) GetArtifact(ctx context.Context, userID int64
 		return nil, err
 	}
 	if len(items) == 0 {
-		return nil, service.ErrImageWorkspaceTaskNotFound
+		return nil, contentimage.ErrImageWorkspaceTaskNotFound
 	}
 	return &items[0], nil
 }
 
-func (r *imageWorkspaceRepository) ListTemplates(ctx context.Context, userID int64) ([]service.ImageWorkspaceTemplate, error) {
+func (r *imageWorkspaceRepository) ListTemplates(ctx context.Context, userID int64) ([]contentimage.ImageWorkspaceTemplate, error) {
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id, user_id, title, description, prompt, negative_prompt, model, size,
 			quality, style, is_default, created_at, updated_at
@@ -203,7 +204,7 @@ func (r *imageWorkspaceRepository) ListTemplates(ctx context.Context, userID int
 	return scanImageWorkspaceTemplateRows(rows)
 }
 
-func (r *imageWorkspaceRepository) UpsertTemplate(ctx context.Context, template *service.ImageWorkspaceTemplate) error {
+func (r *imageWorkspaceRepository) UpsertTemplate(ctx context.Context, template *contentimage.ImageWorkspaceTemplate) error {
 	if template == nil {
 		return nil
 	}
@@ -236,7 +237,7 @@ func (r *imageWorkspaceRepository) UpsertTemplate(ctx context.Context, template 
 			template.IsDefault,
 		}, &template.CreatedAt, &template.UpdatedAt)
 		if errors.Is(err, sql.ErrNoRows) {
-			return service.ErrImageWorkspaceTaskNotFound
+			return contentimage.ErrImageWorkspaceTaskNotFound
 		}
 		return err
 	}
@@ -273,18 +274,18 @@ func (r *imageWorkspaceRepository) DeleteTemplate(ctx context.Context, userID in
 		return err
 	}
 	if rows == 0 {
-		return service.ErrImageWorkspaceTaskNotFound
+		return contentimage.ErrImageWorkspaceTaskNotFound
 	}
 	return nil
 }
 
-func (r *imageWorkspaceRepository) ListUsageRecords(ctx context.Context, userID int64, params pagination.PaginationParams) ([]service.ImageWorkspaceUsageRecord, *pagination.PaginationResult, error) {
+func (r *imageWorkspaceRepository) ListUsageRecords(ctx context.Context, userID int64, params pagination.PaginationParams) ([]contentimage.ImageWorkspaceUsageRecord, *pagination.PaginationResult, error) {
 	var total int64
 	if err := scanSingleRow(ctx, r.sql, "SELECT COUNT(*) FROM image_workspace_usage_records WHERE user_id = $1", []any{userID}, &total); err != nil {
 		return nil, nil, err
 	}
 	if total == 0 {
-		return []service.ImageWorkspaceUsageRecord{}, paginationResultFromTotal(0, params), nil
+		return []contentimage.ImageWorkspaceUsageRecord{}, paginationResultFromTotal(0, params), nil
 	}
 	rows, err := r.sql.QueryContext(ctx, `
 		SELECT id, task_id, user_id, provider, model, size, quality, image_count,
@@ -306,7 +307,7 @@ func (r *imageWorkspaceRepository) ListUsageRecords(ctx context.Context, userID 
 	return items, paginationResultFromTotal(total, params), nil
 }
 
-func (r *imageWorkspaceRepository) ClaimNextTask(ctx context.Context, leaseSeconds int64) (*service.ImageWorkspaceTask, error) {
+func (r *imageWorkspaceRepository) ClaimNextTask(ctx context.Context, leaseSeconds int64) (*contentimage.ImageWorkspaceTask, error) {
 	query := `
 		WITH next AS (
 			SELECT id
@@ -329,14 +330,14 @@ func (r *imageWorkspaceRepository) ClaimNextTask(ctx context.Context, leaseSecon
 			tasks.reserved_paid_balance, tasks.reserved_gift_balance, tasks.error_message,
 			tasks.result_json, tasks.created_at, tasks.updated_at
 	`
-	task, err := scanImageWorkspaceTask(ctx, r.sql, query, service.ImageWorkspaceTaskStatusQueued, service.ImageWorkspaceTaskStatusRunning, leaseSeconds)
+	task, err := scanImageWorkspaceTask(ctx, r.sql, query, contentimage.ImageWorkspaceTaskStatusQueued, contentimage.ImageWorkspaceTaskStatusRunning, leaseSeconds)
 	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	return task, err
 }
 
-func (r *imageWorkspaceRepository) CompleteTask(ctx context.Context, taskID int64, artifacts []service.ImageWorkspaceArtifact, resultJSON string, cost float64) (*service.ImageWorkspaceTask, error) {
+func (r *imageWorkspaceRepository) CompleteTask(ctx context.Context, taskID int64, artifacts []contentimage.ImageWorkspaceArtifact, resultJSON string, cost float64) (*contentimage.ImageWorkspaceTask, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -353,14 +354,14 @@ func (r *imageWorkspaceRepository) CompleteTask(ctx context.Context, taskID int6
 		FOR UPDATE
 	`, taskID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrImageWorkspaceTaskNotFound
+		return nil, contentimage.ErrImageWorkspaceTaskNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	if current.Status == service.ImageWorkspaceTaskStatusFailed ||
-		current.Status == service.ImageWorkspaceTaskStatusCancelled ||
-		current.Status == service.ImageWorkspaceTaskStatusSucceeded {
+	if current.Status == contentimage.ImageWorkspaceTaskStatusFailed ||
+		current.Status == contentimage.ImageWorkspaceTaskStatusCancelled ||
+		current.Status == contentimage.ImageWorkspaceTaskStatusSucceeded {
 		if err := tx.Commit(); err != nil {
 			return nil, err
 		}
@@ -372,7 +373,7 @@ func (r *imageWorkspaceRepository) CompleteTask(ctx context.Context, taskID int6
 	// but reject obvious bypass attempts like cost=0 for paid tasks
 	minAllowedCost := originalEstimate * 0.5
 	if originalEstimate > 0 && cost < minAllowedCost {
-		return nil, service.ErrImageWorkspaceInvalidCost
+		return nil, contentimage.ErrImageWorkspaceInvalidCost
 	}
 	adjustment := cost - originalEstimate
 	reservation := imageWorkspaceTaskReservation(current)
@@ -401,9 +402,9 @@ func (r *imageWorkspaceRepository) CompleteTask(ctx context.Context, taskID int6
 		RETURNING id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
 			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
 			result_json, created_at, updated_at
-	`, service.ImageWorkspaceTaskStatusSucceeded, cost, normalizeJSONText(resultJSON), taskID)
+	`, contentimage.ImageWorkspaceTaskStatusSucceeded, cost, normalizeJSONText(resultJSON), taskID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrImageWorkspaceTaskNotFound
+		return nil, contentimage.ErrImageWorkspaceTaskNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -439,7 +440,7 @@ func (r *imageWorkspaceRepository) CompleteTask(ctx context.Context, taskID int6
 	return task, nil
 }
 
-func (r *imageWorkspaceRepository) FailTask(ctx context.Context, taskID int64, message string, resultJSON string) (*service.ImageWorkspaceTask, error) {
+func (r *imageWorkspaceRepository) FailTask(ctx context.Context, taskID int64, message string, resultJSON string) (*contentimage.ImageWorkspaceTask, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -454,14 +455,14 @@ func (r *imageWorkspaceRepository) FailTask(ctx context.Context, taskID int64, m
 		FOR UPDATE
 	`, taskID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrImageWorkspaceTaskNotFound
+		return nil, contentimage.ErrImageWorkspaceTaskNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
-	if current.Status == service.ImageWorkspaceTaskStatusFailed ||
-		current.Status == service.ImageWorkspaceTaskStatusCancelled ||
-		current.Status == service.ImageWorkspaceTaskStatusSucceeded {
+	if current.Status == contentimage.ImageWorkspaceTaskStatusFailed ||
+		current.Status == contentimage.ImageWorkspaceTaskStatusCancelled ||
+		current.Status == contentimage.ImageWorkspaceTaskStatusSucceeded {
 		if err := tx.Commit(); err != nil {
 			return nil, err
 		}
@@ -478,9 +479,9 @@ func (r *imageWorkspaceRepository) FailTask(ctx context.Context, taskID int64, m
 		RETURNING id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
 			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
 			result_json, created_at, updated_at
-	`, service.ImageWorkspaceTaskStatusFailed, message, normalizeJSONText(resultJSON), taskID)
+	`, contentimage.ImageWorkspaceTaskStatusFailed, message, normalizeJSONText(resultJSON), taskID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrImageWorkspaceTaskNotFound
+		return nil, contentimage.ErrImageWorkspaceTaskNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -506,7 +507,7 @@ func (r *imageWorkspaceRepository) FailTask(ctx context.Context, taskID int64, m
 	if task.CostEstimate > 0 {
 		metadataJSON, _ := json.Marshal(map[string]string{
 			"error_message": message,
-			"status":        service.ImageWorkspaceTaskStatusFailed,
+			"status":        contentimage.ImageWorkspaceTaskStatusFailed,
 		})
 		if err := upsertImageWorkspaceUsageRecordWithStatus(ctx, tx, task, 0, task.CostEstimate, 0, string(metadataJSON), "refunded"); err != nil {
 			return nil, err
@@ -518,7 +519,7 @@ func (r *imageWorkspaceRepository) FailTask(ctx context.Context, taskID int64, m
 	return task, nil
 }
 
-func (r *imageWorkspaceRepository) CancelTask(ctx context.Context, taskID int64, userID int64) (*service.ImageWorkspaceTask, error) {
+func (r *imageWorkspaceRepository) CancelTask(ctx context.Context, taskID int64, userID int64) (*contentimage.ImageWorkspaceTask, error) {
 	tx, err := r.db.BeginTx(ctx, nil)
 	if err != nil {
 		return nil, err
@@ -533,19 +534,19 @@ func (r *imageWorkspaceRepository) CancelTask(ctx context.Context, taskID int64,
 		FOR UPDATE
 	`, taskID, userID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrImageWorkspaceTaskNotFound
+		return nil, contentimage.ErrImageWorkspaceTaskNotFound
 	}
 	if err != nil {
 		return nil, err
 	}
 	// Allow cancelling queued tasks or running tasks with expired lease
 	now := time.Now()
-	if current.Status != service.ImageWorkspaceTaskStatusQueued {
-		if current.Status != service.ImageWorkspaceTaskStatusRunning {
-			return nil, service.ErrImageWorkspaceInvalidInput
+	if current.Status != contentimage.ImageWorkspaceTaskStatusQueued {
+		if current.Status != contentimage.ImageWorkspaceTaskStatusRunning {
+			return nil, contentimage.ErrImageWorkspaceInvalidInput
 		}
 		if current.WorkerLeaseUntil != nil && current.WorkerLeaseUntil.After(now) {
-			return nil, service.ErrImageWorkspaceInvalidInput
+			return nil, contentimage.ErrImageWorkspaceInvalidInput
 		}
 	}
 	task, err := scanImageWorkspaceTask(ctx, tx, `
@@ -558,9 +559,9 @@ func (r *imageWorkspaceRepository) CancelTask(ctx context.Context, taskID int64,
 		RETURNING id, user_id, status, prompt, negative_prompt, model, provider, size, quality, style,
 			seed, batch_size, template_id, worker_lease_until, cost_estimate, balance_snapshot, reserved_paid_balance, reserved_gift_balance, error_message,
 			result_json, created_at, updated_at
-	`, service.ImageWorkspaceTaskStatusCancelled, taskID)
+	`, contentimage.ImageWorkspaceTaskStatusCancelled, taskID)
 	if errors.Is(err, sql.ErrNoRows) {
-		return nil, service.ErrImageWorkspaceTaskNotFound
+		return nil, contentimage.ErrImageWorkspaceTaskNotFound
 	}
 	if err != nil {
 		return nil, err
@@ -585,7 +586,7 @@ func (r *imageWorkspaceRepository) CancelTask(ctx context.Context, taskID int64,
 	}
 	if task.CostEstimate > 0 {
 		metadataJSON, _ := json.Marshal(map[string]string{
-			"status": service.ImageWorkspaceTaskStatusCancelled,
+			"status": contentimage.ImageWorkspaceTaskStatusCancelled,
 		})
 		if err := upsertImageWorkspaceUsageRecordWithStatus(ctx, tx, task, 0, task.CostEstimate, 0, string(metadataJSON), "refunded"); err != nil {
 			return nil, err
@@ -597,8 +598,8 @@ func (r *imageWorkspaceRepository) CancelTask(ctx context.Context, taskID int64,
 	return task, nil
 }
 
-func (r *imageWorkspaceRepository) GetWorkerStatus(ctx context.Context) (*service.ImageWorkspaceWorkerStatus, error) {
-	var status service.ImageWorkspaceWorkerStatus
+func (r *imageWorkspaceRepository) GetWorkerStatus(ctx context.Context) (*contentimage.ImageWorkspaceWorkerStatus, error) {
+	var status contentimage.ImageWorkspaceWorkerStatus
 	var lastTaskUpdatedAt sql.NullTime
 	var lastFailedAt sql.NullTime
 	var lastFailureMessage sql.NullString
@@ -632,11 +633,11 @@ func (r *imageWorkspaceRepository) GetWorkerStatus(ctx context.Context) (*servic
 			MIN(created_at) FILTER (WHERE status = $1) AS oldest_queued_at
 		FROM image_workspace_tasks
 	`, []any{
-		service.ImageWorkspaceTaskStatusQueued,
-		service.ImageWorkspaceTaskStatusRunning,
-		service.ImageWorkspaceTaskStatusFailed,
-		service.ImageWorkspaceTaskStatusSucceeded,
-		service.ImageWorkspaceTaskStatusCancelled,
+		contentimage.ImageWorkspaceTaskStatusQueued,
+		contentimage.ImageWorkspaceTaskStatusRunning,
+		contentimage.ImageWorkspaceTaskStatusFailed,
+		contentimage.ImageWorkspaceTaskStatusSucceeded,
+		contentimage.ImageWorkspaceTaskStatusCancelled,
 	},
 		&status.TotalCount,
 		&status.QueuedCount,
@@ -671,10 +672,10 @@ func (r *imageWorkspaceRepository) GetWorkerStatus(ctx context.Context) (*servic
 }
 
 func reserveImageWorkspaceBalance(ctx context.Context, q sqlExecutor, userID int64, amount float64) (userBalanceReservation, error) {
-	return reserveUserBalanceWithComponents(ctx, q, userID, amount, service.ErrInsufficientBalance)
+	return reserveUserBalanceWithComponents(ctx, q, userID, amount, billing.ErrInsufficientBalance)
 }
 
-func imageWorkspaceTaskReservation(task *service.ImageWorkspaceTask) userBalanceReservation {
+func imageWorkspaceTaskReservation(task *contentimage.ImageWorkspaceTask) userBalanceReservation {
 	if task == nil {
 		return userBalanceReservation{}
 	}
@@ -685,7 +686,7 @@ func imageWorkspaceTaskReservation(task *service.ImageWorkspaceTask) userBalance
 	}
 }
 
-func scanImageWorkspaceTask(ctx context.Context, q sqlQueryer, query string, args ...any) (*service.ImageWorkspaceTask, error) {
+func scanImageWorkspaceTask(ctx context.Context, q sqlQueryer, query string, args ...any) (*contentimage.ImageWorkspaceTask, error) {
 	rows, err := q.QueryContext(ctx, query, args...)
 	if err != nil {
 		return nil, err
@@ -701,7 +702,7 @@ func scanImageWorkspaceTask(ctx context.Context, q sqlQueryer, query string, arg
 	return &items[0], nil
 }
 
-func insertImageWorkspaceArtifact(ctx context.Context, q sqlExecutor, artifact *service.ImageWorkspaceArtifact) error {
+func insertImageWorkspaceArtifact(ctx context.Context, q sqlExecutor, artifact *contentimage.ImageWorkspaceArtifact) error {
 	if artifact == nil {
 		return nil
 	}
@@ -730,11 +731,11 @@ func insertImageWorkspaceArtifact(ctx context.Context, q sqlExecutor, artifact *
 	return nil
 }
 
-func upsertImageWorkspaceUsageRecord(ctx context.Context, q sqlExecutor, task *service.ImageWorkspaceTask, imageCount int, reservedCost float64, actualCost float64, metadataJSON string) error {
+func upsertImageWorkspaceUsageRecord(ctx context.Context, q sqlExecutor, task *contentimage.ImageWorkspaceTask, imageCount int, reservedCost float64, actualCost float64, metadataJSON string) error {
 	return upsertImageWorkspaceUsageRecordWithStatus(ctx, q, task, imageCount, reservedCost, actualCost, metadataJSON, "settled")
 }
 
-func upsertImageWorkspaceUsageRecordWithStatus(ctx context.Context, q sqlExecutor, task *service.ImageWorkspaceTask, imageCount int, reservedCost float64, actualCost float64, metadataJSON string, billingStatus string) error {
+func upsertImageWorkspaceUsageRecordWithStatus(ctx context.Context, q sqlExecutor, task *contentimage.ImageWorkspaceTask, imageCount int, reservedCost float64, actualCost float64, metadataJSON string, billingStatus string) error {
 	if task == nil {
 		return nil
 	}
@@ -778,10 +779,10 @@ func upsertImageWorkspaceUsageRecordWithStatus(ctx context.Context, q sqlExecuto
 	return nil
 }
 
-func (r *imageWorkspaceRepository) hydrateTaskArtifacts(ctx context.Context, userID int64, tasks []service.ImageWorkspaceTask) error {
+func (r *imageWorkspaceRepository) hydrateTaskArtifacts(ctx context.Context, userID int64, tasks []contentimage.ImageWorkspaceTask) error {
 	succeededIDs := make([]int64, 0)
 	for _, task := range tasks {
-		if task.Status == service.ImageWorkspaceTaskStatusSucceeded {
+		if task.Status == contentimage.ImageWorkspaceTaskStatusSucceeded {
 			succeededIDs = append(succeededIDs, task.ID)
 		}
 	}
@@ -807,7 +808,7 @@ func (r *imageWorkspaceRepository) hydrateTaskArtifacts(ctx context.Context, use
 		return err
 	}
 	defer func() { _ = rows.Close() }()
-	artifactsByTask := make(map[int64][]service.ImageWorkspaceArtifact)
+	artifactsByTask := make(map[int64][]contentimage.ImageWorkspaceArtifact)
 	for rows.Next() {
 		artifact, err := scanImageWorkspaceArtifactRow(rows)
 		if err != nil {
@@ -826,10 +827,10 @@ func (r *imageWorkspaceRepository) hydrateTaskArtifacts(ctx context.Context, use
 	return nil
 }
 
-func scanImageWorkspaceTaskRows(rows *sql.Rows) ([]service.ImageWorkspaceTask, error) {
-	items := make([]service.ImageWorkspaceTask, 0)
+func scanImageWorkspaceTaskRows(rows *sql.Rows) ([]contentimage.ImageWorkspaceTask, error) {
+	items := make([]contentimage.ImageWorkspaceTask, 0)
 	for rows.Next() {
-		var item service.ImageWorkspaceTask
+		var item contentimage.ImageWorkspaceTask
 		var seed sql.NullInt64
 		var templateID sql.NullInt64
 		var workerLeaseUntil sql.NullTime
@@ -875,8 +876,8 @@ func scanImageWorkspaceTaskRows(rows *sql.Rows) ([]service.ImageWorkspaceTask, e
 	return items, rows.Err()
 }
 
-func scanImageWorkspaceArtifactRow(rows *sql.Rows) (service.ImageWorkspaceArtifact, error) {
-	var item service.ImageWorkspaceArtifact
+func scanImageWorkspaceArtifactRow(rows *sql.Rows) (contentimage.ImageWorkspaceArtifact, error) {
+	var item contentimage.ImageWorkspaceArtifact
 	var metadataJSON []byte
 	if err := rows.Scan(
 		&item.ID,
@@ -900,8 +901,8 @@ func scanImageWorkspaceArtifactRow(rows *sql.Rows) (service.ImageWorkspaceArtifa
 	return item, nil
 }
 
-func scanImageWorkspaceArtifactRows(rows *sql.Rows) ([]service.ImageWorkspaceArtifact, error) {
-	items := make([]service.ImageWorkspaceArtifact, 0)
+func scanImageWorkspaceArtifactRows(rows *sql.Rows) ([]contentimage.ImageWorkspaceArtifact, error) {
+	items := make([]contentimage.ImageWorkspaceArtifact, 0)
 	for rows.Next() {
 		item, err := scanImageWorkspaceArtifactRow(rows)
 		if err != nil {
@@ -912,10 +913,10 @@ func scanImageWorkspaceArtifactRows(rows *sql.Rows) ([]service.ImageWorkspaceArt
 	return items, rows.Err()
 }
 
-func scanImageWorkspaceTemplateRows(rows *sql.Rows) ([]service.ImageWorkspaceTemplate, error) {
-	items := make([]service.ImageWorkspaceTemplate, 0)
+func scanImageWorkspaceTemplateRows(rows *sql.Rows) ([]contentimage.ImageWorkspaceTemplate, error) {
+	items := make([]contentimage.ImageWorkspaceTemplate, 0)
 	for rows.Next() {
-		var item service.ImageWorkspaceTemplate
+		var item contentimage.ImageWorkspaceTemplate
 		if err := rows.Scan(
 			&item.ID,
 			&item.UserID,
@@ -938,10 +939,10 @@ func scanImageWorkspaceTemplateRows(rows *sql.Rows) ([]service.ImageWorkspaceTem
 	return items, rows.Err()
 }
 
-func scanImageWorkspaceUsageRecordRows(rows *sql.Rows) ([]service.ImageWorkspaceUsageRecord, error) {
-	items := make([]service.ImageWorkspaceUsageRecord, 0)
+func scanImageWorkspaceUsageRecordRows(rows *sql.Rows) ([]contentimage.ImageWorkspaceUsageRecord, error) {
+	items := make([]contentimage.ImageWorkspaceUsageRecord, 0)
 	for rows.Next() {
-		var item service.ImageWorkspaceUsageRecord
+		var item contentimage.ImageWorkspaceUsageRecord
 		var metadataJSON []byte
 		if err := rows.Scan(
 			&item.ID,

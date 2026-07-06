@@ -9,6 +9,9 @@ import (
 
 	dbent "github.com/Aias00/cloudbase/ent"
 	billingctx "github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/gateway"
+	"github.com/Aias00/cloudbase/internal/identity"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/Aias00/cloudbase/internal/pkg/timezone"
 	"github.com/Aias00/cloudbase/internal/service"
@@ -138,7 +141,7 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 		}
 	}
 
-	if cmd.AccountQuotaCost > 0 && (strings.EqualFold(cmd.AccountType, service.AccountTypeAPIKey) || strings.EqualFold(cmd.AccountType, service.AccountTypeBedrock)) {
+	if cmd.AccountQuotaCost > 0 && (strings.EqualFold(cmd.AccountType, domain.AccountTypeAPIKey) || strings.EqualFold(cmd.AccountType, domain.AccountTypeBedrock)) {
 		quotaState, err := incrementUsageBillingAccountQuota(ctx, tx, cmd.AccountID, cmd.AccountQuotaCost)
 		if err != nil {
 			return err
@@ -324,7 +327,7 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 				RETURNING balance
 		`, amount, userID).Scan(&newBalance)
 		if errors.Is(err, sql.ErrNoRows) {
-			return 0, false, service.ErrUserNotFound
+			return 0, false, identity.ErrUserNotFound
 		}
 		if err != nil {
 			return 0, false, err
@@ -356,7 +359,7 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 		RETURNING balance
 	`, amount, userID).Scan(&newBalance)
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, false, service.ErrUserNotFound
+		return 0, false, identity.ErrUserNotFound
 	}
 	if err != nil {
 		return 0, false, err
@@ -430,7 +433,7 @@ func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID 
 		RETURNING quota > 0 AND quota_used >= quota AND quota_used - $1 < quota
 	`, amount, apiKeyID, service.StatusAPIKeyActive, service.StatusAPIKeyQuotaExhausted).Scan(&exhausted)
 	if errors.Is(err, sql.ErrNoRows) {
-		return false, service.ErrAPIKeyNotFound
+		return false, gateway.ErrAPIKeyNotFound
 	}
 	if err != nil {
 		return false, err
@@ -458,7 +461,7 @@ func incrementUsageBillingAPIKeyRateLimit(ctx context.Context, tx *sql.Tx, apiKe
 		return err
 	}
 	if affected == 0 {
-		return service.ErrAPIKeyNotFound
+		return gateway.ErrAPIKeyNotFound
 	}
 	return nil
 }
@@ -528,7 +531,7 @@ func incrementUsageBillingAccountQuota(ctx context.Context, tx *sql.Tx, accountI
 			return nil, err
 		}
 		_ = rows.Close()
-		return nil, service.ErrAccountNotFound
+		return nil, gateway.ErrAccountNotFound
 	}
 	if err := rows.Err(); err != nil {
 		_ = rows.Close()

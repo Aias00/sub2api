@@ -22,6 +22,9 @@ import (
 	dbuser "github.com/Aias00/cloudbase/ent/user"
 	"github.com/Aias00/cloudbase/ent/userallowedgroup"
 	"github.com/Aias00/cloudbase/ent/usersubscription"
+	"github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/identity"
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 	"github.com/Aias00/cloudbase/internal/service"
@@ -105,7 +108,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		SetRpmLimit(userIn.RPMLimit).
 		Save(txCtx)
 	if err != nil {
-		return translatePersistenceError(err, nil, service.ErrEmailExists)
+		return translatePersistenceError(err, nil, identity.ErrEmailExists)
 	}
 
 	if err := r.syncUserAllowedGroupsWithClient(txCtx, txClient, created.ID, userIn.AllowedGroups); err != nil {
@@ -150,7 +153,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 func (r *userRepository) GetByID(ctx context.Context, id int64) (*service.User, error) {
 	m, err := r.client.User.Query().Where(dbuser.IDEQ(id)).Only(ctx)
 	if err != nil {
-		return nil, translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return nil, translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 
 	out := userEntityToService(m)
@@ -171,7 +174,7 @@ func (r *userRepository) GetByIDIncludeDeleted(ctx context.Context, id int64) (*
 	ctx = mixins.SkipSoftDelete(ctx)
 	m, err := r.client.User.Query().Where(dbuser.IDEQ(id)).Only(ctx)
 	if err != nil {
-		return nil, translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return nil, translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 	out := userEntityToService(m)
 	if err := r.hydrateUserBalanceBuckets(ctx, out); err != nil {
@@ -196,7 +199,7 @@ func (r *userRepository) GetByEmail(ctx context.Context, email string) (*service
 		return nil, err
 	}
 	if len(matches) == 0 {
-		return nil, service.ErrUserNotFound
+		return nil, identity.ErrUserNotFound
 	}
 	if len(matches) > 1 {
 		return nil, fmt.Errorf("normalized email lookup matched multiple users for %q", strings.TrimSpace(email))
@@ -227,7 +230,7 @@ func (r *userRepository) GetByEmailAndSignupSource(ctx context.Context, email st
 		Only(ctx)
 	if err != nil {
 		if dbent.IsNotFound(err) {
-			return nil, service.ErrUserNotFound
+			return nil, identity.ErrUserNotFound
 		}
 		return nil, err
 	}
@@ -271,7 +274,7 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 
 	existing, err := clientFromContext(txCtx, txClient).User.Get(txCtx, userIn.ID)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 	oldEmail := existing.Email
 	signupSource := userSignupSourceOrDefault(userIn.SignupSource)
@@ -327,7 +330,7 @@ func (r *userRepository) Update(ctx context.Context, userIn *service.User) error
 	}
 	updated, err := updateOp.Save(txCtx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, service.ErrEmailExists)
+		return translatePersistenceError(err, identity.ErrUserNotFound, identity.ErrEmailExists)
 	}
 
 	if err := r.syncUserAllowedGroupsWithClient(txCtx, txClient, updated.ID, userIn.AllowedGroups); err != nil {
@@ -471,7 +474,7 @@ func (r *userRepository) Delete(ctx context.Context, id int64) error {
 
 	tx, err := r.client.Tx(ctx)
 	if err != nil && !errors.Is(err, dbent.ErrTxStarted) {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 	exec := r.client
 	if err == nil {
@@ -486,7 +489,7 @@ func (r *userRepository) Delete(ctx context.Context, id int64) error {
 
 	if tx != nil {
 		if err := tx.Commit(); err != nil {
-			return translatePersistenceError(err, service.ErrUserNotFound, nil)
+			return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 		}
 	}
 	return nil
@@ -498,42 +501,42 @@ func (r *userRepository) deleteUser(ctx context.Context, exec *dbent.Client, id 
 		Where(authidentity.UserIDEQ(id)).
 		IDs(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 	if len(identityIDs) > 0 {
 		if _, err := exec.IdentityAdoptionDecision.Update().
 			Where(identityadoptiondecision.IdentityIDIn(identityIDs...)).
 			ClearIdentityID().
 			Save(ctx); err != nil {
-			return translatePersistenceError(err, service.ErrUserNotFound, nil)
+			return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 		}
 		if _, err := exec.AuthIdentityChannel.Delete().
 			Where(authidentitychannel.IdentityIDIn(identityIDs...)).
 			Exec(ctx); err != nil {
-			return translatePersistenceError(err, service.ErrUserNotFound, nil)
+			return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 		}
 		if _, err := exec.AuthIdentity.Delete().
 			Where(authidentity.UserIDEQ(id)).
 			Exec(ctx); err != nil {
-			return translatePersistenceError(err, service.ErrUserNotFound, nil)
+			return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 		}
 	}
 
 	affected, err := exec.User.Delete().Where(dbuser.IDEQ(id)).Exec(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 	if affected == 0 {
-		return service.ErrUserNotFound
+		return identity.ErrUserNotFound
 	}
 	return nil
 }
 
 func (r *userRepository) List(ctx context.Context, params pagination.PaginationParams) ([]service.User, *pagination.PaginationResult, error) {
-	return r.ListWithFilters(ctx, params, service.UserListFilters{})
+	return r.ListWithFilters(ctx, params, identity.UserListFilters{})
 }
 
-func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.PaginationParams, filters service.UserListFilters) ([]service.User, *pagination.PaginationResult, error) {
+func (r *userRepository) ListWithFilters(ctx context.Context, params pagination.PaginationParams, filters identity.UserListFilters) ([]service.User, *pagination.PaginationResult, error) {
 	// SkipSoftDelete 仅作用于 User 身份解析（下方 Count/All）；订阅、分组等关联实体沿用原始 ctx，避免穿透到这些同样带软删除的实体而带出已删除行。
 	userCtx := ctx
 	if filters.IncludeDeleted {
@@ -878,7 +881,7 @@ func (r *userRepository) UpdateBalance(ctx context.Context, id int64, amount flo
 		return err
 	}
 	if n == 0 {
-		return service.ErrUserNotFound
+		return identity.ErrUserNotFound
 	}
 	return nil
 }
@@ -910,7 +913,7 @@ func setGiftBalanceComponentWithExec(ctx context.Context, exec sqlQueryExecutor,
 		return err
 	}
 	if n == 0 {
-		return service.ErrUserNotFound
+		return identity.ErrUserNotFound
 	}
 	return nil
 }
@@ -931,7 +934,7 @@ func setPaidBalanceComponentWithExec(ctx context.Context, exec sqlQueryExecutor,
 		return err
 	}
 	if n == 0 {
-		return service.ErrUserNotFound
+		return identity.ErrUserNotFound
 	}
 	return nil
 }
@@ -959,7 +962,7 @@ func (r *userRepository) AddGiftBalance(ctx context.Context, id int64, amount fl
 		return err
 	}
 	if n == 0 {
-		return service.ErrUserNotFound
+		return identity.ErrUserNotFound
 	}
 	return nil
 }
@@ -1376,29 +1379,29 @@ func (r *userRepository) DeductBalanceIfEnough(ctx context.Context, id int64, am
 		AddBalance(-amount).
 		Save(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 	if n > 0 {
 		return nil
 	}
 	exists, err := client.User.Query().Where(dbuser.IDEQ(id)).Exist(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 	if !exists {
-		return service.ErrUserNotFound
+		return identity.ErrUserNotFound
 	}
-	return service.ErrInsufficientBalance
+	return billing.ErrInsufficientBalance
 }
 
 func (r *userRepository) UpdateConcurrency(ctx context.Context, id int64, amount int) error {
 	client := clientFromContext(ctx, r.client)
 	n, err := client.User.Update().Where(dbuser.IDEQ(id)).AddConcurrency(amount).Save(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 	if n == 0 {
-		return service.ErrUserNotFound
+		return identity.ErrUserNotFound
 	}
 	return nil
 }
@@ -1463,7 +1466,7 @@ func ensureNormalizedEmailAvailableWithClient(ctx context.Context, client *dbent
 		if match.ID == userID {
 			continue
 		}
-		return service.ErrEmailExists
+		return identity.ErrEmailExists
 	}
 	return nil
 }
@@ -1536,13 +1539,13 @@ func (r *userRepository) RemoveGroupFromUserAllowedGroups(ctx context.Context, u
 func (r *userRepository) GetFirstAdmin(ctx context.Context) (*service.User, error) {
 	m, err := r.client.User.Query().
 		Where(
-			dbuser.RoleEQ(service.RoleAdmin),
-			dbuser.StatusEQ(service.StatusActive),
+			dbuser.RoleEQ(domain.RoleAdmin),
+			dbuser.StatusEQ(domain.StatusActive),
 		).
 		Order(dbent.Asc(dbuser.FieldID)).
 		First(ctx)
 	if err != nil {
-		return nil, translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return nil, translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 
 	out := userEntityToService(m)
@@ -1663,7 +1666,7 @@ func (r *userRepository) UpdateTotpSecret(ctx context.Context, userID int64, enc
 	}
 	_, err := update.Save(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 	return nil
 }
@@ -1676,7 +1679,7 @@ func (r *userRepository) EnableTotp(ctx context.Context, userID int64) error {
 		SetTotpEnabledAt(time.Now()).
 		Save(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 	return nil
 }
@@ -1690,7 +1693,7 @@ func (r *userRepository) DisableTotp(ctx context.Context, userID int64) error {
 		ClearTotpSecretEncrypted().
 		Save(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrUserNotFound, nil)
+		return translatePersistenceError(err, identity.ErrUserNotFound, nil)
 	}
 	return nil
 }

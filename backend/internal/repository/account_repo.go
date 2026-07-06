@@ -25,6 +25,8 @@ import (
 	dbgroup "github.com/Aias00/cloudbase/ent/group"
 	dbpredicate "github.com/Aias00/cloudbase/ent/predicate"
 	dbproxy "github.com/Aias00/cloudbase/ent/proxy"
+	"github.com/Aias00/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 	"github.com/Aias00/cloudbase/internal/service"
@@ -80,7 +82,7 @@ func newAccountRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor, schedul
 
 func (r *accountRepository) Create(ctx context.Context, account *service.Account) error {
 	if account == nil {
-		return service.ErrAccountNilInput
+		return gateway.ErrAccountNilInput
 	}
 
 	builder := r.client.Account.Create().
@@ -139,7 +141,7 @@ func (r *accountRepository) Create(ctx context.Context, account *service.Account
 
 	created, err := builder.Save(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrAccountNotFound, nil)
+		return translatePersistenceError(err, gateway.ErrAccountNotFound, nil)
 	}
 
 	account.ID = created.ID
@@ -154,7 +156,7 @@ func (r *accountRepository) Create(ctx context.Context, account *service.Account
 func (r *accountRepository) GetByID(ctx context.Context, id int64) (*service.Account, error) {
 	m, err := r.client.Account.Query().Where(dbaccount.IDEQ(id)).Only(ctx)
 	if err != nil {
-		return nil, translatePersistenceError(err, service.ErrAccountNotFound, nil)
+		return nil, translatePersistenceError(err, gateway.ErrAccountNotFound, nil)
 	}
 
 	accounts, err := r.accountsToService(ctx, []*dbent.Account{m})
@@ -162,7 +164,7 @@ func (r *accountRepository) GetByID(ctx context.Context, id int64) (*service.Acc
 		return nil, err
 	}
 	if len(accounts) == 0 {
-		return nil, service.ErrAccountNotFound
+		return nil, gateway.ErrAccountNotFound
 	}
 	return &accounts[0], nil
 }
@@ -332,7 +334,7 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 		return nil
 	}
 	schedulable := account.Schedulable
-	if account.Status == service.StatusError {
+	if account.Status == domain.StatusError {
 		schedulable = false
 	}
 
@@ -413,7 +415,7 @@ func (r *accountRepository) Update(ctx context.Context, account *service.Account
 
 	updated, err := builder.Save(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrAccountNotFound, nil)
+		return translatePersistenceError(err, gateway.ErrAccountNotFound, nil)
 	}
 	account.UpdatedAt = updated.UpdatedAt
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &account.ID, nil, buildSchedulerGroupPayload(account.GroupIDs)); err != nil {
@@ -430,7 +432,7 @@ func (r *accountRepository) UpdateCredentials(ctx context.Context, id int64, cre
 		SetCredentials(normalizeJSONMap(credentials)).
 		Save(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrAccountNotFound, nil)
+		return translatePersistenceError(err, gateway.ErrAccountNotFound, nil)
 	}
 	r.syncSchedulerAccountSnapshot(ctx, id)
 	return nil
@@ -493,7 +495,7 @@ func (r *accountRepository) ListWithFilters(ctx context.Context, params paginati
 	}
 	if status != "" {
 		switch status {
-		case service.StatusActive:
+		case domain.StatusActive:
 			q = q.Where(
 				dbaccount.StatusEQ(status),
 				dbaccount.SchedulableEQ(true),
@@ -511,7 +513,7 @@ func (r *accountRepository) ListWithFilters(ctx context.Context, params paginati
 			)
 		case "rate_limited":
 			q = q.Where(
-				dbaccount.StatusEQ(service.StatusActive),
+				dbaccount.StatusEQ(domain.StatusActive),
 				dbaccount.RateLimitResetAtGT(time.Now()),
 				dbpredicate.Account(func(s *entsql.Selector) {
 					col := s.C("temp_unschedulable_until")
@@ -523,7 +525,7 @@ func (r *accountRepository) ListWithFilters(ctx context.Context, params paginati
 			)
 		case "temp_unschedulable":
 			q = q.Where(
-				dbaccount.StatusEQ(service.StatusActive),
+				dbaccount.StatusEQ(domain.StatusActive),
 				dbpredicate.Account(func(s *entsql.Selector) {
 					col := s.C("temp_unschedulable_until")
 					s.Where(entsql.And(
@@ -534,7 +536,7 @@ func (r *accountRepository) ListWithFilters(ctx context.Context, params paginati
 			)
 		case "unschedulable":
 			q = q.Where(
-				dbaccount.StatusEQ(service.StatusActive),
+				dbaccount.StatusEQ(domain.StatusActive),
 				dbaccount.SchedulableEQ(false),
 				dbaccount.Or(
 					dbaccount.RateLimitResetAtIsNil(),
@@ -649,7 +651,7 @@ func accountListOrder(params pagination.PaginationParams) []func(*entsql.Selecto
 
 func (r *accountRepository) ListByGroup(ctx context.Context, groupID int64) ([]service.Account, error) {
 	accounts, err := r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
-		status: service.StatusActive,
+		status: domain.StatusActive,
 	})
 	if err != nil {
 		return nil, err
@@ -659,7 +661,7 @@ func (r *accountRepository) ListByGroup(ctx context.Context, groupID int64) ([]s
 
 func (r *accountRepository) ListActive(ctx context.Context) ([]service.Account, error) {
 	accounts, err := r.client.Account.Query().
-		Where(dbaccount.StatusEQ(service.StatusActive)).
+		Where(dbaccount.StatusEQ(domain.StatusActive)).
 		Order(dbent.Asc(dbaccount.FieldPriority)).
 		All(ctx)
 	if err != nil {
@@ -728,7 +730,7 @@ func (r *accountRepository) ListByPlatform(ctx context.Context, platform string)
 	accounts, err := r.client.Account.Query().
 		Where(
 			dbaccount.PlatformEQ(platform),
-			dbaccount.StatusEQ(service.StatusActive),
+			dbaccount.StatusEQ(domain.StatusActive),
 		).
 		Order(dbent.Asc(dbaccount.FieldPriority)).
 		All(ctx)
@@ -796,7 +798,7 @@ func (r *accountRepository) BatchUpdateLastUsed(ctx context.Context, updates map
 func (r *accountRepository) SetError(ctx context.Context, id int64, errorMsg string) error {
 	_, err := r.client.Account.Update().
 		Where(dbaccount.IDEQ(id)).
-		SetStatus(service.StatusError).
+		SetStatus(domain.StatusError).
 		SetErrorMessage(errorMsg).
 		SetSchedulable(false).
 		Save(ctx)
@@ -881,7 +883,7 @@ func (r *accountRepository) syncSchedulerAccountSnapshots(ctx context.Context, a
 func (r *accountRepository) ClearError(ctx context.Context, id int64) error {
 	_, err := r.client.Account.Update().
 		Where(dbaccount.IDEQ(id)).
-		SetStatus(service.StatusActive).
+		SetStatus(domain.StatusActive).
 		SetErrorMessage("").
 		Save(ctx)
 	if err != nil {
@@ -1004,7 +1006,7 @@ func (r *accountRepository) ListSchedulable(ctx context.Context) ([]service.Acco
 	now := time.Now()
 	accounts, err := r.client.Account.Query().
 		Where(
-			dbaccount.StatusEQ(service.StatusActive),
+			dbaccount.StatusEQ(domain.StatusActive),
 			dbaccount.SchedulableEQ(true),
 			tempUnschedulablePredicate(),
 			notExpiredPredicate(now),
@@ -1021,7 +1023,7 @@ func (r *accountRepository) ListSchedulable(ctx context.Context) ([]service.Acco
 
 func (r *accountRepository) ListSchedulableByGroupID(ctx context.Context, groupID int64) ([]service.Account, error) {
 	return r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
-		status:      service.StatusActive,
+		status:      domain.StatusActive,
 		schedulable: true,
 	})
 }
@@ -1031,7 +1033,7 @@ func (r *accountRepository) ListSchedulableByPlatform(ctx context.Context, platf
 	accounts, err := r.client.Account.Query().
 		Where(
 			dbaccount.PlatformEQ(platform),
-			dbaccount.StatusEQ(service.StatusActive),
+			dbaccount.StatusEQ(domain.StatusActive),
 			dbaccount.SchedulableEQ(true),
 			tempUnschedulablePredicate(),
 			notExpiredPredicate(now),
@@ -1049,7 +1051,7 @@ func (r *accountRepository) ListSchedulableByPlatform(ctx context.Context, platf
 func (r *accountRepository) ListSchedulableByGroupIDAndPlatform(ctx context.Context, groupID int64, platform string) ([]service.Account, error) {
 	// 单平台查询复用多平台逻辑，保持过滤条件与排序策略一致。
 	return r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
-		status:      service.StatusActive,
+		status:      domain.StatusActive,
 		schedulable: true,
 		platforms:   []string{platform},
 	})
@@ -1065,7 +1067,7 @@ func (r *accountRepository) ListSchedulableByPlatforms(ctx context.Context, plat
 	accounts, err := r.client.Account.Query().
 		Where(
 			dbaccount.PlatformIn(platforms...),
-			dbaccount.StatusEQ(service.StatusActive),
+			dbaccount.StatusEQ(domain.StatusActive),
 			dbaccount.SchedulableEQ(true),
 			tempUnschedulablePredicate(),
 			notExpiredPredicate(now),
@@ -1085,7 +1087,7 @@ func (r *accountRepository) ListSchedulableUngroupedByPlatform(ctx context.Conte
 	accounts, err := r.client.Account.Query().
 		Where(
 			dbaccount.PlatformEQ(platform),
-			dbaccount.StatusEQ(service.StatusActive),
+			dbaccount.StatusEQ(domain.StatusActive),
 			dbaccount.SchedulableEQ(true),
 			dbaccount.Not(dbaccount.HasAccountGroups()),
 			tempUnschedulablePredicate(),
@@ -1109,7 +1111,7 @@ func (r *accountRepository) ListSchedulableUngroupedByPlatforms(ctx context.Cont
 	accounts, err := r.client.Account.Query().
 		Where(
 			dbaccount.PlatformIn(platforms...),
-			dbaccount.StatusEQ(service.StatusActive),
+			dbaccount.StatusEQ(domain.StatusActive),
 			dbaccount.SchedulableEQ(true),
 			dbaccount.Not(dbaccount.HasAccountGroups()),
 			tempUnschedulablePredicate(),
@@ -1131,7 +1133,7 @@ func (r *accountRepository) ListSchedulableByGroupIDAndPlatforms(ctx context.Con
 	}
 	// 复用按分组查询逻辑，保证分组优先级 + 账号优先级的排序与筛选一致。
 	return r.queryAccountsByGroup(ctx, groupID, accountGroupQueryOptions{
-		status:      service.StatusActive,
+		status:      domain.StatusActive,
 		schedulable: true,
 		platforms:   platforms,
 	})
@@ -1198,7 +1200,7 @@ func (r *accountRepository) SetModelRateLimit(ctx context.Context, id int64, sco
 		return err
 	}
 	if affected == 0 {
-		return service.ErrAccountNotFound
+		return gateway.ErrAccountNotFound
 	}
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue model rate limit failed: account=%d err=%v", id, err)
@@ -1301,7 +1303,7 @@ func (r *accountRepository) ClearAntigravityQuotaScopes(ctx context.Context, id 
 		return err
 	}
 	if affected == 0 {
-		return service.ErrAccountNotFound
+		return gateway.ErrAccountNotFound
 	}
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue clear quota scopes failed: account=%d err=%v", id, err)
@@ -1325,7 +1327,7 @@ func (r *accountRepository) ClearModelRateLimits(ctx context.Context, id int64) 
 		return err
 	}
 	if affected == 0 {
-		return service.ErrAccountNotFound
+		return gateway.ErrAccountNotFound
 	}
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue clear model rate limit failed: account=%d err=%v", id, err)
@@ -1441,7 +1443,7 @@ func (r *accountRepository) UpdateExtra(ctx context.Context, id int64, updates m
 		return err
 	}
 	if affected == 0 {
-		return service.ErrAccountNotFound
+		return gateway.ErrAccountNotFound
 	}
 	if shouldEnqueueSchedulerOutboxForExtraUpdates(updates) {
 		if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &id, nil, nil); err != nil {
@@ -1485,7 +1487,7 @@ func isSchedulerNeutralExtraKey(key string) bool {
 	return false
 }
 
-func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates service.AccountBulkUpdate) (int64, error) {
+func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates gateway.AccountBulkUpdate) (int64, error) {
 	if len(ids) == 0 {
 		return 0, nil
 	}
@@ -1586,7 +1588,7 @@ func (r *accountRepository) BulkUpdate(ctx context.Context, ids []int64, updates
 			logger.LegacyPrintf("repository.account", "[SchedulerOutbox] enqueue bulk update failed: err=%v", err)
 		}
 		shouldSync := false
-		if updates.Status != nil && (*updates.Status == service.StatusError || *updates.Status == service.StatusDisabled) {
+		if updates.Status != nil && (*updates.Status == domain.StatusError || *updates.Status == domain.StatusDisabled) {
 			shouldSync = true
 		}
 		if updates.Schedulable != nil && !*updates.Schedulable {
@@ -2035,7 +2037,7 @@ func (r *accountRepository) FindByExtraField(ctx context.Context, key string, va
 		).
 		All(ctx)
 	if err != nil {
-		return nil, translatePersistenceError(err, service.ErrAccountNotFound, nil)
+		return nil, translatePersistenceError(err, gateway.ErrAccountNotFound, nil)
 	}
 
 	return r.accountsToService(ctx, accounts)
@@ -2236,7 +2238,7 @@ func (r *accountRepository) RevertProxyFallback(ctx context.Context, accountID i
 	}
 	n, _ := res.RowsAffected()
 	if n == 0 {
-		return service.ErrAccountNotInFallback
+		return gateway.ErrAccountNotInFallback
 	}
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventAccountChanged, &accountID, nil, nil); err != nil {
 		logger.LegacyPrintf("repository.account", "[SchedulerOutbox] revert fallback enqueue failed: account=%d err=%v", accountID, err)

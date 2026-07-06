@@ -8,7 +8,7 @@ import (
 	dbent "github.com/Aias00/cloudbase/ent"
 	"github.com/Aias00/cloudbase/ent/setting"
 	dbuser "github.com/Aias00/cloudbase/ent/user"
-	"github.com/Aias00/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/domain"
 )
 
 const (
@@ -32,7 +32,7 @@ func ensureSimpleModeAdminConcurrency(ctx context.Context, client *dbent.Client)
 
 	if _, err := client.User.Update().
 		Where(
-			dbuser.RoleEQ(service.RoleAdmin),
+			dbuser.RoleEQ(domain.RoleAdmin),
 			dbuser.ConcurrencyEQ(simpleModeLegacyAdminConcurrency),
 		).
 		SetConcurrency(simpleModeTargetAdminConcurrency).

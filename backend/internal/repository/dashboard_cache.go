@@ -17,7 +17,7 @@ type dashboardCache struct {
 	keyPrefix string
 }
 
-func NewDashboardCache(rdb *redis.Client, cfg *config.Config) service.DashboardStatsCache {
+func NewDashboardCache(rdb *redis.Client, cfg *config.Config) *dashboardCache {
 	prefix := "cloudbase:"
 	if cfg != nil {
 		prefix = strings.TrimSpace(cfg.Dashboard.KeyPrefix)

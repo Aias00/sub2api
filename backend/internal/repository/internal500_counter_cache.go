@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -32,7 +31,7 @@ type internal500CounterCache struct {
 }
 
 // NewInternal500CounterCache 创建 INTERNAL 500 连续失败计数器缓存实例
-func NewInternal500CounterCache(rdb *redis.Client) service.Internal500CounterCache {
+func NewInternal500CounterCache(rdb *redis.Client) *internal500CounterCache {
 	return &internal500CounterCache{rdb: rdb}
 }
 

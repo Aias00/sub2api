@@ -10,7 +10,6 @@ import (
 	"io"
 
 	"github.com/Aias00/cloudbase/internal/config"
-	"github.com/Aias00/cloudbase/internal/service"
 )
 
 // AESEncryptor implements SecretEncryptor using AES-256-GCM
@@ -19,7 +18,7 @@ type AESEncryptor struct {
 }
 
 // NewAESEncryptor creates a new AES encryptor
-func NewAESEncryptor(cfg *config.Config) (service.SecretEncryptor, error) {
+func NewAESEncryptor(cfg *config.Config) (*AESEncryptor, error) {
 	key, err := hex.DecodeString(cfg.Totp.EncryptionKey)
 	if err != nil {
 		return nil, fmt.Errorf("invalid totp encryption key: %w", err)

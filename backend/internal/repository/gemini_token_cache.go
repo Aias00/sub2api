@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Aias00/cloudbase/internal/service"
-
 	"github.com/redis/go-redis/v9"
 )
 
@@ -19,7 +17,7 @@ type geminiTokenCache struct {
 	rdb *redis.Client
 }
 
-func NewGeminiTokenCache(rdb *redis.Client) service.GeminiTokenCache {
+func NewGeminiTokenCache(rdb *redis.Client) *geminiTokenCache {
 	return &geminiTokenCache{rdb: rdb}
 }
 

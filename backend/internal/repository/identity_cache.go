@@ -31,7 +31,7 @@ type identityCache struct {
 	rdb *redis.Client
 }
 
-func NewIdentityCache(rdb *redis.Client) service.IdentityCache {
+func NewIdentityCache(rdb *redis.Client) *identityCache {
 	return &identityCache{rdb: rdb}
 }
 

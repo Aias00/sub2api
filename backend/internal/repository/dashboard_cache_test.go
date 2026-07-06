@@ -13,16 +13,12 @@ func TestNewDashboardCacheKeyPrefix(t *testing.T) {
 			KeyPrefix: "prod",
 		},
 	})
-	impl, ok := cache.(*dashboardCache)
-	require.True(t, ok)
-	require.Equal(t, "prod:", impl.keyPrefix)
+	require.Equal(t, "prod:", cache.keyPrefix)
 
 	cache = NewDashboardCache(nil, &config.Config{
 		Dashboard: config.DashboardCacheConfig{
 			KeyPrefix: "staging:",
 		},
 	})
-	impl, ok = cache.(*dashboardCache)
-	require.True(t, ok)
-	require.Equal(t, "staging:", impl.keyPrefix)
+	require.Equal(t, "staging:", cache.keyPrefix)
 }

@@ -19,8 +19,8 @@ import (
 	"github.com/Aias00/cloudbase/ent/authidentitychannel"
 	"github.com/Aias00/cloudbase/ent/identityadoptiondecision"
 	dbpredicate "github.com/Aias00/cloudbase/ent/predicate"
+	"github.com/Aias00/cloudbase/internal/identity"
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
-	"github.com/Aias00/cloudbase/internal/service"
 )
 
 var (
@@ -332,7 +332,7 @@ func (r *userRepository) GetUserByChannelIdentity(ctx context.Context, key AuthI
 	}, nil
 }
 
-func (r *userRepository) ListUserAuthIdentities(ctx context.Context, userID int64) ([]service.UserAuthIdentityRecord, error) {
+func (r *userRepository) ListUserAuthIdentities(ctx context.Context, userID int64) ([]identity.UserAuthIdentityRecord, error) {
 	identities, err := clientFromContext(ctx, r.client).AuthIdentity.Query().
 		Where(authidentity.UserIDEQ(userID)).
 		All(ctx)
@@ -340,20 +340,20 @@ func (r *userRepository) ListUserAuthIdentities(ctx context.Context, userID int6
 		return nil, err
 	}
 
-	records := make([]service.UserAuthIdentityRecord, 0, len(identities))
-	for _, identity := range identities {
-		if identity == nil {
+	records := make([]identity.UserAuthIdentityRecord, 0, len(identities))
+	for _, authIdentity := range identities {
+		if authIdentity == nil {
 			continue
 		}
-		records = append(records, service.UserAuthIdentityRecord{
-			ProviderType:    strings.TrimSpace(identity.ProviderType),
-			ProviderKey:     strings.TrimSpace(identity.ProviderKey),
-			ProviderSubject: strings.TrimSpace(identity.ProviderSubject),
-			VerifiedAt:      identity.VerifiedAt,
-			Issuer:          identity.Issuer,
-			Metadata:        copyMetadata(identity.Metadata),
-			CreatedAt:       identity.CreatedAt,
-			UpdatedAt:       identity.UpdatedAt,
+		records = append(records, identity.UserAuthIdentityRecord{
+			ProviderType:    strings.TrimSpace(authIdentity.ProviderType),
+			ProviderKey:     strings.TrimSpace(authIdentity.ProviderKey),
+			ProviderSubject: strings.TrimSpace(authIdentity.ProviderSubject),
+			VerifiedAt:      authIdentity.VerifiedAt,
+			Issuer:          authIdentity.Issuer,
+			Metadata:        copyMetadata(authIdentity.Metadata),
+			CreatedAt:       authIdentity.CreatedAt,
+			UpdatedAt:       authIdentity.UpdatedAt,
 		})
 	}
 
@@ -363,7 +363,7 @@ func (r *userRepository) ListUserAuthIdentities(ctx context.Context, userID int6
 func (r *userRepository) UnbindUserAuthProvider(ctx context.Context, userID int64, provider string) error {
 	provider = strings.ToLower(strings.TrimSpace(provider))
 	if provider == "" || provider == "email" {
-		return service.ErrIdentityProviderInvalid
+		return identity.ErrIdentityProviderInvalid
 	}
 
 	return r.WithUserProfileIdentityTx(ctx, func(txCtx context.Context) error {
@@ -727,7 +727,7 @@ func (r *userRepository) UpdateUserLastActiveAt(ctx context.Context, userID int6
 	return err
 }
 
-func (r *userRepository) GetUserAvatar(ctx context.Context, userID int64) (*service.UserAvatar, error) {
+func (r *userRepository) GetUserAvatar(ctx context.Context, userID int64) (*identity.UserAvatar, error) {
 	exec, err := r.userProfileIdentitySQL(ctx)
 	if err != nil {
 		return nil, err
@@ -746,7 +746,7 @@ WHERE user_id = $1`, userID)
 		return nil, rows.Err()
 	}
 
-	var avatar service.UserAvatar
+	var avatar identity.UserAvatar
 	if err := rows.Scan(
 		&avatar.StorageProvider,
 		&avatar.StorageKey,
@@ -763,7 +763,7 @@ WHERE user_id = $1`, userID)
 	return &avatar, nil
 }
 
-func (r *userRepository) UpsertUserAvatar(ctx context.Context, userID int64, input service.UpsertUserAvatarInput) (*service.UserAvatar, error) {
+func (r *userRepository) UpsertUserAvatar(ctx context.Context, userID int64, input identity.UpsertUserAvatarInput) (*identity.UserAvatar, error) {
 	exec, err := r.userProfileIdentitySQL(ctx)
 	if err != nil {
 		return nil, err
@@ -792,7 +792,7 @@ ON CONFLICT (user_id) DO UPDATE SET
 		return nil, err
 	}
 
-	return &service.UserAvatar{
+	return &identity.UserAvatar{
 		StorageProvider: strings.TrimSpace(input.StorageProvider),
 		StorageKey:      strings.TrimSpace(input.StorageKey),
 		URL:             strings.TrimSpace(input.URL),

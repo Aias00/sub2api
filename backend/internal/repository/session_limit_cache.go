@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -162,7 +161,7 @@ type sessionLimitCache struct {
 
 // NewSessionLimitCache 创建会话限制缓存
 // defaultIdleTimeoutMinutes: 默认空闲超时时间（分钟），用于无参数查询
-func NewSessionLimitCache(rdb *redis.Client, defaultIdleTimeoutMinutes int) service.SessionLimitCache {
+func NewSessionLimitCache(rdb *redis.Client, defaultIdleTimeoutMinutes int) *sessionLimitCache {
 	if defaultIdleTimeoutMinutes <= 0 {
 		defaultIdleTimeoutMinutes = 5 // 默认 5 分钟
 	}

@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/Aias00/cloudbase/internal/model"
-	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -25,7 +24,7 @@ type tlsFingerprintProfileCache struct {
 }
 
 // NewTLSFingerprintProfileCache 创建 TLS 指纹模板缓存
-func NewTLSFingerprintProfileCache(rdb *redis.Client) service.TLSFingerprintProfileCache {
+func NewTLSFingerprintProfileCache(rdb *redis.Client) *tlsFingerprintProfileCache {
 	return &tlsFingerprintProfileCache{
 		rdb: rdb,
 	}

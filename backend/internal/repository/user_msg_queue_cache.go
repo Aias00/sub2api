@@ -8,7 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -63,7 +62,7 @@ type userMsgQueueCache struct {
 }
 
 // NewUserMsgQueueCache 创建用户消息队列缓存
-func NewUserMsgQueueCache(rdb *redis.Client) service.UserMsgQueueCache {
+func NewUserMsgQueueCache(rdb *redis.Client) *userMsgQueueCache {
 	return &userMsgQueueCache{rdb: rdb}
 }
 

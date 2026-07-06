@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/Aias00/cloudbase/internal/model"
-	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -25,7 +24,7 @@ type errorPassthroughCache struct {
 }
 
 // NewErrorPassthroughCache 创建错误透传规则缓存
-func NewErrorPassthroughCache(rdb *redis.Client) service.ErrorPassthroughCache {
+func NewErrorPassthroughCache(rdb *redis.Client) *errorPassthroughCache {
 	return &errorPassthroughCache{
 		rdb: rdb,
 	}

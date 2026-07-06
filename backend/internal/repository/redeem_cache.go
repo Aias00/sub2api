@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -29,7 +28,7 @@ type redeemCache struct {
 	rdb *redis.Client
 }
 
-func NewRedeemCache(rdb *redis.Client) service.RedeemCache {
+func NewRedeemCache(rdb *redis.Client) *redeemCache {
 	return &redeemCache{rdb: rdb}
 }
 

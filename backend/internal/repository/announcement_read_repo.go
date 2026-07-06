@@ -6,14 +6,13 @@ import (
 
 	dbent "github.com/Aias00/cloudbase/ent"
 	"github.com/Aias00/cloudbase/ent/announcementread"
-	"github.com/Aias00/cloudbase/internal/service"
 )
 
 type announcementReadRepository struct {
 	client *dbent.Client
 }
 
-func NewAnnouncementReadRepository(client *dbent.Client) service.AnnouncementReadRepository {
+func NewAnnouncementReadRepository(client *dbent.Client) *announcementReadRepository {
 	return &announcementReadRepository{client: client}
 }
 

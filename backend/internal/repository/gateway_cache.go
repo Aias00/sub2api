@@ -15,7 +15,7 @@ type gatewayCache struct {
 	rdb *redis.Client
 }
 
-func NewGatewayCache(rdb *redis.Client) service.GatewayCache {
+func NewGatewayCache(rdb *redis.Client) *gatewayCache {
 	return &gatewayCache{rdb: rdb}
 }
 

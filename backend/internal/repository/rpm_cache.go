@@ -7,7 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -41,7 +40,7 @@ type RPMCacheImpl struct {
 }
 
 // NewRPMCache 创建 RPM 计数器缓存
-func NewRPMCache(rdb *redis.Client) service.RPMCache {
+func NewRPMCache(rdb *redis.Client) *RPMCacheImpl {
 	return &RPMCacheImpl{rdb: rdb}
 }
 

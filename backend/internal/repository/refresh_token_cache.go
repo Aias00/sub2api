@@ -36,7 +36,7 @@ type refreshTokenCache struct {
 }
 
 // NewRefreshTokenCache creates a new RefreshTokenCache implementation.
-func NewRefreshTokenCache(rdb *redis.Client) service.RefreshTokenCache {
+func NewRefreshTokenCache(rdb *redis.Client) *refreshTokenCache {
 	return &refreshTokenCache{rdb: rdb}
 }
 

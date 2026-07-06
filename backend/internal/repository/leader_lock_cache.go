@@ -4,8 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/Aias00/cloudbase/internal/service"
-
 	"github.com/redis/go-redis/v9"
 )
 
@@ -29,7 +27,7 @@ type leaderLockCache struct {
 // NewLeaderLockCache returns a Redis-backed implementation of
 // service.LeaderLockCache used by periodic background jobs to elect a single
 // runner across instances.
-func NewLeaderLockCache(rdb *redis.Client) service.LeaderLockCache {
+func NewLeaderLockCache(rdb *redis.Client) *leaderLockCache {
 	return &leaderLockCache{rdb: rdb}
 }
 

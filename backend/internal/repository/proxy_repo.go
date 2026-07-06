@@ -9,6 +9,7 @@ import (
 
 	dbent "github.com/Aias00/cloudbase/ent"
 	"github.com/Aias00/cloudbase/ent/proxy"
+	"github.com/Aias00/cloudbase/internal/domain"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 	"github.com/Aias00/cloudbase/internal/service"
@@ -295,7 +296,7 @@ func proxyListOrder(params pagination.PaginationParams) []func(*entsql.Selector)
 
 func (r *proxyRepository) ListActive(ctx context.Context) ([]service.Proxy, error) {
 	proxies, err := r.client.Proxy.Query().
-		Where(proxy.StatusEQ(service.StatusActive)).
+		Where(proxy.StatusEQ(domain.StatusActive)).
 		All(ctx)
 	if err != nil {
 		return nil, err
@@ -408,7 +409,7 @@ func (r *proxyRepository) GetAccountCountsForProxies(ctx context.Context) (count
 // ListActiveWithAccountCount returns all active proxies with account count, sorted by creation time descending
 func (r *proxyRepository) ListActiveWithAccountCount(ctx context.Context) ([]service.ProxyWithAccountCount, error) {
 	proxies, err := r.client.Proxy.Query().
-		Where(proxy.StatusEQ(service.StatusActive)).
+		Where(proxy.StatusEQ(domain.StatusActive)).
 		Order(dbent.Desc(proxy.FieldCreatedAt)).
 		All(ctx)
 	if err != nil {
@@ -506,7 +507,7 @@ func (r *proxyRepository) SweepExpiredProxies(ctx context.Context, now time.Time
 	accountsTouched := false
 
 	for _, p := range all {
-		if p.Status != service.StatusActive || !p.IsExpired(now) {
+		if p.Status != domain.StatusActive || !p.IsExpired(now) {
 			continue
 		}
 
@@ -605,6 +606,6 @@ func (r *proxyRepository) CountExpiringSoon(ctx context.Context, now time.Time) 
 		SELECT COUNT(*) FROM proxies
 		WHERE deleted_at IS NULL AND status=$1 AND expires_at IS NOT NULL
 		  AND expires_at > $2 AND expires_at <= $2 + (expiry_warn_days || ' days')::interval`,
-		[]any{service.StatusActive, now}, &c)
+		[]any{domain.StatusActive, now}, &c)
 	return c, err
 }

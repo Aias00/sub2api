@@ -37,7 +37,7 @@ type tempUnschedCache struct {
 	rdb *redis.Client
 }
 
-func NewTempUnschedCache(rdb *redis.Client) service.TempUnschedCache {
+func NewTempUnschedCache(rdb *redis.Client) *tempUnschedCache {
 	return &tempUnschedCache{rdb: rdb}
 }
 

@@ -24,7 +24,7 @@ type TotpCache struct {
 }
 
 // NewTotpCache creates a new TOTP cache
-func NewTotpCache(rdb *redis.Client) service.TotpCache {
+func NewTotpCache(rdb *redis.Client) *TotpCache {
 	return &TotpCache{rdb: rdb}
 }
 

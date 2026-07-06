@@ -6,6 +6,7 @@ import (
 
 	dbent "github.com/Aias00/cloudbase/ent"
 	"github.com/Aias00/cloudbase/ent/group"
+	"github.com/Aias00/cloudbase/internal/domain"
 	"github.com/Aias00/cloudbase/internal/service"
 )
 
@@ -15,11 +16,11 @@ func ensureSimpleModeDefaultGroups(ctx context.Context, client *dbent.Client) er
 	}
 
 	requiredByPlatform := map[string]int{
-		service.PlatformAnthropic:   1,
-		service.PlatformOpenAI:      1,
-		service.PlatformGemini:      1,
-		service.PlatformAntigravity: 2,
-		service.PlatformGrok:        1,
+		domain.PlatformAnthropic:   1,
+		domain.PlatformOpenAI:      1,
+		domain.PlatformGemini:      1,
+		domain.PlatformAntigravity: 2,
+		domain.PlatformGrok:        1,
 	}
 
 	for platform, minCount := range requiredByPlatform {
@@ -30,7 +31,7 @@ func ensureSimpleModeDefaultGroups(ctx context.Context, client *dbent.Client) er
 			return fmt.Errorf("count groups for platform %s: %w", platform, err)
 		}
 
-		if platform == service.PlatformAntigravity {
+		if platform == domain.PlatformAntigravity {
 			if count < minCount {
 				for i := count; i < minCount; i++ {
 					name := fmt.Sprintf("%s-default-%d", platform, i+1)
@@ -67,7 +68,7 @@ func createGroupIfNotExists(ctx context.Context, client *dbent.Client, name, pla
 		SetName(name).
 		SetDescription("Auto-created default group").
 		SetPlatform(platform).
-		SetStatus(service.StatusActive).
+		SetStatus(domain.StatusActive).
 		SetSubscriptionType(service.SubscriptionTypeStandard).
 		SetRateMultiplier(1.0).
 		SetIsExclusive(false).

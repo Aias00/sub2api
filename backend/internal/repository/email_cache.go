@@ -49,7 +49,7 @@ type emailCache struct {
 	rdb *redis.Client
 }
 
-func NewEmailCache(rdb *redis.Client) service.EmailCache {
+func NewEmailCache(rdb *redis.Client) *emailCache {
 	return &emailCache{rdb: rdb}
 }
 

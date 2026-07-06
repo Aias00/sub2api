@@ -4,7 +4,6 @@ import (
 	"context"
 	"time"
 
-	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -14,7 +13,7 @@ type updateCache struct {
 	rdb *redis.Client
 }
 
-func NewUpdateCache(rdb *redis.Client) service.UpdateCache {
+func NewUpdateCache(rdb *redis.Client) *updateCache {
 	return &updateCache{rdb: rdb}
 }
 

@@ -1,15 +1,5 @@
 package service
 
-import (
-	"time"
-)
+import billingctx "github.com/Aias00/cloudbase/internal/billing"
 
-// SubscriptionCacheData represents cached subscription data
-type SubscriptionCacheData struct {
-	Status       string
-	ExpiresAt    time.Time
-	DailyUsage   float64
-	WeeklyUsage  float64
-	MonthlyUsage float64
-	Version      int64
-}
+type SubscriptionCacheData = billingctx.SubscriptionCacheData

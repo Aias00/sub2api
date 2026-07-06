@@ -6,7 +6,8 @@ import (
 	"errors"
 	"math"
 
-	"github.com/Aias00/cloudbase/internal/service"
+	"github.com/Aias00/cloudbase/internal/billing"
+	"github.com/Aias00/cloudbase/internal/identity"
 )
 
 type userBalanceReservation struct {
@@ -54,12 +55,12 @@ func reserveUserBalanceWithComponents(ctx context.Context, q sqlExecutor, userID
 		return userBalanceReservation{}, err
 	}
 	if !exists {
-		return userBalanceReservation{}, service.ErrUserNotFound
+		return userBalanceReservation{}, identity.ErrUserNotFound
 	}
 	if insufficientErr != nil {
 		return userBalanceReservation{}, insufficientErr
 	}
-	return userBalanceReservation{}, service.ErrInsufficientBalance
+	return userBalanceReservation{}, billing.ErrInsufficientBalance
 }
 
 func creditBalanceComponents(ctx context.Context, q sqlExecutor, userID int64, paidAmount, giftAmount float64) (float64, error) {

@@ -10,6 +10,8 @@ import (
 
 	dbent "github.com/Aias00/cloudbase/ent"
 	"github.com/Aias00/cloudbase/ent/group"
+	"github.com/Aias00/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 	"github.com/Aias00/cloudbase/internal/service"
@@ -90,7 +92,7 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 			logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group create failed: group=%d err=%v", groupIn.ID, err)
 		}
 	}
-	return translatePersistenceError(err, nil, service.ErrGroupExists)
+	return translatePersistenceError(err, nil, gateway.ErrGroupExists)
 }
 
 func (r *groupRepository) GetByID(ctx context.Context, id int64) (*service.Group, error) {
@@ -114,7 +116,7 @@ func (r *groupRepository) GetByIDLite(ctx context.Context, id int64) (*service.G
 		Where(group.IDEQ(id)).
 		Only(ctx)
 	if err != nil {
-		return nil, translatePersistenceError(err, service.ErrGroupNotFound, nil)
+		return nil, translatePersistenceError(err, gateway.ErrGroupNotFound, nil)
 	}
 	return groupEntityToService(m), nil
 }
@@ -210,7 +212,7 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 
 	updated, err := builder.Save(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrGroupNotFound, service.ErrGroupExists)
+		return translatePersistenceError(err, gateway.ErrGroupNotFound, gateway.ErrGroupExists)
 	}
 	groupIn.UpdatedAt = updated.UpdatedAt
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupIn.ID, nil); err != nil {
@@ -222,7 +224,7 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 func (r *groupRepository) Delete(ctx context.Context, id int64) error {
 	_, err := r.client.Group.Delete().Where(group.IDEQ(id)).Exec(ctx)
 	if err != nil {
-		return translatePersistenceError(err, service.ErrGroupNotFound, nil)
+		return translatePersistenceError(err, gateway.ErrGroupNotFound, nil)
 	}
 	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &id, nil); err != nil {
 		logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group delete failed: group=%d err=%v", id, err)
@@ -438,7 +440,7 @@ func groupListOrder(params pagination.PaginationParams) []func(*entsql.Selector)
 
 func (r *groupRepository) ListActive(ctx context.Context) ([]service.Group, error) {
 	groups, err := r.client.Group.Query().
-		Where(group.StatusEQ(service.StatusActive)).
+		Where(group.StatusEQ(domain.StatusActive)).
 		Order(dbent.Asc(group.FieldSortOrder), dbent.Asc(group.FieldID)).
 		All(ctx)
 	if err != nil {
@@ -468,7 +470,7 @@ func (r *groupRepository) ListActive(ctx context.Context) ([]service.Group, erro
 
 func (r *groupRepository) ListActiveByPlatform(ctx context.Context, platform string) ([]service.Group, error) {
 	groups, err := r.client.Group.Query().
-		Where(group.StatusEQ(service.StatusActive), group.PlatformEQ(platform)).
+		Where(group.StatusEQ(domain.StatusActive), group.PlatformEQ(platform)).
 		Order(dbent.Asc(group.FieldSortOrder), dbent.Asc(group.FieldID)).
 		All(ctx)
 	if err != nil {
@@ -576,7 +578,7 @@ func (r *groupRepository) DeleteAccountGroupsByGroupID(ctx context.Context, grou
 func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64, error) {
 	g, err := r.client.Group.Query().Where(group.IDEQ(id)).Only(ctx)
 	if err != nil {
-		return nil, translatePersistenceError(err, service.ErrGroupNotFound, nil)
+		return nil, translatePersistenceError(err, gateway.ErrGroupNotFound, nil)
 	}
 	groupSvc := groupEntityToService(g)
 
@@ -615,7 +617,7 @@ func (r *groupRepository) DeleteCascade(ctx context.Context, id int64) ([]int64,
 		return nil, err
 	}
 	if lockedID == 0 {
-		return nil, service.ErrGroupNotFound
+		return nil, gateway.ErrGroupNotFound
 	}
 
 	var affectedUserIDs []int64
@@ -804,7 +806,7 @@ func (r *groupRepository) BindAccountsToGroup(ctx context.Context, groupID int64
 }
 
 // UpdateSortOrders 批量更新分组排序
-func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []service.GroupSortOrderUpdate) error {
+func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []gateway.GroupSortOrderUpdate) error {
 	if len(updates) == 0 {
 		return nil
 	}
@@ -837,7 +839,7 @@ func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []servic
 		return err
 	}
 	if existingCount != len(groupIDs) {
-		return service.ErrGroupNotFound
+		return gateway.ErrGroupNotFound
 	}
 
 	args := make([]any, 0, len(groupIDs)*2+1)
@@ -868,7 +870,7 @@ func (r *groupRepository) UpdateSortOrders(ctx context.Context, updates []servic
 		return err
 	}
 	if affected != int64(len(groupIDs)) {
-		return service.ErrGroupNotFound
+		return gateway.ErrGroupNotFound
 	}
 
 	for _, id := range groupIDs {

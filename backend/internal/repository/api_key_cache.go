@@ -32,7 +32,7 @@ type apiKeyCache struct {
 	rdb *redis.Client
 }
 
-func NewAPIKeyCache(rdb *redis.Client) service.APIKeyCache {
+func NewAPIKeyCache(rdb *redis.Client) *apiKeyCache {
 	return &apiKeyCache{rdb: rdb}
 }
 
