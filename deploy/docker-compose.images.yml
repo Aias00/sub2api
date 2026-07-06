@@ -5,15 +5,19 @@
 services:
   cloudbase:
     image: ${CLOUDBASE_IMAGE:-ghcr.io/aias00/cloudbase:${CLOUDBASE_IMAGE_TAG:-latest}}
+    platform: ${CLOUDBASE_IMAGE_PLATFORM:-linux/amd64}
 
   wechat-worker:
     build: !reset null
     image: ${WECHAT_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-wechat-worker:${WECHAT_WORKER_IMAGE_TAG:-latest}}
+    platform: ${WECHAT_WORKER_IMAGE_PLATFORM:-linux/amd64}
 
   image-workspace-worker:
     build: !reset null
     image: ${IMAGE_WORKSPACE_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-image-workspace-worker:${IMAGE_WORKSPACE_WORKER_IMAGE_TAG:-latest}}
+    platform: ${IMAGE_WORKSPACE_WORKER_IMAGE_PLATFORM:-linux/amd64}
 
   content-worker:
     build: !reset null
     image: ${CONTENT_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-content-worker:${CONTENT_WORKER_IMAGE_TAG:-latest}}
+    platform: ${CONTENT_WORKER_IMAGE_PLATFORM:-linux/amd64}

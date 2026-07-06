@@ -16,6 +16,7 @@ services:
     volumes:
       - ${CLOUDBASE_DATA_MOUNT:-./data}:/app/data
       - ${HOT_RUNTIME_MOUNT:-./runtime}:/app/runtime:ro
+      - ${WORKER_MANAGER_DOCKER_SOCKET:-/var/run/docker.sock}:${WORKER_MANAGER_DOCKER_SOCKET:-/var/run/docker.sock}
     environment:
       - AUTO_SETUP=true
       - SERVER_HOST=0.0.0.0
