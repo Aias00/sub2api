@@ -15,10 +15,6 @@ const (
 	codexImageGenerationExplicitToolPolicyStrip = "strip"
 )
 
-func boolOverridePtr(v bool) *bool {
-	return &v
-}
-
 func boolOverrideFromMap(values map[string]any, keys ...string) *bool {
 	return imagecore.BoolOverrideFromMap(values, keys...)
 }

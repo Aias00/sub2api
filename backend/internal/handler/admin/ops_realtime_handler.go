@@ -150,21 +150,6 @@ func isOpsRealtimeRequestCanceled(c *gin.Context, err error) bool {
 	return strings.Contains(err.Error(), "canceling statement due to user request")
 }
 
-func parseOpsRealtimeWindow(v string) (time.Duration, string, bool) {
-	switch strings.ToLower(strings.TrimSpace(v)) {
-	case "", "1min", "1m":
-		return 1 * time.Minute, "1min", true
-	case "5min", "5m":
-		return 5 * time.Minute, "5min", true
-	case "30min", "30m":
-		return 30 * time.Minute, "30min", true
-	case "1h", "60m", "60min":
-		return 1 * time.Hour, "1h", true
-	default:
-		return 0, "", false
-	}
-}
-
 // GetRealtimeTrafficSummary returns QPS/TPS current/peak/avg for the selected window.
 // GET /api/v1/admin/ops/realtime-traffic
 //
