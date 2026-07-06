@@ -59,7 +59,7 @@ vi.mock('vue-i18n', async () => {
   return {
     ...actual,
     useI18n: () => ({
-      t: (key: string) => key,
+      t: (key: string) => key === 'common.login' ? 'Log in' : key,
     }),
   }
 })
@@ -137,7 +137,7 @@ describe('PublicDarkHeader', () => {
       },
     })
 
-    expect(wrapper.find('a.public-dark-header__account[href="/login"]').text()).toContain('common.login')
+    expect(wrapper.find('a.public-dark-header__account[href="/login"]').text()).toContain('Log in')
     expect(wrapper.find('button.public-dark-header__avatar').exists()).toBe(false)
   })
 
