@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	opsctx "github.com/Aias00/cloudbase/internal/ops"
 	"github.com/stretchr/testify/require"
 )
 
@@ -328,7 +329,7 @@ func TestComputeBusinessHealth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			score := computeBusinessHealth(tt.overview)
+			score := opsctx.ComputeBusinessHealth(opsHealthInputFromOverview(tt.overview))
 			require.GreaterOrEqual(t, score, tt.wantMin, "score should be >= %.1f", tt.wantMin)
 			require.LessOrEqual(t, score, tt.wantMax, "score should be <= %.1f", tt.wantMax)
 			require.GreaterOrEqual(t, score, 0.0, "score must be >= 0")
@@ -428,7 +429,7 @@ func TestComputeInfraHealth(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			score := computeInfraHealth(now, tt.overview)
+			score := opsctx.ComputeInfraHealth(now, opsHealthInputFromOverview(tt.overview))
 			require.GreaterOrEqual(t, score, tt.wantMin, "score should be >= %.1f", tt.wantMin)
 			require.LessOrEqual(t, score, tt.wantMax, "score should be <= %.1f", tt.wantMax)
 			require.GreaterOrEqual(t, score, 0.0, "score must be >= 0")

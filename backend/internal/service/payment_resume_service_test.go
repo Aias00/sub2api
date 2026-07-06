@@ -303,7 +303,7 @@ func TestParseWeChatPaymentResumeTokenRejectsFallbackSignedTokenWhenSigningKeyMi
 	t.Parallel()
 
 	token := mustCreateFallbackSignedToken(t, WeChatPaymentResumeClaims{
-		TokenType:   wechatPaymentResumeTokenType,
+		TokenType:   payment.WeChatPaymentResumeTokenType,
 		OpenID:      "openid-123",
 		PaymentType: payment.TypeWxpay,
 	})
