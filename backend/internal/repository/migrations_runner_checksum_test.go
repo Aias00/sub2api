@@ -43,13 +43,57 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.True(t, ok)
 	})
 
-	t.Run("001初始化迁移注释改名checksum可兼容", func(t *testing.T) {
-		ok := isMigrationChecksumCompatible(
-			"001_init.sql",
-			"9ba0369779484625edcea7a7d1d4582397e31546db9149b05004990a3f16c630",
-			"51d96819f939931fe6c52e0b9d19eb9be7b9e2fcd6897a0d89a3ea2fac3f5228",
-		)
-		require.True(t, ok)
+	t.Run("生产已应用迁移和当前rename后checksum可兼容", func(t *testing.T) {
+		cases := []struct {
+			name         string
+			dbChecksum   string
+			fileChecksum string
+		}{
+			{
+				name:         "001_init.sql",
+				dbChecksum:   "9ba0369779484625edcea7a7d1d4582397e31546db9149b05004990a3f16c630",
+				fileChecksum: "51d96819f939931fe6c52e0b9d19eb9be7b9e2fcd6897a0d89a3ea2fac3f5228",
+			},
+			{
+				name:         "002_account_type_migration.sql",
+				dbChecksum:   "aad3816e44f58ff007ea4df8092aae580f3f85180314c1deb1b1054b20892bbf",
+				fileChecksum: "0816928a5a2d2a5a5dd681a675aa803a44c959ccd4e9d8d34db5ed3c6db10858",
+			},
+			{
+				name:         "003_subscription.sql",
+				dbChecksum:   "4642fcb1ccd7954b1d3eef8f795cfba2ce21431257346cc5a7568cde61a60b13",
+				fileChecksum: "afc0d723f79789ac9893ad1efd882e241a43b7c99250128f9645eff844f152af",
+			},
+			{
+				name:         "038_ops_errors_resolution_retry_results_and_standardize_classification.sql",
+				dbChecksum:   "4cc121d97c7f59e9def9397b7d0314d4dfbfe4cd831698359456dd49bf995ece",
+				fileChecksum: "a5e6b87947bfe632e52ef1b6a09ab3f7e20e91ac4ef1a124b6564caccf543043",
+			},
+			{
+				name:         "052_migrate_upstream_to_apikey.sql",
+				dbChecksum:   "d2ea657ec24995664a8ddc1bfb9c3fe317646c7bcd12517dee8478bc6c36244a",
+				fileChecksum: "d1fba21a7b7294b8ad1c158d90253b3792eedea341dadfa190fe46a7208c8643",
+			},
+			{
+				name:         "147_touch_identity_source_separation.sql",
+				dbChecksum:   "99e2b5ab85997c67f4b879e376d3d65e900ba58f18ad333691da78c1325f4f13",
+				fileChecksum: "77d550425fe00d861c226ef0905ca548ace5d85e31b09aec3b24c91b607e4ef5",
+			},
+			{
+				name:         "163_signup_grant_risk_control.sql",
+				dbChecksum:   "072f671b20f464f8cfff49ef1c3c53fa7b78548c4d461ef9dbad6f252a015881",
+				fileChecksum: "d4fb668a2e2cda9290b6a51426adea0c4e8281c463e28abdcb23da8d0022f452",
+			},
+			{
+				name:         "164_signup_grant_risk_enhancements.sql",
+				dbChecksum:   "fabc73c5ea1d12973c3dc5bf6dafaa81fb2fa39aabba7b85538ea283e0d7ec75",
+				fileChecksum: "ffc215c4ac8851357a621893c8c08231720b3c1d0f564070a914076bceadea6b",
+			},
+		}
+		for _, tc := range cases {
+			ok := isMigrationChecksumCompatible(tc.name, tc.dbChecksum, tc.fileChecksum)
+			require.True(t, ok, tc.name)
+		}
 	})
 
 	t.Run("001初始化迁移未知checksum不兼容", func(t *testing.T) {
