@@ -46,6 +46,7 @@ services:
       - ADMIN_PASSWORD=${ADMIN_PASSWORD:-}
       - JWT_SECRET=${JWT_SECRET:-}
       - JWT_EXPIRE_HOUR=${JWT_EXPIRE_HOUR:-24}
+
       - WECHAT_EXPORT_WORKER_TOKEN=${WECHAT_EXPORT_WORKER_TOKEN:-}
       - WECHAT_EXPORT_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN=${WECHAT_EXPORT_ALLOW_PRIVATE_WORKER_WITHOUT_TOKEN:-false}
       - WECHAT_EXPORT_CAPABILITY_STATUS_USER_ID=${WECHAT_EXPORT_CAPABILITY_STATUS_USER_ID:-}
@@ -72,6 +73,19 @@ services:
       - HOT_WORKER_CONTAINER_NAME=${HOT_WORKER_CONTAINER_NAME:-cloudbase-content-worker}
       - X_AUTO_BASE_URL=${X_AUTO_BASE_URL:-http://content-worker:8000}
       - CONTENT_WORKER_CONTAINER_NAME=${CONTENT_WORKER_CONTAINER_NAME:-cloudbase-content-worker}
+      # =======================================================================
+      # Setup Configuration
+      # =======================================================================
+      - SETUP_MIGRATION_TIMEOUT_SECONDS=${SETUP_MIGRATION_TIMEOUT_SECONDS:-0}
+
+      # =======================================================================
+      # TOTP (2FA) Configuration
+      # =======================================================================
+      # IMPORTANT: Set a fixed encryption key for TOTP secrets. If left empty,
+      # a random key will be generated on each startup, causing all existing
+      # TOTP configurations to become invalid (users won't be able to login
+      # with 2FA).
+      # Generate a secure key: openssl rand -hex 32
       - TOTP_ENCRYPTION_KEY=${TOTP_ENCRYPTION_KEY:-}
       - TZ=${TZ:-Asia/Shanghai}
       - CORS_ALLOWED_ORIGINS=${CORS_ALLOWED_ORIGINS:-}
@@ -83,6 +97,7 @@ services:
       - GEMINI_CLI_OAUTH_CLIENT_SECRET=${GEMINI_CLI_OAUTH_CLIENT_SECRET:-}
       - ANTIGRAVITY_OAUTH_CLIENT_SECRET=${ANTIGRAVITY_OAUTH_CLIENT_SECRET:-}
       - ANTIGRAVITY_USER_AGENT_VERSION=${ANTIGRAVITY_USER_AGENT_VERSION:-}
+
       - SECURITY_URL_ALLOWLIST_ENABLED=${SECURITY_URL_ALLOWLIST_ENABLED:-true}
       - SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP=${SECURITY_URL_ALLOWLIST_ALLOW_INSECURE_HTTP:-false}
       - SECURITY_URL_ALLOWLIST_ALLOW_PRIVATE_HOSTS=${SECURITY_URL_ALLOWLIST_ALLOW_PRIVATE_HOSTS:-false}

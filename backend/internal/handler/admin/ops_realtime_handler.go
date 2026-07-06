@@ -1,6 +1,9 @@
 package admin
 
 import (
+	"context"
+	"errors"
+	"strings"
 	"time"
 
 	opsctx "github.com/Aias00/cloudbase/internal/ops"
@@ -50,6 +53,9 @@ func (h *OpsHandler) GetConcurrencyStats(c *gin.Context) {
 
 	platform, group, account, collectedAt, err := opsService.GetConcurrencyStats(c.Request.Context(), filter.Platform, filter.GroupID)
 	if err != nil {
+		if isOpsRealtimeRequestCanceled(c, err) {
+			return
+		}
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -78,6 +84,9 @@ func (h *OpsHandler) GetUserConcurrencyStats(c *gin.Context) {
 
 	users, collectedAt, err := opsService.GetUserConcurrencyStats(c.Request.Context())
 	if err != nil {
+		if isOpsRealtimeRequestCanceled(c, err) {
+			return
+		}
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -114,6 +123,9 @@ func (h *OpsHandler) GetAccountAvailability(c *gin.Context) {
 
 	platformStats, groupStats, accountStats, collectedAt, err := opsService.GetAccountAvailabilityStats(c.Request.Context(), parsed.Platform, parsed.GroupID)
 	if err != nil {
+		if isOpsRealtimeRequestCanceled(c, err) {
+			return
+		}
 		response.ErrorFrom(c, err)
 		return
 	}
@@ -123,6 +135,34 @@ func (h *OpsHandler) GetAccountAvailability(c *gin.Context) {
 		"group":    groupStats,
 		"account":  accountStats,
 	}, collectedAt))
+}
+
+func isOpsRealtimeRequestCanceled(c *gin.Context, err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) {
+		return true
+	}
+	if c != nil && c.Request != nil && errors.Is(c.Request.Context().Err(), context.Canceled) {
+		return true
+	}
+	return strings.Contains(err.Error(), "canceling statement due to user request")
+}
+
+func parseOpsRealtimeWindow(v string) (time.Duration, string, bool) {
+	switch strings.ToLower(strings.TrimSpace(v)) {
+	case "", "1min", "1m":
+		return 1 * time.Minute, "1min", true
+	case "5min", "5m":
+		return 5 * time.Minute, "5min", true
+	case "30min", "30m":
+		return 30 * time.Minute, "30min", true
+	case "1h", "60m", "60min":
+		return 1 * time.Hour, "1h", true
+	default:
+		return 0, "", false
+	}
 }
 
 // GetRealtimeTrafficSummary returns QPS/TPS current/peak/avg for the selected window.
@@ -170,6 +210,9 @@ func (h *OpsHandler) GetRealtimeTrafficSummary(c *gin.Context) {
 
 	summary, err := opsService.GetRealtimeTrafficSummary(c.Request.Context(), filter)
 	if err != nil {
+		if isOpsRealtimeRequestCanceled(c, err) {
+			return
+		}
 		response.ErrorFrom(c, err)
 		return
 	}

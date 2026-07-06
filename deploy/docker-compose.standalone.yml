@@ -105,6 +105,11 @@ services:
       - CONTENT_WORKER_CONTAINER_NAME=${CONTENT_WORKER_CONTAINER_NAME:-cloudbase-content-worker}
 
       # =======================================================================
+      # Setup Configuration
+      # =======================================================================
+      - SETUP_MIGRATION_TIMEOUT_SECONDS=${SETUP_MIGRATION_TIMEOUT_SECONDS:-0}
+
+      # =======================================================================
       # Timezone Configuration
       # =======================================================================
       - TZ=${TZ:-Asia/Shanghai}

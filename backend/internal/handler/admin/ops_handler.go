@@ -146,6 +146,13 @@ func (h *OpsHandler) requireOpsService(c *gin.Context) (*service.OpsService, boo
 	return h.opsService, true
 }
 
+// applyOpsErrorSortParams reads sort_by/sort_order query params into the filter.
+// Column whitelist and order normalization live in the repository; unknown
+// values degrade to the default (created_at DESC), mirroring the usage list.
+func applyOpsErrorSortParams(c *gin.Context, filter *service.OpsErrorLogFilter) {
+	filter.SetSort(c.Query("sort_by"), c.Query("sort_order"))
+}
+
 func bindOpsJSON[T any](c *gin.Context) (*T, bool) {
 	var req T
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -216,6 +223,7 @@ func (h *OpsHandler) GetErrorLogs(c *gin.Context) {
 		return
 	}
 
+	applyOpsErrorSortParams(c, filter)
 	result, err := opsService.GetErrorLogs(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -249,6 +257,7 @@ func (h *OpsHandler) ListRequestErrors(c *gin.Context) {
 		return
 	}
 
+	applyOpsErrorSortParams(c, filter)
 	result, err := opsService.GetErrorLogs(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -319,6 +328,7 @@ func (h *OpsHandler) ListRequestErrorUpstreamErrors(c *gin.Context) {
 		return
 	}
 
+	applyOpsErrorSortParams(c, filter)
 	result, err := opsService.GetErrorLogs(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -376,6 +386,7 @@ func (h *OpsHandler) ListUpstreamErrors(c *gin.Context) {
 		return
 	}
 
+	applyOpsErrorSortParams(c, filter)
 	result, err := opsService.GetErrorLogs(c.Request.Context(), filter)
 	if err != nil {
 		response.ErrorFrom(c, err)
