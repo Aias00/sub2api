@@ -18,7 +18,7 @@ type RedeemCacheSuite struct {
 
 func (s *RedeemCacheSuite) SetupTest() {
 	s.IntegrationRedisSuite.SetupTest()
-	s.cache = NewRedeemCache(s.rdb).(*redeemCache)
+	s.cache = NewRedeemCache(s.rdb)
 }
 
 func (s *RedeemCacheSuite) TestGetRedeemAttemptCount_Missing() {
