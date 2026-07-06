@@ -1,37 +1,19 @@
 package service
 
-import (
-	"regexp"
-	"strings"
-)
+import "github.com/Aias00/cloudbase/internal/gateway"
 
 const (
-	OpenAIPreviousResponseIDKindEmpty      = "empty"
-	OpenAIPreviousResponseIDKindResponseID = "response_id"
-	OpenAIPreviousResponseIDKindMessageID  = "message_id"
-	OpenAIPreviousResponseIDKindUnknown    = "unknown"
-)
-
-var (
-	openAIResponseIDPattern = regexp.MustCompile(`^resp_[A-Za-z0-9_-]{1,256}$`)
-	openAIMessageIDPattern  = regexp.MustCompile(`^(msg|message|item|chatcmpl)_[A-Za-z0-9_-]{1,256}$`)
+	OpenAIPreviousResponseIDKindEmpty      = gateway.OpenAIPreviousResponseIDKindEmpty
+	OpenAIPreviousResponseIDKindResponseID = gateway.OpenAIPreviousResponseIDKindResponseID
+	OpenAIPreviousResponseIDKindMessageID  = gateway.OpenAIPreviousResponseIDKindMessageID
+	OpenAIPreviousResponseIDKindUnknown    = gateway.OpenAIPreviousResponseIDKindUnknown
 )
 
 // ClassifyOpenAIPreviousResponseIDKind classifies previous_response_id to improve diagnostics.
 func ClassifyOpenAIPreviousResponseIDKind(id string) string {
-	trimmed := strings.TrimSpace(id)
-	if trimmed == "" {
-		return OpenAIPreviousResponseIDKindEmpty
-	}
-	if openAIResponseIDPattern.MatchString(trimmed) {
-		return OpenAIPreviousResponseIDKindResponseID
-	}
-	if openAIMessageIDPattern.MatchString(strings.ToLower(trimmed)) {
-		return OpenAIPreviousResponseIDKindMessageID
-	}
-	return OpenAIPreviousResponseIDKindUnknown
+	return gateway.ClassifyOpenAIPreviousResponseIDKind(id)
 }
 
 func IsOpenAIPreviousResponseIDLikelyMessageID(id string) bool {
-	return ClassifyOpenAIPreviousResponseIDKind(id) == OpenAIPreviousResponseIDKindMessageID
+	return gateway.IsOpenAIPreviousResponseIDLikelyMessageID(id)
 }

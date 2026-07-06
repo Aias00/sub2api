@@ -19,6 +19,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/Aias00/cloudbase/internal/util/responseheaders"
 	"github.com/gin-gonic/gin"
@@ -746,7 +747,8 @@ func (s *OpenAIGatewayService) buildOpenAIImagesRequest(
 	req = req.WithContext(WithHTTPUpstreamProfile(req.Context(), HTTPUpstreamProfileOpenAI))
 	req.Header.Set("Authorization", "Bearer "+token)
 	for key, values := range c.Request.Header {
-		if !openaiPassthroughAllowedHeaders[strings.ToLower(key)] {
+		lowerKey := strings.ToLower(strings.TrimSpace(key))
+		if !gateway.IsOpenAIPassthroughAllowedRequestHeader(lowerKey, false) {
 			continue
 		}
 		for _, value := range values {

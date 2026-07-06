@@ -1,63 +1,26 @@
 package service
 
 import (
-	"strings"
-
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/gin-gonic/gin"
 )
 
-// OpenAIClientTransport 表示客户端入站协议类型。
-type OpenAIClientTransport string
+type OpenAIClientTransport = gateway.OpenAIClientTransport
 
 const (
-	OpenAIClientTransportUnknown OpenAIClientTransport = ""
-	OpenAIClientTransportHTTP    OpenAIClientTransport = "http"
-	OpenAIClientTransportWS      OpenAIClientTransport = "ws"
+	OpenAIClientTransportUnknown = gateway.OpenAIClientTransportUnknown
+	OpenAIClientTransportHTTP    = gateway.OpenAIClientTransportHTTP
+	OpenAIClientTransportWS      = gateway.OpenAIClientTransportWS
 )
-
-const openAIClientTransportContextKey = "openai_client_transport"
 
 // SetOpenAIClientTransport 标记当前请求的客户端入站协议。
 func SetOpenAIClientTransport(c *gin.Context, transport OpenAIClientTransport) {
-	if c == nil {
-		return
-	}
-	normalized := normalizeOpenAIClientTransport(transport)
-	if normalized == OpenAIClientTransportUnknown {
-		return
-	}
-	c.Set(openAIClientTransportContextKey, string(normalized))
+	gateway.SetOpenAIClientTransport(c, transport)
 }
 
 // GetOpenAIClientTransport 读取当前请求的客户端入站协议。
 func GetOpenAIClientTransport(c *gin.Context) OpenAIClientTransport {
-	if c == nil {
-		return OpenAIClientTransportUnknown
-	}
-	raw, ok := c.Get(openAIClientTransportContextKey)
-	if !ok || raw == nil {
-		return OpenAIClientTransportUnknown
-	}
-
-	switch v := raw.(type) {
-	case OpenAIClientTransport:
-		return normalizeOpenAIClientTransport(v)
-	case string:
-		return normalizeOpenAIClientTransport(OpenAIClientTransport(v))
-	default:
-		return OpenAIClientTransportUnknown
-	}
-}
-
-func normalizeOpenAIClientTransport(transport OpenAIClientTransport) OpenAIClientTransport {
-	switch strings.ToLower(strings.TrimSpace(string(transport))) {
-	case string(OpenAIClientTransportHTTP), "http_sse", "sse":
-		return OpenAIClientTransportHTTP
-	case string(OpenAIClientTransportWS), "websocket":
-		return OpenAIClientTransportWS
-	default:
-		return OpenAIClientTransportUnknown
-	}
+	return gateway.GetOpenAIClientTransport(c)
 }
 
 func resolveOpenAIWSDecisionByClientTransport(

@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 )
 
 var (
-	ErrAccountNotFound      = infraerrors.NotFound("ACCOUNT_NOT_FOUND", "account not found")
-	ErrAccountNilInput      = infraerrors.BadRequest("ACCOUNT_NIL_INPUT", "account input cannot be nil")
-	ErrAccountNotInFallback = infraerrors.BadRequest("ACCOUNT_NOT_IN_FALLBACK", "account is not in proxy fallback state")
+	ErrAccountNotFound      = gateway.ErrAccountNotFound
+	ErrAccountNilInput      = gateway.ErrAccountNilInput
+	ErrAccountNotInFallback = gateway.ErrAccountNotInFallback
 )
 
 const AccountListGroupUngrouped int64 = -1
@@ -87,20 +87,7 @@ type AccountRepository interface {
 	ListShadowsByParent(ctx context.Context, parentID int64) ([]*Account, error)
 }
 
-// AccountBulkUpdate describes the fields that can be updated in a bulk operation.
-// Nil pointers mean "do not change".
-type AccountBulkUpdate struct {
-	Name           *string
-	ProxyID        *int64
-	Concurrency    *int
-	Priority       *int
-	RateMultiplier *float64
-	LoadFactor     *int
-	Status         *string
-	Schedulable    *bool
-	Credentials    map[string]any
-	Extra          map[string]any
-}
+type AccountBulkUpdate = gateway.AccountBulkUpdate
 
 // CreateAccountRequest 创建账号请求
 type CreateAccountRequest struct {

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/gateway"
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 	"github.com/Aias00/cloudbase/internal/pkg/ip"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
@@ -21,22 +22,20 @@ import (
 )
 
 var (
-	ErrAPIKeyNotFound     = infraerrors.NotFound("API_KEY_NOT_FOUND", "api key not found")
-	ErrGroupNotAllowed    = infraerrors.Forbidden("GROUP_NOT_ALLOWED", "user is not allowed to bind this group")
-	ErrAPIKeyExists       = infraerrors.Conflict("API_KEY_EXISTS", "api key already exists")
-	ErrAPIKeyTooShort     = infraerrors.BadRequest("API_KEY_TOO_SHORT", "api key must be at least 16 characters")
-	ErrAPIKeyInvalidChars = infraerrors.BadRequest("API_KEY_INVALID_CHARS", "api key can only contain letters, numbers, underscores, and hyphens")
-	ErrAPIKeyRateLimited  = infraerrors.TooManyRequests("API_KEY_RATE_LIMITED", "too many failed attempts, please try again later")
-	ErrInvalidIPPattern   = infraerrors.BadRequest("INVALID_IP_PATTERN", "invalid IP or CIDR pattern")
-	// ErrAPIKeyExpired        = infraerrors.Forbidden("API_KEY_EXPIRED", "api key has expired")
-	ErrAPIKeyExpired = infraerrors.Forbidden("API_KEY_EXPIRED", "api key 已过期")
-	// ErrAPIKeyQuotaExhausted = infraerrors.TooManyRequests("API_KEY_QUOTA_EXHAUSTED", "api key quota exhausted")
-	ErrAPIKeyQuotaExhausted = infraerrors.TooManyRequests("API_KEY_QUOTA_EXHAUSTED", "api key 额度已用完")
+	ErrAPIKeyNotFound       = gateway.ErrAPIKeyNotFound
+	ErrGroupNotAllowed      = infraerrors.Forbidden("GROUP_NOT_ALLOWED", "user is not allowed to bind this group")
+	ErrAPIKeyExists         = gateway.ErrAPIKeyExists
+	ErrAPIKeyTooShort       = gateway.ErrAPIKeyTooShort
+	ErrAPIKeyInvalidChars   = gateway.ErrAPIKeyInvalidChars
+	ErrAPIKeyRateLimited    = gateway.ErrAPIKeyRateLimited
+	ErrInvalidIPPattern     = infraerrors.BadRequest("INVALID_IP_PATTERN", "invalid IP or CIDR pattern")
+	ErrAPIKeyExpired        = gateway.ErrAPIKeyExpired
+	ErrAPIKeyQuotaExhausted = gateway.ErrAPIKeyQuotaExhausted
 
 	// Rate limit errors
-	ErrAPIKeyRateLimit5hExceeded = infraerrors.TooManyRequests("API_KEY_RATE_5H_EXCEEDED", "api key 5小时限额已用完")
-	ErrAPIKeyRateLimit1dExceeded = infraerrors.TooManyRequests("API_KEY_RATE_1D_EXCEEDED", "api key 日限额已用完")
-	ErrAPIKeyRateLimit7dExceeded = infraerrors.TooManyRequests("API_KEY_RATE_7D_EXCEEDED", "api key 7天限额已用完")
+	ErrAPIKeyRateLimit5hExceeded = gateway.ErrAPIKeyRateLimit5hExceeded
+	ErrAPIKeyRateLimit1dExceeded = gateway.ErrAPIKeyRateLimit1dExceeded
+	ErrAPIKeyRateLimit7dExceeded = gateway.ErrAPIKeyRateLimit7dExceeded
 )
 
 const (
@@ -86,48 +85,9 @@ type APIKeyRepository interface {
 	DisableAllActiveKeysByUserID(ctx context.Context, userID int64) (int64, error)
 }
 
-// APIKeyRateLimitData holds rate limit usage and window state for an API key.
-type APIKeyRateLimitData struct {
-	Usage5h       float64
-	Usage1d       float64
-	Usage7d       float64
-	Window5hStart *time.Time
-	Window1dStart *time.Time
-	Window7dStart *time.Time
-}
+type APIKeyRateLimitData = gateway.APIKeyRateLimitData
 
-// EffectiveUsage5h returns the 5h window usage, or 0 if the window has expired.
-func (d *APIKeyRateLimitData) EffectiveUsage5h() float64 {
-	if IsWindowExpired(d.Window5hStart, RateLimitWindow5h) {
-		return 0
-	}
-	return d.Usage5h
-}
-
-// EffectiveUsage1d returns the 1d window usage, or 0 if the window has expired.
-func (d *APIKeyRateLimitData) EffectiveUsage1d() float64 {
-	if IsWindowExpired(d.Window1dStart, RateLimitWindow1d) {
-		return 0
-	}
-	return d.Usage1d
-}
-
-// EffectiveUsage7d returns the 7d window usage, or 0 if the window has expired.
-func (d *APIKeyRateLimitData) EffectiveUsage7d() float64 {
-	if IsWindowExpired(d.Window7dStart, RateLimitWindow7d) {
-		return 0
-	}
-	return d.Usage7d
-}
-
-// APIKeyQuotaUsageState captures the latest quota fields after an atomic quota update.
-// It is intentionally small so repositories can return it from a single SQL statement.
-type APIKeyQuotaUsageState struct {
-	QuotaUsed float64
-	Quota     float64
-	Key       string
-	Status    string
-}
+type APIKeyQuotaUsageState = gateway.APIKeyQuotaUsageState
 
 // APIKeyCache defines cache operations for API key service
 type APIKeyCache interface {

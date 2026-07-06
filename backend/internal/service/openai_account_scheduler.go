@@ -1,19 +1,16 @@
 package service
 
 import (
-	"container/heap"
 	"context"
 	"fmt"
-	"hash/fnv"
 	"log/slog"
 	"math"
-	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
 
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -476,6 +473,60 @@ type openAIAccountCandidateScore struct {
 	hasTTFT   bool
 }
 
+func openAIAccountCandidateScoreToGateway(candidate openAIAccountCandidateScore, index int) gateway.OpenAIAccountCandidateScore {
+	out := gateway.OpenAIAccountCandidateScore{
+		Index: index,
+		Score: candidate.score,
+	}
+	if candidate.account != nil {
+		out.AccountID = candidate.account.ID
+		out.Priority = candidate.account.Priority
+		out.LastUsedAt = candidate.account.LastUsedAt
+	}
+	if candidate.loadInfo != nil {
+		out.LoadRate = float64(candidate.loadInfo.LoadRate)
+		out.WaitingCount = candidate.loadInfo.WaitingCount
+	}
+	return out
+}
+
+func openAIAccountCandidateScoresToGateway(candidates []openAIAccountCandidateScore) []gateway.OpenAIAccountCandidateScore {
+	if len(candidates) == 0 {
+		return nil
+	}
+	out := make([]gateway.OpenAIAccountCandidateScore, len(candidates))
+	for i, candidate := range candidates {
+		out[i] = openAIAccountCandidateScoreToGateway(candidate, i)
+	}
+	return out
+}
+
+func openAIAccountCandidateScoresFromGateway(
+	original []openAIAccountCandidateScore,
+	ordered []gateway.OpenAIAccountCandidateScore,
+) []openAIAccountCandidateScore {
+	if len(ordered) == 0 {
+		return nil
+	}
+	out := make([]openAIAccountCandidateScore, 0, len(ordered))
+	for _, item := range ordered {
+		if item.Index < 0 || item.Index >= len(original) {
+			continue
+		}
+		out = append(out, original[item.Index])
+	}
+	return out
+}
+
+func openAISelectionSeedInputToGateway(req OpenAIAccountScheduleRequest) gateway.OpenAISelectionSeedInput {
+	return gateway.OpenAISelectionSeedInput{
+		GroupID:            req.GroupID,
+		SessionHash:        req.SessionHash,
+		PreviousResponseID: req.PreviousResponseID,
+		RequestedModel:     req.RequestedModel,
+	}
+}
+
 type openAIAccountCandidateHeap []openAIAccountCandidateScore
 
 func (h openAIAccountCandidateHeap) Len() int {
@@ -508,164 +559,40 @@ func (h *openAIAccountCandidateHeap) Pop() any {
 }
 
 func isOpenAIAccountCandidateBetter(left openAIAccountCandidateScore, right openAIAccountCandidateScore) bool {
-	if left.score != right.score {
-		return left.score > right.score
-	}
-	if left.account.Priority != right.account.Priority {
-		return left.account.Priority < right.account.Priority
-	}
-	if left.loadInfo.LoadRate != right.loadInfo.LoadRate {
-		return left.loadInfo.LoadRate < right.loadInfo.LoadRate
-	}
-	if left.loadInfo.WaitingCount != right.loadInfo.WaitingCount {
-		return left.loadInfo.WaitingCount < right.loadInfo.WaitingCount
-	}
-	return left.account.ID < right.account.ID
+	return gateway.IsOpenAIAccountCandidateBetter(openAIAccountCandidateScoreToGateway(left, 0), openAIAccountCandidateScoreToGateway(right, 0))
 }
 
 func selectTopKOpenAICandidates(candidates []openAIAccountCandidateScore, topK int) []openAIAccountCandidateScore {
-	if len(candidates) == 0 {
-		return nil
-	}
-	if topK <= 0 {
-		topK = 1
-	}
-	if topK >= len(candidates) {
-		ranked := append([]openAIAccountCandidateScore(nil), candidates...)
-		sort.Slice(ranked, func(i, j int) bool {
-			return isOpenAIAccountCandidateBetter(ranked[i], ranked[j])
-		})
-		return ranked
-	}
-
-	best := make(openAIAccountCandidateHeap, 0, topK)
-	for _, candidate := range candidates {
-		if len(best) < topK {
-			heap.Push(&best, candidate)
-			continue
-		}
-		if isOpenAIAccountCandidateBetter(candidate, best[0]) {
-			best[0] = candidate
-			heap.Fix(&best, 0)
-		}
-	}
-
-	ranked := make([]openAIAccountCandidateScore, len(best))
-	copy(ranked, best)
-	sort.Slice(ranked, func(i, j int) bool {
-		return isOpenAIAccountCandidateBetter(ranked[i], ranked[j])
-	})
-	return ranked
+	ordered := gateway.SelectTopKOpenAIAccountCandidates(openAIAccountCandidateScoresToGateway(candidates), topK)
+	return openAIAccountCandidateScoresFromGateway(candidates, ordered)
 }
 
 type openAISelectionRNG struct {
-	state uint64
+	inner gateway.OpenAISelectionRNG
 }
 
 func newOpenAISelectionRNG(seed uint64) openAISelectionRNG {
-	if seed == 0 {
-		seed = 0x9e3779b97f4a7c15
-	}
-	return openAISelectionRNG{state: seed}
+	return openAISelectionRNG{inner: gateway.NewOpenAISelectionRNG(seed)}
 }
 
 func (r *openAISelectionRNG) nextUint64() uint64 {
-	// xorshift64*
-	x := r.state
-	x ^= x >> 12
-	x ^= x << 25
-	x ^= x >> 27
-	r.state = x
-	return x * 2685821657736338717
+	return r.inner.NextUint64()
 }
 
 func (r *openAISelectionRNG) nextFloat64() float64 {
-	// [0,1)
-	return float64(r.nextUint64()>>11) / (1 << 53)
+	return r.inner.NextFloat64()
 }
 
 func deriveOpenAISelectionSeed(req OpenAIAccountScheduleRequest) uint64 {
-	hasher := fnv.New64a()
-	writeValue := func(value string) {
-		trimmed := strings.TrimSpace(value)
-		if trimmed == "" {
-			return
-		}
-		_, _ = hasher.Write([]byte(trimmed))
-		_, _ = hasher.Write([]byte{0})
-	}
-
-	writeValue(req.SessionHash)
-	writeValue(req.PreviousResponseID)
-	writeValue(req.RequestedModel)
-	if req.GroupID != nil {
-		_, _ = hasher.Write([]byte(strconv.FormatInt(*req.GroupID, 10)))
-	}
-
-	seed := hasher.Sum64()
-	// 对“无会话锚点”的纯负载均衡请求引入时间熵，避免固定命中同一账号。
-	if strings.TrimSpace(req.SessionHash) == "" && strings.TrimSpace(req.PreviousResponseID) == "" {
-		seed ^= uint64(time.Now().UnixNano())
-	}
-	if seed == 0 {
-		seed = uint64(time.Now().UnixNano()) ^ 0x9e3779b97f4a7c15
-	}
-	return seed
+	return gateway.DeriveOpenAISelectionSeed(openAISelectionSeedInputToGateway(req))
 }
 
 func buildOpenAIWeightedSelectionOrder(
 	candidates []openAIAccountCandidateScore,
 	req OpenAIAccountScheduleRequest,
 ) []openAIAccountCandidateScore {
-	if len(candidates) <= 1 {
-		return append([]openAIAccountCandidateScore(nil), candidates...)
-	}
-
-	pool := append([]openAIAccountCandidateScore(nil), candidates...)
-	weights := make([]float64, len(pool))
-	minScore := pool[0].score
-	for i := 1; i < len(pool); i++ {
-		if pool[i].score < minScore {
-			minScore = pool[i].score
-		}
-	}
-	for i := range pool {
-		// 将 top-K 分值平移到正区间，避免“单一最高分账号”长期垄断。
-		weight := (pool[i].score - minScore) + 1.0
-		if math.IsNaN(weight) || math.IsInf(weight, 0) || weight <= 0 {
-			weight = 1.0
-		}
-		weights[i] = weight
-	}
-
-	order := make([]openAIAccountCandidateScore, 0, len(pool))
-	rng := newOpenAISelectionRNG(deriveOpenAISelectionSeed(req))
-	for len(pool) > 0 {
-		total := 0.0
-		for _, w := range weights {
-			total += w
-		}
-
-		selectedIdx := 0
-		if total > 0 {
-			r := rng.nextFloat64() * total
-			acc := 0.0
-			for i, w := range weights {
-				acc += w
-				if r <= acc {
-					selectedIdx = i
-					break
-				}
-			}
-		} else {
-			selectedIdx = int(rng.nextUint64() % uint64(len(pool)))
-		}
-
-		order = append(order, pool[selectedIdx])
-		pool = append(pool[:selectedIdx], pool[selectedIdx+1:]...)
-		weights = append(weights[:selectedIdx], weights[selectedIdx+1:]...)
-	}
-	return order
+	ordered := gateway.BuildOpenAIWeightedSelectionOrder(openAIAccountCandidateScoresToGateway(candidates), openAISelectionSeedInputToGateway(req))
+	return openAIAccountCandidateScoresFromGateway(candidates, ordered)
 }
 
 func (s *defaultOpenAIAccountScheduler) buildOpenAIAccountLoadPlan(
@@ -872,33 +799,8 @@ func (s *defaultOpenAIAccountScheduler) buildOpenAISelectionOrder(
 }
 
 func sortOpenAICompactRetryCandidates(pool []openAIAccountCandidateScore) []openAIAccountCandidateScore {
-	if len(pool) == 0 {
-		return nil
-	}
-	ordered := append([]openAIAccountCandidateScore(nil), pool...)
-	sort.SliceStable(ordered, func(i, j int) bool {
-		a, b := ordered[i], ordered[j]
-		if a.account.Priority != b.account.Priority {
-			return a.account.Priority < b.account.Priority
-		}
-		if a.loadInfo.LoadRate != b.loadInfo.LoadRate {
-			return a.loadInfo.LoadRate < b.loadInfo.LoadRate
-		}
-		if a.loadInfo.WaitingCount != b.loadInfo.WaitingCount {
-			return a.loadInfo.WaitingCount < b.loadInfo.WaitingCount
-		}
-		switch {
-		case a.account.LastUsedAt == nil && b.account.LastUsedAt != nil:
-			return true
-		case a.account.LastUsedAt != nil && b.account.LastUsedAt == nil:
-			return false
-		case a.account.LastUsedAt == nil && b.account.LastUsedAt == nil:
-			return false
-		default:
-			return a.account.LastUsedAt.Before(*b.account.LastUsedAt)
-		}
-	})
-	return ordered
+	ordered := gateway.SortOpenAICompactRetryCandidates(openAIAccountCandidateScoresToGateway(pool))
+	return openAIAccountCandidateScoresFromGateway(pool, ordered)
 }
 
 func (s *defaultOpenAIAccountScheduler) tryAcquireOpenAISelectionOrder(

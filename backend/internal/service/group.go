@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Aias00/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/timezone"
 )
 
@@ -87,39 +88,29 @@ type Group struct {
 }
 
 func (g *Group) IsActive() bool {
-	return g.Status == StatusActive
+	return gateway.IsGroupActive(g.Status)
 }
 
 func (g *Group) IsSubscriptionType() bool {
-	return g.SubscriptionType == SubscriptionTypeSubscription
+	return gateway.IsGroupSubscriptionType(g.SubscriptionType)
 }
 
 func (g *Group) HasDailyLimit() bool {
-	return g.DailyLimitUSD != nil && *g.DailyLimitUSD > 0
+	return gateway.HasPositiveLimit(g.DailyLimitUSD)
 }
 
 func (g *Group) HasWeeklyLimit() bool {
-	return g.WeeklyLimitUSD != nil && *g.WeeklyLimitUSD > 0
+	return gateway.HasPositiveLimit(g.WeeklyLimitUSD)
 }
 
 func (g *Group) HasMonthlyLimit() bool {
-	return g.MonthlyLimitUSD != nil && *g.MonthlyLimitUSD > 0
+	return gateway.HasPositiveLimit(g.MonthlyLimitUSD)
 }
 
 // GetImagePrice 根据 image_size 返回对应的图片生成价格
 // 如果分组未配置价格，返回 nil（调用方应使用默认值）
 func (g *Group) GetImagePrice(imageSize string) *float64 {
-	switch imageSize {
-	case "1K":
-		return g.ImagePrice1K
-	case "2K":
-		return g.ImagePrice2K
-	case "4K":
-		return g.ImagePrice4K
-	default:
-		// 未知尺寸默认按 2K 计费
-		return g.ImagePrice2K
-	}
+	return gateway.SelectGroupImagePrice(imageSize, g.ImagePrice1K, g.ImagePrice2K, g.ImagePrice4K)
 }
 
 // IsGroupContextValid reports whether a group from context has the fields required for routing decisions.
@@ -127,54 +118,22 @@ func IsGroupContextValid(group *Group) bool {
 	if group == nil {
 		return false
 	}
-	if group.ID <= 0 {
-		return false
-	}
-	if !group.Hydrated {
-		return false
-	}
-	if group.Platform == "" || group.Status == "" {
-		return false
-	}
-	return true
+	return gateway.IsGroupContextValid(gateway.GroupContextValidityInput{
+		ID:       group.ID,
+		Hydrated: group.Hydrated,
+		Platform: group.Platform,
+		Status:   group.Status,
+	})
 }
 
 // GetRoutingAccountIDs 根据请求模型获取路由账号 ID 列表
 // 返回匹配的优先账号 ID 列表，如果没有匹配规则则返回 nil
 func (g *Group) GetRoutingAccountIDs(requestedModel string) []int64 {
-	if !g.ModelRoutingEnabled || len(g.ModelRouting) == 0 || requestedModel == "" {
-		return nil
-	}
-
-	// 1. 精确匹配优先
-	if accountIDs, ok := g.ModelRouting[requestedModel]; ok && len(accountIDs) > 0 {
-		return accountIDs
-	}
-
-	// 2. 通配符匹配（前缀匹配）
-	for pattern, accountIDs := range g.ModelRouting {
-		if matchModelPattern(pattern, requestedModel) && len(accountIDs) > 0 {
-			return accountIDs
-		}
-	}
-
-	return nil
+	return gateway.RoutingAccountIDs(g.ModelRoutingEnabled, g.ModelRouting, requestedModel)
 }
 
-// matchModelPattern 检查模型是否匹配模式
-// 支持 * 通配符，如 "claude-opus-*" 匹配 "claude-opus-4-20250514"
 func matchModelPattern(pattern, model string) bool {
-	if pattern == model {
-		return true
-	}
-
-	// 处理 * 通配符（仅支持末尾通配符）
-	if strings.HasSuffix(pattern, "*") {
-		prefix := strings.TrimSuffix(pattern, "*")
-		return strings.HasPrefix(model, prefix)
-	}
-
-	return false
+	return gateway.MatchModelPattern(pattern, model)
 }
 
 // parseMinutes 把 "HH:MM" 解析为当日分钟数（0..1439），格式非法返回 (0,false)。

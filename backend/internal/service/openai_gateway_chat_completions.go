@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/apicompat"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/Aias00/cloudbase/internal/pkg/openai_compat"
@@ -285,31 +286,17 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 			)
 			return s.forwardAsRawChatCompletions(ctx, c, account, body, defaultMappedModel)
 		}
-		if s.shouldFailoverOpenAIUpstreamResponse(resp.StatusCode, upstreamMsg, respBody) {
-			upstreamDetail := ""
-			if s.cfg != nil && s.cfg.Gateway.LogUpstreamErrorBody {
-				maxBytes := s.cfg.Gateway.LogUpstreamErrorBodyMaxBytes
-				if maxBytes <= 0 {
-					maxBytes = 2048
-				}
-				upstreamDetail = truncateString(string(respBody), maxBytes)
-			}
-			appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
-				Platform:           account.Platform,
-				AccountID:          account.ID,
-				AccountName:        account.Name,
-				UpstreamStatusCode: resp.StatusCode,
-				UpstreamRequestID:  resp.Header.Get("x-request-id"),
-				Kind:               "failover",
-				Message:            upstreamMsg,
-				Detail:             upstreamDetail,
+		failoverDecision := s.evaluateOpenAIUpstreamFailure(account, resp.StatusCode, upstreamMsg, respBody)
+		if failoverDecision.Failover {
+			return nil, s.applyOpenAIUpstreamFailoverSideEffects(ctx, openAIUpstreamFailoverSideEffectInput{
+				HTTPContext:   c,
+				Account:       account,
+				Response:      resp,
+				ResponseBody:  respBody,
+				UpstreamModel: upstreamModel,
+				Message:       upstreamMsg,
+				Decision:      failoverDecision,
 			})
-			s.handleOpenAIAccountUpstreamError(ctx, account, resp.StatusCode, resp.Header, respBody, upstreamModel)
-			return nil, &UpstreamFailoverError{
-				StatusCode:             resp.StatusCode,
-				ResponseBody:           respBody,
-				RetryableOnSameAccount: account.IsPoolMode() && (account.IsPoolModeRetryableStatus(resp.StatusCode) || isOpenAITransientProcessingError(resp.StatusCode, upstreamMsg, respBody)),
-			}
 		}
 		return s.handleChatCompletionsErrorResponse(resp, c, account, billingModel)
 	}
@@ -356,38 +343,15 @@ func (s *OpenAIGatewayService) ForwardAsChatCompletions(
 }
 
 func normalizeResponsesRequestServiceTier(req *apicompat.ResponsesRequest) {
-	if req == nil {
-		return
-	}
-	req.ServiceTier = normalizedOpenAIServiceTierValue(req.ServiceTier)
+	gateway.NormalizeResponsesRequestServiceTier(req)
 }
 
 func normalizeResponsesBodyServiceTier(body []byte) ([]byte, string, error) {
-	if len(body) == 0 {
-		return body, "", nil
-	}
-	rawServiceTier := gjson.GetBytes(body, "service_tier").String()
-	if rawServiceTier == "" {
-		return body, "", nil
-	}
-	normalizedServiceTier := normalizedOpenAIServiceTierValue(rawServiceTier)
-	if normalizedServiceTier == "" {
-		trimmed, err := sjson.DeleteBytes(body, "service_tier")
-		return trimmed, "", err
-	}
-	if normalizedServiceTier == rawServiceTier {
-		return body, normalizedServiceTier, nil
-	}
-	trimmed, err := sjson.SetBytes(body, "service_tier", normalizedServiceTier)
-	return trimmed, normalizedServiceTier, err
+	return gateway.NormalizeResponsesBodyServiceTier(body)
 }
 
 func normalizedOpenAIServiceTierValue(raw string) string {
-	normalized := normalizeOpenAIServiceTier(raw)
-	if normalized == nil {
-		return ""
-	}
-	return *normalized
+	return gateway.NormalizedOpenAIServiceTierValue(raw)
 }
 
 func openAICompatFailedResponseMessage(resp *apicompat.ResponsesResponse) string {
@@ -540,10 +504,13 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 	}
 	scanner.Buffer(make([]byte, 0, 64*1024), maxLineSize)
 
-	streamInterval := time.Duration(0)
-	if s.cfg != nil && s.cfg.Gateway.StreamDataIntervalTimeout > 0 {
-		streamInterval = time.Duration(s.cfg.Gateway.StreamDataIntervalTimeout) * time.Second
+	streamIntervalSeconds := 0
+	keepaliveIntervalSeconds := 0
+	if s.cfg != nil {
+		streamIntervalSeconds = s.cfg.Gateway.StreamDataIntervalTimeout
+		keepaliveIntervalSeconds = s.cfg.Gateway.StreamKeepaliveInterval
 	}
+	streamInterval, keepaliveInterval := gateway.ResolveOpenAIStreamLoopTimings(streamIntervalSeconds, keepaliveIntervalSeconds)
 	var intervalTicker *time.Ticker
 	if streamInterval > 0 {
 		intervalTicker = time.NewTicker(streamInterval)
@@ -800,16 +767,10 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 	}
 	processFrame := func(frame openAICompatSSEFrame) bool {
 		payload := openAICompatPayloadWithEventType(frame.Data, frame.EventType)
-		if strings.TrimSpace(payload) == "[DONE]" {
+		if gateway.IsOpenAISSEDoneData(payload) {
 			return false
 		}
 		return processDataLine(payload)
-	}
-
-	// Determine keepalive interval
-	keepaliveInterval := time.Duration(0)
-	if s.cfg != nil && s.cfg.Gateway.StreamKeepaliveInterval > 0 {
-		keepaliveInterval = time.Duration(s.cfg.Gateway.StreamKeepaliveInterval) * time.Second
 	}
 
 	// No keepalive: fast synchronous path
@@ -821,7 +782,7 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 			if !ok {
 				continue
 			}
-			if strings.TrimSpace(frame.Data) == "[DONE]" {
+			if gateway.IsOpenAISSEDoneData(frame.Data) {
 				return missingTerminalErr()
 			}
 			if processFrame(frame) {
@@ -833,7 +794,7 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 			return resultWithUsage(), fmt.Errorf("stream usage incomplete: %w", err)
 		}
 		if frame, ok := parser.Finish(); ok {
-			if strings.TrimSpace(frame.Data) == "[DONE]" {
+			if gateway.IsOpenAISSEDoneData(frame.Data) {
 				return missingTerminalErr()
 			}
 			if processFrame(frame) {
@@ -844,15 +805,11 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 	}
 
 	// With keepalive: goroutine + channel + select
-	type scanEvent struct {
-		line string
-		err  error
-	}
-	events := make(chan scanEvent, 16)
+	events := make(chan gateway.OpenAIStreamScanEvent, 16)
 	done := make(chan struct{})
 	var lastReadAt int64
 	atomic.StoreInt64(&lastReadAt, time.Now().UnixNano())
-	sendEvent := func(ev scanEvent) bool {
+	sendEvent := func(ev gateway.OpenAIStreamScanEvent) bool {
 		select {
 		case events <- ev:
 			return true
@@ -864,12 +821,12 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 		defer close(events)
 		for scanner.Scan() {
 			atomic.StoreInt64(&lastReadAt, time.Now().UnixNano())
-			if !sendEvent(scanEvent{line: scanner.Text()}) {
+			if !sendEvent(gateway.OpenAIStreamScanEvent{Line: scanner.Text()}) {
 				return
 			}
 		}
 		if err := scanner.Err(); err != nil {
-			_ = sendEvent(scanEvent{err: err})
+			_ = sendEvent(gateway.OpenAIStreamScanEvent{Err: err})
 		}
 	}()
 	defer close(done)
@@ -891,7 +848,7 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 		case ev, ok := <-events:
 			if !ok {
 				if frame, ok := parser.Finish(); ok {
-					if strings.TrimSpace(frame.Data) == "[DONE]" {
+					if gateway.IsOpenAISSEDoneData(frame.Data) {
 						return missingTerminalErr()
 					}
 					if processFrame(frame) {
@@ -900,17 +857,17 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 				}
 				return missingTerminalErr()
 			}
-			if ev.err != nil {
-				handleScanErr(ev.err)
-				return resultWithUsage(), fmt.Errorf("stream usage incomplete: %w", ev.err)
+			if ev.Err != nil {
+				handleScanErr(ev.Err)
+				return resultWithUsage(), fmt.Errorf("stream usage incomplete: %w", ev.Err)
 			}
 			lastDataAt = time.Now()
-			line := ev.line
+			line := ev.Line
 			frame, ok := parser.AddLine(line)
 			if !ok {
 				continue
 			}
-			if strings.TrimSpace(frame.Data) == "[DONE]" {
+			if gateway.IsOpenAISSEDoneData(frame.Data) {
 				return missingTerminalErr()
 			}
 			if processFrame(frame) {
@@ -919,10 +876,10 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 
 		case <-intervalCh:
 			lastRead := time.Unix(0, atomic.LoadInt64(&lastReadAt))
-			if time.Since(lastRead) < streamInterval {
+			switch gateway.EvaluateOpenAIStreamDataInterval(time.Now(), lastRead, streamInterval, clientDisconnected) {
+			case gateway.OpenAIStreamTimeoutContinue:
 				continue
-			}
-			if clientDisconnected {
+			case gateway.OpenAIStreamTimeoutIncompleteAfterDisconnect:
 				return resultWithUsage(), fmt.Errorf("stream usage incomplete after timeout")
 			}
 			logger.L().Warn("openai chat_completions stream: data interval timeout",
@@ -933,13 +890,7 @@ func (s *OpenAIGatewayService) handleChatStreamingResponse(
 			return resultWithUsage(), fmt.Errorf("stream data interval timeout")
 
 		case <-keepaliveCh:
-			if clientDisconnected {
-				continue
-			}
-			if refusalDetector.Enabled() && !clientOutputStarted {
-				continue
-			}
-			if time.Since(lastDataAt) < keepaliveInterval {
+			if !gateway.ShouldSendOpenAIStreamKeepalive(time.Now(), lastDataAt, keepaliveInterval, clientDisconnected, refusalDetector.Enabled() && !clientOutputStarted) {
 				continue
 			}
 			// Send SSE comment as keepalive
@@ -972,15 +923,5 @@ func writeChatCompletionsError(c *gin.Context, statusCode int, errType, message 
 // error (e.g. upstream cyber_policy), so programmatic clients stop retrying.
 // Marshal 失败的兜底会丢弃 message 原文，仅保留 code 与固定提示。
 func buildChatStreamErrorSSE(code, message string) string {
-	payload, err := json.Marshal(gin.H{
-		"error": gin.H{
-			"type":    "invalid_request_error",
-			"code":    code,
-			"message": message,
-		},
-	})
-	if err != nil {
-		return "data: {\"error\":{\"type\":\"invalid_request_error\",\"code\":\"" + code + "\",\"message\":\"upstream error\"}}\n\n"
-	}
-	return "data: " + string(payload) + "\n\n"
+	return gateway.BuildOpenAIChatStreamErrorSSE(code, message)
 }

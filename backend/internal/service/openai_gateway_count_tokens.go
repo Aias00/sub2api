@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/apicompat"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/gin-gonic/gin"
@@ -245,11 +246,7 @@ func writeAnthropicCountTokensError(c *gin.Context, status int, errType, message
 }
 
 func isOpenAIInputTokensUnsupported(statusCode int, body []byte) bool {
-	if statusCode != http.StatusNotFound {
-		return false
-	}
-	msg := strings.ToLower(strings.TrimSpace(extractUpstreamErrorMessage(body)))
-	return strings.Contains(msg, "input_tokens") && strings.Contains(msg, "not found")
+	return gateway.IsOpenAIInputTokensUnsupported(statusCode, body)
 }
 
 func writeOpenAIOAuthInputTokensFallback(c *gin.Context, account *Account, prepared *openAIInputTokensCountPrepared, statusCode int) {
@@ -280,31 +277,7 @@ func writeOpenAIOAuthInputTokensFallback(c *gin.Context, account *Account, prepa
 }
 
 func isOpenAIOAuthInputTokensUnsupported(statusCode int, body []byte) bool {
-	switch statusCode {
-	case http.StatusUnauthorized, http.StatusForbidden, http.StatusNotFound:
-	default:
-		return false
-	}
-
-	bodyLower := strings.ToLower(string(body))
-	msg := strings.ToLower(strings.TrimSpace(extractUpstreamErrorMessage(body)))
-	code := strings.ToLower(strings.TrimSpace(extractUpstreamErrorCode(body)))
-
-	if code == "missing_scope" ||
-		strings.Contains(bodyLower, "api.responses.write") ||
-		strings.Contains(bodyLower, "missing scopes") ||
-		strings.Contains(bodyLower, "insufficient_scope") {
-		return true
-	}
-
-	if statusCode == http.StatusNotFound && isOpenAIInputTokensUnsupported(statusCode, body) {
-		return true
-	}
-
-	return strings.Contains(msg, "input_tokens") &&
-		(strings.Contains(msg, "not found") ||
-			strings.Contains(msg, "not supported") ||
-			strings.Contains(msg, "unsupported"))
+	return gateway.IsOpenAIOAuthInputTokensUnsupported(statusCode, body)
 }
 
 func estimateOpenAIInputTokens(req openAIInputTokensCountRequest) (int, error) {

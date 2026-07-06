@@ -13,6 +13,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/apicompat"
 	"github.com/Aias00/cloudbase/internal/pkg/claude"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
@@ -336,31 +337,17 @@ func (s *OpenAIGatewayService) ForwardAsAnthropic(
 			)
 			return s.ForwardAsAnthropic(ctx, c, account, body, promptCacheKey, defaultMappedModel)
 		}
-		if s.shouldFailoverOpenAIUpstreamResponse(resp.StatusCode, upstreamMsg, respBody) {
-			upstreamDetail := ""
-			if s.cfg != nil && s.cfg.Gateway.LogUpstreamErrorBody {
-				maxBytes := s.cfg.Gateway.LogUpstreamErrorBodyMaxBytes
-				if maxBytes <= 0 {
-					maxBytes = 2048
-				}
-				upstreamDetail = truncateString(string(respBody), maxBytes)
-			}
-			appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
-				Platform:           account.Platform,
-				AccountID:          account.ID,
-				AccountName:        account.Name,
-				UpstreamStatusCode: resp.StatusCode,
-				UpstreamRequestID:  resp.Header.Get("x-request-id"),
-				Kind:               "failover",
-				Message:            upstreamMsg,
-				Detail:             upstreamDetail,
+		failoverDecision := s.evaluateOpenAIUpstreamFailure(account, resp.StatusCode, upstreamMsg, respBody)
+		if failoverDecision.Failover {
+			return nil, s.applyOpenAIUpstreamFailoverSideEffects(ctx, openAIUpstreamFailoverSideEffectInput{
+				HTTPContext:   c,
+				Account:       account,
+				Response:      resp,
+				ResponseBody:  respBody,
+				UpstreamModel: upstreamModel,
+				Message:       upstreamMsg,
+				Decision:      failoverDecision,
 			})
-			s.handleOpenAIAccountUpstreamError(ctx, account, resp.StatusCode, resp.Header, respBody, upstreamModel)
-			return nil, &UpstreamFailoverError{
-				StatusCode:             resp.StatusCode,
-				ResponseBody:           respBody,
-				RetryableOnSameAccount: account.IsPoolMode() && (account.IsPoolModeRetryableStatus(resp.StatusCode) || isOpenAITransientProcessingError(resp.StatusCode, upstreamMsg, respBody)),
-			}
 		}
 		// Non-failover error: return Anthropic-formatted error to client
 		return s.handleAnthropicErrorResponse(resp, c, account, billingModel)
@@ -519,12 +506,7 @@ func (s *OpenAIGatewayService) handleAnthropicBufferedStreamingResponse(
 }
 
 func isOpenAICompatResponsesTerminalEvent(eventType string) bool {
-	switch strings.TrimSpace(eventType) {
-	case "response.completed", "response.done", "response.incomplete", "response.failed":
-		return true
-	default:
-		return false
-	}
+	return gateway.IsOpenAICompatResponsesTerminalEvent(eventType)
 }
 
 func (s *OpenAIGatewayService) recordOpenAIMessagesStreamUpstreamError(c *gin.Context, account *Account, upstreamRequestID, kind, message string) {

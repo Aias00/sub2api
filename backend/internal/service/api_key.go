@@ -3,28 +3,29 @@ package service
 import (
 	"time"
 
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/ip"
 )
 
 // API Key status constants
 const (
-	StatusAPIKeyActive         = "active"
-	StatusAPIKeyDisabled       = "disabled"
-	StatusAPIKeyQuotaExhausted = "quota_exhausted"
-	StatusAPIKeyExpired        = "expired"
+	StatusAPIKeyActive         = gateway.StatusAPIKeyActive
+	StatusAPIKeyDisabled       = gateway.StatusAPIKeyDisabled
+	StatusAPIKeyQuotaExhausted = gateway.StatusAPIKeyQuotaExhausted
+	StatusAPIKeyExpired        = gateway.StatusAPIKeyExpired
 )
 
 // Rate limit window durations
 const (
-	RateLimitWindow5h = 5 * time.Hour
-	RateLimitWindow1d = 24 * time.Hour
-	RateLimitWindow7d = 7 * 24 * time.Hour
+	RateLimitWindow5h = gateway.RateLimitWindow5h
+	RateLimitWindow1d = gateway.RateLimitWindow1d
+	RateLimitWindow7d = gateway.RateLimitWindow7d
 )
 
 // IsWindowExpired returns true if the window starting at windowStart has exceeded the given duration.
 // A nil windowStart is treated as expired — no initialized window means any accumulated usage is stale.
 func IsWindowExpired(windowStart *time.Time, duration time.Duration) bool {
-	return windowStart == nil || time.Since(*windowStart) >= duration
+	return gateway.IsWindowExpired(windowStart, duration)
 }
 
 type APIKey struct {
@@ -63,7 +64,7 @@ type APIKey struct {
 }
 
 func (k *APIKey) IsActive() bool {
-	return k.Status == StatusActive
+	return gateway.IsAPIKeyActive(k.Status)
 }
 
 // HasRateLimits returns true if any rate limit window is configured
@@ -73,42 +74,22 @@ func (k *APIKey) HasRateLimits() bool {
 
 // IsExpired checks if the API key has expired
 func (k *APIKey) IsExpired() bool {
-	if k.ExpiresAt == nil {
-		return false
-	}
-	return time.Now().After(*k.ExpiresAt)
+	return gateway.IsAPIKeyExpired(k.ExpiresAt, time.Now())
 }
 
 // IsQuotaExhausted checks if the API key quota is exhausted
 func (k *APIKey) IsQuotaExhausted() bool {
-	if k.Quota <= 0 {
-		return false // unlimited
-	}
-	return k.QuotaUsed >= k.Quota
+	return gateway.IsAPIKeyQuotaExhausted(k.Quota, k.QuotaUsed)
 }
 
 // GetQuotaRemaining returns remaining quota (-1 for unlimited)
 func (k *APIKey) GetQuotaRemaining() float64 {
-	if k.Quota <= 0 {
-		return -1 // unlimited
-	}
-	remaining := k.Quota - k.QuotaUsed
-	if remaining < 0 {
-		return 0
-	}
-	return remaining
+	return gateway.APIKeyQuotaRemaining(k.Quota, k.QuotaUsed)
 }
 
 // GetDaysUntilExpiry returns days until expiry (-1 for never expires)
 func (k *APIKey) GetDaysUntilExpiry() int {
-	if k.ExpiresAt == nil {
-		return -1 // never expires
-	}
-	duration := time.Until(*k.ExpiresAt)
-	if duration < 0 {
-		return 0
-	}
-	return int(duration.Hours() / 24)
+	return gateway.APIKeyDaysUntilExpiry(k.ExpiresAt, time.Now())
 }
 
 // EffectiveUsage5h returns the 5h window usage, or 0 if the window has expired.
@@ -136,8 +117,4 @@ func (k *APIKey) EffectiveUsage7d() float64 {
 }
 
 // APIKeyListFilters holds optional filtering parameters for listing API keys.
-type APIKeyListFilters struct {
-	Search  string
-	Status  string
-	GroupID *int64 // nil=不筛选, 0=无分组, >0=指定分组
-}
+type APIKeyListFilters = gateway.APIKeyListFilters

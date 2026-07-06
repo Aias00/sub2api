@@ -4,13 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 )
 
 var (
-	ErrGroupNotFound = infraerrors.NotFound("GROUP_NOT_FOUND", "group not found")
-	ErrGroupExists   = infraerrors.Conflict("GROUP_EXISTS", "group name already exists")
+	ErrGroupNotFound = gateway.ErrGroupNotFound
+	ErrGroupExists   = gateway.ErrGroupExists
 )
 
 type GroupRepository interface {
@@ -37,11 +37,7 @@ type GroupRepository interface {
 	UpdateSortOrders(ctx context.Context, updates []GroupSortOrderUpdate) error
 }
 
-// GroupSortOrderUpdate 分组排序更新
-type GroupSortOrderUpdate struct {
-	ID        int64 `json:"id"`
-	SortOrder int   `json:"sort_order"`
-}
+type GroupSortOrderUpdate = gateway.GroupSortOrderUpdate
 
 // CreateGroupRequest 创建分组请求
 type CreateGroupRequest struct {

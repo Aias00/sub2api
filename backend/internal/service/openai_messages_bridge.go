@@ -2,13 +2,11 @@ package service
 
 import (
 	"bytes"
-	"strings"
 
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/gin-gonic/gin"
 	"github.com/tidwall/gjson"
 )
-
-const openAICompatMessagesBridgeContextKey = "openai_compat_messages_bridge"
 
 func isOpenAICompatMessagesBridgeBody(body []byte) bool {
 	if len(body) == 0 {
@@ -31,27 +29,13 @@ func isOpenAICompatMessagesBridgeRequestBody(reqBody map[string]any) bool {
 }
 
 func isOpenAICompatMessagesBridgePromptCacheKey(key string) bool {
-	key = strings.TrimSpace(key)
-	return strings.HasPrefix(key, "anthropic-metadata-") ||
-		strings.HasPrefix(key, "anthropic-cache-") ||
-		strings.HasPrefix(key, "anthropic-digest-")
+	return gateway.IsOpenAICompatMessagesBridgePromptCacheKey(key)
 }
 
 func setOpenAICompatMessagesBridgeContext(c *gin.Context, enabled bool) {
-	if c == nil || !enabled {
-		return
-	}
-	c.Set(openAICompatMessagesBridgeContextKey, true)
+	gateway.SetOpenAICompatMessagesBridgeContext(c, enabled)
 }
 
 func isOpenAICompatMessagesBridgeContext(c *gin.Context) bool {
-	if c == nil {
-		return false
-	}
-	value, ok := c.Get(openAICompatMessagesBridgeContextKey)
-	if !ok {
-		return false
-	}
-	enabled, ok := value.(bool)
-	return ok && enabled
+	return gateway.IsOpenAICompatMessagesBridgeContext(c)
 }

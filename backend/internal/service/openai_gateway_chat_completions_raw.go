@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/apicompat"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/Aias00/cloudbase/internal/pkg/xai"
@@ -208,31 +209,17 @@ func (s *OpenAIGatewayService) forwardAsRawChatCompletions(
 			}
 			return s.handleChatCompletionsErrorResponse(resp, c, account, billingModel)
 		}
-		if s.shouldFailoverOpenAIUpstreamResponse(resp.StatusCode, upstreamMsg, respBody) {
-			upstreamDetail := ""
-			if s.cfg != nil && s.cfg.Gateway.LogUpstreamErrorBody {
-				maxBytes := s.cfg.Gateway.LogUpstreamErrorBodyMaxBytes
-				if maxBytes <= 0 {
-					maxBytes = 2048
-				}
-				upstreamDetail = truncateString(string(respBody), maxBytes)
-			}
-			appendOpsUpstreamError(c, OpsUpstreamErrorEvent{
-				Platform:           account.Platform,
-				AccountID:          account.ID,
-				AccountName:        account.Name,
-				UpstreamStatusCode: resp.StatusCode,
-				UpstreamRequestID:  resp.Header.Get("x-request-id"),
-				Kind:               "failover",
-				Message:            upstreamMsg,
-				Detail:             upstreamDetail,
+		failoverDecision := s.evaluateOpenAIUpstreamFailure(account, resp.StatusCode, upstreamMsg, respBody)
+		if failoverDecision.Failover {
+			return nil, s.applyOpenAIUpstreamFailoverSideEffects(ctx, openAIUpstreamFailoverSideEffectInput{
+				HTTPContext:   c,
+				Account:       account,
+				Response:      resp,
+				ResponseBody:  respBody,
+				UpstreamModel: upstreamModel,
+				Message:       upstreamMsg,
+				Decision:      failoverDecision,
 			})
-			s.handleOpenAIAccountUpstreamError(ctx, account, resp.StatusCode, resp.Header, respBody, upstreamModel)
-			return nil, &UpstreamFailoverError{
-				StatusCode:             resp.StatusCode,
-				ResponseBody:           respBody,
-				RetryableOnSameAccount: account.IsPoolMode() && (account.IsPoolModeRetryableStatus(resp.StatusCode) || isOpenAITransientProcessingError(resp.StatusCode, upstreamMsg, respBody)),
-			}
 		}
 		return s.handleChatCompletionsErrorResponse(resp, c, account, billingModel)
 	}
@@ -434,14 +421,7 @@ func ensureOpenAIChatStreamUsage(body []byte) ([]byte, error) {
 }
 
 func isOpenAIChatUsageOnlyStreamChunk(payload string) bool {
-	if strings.TrimSpace(payload) == "" {
-		return false
-	}
-	if !gjson.Get(payload, "usage").Exists() {
-		return false
-	}
-	choices := gjson.Get(payload, "choices")
-	return choices.Exists() && choices.IsArray() && len(choices.Array()) == 0
+	return gateway.IsOpenAIChatUsageOnlyStreamChunk(payload)
 }
 
 // extractCCStreamUsage 从单个 CC 流式 chunk 的 payload 中提取 usage 字段。

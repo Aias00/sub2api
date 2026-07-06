@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/Aias00/cloudbase/internal/pkg/openai"
 	"github.com/Aias00/cloudbase/internal/util/responseheaders"
@@ -321,60 +322,15 @@ func shouldLogOpenAIWSBufferedEvent(idx int) bool {
 }
 
 func openAIWSEventMayContainModel(eventType string) bool {
-	switch eventType {
-	case "response.created",
-		"response.in_progress",
-		"response.completed",
-		"response.done",
-		"response.failed",
-		"response.incomplete",
-		"response.cancelled",
-		"response.canceled":
-		return true
-	default:
-		trimmed := strings.TrimSpace(eventType)
-		if trimmed == eventType {
-			return false
-		}
-		switch trimmed {
-		case "response.created",
-			"response.in_progress",
-			"response.completed",
-			"response.done",
-			"response.failed",
-			"response.incomplete",
-			"response.cancelled",
-			"response.canceled":
-			return true
-		default:
-			return false
-		}
-	}
+	return gateway.OpenAIWSEventMayContainModel(eventType)
 }
 
 func openAIWSEventMayContainToolCalls(eventType string) bool {
-	eventType = strings.TrimSpace(eventType)
-	if eventType == "" {
-		return false
-	}
-	if strings.Contains(eventType, "function_call") || strings.Contains(eventType, "tool_call") {
-		return true
-	}
-	switch eventType {
-	case "response.output_item.added", "response.output_item.done", "response.completed", "response.done":
-		return true
-	default:
-		return false
-	}
+	return gateway.OpenAIWSEventMayContainToolCalls(eventType)
 }
 
 func openAIWSEventShouldParseUsage(eventType string) bool {
-	switch strings.TrimSpace(eventType) {
-	case "response.completed", "response.done", "response.failed", "response.incomplete", "response.cancelled", "response.canceled":
-		return true
-	default:
-		return false
-	}
+	return gateway.OpenAIWSEventShouldParseUsage(eventType)
 }
 
 func parseOpenAIWSEventEnvelope(message []byte) (eventType string, responseID string, response gjson.Result) {
@@ -1445,174 +1401,39 @@ func cloneOpenAIWSRawMessages(items []json.RawMessage) []json.RawMessage {
 }
 
 func normalizeOpenAIWSJSONForCompare(raw []byte) ([]byte, error) {
-	trimmed := bytes.TrimSpace(raw)
-	if len(trimmed) == 0 {
-		return nil, errors.New("json is empty")
-	}
-	var decoded any
-	if err := json.Unmarshal(trimmed, &decoded); err != nil {
-		return nil, err
-	}
-	return json.Marshal(decoded)
+	return gateway.NormalizeOpenAIWSJSONForCompare(raw)
 }
 
 func normalizeOpenAIWSJSONForCompareOrRaw(raw []byte) []byte {
-	normalized, err := normalizeOpenAIWSJSONForCompare(raw)
-	if err != nil {
-		return bytes.TrimSpace(raw)
-	}
-	return normalized
+	return gateway.NormalizeOpenAIWSJSONForCompareOrRaw(raw)
 }
 
 func normalizeOpenAIWSPayloadWithoutInputAndPreviousResponseID(payload []byte) ([]byte, error) {
-	if len(payload) == 0 {
-		return nil, errors.New("payload is empty")
-	}
-	var decoded map[string]any
-	if err := json.Unmarshal(payload, &decoded); err != nil {
-		return nil, err
-	}
-	delete(decoded, "input")
-	delete(decoded, "previous_response_id")
-	return json.Marshal(decoded)
+	return gateway.NormalizeOpenAIWSPayloadWithoutInputAndPreviousResponseID(payload)
 }
 
 func openAIWSExtractNormalizedInputSequence(payload []byte) ([]json.RawMessage, bool, error) {
-	if len(payload) == 0 {
-		return nil, false, nil
-	}
-	inputValue := gjson.GetBytes(payload, "input")
-	if !inputValue.Exists() {
-		return nil, false, nil
-	}
-	if inputValue.Type == gjson.JSON {
-		raw := strings.TrimSpace(inputValue.Raw)
-		if strings.HasPrefix(raw, "[") {
-			var items []json.RawMessage
-			if err := json.Unmarshal([]byte(raw), &items); err != nil {
-				return nil, true, err
-			}
-			return items, true, nil
-		}
-		return []json.RawMessage{json.RawMessage(raw)}, true, nil
-	}
-	if inputValue.Type == gjson.String {
-		encoded, _ := json.Marshal(inputValue.String())
-		return []json.RawMessage{encoded}, true, nil
-	}
-	return []json.RawMessage{json.RawMessage(inputValue.Raw)}, true, nil
+	return gateway.ExtractOpenAIWSNormalizedInputSequence(payload)
 }
 
 func openAIWSInputIsPrefixExtended(previousPayload, currentPayload []byte) (bool, error) {
-	previousItems, previousExists, prevErr := openAIWSExtractNormalizedInputSequence(previousPayload)
-	if prevErr != nil {
-		return false, prevErr
-	}
-	currentItems, currentExists, currentErr := openAIWSExtractNormalizedInputSequence(currentPayload)
-	if currentErr != nil {
-		return false, currentErr
-	}
-	if !previousExists && !currentExists {
-		return true, nil
-	}
-	if !previousExists {
-		return len(currentItems) == 0, nil
-	}
-	if !currentExists {
-		return len(previousItems) == 0, nil
-	}
-	if len(currentItems) < len(previousItems) {
-		return false, nil
-	}
-
-	for idx := range previousItems {
-		previousNormalized := normalizeOpenAIWSJSONForCompareOrRaw(previousItems[idx])
-		currentNormalized := normalizeOpenAIWSJSONForCompareOrRaw(currentItems[idx])
-		if !bytes.Equal(previousNormalized, currentNormalized) {
-			return false, nil
-		}
-	}
-	return true, nil
+	return gateway.OpenAIWSInputIsPrefixExtended(previousPayload, currentPayload)
 }
 
 func openAIWSRawItemsHasPrefix(items []json.RawMessage, prefix []json.RawMessage) bool {
-	if len(prefix) == 0 {
-		return true
-	}
-	if len(items) < len(prefix) {
-		return false
-	}
-	for idx := range prefix {
-		previousNormalized := normalizeOpenAIWSJSONForCompareOrRaw(prefix[idx])
-		currentNormalized := normalizeOpenAIWSJSONForCompareOrRaw(items[idx])
-		if !bytes.Equal(previousNormalized, currentNormalized) {
-			return false
-		}
-	}
-	return true
+	return gateway.OpenAIWSRawItemsHasPrefix(items, prefix)
 }
 
 func openAIWSRawItemsHasFunctionCallOutput(items []json.RawMessage) bool {
-	for _, item := range items {
-		if isCodexToolCallOutputItemType(gjson.GetBytes(item, "type").String()) {
-			return true
-		}
-	}
-	return false
+	return gateway.OpenAIWSRawItemsHasFunctionCallOutput(items)
 }
 
 func openAIWSRawItemsHaveToolCallContextForOutputs(items []json.RawMessage) bool {
-	if len(items) == 0 {
-		return false
-	}
-	contextCallIDs := make(map[string]struct{})
-	outputCallIDs := make(map[string]struct{})
-	for _, item := range items {
-		itemType := gjson.GetBytes(item, "type").String()
-		callID := strings.TrimSpace(gjson.GetBytes(item, "call_id").String())
-		switch {
-		case isCodexToolCallContextItemType(itemType):
-			if callID != "" {
-				contextCallIDs[callID] = struct{}{}
-			}
-		case isCodexToolCallOutputItemType(itemType):
-			if callID == "" {
-				return false
-			}
-			outputCallIDs[callID] = struct{}{}
-		}
-	}
-	if len(outputCallIDs) == 0 || len(contextCallIDs) == 0 {
-		return false
-	}
-	for callID := range outputCallIDs {
-		if _, ok := contextCallIDs[callID]; !ok {
-			return false
-		}
-	}
-	return true
+	return gateway.OpenAIWSRawItemsHaveToolCallContextForOutputs(items)
 }
 
 func openAIWSRawPayloadHasToolCallOutput(payload []byte) bool {
-	if len(payload) == 0 {
-		return false
-	}
-	input := gjson.GetBytes(payload, "input")
-	if !input.Exists() {
-		return false
-	}
-	if input.IsArray() {
-		for _, item := range input.Array() {
-			if isCodexToolCallOutputItemType(item.Get("type").String()) {
-				return true
-			}
-		}
-		return false
-	}
-	if input.Type == gjson.JSON {
-		return isCodexToolCallOutputItemType(input.Get("type").String())
-	}
-	return false
+	return gateway.OpenAIWSRawPayloadHasToolCallOutput(payload)
 }
 
 func buildOpenAIWSReplayInputSequence(
@@ -4192,36 +4013,11 @@ func payloadAsJSONBytes(payload map[string]any) []byte {
 }
 
 func isOpenAIWSTerminalEvent(eventType string) bool {
-	switch strings.TrimSpace(eventType) {
-	case "response.completed", "response.done", "response.failed", "response.incomplete", "response.cancelled", "response.canceled":
-		return true
-	default:
-		return false
-	}
+	return gateway.IsOpenAIWSTerminalEvent(eventType)
 }
 
 func isOpenAIWSTokenEvent(eventType string) bool {
-	eventType = strings.TrimSpace(eventType)
-	if eventType == "" {
-		return false
-	}
-	switch eventType {
-	case "response.created", "response.in_progress", "response.output_item.added", "response.output_item.done":
-		return false
-	}
-	if strings.Contains(eventType, ".delta") {
-		return true
-	}
-	if strings.HasPrefix(eventType, "response.output_text") {
-		return true
-	}
-	if strings.HasPrefix(eventType, "response.output") {
-		return true
-	}
-	// 终止事件（response.completed/done/failed/...）由 isOpenAIWSTerminalEvent 单独处理。
-	// 不能把它们当作 token event，否则当上游没有可识别的 delta 时，
-	// firstTokenMs 会被填到终止时刻，等于把"总耗时"误报为"首 token 延迟"。
-	return false
+	return gateway.IsOpenAIWSTokenEvent(eventType)
 }
 
 func replaceOpenAIWSMessageModel(message []byte, fromModel, toModel string) []byte {
@@ -4455,23 +4251,7 @@ func classifyOpenAIWSAcquireError(err error) string {
 }
 
 func isOpenAIWSRateLimitError(codeRaw, errTypeRaw, msgRaw string) bool {
-	code := strings.ToLower(strings.TrimSpace(codeRaw))
-	errType := strings.ToLower(strings.TrimSpace(errTypeRaw))
-	msg := strings.ToLower(strings.TrimSpace(msgRaw))
-
-	if strings.Contains(errType, "rate_limit") || strings.Contains(errType, "usage_limit") {
-		return true
-	}
-	if strings.Contains(code, "rate_limit") || strings.Contains(code, "usage_limit") || strings.Contains(code, "insufficient_quota") {
-		return true
-	}
-	if strings.Contains(msg, "usage limit") && strings.Contains(msg, "reached") {
-		return true
-	}
-	if strings.Contains(msg, "rate limit") && (strings.Contains(msg, "reached") || strings.Contains(msg, "exceeded")) {
-		return true
-	}
-	return false
+	return gateway.IsOpenAIWSRateLimitError(codeRaw, errTypeRaw, msgRaw)
 }
 
 func (s *OpenAIGatewayService) persistOpenAIWSRateLimitSignal(ctx context.Context, account *Account, headers http.Header, responseBody []byte, codeRaw, errTypeRaw, msgRaw string) {
@@ -4485,49 +4265,7 @@ func (s *OpenAIGatewayService) persistOpenAIWSRateLimitSignal(ctx context.Contex
 }
 
 func classifyOpenAIWSErrorEventFromRaw(codeRaw, errTypeRaw, msgRaw string) (string, bool) {
-	code := strings.ToLower(strings.TrimSpace(codeRaw))
-	errType := strings.ToLower(strings.TrimSpace(errTypeRaw))
-	msg := strings.ToLower(strings.TrimSpace(msgRaw))
-
-	switch code {
-	case "upgrade_required":
-		return "upgrade_required", true
-	case "websocket_not_supported", "websocket_unsupported":
-		return "ws_unsupported", true
-	case "websocket_connection_limit_reached":
-		return "ws_connection_limit_reached", true
-	case "invalid_encrypted_content":
-		return "invalid_encrypted_content", true
-	case "previous_response_not_found":
-		return "previous_response_not_found", true
-	}
-	if isOpenAIWSRateLimitError(codeRaw, errTypeRaw, msgRaw) {
-		return "upstream_rate_limited", false
-	}
-	if strings.Contains(msg, "upgrade required") || strings.Contains(msg, "status 426") {
-		return "upgrade_required", true
-	}
-	if strings.Contains(errType, "upgrade") {
-		return "upgrade_required", true
-	}
-	if strings.Contains(msg, "websocket") && strings.Contains(msg, "unsupported") {
-		return "ws_unsupported", true
-	}
-	if strings.Contains(msg, "connection limit") && strings.Contains(msg, "websocket") {
-		return "ws_connection_limit_reached", true
-	}
-	if strings.Contains(msg, "invalid_encrypted_content") ||
-		(strings.Contains(msg, "encrypted content") && strings.Contains(msg, "could not be verified")) {
-		return "invalid_encrypted_content", true
-	}
-	if strings.Contains(msg, "previous_response_not_found") ||
-		(strings.Contains(msg, "previous response") && strings.Contains(msg, "not found")) {
-		return "previous_response_not_found", true
-	}
-	if strings.Contains(errType, "server_error") || strings.Contains(code, "server_error") {
-		return "upstream_error_event", true
-	}
-	return "event_error", false
+	return gateway.ClassifyOpenAIWSErrorEvent(codeRaw, errTypeRaw, msgRaw)
 }
 
 func classifyOpenAIWSErrorEvent(message []byte) (string, bool) {
@@ -4538,27 +4276,7 @@ func classifyOpenAIWSErrorEvent(message []byte) (string, bool) {
 }
 
 func openAIWSErrorHTTPStatusFromRaw(codeRaw, errTypeRaw string) int {
-	code := strings.ToLower(strings.TrimSpace(codeRaw))
-	errType := strings.ToLower(strings.TrimSpace(errTypeRaw))
-	switch {
-	case strings.Contains(errType, "invalid_request"),
-		strings.Contains(code, "invalid_request"),
-		strings.Contains(code, "bad_request"),
-		code == "invalid_encrypted_content",
-		code == "previous_response_not_found":
-		return http.StatusBadRequest
-	case strings.Contains(errType, "authentication"),
-		strings.Contains(code, "invalid_api_key"),
-		strings.Contains(code, "unauthorized"):
-		return http.StatusUnauthorized
-	case strings.Contains(errType, "permission"),
-		strings.Contains(code, "forbidden"):
-		return http.StatusForbidden
-	case isOpenAIWSRateLimitError(codeRaw, errTypeRaw, ""):
-		return http.StatusTooManyRequests
-	default:
-		return http.StatusBadGateway
-	}
+	return gateway.OpenAIWSErrorHTTPStatus(codeRaw, errTypeRaw)
 }
 
 func openAIWSErrorHTTPStatus(message []byte) int {

@@ -3,6 +3,7 @@ package service
 import (
 	"strings"
 
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/tidwall/gjson"
 )
 
@@ -15,7 +16,7 @@ func (a *openAISSEDataAccumulator) AddLine(line string, fn func([]byte)) {
 		return
 	}
 	trimmedLine := strings.TrimRight(line, "\r\n")
-	if data, ok := extractOpenAISSEDataLine(trimmedLine); ok {
+	if data, ok := gateway.ExtractOpenAISSEDataLine(trimmedLine); ok {
 		a.lines = append(a.lines, data)
 		return
 	}
@@ -33,14 +34,7 @@ func (a *openAISSEDataAccumulator) Flush(fn func([]byte)) {
 }
 
 func forEachOpenAISSEDataPayload(body string, fn func([]byte)) {
-	if fn == nil || strings.TrimSpace(body) == "" {
-		return
-	}
-	var acc openAISSEDataAccumulator
-	for _, line := range strings.Split(body, "\n") {
-		acc.AddLine(line, fn)
-	}
-	acc.Flush(fn)
+	gateway.ForEachOpenAISSEDataPayload(body, fn)
 }
 
 func emitOpenAISSEDataPayloads(lines []string, fn func([]byte)) {

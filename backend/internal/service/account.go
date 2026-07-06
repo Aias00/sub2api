@@ -15,6 +15,7 @@ import (
 
 	"github.com/Aias00/cloudbase/internal/config"
 	"github.com/Aias00/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/gateway"
 	"github.com/Aias00/cloudbase/internal/pkg/xai"
 )
 
@@ -105,7 +106,7 @@ type TempUnschedulableRule struct {
 }
 
 func (a *Account) IsActive() bool {
-	return a.Status == StatusActive
+	return gateway.IsAccountActive(a.Status)
 }
 
 // BillingRateMultiplier 返回账号计费倍率。
@@ -113,30 +114,21 @@ func (a *Account) IsActive() bool {
 // - 允许 0，表示该账号计费为 0
 // - 负数属于非法数据，出于安全考虑按 1.0 处理
 func (a *Account) BillingRateMultiplier() float64 {
-	if a == nil || a.RateMultiplier == nil {
+	if a == nil {
 		return 1.0
 	}
-	if *a.RateMultiplier < 0 {
-		return 1.0
-	}
-	return *a.RateMultiplier
+	return gateway.AccountBillingRateMultiplier(a.RateMultiplier)
 }
 
 func (a *Account) EffectiveLoadFactor() int {
 	if a == nil {
 		return 1
 	}
-	if a.LoadFactor != nil && *a.LoadFactor > 0 {
-		return *a.LoadFactor
-	}
-	if a.Concurrency > 0 {
-		return a.Concurrency
-	}
-	return 1
+	return gateway.AccountEffectiveLoadFactor(a.LoadFactor, a.Concurrency)
 }
 
 func (a *Account) IsSchedulable() bool {
-	if !a.IsActive() || !a.Schedulable {
+	if a == nil || !gateway.IsAccountSchedulable(a.Status, a.Schedulable) {
 		return false
 	}
 	now := time.Now()
