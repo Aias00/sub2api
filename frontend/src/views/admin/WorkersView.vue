@@ -11,7 +11,7 @@
               Worker 管理
             </h1>
             <p class="mt-2 max-w-3xl text-sm leading-6 text-gray-500 dark:text-dark-300">
-              查看业务 Worker 与热点采集 Worker 的运行状态，执行重启、上线、下线，并获取部署命令。
+              查看业务 Worker 与热点采集 Worker 的运行状态，执行重启、上线、下线，并更新受控 Worker 镜像。
             </p>
           </div>
           <button class="btn btn-secondary" type="button" :disabled="loading" @click="loadWorkers">
@@ -26,6 +26,13 @@
         class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200"
       >
         {{ management.reason || 'Worker 管理动作未启用。' }}
+      </div>
+
+      <div
+        v-if="management && !management.deploy_enabled"
+        class="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200"
+      >
+        {{ management.deploy_reason || 'Worker 镜像更新未启用。' }}
       </div>
 
       <div v-if="error" class="rounded-2xl border border-red-200 bg-red-50 p-4 text-sm text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200">
@@ -50,6 +57,10 @@
             </div>
 
             <div class="mt-4 flex flex-wrap gap-2">
+              <button class="btn btn-primary btn-sm" type="button" :disabled="!canDeploy(node) || actionLoading === `${node.id}:deploy`" @click="openDeployDialog(node)">
+                <Icon name="upload" size="sm" :class="actionLoading === `${node.id}:deploy` ? 'animate-spin' : ''" />
+                更新镜像
+              </button>
               <button class="btn btn-secondary btn-sm" type="button" @click="copyDeployCommand(node)">
                 <Icon name="copy" size="sm" />
                 部署命令
@@ -69,6 +80,9 @@
 
             <p v-if="!canManage(node)" class="mt-3 text-xs text-amber-700 dark:text-amber-300">
               {{ node.management_reason || management?.reason || '该节点暂不可由页面管理。' }}
+            </p>
+            <p v-if="!canDeploy(node)" class="mt-2 text-xs text-amber-700 dark:text-amber-300">
+              {{ node.deploy_reason || management?.deploy_reason || '该节点暂不可由页面更新镜像。' }}
             </p>
           </div>
 
@@ -116,6 +130,61 @@
       <div v-if="!loading && workerNodes.length === 0" class="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500 dark:border-dark-700 dark:text-dark-300">
         暂无 Worker 节点数据
       </div>
+
+      <div
+        v-if="deployTarget"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-gray-950/60 p-4"
+        @click.self="closeDeployDialog"
+      >
+        <form class="w-full max-w-xl rounded-2xl border border-gray-200 bg-white p-5 shadow-xl dark:border-dark-700 dark:bg-dark-900" @submit.prevent="submitDeployImage">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <p class="text-base font-black text-gray-950 dark:text-white">更新 Worker 镜像</p>
+              <p class="mt-1 text-xs text-gray-500 dark:text-dark-300">{{ nodeTitle(deployTarget.id) }}</p>
+            </div>
+            <button class="btn btn-secondary btn-sm" type="button" :disabled="deploySubmitting" @click="closeDeployDialog">
+              关闭
+            </button>
+          </div>
+
+          <label class="mt-5 block text-sm font-semibold text-gray-700 dark:text-dark-200" for="worker-image-input">
+            镜像地址
+          </label>
+          <input
+            id="worker-image-input"
+            v-model.trim="deployImage"
+            class="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-950 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-dark-600 dark:bg-dark-800 dark:text-white"
+            placeholder="registry.cn-qingdao.aliyuncs.com/cola/images:content-worker-sha-..."
+            autocomplete="off"
+            :disabled="deploySubmitting"
+          >
+
+          <div class="mt-4 grid gap-3 sm:grid-cols-2">
+            <label class="flex items-center gap-2 rounded-lg border border-gray-200 p-3 text-sm text-gray-700 dark:border-dark-700 dark:text-dark-200">
+              <input v-model="deployPull" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" :disabled="deploySubmitting">
+              拉取镜像
+            </label>
+            <label class="flex items-center gap-2 rounded-lg border border-gray-200 p-3 text-sm text-gray-700 dark:border-dark-700 dark:text-dark-200">
+              <input v-model="deployRestart" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500" :disabled="deploySubmitting">
+              更新并重启容器
+            </label>
+          </div>
+
+          <p class="mt-3 text-xs leading-5 text-gray-500 dark:text-dark-300">
+            页面只会更新该 Worker 对应的镜像 env key，并执行固定 docker compose 命令。
+          </p>
+
+          <div class="mt-5 flex justify-end gap-2">
+            <button class="btn btn-secondary" type="button" :disabled="deploySubmitting" @click="closeDeployDialog">
+              取消
+            </button>
+            <button class="btn btn-primary" type="submit" :disabled="deploySubmitting || !deployImage">
+              <Icon name="upload" size="sm" :class="deploySubmitting ? 'animate-spin' : ''" />
+              更新镜像
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   </AppLayout>
 </template>
@@ -139,6 +208,11 @@ const error = ref('')
 const workers = ref<RuntimeWorkerStatus[]>([])
 const management = ref<RuntimeWorkersResponse['management']>()
 const actionLoading = ref('')
+const deployTarget = ref<WorkerNode | null>(null)
+const deployImage = ref('')
+const deployPull = ref(true)
+const deployRestart = ref(true)
+const deploySubmitting = ref(false)
 
 const workerNodes = computed<WorkerNode[]>(() => {
   const byNode = new Map<string, WorkerNode>()
@@ -188,6 +262,10 @@ function canManage(node: WorkerNode): boolean {
   return node.manageable === true && management.value?.enabled === true
 }
 
+function canDeploy(node: WorkerNode): boolean {
+  return node.deployable === true && management.value?.deploy_enabled === true
+}
+
 async function runAction(node: WorkerNode, action: RuntimeWorkerAction) {
   if (!canManage(node)) return
   const key = `${node.id}:${action}`
@@ -199,6 +277,49 @@ async function runAction(node: WorkerNode, action: RuntimeWorkerAction) {
   } catch (err) {
     appStore.showError(extractApiErrorMessage(err, `Worker ${actionLabel(action)} 失败`))
   } finally {
+    actionLoading.value = ''
+  }
+}
+
+function openDeployDialog(node: WorkerNode) {
+  if (!canDeploy(node)) return
+  deployTarget.value = node
+  deployImage.value = node.image || node.workers.find(item => item.image)?.image || ''
+  deployPull.value = true
+  deployRestart.value = true
+}
+
+function closeDeployDialog() {
+  if (deploySubmitting.value) return
+  deployTarget.value = null
+  deployImage.value = ''
+}
+
+async function submitDeployImage() {
+  if (!deployTarget.value || !canDeploy(deployTarget.value)) return
+  const image = deployImage.value.trim()
+  if (!image) {
+    appStore.showError('请输入镜像地址')
+    return
+  }
+  const node = deployTarget.value
+  const key = `${node.id}:deploy`
+  actionLoading.value = key
+  deploySubmitting.value = true
+  try {
+    await adminAPI.settings.manageRuntimeWorker(node.id, 'deploy', {
+      image,
+      pull: deployPull.value,
+      restart: deployRestart.value,
+    })
+    appStore.showSuccess('Worker 镜像更新已执行')
+    deployTarget.value = null
+    deployImage.value = ''
+    await loadWorkers()
+  } catch (err) {
+    appStore.showError(extractApiErrorMessage(err, 'Worker 镜像更新失败'))
+  } finally {
+    deploySubmitting.value = false
     actionLoading.value = ''
   }
 }
@@ -219,6 +340,7 @@ function nodeTitle(id: string): string {
       return '微信导出 Worker 节点'
     case 'image-workspace-worker':
       return '生图工作台 Worker 节点'
+    case 'content-worker':
     case 'hot-collector':
       return '热点采集 Worker 节点'
     default:

@@ -228,6 +228,33 @@ registry.cn-qingdao.aliyuncs.com/cola/images:image-workspace-worker-sha-<commit>
 Set the corresponding image overrides in `deploy/.env` when the production host
 should pull from ACR instead of GHCR.
 
+The admin Worker Management page can also update worker images through a
+controlled deploy adapter. It does not expose arbitrary compose editing: the API
+only rewrites the mapped image variable in `deploy/.env` and runs fixed
+`docker compose pull <service>` plus `docker compose up -d --no-deps <service>`
+commands.
+
+```text
+WORKER_MANAGER_ENABLED=true
+WORKER_MANAGER_DEPLOY_ENABLED=true
+WORKER_MANAGER_DEPLOY_DIR=/opt/sub2api
+WORKER_MANAGER_DEPLOY_ENV_FILE=deploy/.env
+WORKER_MANAGER_COMPOSE_FILES=deploy/docker-compose.yml,deploy/docker-compose.business-worker.yml,deploy/docker-compose.content-worker.yml,deploy/docker-compose.images.yml
+WORKER_MANAGER_IMAGE_ALLOWLIST=registry.cn-qingdao.aliyuncs.com/cola/images:,ghcr.io/aias00/
+```
+
+When the deployed directory or service names differ from the repository compose
+files, override the per-worker target instead of editing compose from the page:
+
+```text
+CONTENT_WORKER_IMAGE_ENV_KEY=CONTENT_WORKER_IMAGE
+CONTENT_WORKER_COMPOSE_SERVICE=content-worker
+WECHAT_WORKER_IMAGE_ENV_KEY=WECHAT_WORKER_IMAGE
+WECHAT_WORKER_COMPOSE_SERVICE=wechat-worker
+IMAGE_WORKSPACE_WORKER_IMAGE_ENV_KEY=IMAGE_WORKSPACE_WORKER_IMAGE
+IMAGE_WORKSPACE_WORKER_COMPOSE_SERVICE=image-workspace-worker
+```
+
 The current runtime reads Docker environment from `deploy/.env`. A
 `deploy/data/config.yaml` file is optional and should only be added for
 settings that cannot be expressed cleanly as environment variables.

@@ -903,6 +903,9 @@ export interface RuntimeWorkerStatus {
   manageable?: boolean;
   management_reason?: string;
   deploy_command?: string;
+  image?: string;
+  deployable?: boolean;
+  deploy_reason?: string;
   actions?: string[];
 }
 
@@ -912,6 +915,8 @@ export interface RuntimeWorkersResponse {
     enabled: boolean;
     reason?: string;
     socket?: string;
+    deploy_enabled?: boolean;
+    deploy_reason?: string;
   };
 }
 
@@ -927,17 +932,30 @@ export interface RuntimeWorkerActionResponse {
   action: RuntimeWorkerAction;
   worker_id: string;
   container_name?: string;
+  image?: string;
+  env_key?: string;
+  service?: string;
+  commands?: string[];
+  backup_path?: string;
   message?: string;
   deploy_command?: string;
   management_note?: string;
 }
 
+export interface RuntimeWorkerDeployRequest {
+  image: string;
+  pull?: boolean;
+  restart?: boolean;
+}
+
 export async function manageRuntimeWorker(
   workerID: string,
   action: RuntimeWorkerAction,
+  payload?: RuntimeWorkerDeployRequest,
 ): Promise<RuntimeWorkerActionResponse> {
   const { data } = await apiClient.post<RuntimeWorkerActionResponse>(
     `/admin/runtime/workers/${encodeURIComponent(workerID)}/actions/${action}`,
+    payload,
   );
   return data;
 }

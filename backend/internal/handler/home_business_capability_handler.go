@@ -78,7 +78,16 @@ type adminWorkerRuntimeStatusDTO struct {
 	Manageable       bool     `json:"manageable"`
 	ManagementReason string   `json:"management_reason,omitempty"`
 	DeployCommand    string   `json:"deploy_command,omitempty"`
+	Image            string   `json:"image,omitempty"`
+	Deployable       bool     `json:"deployable"`
+	DeployReason     string   `json:"deploy_reason,omitempty"`
 	Actions          []string `json:"actions,omitempty"`
+}
+
+type adminWorkerDeployRequestDTO struct {
+	Image   string `json:"image"`
+	Pull    *bool  `json:"pull,omitempty"`
+	Restart *bool  `json:"restart,omitempty"`
 }
 
 func (h *HomeBusinessCapabilityHandler) GetStatuses(c *gin.Context) {
@@ -98,15 +107,19 @@ func (h *HomeBusinessCapabilityHandler) GetAdminWorkerRuntimeStatuses(c *gin.Con
 		h.adminXAutoWorkerStatus(c.Request.Context()),
 	}
 	manager := newRuntimeWorkerDockerManager()
+	deployer := newRuntimeWorkerDeployAdapter()
 	for i := range workers {
 		workers[i] = manager.enrich(workers[i])
+		workers[i] = deployer.enrich(workers[i])
 	}
 	response.Success(c, gin.H{
 		"workers": workers,
 		"management": gin.H{
-			"enabled": manager.enabled,
-			"reason":  manager.disabledReason(),
-			"socket":  manager.socketPath,
+			"enabled":        manager.enabled,
+			"reason":         manager.disabledReason(),
+			"socket":         manager.socketPath,
+			"deploy_enabled": deployer.enabled,
+			"deploy_reason":  deployer.disabledReason(),
 		},
 	})
 }
@@ -121,14 +134,43 @@ func (h *HomeBusinessCapabilityHandler) ManageAdminRuntimeWorker(c *gin.Context)
 		return
 	}
 	if action == "deploy" {
+		deployer := newRuntimeWorkerDeployAdapter()
+		if !deployer.enabled {
+			response.Forbidden(c, deployer.disabledReason())
+			return
+		}
+		var req adminWorkerDeployRequestDTO
+		if err := c.ShouldBindJSON(&req); err != nil {
+			response.BadRequest(c, "invalid deploy request")
+			return
+		}
+		pull := true
+		if req.Pull != nil {
+			pull = *req.Pull
+		}
+		restart := true
+		if req.Restart != nil {
+			restart = *req.Restart
+		}
+		result, err := deployer.deploy(c.Request.Context(), target, runtimeWorkerDeployRequest{
+			Image:   req.Image,
+			Pull:    pull,
+			Restart: restart,
+		})
+		if err != nil {
+			response.BadRequest(c, err.Error())
+			return
+		}
 		response.Success(c, gin.H{
-			"ok":              false,
-			"action":          action,
-			"worker_id":       workerID,
-			"container_name":  target.ContainerName,
-			"message":         "Deployment is intentionally exposed as an operator command, not executed by the API server.",
-			"deploy_command":  target.DeployCommand,
-			"management_note": manager.disabledReason(),
+			"ok":             true,
+			"action":         action,
+			"worker_id":      workerID,
+			"container_name": target.ContainerName,
+			"image":          result.Image,
+			"env_key":        result.EnvKey,
+			"service":        result.Service,
+			"commands":       result.Commands,
+			"backup_path":    result.BackupPath,
 		})
 		return
 	}
@@ -686,9 +728,12 @@ func hotWorkerStatusMaxAge() time.Duration {
 }
 
 type runtimeWorkerTargetInfo struct {
-	ID            string
-	ContainerName string
-	DeployCommand string
+	ID              string
+	ContainerName   string
+	DeployCommand   string
+	ImageEnvKey     string
+	ComposeService  string
+	ComposeProfiles []string
 }
 
 type runtimeWorkerDockerManager struct {
@@ -702,21 +747,30 @@ func runtimeWorkerTarget(id string) (runtimeWorkerTargetInfo, bool) {
 	switch strings.ToLower(strings.TrimSpace(id)) {
 	case workerNodeWeChatExport, "wechat-export":
 		return runtimeWorkerTargetInfo{
-			ID:            workerNodeWeChatExport,
-			ContainerName: envOrDefault("WECHAT_WORKER_CONTAINER_NAME", "cloudbase-wechat-worker"),
-			DeployCommand: "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile wechat-worker up -d --build wechat-worker",
+			ID:              workerNodeWeChatExport,
+			ContainerName:   envOrDefault("WECHAT_WORKER_CONTAINER_NAME", "cloudbase-wechat-worker"),
+			DeployCommand:   "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile wechat-worker up -d --build wechat-worker",
+			ImageEnvKey:     envOrDefault("WECHAT_WORKER_IMAGE_ENV_KEY", "WECHAT_WORKER_IMAGE"),
+			ComposeService:  envOrDefault("WECHAT_WORKER_COMPOSE_SERVICE", "wechat-worker"),
+			ComposeProfiles: []string{envOrDefault("WECHAT_WORKER_COMPOSE_PROFILE", "wechat-worker")},
 		}, true
 	case workerNodeImageWorkspace, "image-workspace":
 		return runtimeWorkerTargetInfo{
-			ID:            workerNodeImageWorkspace,
-			ContainerName: envOrDefault("IMAGE_WORKSPACE_WORKER_CONTAINER_NAME", "cloudbase-image-workspace-worker"),
-			DeployCommand: "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile image-workspace-worker up -d --build image-workspace-worker",
+			ID:              workerNodeImageWorkspace,
+			ContainerName:   envOrDefault("IMAGE_WORKSPACE_WORKER_CONTAINER_NAME", "cloudbase-image-workspace-worker"),
+			DeployCommand:   "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.business-worker.yml --profile image-workspace-worker up -d --build image-workspace-worker",
+			ImageEnvKey:     envOrDefault("IMAGE_WORKSPACE_WORKER_IMAGE_ENV_KEY", "IMAGE_WORKSPACE_WORKER_IMAGE"),
+			ComposeService:  envOrDefault("IMAGE_WORKSPACE_WORKER_COMPOSE_SERVICE", "image-workspace-worker"),
+			ComposeProfiles: []string{envOrDefault("IMAGE_WORKSPACE_WORKER_COMPOSE_PROFILE", "image-workspace-worker")},
 		}, true
 	case workerNodeContent, "hot-collector", "hot-rss-collector", "x-auto", "xauto":
 		return runtimeWorkerTargetInfo{
-			ID:            workerNodeContent,
-			ContainerName: envOrDefault("CONTENT_WORKER_CONTAINER_NAME", "cloudbase-content-worker"),
-			DeployCommand: "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker up -d --build",
+			ID:              workerNodeContent,
+			ContainerName:   envOrDefault("CONTENT_WORKER_CONTAINER_NAME", "cloudbase-content-worker"),
+			DeployCommand:   "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker up -d --build",
+			ImageEnvKey:     envOrDefault("CONTENT_WORKER_IMAGE_ENV_KEY", "CONTENT_WORKER_IMAGE"),
+			ComposeService:  envOrDefault("CONTENT_WORKER_COMPOSE_SERVICE", "content-worker"),
+			ComposeProfiles: []string{envOrDefault("CONTENT_WORKER_COMPOSE_PROFILE", "content-worker")},
 		}, true
 	default:
 		return runtimeWorkerTargetInfo{}, false
