@@ -43,11 +43,20 @@ func TestIsMigrationChecksumCompatible(t *testing.T) {
 		require.True(t, ok)
 	})
 
-	t.Run("非白名单迁移不兼容", func(t *testing.T) {
+	t.Run("001初始化迁移注释改名checksum可兼容", func(t *testing.T) {
 		ok := isMigrationChecksumCompatible(
 			"001_init.sql",
-			"182c193f3359946cf094090cd9e57d5c3fd9abaffbc1e8fc378646b8a6fa12b4",
-			"82de761156e03876653e7a6a4eee883cd927847036f779b0b9f34c42a8af7a7d",
+			"9ba0369779484625edcea7a7d1d4582397e31546db9149b05004990a3f16c630",
+			"51d96819f939931fe6c52e0b9d19eb9be7b9e2fcd6897a0d89a3ea2fac3f5228",
+		)
+		require.True(t, ok)
+	})
+
+	t.Run("001初始化迁移未知checksum不兼容", func(t *testing.T) {
+		ok := isMigrationChecksumCompatible(
+			"001_init.sql",
+			"9ba0369779484625edcea7a7d1d4582397e31546db9149b05004990a3f16c630",
+			"0000000000000000000000000000000000000000000000000000000000000000",
 		)
 		require.False(t, ok)
 	})
