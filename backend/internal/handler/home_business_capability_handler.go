@@ -517,9 +517,6 @@ func (h *HomeBusinessCapabilityHandler) adminXAutoWorkerStatus(ctx context.Conte
 	if strings.TrimSpace(payload.CheckedAt) != "" {
 		result.LastUpdatedAt = strings.TrimSpace(payload.CheckedAt)
 	}
-	if strings.TrimSpace(payload.DBPath) != "" {
-		result.AttentionReasons = []string{"db_path=" + strings.TrimSpace(payload.DBPath)}
-	}
 	return result
 }
 

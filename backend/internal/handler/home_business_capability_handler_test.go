@@ -451,3 +451,20 @@ func TestHomeBusinessCapabilityWeChatExportAvailableWhenRuntimeReady(t *testing.
 	require.Equal(t, "available", status.Status)
 	require.Empty(t, status.Message)
 }
+
+func TestHomeBusinessAdminXAutoWorkerStatusDoesNotTreatDBPathAsAttention(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"status":"ok","checked_at":"2026-07-06T12:00:00Z","db_path":"/app/data/x_atuo.sqlite3"}`))
+	}))
+	defer server.Close()
+	t.Setenv("X_AUTO_BASE_URL", server.URL)
+
+	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, nil)
+	status := h.adminXAutoWorkerStatus(context.Background())
+
+	require.Equal(t, "active", status.Health)
+	require.Equal(t, "X Auto worker is reachable.", status.Message)
+	require.Equal(t, "2026-07-06T12:00:00Z", status.LastUpdatedAt)
+	require.Empty(t, status.AttentionReasons)
+}
