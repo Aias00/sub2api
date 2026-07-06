@@ -26,18 +26,6 @@ func ParseRegistrationEmailSuffixWhitelist(raw string) []string {
 	return identity.ParseRegistrationEmailSuffixWhitelist(raw)
 }
 
-func normalizeRegistrationEmailSuffix(raw string) (string, error) {
-	return identity.NormalizeRegistrationEmailSuffix(raw)
-}
-
-func isValidRegistrationEmailDomain(domain string) bool {
-	return identity.IsValidRegistrationEmailDomain(domain)
-}
-
-func registrationEmailDomainMatchesWildcard(domain string, allowed string) bool {
-	return identity.RegistrationEmailDomainMatchesWildcard(domain, allowed)
-}
-
 func splitEmailForPolicy(raw string) (local string, domain string, ok bool) {
 	return identity.SplitEmailForPolicy(raw)
 }

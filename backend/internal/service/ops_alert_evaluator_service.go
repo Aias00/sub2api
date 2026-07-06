@@ -732,10 +732,6 @@ func shouldSendOpsAlertEmailByMinSeverity(minSeverity string, ruleSeverity strin
 	return opsctx.ShouldSendAlertEmailByMinSeverity(minSeverity, ruleSeverity)
 }
 
-func opsEmailSeverityForOps(severity string) string {
-	return opsctx.AlertEmailSeverityForOps(severity)
-}
-
 func isOpsAlertSilenced(now time.Time, rule *OpsAlertRule, event *OpsAlertEvent, silencing OpsAlertSilencingSettings) bool {
 	target := opsctx.AlertSilenceTarget{}
 	if rule != nil {

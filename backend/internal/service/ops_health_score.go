@@ -10,14 +10,6 @@ func computeDashboardHealthScore(now time.Time, overview *OpsDashboardOverview) 
 	return opsctx.ComputeDashboardHealthScore(now, opsHealthInputFromOverview(overview))
 }
 
-func computeBusinessHealth(overview *OpsDashboardOverview) float64 {
-	return opsctx.ComputeBusinessHealth(opsHealthInputFromOverview(overview))
-}
-
-func computeInfraHealth(now time.Time, overview *OpsDashboardOverview) float64 {
-	return opsctx.ComputeInfraHealth(now, opsHealthInputFromOverview(overview))
-}
-
 func opsHealthInputFromOverview(overview *OpsDashboardOverview) *opsctx.DashboardHealthInput {
 	if overview == nil {
 		return nil
@@ -52,8 +44,4 @@ func opsHealthInputFromOverview(overview *OpsDashboardOverview) *opsctx.Dashboar
 		}
 	}
 	return input
-}
-
-func clampFloat64(v float64, min float64, max float64) float64 {
-	return opsctx.ClampFloat64(v, min, max)
 }

@@ -427,7 +427,3 @@ func buildVisibleMethodSourceAvailability(instances []*dbent.PaymentProviderInst
 func applyVisibleMethodRoutingToEnabledTypes(base []string, vals map[string]string, available map[string]bool) []string {
 	return payment.ApplyVisibleMethodRoutingToEnabledTypes(base, vals, available)
 }
-
-func visibleMethodShouldBeExposed(method string, vals map[string]string, available map[string]bool) bool {
-	return payment.VisibleMethodShouldBeExposed(method, vals, available)
-}

@@ -112,14 +112,14 @@ func ParseSystemLogListFilter(input SystemLogListFilterInput) (*SystemLogListFil
 func ParseSystemLogCleanupFilter(input SystemLogCleanupFilterInput) (*SystemLogCleanupFilter, error) {
 	start, err := parseOptionalTimestamp(input.StartTimeRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid start_time")
+		return nil, fmt.Errorf("invalid start_time")
 	}
 	end, err := parseOptionalTimestamp(input.EndTimeRaw)
 	if err != nil {
-		return nil, fmt.Errorf("Invalid end_time")
+		return nil, fmt.Errorf("invalid end_time")
 	}
 	if input.APIKeyID != nil && *input.APIKeyID <= 0 {
-		return nil, fmt.Errorf("Invalid api_key_id")
+		return nil, fmt.Errorf("invalid api_key_id")
 	}
 
 	return &SystemLogCleanupFilter{

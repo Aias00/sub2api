@@ -139,14 +139,6 @@ func normalizeOpsAlertSilencingSettings(s *OpsAlertSilencingSettings) {
 	opsctx.NormalizeAlertSilencingSettings(s)
 }
 
-func validateOpsDistributedLockSettings(s OpsDistributedLockSettings) error {
-	return opsctx.ValidateDistributedLockSettings(s)
-}
-
-func validateOpsAlertSilencingSettings(s OpsAlertSilencingSettings) error {
-	return opsctx.ValidateAlertSilencingSettings(s)
-}
-
 func (s *OpsService) GetOpsAlertRuntimeSettings(ctx context.Context) (*OpsAlertRuntimeSettings, error) {
 	defaultCfg := defaultOpsAlertRuntimeSettings()
 	if s == nil || s.settingRepo == nil {
@@ -224,10 +216,6 @@ func defaultOpsAdvancedSettings() *OpsAdvancedSettings {
 
 func normalizeOpsAdvancedSettings(cfg *OpsAdvancedSettings) {
 	opsctx.NormalizeAdvancedSettings(cfg, opsCleanupDefaultSchedule)
-}
-
-func clampOpsQuotaAutoPauseThreshold(value float64) float64 {
-	return opsctx.ClampQuotaAutoPauseThreshold(value)
 }
 
 func validateOpsAdvancedSettings(cfg *OpsAdvancedSettings) error {

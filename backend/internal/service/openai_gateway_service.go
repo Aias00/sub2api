@@ -3787,10 +3787,6 @@ func isOpenAIPassthroughAllowedRequestHeader(lowerKey string, allowTimeoutHeader
 	return gateway.IsOpenAIPassthroughAllowedRequestHeader(lowerKey, allowTimeoutHeaders)
 }
 
-func isOpenAIPassthroughTimeoutHeader(lowerKey string) bool {
-	return gateway.IsOpenAIPassthroughTimeoutHeader(lowerKey)
-}
-
 func (s *OpenAIGatewayService) isOpenAIPassthroughTimeoutHeadersAllowed() bool {
 	return s != nil && s.cfg != nil && s.cfg.Gateway.OpenAIPassthroughAllowTimeoutHeaders
 }
@@ -3836,10 +3832,6 @@ func (w openAIStreamBufferedDownstreamWriter) Flush() error {
 		return nil
 	}
 	return w.flush()
-}
-
-func openAIStreamEventIsPreamble(eventType string) bool {
-	return gateway.IsOpenAIStreamPreambleEvent(eventType)
 }
 
 func openAIStreamDataStartsClientOutput(data, eventType string) bool {
@@ -5191,18 +5183,6 @@ func normalizeOpenAIResponsesFunctionCallArguments(data []byte) ([]byte, bool) {
 	return gateway.NormalizeOpenAIResponsesFunctionCallArguments(data)
 }
 
-func dedupeResponsesFunctionCallOutputArguments(data []byte, outputPath string, setDedupedArgument func(string)) {
-	gateway.DedupeOpenAIResponsesFunctionCallOutputArgumentsForTest(data, outputPath, setDedupedArgument)
-}
-
-func isResponsesFunctionCallItemType(itemType string) bool {
-	return gateway.IsOpenAIResponsesFunctionCallItemType(itemType)
-}
-
-func dedupeRepeatedJSONArgumentString(arguments string) (string, bool) {
-	return gateway.DedupeRepeatedJSONArgumentString(arguments)
-}
-
 func (s *OpenAIGatewayService) parseSSEUsage(data string, usage *OpenAIUsage) {
 	s.parseSSEUsageBytes([]byte(data), usage)
 }
@@ -5603,10 +5583,6 @@ func buildOpenAIResponsesURL(base string) string {
 
 func trimOpenAIEncryptedReasoningItems(reqBody map[string]any) bool {
 	return gateway.TrimOpenAIEncryptedReasoningItems(reqBody)
-}
-
-func sanitizeEncryptedReasoningInputItem(item any) (next any, changed bool, keep bool) {
-	return gateway.SanitizeOpenAIEncryptedReasoningInputItem(item)
 }
 
 func IsOpenAIResponsesCompactPathForTest(c *gin.Context) bool {
@@ -6300,14 +6276,6 @@ func (s *OpenAIGatewayService) UpdateCodexUsageSnapshotFromHeaders(ctx context.C
 	}
 }
 
-func getOpenAIReasoningEffortFromReqBody(reqBody map[string]any) (value string, present bool) {
-	return gateway.GetOpenAIReasoningEffortFromRequestBody(reqBody)
-}
-
-func deriveOpenAIReasoningEffortFromModel(model string) string {
-	return gateway.DeriveOpenAIReasoningEffortFromModel(model)
-}
-
 type openAIRequestView struct {
 	gateway.OpenAIRequestView
 }
@@ -6318,11 +6286,7 @@ func newOpenAIRequestView(body []byte) openAIRequestView {
 
 // Decode 保留阶段一既有 full-map 行为；后续阶段会把调用点下沉到复杂分支。
 func (v openAIRequestView) Decode(c *gin.Context) (map[string]any, error) {
-	return getOpenAIRequestBodyMap(c, v.OpenAIRequestView.Body())
-}
-
-func isSimpleOpenAIRequestPatchPath(path string) bool {
-	return gateway.IsSimpleOpenAIRequestPatchPath(path)
+	return getOpenAIRequestBodyMap(c, v.Body())
 }
 
 func setOpenAIRequestMapPath(reqBody map[string]any, path string, value any) {
@@ -6678,20 +6642,8 @@ func openAIRequestBodyMayContainImageInput(body []byte) bool {
 	return gateway.OpenAIRequestBodyMayContainImageInput(body)
 }
 
-func openAIJSONValueMayContainImageInput(value gjson.Result) bool {
-	return gateway.OpenAIJSONValueMayContainImageInputForTest(value)
-}
-
 func openAIRequestBodyMayContainEmptyBase64InputImage(body []byte) bool {
 	return gateway.OpenAIRequestBodyMayContainEmptyBase64InputImage(body)
-}
-
-func openAIRequestBodyMayContainInputImageToken(body []byte) bool {
-	return gateway.OpenAIRequestBodyMayContainInputImageToken(body)
-}
-
-func openAIJSONValueMayContainEmptyBase64InputImage(value gjson.Result) bool {
-	return gateway.OpenAIJSONValueMayContainEmptyBase64InputImageForTest(value)
 }
 
 func sanitizeEmptyBase64InputImagesInOpenAIBody(body []byte) ([]byte, bool, error) {
@@ -6700,18 +6652,6 @@ func sanitizeEmptyBase64InputImagesInOpenAIBody(body []byte) ([]byte, bool, erro
 
 func sanitizeEmptyBase64InputImagesInOpenAIRequestBodyMap(reqBody map[string]any) bool {
 	return gateway.SanitizeEmptyBase64InputImagesInOpenAIRequestBodyMap(reqBody)
-}
-
-func sanitizeEmptyBase64InputImagesInOpenAIInput(input any) (any, bool) {
-	return gateway.SanitizeEmptyBase64InputImagesInOpenAIInput(input)
-}
-
-func shouldDropEmptyBase64InputImagePart(part any) bool {
-	return gateway.ShouldDropEmptyBase64InputImagePartForTest(part)
-}
-
-func isEmptyBase64DataURI(raw string) bool {
-	return gateway.IsEmptyBase64DataURIForTest(raw)
 }
 
 func getOpenAIRequestBodyMap(_ *gin.Context, body []byte) (map[string]any, error) {

@@ -137,7 +137,7 @@ func parseStatusCodes(raw string) ([]int, error) {
 		}
 		n, err := strconv.Atoi(p)
 		if err != nil || n < 0 {
-			return nil, fmt.Errorf("Invalid status_codes")
+			return nil, fmt.Errorf("invalid status_codes")
 		}
 		out = append(out, n)
 	}

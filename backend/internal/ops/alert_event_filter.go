@@ -67,7 +67,7 @@ func ParseAlertEventStatus(raw string) (string, error) {
 	case AlertStatusResolved, AlertStatusManualResolved:
 		return status, nil
 	default:
-		return "", fmt.Errorf("Invalid status")
+		return "", fmt.Errorf("invalid status")
 	}
 }
 
@@ -86,7 +86,7 @@ func ParseAlertEventFilter(input AlertEventFilterInput) (*AlertEventFilter, erro
 	if raw := strings.TrimSpace(input.LimitRaw); raw != "" {
 		n, err := strconv.Atoi(raw)
 		if err != nil || n <= 0 {
-			return nil, fmt.Errorf("Invalid limit")
+			return nil, fmt.Errorf("invalid limit")
 		}
 		limit = n
 	}
@@ -107,7 +107,7 @@ func ParseAlertEventFilter(input AlertEventFilterInput) (*AlertEventFilter, erro
 			b := false
 			filter.EmailSent = &b
 		default:
-			return nil, fmt.Errorf("Invalid email_sent")
+			return nil, fmt.Errorf("invalid email_sent")
 		}
 	}
 
@@ -119,13 +119,13 @@ func ParseAlertEventFilter(input AlertEventFilterInput) (*AlertEventFilter, erro
 	if rawTS != "" {
 		ts, err := parseRequiredTimestamp(rawTS)
 		if err != nil {
-			return nil, fmt.Errorf("Invalid before_fired_at")
+			return nil, fmt.Errorf("invalid before_fired_at")
 		}
 		filter.BeforeFiredAt = &ts
 
 		id, err := strconv.ParseInt(rawID, 10, 64)
 		if err != nil || id <= 0 {
-			return nil, fmt.Errorf("Invalid before_id")
+			return nil, fmt.Errorf("invalid before_id")
 		}
 		filter.BeforeID = &id
 	}
@@ -133,7 +133,7 @@ func ParseAlertEventFilter(input AlertEventFilterInput) (*AlertEventFilter, erro
 	if raw := strings.TrimSpace(input.GroupIDRaw); raw != "" {
 		id, err := strconv.ParseInt(raw, 10, 64)
 		if err != nil || id <= 0 {
-			return nil, fmt.Errorf("Invalid group_id")
+			return nil, fmt.Errorf("invalid group_id")
 		}
 		filter.GroupID = &id
 	}
@@ -150,7 +150,7 @@ func ParseAlertEventFilter(input AlertEventFilterInput) (*AlertEventFilter, erro
 func ParseAlertSilence(input AlertSilenceInput) (*AlertSilence, error) {
 	until, err := time.Parse(time.RFC3339, strings.TrimSpace(input.UntilRaw))
 	if err != nil {
-		return nil, fmt.Errorf("Invalid until")
+		return nil, fmt.Errorf("invalid until")
 	}
 	return &AlertSilence{
 		RuleID:   input.RuleID,

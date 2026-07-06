@@ -110,10 +110,6 @@ func hasPendingOrderProtectedConfigChange(providerKey string, currentConfig, nex
 	return payment.HasPendingOrderProtectedConfigChange(providerKey, currentConfig, nextConfig)
 }
 
-func providerConfigFieldValue(config map[string]string, fieldName string) string {
-	return payment.ProviderConfigFieldValue(config, fieldName)
-}
-
 func (s *PaymentConfigService) countPendingOrders(ctx context.Context, providerInstanceID int64) (int, error) {
 	return s.entClient.PaymentOrder.Query().
 		Where(

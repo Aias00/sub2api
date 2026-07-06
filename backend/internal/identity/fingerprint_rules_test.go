@@ -51,7 +51,8 @@ func TestApplyFingerprintHeadersUsesRawCasing(t *testing.T) {
 	if _, ok := headers["X-Stainless-Os"]; ok {
 		t.Fatal("canonicalized old casing should be removed")
 	}
-	if got := headers["X-Stainless-OS"]; len(got) != 1 || got[0] != "Darwin" {
+	rawOSHeader := "X-Stainless-OS"
+	if got := headers[rawOSHeader]; len(got) != 1 || got[0] != "Darwin" {
 		t.Fatalf("X-Stainless-OS = %#v", got)
 	}
 }

@@ -9,11 +9,3 @@ func buildOpenAIEndpointURL(base string, endpoint string) string {
 func buildOpenAIResponsesInputTokensURL(base string) string {
 	return gateway.BuildOpenAIResponsesInputTokensURL(base)
 }
-
-func openAIBaseURLHasVersionSuffix(raw string) bool {
-	return gateway.OpenAIBaseURLHasVersionSuffix(raw)
-}
-
-func isOpenAIAPIVersionSegment(segment string) bool {
-	return gateway.IsOpenAIAPIVersionSegment(segment)
-}

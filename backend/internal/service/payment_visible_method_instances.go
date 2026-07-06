@@ -12,18 +12,6 @@ import (
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
-func enabledVisibleMethodsForProvider(providerKey, supportedTypes string) []string {
-	return payment.EnabledVisibleMethodsForProvider(providerKey, supportedTypes)
-}
-
-func providerSupportsVisibleMethod(inst *dbent.PaymentProviderInstance, method string) bool {
-	source, ok := visibleMethodSourceFromEnt(inst)
-	if !ok {
-		return false
-	}
-	return payment.ProviderSupportsVisibleMethod(source, method)
-}
-
 func filterEnabledVisibleMethodInstances(instances []*dbent.PaymentProviderInstance, method string) []*dbent.PaymentProviderInstance {
 	sources := payment.FilterEnabledVisibleMethodSources(visibleMethodSourcesFromEnt(instances), method)
 	return visibleMethodInstancesFromSources(instances, sources)

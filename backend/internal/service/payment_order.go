@@ -636,10 +636,6 @@ func calculateCreateOrderPayAmount(limitAmount, feeRate float64, currency string
 	return payment.CalculateCreateOrderPayAmount(limitAmount, feeRate, currency)
 }
 
-func validateCreateOrderAmountCurrency(amount float64, currency string) error {
-	return payment.ValidateAmountCurrency(amount, currency)
-}
-
 func validateSelectedCreateOrderAmountCurrency(payAmount string, sel *payment.InstanceSelection) error {
 	if sel == nil {
 		return nil

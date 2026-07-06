@@ -7,8 +7,6 @@ import (
 	"github.com/Aias00/cloudbase/internal/payment"
 )
 
-const paymentResultReturnPath = payment.PaymentResultReturnPath
-
 const (
 	PaymentSourceHostedRedirect    = payment.PaymentSourceHostedRedirect
 	PaymentSourceWechatInAppResume = payment.PaymentSourceWechatInAppResume
@@ -22,14 +20,6 @@ const (
 	VisibleMethodSourceEasyPayAlipay  = payment.VisibleMethodSourceEasyPayAlipay
 	VisibleMethodSourceOfficialWechat = payment.VisibleMethodSourceOfficialWechat
 	VisibleMethodSourceEasyPayWechat  = payment.VisibleMethodSourceEasyPayWechat
-
-	wechatPaymentResumeTokenType = payment.WeChatPaymentResumeTokenType
-
-	paymentResumeNotConfiguredCode    = payment.PaymentResumeNotConfiguredCode
-	paymentResumeNotConfiguredMessage = payment.PaymentResumeNotConfiguredMessage
-
-	paymentResumeTokenTTL       = payment.PaymentResumeTokenTTL
-	wechatPaymentResumeTokenTTL = payment.WeChatPaymentResumeTokenTTL
 )
 
 type ResumeTokenClaims = payment.ResumeTokenClaims
@@ -92,10 +82,6 @@ func (lb *visibleMethodLoadBalancer) SelectInstance(ctx context.Context, provide
 	return lb.inner.SelectInstance(ctx, inst.ProviderKey, paymentType, strategy, orderAmount)
 }
 
-func visibleMethodEnabledSettingKey(method string) string {
-	return payment.VisibleMethodEnabledSettingKey(method)
-}
-
 func visibleMethodSourceSettingKey(method string) string {
 	return payment.VisibleMethodSourceSettingKey(method)
 }
@@ -106,12 +92,4 @@ func CanonicalizeReturnURL(raw string, srcHost string, srcURL string) (string, e
 
 func buildPaymentReturnURL(base string, orderID int64, outTradeNo string, resumeToken string) (string, error) {
 	return payment.BuildPaymentReturnURL(base, orderID, outTradeNo, resumeToken)
-}
-
-func validatePaymentResumeExpiry(expiresAt int64, code, message string) error {
-	return payment.ValidatePaymentResumeExpiry(expiresAt, code, message)
-}
-
-func signPaymentResumePayload(payload string, key []byte) string {
-	return payment.SignPaymentResumePayload(payload, key)
 }
