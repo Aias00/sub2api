@@ -31,6 +31,7 @@ jobs:
     env:
       ALIYUN_ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
       ALIYUN_ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
+      ALIYUN_ACR_REPOSITORY: ${{ secrets.ALIYUN_ACR_REPOSITORY }}
       ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
       ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
     strategy:
@@ -94,11 +95,20 @@ jobs:
           acr_registry="${ALIYUN_ACR_REGISTRY%/}"
           acr_namespace="${ALIYUN_ACR_NAMESPACE#/}"
           acr_namespace="${acr_namespace%/}"
+          acr_repository="${ALIYUN_ACR_REPOSITORY#/}"
+          acr_repository="${acr_repository%/}"
           if [[ -n "${acr_registry}" && -n "${acr_namespace}" && -n "${ALIYUN_ACR_USERNAME}" && -n "${ALIYUN_ACR_PASSWORD}" ]]; then
-            acr_image="${acr_registry}/${acr_namespace}/${repo}${{ matrix.suffix }}"
-            for tag in "${tag_names[@]}"; do
-              tags+=("${acr_image}:${tag}")
-            done
+            if [[ -n "${acr_repository}" ]]; then
+              acr_image="${acr_registry}/${acr_namespace}/${acr_repository}"
+              for tag in "${tag_names[@]}"; do
+                tags+=("${acr_image}:${{ matrix.name }}-${tag}")
+              done
+            else
+              acr_image="${acr_registry}/${acr_namespace}/${repo}${{ matrix.suffix }}"
+              for tag in "${tag_names[@]}"; do
+                tags+=("${acr_image}:${tag}")
+              done
+            fi
           fi
 
           {

@@ -197,19 +197,32 @@ The container image workflow can also mirror images to Aliyun Container
 Registry. Configure these GitHub Actions secrets to enable it:
 
 ```text
-ALIYUN_ACR_REGISTRY=registry.cn-hangzhou.aliyuncs.com
+ALIYUN_ACR_REGISTRY=registry.cn-qingdao.aliyuncs.com
 ALIYUN_ACR_NAMESPACE=<your-acr-namespace>
+ALIYUN_ACR_REPOSITORY=<optional-single-repository>
 ALIYUN_ACR_USERNAME=<your-acr-username>
 ALIYUN_ACR_PASSWORD=<your-acr-password-or-token>
 ```
 
-When configured, CI publishes the same tags as GHCR, for example:
+Without `ALIYUN_ACR_REPOSITORY`, CI publishes one ACR repository per image with
+the same tags as GHCR, for example:
 
 ```text
-registry.cn-hangzhou.aliyuncs.com/<namespace>/cloudbase:sha-<commit>
-registry.cn-hangzhou.aliyuncs.com/<namespace>/cloudbase-content-worker:sha-<commit>
-registry.cn-hangzhou.aliyuncs.com/<namespace>/cloudbase-wechat-worker:sha-<commit>
-registry.cn-hangzhou.aliyuncs.com/<namespace>/cloudbase-image-workspace-worker:sha-<commit>
+registry.cn-qingdao.aliyuncs.com/<namespace>/cloudbase:sha-<commit>
+registry.cn-qingdao.aliyuncs.com/<namespace>/cloudbase-content-worker:sha-<commit>
+registry.cn-qingdao.aliyuncs.com/<namespace>/cloudbase-wechat-worker:sha-<commit>
+registry.cn-qingdao.aliyuncs.com/<namespace>/cloudbase-image-workspace-worker:sha-<commit>
+```
+
+When using an existing single repository such as `cola/images`, set
+`ALIYUN_ACR_NAMESPACE=cola` and `ALIYUN_ACR_REPOSITORY=images`. CI will push
+image-specific tags to that repository:
+
+```text
+registry.cn-qingdao.aliyuncs.com/cola/images:api-sha-<commit>
+registry.cn-qingdao.aliyuncs.com/cola/images:content-worker-sha-<commit>
+registry.cn-qingdao.aliyuncs.com/cola/images:wechat-worker-sha-<commit>
+registry.cn-qingdao.aliyuncs.com/cola/images:image-workspace-worker-sha-<commit>
 ```
 
 Set the corresponding image overrides in `deploy/.env` when the production host
