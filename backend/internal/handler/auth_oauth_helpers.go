@@ -7,6 +7,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/Aias00/cloudbase/internal/identity"
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,9 +15,9 @@ const (
 	oauthMaxRedirectLen          = 2048
 	oauthMaxFragmentValueLen     = 128
 	oauthDefaultRedirectTo       = "/dashboard"
-	oauthIntentLogin             = "login"
-	wechatOAuthProviderKey       = "wechat-main"
-	wechatOAuthLegacyProviderKey = "wechat"
+	oauthIntentLogin             = identity.OAuthIntentLogin
+	wechatOAuthProviderKey       = identity.WeChatOAuthProviderKey
+	wechatOAuthLegacyProviderKey = identity.WeChatOAuthLegacyProviderKey
 )
 
 func firstNonEmpty(values ...string) string {

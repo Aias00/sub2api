@@ -9,6 +9,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"github.com/Aias00/cloudbase/internal/identity"
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 	"image"
@@ -30,14 +31,14 @@ import (
 )
 
 var (
-	ErrUserNotFound             = infraerrors.NotFound("USER_NOT_FOUND", "user not found")
+	ErrUserNotFound             = identity.ErrUserNotFound
 	ErrPasswordIncorrect        = infraerrors.BadRequest("PASSWORD_INCORRECT", "current password is incorrect")
 	ErrInsufficientPerms        = infraerrors.Forbidden("INSUFFICIENT_PERMISSIONS", "insufficient permissions")
 	ErrNotifyCodeUserRateLimit  = infraerrors.TooManyRequests("NOTIFY_CODE_USER_RATE_LIMIT", "too many verification codes requested, please try again later")
 	ErrAvatarInvalid            = infraerrors.BadRequest("AVATAR_INVALID", "avatar must be a valid image data URL or http(s) URL")
 	ErrAvatarTooLarge           = infraerrors.BadRequest("AVATAR_TOO_LARGE", "avatar image must be 100KB or smaller")
 	ErrAvatarNotImage           = infraerrors.BadRequest("AVATAR_NOT_IMAGE", "avatar content must be an image")
-	ErrIdentityProviderInvalid  = infraerrors.BadRequest("IDENTITY_PROVIDER_INVALID", "identity provider is invalid")
+	ErrIdentityProviderInvalid  = identity.ErrIdentityProviderInvalid
 	ErrIdentityUnbindLastMethod = infraerrors.Conflict(
 		"IDENTITY_UNBIND_LAST_METHOD",
 		"bind another sign-in method before unbinding this provider",
@@ -62,25 +63,7 @@ var (
 	avatarQualitySteps = []int{88, 80, 72, 64, 56, 48, 40, 32}
 )
 
-// UserListFilters contains all filter options for listing users
-type UserListFilters struct {
-	Status    string // User status filter
-	Role      string // User role filter
-	Search    string // Search in email, username
-	GroupName string // Filter by allowed group name (fuzzy match)
-	// APIKeyGroupID filters users who own at least one non-soft-deleted API key
-	// bound to this group (api_keys.group_id). 0 = no filter. Covers all three
-	// group types since it matches the key's group directly, not allowed_groups.
-	APIKeyGroupID int64
-	Attributes    map[int64]string // Custom attribute filters: attributeID -> value
-	// IncludeSubscriptions controls whether ListWithFilters should load active subscriptions.
-	// For large datasets this can be expensive; admin list pages should enable it on demand.
-	// nil means not specified (default: load subscriptions for backward compatibility).
-	IncludeSubscriptions *bool
-	// IncludeDeleted 为 true 时绕过软删除过滤，返回含已删除（deleted_at 非空）的用户。
-	// 仅供 /admin/usage 的 SearchUsers 端点使用，其他列表调用方不要设置。
-	IncludeDeleted bool
-}
+type UserListFilters = identity.UserListFilters
 
 type UserRepository interface {
 	Create(ctx context.Context, user *User) error
@@ -121,16 +104,7 @@ type UserRepository interface {
 	DisableTotp(ctx context.Context, userID int64) error
 }
 
-type UserAuthIdentityRecord struct {
-	ProviderType    string
-	ProviderKey     string
-	ProviderSubject string
-	VerifiedAt      *time.Time
-	Issuer          *string
-	Metadata        map[string]any
-	CreatedAt       time.Time
-	UpdatedAt       time.Time
-}
+type UserAuthIdentityRecord = identity.UserAuthIdentityRecord
 
 type UserIdentitySummary struct {
 	Provider      string     `json:"provider"`
@@ -168,23 +142,9 @@ type UpdateProfileRequest struct {
 	BalanceNotifyThreshold *float64 `json:"balance_notify_threshold"`
 }
 
-type UserAvatar struct {
-	StorageProvider string
-	StorageKey      string
-	URL             string
-	ContentType     string
-	ByteSize        int
-	SHA256          string
-}
+type UserAvatar = identity.UserAvatar
 
-type UpsertUserAvatarInput struct {
-	StorageProvider string
-	StorageKey      string
-	URL             string
-	ContentType     string
-	ByteSize        int
-	SHA256          string
-}
+type UpsertUserAvatarInput = identity.UpsertUserAvatarInput
 
 type userProfileIdentityTxRunner interface {
 	WithUserProfileIdentityTx(ctx context.Context, fn func(txCtx context.Context) error) error

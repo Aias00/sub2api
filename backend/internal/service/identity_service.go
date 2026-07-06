@@ -8,21 +8,14 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"regexp"
-	"strconv"
 	"strings"
 	"time"
 
+	"github.com/Aias00/cloudbase/internal/identity"
 	"github.com/Aias00/cloudbase/internal/pkg/claude"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/tidwall/gjson"
 	"github.com/tidwall/sjson"
-)
-
-// 预编译正则表达式（避免每次调用重新编译）
-var (
-	// 匹配 User-Agent 版本号: xxx/x.y.z
-	userAgentVersionRegex = regexp.MustCompile(`/(\d+)\.(\d+)\.(\d+)`)
 )
 
 // 默认指纹值（当客户端未提供时使用）
@@ -47,6 +40,42 @@ type Fingerprint struct {
 	StainlessRuntime        string
 	StainlessRuntimeVersion string
 	UpdatedAt               int64 `json:",omitempty"` // Unix timestamp，用于判断是否需要续期TTL
+}
+
+func fingerprintToIdentity(fp Fingerprint) identity.Fingerprint {
+	return identity.Fingerprint{
+		ClientID:                fp.ClientID,
+		UserAgent:               fp.UserAgent,
+		StainlessLang:           fp.StainlessLang,
+		StainlessPackageVersion: fp.StainlessPackageVersion,
+		StainlessOS:             fp.StainlessOS,
+		StainlessArch:           fp.StainlessArch,
+		StainlessRuntime:        fp.StainlessRuntime,
+		StainlessRuntimeVersion: fp.StainlessRuntimeVersion,
+		UpdatedAt:               fp.UpdatedAt,
+	}
+}
+
+func fingerprintToIdentityPtr(fp *Fingerprint) *identity.Fingerprint {
+	if fp == nil {
+		return nil
+	}
+	converted := fingerprintToIdentity(*fp)
+	return &converted
+}
+
+func fingerprintFromIdentity(fp identity.Fingerprint) *Fingerprint {
+	return &Fingerprint{
+		ClientID:                fp.ClientID,
+		UserAgent:               fp.UserAgent,
+		StainlessLang:           fp.StainlessLang,
+		StainlessPackageVersion: fp.StainlessPackageVersion,
+		StainlessOS:             fp.StainlessOS,
+		StainlessArch:           fp.StainlessArch,
+		StainlessRuntime:        fp.StainlessRuntime,
+		StainlessRuntimeVersion: fp.StainlessRuntimeVersion,
+		UpdatedAt:               fp.UpdatedAt,
+	}
 }
 
 // IdentityCache defines cache operations for identity service
@@ -121,24 +150,8 @@ func (s *IdentityService) GetOrCreateFingerprint(ctx context.Context, accountID 
 
 // createFingerprintFromHeaders 从请求头创建指纹
 func (s *IdentityService) createFingerprintFromHeaders(headers http.Header) *Fingerprint {
-	fp := &Fingerprint{}
-
-	// 获取User-Agent
-	if ua := headers.Get("User-Agent"); ua != "" {
-		fp.UserAgent = ua
-	} else {
-		fp.UserAgent = defaultFingerprint.UserAgent
-	}
-
-	// 获取x-stainless-*头，如果没有则使用默认值
-	fp.StainlessLang = getHeaderOrDefault(headers, "X-Stainless-Lang", defaultFingerprint.StainlessLang)
-	fp.StainlessPackageVersion = getHeaderOrDefault(headers, "X-Stainless-Package-Version", defaultFingerprint.StainlessPackageVersion)
-	fp.StainlessOS = getHeaderOrDefault(headers, "X-Stainless-OS", defaultFingerprint.StainlessOS)
-	fp.StainlessArch = getHeaderOrDefault(headers, "X-Stainless-Arch", defaultFingerprint.StainlessArch)
-	fp.StainlessRuntime = getHeaderOrDefault(headers, "X-Stainless-Runtime", defaultFingerprint.StainlessRuntime)
-	fp.StainlessRuntimeVersion = getHeaderOrDefault(headers, "X-Stainless-Runtime-Version", defaultFingerprint.StainlessRuntimeVersion)
-
-	return fp
+	fp := identity.FingerprintFromHeaders(headers, fingerprintToIdentity(defaultFingerprint))
+	return fingerprintFromIdentity(fp)
 }
 
 // mergeHeadersIntoFingerprint 将请求头中实际存在的字段合并到现有指纹中（用于版本升级场景）
@@ -146,65 +159,21 @@ func (s *IdentityService) createFingerprintFromHeaders(headers http.Header) *Fin
 // 与 createFingerprintFromHeaders 的区别：后者用于首次创建，缺失头回退到 defaultFingerprint；
 // 本函数用于升级更新，缺失头保留缓存值，避免将已知的真实值退化为硬编码默认值
 func mergeHeadersIntoFingerprint(fp *Fingerprint, headers http.Header) {
-	// User-Agent：版本升级的触发条件，一定存在
-	if ua := headers.Get("User-Agent"); ua != "" {
-		fp.UserAgent = ua
+	if fp == nil {
+		return
 	}
-	// X-Stainless-* 头：仅在请求中实际携带时才更新，否则保留缓存值
-	mergeHeader(headers, "X-Stainless-Lang", &fp.StainlessLang)
-	mergeHeader(headers, "X-Stainless-Package-Version", &fp.StainlessPackageVersion)
-	mergeHeader(headers, "X-Stainless-OS", &fp.StainlessOS)
-	mergeHeader(headers, "X-Stainless-Arch", &fp.StainlessArch)
-	mergeHeader(headers, "X-Stainless-Runtime", &fp.StainlessRuntime)
-	mergeHeader(headers, "X-Stainless-Runtime-Version", &fp.StainlessRuntimeVersion)
-}
-
-// mergeHeader 如果请求头中存在该字段则更新目标值，否则保留原值
-func mergeHeader(headers http.Header, key string, target *string) {
-	if v := headers.Get(key); v != "" {
-		*target = v
-	}
-}
-
-// getHeaderOrDefault 获取header值，如果不存在则返回默认值
-func getHeaderOrDefault(headers http.Header, key, defaultValue string) string {
-	if v := headers.Get(key); v != "" {
-		return v
-	}
-	return defaultValue
+	converted := fingerprintToIdentity(*fp)
+	identity.MergeHeadersIntoFingerprint(&converted, headers)
+	*fp = *fingerprintFromIdentity(converted)
 }
 
 // ApplyFingerprint 将指纹应用到请求头（覆盖原有的x-stainless-*头）
 // 使用 setHeaderRaw 保持原始大小写（如 X-Stainless-OS 而非 X-Stainless-Os）
 func (s *IdentityService) ApplyFingerprint(req *http.Request, fp *Fingerprint) {
-	if fp == nil {
+	if req == nil || fp == nil {
 		return
 	}
-
-	// 设置user-agent
-	if fp.UserAgent != "" {
-		setHeaderRaw(req.Header, "User-Agent", fp.UserAgent)
-	}
-
-	// 设置x-stainless-*头（保持与 claude.DefaultHeaders 一致的大小写）
-	if fp.StainlessLang != "" {
-		setHeaderRaw(req.Header, "X-Stainless-Lang", fp.StainlessLang)
-	}
-	if fp.StainlessPackageVersion != "" {
-		setHeaderRaw(req.Header, "X-Stainless-Package-Version", fp.StainlessPackageVersion)
-	}
-	if fp.StainlessOS != "" {
-		setHeaderRaw(req.Header, "X-Stainless-OS", fp.StainlessOS)
-	}
-	if fp.StainlessArch != "" {
-		setHeaderRaw(req.Header, "X-Stainless-Arch", fp.StainlessArch)
-	}
-	if fp.StainlessRuntime != "" {
-		setHeaderRaw(req.Header, "X-Stainless-Runtime", fp.StainlessRuntime)
-	}
-	if fp.StainlessRuntimeVersion != "" {
-		setHeaderRaw(req.Header, "X-Stainless-Runtime-Version", fp.StainlessRuntimeVersion)
-	}
+	identity.ApplyFingerprintHeaders(req.Header, fingerprintToIdentityPtr(fp))
 }
 
 // RewriteUserID 重写body中的metadata.user_id
@@ -384,60 +353,8 @@ func generateUUIDFromSeed(seed string) string {
 		bytes[0:4], bytes[4:6], bytes[6:8], bytes[8:10], bytes[10:16])
 }
 
-// parseUserAgentVersion 解析user-agent版本号
-// 例如：claude-cli/2.1.2 -> (2, 1, 2)
-func parseUserAgentVersion(ua string) (major, minor, patch int, ok bool) {
-	// 匹配 xxx/x.y.z 格式
-	matches := userAgentVersionRegex.FindStringSubmatch(ua)
-	if len(matches) != 4 {
-		return 0, 0, 0, false
-	}
-	major, _ = strconv.Atoi(matches[1])
-	minor, _ = strconv.Atoi(matches[2])
-	patch, _ = strconv.Atoi(matches[3])
-	return major, minor, patch, true
-}
-
-// extractProduct 提取 User-Agent 中 "/" 前的产品名
-// 例如：claude-cli/2.1.22 (external, cli) -> "claude-cli"
-func extractProduct(ua string) string {
-	if idx := strings.Index(ua, "/"); idx > 0 {
-		return strings.ToLower(ua[:idx])
-	}
-	return ""
-}
-
 // isNewerVersion 比较版本号，判断newUA是否比cachedUA更新
 // 要求产品名一致（防止浏览器 UA 如 Mozilla/5.0 误判为更新版本）
 func isNewerVersion(newUA, cachedUA string) bool {
-	// 校验产品名一致性
-	newProduct := extractProduct(newUA)
-	cachedProduct := extractProduct(cachedUA)
-	if newProduct == "" || cachedProduct == "" || newProduct != cachedProduct {
-		return false
-	}
-
-	newMajor, newMinor, newPatch, newOk := parseUserAgentVersion(newUA)
-	cachedMajor, cachedMinor, cachedPatch, cachedOk := parseUserAgentVersion(cachedUA)
-
-	if !newOk || !cachedOk {
-		return false
-	}
-
-	// 比较版本号
-	if newMajor > cachedMajor {
-		return true
-	}
-	if newMajor < cachedMajor {
-		return false
-	}
-
-	if newMinor > cachedMinor {
-		return true
-	}
-	if newMinor < cachedMinor {
-		return false
-	}
-
-	return newPatch > cachedPatch
+	return identity.IsNewerUserAgentVersion(newUA, cachedUA)
 }

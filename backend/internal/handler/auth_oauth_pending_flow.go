@@ -17,6 +17,7 @@ import (
 	"github.com/Aias00/cloudbase/ent/identityadoptiondecision"
 	"github.com/Aias00/cloudbase/ent/predicate"
 	dbuser "github.com/Aias00/cloudbase/ent/user"
+	"github.com/Aias00/cloudbase/internal/identity"
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 	"github.com/Aias00/cloudbase/internal/pkg/ip"
 	"github.com/Aias00/cloudbase/internal/pkg/oauth"
@@ -34,7 +35,7 @@ const (
 	oauthPendingSessionCookieName = "oauth_pending_session"
 	oauthPromoCodeCookieName      = "oauth_promo_code"
 	oauthPendingCookieMaxAgeSec   = 10 * 60
-	oauthPendingChoiceStep        = "choose_account_action_required"
+	oauthPendingChoiceStep        = identity.OAuthPendingChoiceStep
 
 	oauthCompletionResponseKey = "completion_response"
 	oauthPromoCodeStateKey     = "promo_code"
@@ -43,12 +44,7 @@ const (
 var pendingOAuthCreateAccountPreCommitHook func(context.Context, *dbent.PendingAuthSession) error
 
 func isSupportedPendingOAuthProvider(provider string) bool {
-	switch strings.ToLower(strings.TrimSpace(provider)) {
-	case "github", "google":
-		return true
-	default:
-		return false
-	}
+	return identity.IsSupportedPendingOAuthProvider(provider)
 }
 
 func ensureSupportedPendingOAuthProvider(provider string) error {
@@ -58,16 +54,7 @@ func ensureSupportedPendingOAuthProvider(provider string) error {
 	return infraerrors.BadRequest("OAUTH_PROVIDER_UNSUPPORTED", "oauth provider is not supported")
 }
 
-type oauthPendingSessionPayload struct {
-	Intent                 string
-	Identity               service.PendingAuthIdentityKey
-	TargetUserID           *int64
-	ResolvedEmail          string
-	RedirectTo             string
-	BrowserSessionKey      string
-	UpstreamIdentityClaims map[string]any
-	CompletionResponse     map[string]any
-}
+type oauthPendingSessionPayload = identity.OAuthPendingSessionPayload
 
 type oauthAdoptionDecisionRequest struct {
 	AdoptDisplayName *bool `json:"adopt_display_name,omitempty"`
@@ -265,7 +252,7 @@ func (h *AuthHandler) createOAuthPendingSession(c *gin.Context, payload oauthPen
 		localFlowState[oauthPromoCodeStateKey] = promoCode
 	}
 
-	session, err := svc.CreatePendingSession(c.Request.Context(), service.CreatePendingAuthSessionInput{
+	session, err := svc.CreatePendingSession(c.Request.Context(), identity.CreatePendingAuthSessionInput{
 		Intent:                 strings.TrimSpace(payload.Intent),
 		Identity:               payload.Identity,
 		TargetUserID:           payload.TargetUserID,
@@ -307,14 +294,7 @@ func readCompletionResponse(session map[string]any) (map[string]any, bool) {
 }
 
 func clonePendingMap(values map[string]any) map[string]any {
-	if len(values) == 0 {
-		return map[string]any{}
-	}
-	cloned := make(map[string]any, len(values))
-	for key, value := range values {
-		cloned[key] = value
-	}
-	return cloned
+	return identity.ClonePendingMap(values)
 }
 
 func mergePendingCompletionResponse(session *dbent.PendingAuthSession, overrides map[string]any) map[string]any {
@@ -337,68 +317,39 @@ func mergePendingCompletionResponse(session *dbent.PendingAuthSession, overrides
 }
 
 func pendingSessionStringValue(values map[string]any, key string) string {
-	if len(values) == 0 {
-		return ""
-	}
-	raw, ok := values[key]
-	if !ok {
-		return ""
-	}
-	value, ok := raw.(string)
-	if !ok {
-		return ""
-	}
-	return strings.TrimSpace(value)
+	return identity.PendingSessionStringValue(values, key)
 }
 
 func pendingSessionWantsInvitation(payload map[string]any) bool {
-	return strings.EqualFold(strings.TrimSpace(pendingSessionStringValue(payload, "error")), "invitation_required")
+	return identity.PendingSessionWantsInvitation(payload)
 }
 
 // pendingSessionRequiresEmailCompletion 判断 callback 写入的 completion payload 是否处于"补邮箱"状态。
 // 钉钉跨组织/staff 邮箱缺失时进入此状态：前端跳到补邮箱页，exchange 不应走 adoption apply。
 func pendingSessionRequiresEmailCompletion(payload map[string]any) bool {
-	if v, ok := payload["requires_email_completion"].(bool); ok && v {
-		return true
-	}
-	return strings.EqualFold(strings.TrimSpace(pendingSessionStringValue(payload, "step")), "email_completion")
+	return identity.PendingSessionRequiresEmailCompletion(payload)
 }
 
 // pendingSessionRequiresBindLogin 判断 callback 写入的 completion payload 是否处于"必须绑定已有账户"状态。
 // 钉钉 signupBlocked=true（注册关 + 钉钉企业豁免关）时进入此状态：前端渲染 bind_login 表单，
 // exchange 不应消费 session，否则后续 /pending/bind-login 找不到 session。
 func pendingSessionRequiresBindLogin(payload map[string]any) bool {
-	return strings.EqualFold(strings.TrimSpace(pendingSessionStringValue(payload, "step")), "bind_login_required")
+	return identity.PendingSessionRequiresBindLogin(payload)
 }
 
 func pendingOAuthCompletionCanIssueTokenPair(session *dbent.PendingAuthSession, payload map[string]any) bool {
 	if session == nil {
 		return false
 	}
-	if !strings.EqualFold(strings.TrimSpace(session.Intent), oauthIntentLogin) {
-		return false
-	}
-	if session.TargetUserID == nil || *session.TargetUserID <= 0 {
-		return false
-	}
-	if pendingSessionWantsInvitation(payload) {
-		return false
-	}
-	return strings.TrimSpace(pendingSessionStringValue(payload, "step")) == ""
+	return identity.PendingOAuthCompletionCanIssueTokenPair(session.Intent, session.TargetUserID, payload)
 }
 
 func ensurePendingOAuthCompleteRegistrationSession(session *dbent.PendingAuthSession) error {
 	if session == nil {
 		return infraerrors.BadRequest("PENDING_AUTH_SESSION_INVALID", "pending auth registration context is invalid")
 	}
-	if strings.TrimSpace(session.Intent) != oauthIntentLogin {
-		return infraerrors.BadRequest("PENDING_AUTH_SESSION_INVALID", "pending auth registration context is invalid")
-	}
-	if session.TargetUserID != nil && *session.TargetUserID > 0 {
-		return infraerrors.BadRequest("PENDING_AUTH_SESSION_INVALID", "pending auth registration context is invalid")
-	}
 	payload, _ := readCompletionResponse(session.LocalFlowState)
-	if strings.EqualFold(strings.TrimSpace(pendingSessionStringValue(payload, "step")), "bind_login_required") {
+	if !identity.IsPendingOAuthCompleteRegistrationSession(session.Intent, session.TargetUserID, payload) {
 		return infraerrors.BadRequest("PENDING_AUTH_SESSION_INVALID", "pending auth registration context is invalid")
 	}
 	return nil
@@ -456,7 +407,7 @@ func (h *AuthHandler) entClient() *dbent.Client {
 	return h.authService.EntClient()
 }
 
-func (h *AuthHandler) findOAuthIdentityUser(ctx context.Context, identity service.PendingAuthIdentityKey) (*dbent.User, error) {
+func (h *AuthHandler) findOAuthIdentityUser(ctx context.Context, identity identity.PendingAuthIdentityKey) (*dbent.User, error) {
 	client := h.entClient()
 	if client == nil {
 		return nil, infraerrors.ServiceUnavailable("PENDING_AUTH_NOT_READY", "pending auth service is not ready")
@@ -564,7 +515,7 @@ func (h *AuthHandler) upsertPendingOAuthAdoptionDecision(
 		return nil, nil
 	}
 
-	input := service.PendingIdentityAdoptionDecisionInput{
+	input := identity.PendingIdentityAdoptionDecisionInput{
 		PendingAuthSessionID: sessionID,
 	}
 	if existing != nil {
@@ -607,7 +558,7 @@ func (h *AuthHandler) ensurePendingOAuthAdoptionDecision(
 	if err != nil {
 		return nil, err
 	}
-	decision, err = svc.UpsertAdoptionDecision(c.Request.Context(), service.PendingIdentityAdoptionDecisionInput{
+	decision, err = svc.UpsertAdoptionDecision(c.Request.Context(), identity.PendingIdentityAdoptionDecisionInput{
 		PendingAuthSessionID: sessionID,
 	})
 	if err != nil {
@@ -883,11 +834,7 @@ func ensurePendingWeChatOAuthIdentityForUser(ctx context.Context, tx *dbent.Tx, 
 }
 
 func wechatOAuthIdentityProviderKeys(providerKey string) []string {
-	providerKey = strings.TrimSpace(providerKey)
-	if providerKey == wechatOAuthProviderKey {
-		return []string{wechatOAuthProviderKey, wechatOAuthLegacyProviderKey}
-	}
-	return []string{providerKey}
+	return identity.WeChatOAuthIdentityProviderKeys(providerKey)
 }
 
 func chooseWeChatIdentityForUser(ctx context.Context, client *dbent.Client, records []*dbent.AuthIdentity, userID int64) (*dbent.AuthIdentity, error) {
@@ -963,12 +910,7 @@ func shouldBindPendingOAuthIdentity(session *dbent.PendingAuthSession, decision 
 	if session == nil || decision == nil {
 		return false
 	}
-	switch strings.ToLower(strings.TrimSpace(session.Intent)) {
-	case "bind_current_user", "login", "adopt_existing_user_by_email":
-		return true
-	default:
-		return decision.AdoptDisplayName || decision.AdoptAvatar
-	}
+	return identity.ShouldBindPendingOAuthIdentity(session.Intent, decision.AdoptDisplayName, decision.AdoptAvatar)
 }
 
 func shouldSkipAvatarAdoption(err error) bool {
@@ -1128,27 +1070,27 @@ func consumePendingOAuthBrowserSessionTx(
 	session *dbent.PendingAuthSession,
 ) error {
 	if tx == nil || session == nil {
-		return service.ErrPendingAuthSessionNotFound
+		return identity.ErrPendingAuthSessionNotFound
 	}
 
 	storedSession, err := tx.Client().PendingAuthSession.Get(ctx, session.ID)
 	if err != nil {
 		if dbent.IsNotFound(err) {
-			return service.ErrPendingAuthSessionNotFound
+			return identity.ErrPendingAuthSessionNotFound
 		}
 		return err
 	}
 
 	now := time.Now().UTC()
 	if storedSession.ConsumedAt != nil {
-		return service.ErrPendingAuthSessionConsumed
+		return identity.ErrPendingAuthSessionConsumed
 	}
 	if !storedSession.ExpiresAt.IsZero() && now.After(storedSession.ExpiresAt) {
-		return service.ErrPendingAuthSessionExpired
+		return identity.ErrPendingAuthSessionExpired
 	}
 	if strings.TrimSpace(storedSession.BrowserSessionKey) != "" &&
 		strings.TrimSpace(storedSession.BrowserSessionKey) != strings.TrimSpace(session.BrowserSessionKey) {
-		return service.ErrPendingAuthBrowserMismatch
+		return identity.ErrPendingAuthBrowserMismatch
 	}
 
 	if _, err := tx.Client().PendingAuthSession.UpdateOneID(storedSession.ID).
@@ -1185,26 +1127,7 @@ func applyPendingOAuthAdoption(
 }
 
 func applySuggestedProfileToCompletionResponse(payload map[string]any, upstream map[string]any) {
-	if len(payload) == 0 || len(upstream) == 0 {
-		return
-	}
-
-	displayName := pendingSessionStringValue(upstream, "suggested_display_name")
-	avatarURL := pendingSessionStringValue(upstream, "suggested_avatar_url")
-
-	if displayName != "" {
-		if _, exists := payload["suggested_display_name"]; !exists {
-			payload["suggested_display_name"] = displayName
-		}
-	}
-	if avatarURL != "" {
-		if _, exists := payload["suggested_avatar_url"]; !exists {
-			payload["suggested_avatar_url"] = avatarURL
-		}
-	}
-	if displayName != "" || avatarURL != "" {
-		payload["adoption_required"] = true
-	}
+	identity.ApplySuggestedProfileToCompletionResponse(payload, upstream)
 }
 
 func pendingOAuthIdentityExistsForUser(
@@ -1272,12 +1195,12 @@ func readPendingOAuthBrowserSession(c *gin.Context, h *AuthHandler) (*service.Au
 	sessionToken, err := readOAuthPendingSessionCookie(c)
 	if err != nil || strings.TrimSpace(sessionToken) == "" {
 		clearCookies()
-		return nil, nil, clearCookies, service.ErrPendingAuthSessionNotFound
+		return nil, nil, clearCookies, identity.ErrPendingAuthSessionNotFound
 	}
 	browserSessionKey, err := readOAuthPendingBrowserCookie(c)
 	if err != nil || strings.TrimSpace(browserSessionKey) == "" {
 		clearCookies()
-		return nil, nil, clearCookies, service.ErrPendingAuthBrowserMismatch
+		return nil, nil, clearCookies, identity.ErrPendingAuthBrowserMismatch
 	}
 
 	svc, err := h.pendingIdentityService()
@@ -1345,26 +1268,7 @@ func buildPendingOAuthSessionStatusPayload(session *dbent.PendingAuthSession) gi
 }
 
 func normalizePendingOAuthCompletionResponse(payload map[string]any) map[string]any {
-	normalized := clonePendingMap(payload)
-	for _, key := range []string{"access_token", "refresh_token", "expires_in", "token_type"} {
-		delete(normalized, key)
-	}
-	step := strings.ToLower(strings.TrimSpace(pendingSessionStringValue(normalized, "step")))
-	// 把多种 choice 别名归一为 oauthPendingChoiceStep；bind_login_required 是独立终态
-	// （前端渲染 needsBindLogin 而非 needsChooser），故不能并入归一化列表。
-	switch step {
-	case "choice", "choose_account_action", "choose_account", "choose", "email_required":
-		normalized["step"] = oauthPendingChoiceStep
-	}
-	if strings.EqualFold(strings.TrimSpace(pendingSessionStringValue(normalized, "step")), oauthPendingChoiceStep) {
-		normalized["adoption_required"] = true
-	}
-	if _, exists := normalized["adoption_required"]; !exists {
-		if _, hasChoiceFields := normalized["email_binding_required"]; hasChoiceFields {
-			normalized["adoption_required"] = true
-		}
-	}
-	return normalized
+	return identity.NormalizePendingOAuthCompletionResponse(payload)
 }
 
 func pendingOAuthChoiceCompletionResponse(session *dbent.PendingAuthSession, email string) map[string]any {
@@ -1731,13 +1635,13 @@ func (h *AuthHandler) ExchangePendingOAuthCompletion(c *gin.Context) {
 	sessionToken, err := readOAuthPendingSessionCookie(c)
 	if err != nil || strings.TrimSpace(sessionToken) == "" {
 		clearCookies()
-		response.ErrorFrom(c, service.ErrPendingAuthSessionNotFound)
+		response.ErrorFrom(c, identity.ErrPendingAuthSessionNotFound)
 		return
 	}
 	browserSessionKey, err := readOAuthPendingBrowserCookie(c)
 	if err != nil || strings.TrimSpace(browserSessionKey) == "" {
 		clearCookies()
-		response.ErrorFrom(c, service.ErrPendingAuthBrowserMismatch)
+		response.ErrorFrom(c, identity.ErrPendingAuthBrowserMismatch)
 		return
 	}
 

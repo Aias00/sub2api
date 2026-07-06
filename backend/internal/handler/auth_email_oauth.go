@@ -11,6 +11,7 @@ import (
 
 	dbent "github.com/Aias00/cloudbase/ent"
 	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/Aias00/cloudbase/internal/identity"
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 	"github.com/Aias00/cloudbase/internal/pkg/oauth"
 	"github.com/Aias00/cloudbase/internal/pkg/response"
@@ -291,7 +292,7 @@ func (h *AuthHandler) emailOAuthShouldCreatePendingRegistration(ctx context.Cont
 	if client == nil {
 		return false, infraerrors.ServiceUnavailable("PENDING_AUTH_NOT_READY", "pending auth service is not ready")
 	}
-	identityUser, err := h.findOAuthIdentityUser(ctx, service.PendingAuthIdentityKey{
+	identityUser, err := h.findOAuthIdentityUser(ctx, identity.PendingAuthIdentityKey{
 		ProviderType:    strings.TrimSpace(input.ProviderType),
 		ProviderKey:     strings.TrimSpace(input.ProviderKey),
 		ProviderSubject: strings.TrimSpace(input.ProviderSubject),
@@ -390,7 +391,7 @@ func (h *AuthHandler) createEmailOAuthRegistrationPendingSession(
 
 	return h.createOAuthPendingSession(c, oauthPendingSessionPayload{
 		Intent:                 oauthIntentLogin,
-		Identity:               service.PendingAuthIdentityKey{ProviderType: provider, ProviderKey: provider, ProviderSubject: strings.TrimSpace(profile.Subject)},
+		Identity:               identity.PendingAuthIdentityKey{ProviderType: provider, ProviderKey: provider, ProviderSubject: strings.TrimSpace(profile.Subject)},
 		ResolvedEmail:          email,
 		RedirectTo:             redirectTo,
 		BrowserSessionKey:      browserSessionKey,

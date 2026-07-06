@@ -2,13 +2,10 @@ package service
 
 import (
 	"context"
-	"crypto/sha256"
 	"database/sql"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net"
 	"strconv"
 	"strings"
 	"time"
@@ -16,6 +13,7 @@ import (
 	"entgo.io/ent/dialect"
 	entsql "entgo.io/ent/dialect/sql"
 	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/internal/identity"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 )
 
@@ -424,12 +422,7 @@ func signupGrantPlanHasBonus(plan signupGrantPlan) bool {
 }
 
 func signupGrantRiskAppliesToSource(signupSource string) bool {
-	switch strings.ToLower(strings.TrimSpace(signupSource)) {
-	case authSignupSourceEmail, "github", "google":
-		return true
-	default:
-		return false
-	}
+	return identity.SignupGrantRiskAppliesToSource(signupSource)
 }
 
 func stripSignupGrantBonus(plan signupGrantPlan) signupGrantPlan {
@@ -437,115 +430,53 @@ func stripSignupGrantBonus(plan signupGrantPlan) signupGrantPlan {
 }
 
 func signupGrantRiskHash(salt string, value string) string {
-	value = strings.TrimSpace(strings.ToLower(value))
-	if value == "" {
-		return ""
-	}
-	sum := sha256.Sum256([]byte(salt + "\x00" + value))
-	return hex.EncodeToString(sum[:])
+	return identity.SignupGrantRiskHash(salt, value)
 }
 
 func normalizeSignupGrantRiskEmail(raw string) (string, string) {
-	local, domain, ok := splitEmailForPolicy(raw)
-	if !ok {
-		return strings.ToLower(strings.TrimSpace(raw)), ""
-	}
-	if beforePlus, _, found := strings.Cut(local, "+"); found {
-		local = beforePlus
-	}
-	if domain == "googlemail.com" {
-		domain = "gmail.com"
-	}
-	if domain == "gmail.com" {
-		local = strings.ReplaceAll(local, ".", "")
-	}
-	if local == "" {
-		return "", domain
-	}
-	return local + "@" + domain, domain
+	return identity.NormalizeSignupGrantRiskEmail(raw)
 }
 
 func normalizeSignupGrantRiskIP(raw string) string {
-	raw = strings.TrimSpace(raw)
-	if raw == "" {
-		return ""
-	}
-	if host, _, err := net.SplitHostPort(raw); err == nil {
-		raw = host
-	}
-	ip := net.ParseIP(raw)
-	if ip == nil {
-		return ""
-	}
-	return ip.String()
+	return identity.NormalizeSignupGrantRiskIP(raw)
 }
 
 func normalizeSignupGrantRiskLabel(raw string) string {
-	return strings.ToLower(strings.TrimSpace(raw))
+	return identity.NormalizeSignupGrantRiskLabel(raw)
 }
 
 func signupGrantDeviceSignal(input SignupGrantRiskInput) string {
-	if fp := strings.TrimSpace(input.DeviceFingerprint); fp != "" {
-		return fp
-	}
-	return strings.Join([]string{
-		strings.TrimSpace(input.UserAgent),
-		strings.TrimSpace(input.AcceptLanguage),
-	}, "\x00")
+	return identity.SignupGrantDeviceSignal(identity.SignupGrantRiskInput{
+		RemoteIP:          input.RemoteIP,
+		UserAgent:         input.UserAgent,
+		AcceptLanguage:    input.AcceptLanguage,
+		DeviceFingerprint: input.DeviceFingerprint,
+		ProviderType:      input.ProviderType,
+		ProviderSubject:   input.ProviderSubject,
+	})
 }
 
 func (cfg signupGrantRiskConfig) domainLimitFor(domain string) int {
-	domain = normalizeSignupGrantRiskDomain(domain)
-	if domain == "" {
-		return cfg.DomainLimit
-	}
-	if _, trusted := cfg.TrustedDomains[domain]; trusted {
-		return 0
-	}
-	if _, free := cfg.FreeDomains[domain]; free && cfg.FreeDomainLimit > 0 {
-		return cfg.FreeDomainLimit
-	}
-	return cfg.DomainLimit
+	return identity.SignupGrantRiskConfig{
+		DomainLimit:     cfg.DomainLimit,
+		FreeDomainLimit: cfg.FreeDomainLimit,
+		FreeDomains:     cfg.FreeDomains,
+		TrustedDomains:  cfg.TrustedDomains,
+	}.DomainLimitFor(domain)
 }
 
 func normalizeSignupGrantRiskDomain(raw string) string {
-	domain := strings.ToLower(strings.TrimSpace(raw))
-	domain = strings.TrimPrefix(domain, "@")
-	domain = strings.TrimPrefix(domain, "*.")
-	return domain
+	return identity.NormalizeSignupGrantRiskDomain(raw)
 }
 
 const defaultSignupGrantRiskFreeDomains = "gmail.com,googlemail.com,outlook.com,hotmail.com,live.com,icloud.com,yahoo.com,qq.com,163.com,126.com,foxmail.com"
 
 func parseSignupGrantRiskDomainSet(raw string) map[string]struct{} {
-	normalized := normalizeDomainListSetting(raw)
-	out := map[string]struct{}{}
-	for _, domain := range strings.Split(normalized, ",") {
-		domain = normalizeSignupGrantRiskDomain(domain)
-		if domain != "" {
-			out[domain] = struct{}{}
-		}
-	}
-	return out
+	return identity.ParseSignupGrantRiskDomainSet(raw)
 }
 
 func normalizeDomainListSetting(raw string) string {
-	replacer := strings.NewReplacer("\n", ",", "\r", ",", "\t", ",", " ", ",", ";", ",", "；", ",", "，", ",")
-	parts := strings.Split(replacer.Replace(strings.TrimSpace(raw)), ",")
-	seen := map[string]struct{}{}
-	domains := make([]string, 0, len(parts))
-	for _, part := range parts {
-		domain := normalizeSignupGrantRiskDomain(part)
-		if domain == "" {
-			continue
-		}
-		if _, ok := seen[domain]; ok {
-			continue
-		}
-		seen[domain] = struct{}{}
-		domains = append(domains, domain)
-	}
-	return strings.Join(domains, ",")
+	return identity.NormalizeDomainListSetting(raw)
 }
 
 func defaultIfEmpty(value, fallback string) string {

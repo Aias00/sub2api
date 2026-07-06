@@ -3,7 +3,7 @@ package service
 import (
 	"time"
 
-	"golang.org/x/crypto/bcrypt"
+	"github.com/Aias00/cloudbase/internal/identity"
 )
 
 type User struct {
@@ -70,11 +70,11 @@ type User struct {
 }
 
 func (u *User) IsAdmin() bool {
-	return u.Role == RoleAdmin
+	return identity.IsUserAdmin(u.Role)
 }
 
 func (u *User) IsActive() bool {
-	return u.Status == StatusActive
+	return identity.IsUserActive(u.Status)
 }
 
 // CanBindGroup checks whether a user can bind to a given group.
@@ -82,21 +82,11 @@ func (u *User) IsActive() bool {
 // - Public groups (non-exclusive): all users can bind
 // - Exclusive groups: only users with the group in AllowedGroups can bind
 func (u *User) CanBindGroup(groupID int64, isExclusive bool) bool {
-	// 公开分组（非专属）：所有用户都可以绑定
-	if !isExclusive {
-		return true
-	}
-	// 专属分组：需要在 AllowedGroups 中
-	for _, id := range u.AllowedGroups {
-		if id == groupID {
-			return true
-		}
-	}
-	return false
+	return identity.CanUserBindGroup(u.AllowedGroups, groupID, isExclusive)
 }
 
 func (u *User) SetPassword(password string) error {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	hash, err := identity.HashPassword(password)
 	if err != nil {
 		return err
 	}
@@ -105,5 +95,5 @@ func (u *User) SetPassword(password string) error {
 }
 
 func (u *User) CheckPassword(password string) bool {
-	return bcrypt.CompareHashAndPassword([]byte(u.PasswordHash), []byte(password)) == nil
+	return identity.CheckPassword(password, u.PasswordHash)
 }

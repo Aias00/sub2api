@@ -18,19 +18,19 @@ import (
 	"github.com/Aias00/cloudbase/ent/identityadoptiondecision"
 	"github.com/Aias00/cloudbase/ent/pendingauthsession"
 	dbpredicate "github.com/Aias00/cloudbase/ent/predicate"
-	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/Aias00/cloudbase/internal/identity"
 
 	entsql "entgo.io/ent/dialect/sql"
 )
 
 var (
-	ErrPendingAuthSessionNotFound = infraerrors.NotFound("PENDING_AUTH_SESSION_NOT_FOUND", "pending auth session not found")
-	ErrPendingAuthSessionExpired  = infraerrors.Unauthorized("PENDING_AUTH_SESSION_EXPIRED", "pending auth session has expired")
-	ErrPendingAuthSessionConsumed = infraerrors.Unauthorized("PENDING_AUTH_SESSION_CONSUMED", "pending auth session has already been used")
-	ErrPendingAuthCodeInvalid     = infraerrors.Unauthorized("PENDING_AUTH_CODE_INVALID", "pending auth completion code is invalid")
-	ErrPendingAuthCodeExpired     = infraerrors.Unauthorized("PENDING_AUTH_CODE_EXPIRED", "pending auth completion code has expired")
-	ErrPendingAuthCodeConsumed    = infraerrors.Unauthorized("PENDING_AUTH_CODE_CONSUMED", "pending auth completion code has already been used")
-	ErrPendingAuthBrowserMismatch = infraerrors.Unauthorized("PENDING_AUTH_BROWSER_MISMATCH", "pending auth completion code does not match this browser session")
+	ErrPendingAuthSessionNotFound = identity.ErrPendingAuthSessionNotFound
+	ErrPendingAuthSessionExpired  = identity.ErrPendingAuthSessionExpired
+	ErrPendingAuthSessionConsumed = identity.ErrPendingAuthSessionConsumed
+	ErrPendingAuthCodeInvalid     = identity.ErrPendingAuthCodeInvalid
+	ErrPendingAuthCodeExpired     = identity.ErrPendingAuthCodeExpired
+	ErrPendingAuthCodeConsumed    = identity.ErrPendingAuthCodeConsumed
+	ErrPendingAuthBrowserMismatch = identity.ErrPendingAuthBrowserMismatch
 )
 
 const (
@@ -38,43 +38,15 @@ const (
 	defaultPendingAuthCompletionTTL = 5 * time.Minute
 )
 
-type PendingAuthIdentityKey struct {
-	ProviderType    string
-	ProviderKey     string
-	ProviderSubject string
-}
+type PendingAuthIdentityKey = identity.PendingAuthIdentityKey
 
-type CreatePendingAuthSessionInput struct {
-	SessionToken             string
-	Intent                   string
-	Identity                 PendingAuthIdentityKey
-	TargetUserID             *int64
-	RedirectTo               string
-	ResolvedEmail            string
-	RegistrationPasswordHash string
-	BrowserSessionKey        string
-	UpstreamIdentityClaims   map[string]any
-	LocalFlowState           map[string]any
-	ExpiresAt                time.Time
-}
+type CreatePendingAuthSessionInput = identity.CreatePendingAuthSessionInput
 
-type IssuePendingAuthCompletionCodeInput struct {
-	PendingAuthSessionID int64
-	BrowserSessionKey    string
-	TTL                  time.Duration
-}
+type IssuePendingAuthCompletionCodeInput = identity.IssuePendingAuthCompletionCodeInput
 
-type IssuePendingAuthCompletionCodeResult struct {
-	Code      string
-	ExpiresAt time.Time
-}
+type IssuePendingAuthCompletionCodeResult = identity.IssuePendingAuthCompletionCodeResult
 
-type PendingIdentityAdoptionDecisionInput struct {
-	PendingAuthSessionID int64
-	IdentityID           *int64
-	AdoptDisplayName     bool
-	AdoptAvatar          bool
-}
+type PendingIdentityAdoptionDecisionInput = identity.PendingIdentityAdoptionDecisionInput
 
 type AuthPendingIdentityService struct {
 	entClient *dbent.Client
@@ -397,26 +369,7 @@ func (s *AuthPendingIdentityService) consumeSession(
 }
 
 func sanitizePendingAuthLocalFlowState(localFlowState map[string]any) map[string]any {
-	sanitized := copyPendingMap(localFlowState)
-	if len(sanitized) == 0 {
-		return sanitized
-	}
-
-	rawCompletion, ok := sanitized["completion_response"]
-	if !ok {
-		return sanitized
-	}
-	completion, ok := rawCompletion.(map[string]any)
-	if !ok {
-		return sanitized
-	}
-
-	cleanedCompletion := copyPendingMap(completion)
-	for _, key := range []string{"access_token", "refresh_token", "expires_in", "token_type"} {
-		delete(cleanedCompletion, key)
-	}
-	sanitized["completion_response"] = cleanedCompletion
-	return sanitized
+	return identity.SanitizePendingAuthLocalFlowState(localFlowState)
 }
 
 func validatePendingSessionState(session *dbent.PendingAuthSession, browserSessionKey string, expiredErr error, consumedErr error) error {

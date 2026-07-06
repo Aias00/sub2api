@@ -2,17 +2,13 @@ package service
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/subtle"
-	"encoding/hex"
 	"fmt"
 	"log/slog"
-	"net/url"
-	"strings"
 	"time"
 
 	"github.com/pquerna/otp/totp"
 
+	"github.com/Aias00/cloudbase/internal/identity"
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 )
 
@@ -124,20 +120,13 @@ func NewTotpService(
 }
 
 func (s *TotpService) issuer(ctx context.Context) string {
+	frontendURL := ""
+	siteName := ""
 	if s.settingService != nil {
-		if frontendURL := strings.TrimSpace(s.settingService.GetFrontendURL(ctx)); frontendURL != "" {
-			if parsedURL, err := url.Parse(frontendURL); err == nil {
-				if host := strings.TrimSpace(parsedURL.Hostname()); host != "" {
-					return host
-				}
-			}
-		}
-		if siteName := strings.TrimSpace(s.settingService.GetSiteName(ctx)); siteName != "" {
-			return siteName
-		}
+		frontendURL = s.settingService.GetFrontendURL(ctx)
+		siteName = s.settingService.GetSiteName(ctx)
 	}
-
-	return defaultTotpIssuer
+	return identity.ResolveTotpIssuer(frontendURL, siteName)
 }
 
 // GetStatus returns the TOTP status for a user
@@ -245,19 +234,16 @@ func (s *TotpService) CompleteSetup(ctx context.Context, userID int64, totpCode,
 	}
 
 	// Verify the setup token (constant-time comparison)
-	if subtle.ConstantTimeCompare([]byte(session.SetupToken), []byte(setupToken)) != 1 {
+	if !identity.ConstantTimeEqual(session.SetupToken, setupToken) {
 		return ErrTotpSetupExpired
 	}
 
 	// Verify the TOTP code
-	if !totp.Validate(totpCode, session.Secret) {
+	if !identity.ValidateTotpCode(totpCode, session.Secret) {
 		return ErrTotpInvalidCode
 	}
 
-	setupSecretPrefix := "N/A"
-	if len(session.Secret) >= 4 {
-		setupSecretPrefix = session.Secret[:4]
-	}
+	setupSecretPrefix := identity.TotpSecretPrefix(session.Secret)
 	slog.Debug("totp_complete_setup_before_encrypt",
 		"user_id", userID,
 		"secret_len", len(session.Secret),
@@ -280,10 +266,7 @@ func (s *TotpService) CompleteSetup(ctx context.Context, userID int64, totpCode,
 			"user_id", userID,
 			"error", decErr)
 	} else {
-		decryptedPrefix := "N/A"
-		if len(decrypted) >= 4 {
-			decryptedPrefix = decrypted[:4]
-		}
+		decryptedPrefix := identity.TotpSecretPrefix(decrypted)
 		slog.Debug("totp_complete_setup_verified",
 			"user_id", userID,
 			"original_len", len(session.Secret),
@@ -390,17 +373,14 @@ func (s *TotpService) VerifyCode(ctx context.Context, userID int64, code string)
 		return infraerrors.InternalServer("TOTP_VERIFY_ERROR", "failed to verify totp code")
 	}
 
-	secretPrefix := "N/A"
-	if len(secret) >= 4 {
-		secretPrefix = secret[:4]
-	}
+	secretPrefix := identity.TotpSecretPrefix(secret)
 	slog.Debug("totp_verify_decrypted",
 		"user_id", userID,
 		"secret_len", len(secret),
 		"secret_prefix", secretPrefix)
 
 	// Verify the code
-	valid := totp.Validate(code, secret)
+	valid := identity.ValidateTotpCode(code, secret)
 	slog.Debug("totp_verify_result",
 		"user_id", userID,
 		"valid", valid,
@@ -487,39 +467,12 @@ func (s *TotpService) IsTotpEnabledForUser(ctx context.Context, userID int64) (b
 
 // MaskEmail masks an email address for display
 func MaskEmail(email string) string {
-	if len(email) < 3 {
-		return "***"
-	}
-
-	atIdx := -1
-	for i, c := range email {
-		if c == '@' {
-			atIdx = i
-			break
-		}
-	}
-
-	if atIdx == -1 || atIdx < 1 {
-		return email[:1] + "***"
-	}
-
-	localPart := email[:atIdx]
-	domain := email[atIdx:]
-
-	if len(localPart) <= 2 {
-		return localPart[:1] + "***" + domain
-	}
-
-	return localPart[:1] + "***" + localPart[len(localPart)-1:] + domain
+	return identity.MaskEmail(email)
 }
 
 // generateRandomToken generates a random hex-encoded token
 func generateRandomToken(byteLength int) (string, error) {
-	b := make([]byte, byteLength)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(b), nil
+	return identity.GenerateRandomHexToken(byteLength)
 }
 
 // VerificationMethod represents the method required for TOTP operations
@@ -529,10 +482,7 @@ type VerificationMethod struct {
 
 // GetVerificationMethod returns the verification method for TOTP operations
 func (s *TotpService) GetVerificationMethod(ctx context.Context) *VerificationMethod {
-	if s.settingService.IsEmailVerifyEnabled(ctx) {
-		return &VerificationMethod{Method: "email"}
-	}
-	return &VerificationMethod{Method: "password"}
+	return &VerificationMethod{Method: identity.TotpVerificationMethod(s.settingService.IsEmailVerifyEnabled(ctx))}
 }
 
 // SendVerifyCode sends an email verification code for TOTP operations
