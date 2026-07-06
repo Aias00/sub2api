@@ -28,6 +28,11 @@ jobs:
   build:
     name: Build and push images
     runs-on: ubuntu-latest
+    env:
+      ALIYUN_ACR_REGISTRY: ${{ secrets.ALIYUN_ACR_REGISTRY }}
+      ALIYUN_ACR_NAMESPACE: ${{ secrets.ALIYUN_ACR_NAMESPACE }}
+      ALIYUN_ACR_USERNAME: ${{ secrets.ALIYUN_ACR_USERNAME }}
+      ALIYUN_ACR_PASSWORD: ${{ secrets.ALIYUN_ACR_PASSWORD }}
     strategy:
       fail-fast: false
       matrix:
@@ -65,20 +70,35 @@ jobs:
           image="ghcr.io/${owner}/${repo}${{ matrix.suffix }}"
           short_sha="${GITHUB_SHA::12}"
 
-          tags=("${image}:sha-${short_sha}")
+          tags=()
+          tag_names=("sha-${short_sha}")
           if [[ "${GITHUB_REF_TYPE}" == "branch" ]]; then
             ref_name="$(echo "${GITHUB_REF_NAME}" | tr '/[:upper:]' '-[:lower:]')"
-            tags+=("${image}:${ref_name}")
+            tag_names+=("${ref_name}")
           fi
           if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             version="${GITHUB_REF_NAME#v}"
-            tags+=("${image}:${GITHUB_REF_NAME}" "${image}:${version}")
+            tag_names+=("${GITHUB_REF_NAME}" "${version}")
           fi
           if [[ "${{ github.event_name }}" == "workflow_dispatch" && -n "${EXTRA_IMAGE_TAG}" ]]; then
-            tags+=("${image}:${EXTRA_IMAGE_TAG}")
+            tag_names+=("${EXTRA_IMAGE_TAG}")
           fi
           if [[ "${GITHUB_REF_NAME}" == "${{ github.event.repository.default_branch }}" ]]; then
-            tags+=("${image}:latest")
+            tag_names+=("latest")
+          fi
+
+          for tag in "${tag_names[@]}"; do
+            tags+=("${image}:${tag}")
+          done
+
+          acr_registry="${ALIYUN_ACR_REGISTRY%/}"
+          acr_namespace="${ALIYUN_ACR_NAMESPACE#/}"
+          acr_namespace="${acr_namespace%/}"
+          if [[ -n "${acr_registry}" && -n "${acr_namespace}" && -n "${ALIYUN_ACR_USERNAME}" && -n "${ALIYUN_ACR_PASSWORD}" ]]; then
+            acr_image="${acr_registry}/${acr_namespace}/${repo}${{ matrix.suffix }}"
+            for tag in "${tag_names[@]}"; do
+              tags+=("${acr_image}:${tag}")
+            done
           fi
 
           {
@@ -100,6 +120,14 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Login to Aliyun Container Registry
+        if: ${{ env.ALIYUN_ACR_REGISTRY != '' && env.ALIYUN_ACR_USERNAME != '' && env.ALIYUN_ACR_PASSWORD != '' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.ALIYUN_ACR_REGISTRY }}
+          username: ${{ env.ALIYUN_ACR_USERNAME }}
+          password: ${{ env.ALIYUN_ACR_PASSWORD }}
 
       - name: Build and push ${{ matrix.name }}
         uses: docker/build-push-action@v6

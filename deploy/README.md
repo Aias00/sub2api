@@ -193,6 +193,28 @@ CONTENT_WORKER_IMAGE_TAG=latest \
 deploy/pull-and-restart.sh
 ```
 
+The container image workflow can also mirror images to Aliyun Container
+Registry. Configure these GitHub Actions secrets to enable it:
+
+```text
+ALIYUN_ACR_REGISTRY=registry.cn-hangzhou.aliyuncs.com
+ALIYUN_ACR_NAMESPACE=<your-acr-namespace>
+ALIYUN_ACR_USERNAME=<your-acr-username>
+ALIYUN_ACR_PASSWORD=<your-acr-password-or-token>
+```
+
+When configured, CI publishes the same tags as GHCR, for example:
+
+```text
+registry.cn-hangzhou.aliyuncs.com/<namespace>/cloudbase:sha-<commit>
+registry.cn-hangzhou.aliyuncs.com/<namespace>/cloudbase-content-worker:sha-<commit>
+registry.cn-hangzhou.aliyuncs.com/<namespace>/cloudbase-wechat-worker:sha-<commit>
+registry.cn-hangzhou.aliyuncs.com/<namespace>/cloudbase-image-workspace-worker:sha-<commit>
+```
+
+Set the corresponding image overrides in `deploy/.env` when the production host
+should pull from ACR instead of GHCR.
+
 The current runtime reads Docker environment from `deploy/.env`. A
 `deploy/data/config.yaml` file is optional and should only be added for
 settings that cannot be expressed cleanly as environment variables.
