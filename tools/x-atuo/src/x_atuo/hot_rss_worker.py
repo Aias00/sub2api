@@ -18,6 +18,7 @@ import sys
 import threading
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 import uuid
 import xml.etree.ElementTree as ET
@@ -808,6 +809,222 @@ def fetch_text(config: Config, url: str) -> str:
         raise RuntimeError(f"HTTP {exc.code}") from exc
 
 
+def fetch_json(config: Config, url: str) -> Any:
+    request = urllib.request.Request(
+        url,
+        headers={
+            "accept": "application/json, */*",
+            "user-agent": "cloudbase-hot-ai-trends-collector/1.0",
+        },
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=config.request_timeout_ms / 1000) as response:
+            return json.loads(response.read().decode(response.headers.get_content_charset() or "utf-8", errors="replace"))
+    except urllib.error.HTTPError as exc:
+        raise RuntimeError(f"HTTP {exc.code}") from exc
+    except (urllib.error.URLError, TimeoutError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"fetch json failed: {exc}") from exc
+
+
+def _normalize_url(value: str) -> str:
+    raw = _text(value)
+    try:
+        parsed = urllib.parse.urlparse(raw)
+        if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+            return ""
+        query = urllib.parse.parse_qsl(parsed.query, keep_blank_values=True)
+        clean_query = [
+            (key, val)
+            for key, val in query
+            if not key.lower().startswith("utm_") and key.lower() not in {"ref", "source"}
+        ]
+        return urllib.parse.urlunparse(
+            (
+                parsed.scheme.lower(),
+                parsed.netloc.lower(),
+                parsed.path.rstrip("/") or "/",
+                "",
+                urllib.parse.urlencode(clean_query, doseq=True),
+                "",
+            )
+        )
+    except Exception:
+        return ""
+
+
+def _infer_ai_category(title: str, summary: str) -> str:
+    text = f"{title or ''} {summary or ''}".lower()
+    category_keywords = {
+        "AI Agent": ["agent", "agents", "mcp", "tool calling", "workflow", "智能体"],
+        "LLM": ["llm", "large language model", "openai", "anthropic", "claude", "gemini", "deepseek", "大模型"],
+        "Multimodal": ["multimodal", "vision", "audio", "video", "image generation", "多模态", "图像", "视频"],
+        "Open Source Model": ["open source", "hugging face", "weights", "model release", "开源模型"],
+        "AI Infra": ["inference", "gpu", "vector", "rag", "latency", "serving", "deployment", "推理", "算力"],
+    }
+    for category, keywords in category_keywords.items():
+        if any(keyword in text for keyword in keywords):
+            return category
+    return "AI Industry"
+
+
+def build_ai_trends_item(
+    source: dict[str, Any],
+    upstream_source: str,
+    *,
+    upstream_id: str,
+    title: str,
+    link: str,
+    summary: str,
+    published_at: str,
+    score: int,
+    author: str = "",
+) -> dict[str, Any] | None:
+    source_config_value = _source_config(source)
+    source_name = _source_display_name(source)
+    source_config_value.setdefault("source_name", source_name)
+    title = _strip_tags(title)
+    summary = _strip_tags(summary)
+    link = _normalize_url(link)
+    if not title or not link:
+        return None
+    if not is_ai_related(title, summary, source_config_value):
+        return None
+    if not is_publishable_hot_item(title, summary, upstream_source, source_config_value):
+        return None
+    category = _infer_ai_category(title, summary)
+    tags = list(dict.fromkeys([category, upstream_source]))[:8]
+    hash_input = "\n".join([str(source.get("source_id") or ""), upstream_source, upstream_id, link, title, summary])
+    content_hash = hashlib.sha256(hash_input.encode("utf-8")).hexdigest()
+    published = published_at or _iso()
+    hot_score = max(score, _score_for_item(published, tags, title, source_config_value))
+    reason = f"{_source_category_label(source_config_value)} · AI Trends {upstream_source}"
+    metrics = {
+        "reason": reason,
+        "hot_score": hot_score,
+        "source_category": source_config_value.get("category") or "news",
+        "source_category_label": _source_category_label(source_config_value),
+        "ai_related": True,
+        "source_weight": source_config_value.get("source_weight", SOURCE_WEIGHTS.get(source_name, 0)),
+        "ai_hot_rules_version": 1,
+        "adapter_kind": "ai-trends",
+        "upstream_source": upstream_source,
+        "upstream_score": score,
+    }
+    return {
+        "source_id": source.get("source_id"),
+        "external_id": f"ai-trends:{upstream_source.lower()}:{upstream_id or content_hash}",
+        "canonical_url": link,
+        "title": title,
+        "summary": summary,
+        "body": summary,
+        "reason": reason,
+        "published_at": published,
+        "author": author,
+        "source_name": upstream_source,
+        "source_handle": upstream_source.lower().replace(" ", "-"),
+        "badge": _source_category_label(source_config_value),
+        "score": str(max(0, min(100, int(hot_score)))),
+        "content_type": "article",
+        "tags_json": tags,
+        "metrics_json": metrics,
+        "raw_ref_json": {"adapter_kind": "ai-trends", "upstream_source": upstream_source, "upstream_id": upstream_id},
+        "content_hash": content_hash,
+    }
+
+
+def collect_hacker_news_items(config: Config, source: dict[str, Any], limit: int) -> tuple[list[dict[str, Any]], list[str]]:
+    errors: list[str] = []
+    try:
+        ids = fetch_json(config, "https://hacker-news.firebaseio.com/v0/topstories.json")
+    except Exception as exc:
+        return [], [f"hackernews: {exc}"]
+    if not isinstance(ids, list):
+        return [], ["hackernews: topstories response is not a list"]
+    items: list[dict[str, Any]] = []
+    for raw_id in ids[: max(limit * 4, limit)]:
+        if len(items) >= limit:
+            break
+        try:
+            hn_id = int(raw_id)
+            data = fetch_json(config, f"https://hacker-news.firebaseio.com/v0/item/{hn_id}.json")
+            if not isinstance(data, dict) or data.get("type") != "story":
+                continue
+            published_at = _iso(datetime.fromtimestamp(int(data.get("time") or 0), UTC)) if data.get("time") else _iso()
+            item = build_ai_trends_item(
+                source,
+                "Hacker News",
+                upstream_id=str(hn_id),
+                title=str(data.get("title") or ""),
+                link=str(data.get("url") or f"https://news.ycombinator.com/item?id={hn_id}"),
+                summary=str(data.get("text") or ""),
+                published_at=published_at,
+                score=int(data.get("score") or 0),
+                author=str(data.get("by") or ""),
+            )
+            if item:
+                items.append(item)
+        except Exception as exc:
+            errors.append(f"hackernews item {raw_id}: {exc}")
+    return items, errors[:5]
+
+
+def collect_devto_items(config: Config, source: dict[str, Any], limit: int) -> tuple[list[dict[str, Any]], list[str]]:
+    url = f"https://dev.to/api/articles?tag=ai&per_page={max(1, min(limit * 2, 100))}"
+    try:
+        data = fetch_json(config, url)
+    except Exception as exc:
+        return [], [f"devto: {exc}"]
+    if not isinstance(data, list):
+        return [], ["devto: response is not a list"]
+    items: list[dict[str, Any]] = []
+    for article in data:
+        if len(items) >= limit:
+            break
+        if not isinstance(article, dict):
+            continue
+        item = build_ai_trends_item(
+            source,
+            "Dev.to",
+            upstream_id=str(article.get("id") or article.get("path") or article.get("url") or ""),
+            title=str(article.get("title") or ""),
+            link=str(article.get("url") or ""),
+            summary=str(article.get("description") or ""),
+            published_at=_normalize_date(str(article.get("published_at") or "")) or _iso(),
+            score=int(article.get("public_reactions_count") or 0),
+            author=str((article.get("user") or {}).get("username") if isinstance(article.get("user"), dict) else ""),
+        )
+        if item:
+            items.append(item)
+    return items, []
+
+
+def collect_ai_trends_items(config: Config, source: dict[str, Any]) -> tuple[list[dict[str, Any]], list[str]]:
+    source_config_value = _source_config(source)
+    enabled_sources = source_config_value.get("sources") or ["hackernews", "devto"]
+    if not isinstance(enabled_sources, list):
+        enabled_sources = ["hackernews", "devto"]
+    limit = int(source_config_value.get("limit_per_source") or config.limit_per_source)
+    all_items: list[dict[str, Any]] = []
+    errors: list[str] = []
+    if "hackernews" in enabled_sources:
+        items, source_errors = collect_hacker_news_items(config, source, limit)
+        all_items.extend(items)
+        errors.extend(source_errors)
+    if "devto" in enabled_sources:
+        items, source_errors = collect_devto_items(config, source, limit)
+        all_items.extend(items)
+        errors.extend(source_errors)
+    seen: set[str] = set()
+    deduped: list[dict[str, Any]] = []
+    for item in sorted(all_items, key=lambda row: _score_value(row.get("score")), reverse=True):
+        key = str(item.get("canonical_url") or item.get("external_id") or "")
+        if not key or key in seen:
+            continue
+        seen.add(key)
+        deduped.append(item)
+    return deduped[: config.limit_per_source], errors[:5]
+
+
 def build_feed_item(
     source: dict[str, Any],
     feed_url: str,
@@ -975,7 +1192,7 @@ def load_sources(conn: psycopg.Connection[Any]) -> list[dict[str, Any]]:
             """
             SELECT source_id, adapter_kind, title, description, enabled, base_url, seed_urls_json, config_json, created_at, updated_at
             FROM hot_sources
-            WHERE enabled = TRUE AND adapter_kind = 'rss-generic'
+            WHERE enabled = TRUE AND adapter_kind IN ('rss-generic', 'ai-trends')
             ORDER BY sort_order ASC, source_id
             """
         )
@@ -1010,6 +1227,10 @@ def write_run(
     limit: int,
 ) -> None:
     now = _iso()
+    adapter_kind = str(summary.get("adapter_kind") or "rss-generic")
+    node = "ai-trends-worker" if adapter_kind == "ai-trends" else "rss-worker"
+    success_message = "AI trends source collected" if adapter_kind == "ai-trends" else "RSS source collected"
+    failure_message = "AI trends source failed" if adapter_kind == "ai-trends" else "RSS source failed"
     with conn.cursor() as cur:
         cur.execute(
             """
@@ -1027,14 +1248,14 @@ def write_run(
         cur.execute(
             """
             INSERT INTO hot_run_events (run_id, legacy_id, node, message, payload_json, created_at)
-            VALUES (%s, 1, 'rss-worker', %s, %s, %s)
+            VALUES (%s, 1, %s, %s, %s, %s)
             ON CONFLICT(run_id, legacy_id) DO UPDATE SET
               node=excluded.node,
               message=excluded.message,
               payload_json=excluded.payload_json,
               created_at=excluded.created_at
             """,
-            (run_id, "RSS source collected" if status == "completed" else "RSS source failed", Json(summary), now),
+            (run_id, node, success_message if status == "completed" else failure_message, Json(summary), now),
         )
 
 
@@ -1198,22 +1419,31 @@ def clean_ranked_items(conn: psycopg.Connection[Any], config: Config) -> dict[st
 
 
 def collect_source(config: Config, conn: psycopg.Connection[Any], source: dict[str, Any], *, ai_budget: AIBudget | None = None) -> dict[str, Any]:
-    run_id = f"rss-{source['source_id']}-{uuid.uuid4()}"
+    adapter_kind = str(source.get("adapter_kind") or "rss-generic")
+    run_prefix = "ai-trends" if adapter_kind == "ai-trends" else "rss"
+    run_id = f"{run_prefix}-{source['source_id']}-{uuid.uuid4()}"
     started_at = _iso()
     try:
-        groups: list[list[dict[str, Any]]] = []
         errors: list[str] = []
-        for url in _seed_urls(source):
-            try:
-                groups.append(parse_feed(config, fetch_text(config, url), source, url))
-            except Exception as exc:
-                errors.append(f"{url}: {exc}")
-        discovered_count = sum(len(group) for group in groups)
-        items = [item for group in groups for item in group]
+        if adapter_kind == "ai-trends":
+            items, errors = collect_ai_trends_items(config, source)
+            discovered_count = len(items)
+        elif adapter_kind == "rss-generic":
+            groups: list[list[dict[str, Any]]] = []
+            for url in _seed_urls(source):
+                try:
+                    groups.append(parse_feed(config, fetch_text(config, url), source, url))
+                except Exception as exc:
+                    errors.append(f"{url}: {exc}")
+            discovered_count = sum(len(group) for group in groups)
+            items = [item for group in groups for item in group]
+        else:
+            raise RuntimeError(f"unsupported hot source adapter_kind: {adapter_kind}")
         items, ai_summary = enrich_items_with_ai(config, items, ai_budget=ai_budget)
         persist_items(conn, items)
         finished_at = _iso()
         summary = {
+            "adapter_kind": adapter_kind,
             "discovered_count": discovered_count,
             "hydrated_count": len(items),
             "normalized_count": len(items),
@@ -1230,7 +1460,7 @@ def collect_source(config: Config, conn: psycopg.Connection[Any], source: dict[s
                 VALUES (%s, %s, %s)
                 ON CONFLICT(source_id) DO UPDATE SET checkpoint_json=excluded.checkpoint_json, updated_at=excluded.updated_at
                 """,
-                (source["source_id"], Json({"last_run_id": run_id, "last_collected_at": finished_at, "errors": errors[:3]}), finished_at),
+                (source["source_id"], Json({"last_run_id": run_id, "last_collected_at": finished_at, "adapter_kind": adapter_kind, "errors": errors[:3]}), finished_at),
             )
         return {"source_id": source["source_id"], "status": "completed", "summary": summary, "_run_recorded": True}
     except Exception as exc:
@@ -1243,12 +1473,14 @@ def collect_source(config: Config, conn: psycopg.Connection[Any], source: dict[s
 def write_source_failure_run(conn: psycopg.Connection[Any], config: Config, source: dict[str, Any], error: str, started_at: str | None = None, finished_at: str | None = None) -> None:
     now = _iso()
     source_id = str(source.get("source_id") or "")
+    adapter_kind = str(source.get("adapter_kind") or "rss-generic")
+    run_prefix = "ai-trends" if adapter_kind == "ai-trends" else "rss"
     write_run(
         conn,
-        run_id=f"rss-{source_id}-{uuid.uuid4()}",
+        run_id=f"{run_prefix}-{source_id}-{uuid.uuid4()}",
         source_id=source_id,
         status="failed",
-        summary={"discovered_count": 0, "persisted_count": 0, "error_count": 1, "errors": [error][:1]},
+        summary={"adapter_kind": adapter_kind, "discovered_count": 0, "persisted_count": 0, "error_count": 1, "errors": [error][:1]},
         error=error,
         started_at=started_at or now,
         finished_at=finished_at or now,

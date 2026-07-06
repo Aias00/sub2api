@@ -21,7 +21,7 @@ if "psycopg" not in sys.modules:
     sys.modules["psycopg.types.json"] = json_stub
 
 import x_atuo.hot_rss_worker as hot_rss_worker
-from x_atuo.hot_rss_worker import AIBudget, Config, _rank_clean_reason, collect_sources, enrich_items_with_ai, parse_feed, run_collect, run_healthcheck, is_ai_related
+from x_atuo.hot_rss_worker import AIBudget, Config, _rank_clean_reason, collect_ai_trends_items, collect_sources, enrich_items_with_ai, parse_feed, run_collect, run_healthcheck, is_ai_related
 
 
 def _config(limit: int = 10, ai_api_key: str = "") -> Config:
@@ -53,10 +53,29 @@ def _config(limit: int = 10, ai_api_key: str = "") -> Config:
 def _source(**config):
     return {
         "source_id": "ai-hot-techcrunch",
+        "adapter_kind": "rss-generic",
         "title": "TechCrunch AI",
         "base_url": "https://techcrunch.com",
         "seed_urls_json": ["https://techcrunch.com/category/artificial-intelligence/feed/"],
         "config_json": {"category": "news", "ai_only": True, "source_weight": 10, **config},
+    }
+
+
+def _ai_trends_source(**config):
+    return {
+        "source_id": "ai-hot-trends",
+        "adapter_kind": "ai-trends",
+        "title": "AI Trends",
+        "base_url": "https://news.ycombinator.com",
+        "seed_urls_json": [],
+        "config_json": {
+            "category": "news",
+            "category_label": "AI 资讯",
+            "ai_only": True,
+            "source_weight": 7,
+            "sources": ["hackernews", "devto"],
+            **config,
+        },
     }
 
 
@@ -137,6 +156,96 @@ class HotRSSWorkerAIHotRulesTest(unittest.TestCase):
         item = parse_feed(_config(), xml, _source(), "https://example.com/feed.xml")[0]
         json.dumps(item["raw_ref_json"])
         json.dumps(item["metrics_json"])
+
+    def test_collect_ai_trends_items_uses_hackernews_and_devto(self):
+        original_fetch_json = hot_rss_worker.fetch_json
+
+        def fake_fetch_json(_config, url):
+            if url.endswith("/topstories.json"):
+                return [101, 102]
+            if url.endswith("/item/101.json"):
+                return {
+                    "id": 101,
+                    "type": "story",
+                    "title": "OpenAI releases a new coding agent",
+                    "url": "https://example.com/openai-agent?utm_source=hn",
+                    "score": 120,
+                    "time": 1_783_320_000,
+                    "by": "alice",
+                }
+            if url.endswith("/item/102.json"):
+                return {
+                    "id": 102,
+                    "type": "story",
+                    "title": "Best summer travel hotels",
+                    "url": "https://example.com/travel",
+                    "score": 99,
+                    "time": 1_783_320_000,
+                    "by": "bob",
+                }
+            if url.startswith("https://dev.to/api/articles"):
+                return [
+                    {
+                        "id": 201,
+                        "title": "Claude improves AI coding workflows",
+                        "url": "https://dev.to/example/claude-ai-coding",
+                        "description": "LLM agent update for software teams",
+                        "public_reactions_count": 17,
+                        "published_at": "2026-07-06T01:00:00Z",
+                        "user": {"username": "carol"},
+                    }
+                ]
+            raise AssertionError(url)
+
+        hot_rss_worker.fetch_json = fake_fetch_json
+        try:
+            items, errors = collect_ai_trends_items(_config(limit=10), _ai_trends_source(limit_per_source=10))
+        finally:
+            hot_rss_worker.fetch_json = original_fetch_json
+
+        self.assertEqual(errors, [])
+        self.assertEqual(len(items), 2)
+        self.assertEqual({item["source_name"] for item in items}, {"Hacker News", "Dev.to"})
+        self.assertTrue(all(item["source_id"] == "ai-hot-trends" for item in items))
+        self.assertTrue(all(item["metrics_json"]["adapter_kind"] == "ai-trends" for item in items))
+        self.assertEqual(items[0]["canonical_url"], "https://example.com/openai-agent")
+
+    def test_collect_ai_trends_items_dedupes_by_canonical_url(self):
+        original_fetch_json = hot_rss_worker.fetch_json
+
+        def fake_fetch_json(_config, url):
+            if url.endswith("/topstories.json"):
+                return [101]
+            if url.endswith("/item/101.json"):
+                return {
+                    "id": 101,
+                    "type": "story",
+                    "title": "OpenAI releases a new coding agent",
+                    "url": "https://example.com/openai-agent?utm_source=hn",
+                    "score": 120,
+                    "time": 1_783_320_000,
+                }
+            if url.startswith("https://dev.to/api/articles"):
+                return [
+                    {
+                        "id": 201,
+                        "title": "OpenAI releases a new coding agent",
+                        "url": "https://example.com/openai-agent?utm_medium=social",
+                        "description": "AI agent update",
+                        "public_reactions_count": 10,
+                        "published_at": "2026-07-06T01:00:00Z",
+                    }
+                ]
+            raise AssertionError(url)
+
+        hot_rss_worker.fetch_json = fake_fetch_json
+        try:
+            items, _errors = collect_ai_trends_items(_config(limit=10), _ai_trends_source(limit_per_source=10))
+        finally:
+            hot_rss_worker.fetch_json = original_fetch_json
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0]["canonical_url"], "https://example.com/openai-agent")
 
     def test_ai_enrichment_skips_without_api_key(self):
         item = {"title": "OpenAI launches agent", "summary": "AI agent update", "metrics_json": {}}
