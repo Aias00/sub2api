@@ -37,3 +37,28 @@ Verification:
 - Failed: `go test ./...` with the pre-existing local OAuth/SignupGrant changes
   using `NOW()` against SQLite; this is outside the worker cleanup diff and was
   not staged in this commit.
+
+## User insight progress
+
+Done:
+- Added an admin aggregate user insights endpoint at `/api/v1/admin/users/profile-insights`.
+- Added the `/admin/user-insights` frontend page and admin sidebar entry.
+- Added registration request-context capture for IP, UA, language, device fingerprint, and a safe header snapshot.
+- Added per-user profile summary entry from the user table menu.
+
+Simplifications:
+- Reused the existing admin service/handler route structure instead of adding a separate dashboard module.
+- Kept raw DB/Redis/runtime access inside service methods; the frontend consumes a compact DTO.
+
+Remaining risks:
+- Aggregate labels are currently returned by the backend and are mostly Chinese; frontend i18n covers page chrome.
+- Historical users before `user_registration_events` migration can only show partial registration context.
+
+Next:
+- Apply migration in production before relying on registration IP/UA aggregates for newly-created accounts.
+
+Verification:
+- Passed: `go test ./internal/service ./internal/handler ./internal/server/routes ./internal/repository`.
+- Passed: `pnpm --dir frontend typecheck`.
+- Passed: `pnpm --dir frontend test:run src/views/admin/__tests__/UsersView.spec.ts`.
+- Passed: `git diff --check`.

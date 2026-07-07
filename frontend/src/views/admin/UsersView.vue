@@ -832,6 +832,15 @@
         <div class="py-1">
           <template v-for="user in users" :key="user.id">
             <template v-if="user.id === activeMenuId">
+              <!-- User Profile Summary -->
+              <button
+                @click="handleProfileSummary(user); closeActionMenu()"
+                class="flex w-full items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-dark-700"
+              >
+                <Icon name="chartBar" size="sm" class="text-gray-400" :stroke-width="2" />
+                {{ t('admin.users.profileSummary.menuItem') }}
+              </button>
+
               <!-- View API Keys -->
               <button
                 @click="handleViewApiKeys(user); closeActionMenu()"
@@ -923,6 +932,11 @@
       :user="platformQuotaUser"
       @close="closePlatformQuotaModal"
       @success="loadUsers"
+    />
+    <UserProfileSummaryModal
+      :show="showProfileSummaryModal"
+      :user="profileSummaryUser"
+      @close="closeProfileSummaryModal"
     />
     <UserApiKeysModal :show="showApiKeysModal" :user="viewingUser" @close="closeApiKeysModal" />
     <UserAllowedGroupsModal :show="showAllowedGroupsModal" :user="allowedGroupsUser" @close="closeAllowedGroupsModal" @success="loadUsers" />
@@ -1023,6 +1037,7 @@ import UserPlatformQuotaCell from '@/components/user/UserPlatformQuotaCell.vue'
 import UserCreateModal from '@/components/admin/user/UserCreateModal.vue'
 import UserEditModal from '@/components/admin/user/UserEditModal.vue'
 import UserPlatformQuotaModal from '@/components/admin/user/UserPlatformQuotaModal.vue'
+import UserProfileSummaryModal from '@/components/admin/user/UserProfileSummaryModal.vue'
 import UserApiKeysModal from '@/components/admin/user/UserApiKeysModal.vue'
 import UserAllowedGroupsModal from '@/components/admin/user/UserAllowedGroupsModal.vue'
 import UserBalanceModal from '@/components/admin/user/UserBalanceModal.vue'
@@ -1523,11 +1538,13 @@ const showCreateModal = ref(false)
 const showEditModal = ref(false)
 const showDeleteDialog = ref(false)
 const showApiKeysModal = ref(false)
+const showProfileSummaryModal = ref(false)
 const showAttributesModal = ref(false)
 const showPlatformQuotaModal = ref(false)
 const editingUser = ref<AdminUser | null>(null)
 const deletingUser = ref<AdminUser | null>(null)
 const viewingUser = ref<AdminUser | null>(null)
+const profileSummaryUser = ref<AdminUser | null>(null)
 const platformQuotaUser = ref<AdminUser | null>(null)
 const signupRiskClaims = ref<SignupGrantRiskClaimRecord[]>([])
 const showSignupRiskPanel = ref(false)
@@ -2138,6 +2155,16 @@ const handleToggleStatus = async (user: AdminUser) => {
 const handleViewApiKeys = (user: AdminUser) => {
   viewingUser.value = user
   showApiKeysModal.value = true
+}
+
+const handleProfileSummary = (user: AdminUser) => {
+  profileSummaryUser.value = user
+  showProfileSummaryModal.value = true
+}
+
+const closeProfileSummaryModal = () => {
+  showProfileSummaryModal.value = false
+  profileSummaryUser.value = null
 }
 
 const closeApiKeysModal = () => {

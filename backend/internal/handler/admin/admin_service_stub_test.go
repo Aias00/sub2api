@@ -19,6 +19,7 @@ type stubAdminService struct {
 	proxies                             []service.Proxy
 	proxyCounts                         []service.ProxyWithAccountCount
 	redeems                             []service.RedeemCode
+	profileSummary                      *service.UserProfileSummary
 	boundAuthIdentity                   *service.AdminBindAuthIdentityInput
 	boundAuthIdentityFor                int64
 	createdAccounts                     []*service.CreateAccountInput
@@ -165,6 +166,45 @@ func (s *stubAdminService) GetUser(ctx context.Context, id int64) (*service.User
 
 func (s *stubAdminService) GetUserIncludeDeleted(ctx context.Context, id int64) (*service.User, error) {
 	return s.GetUser(ctx, id)
+}
+
+func (s *stubAdminService) GetUserProfileSummary(ctx context.Context, userID int64) (*service.UserProfileSummary, error) {
+	if s.profileSummary != nil {
+		return s.profileSummary, nil
+	}
+	user, err := s.GetUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+	return &service.UserProfileSummary{
+		User: service.UserProfileSummaryUser{
+			ID:           user.ID,
+			Email:        user.Email,
+			Role:         user.Role,
+			Status:       user.Status,
+			SignupSource: user.SignupSource,
+			CreatedAt:    user.CreatedAt,
+			UpdatedAt:    user.UpdatedAt,
+		},
+		Classification: service.UserProfileClassification{
+			Category:   "registered",
+			Label:      "注册用户",
+			Confidence: "medium",
+			Reasons:    []string{"stub"},
+		},
+	}, nil
+}
+
+func (s *stubAdminService) GetUserProfileInsights(ctx context.Context, limit int) (*service.UserProfileInsights, error) {
+	return &service.UserProfileInsights{
+		GeneratedAt: time.Now().UTC(),
+		Classification: []service.UserInsightCount{
+			{Key: "registered", Label: "注册用户", Count: int64(len(s.users))},
+		},
+		Funnel: []service.UserInsightFunnelStep{
+			{Key: "registered", Label: "注册", Count: int64(len(s.users)), Conversion: 1},
+		},
+	}, nil
 }
 
 func (s *stubAdminService) CreateUser(ctx context.Context, input *service.CreateUserInput) (*service.User, error) {

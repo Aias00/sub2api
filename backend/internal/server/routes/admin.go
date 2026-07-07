@@ -239,6 +239,8 @@ func registerUserManagementRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		users.GET("/signup-grant-risk/audit-logs", h.Admin.User.ListSignupGrantAdminAuditLogs)
 		users.POST("/signup-grant-risk/overrides", h.Admin.User.UpsertSignupGrantRiskOverride)
 		users.DELETE("/signup-grant-risk/overrides/:id", h.Admin.User.DeleteSignupGrantRiskOverride)
+		users.GET("/profile-insights", h.Admin.User.GetUserProfileInsights)
+		users.GET("/:id/profile-summary", h.Admin.User.GetUserProfileSummary)
 		users.GET("/:id", h.Admin.User.GetByID)
 		users.POST("/:id/auth-identities", h.Admin.User.BindAuthIdentity)
 		users.POST("", h.Admin.User.Create)

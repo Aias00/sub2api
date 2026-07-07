@@ -303,6 +303,7 @@ func (s *AuthService) RegisterWithVerificationSourceAndUsername(ctx context.Cont
 		logger.LegacyPrintf("service.auth", "[Auth] Database error creating user: %v", err)
 		return "", nil, ErrServiceUnavailable
 	}
+	s.recordUserRegistrationEvent(ctx, user, signupSource)
 	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
 	s.postAuthUserBootstrap(ctx, user, signupSource, signupSource == authSignupSourceEmail)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")

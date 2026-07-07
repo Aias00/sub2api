@@ -3,6 +3,7 @@ import { resolveRuntimeLocale } from '@/utils/runtimeLocale'
 export type AdminSidebarRouteDefaults = {
   adminOpsPath: string
   adminUsersPath: string
+  adminUserInsightsPath: string
   adminGroupsPath: string
   adminChannelsPath: string
   adminChannelPricingPath: string
@@ -30,6 +31,7 @@ export type AdminSidebarRouteDefaults = {
 const FALLBACK_ADMIN_SIDEBAR_ROUTE_DEFAULTS: AdminSidebarRouteDefaults = {
   adminOpsPath: '/admin/ops',
   adminUsersPath: '/admin/users',
+  adminUserInsightsPath: '/admin/user-insights',
   adminGroupsPath: '/admin/groups',
   adminChannelsPath: '/admin/channels',
   adminChannelPricingPath: '/admin/channels/pricing',
@@ -59,6 +61,7 @@ type AdminSidebarRouteKey = keyof AdminSidebarRouteDefaults
 const adminSidebarRouteKeys: AdminSidebarRouteKey[] = [
   'adminOpsPath',
   'adminUsersPath',
+  'adminUserInsightsPath',
   'adminGroupsPath',
   'adminChannelsPath',
   'adminChannelPricingPath',
@@ -91,6 +94,8 @@ export function resolveAdminSidebarRouteDefaults(
   return {
     adminOpsPath: defaults.adminOpsPath || FALLBACK_ADMIN_SIDEBAR_ROUTE_DEFAULTS.adminOpsPath,
     adminUsersPath: defaults.adminUsersPath || FALLBACK_ADMIN_SIDEBAR_ROUTE_DEFAULTS.adminUsersPath,
+    adminUserInsightsPath:
+      defaults.adminUserInsightsPath || FALLBACK_ADMIN_SIDEBAR_ROUTE_DEFAULTS.adminUserInsightsPath,
     adminGroupsPath: defaults.adminGroupsPath || FALLBACK_ADMIN_SIDEBAR_ROUTE_DEFAULTS.adminGroupsPath,
     adminChannelsPath: defaults.adminChannelsPath || FALLBACK_ADMIN_SIDEBAR_ROUTE_DEFAULTS.adminChannelsPath,
     adminChannelPricingPath:

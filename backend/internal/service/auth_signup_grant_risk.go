@@ -32,6 +32,7 @@ type SignupGrantRiskInput struct {
 	DeviceFingerprint string
 	ProviderType      string
 	ProviderSubject   string
+	HeaderSnapshot    map[string]string
 }
 
 type signupGrantRiskClaim struct {
@@ -178,6 +179,14 @@ func mergeSignupGrantRiskInput(base SignupGrantRiskInput, patch SignupGrantRiskI
 	}
 	if strings.TrimSpace(patch.ProviderSubject) != "" {
 		base.ProviderSubject = patch.ProviderSubject
+	}
+	if len(patch.HeaderSnapshot) > 0 {
+		base.HeaderSnapshot = make(map[string]string, len(patch.HeaderSnapshot))
+		for key, value := range patch.HeaderSnapshot {
+			if strings.TrimSpace(key) != "" && strings.TrimSpace(value) != "" {
+				base.HeaderSnapshot[key] = value
+			}
+		}
 	}
 	return base
 }

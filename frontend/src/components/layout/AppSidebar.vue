@@ -845,6 +845,7 @@ const adminNavSections = computed((): NavSection[] => {
     dashboard: { path: navPaths.adminRedirectPath, label: t('nav.dashboard'), icon: DashboardIcon },
     ops: { path: adminPaths.adminOpsPath, label: t('nav.ops'), icon: ChartIcon, featureFlag: flagOpsMonitoring },
     users: { path: adminPaths.adminUsersPath, label: t('nav.users'), icon: UsersIcon, hideInSimpleMode: true },
+    userInsights: { path: adminPaths.adminUserInsightsPath, label: t('nav.userInsights'), icon: ChartIcon, hideInSimpleMode: true },
     groups: { path: adminPaths.adminGroupsPath, label: t('nav.groups'), icon: FolderIcon, hideInSimpleMode: true },
     channels: {
       path: adminPaths.adminChannelsPath,
@@ -930,6 +931,7 @@ const adminNavSections = computed((): NavSection[] => {
             'dashboard',
             'ops',
             'users',
+            'userInsights',
             'groups',
             'channels',
             'subscriptions',

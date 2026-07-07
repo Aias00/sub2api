@@ -559,6 +559,18 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/admin/user-insights',
+    name: 'AdminUserInsights',
+    component: () => import('@/views/admin/UserInsightsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'User Insights',
+      titleKey: 'admin.userInsights.title',
+      descriptionKey: 'admin.userInsights.description'
+    }
+  },
+  {
     path: '/admin/groups',
     name: 'AdminGroups',
     component: () => import('@/views/admin/GroupsView.vue'),

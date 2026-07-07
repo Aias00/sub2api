@@ -4,6 +4,7 @@ export const adminSidebarItemKeys = [
   'dashboard',
   'ops',
   'users',
+  'userInsights',
   'groups',
   'channels',
   'subscriptions',

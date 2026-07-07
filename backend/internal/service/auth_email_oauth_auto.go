@@ -226,6 +226,7 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 		}
 		return nil, ErrServiceUnavailable
 	}
+	s.recordUserRegistrationEvent(ctx, user, providerType)
 	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
 	s.postAuthUserBootstrap(ctx, user, providerType, false)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")

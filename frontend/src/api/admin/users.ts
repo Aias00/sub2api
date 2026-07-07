@@ -145,6 +145,163 @@ export interface SignupGrantAdminAuditLogsResponse {
   size: number
 }
 
+export interface UserProfileSummary {
+  user: UserProfileSummaryUser
+  classification: UserProfileClassification
+  registration: UserProfileRegistrationSummary
+  auth_identities: UserProfileAuthIdentitySummary[]
+  activity: UserProfileActivitySummary
+  api_keys: UserProfileAPIKeySummary
+  payments: UserProfilePaymentSummary
+  balance: UserProfileBalanceSummary
+  business: UserProfileBusinessSummary
+  risk_tags: UserProfileRiskTag[]
+}
+
+export interface UserProfileSummaryUser {
+  id: number
+  email: string
+  username: string
+  notes?: string
+  role: string
+  status: string
+  signup_source: string
+  balance: number
+  paid_balance: number
+  gift_balance: number
+  total_recharged: number
+  concurrency: number
+  created_at: string
+  updated_at: string
+  last_login_at?: string | null
+  last_active_at?: string | null
+  last_used_at?: string | null
+  deleted_at?: string | null
+}
+
+export interface UserProfileClassification {
+  category: string
+  label: string
+  confidence: string
+  reasons: string[]
+}
+
+export interface UserProfileRegistrationSummary {
+  registered_via: string
+  registration_ip?: string
+  user_agent?: string
+  accept_language?: string
+  device_fingerprint?: string
+  header_snapshot?: Record<string, string>
+  nearby_auth_event?: string
+  nearby_auth_status?: string
+  nearby_auth_at?: string | null
+  same_ip_signup_count_24h: number
+  same_domain_signup_count: number
+  email_domain: string
+  disposable_email: boolean
+}
+
+export interface UserProfileAuthIdentitySummary {
+  provider_type: string
+  provider_key: string
+  provider_subject: string
+  verified_at?: string | null
+  created_at: string
+}
+
+export interface UserProfileActivitySummary {
+  api_usage_count: number
+  api_actual_cost: number
+  first_api_usage_at?: string | null
+  last_api_usage_at?: string | null
+  last_http_at?: string | null
+}
+
+export interface UserProfileAPIKeySummary {
+  total_count: number
+  active_count: number
+  first_created_at?: string | null
+  last_created_at?: string | null
+}
+
+export interface UserProfilePaymentSummary {
+  order_count: number
+  paid_order_count: number
+  paid_amount: number
+  refund_amount: number
+  last_order_at?: string | null
+}
+
+export interface UserProfileBalanceSummary {
+  ledger_count: number
+  positive_ledger_amount: number
+  net_ledger_amount: number
+  redeem_count: number
+  redeem_balance_amount: number
+}
+
+export interface UserProfileBusinessSummary {
+  image_task_count: number
+  image_success_count: number
+  image_actual_cost: number
+  first_image_task_at?: string | null
+  last_image_task_at?: string | null
+  wechat_task_count: number
+  wechat_actual_cost: number
+  first_wechat_task_at?: string | null
+  last_wechat_task_at?: string | null
+}
+
+export interface UserProfileRiskTag {
+  key: string
+  label: string
+  severity: 'info' | 'warning' | 'danger' | string
+  detail: string
+}
+
+export interface UserProfileInsights {
+  generated_at: string
+  classification: UserInsightCount[]
+  signup_sources: UserInsightCount[]
+  registration_ips: UserInsightDimension[]
+  user_agents: UserInsightDimension[]
+  languages: UserInsightDimension[]
+  funnel: UserInsightFunnelStep[]
+  risk_samples: UserInsightRiskSample[]
+}
+
+export interface UserInsightCount {
+  key: string
+  label: string
+  count: number
+}
+
+export interface UserInsightDimension {
+  value: string
+  count: number
+  last_seen?: string | null
+}
+
+export interface UserInsightFunnelStep {
+  key: string
+  label: string
+  count: number
+  conversion: number
+}
+
+export interface UserInsightRiskSample {
+  user_id: number
+  email: string
+  username: string
+  label: string
+  reason: string
+  severity: string
+  registration_ip?: string
+  created_at: string
+  last_active_at?: string | null
+}
+
 /**
  * List all users with pagination
  * @param page - Page number (default: 1)
@@ -209,6 +366,18 @@ export async function list(
 export async function getById(id: number, includeDeleted = false): Promise<AdminUser> {
   const url = includeDeleted ? `/admin/users/${id}?include_deleted=true` : `/admin/users/${id}`
   const { data } = await apiClient.get<AdminUser>(url)
+  return data
+}
+
+export async function getUserProfileSummary(id: number): Promise<UserProfileSummary> {
+  const { data } = await apiClient.get<UserProfileSummary>(`/admin/users/${id}/profile-summary`)
+  return data
+}
+
+export async function getUserProfileInsights(limit = 10): Promise<UserProfileInsights> {
+  const { data } = await apiClient.get<UserProfileInsights>('/admin/users/profile-insights', {
+    params: { limit }
+  })
   return data
 }
 
@@ -556,6 +725,8 @@ export async function resetPlatformQuotaWindow(
 export const usersAPI = {
   list,
   getById,
+  getUserProfileSummary,
+  getUserProfileInsights,
   create,
   update,
   delete: deleteUser,

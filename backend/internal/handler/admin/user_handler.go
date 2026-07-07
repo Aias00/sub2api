@@ -106,6 +106,11 @@ type signupGrantRiskAdminService interface {
 	ManualGrantSignupGiftBalance(ctx context.Context, userID int64, amount float64, reason string, adminID int64) (*service.User, error)
 }
 
+type userProfileSummaryAdminService interface {
+	GetUserProfileSummary(ctx context.Context, userID int64) (*service.UserProfileSummary, error)
+	GetUserProfileInsights(ctx context.Context, limit int) (*service.UserProfileInsights, error)
+}
+
 type BindUserAuthIdentityRequest struct {
 	ProviderType    string                              `json:"provider_type"`
 	ProviderKey     string                              `json:"provider_key"`
@@ -237,6 +242,47 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 	}
 
 	response.Success(c, dto.UserFromServiceAdmin(user))
+}
+
+// GetUserProfileSummary handles getting a read-only aggregate profile for admin diagnostics.
+// GET /api/v1/admin/users/:id/profile-summary
+func (h *UserHandler) GetUserProfileSummary(c *gin.Context) {
+	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid user ID")
+		return
+	}
+	svc, ok := h.adminService.(userProfileSummaryAdminService)
+	if !ok {
+		response.Error(c, 503, "User profile summary service unavailable")
+		return
+	}
+	summary, err := svc.GetUserProfileSummary(c.Request.Context(), userID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, summary)
+}
+
+// GetUserProfileInsights handles aggregate user profile diagnostics.
+// GET /api/v1/admin/users/profile-insights
+func (h *UserHandler) GetUserProfileInsights(c *gin.Context) {
+	svc, ok := h.adminService.(userProfileSummaryAdminService)
+	if !ok {
+		response.Error(c, 503, "User profile insights service unavailable")
+		return
+	}
+	limit, err := strconv.Atoi(c.DefaultQuery("limit", "10"))
+	if err != nil || limit <= 0 {
+		limit = 10
+	}
+	insights, err := svc.GetUserProfileInsights(c.Request.Context(), limit)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, insights)
 }
 
 // BindAuthIdentity manually binds a canonical auth identity to a user.

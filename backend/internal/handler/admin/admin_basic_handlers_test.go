@@ -22,6 +22,8 @@ func setupAdminRouter() (*gin.Engine, *stubAdminService) {
 	redeemHandler := NewRedeemHandler(adminSvc, nil)
 
 	router.GET("/api/v1/admin/users", userHandler.List)
+	router.GET("/api/v1/admin/users/profile-insights", userHandler.GetUserProfileInsights)
+	router.GET("/api/v1/admin/users/:id/profile-summary", userHandler.GetUserProfileSummary)
 	router.GET("/api/v1/admin/users/:id", userHandler.GetByID)
 	router.POST("/api/v1/admin/users/:id/auth-identities", userHandler.BindAuthIdentity)
 	router.POST("/api/v1/admin/users", userHandler.Create)
@@ -121,6 +123,18 @@ func TestUserHandlerEndpoints(t *testing.T) {
 	req.Header.Set("Content-Type", "application/json")
 	router.ServeHTTP(rec, req)
 	require.Equal(t, http.StatusOK, rec.Code)
+
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/admin/users/profile-insights", nil)
+	router.ServeHTTP(rec, req)
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Contains(t, rec.Body.String(), `"classification"`)
+
+	rec = httptest.NewRecorder()
+	req = httptest.NewRequest(http.MethodGet, "/api/v1/admin/users/1/profile-summary", nil)
+	router.ServeHTTP(rec, req)
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Contains(t, rec.Body.String(), `"classification"`)
 
 	rec = httptest.NewRecorder()
 	req = httptest.NewRequest(http.MethodGet, "/api/v1/admin/users/1/api-keys", nil)

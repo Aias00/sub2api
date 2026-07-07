@@ -80,9 +80,43 @@ func (h *AuthHandler) signupGrantRiskContext(c *gin.Context, providerType, provi
 			input.UserAgent = c.Request.UserAgent()
 			input.AcceptLanguage = c.GetHeader("Accept-Language")
 			input.DeviceFingerprint = c.GetHeader("X-Device-Fingerprint")
+			input.HeaderSnapshot = registrationHeaderSnapshot(c)
 		}
 	}
 	return service.WithSignupGrantRiskInput(ctx, input)
+}
+
+func registrationHeaderSnapshot(c *gin.Context) map[string]string {
+	if c == nil || c.Request == nil {
+		return nil
+	}
+	keys := []string{
+		"User-Agent",
+		"Accept-Language",
+		"X-Device-Fingerprint",
+		"X-Forwarded-For",
+		"X-Real-IP",
+		"CF-Connecting-IP",
+		"True-Client-IP",
+		"Forwarded",
+		"Origin",
+		"Referer",
+		"Sec-CH-UA",
+		"Sec-CH-UA-Mobile",
+		"Sec-CH-UA-Platform",
+	}
+	out := make(map[string]string, len(keys))
+	for _, key := range keys {
+		value := strings.TrimSpace(c.GetHeader(key))
+		if value == "" {
+			continue
+		}
+		if len(value) > 1024 {
+			value = value[:1024]
+		}
+		out[key] = value
+	}
+	return out
 }
 
 func (h *AuthHandler) ensureWebAuthSourceAllowed(c *gin.Context, source string, expectedProvider ...string) error {
