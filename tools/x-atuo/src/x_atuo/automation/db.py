@@ -131,6 +131,7 @@ def _translate_postgres_sql(sql: str) -> str:
     if translated.upper() == "BEGIN IMMEDIATE":
         return "BEGIN"
     translated = re.sub(r"\bifnull\s*\(", "COALESCE(", translated, flags=re.IGNORECASE)
+    translated = re.sub(r"\bcurrent_date\b", '"current_date"', translated, flags=re.IGNORECASE)
     translated = re.sub(r"\bdate\s*\(\s*created_at\s*\)", "LEFT(created_at, 10)", translated, flags=re.IGNORECASE)
     translated = re.sub(r"\bdate\s*\(\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\)", r"LEFT(\1, 10)", translated, flags=re.IGNORECASE)
     if translated.upper().startswith("INSERT INTO AUDIT_EVENTS") and "RETURNING" not in translated.upper():
