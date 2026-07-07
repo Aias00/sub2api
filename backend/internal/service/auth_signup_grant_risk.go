@@ -326,7 +326,7 @@ func (s *AuthService) attachSignupGrantClaim(ctx context.Context, claim *signupG
 	if tx := dbent.TxFromContext(ctx); tx != nil {
 		query := `UPDATE signup_grant_claims SET user_id = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`
 		if tx.Client().Driver().Dialect() == dialect.Postgres {
-			query = `UPDATE signup_grant_claims SET user_id = $1, updated_at = NOW() WHERE id = $2`
+			query = `UPDATE signup_grant_claims SET user_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`
 		}
 		var result entsql.Result
 		if err := tx.Client().Driver().Exec(ctx, query, []any{userID, claim.ID}, &result); err != nil {
@@ -338,7 +338,7 @@ func (s *AuthService) attachSignupGrantClaim(ctx context.Context, claim *signupG
 	if db == nil {
 		return
 	}
-	if _, err := db.ExecContext(ctx, `UPDATE signup_grant_claims SET user_id = $1, updated_at = NOW() WHERE id = $2`, userID, claim.ID); err != nil {
+	if _, err := db.ExecContext(ctx, `UPDATE signup_grant_claims SET user_id = $1, updated_at = CURRENT_TIMESTAMP WHERE id = $2`, userID, claim.ID); err != nil {
 		logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] attach claim failed: claim_id=%d user_id=%d err=%v", claim.ID, userID, err)
 	}
 }
@@ -562,7 +562,7 @@ INSERT INTO signup_grant_claims (
     email_hash, email_domain_hash, ip_hash, user_agent_hash,
     signup_source, provider_type, provider_subject, provider_subject_hash,
     decision, reason, grant_balance, grant_metadata, updated_at
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, CURRENT_TIMESTAMP)
 RETURNING id
 `,
 		input.Email,
