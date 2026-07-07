@@ -4,6 +4,8 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"sort"
+	"strconv"
 	"strings"
 	"time"
 
@@ -20,6 +22,7 @@ type UserProfileSummary struct {
 	Payments       UserProfilePaymentSummary        `json:"payments"`
 	Balance        UserProfileBalanceSummary        `json:"balance"`
 	Business       UserProfileBusinessSummary       `json:"business"`
+	Timeline       []UserProfileTimelineEvent       `json:"timeline"`
 	RiskTags       []UserProfileRiskTag             `json:"risk_tags"`
 }
 
@@ -125,6 +128,19 @@ type UserProfileRiskTag struct {
 	Detail   string `json:"detail"`
 }
 
+type UserProfileTimelineEvent struct {
+	OccurredAt time.Time `json:"occurred_at"`
+	Source     string    `json:"source"`
+	Action     string    `json:"action"`
+	Title      string    `json:"title"`
+	Detail     string    `json:"detail,omitempty"`
+	Status     string    `json:"status,omitempty"`
+	Amount     *float64  `json:"amount,omitempty"`
+	IPAddress  string    `json:"ip_address,omitempty"`
+	UserAgent  string    `json:"user_agent,omitempty"`
+	RecordID   string    `json:"record_id,omitempty"`
+}
+
 func (s *adminServiceImpl) GetUserProfileSummary(ctx context.Context, userID int64) (*UserProfileSummary, error) {
 	if s.entClient == nil {
 		return nil, ErrServiceUnavailable
@@ -174,9 +190,379 @@ func (s *adminServiceImpl) GetUserProfileSummary(ctx context.Context, userID int
 	s.loadUserProfilePayments(ctx, summary, userID)
 	s.loadUserProfileBalance(ctx, summary, userID)
 	s.loadUserProfileBusiness(ctx, summary, userID)
+	s.loadUserProfileTimeline(ctx, summary, userID)
 	summary.Classification = classifyUserProfile(summary)
 
 	return summary, nil
+}
+
+func (s *adminServiceImpl) loadUserProfileTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	s.appendUserProfileRegistrationTimeline(ctx, summary, userID)
+	s.appendUserProfileAuthTimeline(ctx, summary, userID)
+	s.appendUserProfileAPIKeyTimeline(ctx, summary, userID)
+	s.appendUserProfileUsageTimeline(ctx, summary, userID)
+	s.appendUserProfilePaymentTimeline(ctx, summary, userID)
+	s.appendUserProfileBalanceTimeline(ctx, summary, userID)
+	s.appendUserProfileRedeemTimeline(ctx, summary, userID)
+	s.appendUserProfileBusinessTimeline(ctx, summary, userID)
+	s.appendUserProfileHTTPTimeline(ctx, summary, userID)
+	sortUserProfileTimeline(summary)
+}
+
+func (s *adminServiceImpl) appendUserProfileRegistrationTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id, created_at, COALESCE(signup_source, ''), COALESCE(ip_address, ''), COALESCE(user_agent, '')
+FROM user_registration_events
+WHERE user_id = $1
+ORDER BY created_at DESC, id DESC
+LIMIT 20`, userID)
+	if err != nil {
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id int64
+		var occurredAt time.Time
+		var source, ip, ua sql.NullString
+		if err := rows.Scan(&id, &occurredAt, &source, &ip, &ua); err != nil {
+			return
+		}
+		summary.Timeline = append(summary.Timeline, UserProfileTimelineEvent{
+			OccurredAt: occurredAt,
+			Source:     "registration",
+			Action:     "created",
+			Title:      "注册账号",
+			Detail:     source.String,
+			IPAddress:  ip.String,
+			UserAgent:  ua.String,
+			RecordID:   int64RecordID(id),
+		})
+	}
+}
+
+func (s *adminServiceImpl) appendUserProfileAuthTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id, provider_type, provider_key, provider_subject, verified_at, created_at
+FROM auth_identities
+WHERE user_id = $1
+ORDER BY created_at DESC, id DESC
+LIMIT 50`, userID)
+	if err != nil {
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id int64
+		var providerType, providerKey, providerSubject string
+		var verifiedAt sql.NullTime
+		var createdAt time.Time
+		if err := rows.Scan(&id, &providerType, &providerKey, &providerSubject, &verifiedAt, &createdAt); err != nil {
+			return
+		}
+		status := "bound"
+		if verifiedAt.Valid {
+			status = "verified"
+		}
+		summary.Timeline = append(summary.Timeline, UserProfileTimelineEvent{
+			OccurredAt: createdAt,
+			Source:     "identity",
+			Action:     "bind",
+			Title:      "绑定登录身份",
+			Detail:     strings.TrimSpace(providerType + " / " + providerKey + " / " + providerSubject),
+			Status:     status,
+			RecordID:   int64RecordID(id),
+		})
+	}
+}
+
+func (s *adminServiceImpl) appendUserProfileAPIKeyTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id, name, status, created_at, deleted_at
+FROM api_keys
+WHERE user_id = $1
+ORDER BY created_at DESC, id DESC
+LIMIT 50`, userID)
+	if err != nil {
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id int64
+		var name, status string
+		var createdAt time.Time
+		var deletedAt sql.NullTime
+		if err := rows.Scan(&id, &name, &status, &createdAt, &deletedAt); err != nil {
+			return
+		}
+		if deletedAt.Valid {
+			status = "deleted"
+		}
+		summary.Timeline = append(summary.Timeline, UserProfileTimelineEvent{
+			OccurredAt: createdAt,
+			Source:     "api_key",
+			Action:     "create",
+			Title:      "创建 API Key",
+			Detail:     name,
+			Status:     status,
+			RecordID:   int64RecordID(id),
+		})
+	}
+}
+
+func (s *adminServiceImpl) appendUserProfileUsageTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id, created_at, COALESCE(NULLIF(requested_model, ''), model), request_id,
+  COALESCE(actual_cost, 0)::double precision,
+  (COALESCE(input_tokens, 0) + COALESCE(output_tokens, 0))::bigint,
+  COALESCE(ip_address, ''), COALESCE(user_agent, '')
+FROM usage_logs
+WHERE user_id = $1
+ORDER BY created_at DESC, id DESC
+LIMIT 60`, userID)
+	if err != nil {
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id, tokens int64
+		var occurredAt time.Time
+		var model, requestID, ip, ua string
+		var cost float64
+		if err := rows.Scan(&id, &occurredAt, &model, &requestID, &cost, &tokens, &ip, &ua); err != nil {
+			return
+		}
+		amount := -cost
+		summary.Timeline = append(summary.Timeline, UserProfileTimelineEvent{
+			OccurredAt: occurredAt,
+			Source:     "gateway",
+			Action:     "api_usage",
+			Title:      "API 调用",
+			Detail:     strings.TrimSpace(model + " · " + requestID + " · tokens " + formatInt64(tokens)),
+			Status:     "completed",
+			Amount:     &amount,
+			IPAddress:  ip,
+			UserAgent:  ua,
+			RecordID:   int64RecordID(id),
+		})
+	}
+}
+
+func (s *adminServiceImpl) appendUserProfilePaymentTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id, created_at, COALESCE(status, ''), COALESCE(order_type, ''), COALESCE(payment_type, ''),
+  COALESCE(pay_amount, 0)::double precision, COALESCE(out_trade_no, '')
+FROM payment_orders
+WHERE user_id = $1
+ORDER BY created_at DESC, id DESC
+LIMIT 50`, userID)
+	if err != nil {
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id int64
+		var occurredAt time.Time
+		var status, orderType, paymentType, tradeNo string
+		var amount float64
+		if err := rows.Scan(&id, &occurredAt, &status, &orderType, &paymentType, &amount, &tradeNo); err != nil {
+			return
+		}
+		summary.Timeline = append(summary.Timeline, UserProfileTimelineEvent{
+			OccurredAt: occurredAt,
+			Source:     "payment",
+			Action:     "order",
+			Title:      "支付订单",
+			Detail:     strings.TrimSpace(orderType + " · " + paymentType + " · " + tradeNo),
+			Status:     status,
+			Amount:     &amount,
+			RecordID:   int64RecordID(id),
+		})
+	}
+}
+
+func (s *adminServiceImpl) appendUserProfileBalanceTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id, created_at, entry_type, source_type, COALESCE(description, ''),
+  COALESCE(amount, 0)::double precision
+FROM user_balance_ledger
+WHERE user_id = $1
+ORDER BY created_at DESC, id DESC
+LIMIT 80`, userID)
+	if err != nil {
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id int64
+		var occurredAt time.Time
+		var entryType, sourceType, description string
+		var amount float64
+		if err := rows.Scan(&id, &occurredAt, &entryType, &sourceType, &description, &amount); err != nil {
+			return
+		}
+		summary.Timeline = append(summary.Timeline, UserProfileTimelineEvent{
+			OccurredAt: occurredAt,
+			Source:     "billing",
+			Action:     entryType,
+			Title:      "余额流水",
+			Detail:     strings.TrimSpace(sourceType + " · " + description),
+			Status:     entryType,
+			Amount:     &amount,
+			RecordID:   int64RecordID(id),
+		})
+	}
+}
+
+func (s *adminServiceImpl) appendUserProfileRedeemTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id, used_at, type, status, COALESCE(value, 0)::double precision
+FROM redeem_codes
+WHERE used_by = $1 AND used_at IS NOT NULL
+ORDER BY used_at DESC, id DESC
+LIMIT 50`, userID)
+	if err != nil {
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id int64
+		var occurredAt time.Time
+		var codeType, status string
+		var amount float64
+		if err := rows.Scan(&id, &occurredAt, &codeType, &status, &amount); err != nil {
+			return
+		}
+		summary.Timeline = append(summary.Timeline, UserProfileTimelineEvent{
+			OccurredAt: occurredAt,
+			Source:     "billing",
+			Action:     "redeem",
+			Title:      "兑换码兑换",
+			Detail:     codeType,
+			Status:     status,
+			Amount:     &amount,
+			RecordID:   int64RecordID(id),
+		})
+	}
+}
+
+func (s *adminServiceImpl) appendUserProfileBusinessTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	s.appendUserProfileImageTimeline(ctx, summary, userID)
+	s.appendUserProfileWechatTimeline(ctx, summary, userID)
+}
+
+func (s *adminServiceImpl) appendUserProfileImageTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id, created_at, status, model, size, COALESCE(cost_estimate, 0)::double precision
+FROM image_workspace_tasks
+WHERE user_id = $1
+ORDER BY created_at DESC, id DESC
+LIMIT 50`, userID)
+	if err != nil {
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id int64
+		var occurredAt time.Time
+		var status, model, size string
+		var amount float64
+		if err := rows.Scan(&id, &occurredAt, &status, &model, &size, &amount); err != nil {
+			return
+		}
+		negativeAmount := -amount
+		summary.Timeline = append(summary.Timeline, UserProfileTimelineEvent{
+			OccurredAt: occurredAt,
+			Source:     "image_workspace",
+			Action:     "create_task",
+			Title:      "创建生图任务",
+			Detail:     strings.TrimSpace(model + " · " + size),
+			Status:     status,
+			Amount:     &negativeAmount,
+			RecordID:   int64RecordID(id),
+		})
+	}
+}
+
+func (s *adminServiceImpl) appendUserProfileWechatTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id, created_at, status, selected_article_count, successful_article_count
+FROM wechat_export_tasks
+WHERE user_id = $1
+ORDER BY created_at DESC, id DESC
+LIMIT 50`, userID)
+	if err != nil {
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id int64
+		var occurredAt time.Time
+		var status string
+		var selected, succeeded int
+		if err := rows.Scan(&id, &occurredAt, &status, &selected, &succeeded); err != nil {
+			return
+		}
+		summary.Timeline = append(summary.Timeline, UserProfileTimelineEvent{
+			OccurredAt: occurredAt,
+			Source:     "wechat_export",
+			Action:     "create_task",
+			Title:      "创建微信导出任务",
+			Detail:     "selected " + formatInt(selected) + " · succeeded " + formatInt(succeeded),
+			Status:     status,
+			RecordID:   int64RecordID(id),
+		})
+	}
+}
+
+func (s *adminServiceImpl) appendUserProfileHTTPTimeline(ctx context.Context, summary *UserProfileSummary, userID int64) {
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT id, created_at, level, component, message,
+  COALESCE(extra->>'method', ''),
+  COALESCE(extra->>'path', ''),
+  COALESCE(extra->>'status_code', ''),
+  COALESCE(extra->>'client_ip', ''),
+  COALESCE(extra->>'user_agent', '')
+FROM ops_system_logs
+WHERE user_id = $1
+ORDER BY created_at DESC, id DESC
+LIMIT 80`, userID)
+	if err != nil {
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var id int64
+		var occurredAt time.Time
+		var level, component, message, method, path, status, ip, ua string
+		if err := rows.Scan(&id, &occurredAt, &level, &component, &message, &method, &path, &status, &ip, &ua); err != nil {
+			return
+		}
+		title := strings.TrimSpace(method + " " + path)
+		if title == "" {
+			title = message
+		}
+		summary.Timeline = append(summary.Timeline, UserProfileTimelineEvent{
+			OccurredAt: occurredAt,
+			Source:     "ops",
+			Action:     component,
+			Title:      title,
+			Detail:     message,
+			Status:     strings.TrimSpace(level + " " + status),
+			IPAddress:  ip,
+			UserAgent:  ua,
+			RecordID:   int64RecordID(id),
+		})
+	}
+}
+
+func sortUserProfileTimeline(summary *UserProfileSummary) {
+	sort.SliceStable(summary.Timeline, func(i, j int) bool {
+		return summary.Timeline[i].OccurredAt.After(summary.Timeline[j].OccurredAt)
+	})
+	const maxTimelineEvents = 200
+	if len(summary.Timeline) > maxTimelineEvents {
+		summary.Timeline = summary.Timeline[:maxTimelineEvents]
+	}
 }
 
 func (s *adminServiceImpl) loadUserProfileRegistration(ctx context.Context, summary *UserProfileSummary, createdAt time.Time) {
@@ -523,4 +909,16 @@ func commonConsumerEmailDomain(domain string) bool {
 	default:
 		return false
 	}
+}
+
+func int64RecordID(id int64) string {
+	return strconv.FormatInt(id, 10)
+}
+
+func formatInt(value int) string {
+	return strconv.Itoa(value)
+}
+
+func formatInt64(value int64) string {
+	return strconv.FormatInt(value, 10)
 }

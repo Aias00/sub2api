@@ -81,6 +81,8 @@ const createAdminUser = (overrides: Partial<AdminUser> = {}): AdminUser => ({
   notes: '',
   last_active_at: '2026-04-16T02:00:00Z',
   last_used_at: '2026-04-17T02:00:00Z',
+  registration_ip: '203.0.113.9',
+  registration_user_agent: 'Mozilla/5.0',
   current_concurrency: 0,
   ...overrides
 })
@@ -97,6 +99,7 @@ const DataTableStub = {
         <slot :name="'header-' + col.key" :column="col" />
       </template>
       <div v-for="row in data" :key="row.id">
+        <slot name="cell-registration_ip" :value="row.registration_ip" :row="row" />
         <slot name="cell-last_used_at" :value="row.last_used_at" :row="row" />
       </div>
     </div>
@@ -171,7 +174,7 @@ describe('admin UsersView', () => {
 
     const columns = wrapper.get('[data-test="columns"]').text()
     const visibleColumns = columns.split(',')
-    expect(visibleColumns.slice(-4, -1)).toEqual(['last_active_at', 'last_used_at', 'created_at'])
+    expect(visibleColumns.slice(-5, -1)).toEqual(['registration_ip', 'last_active_at', 'last_used_at', 'created_at'])
     expect(visibleColumns).not.toContain('last_login_at')
 
     await wrapper.get('[data-test="sort-last-used"]').trigger('click')
@@ -186,6 +189,42 @@ describe('admin UsersView', () => {
       }),
       expect.any(Object)
     )
+  })
+
+  it('renders the registration IP from the admin user list payload', async () => {
+    const wrapper = mount(UsersView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          TablePageLayout: {
+            template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
+          },
+          DataTable: DataTableStub,
+          Pagination: true,
+          ConfirmDialog: true,
+          EmptyState: true,
+          GroupBadge: true,
+          Select: true,
+          UserAttributesConfigModal: true,
+          UserConcurrencyCell: true,
+          UserCreateModal: true,
+          UserEditModal: true,
+          UserProfileSummaryModal: true,
+          UserApiKeysModal: true,
+          UserAllowedGroupsModal: true,
+          UserBalanceModal: true,
+          UserBalanceHistoryModal: true,
+          GroupReplaceModal: true,
+          Icon: true,
+          Teleport: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="columns"]').text().split(',')).toContain('registration_ip')
+    expect(wrapper.text()).toContain('203.0.113.9')
   })
 
   it('keeps signup risk controls collapsed until explicitly opened', async () => {

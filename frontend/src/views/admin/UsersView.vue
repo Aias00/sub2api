@@ -743,6 +743,19 @@
             </div>
           </template>
 
+          <template #cell-registration_ip="{ value, row }">
+            <div class="max-w-[12rem]">
+              <span
+                v-if="value"
+                class="block truncate font-mono text-sm text-gray-600 dark:text-gray-300"
+                :title="row.registration_user_agent ? `${value} · ${row.registration_user_agent}` : value"
+              >
+                {{ value }}
+              </span>
+              <span v-else class="text-sm text-gray-400">-</span>
+            </div>
+          </template>
+
           <template #cell-created_at="{ value }">
             <span class="text-sm text-gray-500 dark:text-dark-400">{{ formatDateTime(value) }}</span>
           </template>
@@ -1112,6 +1125,7 @@ const allColumns = computed<Column[]>(() => [
   { key: 'usage_antigravity', label: t('admin.users.columns.usageAntigravity'), sortable: false },
   { key: 'concurrency', label: t('admin.users.columns.concurrency'), sortable: true },
   { key: 'status', label: t('admin.users.columns.status'), sortable: true },
+  { key: 'registration_ip', label: t('admin.users.columns.registrationIp'), sortable: false },
   { key: 'last_active_at', label: t('admin.users.columns.lastActive'), sortable: true },
   { key: 'last_used_at', label: t('admin.users.columns.lastUsed'), sortable: true },
   { key: 'created_at', label: t('admin.users.columns.created'), sortable: true },

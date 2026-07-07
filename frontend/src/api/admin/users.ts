@@ -155,6 +155,7 @@ export interface UserProfileSummary {
   payments: UserProfilePaymentSummary
   balance: UserProfileBalanceSummary
   business: UserProfileBusinessSummary
+  timeline: UserProfileTimelineEvent[]
   risk_tags: UserProfileRiskTag[]
 }
 
@@ -258,6 +259,19 @@ export interface UserProfileRiskTag {
   label: string
   severity: 'info' | 'warning' | 'danger' | string
   detail: string
+}
+
+export interface UserProfileTimelineEvent {
+  occurred_at: string
+  source: string
+  action: string
+  title: string
+  detail?: string
+  status?: string
+  amount?: number | null
+  ip_address?: string
+  user_agent?: string
+  record_id?: string
 }
 
 export interface UserProfileInsights {

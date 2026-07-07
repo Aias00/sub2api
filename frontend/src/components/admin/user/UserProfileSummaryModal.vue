@@ -135,6 +135,42 @@
             <SummaryRow :label="t('admin.users.profileSummary.wechatWindow')" :value="formatWindow(summary.business.first_wechat_task_at, summary.business.last_wechat_task_at)" />
           </SummarySection>
         </div>
+
+        <section class="rounded-lg border border-gray-200 bg-white dark:border-dark-600 dark:bg-dark-800">
+          <div class="flex items-center justify-between border-b border-gray-100 px-4 py-3 dark:border-dark-700">
+            <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.users.profileSummary.timeline') }}</h3>
+            <span class="text-xs text-gray-500 dark:text-dark-400">{{ t('admin.users.profileSummary.timelineCount', { count: summary.timeline?.length || 0 }) }}</span>
+          </div>
+          <div v-if="summary.timeline?.length" class="divide-y divide-gray-100 dark:divide-dark-700">
+            <div
+              v-for="event in summary.timeline"
+              :key="`${event.source}:${event.action}:${event.record_id || event.occurred_at}`"
+              class="grid gap-3 px-4 py-3 sm:grid-cols-[9.5rem_1fr]"
+            >
+              <div class="text-xs text-gray-500 dark:text-dark-400">{{ formatDateTime(event.occurred_at) }}</div>
+              <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="rounded bg-gray-100 px-1.5 py-0.5 text-[11px] font-medium text-gray-600 dark:bg-dark-700 dark:text-dark-300">
+                    {{ timelineSourceLabel(event.source) }}
+                  </span>
+                  <span class="text-sm font-medium text-gray-900 dark:text-white">{{ event.title || event.action }}</span>
+                  <span v-if="event.status" class="rounded-full bg-gray-50 px-2 py-0.5 text-[11px] text-gray-500 ring-1 ring-gray-200 dark:bg-dark-700 dark:text-dark-300 dark:ring-dark-600">{{ event.status }}</span>
+                  <span v-if="typeof event.amount === 'number'" class="text-xs font-medium" :class="event.amount < 0 ? 'text-red-600 dark:text-red-300' : 'text-emerald-600 dark:text-emerald-300'">
+                    {{ formatSignedMoney(event.amount) }}
+                  </span>
+                </div>
+                <div v-if="event.detail" class="mt-1 break-words text-xs text-gray-500 dark:text-dark-400">{{ event.detail }}</div>
+                <div v-if="event.ip_address || event.user_agent" class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-gray-400 dark:text-dark-500">
+                  <span v-if="event.ip_address">IP {{ event.ip_address }}</span>
+                  <span v-if="event.user_agent" class="max-w-full truncate" :title="event.user_agent">UA {{ event.user_agent }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div v-else class="px-4 py-8 text-center text-sm text-gray-500 dark:text-dark-400">
+            {{ t('admin.users.profileSummary.noTimeline') }}
+          </div>
+        </section>
       </template>
     </div>
   </BaseDialog>
@@ -245,6 +281,12 @@ function formatMoney(value: number | undefined | null): string {
   return `$${Number(value || 0).toFixed(4)}`
 }
 
+function formatSignedMoney(value: number | undefined | null): string {
+  const amount = Number(value || 0)
+  const sign = amount < 0 ? '-' : amount > 0 ? '+' : ''
+  return `${sign}$${Math.abs(amount).toFixed(4)}`
+}
+
 function formatCount(value: number | undefined | null): string {
   return Number(value || 0).toLocaleString()
 }
@@ -269,5 +311,9 @@ function tagClass(severity: string): string {
     default:
       return 'bg-gray-100 text-gray-700 ring-1 ring-gray-200 dark:bg-dark-700 dark:text-dark-300 dark:ring-dark-600'
   }
+}
+
+function timelineSourceLabel(source: string): string {
+  return t(`admin.users.profileSummary.timelineSources.${source}`, source)
 }
 </script>

@@ -29,6 +29,7 @@ import (
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 	"github.com/Aias00/cloudbase/internal/pkg/xai"
 	"github.com/Aias00/cloudbase/internal/util/httputil"
+	"github.com/lib/pq"
 )
 
 // AdminService interface defines admin management operations
@@ -679,6 +680,7 @@ func (s *adminServiceImpl) ListUsers(ctx context.Context, page, pageSize int, fi
 				users[i].LastUsedAt = lastUsedByUserID[users[i].ID]
 			}
 		}
+		s.loadUserRegistrationSnapshots(ctx, users)
 	}
 	// 批量加载用户专属分组倍率
 	if s.userGroupRateRepo != nil && len(users) > 0 {
@@ -703,6 +705,47 @@ func (s *adminServiceImpl) ListUsers(ctx context.Context, page, pageSize int, fi
 		}
 	}
 	return users, result.Total, nil
+}
+
+func (s *adminServiceImpl) loadUserRegistrationSnapshots(ctx context.Context, users []User) {
+	if s.entClient == nil || len(users) == 0 {
+		return
+	}
+	userIDs := make([]int64, 0, len(users))
+	userIndex := make(map[int64]int, len(users))
+	for i := range users {
+		userIDs = append(userIDs, users[i].ID)
+		userIndex[users[i].ID] = i
+	}
+	rows, err := s.entClient.QueryContext(ctx, `
+SELECT DISTINCT ON (user_id)
+  user_id,
+  COALESCE(ip_address, '') AS ip_address,
+  COALESCE(user_agent, '') AS user_agent,
+  COALESCE(accept_language, '') AS accept_language
+FROM user_registration_events
+WHERE user_id = ANY($1)
+ORDER BY user_id, created_at DESC`, pq.Array(userIDs))
+	if err != nil {
+		logger.LegacyPrintf("service.admin", "failed to load user registration snapshots: err=%v", err)
+		return
+	}
+	defer func() { _ = rows.Close() }()
+	for rows.Next() {
+		var userID int64
+		var ip, userAgent, acceptLanguage sql.NullString
+		if err := rows.Scan(&userID, &ip, &userAgent, &acceptLanguage); err != nil {
+			logger.LegacyPrintf("service.admin", "failed to scan user registration snapshot: err=%v", err)
+			return
+		}
+		i, ok := userIndex[userID]
+		if !ok {
+			continue
+		}
+		users[i].RegistrationIP = ip.String
+		users[i].RegistrationUserAgent = userAgent.String
+		users[i].RegistrationAcceptLanguage = acceptLanguage.String
+	}
 }
 
 func (s *adminServiceImpl) loadUserGroupRatesOneByOne(ctx context.Context, users []User) {

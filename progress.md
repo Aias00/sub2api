@@ -83,3 +83,47 @@ Verification:
 - Passed: `node --check tools/image-workspace-worker/src/worker.mjs`.
 - Passed: production runtime config returns `https://img.4router.net/v1/images/generations`.
 - Passed: production probe to `img.4router.net` with `gpt-image-2` and `auto` quality returned image data.
+
+## User registration IP in admin list
+
+Done:
+- Added registration IP, registration UA, and registration accept-language fields to the admin user DTO.
+- Hydrated admin user list rows from the latest `user_registration_events` record per user.
+- Added a default-visible Registration IP column to the admin users table.
+
+Simplifications:
+- Kept registration context as a read-only list enrichment in admin service; repository list filtering remains unchanged.
+- Displayed only IP in the table, with UA available in the cell title for quick inspection.
+
+Remaining risks:
+- Historical users without `user_registration_events` still show `-`, even if they were created before registration capture existed.
+
+Verification:
+- Passed: `go test -tags=unit ./internal/handler/dto -run TestUserFromServiceAdmin_MapsActivityTimestamps`.
+- Passed: `go test -tags=unit ./internal/service -run 'TestAdminService_ListUsers|TestNonExistent'`.
+- Passed: `pnpm --dir frontend test:run src/views/admin/__tests__/UsersView.spec.ts`.
+- Passed: `pnpm --dir frontend typecheck`.
+- Passed: `git diff --check`.
+
+## User operation timeline
+
+Done:
+- Added a `timeline` section to the admin user profile summary response.
+- Aggregated timestamped user activity from registration events, auth identities, API keys, gateway usage, payment orders, balance ledger, redeem codes, Image Workspace tasks, WeChat export tasks, and HTTP ops logs.
+- Rendered the operation timeline in the user profile summary modal with source, title, status, amount, IP, and UA context.
+
+Simplifications:
+- Reused the existing profile summary endpoint instead of adding a separate timeline endpoint.
+- Capped the combined timeline at 200 newest records to keep the profile modal responsive.
+
+Remaining risks:
+- Very old user actions that were never written to an event/log table cannot be reconstructed.
+- High-volume API users see the newest records first; deeper pagination would need a dedicated timeline endpoint.
+
+Verification:
+- Passed: `go test -tags=unit ./internal/service -run 'TestSortUserProfileTimeline|TestAdminService_ListUsers'`.
+- Passed: `go test -tags=unit ./internal/handler/dto -run TestUserFromServiceAdmin_MapsActivityTimestamps`.
+- Passed: `pnpm --dir frontend test:run src/views/admin/__tests__/UsersView.spec.ts src/components/admin/user/__tests__/UserProfileSummaryModal.spec.ts`.
+- Passed: `pnpm --dir frontend typecheck`.
+- Passed: `go test -tags=unit ./internal/service ./internal/handler/dto`.
+- Passed: `git diff --check`.
