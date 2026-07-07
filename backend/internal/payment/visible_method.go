@@ -11,12 +11,17 @@ type VisibleMethodProviderSource struct {
 
 func EnabledVisibleMethodsForProvider(providerKey, supportedTypes string) []string {
 	methodSet := make(map[string]struct{}, 2)
+	methodOrder := make([]string, 0, 2)
 	addMethod := func(method string) {
 		method = NormalizeVisibleMethod(method)
-		switch method {
-		case TypeAlipay, TypeWxpay:
-			methodSet[method] = struct{}{}
+		if method == "" {
+			return
 		}
+		if _, ok := methodSet[method]; ok {
+			return
+		}
+		methodSet[method] = struct{}{}
+		methodOrder = append(methodOrder, method)
 	}
 
 	switch strings.TrimSpace(providerKey) {
@@ -53,6 +58,12 @@ func EnabledVisibleMethodsForProvider(providerKey, supportedTypes string) []stri
 		if _, ok := methodSet[method]; ok {
 			methods = append(methods, method)
 		}
+	}
+	for _, method := range methodOrder {
+		if method == TypeAlipay || method == TypeWxpay {
+			continue
+		}
+		methods = append(methods, method)
 	}
 	return methods
 }

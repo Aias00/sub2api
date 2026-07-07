@@ -43,6 +43,10 @@ func NormalizeVisibleMethods(methods []string) []string {
 	return payment.NormalizeVisibleMethods(methods)
 }
 
+func enabledVisibleMethodsForProvider(providerKey, supportedTypes string) []string {
+	return payment.EnabledVisibleMethodsForProvider(providerKey, supportedTypes)
+}
+
 func NormalizePaymentSource(source string) string {
 	return payment.NormalizePaymentSource(source)
 }

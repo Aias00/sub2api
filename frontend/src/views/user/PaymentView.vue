@@ -120,9 +120,9 @@
                 <!-- Price -->
                 <div class="flex items-baseline gap-2">
                   <span v-if="selectedPlan.original_price" class="text-sm text-gray-400 line-through dark:text-gray-500">
-                    {{ formatSelectedPaymentAmount(selectedPlan.original_price) }}
+                    {{ formatSelectedPaymentAmount(subscriptionPaymentAmountForCurrency(selectedPlan.original_price, selectedCurrency)) }}
                   </span>
-                  <span :class="['text-3xl font-bold', planTextClass]">{{ formatSelectedPaymentAmount(selectedPlan.price) }}</span>
+                  <span :class="['text-3xl font-bold', planTextClass]">{{ formatSelectedPaymentAmount(subPaymentAmount) }}</span>
                   <span class="text-sm text-gray-500 dark:text-gray-400">/ {{ planValiditySuffix }}</span>
                 </div>
                 <!-- Description -->
@@ -192,7 +192,7 @@
                   <span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                   {{ paymentText('processing') }}
                 </span>
-                <span v-else>{{ paymentText('createOrder') }} {{ formatSelectedPaymentAmount(feeRate > 0 ? subTotalAmount : selectedPlan.price) }}</span>
+                <span v-else>{{ paymentText('createOrder') }} {{ formatSelectedPaymentAmount(feeRate > 0 ? subTotalAmount : subPaymentAmount) }}</span>
               </button>
               <button class="btn btn-secondary w-full" @click="selectedPlan = null">{{ paymentText('cancel') }}</button>
             </template>
@@ -203,7 +203,7 @@
                 <p class="text-gray-500 dark:text-gray-400">{{ paymentText('noPlans') }}</p>
               </div>
               <div v-else :class="planGridClass">
-                <SubscriptionPlanCard v-for="plan in checkout.plans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" :labels="subscriptionPlanCardLabels" :currency="selectedCurrency" :locale="localeCode" @select="selectPlan" />
+                <SubscriptionPlanCard v-for="plan in displayPlans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" :labels="subscriptionPlanCardLabels" :currency="selectedCurrency" :locale="localeCode" @select="selectPlan" />
               </div>
               <!-- Active subscriptions (compact, below plan list) -->
               <div v-if="activeSubscriptions.length > 0">
@@ -253,7 +253,7 @@
             </button>
             <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{{ paymentText('selectPlan') }}</h3>
             <div class="space-y-4">
-              <SubscriptionPlanCard v-for="plan in renewalPlans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" :labels="subscriptionPlanCardLabels" :currency="selectedCurrency" :locale="localeCode" @select="selectPlanFromModal" />
+              <SubscriptionPlanCard v-for="plan in displayRenewalPlans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" :labels="subscriptionPlanCardLabels" :currency="selectedCurrency" :locale="localeCode" @select="selectPlanFromModal" />
             </div>
           </div>
         </div>
@@ -748,7 +748,7 @@ const subFeeAmount = computed(() => {
 
 const subPaymentAmount = computed(() => {
   const price = selectedPlan.value?.price ?? 0
-  return roundPaymentAmount(price, selectedCurrency.value)
+  return subscriptionPaymentAmountForCurrency(price, selectedCurrency.value)
 })
 
 const subTotalAmount = computed(() => {
@@ -756,11 +756,29 @@ const subTotalAmount = computed(() => {
   return roundPaymentAmount(subPaymentAmount.value + subFeeAmount.value, selectedCurrency.value)
 })
 
+function displaySubscriptionPlan(plan: SubscriptionPlan): SubscriptionPlan {
+  return {
+    ...plan,
+    price: subscriptionPaymentAmountForCurrency(plan.price, selectedCurrency.value),
+    original_price: plan.original_price
+      ? subscriptionPaymentAmountForCurrency(plan.original_price, selectedCurrency.value)
+      : plan.original_price,
+  }
+}
+
+const displayPlans = computed(() => checkout.value.plans.map(displaySubscriptionPlan))
+
 function subscriptionTotalAmountForCurrency(value: number, currency: string): number {
-  const paymentAmount = roundPaymentAmount(value, currency)
+  const paymentAmount = subscriptionPaymentAmountForCurrency(value, currency)
   if (feeRate.value <= 0 || paymentAmount <= 0) return paymentAmount
   const fee = ceilPaymentAmount((paymentAmount * feeRate.value) / 100, currency)
   return roundPaymentAmount(paymentAmount + fee, currency)
+}
+
+function subscriptionPaymentAmountForCurrency(value: number, currency: string): number {
+  const rate = checkout.value?.subscription_usd_to_cny_rate ?? 0
+  const amount = normalizePaymentCurrency(currency) === 'CNY' && rate > 0 ? value * rate : value
+  return roundPaymentAmount(amount, currency)
 }
 
 const canSubmitSubscription = computed(() =>
@@ -806,6 +824,7 @@ const renewalPlans = computed(() => {
   if (renewGroupId.value == null) return []
   return checkout.value.plans.filter(p => p.group_id === renewGroupId.value)
 })
+const displayRenewalPlans = computed(() => renewalPlans.value.map(displaySubscriptionPlan))
 
 const planValiditySuffix = computed(() => {
   if (!selectedPlan.value) return ''
@@ -827,7 +846,7 @@ function planPeakRateLabel(plan: SubscriptionPlan): string {
 }
 
 function selectPlan(plan: SubscriptionPlan) {
-  selectedPlan.value = plan
+  selectedPlan.value = checkout.value.plans.find(item => item.id === plan.id) || plan
   errorMessage.value = ''
 }
 
@@ -840,7 +859,7 @@ function selectRechargeProduct(product: RechargeProduct) {
 function selectPlanFromModal(plan: SubscriptionPlan) {
   showRenewalModal.value = false
   renewGroupId.value = null
-  selectedPlan.value = plan
+  selectedPlan.value = checkout.value.plans.find(item => item.id === plan.id) || plan
   errorMessage.value = ''
 }
 
@@ -1228,7 +1247,7 @@ onMounted(async () => {
       if (restored) {
         paymentState.value = restored
         paymentPhase.value = 'paying'
-        const restoredMethod = normalizeVisibleMethod(restored.paymentType)
+        const restoredMethod = normalizeVisibleMethod(restored.paymentType) || restored.paymentType.trim()
         if (restoredMethod) {
           selectedMethod.value = restoredMethod
         }

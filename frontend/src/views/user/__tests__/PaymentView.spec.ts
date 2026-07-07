@@ -357,6 +357,19 @@ describe('PaymentView payment recovery', () => {
 
   it('restores a custom EasyPay method as the selected payment method', async () => {
     getCheckoutInfo.mockResolvedValue(checkoutInfoFixture({
+      recharge_products: [
+        {
+          id: 'recovery-topup',
+          name: 'Recovery Topup',
+          description: '',
+          amount: 66,
+          credited_amount: 66,
+          badge: '',
+          recommended: true,
+          features: [],
+          sort_order: 10,
+        },
+      ],
       methods: {
         wxpay: checkoutInfoFixture().data.methods.wxpay,
         ldc: {
@@ -398,10 +411,29 @@ describe('PaymentView payment recovery', () => {
             template: '<div><slot /></div>',
           },
           PaymentStatusPanel: {
+            inheritAttrs: false,
+            props: [
+              'orderId',
+              'qrCode',
+              'payUrl',
+              'expiresAt',
+              'paymentType',
+              'paymentMode',
+              'resumeToken',
+              'labels',
+              'methodLabels',
+              'orderType',
+              'currency',
+              'countryCode',
+              'paymentEnv',
+              'amount',
+              'payAmount',
+              'feeRate',
+            ],
             template: '<button data-test="payment-done" @click="$emit(\'done\')" />',
           },
           PaymentMethodSelector: {
-            props: ['selected'],
+            props: ['modelValue', 'selected'],
             template: '<div data-test="method-selector">{{ selected }}</div>',
           },
           Teleport: true,
