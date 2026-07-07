@@ -43,7 +43,7 @@ func TestNormalizeVisibleMethods(t *testing.T) {
 func TestEnabledVisibleMethodsForEasyPayIncludesCustomSupportedTypes(t *testing.T) {
 	t.Parallel()
 
-	got := enabledVisibleMethodsForProvider(payment.TypeEasyPay, "alipay,ldc,usdt_trc20")
+	got := payment.EnabledVisibleMethodsForProvider(payment.TypeEasyPay, "alipay,ldc,usdt_trc20")
 	want := []string{"alipay", "ldc", "usdt_trc20"}
 	if len(got) != len(want) {
 		t.Fatalf("enabledVisibleMethodsForProvider len = %d, want %d (%v)", len(got), len(want), got)
