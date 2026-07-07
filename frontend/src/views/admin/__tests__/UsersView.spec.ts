@@ -9,13 +9,19 @@ const {
   getAllGroups,
   getBatchUsersUsage,
   listEnabledDefinitions,
-  getBatchUserAttributes
+  getBatchUserAttributes,
+  listSignupGrantRiskClaims,
+  listSignupGrantRiskOverrides,
+  listSignupGrantAdminAuditLogs
 } = vi.hoisted(() => ({
   listUsers: vi.fn(),
   getAllGroups: vi.fn(),
   getBatchUsersUsage: vi.fn(),
   listEnabledDefinitions: vi.fn(),
-  getBatchUserAttributes: vi.fn()
+  getBatchUserAttributes: vi.fn(),
+  listSignupGrantRiskClaims: vi.fn(),
+  listSignupGrantRiskOverrides: vi.fn(),
+  listSignupGrantAdminAuditLogs: vi.fn()
 }))
 
 vi.mock('@/api/admin', () => ({
@@ -23,7 +29,10 @@ vi.mock('@/api/admin', () => ({
     users: {
       list: listUsers,
       toggleStatus: vi.fn(),
-      delete: vi.fn()
+      delete: vi.fn(),
+      listSignupGrantRiskClaims,
+      listSignupGrantRiskOverrides,
+      listSignupGrantAdminAuditLogs
     },
     groups: {
       getAll: getAllGroups
@@ -104,6 +113,9 @@ describe('admin UsersView', () => {
     getBatchUsersUsage.mockReset()
     listEnabledDefinitions.mockReset()
     getBatchUserAttributes.mockReset()
+    listSignupGrantRiskClaims.mockReset()
+    listSignupGrantRiskOverrides.mockReset()
+    listSignupGrantAdminAuditLogs.mockReset()
 
     listUsers.mockResolvedValue({
       items: [createAdminUser()],
@@ -116,6 +128,9 @@ describe('admin UsersView', () => {
     getBatchUsersUsage.mockResolvedValue({ stats: {} })
     listEnabledDefinitions.mockResolvedValue([])
     getBatchUserAttributes.mockResolvedValue({ values: {} })
+    listSignupGrantRiskClaims.mockResolvedValue({ items: [], total: 0, page: 1, size: 12 })
+    listSignupGrantRiskOverrides.mockResolvedValue({ items: [], total: 0, page: 1, size: 8 })
+    listSignupGrantAdminAuditLogs.mockResolvedValue({ items: [], total: 0, page: 1, size: 8 })
   })
 
   afterEach(() => {
@@ -170,6 +185,50 @@ describe('admin UsersView', () => {
       }),
       expect.any(Object)
     )
+  })
+
+  it('keeps signup risk controls collapsed until explicitly opened', async () => {
+    const wrapper = mount(UsersView, {
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          TablePageLayout: {
+            template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
+          },
+          DataTable: DataTableStub,
+          Pagination: true,
+          ConfirmDialog: true,
+          EmptyState: true,
+          GroupBadge: true,
+          Select: true,
+          UserAttributesConfigModal: true,
+          UserConcurrencyCell: true,
+          UserCreateModal: true,
+          UserEditModal: true,
+          UserApiKeysModal: true,
+          UserAllowedGroupsModal: true,
+          UserBalanceModal: true,
+          UserBalanceHistoryModal: true,
+          GroupReplaceModal: true,
+          Icon: true,
+          Teleport: true
+        }
+      }
+    })
+
+    await flushPromises()
+
+    expect(wrapper.get('[data-test="row-order"]').text()).toBe('scoped@example.com')
+    expect(wrapper.text()).not.toContain('admin.users.signupRisk.description')
+    expect(listSignupGrantRiskClaims).not.toHaveBeenCalled()
+
+    await wrapper.get('button[title="admin.users.signupRisk.title"]').trigger('click')
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('admin.users.signupRisk.description')
+    expect(listSignupGrantRiskClaims).toHaveBeenCalledTimes(1)
+    expect(listSignupGrantRiskOverrides).toHaveBeenCalledTimes(1)
+    expect(listSignupGrantAdminAuditLogs).toHaveBeenCalledTimes(1)
   })
 
   it('clears usage current-page sort when switching to last_used_at server sort', async () => {

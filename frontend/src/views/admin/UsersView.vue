@@ -240,6 +240,15 @@
                 <Icon name="cog" size="sm" class="md:mr-1.5" />
                 <span class="hidden md:inline">{{ t('admin.users.attributes.configButton') }}</span>
               </button>
+              <button
+                @click="toggleSignupRiskPanel"
+                class="btn px-2 md:px-3"
+                :class="showSignupRiskPanel ? 'btn-primary' : 'btn-secondary'"
+                :title="t('admin.users.signupRisk.title')"
+              >
+                <Icon name="shield" size="sm" class="md:mr-1.5" />
+                <span class="hidden md:inline">{{ t('admin.users.signupRisk.title') }}</span>
+              </button>
             </div>
 
             <!-- Create User Button (full width on mobile, auto width on desktop) -->
@@ -253,7 +262,7 @@
 
       <!-- Users Table -->
       <template #table>
-        <div class="mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800">
+        <div v-if="showSignupRiskPanel" class="mb-4 rounded-xl border border-gray-200 bg-white p-4 shadow-sm dark:border-dark-700 dark:bg-dark-800">
           <div class="mb-3 flex flex-wrap items-center justify-between gap-3">
             <div>
               <h3 class="text-sm font-semibold text-gray-900 dark:text-white">{{ t('admin.users.signupRisk.title') }}</h3>
@@ -1521,6 +1530,7 @@ const deletingUser = ref<AdminUser | null>(null)
 const viewingUser = ref<AdminUser | null>(null)
 const platformQuotaUser = ref<AdminUser | null>(null)
 const signupRiskClaims = ref<SignupGrantRiskClaimRecord[]>([])
+const showSignupRiskPanel = ref(false)
 const signupRiskDecision = ref('')
 const signupRiskLoading = ref(false)
 const signupRiskFilters = reactive({
@@ -1575,6 +1585,15 @@ const loadSignupRiskClaims = async () => {
     appStore.showError(error.response?.data?.detail || t('admin.users.signupRisk.loadFailed'))
   } finally {
     signupRiskLoading.value = false
+  }
+}
+
+const toggleSignupRiskPanel = () => {
+  showSignupRiskPanel.value = !showSignupRiskPanel.value
+  if (showSignupRiskPanel.value) {
+    loadSignupRiskClaims()
+    loadSignupRiskOverrides()
+    loadSignupRiskAuditLogs()
   }
 }
 
@@ -2219,9 +2238,6 @@ onMounted(async () => {
   loadSavedFilters()
   loadSavedColumns()
   loadUsers()
-  loadSignupRiskClaims()
-  loadSignupRiskOverrides()
-  loadSignupRiskAuditLogs()
   if (hasVisibleGroupsColumn.value || visibleFilters.has('group')) {
     loadAllGroups()
   }
