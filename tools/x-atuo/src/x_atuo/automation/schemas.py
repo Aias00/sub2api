@@ -15,6 +15,7 @@ class StrictModel(BaseModel):
 
 class HealthResponse(StrictModel):
     status: Literal["ok"]
+    storage: Literal["sqlite", "postgresql"] | None = None
     db_path: str
     checked_at: datetime
 
