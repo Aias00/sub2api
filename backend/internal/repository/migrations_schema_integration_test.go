@@ -95,6 +95,9 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 	require.NoError(t, tx.QueryRowContext(context.Background(), "SELECT to_regclass('public.settings')").Scan(&settingsRegclass))
 	require.True(t, settingsRegclass.Valid, "expected settings table to exist")
 
+	// signup_grant_claims: admin list/detail queries select updated_at.
+	requireColumn(t, tx, "signup_grant_claims", "updated_at", "timestamp with time zone", 0, false)
+
 	// security_secrets table should exist
 	var securitySecretsRegclass sql.NullString
 	require.NoError(t, tx.QueryRowContext(context.Background(), "SELECT to_regclass('public.security_secrets')").Scan(&securitySecretsRegclass))

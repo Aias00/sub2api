@@ -2468,7 +2468,8 @@ CREATE TABLE IF NOT EXISTS signup_grant_claims (
 	reason TEXT NOT NULL DEFAULT '',
 	grant_balance REAL NOT NULL DEFAULT 0,
 	grant_metadata TEXT NOT NULL DEFAULT '{}',
-	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
+	created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 )`)
 	require.NoError(t, err)
 	_, err = db.Exec(`

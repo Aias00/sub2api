@@ -180,6 +180,18 @@ func TestMigration158BackfillsGrokMediaGenerationGroups(t *testing.T) {
 	require.Contains(t, sql, "AND allow_image_generation = false")
 }
 
+func TestMigration171AddsSignupGrantClaimsUpdatedAtForAdminQueries(t *testing.T) {
+	content, err := FS.ReadFile("171_signup_grant_claims_updated_at.sql")
+	require.NoError(t, err)
+
+	sql := string(content)
+	require.Contains(t, sql, "ALTER TABLE signup_grant_claims")
+	require.Contains(t, sql, "ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ")
+	require.Contains(t, sql, "SET updated_at = created_at")
+	require.Contains(t, sql, "ALTER COLUMN updated_at SET DEFAULT NOW()")
+	require.Contains(t, sql, "ALTER COLUMN updated_at SET NOT NULL")
+}
+
 func TestMigration154AddsSparkShadowColumnsAndConstraintsWithoutHotIndexes(t *testing.T) {
 	content, err := FS.ReadFile("154_account_spark_shadow.sql")
 	require.NoError(t, err)
