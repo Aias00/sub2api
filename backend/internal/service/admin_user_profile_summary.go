@@ -287,7 +287,7 @@ ORDER BY created_at ASC, id ASC`, userID)
 	if err != nil {
 		return
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 
 	for rows.Next() {
 		var item UserProfileAuthIdentitySummary
@@ -461,7 +461,7 @@ func scanAdminProfileRow(ctx context.Context, client *dbent.Client, query string
 	if err != nil {
 		return err
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	if !rows.Next() {
 		return sql.ErrNoRows
 	}
