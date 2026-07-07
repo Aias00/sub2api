@@ -103,7 +103,6 @@ services:
       - HOT_WORKER_CONTAINER_NAME=${HOT_WORKER_CONTAINER_NAME:-cloudbase-hot-worker}
       - X_AUTO_WORKER_CONTAINER_NAME=${X_AUTO_WORKER_CONTAINER_NAME:-cloudbase-x-auto-worker}
       - X_AUTO_BASE_URL=${X_AUTO_BASE_URL:-http://x-auto-worker:8000}
-      - CONTENT_WORKER_CONTAINER_NAME=${CONTENT_WORKER_CONTAINER_NAME:-cloudbase-content-worker}
 
       # =======================================================================
       # Setup Configuration

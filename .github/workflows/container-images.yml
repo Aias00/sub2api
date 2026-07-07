@@ -58,10 +58,6 @@ jobs:
             dockerfile: tools/x-auto-worker.Dockerfile
             context: tools
             suffix: '-x-auto-worker'
-          - name: content-worker
-            dockerfile: tools/content-worker.Dockerfile
-            context: tools
-            suffix: '-content-worker'
 
     steps:
       - name: Checkout

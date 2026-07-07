@@ -346,8 +346,6 @@ function nodeTitle(id: string): string {
     case 'x-auto-worker':
     case 'x-auto':
       return 'X Auto Worker 节点'
-    case 'content-worker':
-      return '内容 Worker 节点'
     default:
       return id
   }

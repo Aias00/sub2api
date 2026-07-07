@@ -89,7 +89,7 @@ if ! command -v psql >/dev/null 2>&1; then
 fi
 
 section "Hot worker static checks"
-python3 -m compileall -q tools/x-atuo/src/x_atuo/hot_rss_worker.py tools/x-atuo/src/x_atuo/content_worker.py
+python3 -m compileall -q tools/x-atuo/src/x_atuo/hot_rss_worker.py
 node --check tools/hot-collector-status-metrics.mjs
 bash -n tools/hot-content-integrity.sh
 
@@ -203,13 +203,13 @@ fi
 section "Docker compose overlay"
 if command -v docker >/dev/null 2>&1; then
   if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" \
-    docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker config >/tmp/cloudbase-content-workers-compose.yml; then
-    echo "docker_compose_content_workers_config=ok"
+    docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker config >/tmp/cloudbase-split-content-workers-compose.yml; then
+    echo "docker_compose_split_content_workers_config=ok"
   else
-    warn_or_fail "docker compose content worker overlay did not render"
+    warn_or_fail "docker compose split content worker overlay did not render"
   fi
 else
-  warn_or_fail "docker command is unavailable; content worker compose overlay was not rendered"
+  warn_or_fail "docker command is unavailable; split content worker compose overlay was not rendered"
 fi
 
 section "Production readiness result"

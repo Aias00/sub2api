@@ -33,7 +33,6 @@ const (
 	workerNodeImageWorkspace = "image-workspace-worker"
 	workerNodeHotCollector   = "hot-worker"
 	workerNodeXAuto          = "x-auto-worker"
-	workerNodeContent        = "content-worker"
 )
 
 func NewHomeBusinessCapabilityHandler(
@@ -782,15 +781,6 @@ func runtimeWorkerTarget(id string) (runtimeWorkerTargetInfo, bool) {
 			ImageEnvKey:     envOrDefault("X_AUTO_WORKER_IMAGE_ENV_KEY", "X_AUTO_WORKER_IMAGE"),
 			ComposeService:  envOrDefault("X_AUTO_WORKER_COMPOSE_SERVICE", "x-auto-worker"),
 			ComposeProfiles: []string{envOrDefault("X_AUTO_WORKER_COMPOSE_PROFILE", "x-auto-worker")},
-		}, true
-	case workerNodeContent:
-		return runtimeWorkerTargetInfo{
-			ID:              workerNodeContent,
-			ContainerName:   envOrDefault("CONTENT_WORKER_CONTAINER_NAME", "cloudbase-content-worker"),
-			DeployCommand:   "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile legacy-content-worker up -d --build content-worker",
-			ImageEnvKey:     envOrDefault("CONTENT_WORKER_IMAGE_ENV_KEY", "CONTENT_WORKER_IMAGE"),
-			ComposeService:  envOrDefault("CONTENT_WORKER_COMPOSE_SERVICE", "content-worker"),
-			ComposeProfiles: []string{envOrDefault("CONTENT_WORKER_COMPOSE_PROFILE", "legacy-content-worker")},
 		}, true
 	default:
 		return runtimeWorkerTargetInfo{}, false

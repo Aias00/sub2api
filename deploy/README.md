@@ -183,9 +183,7 @@ wechat-worker ... wechat-worker` or `--profile image-workspace-worker ...
 image-workspace-worker`.
 
 The `content-worker` profile starts split content workers: `hot-worker` for Hot
-RSS collection and `x-auto-worker` for the X Auto API/scheduler. The old
-combined `content-worker` service remains available only through the
-`legacy-content-worker` profile for rollback.
+RSS collection and `x-auto-worker` for the X Auto API/scheduler.
 
 `x-auto-worker` uses PostgreSQL by default through `X_ATUO_DATABASE_URL` and
 `X_ATUO_AUTHOR_ALPHA_DATABASE_URL`. Before switching a production host that
@@ -193,7 +191,7 @@ already has `x_atuo.sqlite3` / `author_alpha.sqlite3`, migrate the old files
 once:
 
 ```bash
-X_AUTO_WORKER_DATA_MOUNT=./data/content-worker \
+X_AUTO_WORKER_DATA_MOUNT=./data/x-auto \
 docker compose \
   -f deploy/docker-compose.yml \
   -f deploy/docker-compose.content-worker.yml \
@@ -240,7 +238,6 @@ registry.cn-qingdao.aliyuncs.com/<namespace>/cloudbase-wechat-worker:sha-<commit
 registry.cn-qingdao.aliyuncs.com/<namespace>/cloudbase-image-workspace-worker:sha-<commit>
 registry.cn-qingdao.aliyuncs.com/<namespace>/cloudbase-hot-worker:sha-<commit>
 registry.cn-qingdao.aliyuncs.com/<namespace>/cloudbase-x-auto-worker:sha-<commit>
-registry.cn-qingdao.aliyuncs.com/<namespace>/cloudbase-content-worker:sha-<commit>
 ```
 
 When using an existing single repository such as `cola/images`, set
@@ -253,7 +250,6 @@ registry.cn-qingdao.aliyuncs.com/cola/images:wechat-worker-sha-<commit>
 registry.cn-qingdao.aliyuncs.com/cola/images:image-workspace-worker-sha-<commit>
 registry.cn-qingdao.aliyuncs.com/cola/images:hot-worker-sha-<commit>
 registry.cn-qingdao.aliyuncs.com/cola/images:x-auto-worker-sha-<commit>
-registry.cn-qingdao.aliyuncs.com/cola/images:content-worker-sha-<commit>
 ```
 
 Set the corresponding image overrides in `deploy/.env` when the production host

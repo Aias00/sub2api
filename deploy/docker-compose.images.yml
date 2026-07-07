@@ -26,8 +26,3 @@ services:
     build: !reset null
     image: ${X_AUTO_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-x-auto-worker:${X_AUTO_WORKER_IMAGE_TAG:-latest}}
     platform: ${X_AUTO_WORKER_IMAGE_PLATFORM:-linux/amd64}
-
-  content-worker:
-    build: !reset null
-    image: ${CONTENT_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-content-worker:${CONTENT_WORKER_IMAGE_TAG:-latest}}
-    platform: ${CONTENT_WORKER_IMAGE_PLATFORM:-linux/amd64}

@@ -19,7 +19,7 @@ services:
       - WECHAT_EXPORT_OUTPUT_DIR=${WECHAT_EXPORT_OUTPUT_DIR:-/app/data/wechat-export}
       - WECHAT_EXPORT_STORAGE_KEY_ROOT=${WECHAT_EXPORT_STORAGE_KEY_ROOT:-/app/data/wechat-export}
     volumes:
-      - ${WECHAT_WORKER_DATA_MOUNT:-./data}:/app/data
+      - ${WECHAT_WORKER_DATA_MOUNT:-./data/wechat}:/app/data
     depends_on:
       cloudbase:
         condition: service_healthy
@@ -59,7 +59,7 @@ services:
       - IMAGE_WORKSPACE_WORKER_MAX_BACKOFF_MS=${IMAGE_WORKSPACE_WORKER_MAX_BACKOFF_MS:-60000}
       - IMAGE_WORKSPACE_WORKER_LEASE_SECONDS=${IMAGE_WORKSPACE_WORKER_LEASE_SECONDS:-300}
     volumes:
-      - ${IMAGE_WORKSPACE_WORKER_DATA_MOUNT:-./data}:/app/data
+      - ${IMAGE_WORKSPACE_WORKER_DATA_MOUNT:-./data/image-workspace}:/app/data
     depends_on:
       cloudbase:
         condition: service_healthy
