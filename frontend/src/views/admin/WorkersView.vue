@@ -154,7 +154,7 @@
             id="worker-image-input"
             v-model.trim="deployImage"
             class="mt-2 w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-950 outline-none transition focus:border-primary-500 focus:ring-2 focus:ring-primary-500/20 dark:border-dark-600 dark:bg-dark-800 dark:text-white"
-            placeholder="registry.cn-qingdao.aliyuncs.com/cola/images:content-worker-sha-..."
+            placeholder="registry.cn-qingdao.aliyuncs.com/cola/images:worker-sha-..."
             autocomplete="off"
             :disabled="deploySubmitting"
           >
@@ -340,9 +340,14 @@ function nodeTitle(id: string): string {
       return '微信导出 Worker 节点'
     case 'image-workspace-worker':
       return '生图工作台 Worker 节点'
-    case 'content-worker':
+    case 'hot-worker':
     case 'hot-collector':
       return '热点采集 Worker 节点'
+    case 'x-auto-worker':
+    case 'x-auto':
+      return 'X Auto Worker 节点'
+    case 'content-worker':
+      return '内容 Worker 节点'
     default:
       return id
   }

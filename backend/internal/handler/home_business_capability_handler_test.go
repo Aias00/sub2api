@@ -463,6 +463,7 @@ func TestHomeBusinessAdminXAutoWorkerStatusDoesNotTreatDBPathAsAttention(t *test
 	h := NewHomeBusinessCapabilityHandler(nil, nil, nil, nil)
 	status := h.adminXAutoWorkerStatus(context.Background())
 
+	require.Equal(t, workerNodeXAuto, status.NodeID)
 	require.Equal(t, "active", status.Health)
 	require.Equal(t, "X Auto worker is reachable.", status.Message)
 	require.Equal(t, "2026-07-06T12:00:00Z", status.LastUpdatedAt)

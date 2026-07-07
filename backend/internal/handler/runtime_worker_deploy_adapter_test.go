@@ -104,3 +104,25 @@ func TestRuntimeWorkerDeployAdapterDeployRunsFixedComposeCommands(t *testing.T) 
 		"up", "-d", "--no-deps", "content-worker",
 	}, runner.calls[1].args)
 }
+
+func TestRuntimeWorkerTargetSplitsHotAndXAutoWorkers(t *testing.T) {
+	hotTarget, ok := runtimeWorkerTarget("hot-collector")
+	require.True(t, ok)
+	require.Equal(t, workerNodeHotCollector, hotTarget.ID)
+	require.Equal(t, "HOT_WORKER_IMAGE", hotTarget.ImageEnvKey)
+	require.Equal(t, "hot-worker", hotTarget.ComposeService)
+	require.Equal(t, []string{"hot-worker"}, hotTarget.ComposeProfiles)
+
+	xAutoTarget, ok := runtimeWorkerTarget("x-auto")
+	require.True(t, ok)
+	require.Equal(t, workerNodeXAuto, xAutoTarget.ID)
+	require.Equal(t, "X_AUTO_WORKER_IMAGE", xAutoTarget.ImageEnvKey)
+	require.Equal(t, "x-auto-worker", xAutoTarget.ComposeService)
+	require.Equal(t, []string{"x-auto-worker"}, xAutoTarget.ComposeProfiles)
+
+	legacyTarget, ok := runtimeWorkerTarget("content-worker")
+	require.True(t, ok)
+	require.Equal(t, workerNodeContent, legacyTarget.ID)
+	require.Equal(t, "CONTENT_WORKER_IMAGE", legacyTarget.ImageEnvKey)
+	require.Equal(t, []string{"legacy-content-worker"}, legacyTarget.ComposeProfiles)
+}

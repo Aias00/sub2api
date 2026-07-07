@@ -12,6 +12,6 @@ if [ -n "${GHCR_USERNAME:-}" ] && [ -n "${GHCR_TOKEN:-}" ]; then
   printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USERNAME" --password-stdin
 fi
 
-DOCKER_DEFAULT_PLATFORM="$IMAGE_PLATFORM" docker compose --env-file "$ENV_FILE" $COMPOSE_FILES $PROFILES pull cloudbase wechat-worker image-workspace-worker content-worker
-docker compose --env-file "$ENV_FILE" $COMPOSE_FILES $PROFILES up -d --no-deps --remove-orphans cloudbase wechat-worker image-workspace-worker content-worker
+DOCKER_DEFAULT_PLATFORM="$IMAGE_PLATFORM" docker compose --env-file "$ENV_FILE" $COMPOSE_FILES $PROFILES pull cloudbase wechat-worker image-workspace-worker hot-worker x-auto-worker
+docker compose --env-file "$ENV_FILE" $COMPOSE_FILES $PROFILES up -d --no-deps --remove-orphans cloudbase wechat-worker image-workspace-worker hot-worker x-auto-worker
 docker compose --env-file "$ENV_FILE" $COMPOSE_FILES $PROFILES ps

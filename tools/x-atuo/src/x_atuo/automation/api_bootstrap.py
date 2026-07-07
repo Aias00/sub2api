@@ -29,8 +29,11 @@ from x_atuo.automation.storage import AutomationStorage
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = AutomationConfig()
-    storage = AutomationStorage(_resolve_db_path())
-    author_alpha_storage = AuthorAlphaStorage(_resolve_author_alpha_db_path(settings))
+    storage = AutomationStorage(_resolve_db_path(), database_url=settings.database_url)
+    author_alpha_storage = AuthorAlphaStorage(
+        _resolve_author_alpha_db_path(settings),
+        database_url=settings.author_alpha.database_url or settings.database_url,
+    )
     observability_runtime = build_langfuse_runtime(settings)
     storage.initialize()
     author_alpha_storage.initialize()

@@ -13,17 +13,24 @@ from x_atuo.automation import author_alpha_execution_ledger
 from x_atuo.automation import author_alpha_schema
 from x_atuo.automation import author_alpha_score_snapshot
 from x_atuo.automation import author_alpha_sync_ledger
+from x_atuo.automation.db import connect_postgres
+from x_atuo.automation.db import table_exists
 from x_atuo.automation.storage import utcnow
 
 _UNSET = object()
 
 
 class AuthorAlphaStorage:
-    def __init__(self, db_path: str | Path) -> None:
+    def __init__(self, db_path: str | Path, *, database_url: str | None = None) -> None:
+        self.database_url = str(database_url or "").strip()
         self.db_path = Path(db_path).expanduser().resolve()
 
     @contextmanager
-    def connect(self) -> Iterator[sqlite3.Connection]:
+    def connect(self) -> Iterator[Any]:
+        if self.database_url:
+            with connect_postgres(self.database_url) as connection:
+                yield connection
+            return
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.db_path, timeout=10.0)
         connection.row_factory = sqlite3.Row
@@ -46,15 +53,7 @@ class AuthorAlphaStorage:
 
     def has_table(self, table_name: str) -> bool:
         with self.connect() as connection:
-            row = connection.execute(
-                """
-                SELECT name
-                FROM sqlite_master
-                WHERE type = 'table' AND name = ?
-                """,
-                (table_name,),
-            ).fetchone()
-        return row is not None
+            return table_exists(connection, table_name)
 
     def upsert_author(
         self,

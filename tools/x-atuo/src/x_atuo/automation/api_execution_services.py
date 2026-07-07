@@ -593,7 +593,10 @@ async def _dispatch_scheduled_request(
     job_type, function_name, payload, endpoint = _workflow_binding(request_obj)
     if request_obj.workflow is WorkflowKind.AUTHOR_ALPHA_ENGAGE:
         if author_alpha_storage is None:
-            author_alpha_storage = AuthorAlphaStorage(_resolve_author_alpha_db_path(resolved_settings))
+            author_alpha_storage = AuthorAlphaStorage(
+                _resolve_author_alpha_db_path(resolved_settings),
+                database_url=resolved_settings.author_alpha.database_url or resolved_settings.database_url,
+            )
             author_alpha_storage.initialize()
         return await _execute_author_alpha_job(
             settings=resolved_settings,

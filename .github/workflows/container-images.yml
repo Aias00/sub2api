@@ -50,6 +50,14 @@ jobs:
             dockerfile: tools/image-workspace-worker.Dockerfile
             context: tools
             suffix: '-image-workspace-worker'
+          - name: hot-worker
+            dockerfile: tools/hot-worker.Dockerfile
+            context: tools
+            suffix: '-hot-worker'
+          - name: x-auto-worker
+            dockerfile: tools/x-auto-worker.Dockerfile
+            context: tools
+            suffix: '-x-auto-worker'
           - name: content-worker
             dockerfile: tools/content-worker.Dockerfile
             context: tools

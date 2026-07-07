@@ -17,6 +17,16 @@ services:
     image: ${IMAGE_WORKSPACE_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-image-workspace-worker:${IMAGE_WORKSPACE_WORKER_IMAGE_TAG:-latest}}
     platform: ${IMAGE_WORKSPACE_WORKER_IMAGE_PLATFORM:-linux/amd64}
 
+  hot-worker:
+    build: !reset null
+    image: ${HOT_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-hot-worker:${HOT_WORKER_IMAGE_TAG:-latest}}
+    platform: ${HOT_WORKER_IMAGE_PLATFORM:-linux/amd64}
+
+  x-auto-worker:
+    build: !reset null
+    image: ${X_AUTO_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-x-auto-worker:${X_AUTO_WORKER_IMAGE_TAG:-latest}}
+    platform: ${X_AUTO_WORKER_IMAGE_PLATFORM:-linux/amd64}
+
   content-worker:
     build: !reset null
     image: ${CONTENT_WORKER_IMAGE:-ghcr.io/aias00/cloudbase-content-worker:${CONTENT_WORKER_IMAGE_TAG:-latest}}

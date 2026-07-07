@@ -9,6 +9,7 @@ from typing import Any, Iterator
 from x_atuo.automation import automation_engagement_ledger
 from x_atuo.automation import automation_run_ledger
 from x_atuo.automation import storage_schema
+from x_atuo.automation.db import connect_postgres
 from x_atuo.automation.state import WorkflowKind
 from x_atuo.automation.utils import deserialize_json as _deserialize_json
 from x_atuo.automation.utils import serialize_json as _serialize_json
@@ -39,11 +40,16 @@ def _parse_transient_reply_failure_count(reason: str | None) -> int:
 
 
 class AutomationStorage:
-    def __init__(self, db_path: str | Path) -> None:
+    def __init__(self, db_path: str | Path, *, database_url: str | None = None) -> None:
+        self.database_url = str(database_url or "").strip()
         self.db_path = Path(db_path).expanduser().resolve()
 
     @contextmanager
-    def connect(self) -> Iterator[sqlite3.Connection]:
+    def connect(self) -> Iterator[Any]:
+        if self.database_url:
+            with connect_postgres(self.database_url) as connection:
+                yield connection
+            return
         self.db_path.parent.mkdir(parents=True, exist_ok=True)
         connection = sqlite3.connect(self.db_path, timeout=10.0)
         connection.row_factory = sqlite3.Row
@@ -75,7 +81,8 @@ class AutomationStorage:
             row = connection.execute("SELECT 1 AS ok").fetchone()
         return {
             "status": "ok" if row and row["ok"] == 1 else "error",
-            "db_path": str(self.db_path),
+            "storage": "postgresql" if self.database_url else "sqlite",
+            "db_path": "" if self.database_url else str(self.db_path),
             "checked_at": datetime.now(timezone.utc),
         }
 
@@ -444,8 +451,12 @@ class AutomationStorage:
         with self.connect() as connection:
             connection.execute(
                 """
-                INSERT OR REPLACE INTO dedupe_keys (dedupe_key, scope, created_at, expires_at)
+                INSERT INTO dedupe_keys (dedupe_key, scope, created_at, expires_at)
                 VALUES (?, ?, ?, ?)
+                ON CONFLICT(dedupe_key) DO UPDATE SET
+                    scope = excluded.scope,
+                    created_at = excluded.created_at,
+                    expires_at = excluded.expires_at
                 """,
                 (dedupe_key, scope, utcnow(), expires_at),
             )

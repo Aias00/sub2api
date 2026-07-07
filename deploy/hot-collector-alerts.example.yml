@@ -14,7 +14,7 @@
 # - cloudbase_hot_collector_last_failure_age_seconds
 #
 # Container platforms should also alert on the Docker/Kubernetes healthcheck
-# result from `python -m x_atuo.content_worker --healthcheck`.
+# result from `python -m x_atuo.hot_rss_worker --healthcheck`.
 
 groups:
   - name: cloudbase-hot-collector

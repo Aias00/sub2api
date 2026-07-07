@@ -445,12 +445,14 @@ async def post_author_alpha_scores_import(
 ) -> AuthorAlphaScoreImportResponse:
     author_alpha_storage = get_author_alpha_storage(request)
     storage = get_storage(request)
-    author_alpha_snapshot = _snapshot_db_file(author_alpha_storage.db_path)
-    shared_snapshot = _snapshot_db_file(storage.db_path)
+    author_alpha_snapshot = None if getattr(author_alpha_storage, "database_url", "") else _snapshot_db_file(author_alpha_storage.db_path)
+    shared_snapshot = None if getattr(storage, "database_url", "") else _snapshot_db_file(storage.db_path)
 
     def _rollback() -> None:
-        _restore_db_file(author_alpha_storage.db_path, author_alpha_snapshot)
-        _restore_db_file(storage.db_path, shared_snapshot)
+        if author_alpha_snapshot is not None:
+            _restore_db_file(author_alpha_storage.db_path, author_alpha_snapshot)
+        if shared_snapshot is not None:
+            _restore_db_file(storage.db_path, shared_snapshot)
 
     try:
         raw_payload = body.model_dump(mode="python")

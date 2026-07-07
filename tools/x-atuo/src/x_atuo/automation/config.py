@@ -76,6 +76,7 @@ class AuthorAlphaSettings(BaseModel):
     enabled: bool = False
     autostart: bool = False
     db_path: str = "data/author_alpha.sqlite3"
+    database_url: str | None = None
     timezone: str = "Asia/Shanghai"
     excluded_authors: list[str] = Field(default_factory=list)
     trigger: Literal["interval", "cron"] = "interval"
@@ -125,6 +126,7 @@ class AutomationConfig(BaseSettings):
 
     environment: str = "development"
     data_dir: Path = Path(".x_atuo")
+    database_url: str | None = None
     webhook_secret: str | None = None
     twitter: TwitterRuntimeConfig = Field(default_factory=TwitterRuntimeConfig)
     ai: AISettings = Field(default_factory=AISettings)

@@ -31,6 +31,8 @@ type HomeBusinessCapabilityHandler struct {
 const (
 	workerNodeWeChatExport   = "wechat-worker"
 	workerNodeImageWorkspace = "image-workspace-worker"
+	workerNodeHotCollector   = "hot-worker"
+	workerNodeXAuto          = "x-auto-worker"
 	workerNodeContent        = "content-worker"
 )
 
@@ -448,7 +450,7 @@ func (h *HomeBusinessCapabilityHandler) adminHotCollectorWorkerStatus() adminWor
 	result := adminWorkerRuntimeStatusDTO{
 		ID:         "hot-collector",
 		Name:       "热点采集 Worker",
-		NodeID:     workerNodeContent,
+		NodeID:     workerNodeHotCollector,
 		Health:     "unknown",
 		Configured: statusPath != "",
 		StatusPath: statusPath,
@@ -513,7 +515,7 @@ func (h *HomeBusinessCapabilityHandler) adminXAutoWorkerStatus(ctx context.Conte
 	result := adminWorkerRuntimeStatusDTO{
 		ID:         "x-auto",
 		Name:       "X Auto Worker",
-		NodeID:     workerNodeContent,
+		NodeID:     workerNodeXAuto,
 		Health:     "unknown",
 		Configured: baseURL != "",
 		StatusPath: baseURL,
@@ -763,14 +765,32 @@ func runtimeWorkerTarget(id string) (runtimeWorkerTargetInfo, bool) {
 			ComposeService:  envOrDefault("IMAGE_WORKSPACE_WORKER_COMPOSE_SERVICE", "image-workspace-worker"),
 			ComposeProfiles: []string{envOrDefault("IMAGE_WORKSPACE_WORKER_COMPOSE_PROFILE", "image-workspace-worker")},
 		}, true
-	case workerNodeContent, "hot-collector", "hot-rss-collector", "x-auto", "xauto":
+	case workerNodeHotCollector, "hot-collector", "hot-rss-collector":
+		return runtimeWorkerTargetInfo{
+			ID:              workerNodeHotCollector,
+			ContainerName:   envOrDefault("HOT_WORKER_CONTAINER_NAME", "cloudbase-hot-worker"),
+			DeployCommand:   "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile hot-worker up -d --build hot-worker",
+			ImageEnvKey:     envOrDefault("HOT_WORKER_IMAGE_ENV_KEY", "HOT_WORKER_IMAGE"),
+			ComposeService:  envOrDefault("HOT_WORKER_COMPOSE_SERVICE", "hot-worker"),
+			ComposeProfiles: []string{envOrDefault("HOT_WORKER_COMPOSE_PROFILE", "hot-worker")},
+		}, true
+	case workerNodeXAuto, "x-auto", "xauto":
+		return runtimeWorkerTargetInfo{
+			ID:              workerNodeXAuto,
+			ContainerName:   envOrDefault("X_AUTO_WORKER_CONTAINER_NAME", "cloudbase-x-auto-worker"),
+			DeployCommand:   "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile x-auto-worker up -d --build x-auto-worker",
+			ImageEnvKey:     envOrDefault("X_AUTO_WORKER_IMAGE_ENV_KEY", "X_AUTO_WORKER_IMAGE"),
+			ComposeService:  envOrDefault("X_AUTO_WORKER_COMPOSE_SERVICE", "x-auto-worker"),
+			ComposeProfiles: []string{envOrDefault("X_AUTO_WORKER_COMPOSE_PROFILE", "x-auto-worker")},
+		}, true
+	case workerNodeContent:
 		return runtimeWorkerTargetInfo{
 			ID:              workerNodeContent,
 			ContainerName:   envOrDefault("CONTENT_WORKER_CONTAINER_NAME", "cloudbase-content-worker"),
-			DeployCommand:   "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker up -d --build",
+			DeployCommand:   "docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile legacy-content-worker up -d --build content-worker",
 			ImageEnvKey:     envOrDefault("CONTENT_WORKER_IMAGE_ENV_KEY", "CONTENT_WORKER_IMAGE"),
 			ComposeService:  envOrDefault("CONTENT_WORKER_COMPOSE_SERVICE", "content-worker"),
-			ComposeProfiles: []string{envOrDefault("CONTENT_WORKER_COMPOSE_PROFILE", "content-worker")},
+			ComposeProfiles: []string{envOrDefault("CONTENT_WORKER_COMPOSE_PROFILE", "legacy-content-worker")},
 		}, true
 	default:
 		return runtimeWorkerTargetInfo{}, false

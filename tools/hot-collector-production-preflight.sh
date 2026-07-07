@@ -70,8 +70,8 @@ if [[ ! -f tools/hot-collector-status-metrics.mjs ]]; then
   echo "ERROR: tools/hot-collector-status-metrics.mjs is missing" >&2
   exit 2
 fi
-if [[ ! -f tools/content-worker.Dockerfile ]]; then
-  echo "ERROR: tools/content-worker.Dockerfile is missing" >&2
+if [[ ! -f tools/hot-worker.Dockerfile ]]; then
+  echo "ERROR: tools/hot-worker.Dockerfile is missing" >&2
   exit 2
 fi
 if [[ ! -f deploy/docker-compose.content-worker.yml ]]; then
@@ -203,13 +203,13 @@ fi
 section "Docker compose overlay"
 if command -v docker >/dev/null 2>&1; then
   if POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-dummy}" \
-    docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker config >/tmp/cloudbase-content-worker-compose.yml; then
-    echo "docker_compose_content_worker_config=ok"
+    docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.content-worker.yml --profile content-worker config >/tmp/cloudbase-content-workers-compose.yml; then
+    echo "docker_compose_content_workers_config=ok"
   else
-    warn_or_fail "docker compose content-worker overlay did not render"
+    warn_or_fail "docker compose content worker overlay did not render"
   fi
 else
-  warn_or_fail "docker command is unavailable; content-worker compose overlay was not rendered"
+  warn_or_fail "docker command is unavailable; content worker compose overlay was not rendered"
 fi
 
 section "Production readiness result"
