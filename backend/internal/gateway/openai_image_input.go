@@ -128,6 +128,10 @@ func OpenAIJSONValueMayContainImageInputForTest(value gjson.Result) bool {
 	return openAIJSONValueMayContainImageInput(value)
 }
 
+func OpenAIJSONValueMayContainImageInput(value gjson.Result) bool {
+	return openAIJSONValueMayContainImageInput(value)
+}
+
 func OpenAIJSONValueMayContainEmptyBase64InputImageForTest(value gjson.Result) bool {
 	return openAIJSONValueMayContainEmptyBase64InputImage(value)
 }
@@ -137,6 +141,10 @@ func ShouldDropEmptyBase64InputImagePartForTest(part any) bool {
 }
 
 func IsEmptyBase64DataURIForTest(raw string) bool {
+	return isEmptyBase64DataURI(raw)
+}
+
+func IsEmptyBase64DataURI(raw string) bool {
 	return isEmptyBase64DataURI(raw)
 }
 

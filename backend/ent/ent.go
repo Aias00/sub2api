@@ -19,6 +19,9 @@ import (
 	"github.com/Aias00/cloudbase/ent/apikey"
 	"github.com/Aias00/cloudbase/ent/authidentity"
 	"github.com/Aias00/cloudbase/ent/authidentitychannel"
+	"github.com/Aias00/cloudbase/ent/batchimageevent"
+	"github.com/Aias00/cloudbase/ent/batchimageitem"
+	"github.com/Aias00/cloudbase/ent/batchimagejob"
 	"github.com/Aias00/cloudbase/ent/channelmonitor"
 	"github.com/Aias00/cloudbase/ent/channelmonitordailyrollup"
 	"github.com/Aias00/cloudbase/ent/channelmonitorhistory"
@@ -114,6 +117,9 @@ func checkColumn(t, c string) error {
 			announcementread.Table:              announcementread.ValidColumn,
 			authidentity.Table:                  authidentity.ValidColumn,
 			authidentitychannel.Table:           authidentitychannel.ValidColumn,
+			batchimageevent.Table:               batchimageevent.ValidColumn,
+			batchimageitem.Table:                batchimageitem.ValidColumn,
+			batchimagejob.Table:                 batchimagejob.ValidColumn,
 			channelmonitor.Table:                channelmonitor.ValidColumn,
 			channelmonitordailyrollup.Table:     channelmonitordailyrollup.ValidColumn,
 			channelmonitorhistory.Table:         channelmonitorhistory.ValidColumn,

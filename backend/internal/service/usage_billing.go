@@ -18,4 +18,7 @@ type AccountQuotaState = billingctx.AccountQuotaState
 
 type UsageBillingApplyResult = billingctx.UsageBillingApplyResult
 
+type BatchImageBalanceHoldCommand = billingctx.BatchImageBalanceHoldCommand
+type BatchImageBalanceHoldResult = billingctx.BatchImageBalanceHoldResult
+
 type UsageBillingRepository = billingctx.UsageBillingRepository

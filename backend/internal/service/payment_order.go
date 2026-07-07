@@ -16,6 +16,7 @@ import (
 	"github.com/Aias00/cloudbase/internal/payment"
 	"github.com/Aias00/cloudbase/internal/payment/provider"
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
+	"github.com/shopspring/decimal"
 )
 
 // --- Order Creation ---
@@ -651,6 +652,25 @@ func (s *PaymentService) validateSelectedCreateOrderInstance(ctx context.Context
 
 func calculateCreateOrderPayAmount(limitAmount, feeRate float64, currency string) (string, float64, error) {
 	return payment.CalculateCreateOrderPayAmount(limitAmount, feeRate, currency)
+}
+
+func calculateCreateOrderPayAmountForOrderType(limitAmount, feeRate float64, currency, orderType string, usdToCnyRate float64) (string, float64, error) {
+	paymentAmount := limitAmount
+	if orderType == payment.OrderTypeSubscription {
+		paymentAmount = calculateSubscriptionGatewayBaseAmount(limitAmount, usdToCnyRate, currency)
+	}
+	return calculateCreateOrderPayAmount(paymentAmount, feeRate, currency)
+}
+
+func calculateSubscriptionGatewayBaseAmount(amount, usdToCnyRate float64, currency string) float64 {
+	rate := normalizeSubscriptionUSDToCNYRate(usdToCnyRate)
+	if rate <= 0 || currency != payment.DefaultPaymentCurrency {
+		return amount
+	}
+	return decimal.NewFromFloat(amount).
+		Mul(decimal.NewFromFloat(rate)).
+		Round(int32(payment.CurrencyMaxFractionDigits(currency))).
+		InexactFloat64()
 }
 
 func validateSelectedCreateOrderAmountCurrency(payAmount string, sel *payment.InstanceSelection) error {

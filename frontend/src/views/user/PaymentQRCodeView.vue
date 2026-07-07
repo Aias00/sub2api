@@ -49,6 +49,7 @@ import {
 } from '@/utils/paymentShell'
 import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import { useAppStore } from '@/stores'
+import { isBuiltInAlipayMethod, isBuiltInWxpayMethod } from '@/components/payment/providerConfig'
 import QRCode from 'qrcode'
 import alipayIcon from '@/assets/icons/alipay.svg'
 import wxpayIcon from '@/assets/icons/wxpay.svg'
@@ -81,8 +82,8 @@ let countdownTimer: ReturnType<typeof setInterval> | null = null
 
 const countdownDisplay = computed(() => formatPaymentQrCountdown(remainingSeconds.value))
 
-const isAlipay = computed(() => paymentType.value.includes('alipay'))
-const isWxpay = computed(() => paymentType.value.includes('wxpay'))
+const isAlipay = computed(() => isBuiltInAlipayMethod(paymentType.value))
+const isWxpay = computed(() => isBuiltInWxpayMethod(paymentType.value))
 
 
 const paymentQRLabels = computed(() =>

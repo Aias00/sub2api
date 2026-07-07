@@ -211,6 +211,29 @@ func (h *ConcurrencyHelper) TryAcquireUserSlot(ctx context.Context, userID int64
 	return result.ReleaseFunc, true, nil
 }
 
+func (h *ConcurrencyHelper) TryAcquireUserSlotForAPIKey(ctx context.Context, userID int64, maxConcurrency int, apiKeyID int64) (func(), bool, error) {
+	releaseFunc, acquired, err := h.TryAcquireUserSlot(ctx, userID, maxConcurrency)
+	if err != nil || !acquired {
+		return releaseFunc, acquired, err
+	}
+	return h.withAPIKeySlot(ctx, apiKeyID, releaseFunc), true, nil
+}
+
+func (h *ConcurrencyHelper) withAPIKeySlot(ctx context.Context, apiKeyID int64, releaseFunc func()) func() {
+	if h == nil || h.concurrencyService == nil || apiKeyID <= 0 {
+		return releaseFunc
+	}
+	apiKeyReleaseFunc := h.concurrencyService.TrackAPIKeySlot(ctx, apiKeyID)
+	return func() {
+		if releaseFunc != nil {
+			releaseFunc()
+		}
+		if apiKeyReleaseFunc != nil {
+			apiKeyReleaseFunc()
+		}
+	}
+}
+
 // TryAcquireAccountSlot 尝试立即获取账号并发槽位。
 // 返回值: (releaseFunc, acquired, error)
 func (h *ConcurrencyHelper) TryAcquireAccountSlot(ctx context.Context, accountID int64, maxConcurrency int) (func(), bool, error) {

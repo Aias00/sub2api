@@ -483,7 +483,7 @@ function onPaymentSettled() {
 // All checkout data from single API call
 const checkout = ref<CheckoutInfoResponse>({
   methods: {}, global_min: 0, global_max: 0,
-  recharge_products: [], plans: [], balance_disabled: false, balance_recharge_multiplier: 1, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
+  recharge_products: [], plans: [], balance_disabled: false, balance_recharge_multiplier: 1, recharge_fee_rate: 0, subscription_usd_to_cny_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
 })
 
 
