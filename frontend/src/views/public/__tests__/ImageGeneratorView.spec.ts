@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
 import ImageGeneratorView from '../ImageGeneratorView.vue'
+import { createImageWorkspaceTask } from '@/api/image-workspace'
 
 const imageGeneratorViewSource = readFileSync('src/views/public/ImageGeneratorView.vue', 'utf8')
 const zhLocaleSource = readFileSync('src/i18n/locales/zh.ts', 'utf8')
@@ -230,6 +231,25 @@ describe('ImageGeneratorView', () => {
       balance: 2,
     }
     authStoreState.refreshUser.mockClear()
+    vi.mocked(createImageWorkspaceTask).mockReset()
+    vi.mocked(createImageWorkspaceTask).mockResolvedValue({
+      id: 901,
+      status: 'queued',
+      prompt: 'short prompt',
+      negative_prompt: '',
+      model: 'configured-image-model',
+      provider: 'openai',
+      size: '768x768',
+      quality: 'auto',
+      style: '',
+      batch_size: 1,
+      cost_estimate: 0.5,
+      balance_snapshot: 2,
+      error_message: '',
+      result_json: '',
+      created_at: '2026-07-07T01:00:00Z',
+      updated_at: '2026-07-07T01:00:00Z',
+    })
     imageWorkspaceTasks.items = []
     imageWorkspaceTasks.total = 0
     imageWorkspaceTasks.pages = 0
@@ -263,6 +283,7 @@ describe('ImageGeneratorView', () => {
     await flushPromises()
     expect(wrapper.text()).toContain('Configured Image Model')
     expect(wrapper.text()).toContain('1 credit / image')
+    expect(wrapper.text()).not.toContain('质量')
     expect(wrapper.text()).not.toContain('余额保护')
     expect(wrapper.text()).not.toContain('模板')
     expect(wrapper.text()).toContain('0 / 12')
@@ -333,6 +354,40 @@ describe('ImageGeneratorView', () => {
     expect(wrapper.text()).toContain('当前余额 0.25')
     expect(wrapper.text()).toContain('预计消耗 0.50')
     expect(wrapper.text()).toContain('充值')
+  })
+
+  it('hides quality controls and always submits auto quality', async () => {
+    const wrapper = mount(ImageGeneratorView, {
+      global: {
+        stubs: {
+          RouterLink: {
+            props: ['to'],
+            template: '<a :href="typeof to === \'string\' ? to : to.path"><slot /></a>',
+          },
+          LocaleSwitcher: { template: '<div>locale</div>' },
+        },
+      },
+    })
+
+    await flushPromises()
+    await wrapper.find('textarea').setValue('short')
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('质量')
+    expect(imageGeneratorViewSource).not.toContain('v-model="quality"')
+    expect(imageGeneratorViewSource).not.toContain('selectedQualityOptions')
+    expect(imageGeneratorViewSource).not.toContain('task.quality')
+
+    const generateButton = wrapper.findAll('button').find((button) => button.text() === '开始生图')
+    await generateButton?.trigger('click')
+    await flushPromises()
+
+    expect(createImageWorkspaceTask).toHaveBeenCalledWith(expect.objectContaining({
+      prompt: 'short',
+      model: 'configured-image-model',
+      size: '768x768',
+      quality: 'auto',
+    }))
   })
 
   it('renders image artifacts with preserved aspect ratio, download action, and lightbox preview', async () => {

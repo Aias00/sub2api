@@ -73,12 +73,6 @@
                 </select>
               </label>
               <label class="block">
-                <span class="image-workspace-field-label">{{ t('imageWorkspace.quality') }}</span>
-                <select v-model="quality" class="image-workspace-field mt-2">
-                  <option v-for="item in selectedQualityOptions" :key="item" :value="item">{{ item }}</option>
-                </select>
-              </label>
-              <label class="block">
                 <span class="image-workspace-field-label">{{ t('imageWorkspace.batchSize') }}</span>
                 <input v-model.number="batchSize" type="number" min="1" max="4" class="image-workspace-field mt-2" />
               </label>
@@ -259,7 +253,7 @@
                       </p>
                       <span class="shrink-0 rounded-full px-2.5 py-1 text-xs font-bold uppercase" :class="taskStatusClass(task.status)">{{ formatTaskStatus(task.status) }}</span>
                     </div>
-                    <p class="truncate text-xs text-[var(--public-muted)]">{{ task.model }} · {{ task.size }} · {{ task.quality }} · {{ t('imageWorkspace.batchLabel') }} {{ task.batch_size }}</p>
+                    <p class="truncate text-xs text-[var(--public-muted)]">{{ task.model }} · {{ task.size }} · {{ t('imageWorkspace.batchLabel') }} {{ task.batch_size }}</p>
                     <p class="line-clamp-2 text-sm leading-6 text-[var(--public-body)]">{{ task.prompt }}</p>
                     <p v-if="task.cost_estimate" class="text-xs text-[var(--public-success)]">{{ t('imageWorkspace.cost') }} {{ task.cost_estimate.toFixed(2) }} · {{ t('imageWorkspace.balanceSnapshot') }} {{ task.balance_snapshot.toFixed(2) }}</p>
                     <p v-if="task.error_message" class="text-xs text-[var(--public-danger)]">{{ formatTaskError(task.error_message) }}</p>
@@ -464,9 +458,9 @@ const prompt = ref('')
 const negativePrompt = ref('')
 const model = ref('gpt-image-2')
 const size = ref('1024x1024')
-const quality = ref('standard')
 const style = ref('')
 const batchSize = ref(1)
+const defaultImageQuality = 'auto'
 const draftTitle = ref('')
 const tasks = ref<ImageWorkspaceTask[]>([])
 const taskStatusFilter = ref('all')
@@ -486,9 +480,9 @@ const modelConfigs = ref<ImageWorkspaceModelOption[]>([
     label: 'GPT Image 2',
     provider: 'openai',
     default_size: '1024x1024',
-    default_quality: 'standard',
+    default_quality: defaultImageQuality,
     sizes: ['1024x1024', '1024x1536', '1536x1024'],
-    qualities: ['standard', 'hd', 'high'],
+    qualities: [defaultImageQuality],
     cost_per_image: 0.04,
     cost_hint: t('imageWorkspace.costPerImage', { cost: '0.04' }),
     enabled: true,
@@ -498,9 +492,9 @@ const modelConfigs = ref<ImageWorkspaceModelOption[]>([
     label: 'GPT Image 1',
     provider: 'openai',
     default_size: '1024x1024',
-    default_quality: 'standard',
+    default_quality: defaultImageQuality,
     sizes: ['1024x1024', '1024x1536', '1536x1024'],
-    qualities: ['standard', 'hd'],
+    qualities: [defaultImageQuality],
     cost_per_image: 0.04,
     cost_hint: t('imageWorkspace.costPerImage', { cost: '0.04' }),
     enabled: true,
@@ -510,9 +504,9 @@ const modelConfigs = ref<ImageWorkspaceModelOption[]>([
     label: 'Gemini 3.1 Flash Image',
     provider: 'gemini',
     default_size: '1024x1024',
-    default_quality: 'standard',
+    default_quality: defaultImageQuality,
     sizes: ['1024x1024'],
-    qualities: ['standard'],
+    qualities: [defaultImageQuality],
     cost_per_image: 0.04,
     cost_hint: t('imageWorkspace.costPerImage', { cost: '0.04' }),
     enabled: true,
@@ -540,7 +534,6 @@ const selectedModelConfig = computed(() =>
   enabledModelConfigs.value.find((item) => item.id === model.value) || enabledModelConfigs.value[0],
 )
 const selectedSizeOptions = computed(() => selectedModelConfig.value?.sizes?.length ? selectedModelConfig.value.sizes : ['1024x1024'])
-const selectedQualityOptions = computed(() => selectedModelConfig.value?.qualities?.length ? selectedModelConfig.value.qualities : ['standard'])
 const estimatedCost = computed(() => Math.max(0, selectedModelConfig.value?.cost_per_image || 0) * Math.max(1, batchSize.value || 1))
 const currentBalance = computed(() => Number(authStore.user?.balance || 0))
 const hasInsufficientBalance = computed(() => isAuthenticated.value && estimatedCost.value > 0 && currentBalance.value < estimatedCost.value)
@@ -820,7 +813,7 @@ async function createGenerationTask() {
       model: model.value,
       provider: selectedModelConfig.value?.provider || 'openai',
       size: size.value,
-      quality: quality.value,
+      quality: defaultImageQuality,
       style: style.value,
       batch_size: batchSize.value,
     })
@@ -871,9 +864,6 @@ function ensureModelSelection() {
   }
   if (!selectedSizeOptions.value.includes(size.value)) {
     size.value = selected.default_size || selectedSizeOptions.value[0] || '1024x1024'
-  }
-  if (!selectedQualityOptions.value.includes(quality.value)) {
-    quality.value = selected.default_quality || selectedQualityOptions.value[0] || 'standard'
   }
 }
 
