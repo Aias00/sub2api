@@ -62,3 +62,24 @@ Verification:
 - Passed: `pnpm --dir frontend typecheck`.
 - Passed: `pnpm --dir frontend test:run src/views/admin/__tests__/UsersView.spec.ts`.
 - Passed: `git diff --check`.
+
+## Image workspace upstream compatibility
+
+Done:
+- Switched production Image Workspace upstream to the 4Router image egress endpoint.
+- Updated production model settings to expose only `gpt-image-2` with `auto` and `low` quality options.
+- Added worker-side quality normalization for `img.4router.net` so legacy `standard`, `hd`, and `high` tasks are sent as `auto`.
+
+Simplifications:
+- Kept the compatibility rule scoped to `img.4router.net`; other OpenAI-compatible image providers keep their original quality behavior.
+
+Remaining risks:
+- 4Router image egress accepted `auto` and `low` during probing; other quality values are intentionally hidden until verified.
+
+Next:
+- Deploy a fresh image-workspace-worker image after CI publishes the new worker image.
+
+Verification:
+- Passed: `node --check tools/image-workspace-worker/src/worker.mjs`.
+- Passed: production runtime config returns `https://img.4router.net/v1/images/generations`.
+- Passed: production probe to `img.4router.net` with `gpt-image-2` and `auto` quality returned image data.

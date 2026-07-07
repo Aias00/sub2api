@@ -91,6 +91,26 @@ function upstreamURLDiagnostics() {
   }
 }
 
+function isFourRouterImageEgressURL() {
+  try {
+    const url = new URL(config.upstreamURL)
+    return url.hostname.toLowerCase() === 'img.4router.net'
+  } catch {
+    return false
+  }
+}
+
+function normalizeGenerationQuality(quality) {
+  const normalized = String(quality || '').trim().toLowerCase()
+  if (!isFourRouterImageEgressURL()) {
+    return normalized || 'standard'
+  }
+  if (!normalized || ['standard', 'hd', 'high'].includes(normalized)) {
+    return 'auto'
+  }
+  return normalized
+}
+
 function redactDiagnosticText(value) {
   let text = String(value || '')
   if (config.upstreamAPIKey) {
@@ -238,7 +258,7 @@ function buildGenerationBody(task) {
     model: task.model || 'gpt-image-2',
     prompt: promptParts.join(''),
     size: task.size || '1024x1024',
-    quality: task.quality || 'standard',
+    quality: normalizeGenerationQuality(task.quality),
     n: Math.max(1, Math.min(Number(task.batch_size || 1), 4)),
     response_format: 'b64_json',
   }
