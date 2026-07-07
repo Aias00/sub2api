@@ -16,10 +16,10 @@ func TestRecordUserRegistrationEventPersistsRequestContext(t *testing.T) {
 	if err != nil {
 		t.Fatalf("sqlmock: %v", err)
 	}
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	client := dbent.NewClient(dbent.Driver(entsql.OpenDB(dialect.Postgres, db)))
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	svc := &AuthService{entClient: client}
 	ctx := WithSignupGrantRiskInput(context.Background(), SignupGrantRiskInput{

@@ -142,7 +142,7 @@ ORDER BY COUNT(*) DESC, source ASC`)
 	if err != nil {
 		return
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	for rows.Next() {
 		var item UserInsightCount
 		if err := rows.Scan(&item.Key, &item.Count); err != nil {
@@ -182,7 +182,7 @@ func (s *adminServiceImpl) queryUserInsightDimensions(ctx context.Context, query
 	if err != nil {
 		return nil
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	out := []UserInsightDimension{}
 	for rows.Next() {
 		var item UserInsightDimension
@@ -300,7 +300,7 @@ LIMIT $1`, limit)
 	if err != nil {
 		return
 	}
-	defer rows.Close()
+	defer func() { _ = rows.Close() }()
 	seen := map[int64]struct{}{}
 	for rows.Next() {
 		var item UserInsightRiskSample
