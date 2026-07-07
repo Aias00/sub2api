@@ -10,12 +10,14 @@ const runtimeSettingsViewSource = readFileSync('src/views/admin/RuntimeSettingsV
 const {
   getSettings,
   updateSettings,
+  getRuntimeWorkers,
   fetchPublicSettings,
   showError,
   showSuccess,
 } = vi.hoisted(() => ({
   getSettings: vi.fn(),
   updateSettings: vi.fn(),
+  getRuntimeWorkers: vi.fn(),
   fetchPublicSettings: vi.fn(),
   showError: vi.fn(),
   showSuccess: vi.fn(),
@@ -26,6 +28,7 @@ vi.mock('@/api/admin', () => ({
     settings: {
       getSettings,
       updateSettings,
+      getRuntimeWorkers,
     },
   },
 }))
@@ -123,8 +126,9 @@ const ImagePromptFilterConfigEditorStub = defineComponent({
   },
 })
 
-function mountView() {
+function mountView(props: { embedded?: boolean; showWorkerStatus?: boolean } = {}) {
   return mount(RuntimeSettingsView, {
+    props,
     global: {
       stubs: {
         AppLayout: { template: '<div><slot /></div>' },
@@ -164,6 +168,9 @@ describe('RuntimeSettingsView', () => {
       public_integrations_enabled: false,
       crisp_enabled: false,
       tawk_enabled: true,
+    })
+    getRuntimeWorkers.mockResolvedValue({
+      workers: [],
     })
     updateSettings.mockImplementation(async (payload) => payload)
     fetchPublicSettings.mockResolvedValue({})
@@ -251,6 +258,14 @@ describe('RuntimeSettingsView', () => {
 
     const formatButton = wrapper.findAll('button').find((b) => b.text().includes('formatAllJson'))
     expect(formatButton).toBeTruthy()
+  })
+
+  it('hides and skips local worker status loading when embedded with worker status disabled', async () => {
+    const wrapper = mountView({ embedded: true, showWorkerStatus: false })
+    await flushPromises()
+
+    expect(wrapper.text()).not.toContain('Worker 运行状态')
+    expect(getRuntimeWorkers).not.toHaveBeenCalled()
   })
 
   it('does not expose standalone prompt catalog heading fields in the runtime settings form', () => {

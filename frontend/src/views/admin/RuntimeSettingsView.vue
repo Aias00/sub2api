@@ -1,5 +1,5 @@
 <template>
-  <AppLayout>
+  <component :is="embedded ? 'div' : AppLayout">
     <div class="space-y-5">
       <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-900">
         <div class="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
@@ -45,7 +45,7 @@
         {{ t('common.loading') }}
       </div>
 
-      <section v-if="!loading" class="settings-card">
+      <section v-if="!loading && showWorkerStatus" class="settings-card">
         <div class="flex flex-col gap-3 border-b border-gray-100 pb-4 dark:border-dark-700 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p class="text-sm font-bold text-gray-950 dark:text-white">Worker 运行状态</p>
@@ -281,7 +281,7 @@
         </section>
       </div>
     </div>
-  </AppLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -296,6 +296,14 @@ import { useAppStore } from '@/stores/app'
 import adminAPI from '@/api/admin'
 import type { RuntimeWorkerStatus, SystemSettings, UpdateSettingsRequest } from '@/api/admin/settings'
 import { extractApiErrorMessage } from '@/utils/apiError'
+
+const props = withDefaults(defineProps<{
+  embedded?: boolean
+  showWorkerStatus?: boolean
+}>(), {
+  embedded: false,
+  showWorkerStatus: true,
+})
 
 // Shell config fields that contain JSON and need validation
 const jsonFields = [
@@ -714,7 +722,9 @@ async function saveSettings() {
 
 onMounted(() => {
   void loadSettings()
-  void loadWorkerStatuses()
+  if (props.showWorkerStatus) {
+    void loadWorkerStatuses()
+  }
 })
 
 function workerHealthLabel(health: string): string {

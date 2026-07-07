@@ -5119,14 +5119,14 @@ export default {
       title: 'System Settings',
       description: 'Manage registration, email verification, default values, and SMTP settings',
       tabs: {
-        general: 'Site',
+        general: 'Basic',
         modelPlaza: 'Models',
         agreement: 'Agreement',
         features: 'Features',
-        security: 'Security',
+        security: 'Auth / Security',
         users: 'User Defaults',
         gateway: 'Gateway',
-        payment: 'Payment',
+        payment: 'Payment / Subscription',
         email: 'Email',
         backup: 'Backup',
         basic: 'Basic',
@@ -5134,8 +5134,14 @@ export default {
         response: 'Hit Notice',
         retention: 'Retention',
         riskThresholds: 'Risk Thresholds',
-        runtime: 'Runtime',
+        runtime: 'Worker / Runtime',
         scope: 'Scope',
+        ops: 'Ops / Alerts / Logs',
+      },
+      opsCenter: {
+        title: 'Ops Runtime Settings',
+        description: 'Log level, alert runtime, and the operations dashboard stay in the Ops boundary while sharing the settings entry point.',
+        openDashboard: 'Open Ops Dashboard',
       },
       features: {
         channelMonitor: {

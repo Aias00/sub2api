@@ -17,6 +17,15 @@ import {
 } from './setupRedirect'
 import { resolveDocumentTitle } from './title'
 
+function redirectToRuntimeSettingsTab() {
+  const appStore = useAppStore()
+  const authRouteDefaults = resolveAuthRouteDefaults(appStore.cachedPublicSettings?.auth_shell_config)
+  return {
+    path: authRouteDefaults.adminSettingsPath,
+    query: { tab: 'runtime' },
+  }
+}
+
 /**
  * Route definitions with lazy loading
  */
@@ -719,8 +728,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/runtime-settings',
-    name: 'AdminRuntimeSettings',
-    component: () => import('@/views/admin/RuntimeSettingsView.vue'),
+    redirect: redirectToRuntimeSettingsTab,
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
@@ -731,8 +739,7 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/workers',
-    name: 'AdminWorkers',
-    component: () => import('@/views/admin/WorkersView.vue'),
+    redirect: redirectToRuntimeSettingsTab,
     meta: {
       requiresAuth: true,
       requiresAdmin: true,

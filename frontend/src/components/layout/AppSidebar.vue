@@ -896,8 +896,8 @@ const adminNavSections = computed((): NavSection[] => {
     },
     usage: { path: adminPaths.adminUsagePath, label: t('nav.usage'), icon: ChartIcon },
     apiKeys: { path: authRouteDefaults.value.apiKeysPath, label: t('nav.apiKeys'), icon: KeyIcon },
-    workers: { path: '/admin/workers', label: t('nav.workers'), icon: ServerIcon },
-    runtimeSettings: { path: navPaths.adminRuntimeSettingsPath, label: t('nav.runtimeSettings'), icon: CogIcon },
+    workers: { path: `${navPaths.adminSettingsPath}?tab=runtime`, label: t('nav.workers'), icon: ServerIcon },
+    runtimeSettings: { path: `${navPaths.adminSettingsPath}?tab=runtime`, label: t('nav.runtimeSettings'), icon: CogIcon },
     settings: { path: navPaths.adminSettingsPath, label: t('nav.settings'), icon: CogIcon },
   }
 
@@ -918,8 +918,6 @@ const adminNavSections = computed((): NavSection[] => {
             'proxies',
             'usage',
             'apiKeys',
-            'workers',
-            'runtimeSettings',
             'settings',
           ],
         },
@@ -948,7 +946,7 @@ const adminNavSections = computed((): NavSection[] => {
         },
         {
           id: 'admin-settings',
-          items: ['workers', 'runtimeSettings', 'settings'],
+          items: ['settings'],
         },
       ]
 
@@ -1001,8 +999,23 @@ function handleMenuItemClick(itemPath: string) {
   }
 }
 
+function splitNavPath(path: string): { pathname: string; query: Record<string, string> } {
+  const [pathname, search = ''] = path.split('?')
+  return {
+    pathname,
+    query: Object.fromEntries(new URLSearchParams(search)),
+  }
+}
+
 function isActive(path: string): boolean {
-  return route.path === path || route.path.startsWith(path + '/')
+  const target = splitNavPath(path)
+  const pathMatches = route.path === target.pathname || route.path.startsWith(target.pathname + '/')
+  if (!pathMatches) return false
+
+  return Object.entries(target.query).every(([key, value]) => {
+    const current = route.query[key]
+    return Array.isArray(current) ? current[0] === value : current === value
+  })
 }
 
 function isGroupActive(item: NavItem): boolean {

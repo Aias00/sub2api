@@ -8,8 +8,8 @@
         ></div>
       </div>
 
-      <!-- Settings Form -->
-      <form v-else @submit.prevent="saveSettings" class="space-y-6" novalidate>
+      <!-- Settings Content -->
+      <div v-else class="space-y-6">
         <!-- Tab Navigation -->
         <div class="settings-tabs-shell">
           <nav
@@ -44,6 +44,7 @@
           </nav>
         </div>
 
+        <form v-if="!['runtime', 'ops'].includes(activeTab)" @submit.prevent="saveSettings" class="space-y-6" novalidate>
         <!-- Tab: Security — Admin API Key -->
         <div v-show="activeTab === 'security'" class="space-y-6">
           <!-- Admin API Key Settings -->
@@ -1898,7 +1899,7 @@
         <!-- /Tab: Security -->
 
         <!-- Tab: Users -->
-        <div v-show="activeTab === 'users'" class="space-y-6">
+        <div v-show="activeTab === 'general'" class="space-y-6">
           <!-- Default Settings -->
           <div class="card">
             <div
@@ -3819,7 +3820,7 @@
 	        <!-- /Tab: General -->
 
 	        <!-- Tab: Login Agreement -->
-	        <div v-show="activeTab === 'agreement'" class="space-y-6">
+        <div v-show="activeTab === 'security'" class="space-y-6">
 	          <div class="card">
 	            <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
 	              <div class="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -4017,7 +4018,7 @@
         <!-- /Tab: Login Agreement -->
 
 	        <!-- Tab: Features (功能开关) -->
-        <div v-show="activeTab === 'features'" class="space-y-6">
+        <div v-show="activeTab === 'general'" class="space-y-6">
 
         <div class="card">
           <div class="border-b border-gray-100 px-6 py-4 dark:border-dark-700">
@@ -5047,7 +5048,7 @@
           />
         </div>
 
-        <div v-show="activeTab === 'email'" class="space-y-6">
+        <div v-show="activeTab === 'general'" class="space-y-6">
           <!-- Email disabled hint - show when email_verify_enabled is off -->
           <div v-if="!form.email_verify_enabled" class="card">
             <div class="p-6">
@@ -5717,7 +5718,7 @@
         <!-- /Tab: Email -->
 
         <!-- Tab: Model Plaza -->
-        <div v-show="activeTab === 'modelPlaza'" class="space-y-6">
+        <div v-show="activeTab === 'general'" class="space-y-6">
           <div class="card">
             <div
               class="border-b border-gray-100 px-6 py-4 dark:border-dark-700"
@@ -5867,12 +5868,12 @@
         <!-- /Tab: Model Plaza -->
 
         <!-- Tab: Backup -->
-        <div v-show="activeTab === 'backup'">
+        <div v-show="activeTab === 'general'">
           <BackupSettings />
         </div>
 
         <!-- Save Button -->
-        <div v-show="activeTab !== 'backup'" class="flex justify-end">
+        <div class="flex justify-end">
           <button
             type="submit"
             :disabled="saving || loadFailed"
@@ -5905,7 +5906,34 @@
             }}
           </button>
         </div>
-      </form>
+        </form>
+
+        <!-- Tab: Worker / Runtime -->
+        <div v-if="activeTab === 'runtime'" class="space-y-6">
+          <RuntimeSettingsView embedded :show-worker-status="false" />
+          <WorkersView embedded />
+        </div>
+
+        <!-- Tab: Ops -->
+        <div v-if="activeTab === 'ops'" class="space-y-6">
+          <div class="flex flex-col gap-3 rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-dark-700 dark:bg-dark-900 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h2 class="text-base font-bold text-gray-950 dark:text-white">
+                {{ t("admin.settings.opsCenter.title") }}
+              </h2>
+              <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                {{ t("admin.settings.opsCenter.description") }}
+              </p>
+            </div>
+            <router-link class="btn btn-secondary" :to="opsDashboardPath">
+              <Icon name="server" size="sm" />
+              {{ t("admin.settings.opsCenter.openDashboard") }}
+            </router-link>
+          </div>
+          <OpsRuntimeSettingsCard />
+          <OpsSystemLogTable />
+        </div>
+      </div>
 
       <!-- Provider dialogs placed outside the settings form to prevent form submission bubbling -->
       <PaymentProviderDialog
@@ -5934,8 +5962,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted } from "vue";
+import { ref, reactive, computed, onMounted, watch } from "vue";
 import { useI18n } from "vue-i18n";
+import { useRoute, useRouter } from "vue-router";
 import { adminAPI } from "@/api";
 import {
   appendAuthSourceDefaultsToUpdateRequest,
@@ -5978,11 +6007,16 @@ import Toggle from "@/components/common/Toggle.vue";
 import ProxySelector from "@/components/common/ProxySelector.vue";
 import ImageUpload from "@/components/common/ImageUpload.vue";
 import BackupSettings from "@/views/admin/BackupView.vue";
+import RuntimeSettingsView from "@/views/admin/RuntimeSettingsView.vue";
+import WorkersView from "@/views/admin/WorkersView.vue";
+import OpsRuntimeSettingsCard from "@/views/admin/ops/components/OpsRuntimeSettingsCard.vue";
+import OpsSystemLogTable from "@/views/admin/ops/components/OpsSystemLogTable.vue";
 import { useClipboard } from "@/composables/useClipboard";
 import { extractApiErrorMessage, extractI18nErrorMessage } from "@/utils/apiError";
 import { useAppStore } from "@/stores";
 import { useAdminSettingsStore } from "@/stores/adminSettings";
 import { normalizeVisibleMethod } from "@/components/payment/paymentFlow";
+import { resolveAdminSidebarRouteDefaults } from "@/utils/adminSidebarShell";
 import {
   isRegistrationEmailSuffixDomainValid,
   normalizeRegistrationEmailSuffixDomain,
@@ -5996,8 +6030,16 @@ import {
 import { resolveRuntimeLanguage } from "@/utils/runtimeLocale";
 
 const { t, locale } = useI18n();
+const route = useRoute();
+const router = useRouter();
 const appStore = useAppStore();
 const adminSettingsStore = useAdminSettingsStore();
+const opsDashboardPath = computed(() =>
+  resolveAdminSidebarRouteDefaults(
+    appStore.cachedPublicSettings?.auth_shell_config,
+    locale.value,
+  ).adminOpsPath,
+);
 
 const paymentGuideHref = computed(() =>
   resolveRuntimeLanguage(locale) === "zh"
@@ -6013,28 +6055,32 @@ const paymentMethodsHref = computed(() =>
 
 type SettingsTab =
   | "general"
-  | "modelPlaza"
-  | "agreement"
-  | "features"
   | "security"
-  | "users"
-  | "gateway"
   | "payment"
-  | "email"
-  | "backup";
-const activeTab = ref<SettingsTab>("general");
+  | "gateway"
+  | "runtime"
+  | "ops";
 const settingsTabs = [
   { key: "general" as SettingsTab, icon: "home" as const },
-  { key: "modelPlaza" as SettingsTab, icon: "grid" as const },
-  { key: "agreement" as SettingsTab, icon: "document" as const },
-  { key: "features" as SettingsTab, icon: "bolt" as const },
   { key: "security" as SettingsTab, icon: "shield" as const },
-  { key: "users" as SettingsTab, icon: "user" as const },
-  { key: "gateway" as SettingsTab, icon: "server" as const },
   { key: "payment" as SettingsTab, icon: "creditCard" as const },
-  { key: "email" as SettingsTab, icon: "mail" as const },
-  { key: "backup" as SettingsTab, icon: "database" as const },
+  { key: "gateway" as SettingsTab, icon: "server" as const },
+  { key: "runtime" as SettingsTab, icon: "terminal" as const },
+  { key: "ops" as SettingsTab, icon: "bell" as const },
 ];
+const activeTab = ref<SettingsTab>(resolveSettingsTab(route.query.tab));
+const systemSettingsInitialized = ref(false);
+watch(
+  () => route.query.tab,
+  (tab) => {
+    activeTab.value = resolveSettingsTab(tab);
+  },
+);
+watch(activeTab, (tab) => {
+  if (isSystemSettingsTab(tab)) {
+    loadSystemSettingsBundle();
+  }
+});
 
 const settingsTabKeyboardActions = {
   ArrowLeft: -1,
@@ -6047,6 +6093,36 @@ const settingsTabKeyboardActions = {
 
 function selectSettingsTab(tab: SettingsTab): void {
   activeTab.value = tab;
+  void router.replace({
+    query: {
+      ...route.query,
+      tab: tab === "general" ? undefined : tab,
+    },
+  });
+}
+
+function resolveSettingsTab(raw: unknown): SettingsTab {
+  const value = Array.isArray(raw) ? raw[0] : raw;
+  switch (value) {
+    case "security":
+      return "security";
+    case "payment":
+      return "payment";
+    case "gateway":
+      return "gateway";
+    case "runtime":
+    case "workers":
+      return "runtime";
+    case "ops":
+      return "ops";
+    case "general":
+    default:
+      return "general";
+  }
+}
+
+function isSystemSettingsTab(tab: SettingsTab): boolean {
+  return !["runtime", "ops"].includes(tab);
 }
 
 function focusSettingsTab(tab: SettingsTab): void {
@@ -8499,7 +8575,9 @@ async function handleDeleteProvider() {
   }
 }
 
-onMounted(() => {
+function loadSystemSettingsBundle() {
+  if (systemSettingsInitialized.value) return;
+  systemSettingsInitialized.value = true;
   loadSettings();
   loadSubscriptionGroups();
   loadAdminApiKey();
@@ -8509,6 +8587,14 @@ onMounted(() => {
   loadRectifierSettings();
   loadBetaPolicySettings();
   loadProviders();
+}
+
+onMounted(() => {
+  if (isSystemSettingsTab(activeTab.value)) {
+    loadSystemSettingsBundle();
+  } else {
+    loading.value = false;
+  }
 });
 
 </script>

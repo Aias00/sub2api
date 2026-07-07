@@ -1,7 +1,7 @@
 <template>
-  <AppLayout>
+  <component :is="embedded ? 'div' : AppLayout">
     <div class="space-y-5">
-      <div class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-900">
+      <div v-if="!embedded" class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm dark:border-dark-700 dark:bg-dark-900">
         <div class="flex flex-col gap-4 p-6 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <p class="text-sm font-semibold uppercase tracking-[0.2em] text-primary-600 dark:text-primary-300">
@@ -186,7 +186,7 @@
         </form>
       </div>
     </div>
-  </AppLayout>
+  </component>
 </template>
 
 <script setup lang="ts">
@@ -197,6 +197,12 @@ import { adminAPI } from '@/api/admin'
 import type { RuntimeWorkerAction, RuntimeWorkerStatus, RuntimeWorkersResponse } from '@/api/admin/settings'
 import { useAppStore } from '@/stores'
 import { extractApiErrorMessage } from '@/utils/apiError'
+
+withDefaults(defineProps<{
+  embedded?: boolean
+}>(), {
+  embedded: false,
+})
 
 type WorkerNode = RuntimeWorkerStatus & {
   workers: RuntimeWorkerStatus[]

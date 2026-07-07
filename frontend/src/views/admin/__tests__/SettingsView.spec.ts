@@ -56,6 +56,21 @@ const {
 }));
 
 const localeRef = vi.hoisted(() => ({ value: "zh-CN" }));
+const replaceRoute = vi.hoisted(() => vi.fn());
+const routeQuery = vi.hoisted(() => ({} as Record<string, unknown>));
+
+vi.mock("vue-router", () => ({
+  useRoute: () => ({ query: routeQuery }),
+  useRouter: () => ({ replace: replaceRoute }),
+}));
+
+vi.mock("@/composables/useAuthRouteDefaults", () => ({
+  useAuthRouteDefaults: () => ({
+    authRouteDefaults: {
+      adminOpsPath: "/configured-admin-ops",
+    },
+  }),
+}));
 
 vi.mock("@/api", () => ({
   adminAPI: {
@@ -117,6 +132,12 @@ vi.mock("@/utils/apiError", () => ({
 vi.mock("vue-i18n", async () => {
   const actual = await vi.importActual<typeof import("vue-i18n")>("vue-i18n");
   const translations: Record<string, string> = {
+    "admin.settings.tabs.general": "基础设置",
+    "admin.settings.tabs.security": "认证/安全",
+    "admin.settings.tabs.payment": "支付/订阅",
+    "admin.settings.tabs.gateway": "网关设置",
+    "admin.settings.tabs.runtime": "Worker/运行时",
+    "admin.settings.tabs.ops": "Ops/告警/日志",
     "admin.settings.wechatConnect.title": "微信 JSAPI 支付 OAuth",
     "admin.settings.wechatConnect.description": "配置微信内 JSAPI 支付所需的公众号 OAuth 授权参数。",
     "admin.settings.wechatConnect.enabledLabel": "启用微信支付 OAuth",
@@ -476,6 +497,12 @@ function mountView() {
         ProxySelector: true,
         ImageUpload: ImageUploadStub,
         BackupSettings: true,
+        RuntimeSettingsView: true,
+        WorkersView: true,
+        OpsRuntimeSettingsCard: true,
+        OpsSystemLogTable: true,
+        RouterLink: true,
+        "router-link": true,
       },
     },
   });
@@ -484,7 +511,7 @@ function mountView() {
 async function openPaymentTab(wrapper: ReturnType<typeof mountView>) {
   const paymentTabButton = wrapper
     .findAll("button")
-    .find((node) => node.text().includes("admin.settings.tabs.payment"));
+    .find((node) => node.text().includes("支付/订阅"));
 
   expect(paymentTabButton).toBeDefined();
   await paymentTabButton?.trigger("click");
@@ -494,7 +521,7 @@ async function openPaymentTab(wrapper: ReturnType<typeof mountView>) {
 async function openSecurityTab(wrapper: ReturnType<typeof mountView>) {
   const securityTabButton = wrapper
     .findAll("button")
-    .find((node) => node.text().includes("admin.settings.tabs.security"));
+    .find((node) => node.text().includes("认证/安全"));
 
   expect(securityTabButton).toBeDefined();
   await securityTabButton?.trigger("click");
@@ -504,7 +531,7 @@ async function openSecurityTab(wrapper: ReturnType<typeof mountView>) {
 async function openUsersTab(wrapper: ReturnType<typeof mountView>) {
   const usersTabButton = wrapper
     .findAll("button")
-    .find((node) => node.text().includes("admin.settings.tabs.users"));
+    .find((node) => node.text().includes("基础设置"));
 
   expect(usersTabButton).toBeDefined();
   await usersTabButton?.trigger("click");
@@ -535,7 +562,11 @@ describe("admin SettingsView payment visible method controls", () => {
     adminSettingsFetch.mockReset();
     showError.mockReset();
     showSuccess.mockReset();
+    replaceRoute.mockReset();
     localeRef.value = "zh-CN";
+    for (const key of Object.keys(routeQuery)) {
+      delete routeQuery[key];
+    }
 
     getSettings.mockResolvedValue({ ...baseSettingsResponse });
     updateSettings.mockImplementation(async (payload) => ({
@@ -592,6 +623,171 @@ describe("admin SettingsView payment visible method controls", () => {
     });
     fetchPublicSettings.mockResolvedValue(undefined);
     adminSettingsFetch.mockResolvedValue(undefined);
+  });
+
+  it("does not mount runtime, worker, or ops panes before their tabs are active", async () => {
+    const mounted = {
+      runtime: vi.fn(),
+      workers: vi.fn(),
+      opsRuntime: vi.fn(),
+      opsLogs: vi.fn(),
+    };
+
+    const wrapper = mount(SettingsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          Select: SelectStub,
+          Toggle: ToggleStub,
+          Icon: true,
+          ConfirmDialog: true,
+          PaymentProviderList: true,
+          PaymentProviderDialog: true,
+          GroupBadge: true,
+          GroupOptionItem: true,
+          ProxySelector: true,
+          ImageUpload: ImageUploadStub,
+          BackupSettings: true,
+          RuntimeSettingsView: defineComponent({
+            setup() {
+              mounted.runtime();
+              return () => h("div", "runtime");
+            },
+          }),
+          WorkersView: defineComponent({
+            setup() {
+              mounted.workers();
+              return () => h("div", "workers");
+            },
+          }),
+          OpsRuntimeSettingsCard: defineComponent({
+            setup() {
+              mounted.opsRuntime();
+              return () => h("div", "ops runtime");
+            },
+          }),
+          OpsSystemLogTable: defineComponent({
+            setup() {
+              mounted.opsLogs();
+              return () => h("div", "ops logs");
+            },
+          }),
+          RouterLink: true,
+          "router-link": true,
+        },
+      },
+    });
+
+    await flushPromises();
+
+    expect(mounted.runtime).not.toHaveBeenCalled();
+    expect(mounted.workers).not.toHaveBeenCalled();
+    expect(mounted.opsRuntime).not.toHaveBeenCalled();
+    expect(mounted.opsLogs).not.toHaveBeenCalled();
+    expect(wrapper.find("form").exists()).toBe(true);
+  });
+
+  it("keeps embedded runtime inputs outside the parent system settings form", async () => {
+    routeQuery.tab = "runtime";
+
+    const wrapper = mount(SettingsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          Select: SelectStub,
+          Toggle: ToggleStub,
+          Icon: true,
+          ConfirmDialog: true,
+          PaymentProviderList: true,
+          PaymentProviderDialog: true,
+          GroupBadge: true,
+          GroupOptionItem: true,
+          ProxySelector: true,
+          ImageUpload: ImageUploadStub,
+          BackupSettings: true,
+          RuntimeSettingsView: defineComponent({
+            setup() {
+              return () => h("input", { class: "embedded-runtime-input" });
+            },
+          }),
+          WorkersView: true,
+          OpsRuntimeSettingsCard: true,
+          OpsSystemLogTable: true,
+          RouterLink: true,
+          "router-link": true,
+        },
+      },
+    });
+
+    await flushPromises();
+
+    expect(wrapper.find("form").exists()).toBe(false);
+    expect(getSettings).not.toHaveBeenCalled();
+    expect(getProviders).not.toHaveBeenCalled();
+    await wrapper.get(".embedded-runtime-input").trigger("keydown.enter");
+    expect(updateSettings).not.toHaveBeenCalled();
+  });
+
+  it("syncs selected settings tabs into the route query", async () => {
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openPaymentTab(wrapper);
+
+    expect(replaceRoute).toHaveBeenCalledWith({
+      query: {
+        tab: "payment",
+      },
+    });
+  });
+
+  it("normalizes legacy workers tab query into the runtime tab", async () => {
+    routeQuery.tab = "workers";
+    const mounted = {
+      runtime: vi.fn(),
+      workers: vi.fn(),
+    };
+
+    const wrapper = mount(SettingsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          Select: SelectStub,
+          Toggle: ToggleStub,
+          Icon: true,
+          ConfirmDialog: true,
+          PaymentProviderList: true,
+          PaymentProviderDialog: true,
+          GroupBadge: true,
+          GroupOptionItem: true,
+          ProxySelector: true,
+          ImageUpload: ImageUploadStub,
+          BackupSettings: true,
+          RuntimeSettingsView: defineComponent({
+            setup() {
+              mounted.runtime();
+              return () => h("div", "runtime");
+            },
+          }),
+          WorkersView: defineComponent({
+            setup() {
+              mounted.workers();
+              return () => h("div", "workers");
+            },
+          }),
+          OpsRuntimeSettingsCard: true,
+          OpsSystemLogTable: true,
+          RouterLink: true,
+          "router-link": true,
+        },
+      },
+    });
+
+    await flushPromises();
+
+    expect(mounted.runtime).toHaveBeenCalledTimes(1);
+    expect(mounted.workers).toHaveBeenCalledTimes(1);
+    expect(wrapper.find("form").exists()).toBe(false);
   });
 
   it("does not render legacy visible payment method controls", async () => {
@@ -877,6 +1073,12 @@ describe("admin SettingsView payment visible method controls", () => {
           ProxySelector: true,
           ImageUpload: ImageUploadStub,
           BackupSettings: true,
+          RuntimeSettingsView: true,
+          WorkersView: true,
+          OpsRuntimeSettingsCard: true,
+          OpsSystemLogTable: true,
+          RouterLink: true,
+          "router-link": true,
         },
       },
     });
@@ -970,6 +1172,12 @@ describe("admin SettingsView payment visible method controls", () => {
           ProxySelector: true,
           ImageUpload: ImageUploadStub,
           BackupSettings: true,
+          RuntimeSettingsView: true,
+          WorkersView: true,
+          OpsRuntimeSettingsCard: true,
+          OpsSystemLogTable: true,
+          RouterLink: true,
+          "router-link": true,
         },
       },
     });

@@ -55,8 +55,10 @@ describe('AppSidebar regular user navigation', () => {
 
   it('reads primary admin entry paths from auth route defaults', () => {
     expect(componentSource).toContain('path: navPaths.adminRedirectPath')
-    expect(componentSource).toContain('path: navPaths.adminRuntimeSettingsPath')
+    expect(componentSource).toContain('path: `${navPaths.adminSettingsPath}?tab=runtime`')
     expect(componentSource).toContain('path: navPaths.adminSettingsPath')
+    expect(componentSource).toContain('function splitNavPath')
+    expect(componentSource).toContain('Object.entries(target.query).every')
     expect(componentSource).not.toContain("path: '/admin/dashboard'")
     expect(componentSource).not.toContain("path: '/admin/runtime-settings'")
     expect(componentSource).not.toContain("path: '/admin/settings'")
