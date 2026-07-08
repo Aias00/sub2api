@@ -19,7 +19,7 @@ func TestRefundBalanceReservationRestoresGiftTailBeforePaid(t *testing.T) {
 		WithArgs(1.0, 3.0, int64(42)).
 		WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(12.0))
 
-	refunded, err := refundBalanceReservation(context.Background(), db, 42, 4, 2, 3)
+	refunded, err := refundBalanceReservation(context.Background(), db, 42, 4, 2, 3, nil)
 
 	require.NoError(t, err)
 	require.Equal(t, 12.0, refunded.BalanceSnapshot)

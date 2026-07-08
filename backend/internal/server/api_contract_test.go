@@ -55,6 +55,7 @@ func TestAPIContracts(t *testing.T) {
 					"email_bound": true,
 					"username": "alice",
 					"role": "user",
+					"public_id": "",
 					"balance": 12.5,
 					"paid_balance": 0,
 					"gift_balance": 0,

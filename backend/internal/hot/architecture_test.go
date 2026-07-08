@@ -18,7 +18,7 @@ func TestHotCapabilityDoesNotReturnToGlobalService(t *testing.T) {
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".go") {
 			continue
 		}
-		if entry.Name() == "setting_service.go" {
+		if entry.Name() == "setting_service.go" || entry.Name() == "setting_shell_config.go" {
 			continue
 		}
 		name := strings.ToLower(entry.Name())

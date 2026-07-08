@@ -877,17 +877,13 @@ func (h *UserHandler) BatchUpdateConcurrency(c *gin.Context) {
 // GetUserPlatformQuotas GET /admin/users/:id/platform-quotas
 // admin 视角：D14 lazy 归零 + 暴露 *_window_start 调试字段
 func (h *UserHandler) GetUserPlatformQuotas(c *gin.Context) {
-	userID, _, ok := h.resolveUserResource(c, false)
-	if !ok {
-		return
-	}
 	if h.userPlatformQuotaRepo == nil {
 		response.Success(c, map[string]any{"platform_quotas": []any{}})
 		return
 	}
 	// 校验用户存在：与 PUT/POST 路径一致，不存在返回 404 而非空数组（避免 admin 界面误判用户存在）。
-	if _, err := h.adminService.GetUser(c.Request.Context(), userID); err != nil {
-		response.ErrorFrom(c, err)
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 	records, err := h.userPlatformQuotaRepo.ListByUser(c.Request.Context(), userID)
