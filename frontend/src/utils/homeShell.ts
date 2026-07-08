@@ -424,7 +424,7 @@ const businessHomeShellConfigZh: HomeShellConfig = {
     heroBadge: '业务能力首页',
     heroTitle: '面向业务场景的 AI 能力工作台',
     heroDescription:
-      '把提示词、微信导出、热点追踪和生图工作台收拢成清晰入口；账户、订单、套餐、支付等能力继续由中台承接。',
+      '可直接上手的业务能力，包括微信内容导出、热点内容采集、图片提示词管理和生图工作台，让用户快速找到并使用核心功能。',
     modelMatrixKicker: '能力入口',
     modelMatrixTitle: '从这里进入核心工作流',
     modelMatrixDescription:
@@ -541,7 +541,7 @@ const businessHomeShellConfigZh: HomeShellConfig = {
       icon: 'key',
       iconClass: 'bg-gradient-to-br from-indigo-500 to-violet-600',
       title: '内容能力先产品化',
-      description: '优先把微信导出、热点和生图工作流做成稳定能力，再让底层平台持续支撑它们。',
+      description: '围绕微信内容导出、热点内容采集、图片提示词管理和生图工作台组织核心入口。',
     },
     {
       key: 'ops',

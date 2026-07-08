@@ -114,8 +114,8 @@ describe('UsageFilters — user search dropdown', () => {
   it('(a) labels deleted users with the i18n badge and (b) sorts active users before deleted ones, (c) selection sets user_id', async () => {
     // Arrange: mock returns deleted FIRST (proves sorting re-orders to active-first)
     mockSearchUsers.mockResolvedValue([
-      { id: 2, email: 'gone@test.com', deleted: true },
-      { id: 1, email: 'active@test.com', deleted: false },
+      { id: 2, public_id: 'u_735000000000000002', email: 'gone@test.com', deleted: true },
+      { id: 1, public_id: 'u_735000000000000001', email: 'active@test.com', deleted: false },
     ])
 
     const wrapper = mountFilters()
@@ -155,14 +155,14 @@ describe('UsageFilters — user search dropdown', () => {
     await flushPromises()
 
     // The component emits 'update:modelValue' or modifies filters.user_id via toRef
-    // selectUser sets filters.value.user_id = u.id and emits 'change'
+    // selectUser sets filters.value.user_id to the public id and emits 'change'
     const changeEmits = wrapper.emitted('change')
     expect(changeEmits).toBeTruthy()
     expect(changeEmits!.length).toBeGreaterThan(0)
 
     // Also confirm user_id was set by checking the emitted change came through
     // (the component uses toRef so modelValue is mutated in place and 'change' is emitted)
-    expect(wrapper.props('modelValue').user_id).toBe(1)
+    expect(wrapper.props('modelValue').user_id).toBe('u_735000000000000001')
   })
 })
 

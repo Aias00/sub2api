@@ -4,12 +4,15 @@ package repository
 
 import (
 	"context"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	dbent "github.com/Aias00/cloudbase/ent"
 	"github.com/Aias00/cloudbase/ent/authidentity"
 	"github.com/Aias00/cloudbase/ent/authidentitychannel"
+	"github.com/Aias00/cloudbase/internal/identity"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 	"github.com/Aias00/cloudbase/internal/service"
 	"github.com/stretchr/testify/suite"
@@ -107,10 +110,14 @@ func (s *UserRepoSuite) TestCreate() {
 	})
 
 	s.Require().NotZero(user.ID, "expected ID to be set")
+	s.Require().NotEmpty(user.PublicID, "expected public ID to be set")
+	s.Require().True(strings.HasPrefix(user.PublicID, identity.PublicUserIDPrefix), "public ID should use the public prefix")
+	s.Require().NotEqual(strconv.FormatInt(user.ID, 10), user.PublicID, "public ID should not be the sequential internal id")
 
 	got, err := s.repo.GetByID(s.ctx, user.ID)
 	s.Require().NoError(err, "GetByID")
 	s.Require().Equal("create@test.com", got.Email)
+	s.Require().Equal(user.PublicID, got.PublicID)
 }
 
 func (s *UserRepoSuite) TestGetByID_NotFound() {

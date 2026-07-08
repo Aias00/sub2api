@@ -60,6 +60,7 @@ type signupGrantRiskConfig struct {
 type SignupGrantRiskClaimRecord struct {
 	ID                  int64     `json:"id"`
 	UserID              *int64    `json:"user_id,omitempty"`
+	UserPublicID        string    `json:"user_public_id,omitempty"`
 	Email               string    `json:"email"`
 	EmailDomain         string    `json:"email_domain"`
 	IPAddress           string    `json:"ip_address"`
@@ -127,18 +128,19 @@ type SignupGrantRiskOverrideFilter struct {
 }
 
 type SignupGrantAdminAuditLog struct {
-	ID           int64          `json:"id"`
-	Operation    string         `json:"operation"`
-	TargetUserID *int64         `json:"target_user_id,omitempty"`
-	SubjectType  string         `json:"subject_type"`
-	SubjectValue string         `json:"subject_value"`
-	SubjectHash  string         `json:"subject_hash"`
-	Action       string         `json:"action"`
-	Amount       float64        `json:"amount"`
-	Reason       string         `json:"reason"`
-	AdminID      *int64         `json:"admin_id,omitempty"`
-	Metadata     map[string]any `json:"metadata,omitempty"`
-	CreatedAt    time.Time      `json:"created_at"`
+	ID                 int64          `json:"id"`
+	Operation          string         `json:"operation"`
+	TargetUserID       *int64         `json:"target_user_id,omitempty"`
+	TargetUserPublicID string         `json:"target_user_public_id,omitempty"`
+	SubjectType        string         `json:"subject_type"`
+	SubjectValue       string         `json:"subject_value"`
+	SubjectHash        string         `json:"subject_hash"`
+	Action             string         `json:"action"`
+	Amount             float64        `json:"amount"`
+	Reason             string         `json:"reason"`
+	AdminID            *int64         `json:"admin_id,omitempty"`
+	Metadata           map[string]any `json:"metadata,omitempty"`
+	CreatedAt          time.Time      `json:"created_at"`
 }
 
 type SignupGrantAdminAuditLogFilter struct {

@@ -76,6 +76,20 @@ func (_c *UserCreate) SetNillableDeletedAt(v *time.Time) *UserCreate {
 	return _c
 }
 
+// SetPublicID sets the "public_id" field.
+func (_c *UserCreate) SetPublicID(v string) *UserCreate {
+	_c.mutation.SetPublicID(v)
+	return _c
+}
+
+// SetNillablePublicID sets the "public_id" field if the given value is not nil.
+func (_c *UserCreate) SetNillablePublicID(v *string) *UserCreate {
+	if v != nil {
+		_c.SetPublicID(*v)
+	}
+	return _c
+}
+
 // SetEmail sets the "email" field.
 func (_c *UserCreate) SetEmail(v string) *UserCreate {
 	_c.mutation.SetEmail(v)
@@ -656,6 +670,13 @@ func (_c *UserCreate) defaults() error {
 		v := user.DefaultUpdatedAt()
 		_c.mutation.SetUpdatedAt(v)
 	}
+	if _, ok := _c.mutation.PublicID(); !ok {
+		if user.DefaultPublicID == nil {
+			return fmt.Errorf("ent: uninitialized user.DefaultPublicID (forgotten import ent/runtime?)")
+		}
+		v := user.DefaultPublicID()
+		_c.mutation.SetPublicID(v)
+	}
 	if _, ok := _c.mutation.Role(); !ok {
 		v := user.DefaultRole
 		_c.mutation.SetRole(v)
@@ -726,6 +747,14 @@ func (_c *UserCreate) check() error {
 	}
 	if _, ok := _c.mutation.UpdatedAt(); !ok {
 		return &ValidationError{Name: "updated_at", err: errors.New(`ent: missing required field "User.updated_at"`)}
+	}
+	if _, ok := _c.mutation.PublicID(); !ok {
+		return &ValidationError{Name: "public_id", err: errors.New(`ent: missing required field "User.public_id"`)}
+	}
+	if v, ok := _c.mutation.PublicID(); ok {
+		if err := user.PublicIDValidator(v); err != nil {
+			return &ValidationError{Name: "public_id", err: fmt.Errorf(`ent: validator failed for field "User.public_id": %w`, err)}
+		}
 	}
 	if _, ok := _c.mutation.Email(); !ok {
 		return &ValidationError{Name: "email", err: errors.New(`ent: missing required field "User.email"`)}
@@ -846,6 +875,10 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.DeletedAt(); ok {
 		_spec.SetField(user.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = &value
+	}
+	if value, ok := _c.mutation.PublicID(); ok {
+		_spec.SetField(user.FieldPublicID, field.TypeString, value)
+		_node.PublicID = value
 	}
 	if value, ok := _c.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)
@@ -1238,6 +1271,18 @@ func (u *UserUpsert) UpdateDeletedAt() *UserUpsert {
 // ClearDeletedAt clears the value of the "deleted_at" field.
 func (u *UserUpsert) ClearDeletedAt() *UserUpsert {
 	u.SetNull(user.FieldDeletedAt)
+	return u
+}
+
+// SetPublicID sets the "public_id" field.
+func (u *UserUpsert) SetPublicID(v string) *UserUpsert {
+	u.Set(user.FieldPublicID, v)
+	return u
+}
+
+// UpdatePublicID sets the "public_id" field to the value that was provided on create.
+func (u *UserUpsert) UpdatePublicID() *UserUpsert {
+	u.SetExcluded(user.FieldPublicID)
 	return u
 }
 
@@ -1702,6 +1747,20 @@ func (u *UserUpsertOne) UpdateDeletedAt() *UserUpsertOne {
 func (u *UserUpsertOne) ClearDeletedAt() *UserUpsertOne {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearDeletedAt()
+	})
+}
+
+// SetPublicID sets the "public_id" field.
+func (u *UserUpsertOne) SetPublicID(v string) *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.SetPublicID(v)
+	})
+}
+
+// UpdatePublicID sets the "public_id" field to the value that was provided on create.
+func (u *UserUpsertOne) UpdatePublicID() *UserUpsertOne {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdatePublicID()
 	})
 }
 
@@ -2396,6 +2455,20 @@ func (u *UserUpsertBulk) UpdateDeletedAt() *UserUpsertBulk {
 func (u *UserUpsertBulk) ClearDeletedAt() *UserUpsertBulk {
 	return u.Update(func(s *UserUpsert) {
 		s.ClearDeletedAt()
+	})
+}
+
+// SetPublicID sets the "public_id" field.
+func (u *UserUpsertBulk) SetPublicID(v string) *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.SetPublicID(v)
+	})
+}
+
+// UpdatePublicID sets the "public_id" field to the value that was provided on create.
+func (u *UserUpsertBulk) UpdatePublicID() *UserUpsertBulk {
+	return u.Update(func(s *UserUpsert) {
+		s.UpdatePublicID()
 	})
 }
 

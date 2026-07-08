@@ -16,6 +16,7 @@ import (
 )
 
 var dashboardSnapshotV2Cache = newSnapshotCache(30 * time.Second)
+var errAdminUserIDParamHandled = errors.New("admin user id param response already handled")
 
 type dashboardSnapshotV2Stats struct {
 	usagestats.DashboardStats
@@ -86,8 +87,11 @@ func (h *DashboardHandler) GetSnapshotV2(c *gin.Context) {
 		}
 	}
 
-	filters, err := parseDashboardSnapshotV2Filters(c)
+	filters, err := h.parseDashboardSnapshotV2Filters(c)
 	if err != nil {
+		if errors.Is(err, errAdminUserIDParamHandled) {
+			return
+		}
 		response.BadRequestWithError(c, err)
 		return
 	}
@@ -241,17 +245,17 @@ func (h *DashboardHandler) buildSnapshotV2Response(
 	return resp, nil
 }
 
-func parseDashboardSnapshotV2Filters(c *gin.Context) (*dashboardSnapshotV2Filters, error) {
+func (h *DashboardHandler) parseDashboardSnapshotV2Filters(c *gin.Context) (*dashboardSnapshotV2Filters, error) {
 	filters := &dashboardSnapshotV2Filters{
 		Model: strings.TrimSpace(c.Query("model")),
 	}
 
 	if userIDStr := strings.TrimSpace(c.Query("user_id")); userIDStr != "" {
-		id, err := strconv.ParseInt(userIDStr, 10, 64)
-		if err != nil {
-			return nil, err
+		userID, ok := resolveAdminUserIDParam(c, h.adminService, userIDStr, "user_id")
+		if !ok {
+			return nil, errAdminUserIDParamHandled
 		}
-		filters.UserID = id
+		filters.UserID = userID
 	}
 	if apiKeyIDStr := strings.TrimSpace(c.Query("api_key_id")); apiKeyIDStr != "" {
 		id, err := strconv.ParseInt(apiKeyIDStr, 10, 64)

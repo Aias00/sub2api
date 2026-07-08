@@ -15,6 +15,7 @@ import (
 
 	dbent "github.com/Aias00/cloudbase/ent"
 	"github.com/Aias00/cloudbase/ent/authidentity"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
 	"github.com/Aias00/cloudbase/internal/config"
 	"github.com/Aias00/cloudbase/internal/identity"
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
@@ -83,6 +84,14 @@ type AuthService struct {
 	affiliateService      *AffiliateService
 	defaultSubAssigner    DefaultSubscriptionAssigner
 	userPlatformQuotaRepo UserPlatformQuotaRepository
+	ledgerService         *billingctx.UserBalanceLedgerService
+}
+
+// SetLedgerService injects the balance-ledger service so first-bind balance
+// grants are recorded in user_balance_ledger. Optional: when nil, the grant
+// falls back to a raw balance update (legacy behavior).
+func (s *AuthService) SetLedgerService(l *billingctx.UserBalanceLedgerService) {
+	s.ledgerService = l
 }
 
 type DefaultSubscriptionAssigner interface {

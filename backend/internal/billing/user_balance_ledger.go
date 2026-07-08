@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"time"
 )
 
@@ -81,6 +82,50 @@ type UserBalanceLedgerRepository interface {
 
 	// GetBySource 查询某来源的流水（用于去重检查）
 	GetBySource(ctx context.Context, sourceType BalanceLedgerSourceType, sourceID int64) (*UserBalanceLedgerEntry, error)
+
+	// ApplyBalanceChange 原子地调整用户余额并记录流水（单事务：锁用户行→幂等检查→改余额→写流水）。
+	ApplyBalanceChange(ctx context.Context, cmd BalanceChangeCommand) (*BalanceChangeResult, error)
+
+	// ApplyBalanceChangeTx 在调用方已有事务内原子地调整余额并记录流水（不自开事务）。
+	// 用条件 UPDATE...RETURNING 做守卫，供 usage 计费/充值/退款等"已在事务内"的路径接入。
+	ApplyBalanceChangeTx(ctx context.Context, exec BalanceTxExecutor, cmd BalanceChangeCommand) (*BalanceChangeResult, error)
+
+	// ApplyBalanceChangeCtx 根据 ctx 自动选择变体：若 ctx 内存在 ent 事务则参与该事务
+	// （ApplyBalanceChangeTx），否则自开事务（ApplyBalanceChange）。供 OAuth 首绑等
+	// "在既有 ent 事务内改余额"的路径无缝接入。
+	ApplyBalanceChangeCtx(ctx context.Context, cmd BalanceChangeCommand) (*BalanceChangeResult, error)
+}
+
+// BalanceTxExecutor 是 ApplyBalanceChangeTx 所需的最小执行器（*sql.Tx 满足）。
+type BalanceTxExecutor interface {
+	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
+	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
+}
+
+// ErrLedgerUserNotFound 表示目标用户不存在（或已软删除）。
+var ErrLedgerUserNotFound = errors.New("user not found")
+
+// BalanceChangeCommand 描述一次原子余额变动。
+// Delta > 0 入账，< 0 扣费。当 SourceID != nil 时按 (SourceType, SourceID) 幂等：
+// 重复调用返回已有流水且不重复扣加。
+type BalanceChangeCommand struct {
+	UserID        int64
+	Delta         float64
+	GiftDelta     float64 // 同事务内对 gift_balance 的增量（默认 0 表示不变）
+	EntryType     BalanceLedgerEntryType
+	SourceType    BalanceLedgerSourceType
+	SourceID      *int64
+	Description   string
+	MetadataJSON  json.RawMessage
+	AllowNegative bool // 为 false 时，导致余额为负的扣费被拒绝
+}
+
+// BalanceChangeResult 是一次原子余额变动的结果。
+type BalanceChangeResult struct {
+	Applied       bool // false 表示命中幂等、未再次变动
+	BalanceBefore float64
+	BalanceAfter  float64
+	LedgerID      int64
 }
 
 // UserBalanceLedgerService 余额流水服务
@@ -93,6 +138,23 @@ func NewUserBalanceLedgerService(ledgerRepo UserBalanceLedgerRepository) *UserBa
 	return &UserBalanceLedgerService{
 		ledgerRepo: ledgerRepo,
 	}
+}
+
+// ApplyBalanceChange 原子地调整用户余额并记录流水。
+// 这是"改余额必写流水且幂等"的统一原语，供充值/退款/用量/奖励等各路径接入，
+// 以保证 user_balance_ledger 成为可对账的完整账本。
+func (s *UserBalanceLedgerService) ApplyBalanceChange(ctx context.Context, cmd BalanceChangeCommand) (*BalanceChangeResult, error) {
+	return s.ledgerRepo.ApplyBalanceChange(ctx, cmd)
+}
+
+// ApplyBalanceChangeTx 在调用方已有事务内原子地调整余额并记录流水（不自开事务）。
+func (s *UserBalanceLedgerService) ApplyBalanceChangeTx(ctx context.Context, exec BalanceTxExecutor, cmd BalanceChangeCommand) (*BalanceChangeResult, error) {
+	return s.ledgerRepo.ApplyBalanceChangeTx(ctx, exec, cmd)
+}
+
+// ApplyBalanceChangeCtx 根据 ctx 自动选择自开/参与事务变体。
+func (s *UserBalanceLedgerService) ApplyBalanceChangeCtx(ctx context.Context, cmd BalanceChangeCommand) (*BalanceChangeResult, error) {
+	return s.ledgerRepo.ApplyBalanceChangeCtx(ctx, cmd)
 }
 
 // WriteLedger 写入余额流水

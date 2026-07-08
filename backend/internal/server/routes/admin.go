@@ -344,6 +344,12 @@ func registerAccountRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		accounts.POST("/cookie-auth", h.Admin.OAuth.CookieAuth)
 		accounts.POST("/setup-token-cookie-auth", h.Admin.OAuth.SetupTokenCookieAuth)
 	}
+
+	// 上游厂商预设目录：选厂商自动填充 base_url / 默认模型 / API 风格
+	upstream := admin.Group("/upstream")
+	{
+		upstream.GET("/presets", h.Admin.Account.ListUpstreamPresets)
+	}
 }
 
 func registerAnnouncementRoutes(admin *gin.RouterGroup, h *handler.Handlers) {

@@ -4,8 +4,10 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"reflect"
+	"time"
 	"unsafe"
 
 	"github.com/Aias00/cloudbase/ent"
@@ -129,7 +131,9 @@ func (r *userBalanceLedgerRepository) ListByUser(
 
 	// 计算分页
 	offset := (filter.Page - 1) * filter.PageSize
-	args = append(args, offset, filter.PageSize)
+	// 参数顺序必须与下方 SQL 的 "LIMIT $argIndex OFFSET $argIndex+1" 对应：
+	// 先 append PageSize(绑定 LIMIT)，再 append offset(绑定 OFFSET)。
+	args = append(args, filter.PageSize, offset)
 
 	// 查询列表
 	listQuery := fmt.Sprintf(`
@@ -280,4 +284,262 @@ func sqlExecutorFromEntClient(client *ent.Client) sqlExecutor {
 		return nil
 	}
 	return exec
+}
+
+// ApplyBalanceChange atomically adjusts users.balance and records a ledger row
+// in a single transaction:
+//  1. SELECT ... FOR UPDATE locks the user row (serializes concurrent changes).
+//  2. When SourceID is set, an existing (source_type, source_id) ledger row makes
+//     this a no-op (idempotent) returning the prior result.
+//  3. Debits that would overdraft are rejected unless AllowNegative is set.
+//  4. balance_before/balance_after are captured within the same tx so the ledger
+//     is a continuous, reconcilable audit trail.
+func (r *userBalanceLedgerRepository) ApplyBalanceChange(ctx context.Context, cmd BalanceChangeCommand) (*BalanceChangeResult, error) {
+	if cmd.UserID <= 0 {
+		return nil, errors.New("balance change requires a valid user_id")
+	}
+	if cmd.Delta == 0 {
+		return nil, errors.New("balance change delta must be non-zero")
+	}
+	if r.db == nil {
+		return nil, errors.New("balance change requires a *sql.DB executor")
+	}
+
+	tx, err := r.db.BeginTx(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("begin balance change tx: %w", err)
+	}
+	committed := false
+	defer func() {
+		if !committed {
+			_ = tx.Rollback()
+		}
+	}()
+
+	// 1. Lock the user row and read the current balance.
+	var before float64
+	err = tx.QueryRowContext(ctx,
+		`SELECT balance FROM users WHERE id = $1 AND deleted_at IS NULL FOR UPDATE`,
+		cmd.UserID,
+	).Scan(&before)
+	if errors.Is(err, sql.ErrNoRows) {
+		return nil, ErrLedgerUserNotFound
+	}
+	if err != nil {
+		return nil, fmt.Errorf("lock user for balance change: %w", err)
+	}
+
+	// 2. Idempotency: a prior ledger row for the same source short-circuits.
+	if cmd.SourceID != nil {
+		var (
+			existingID  int64
+			existBefore sql.NullFloat64
+			existAfter  sql.NullFloat64
+		)
+		e := tx.QueryRowContext(ctx,
+			`SELECT id, balance_before, balance_after FROM user_balance_ledger
+			 WHERE source_type = $1 AND source_id = $2 LIMIT 1`,
+			cmd.SourceType, *cmd.SourceID,
+		).Scan(&existingID, &existBefore, &existAfter)
+		if e == nil {
+			if err = tx.Commit(); err != nil {
+				return nil, fmt.Errorf("commit idempotent balance change: %w", err)
+			}
+			committed = true
+			return &BalanceChangeResult{
+				Applied:       false,
+				BalanceBefore: existBefore.Float64,
+				BalanceAfter:  existAfter.Float64,
+				LedgerID:      existingID,
+			}, nil
+		}
+		if !errors.Is(e, sql.ErrNoRows) {
+			return nil, fmt.Errorf("check ledger idempotency: %w", e)
+		}
+	}
+
+	after := before + cmd.Delta
+	if after < 0 && !cmd.AllowNegative {
+		return nil, ErrInsufficientBalance
+	}
+
+	// 3. Update the balance to the computed value (and gift_balance delta if any).
+	if _, err = tx.ExecContext(ctx,
+		`UPDATE users SET balance = $1, gift_balance = COALESCE(gift_balance, 0) + $2, updated_at = NOW() WHERE id = $3`,
+		after, cmd.GiftDelta, cmd.UserID,
+	); err != nil {
+		return nil, fmt.Errorf("update balance: %w", err)
+	}
+
+	// 4. Record the ledger row with the atomic before/after snapshot.
+	metadata := cmd.MetadataJSON
+	if len(metadata) == 0 {
+		metadata = json.RawMessage("{}")
+	}
+	var ledgerID int64
+	err = tx.QueryRowContext(ctx,
+		`INSERT INTO user_balance_ledger (
+			user_id, entry_type, amount,
+			balance_before, balance_after,
+			source_type, source_id,
+			description, metadata_json, created_at
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+		cmd.UserID,
+		cmd.EntryType,
+		cmd.Delta,
+		before,
+		after,
+		cmd.SourceType,
+		cmd.SourceID,
+		cmd.Description,
+		[]byte(metadata),
+		time.Now().UTC(),
+	).Scan(&ledgerID)
+	if err != nil {
+		return nil, fmt.Errorf("insert balance ledger: %w", err)
+	}
+
+	if err = tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit balance change: %w", err)
+	}
+	committed = true
+
+	return &BalanceChangeResult{
+		Applied:       true,
+		BalanceBefore: before,
+		BalanceAfter:  after,
+		LedgerID:      ledgerID,
+	}, nil
+}
+
+// ApplyBalanceChangeTx runs the same balance+ledger mutation as ApplyBalanceChange
+// but participates in the caller's transaction (it does NOT open or commit a tx).
+// Instead of SELECT ... FOR UPDATE it uses a single conditional UPDATE ... RETURNING
+// as both the overdraft guard and the row lock, so it composes cleanly inside a
+// larger transaction (e.g. usage billing, recharge, first-bind grant).
+func (r *userBalanceLedgerRepository) ApplyBalanceChangeTx(ctx context.Context, exec BalanceTxExecutor, cmd BalanceChangeCommand) (*BalanceChangeResult, error) {
+	if exec == nil {
+		return nil, errors.New("balance change tx requires an executor")
+	}
+	if cmd.UserID <= 0 {
+		return nil, errors.New("balance change requires a valid user_id")
+	}
+	if cmd.Delta == 0 {
+		return nil, errors.New("balance change delta must be non-zero")
+	}
+
+	// Idempotency: a prior ledger row for the same source short-circuits.
+	if cmd.SourceID != nil {
+		var (
+			existingID  int64
+			existBefore sql.NullFloat64
+			existAfter  sql.NullFloat64
+		)
+		found, err := queryOneBalanceRow(ctx, exec,
+			`SELECT id, balance_before, balance_after FROM user_balance_ledger
+			 WHERE source_type = $1 AND source_id = $2 LIMIT 1`,
+			func(rows *sql.Rows) error { return rows.Scan(&existingID, &existBefore, &existAfter) },
+			cmd.SourceType, *cmd.SourceID,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("check ledger idempotency: %w", err)
+		}
+		if found {
+			return &BalanceChangeResult{
+				Applied:       false,
+				BalanceBefore: existBefore.Float64,
+				BalanceAfter:  existAfter.Float64,
+				LedgerID:      existingID,
+			}, nil
+		}
+	}
+
+	// Conditional atomic update: guards overdraft and row-locks the user in one shot.
+	var after float64
+	updated, err := queryOneBalanceRow(ctx, exec,
+		`UPDATE users SET balance = balance + $1, gift_balance = COALESCE(gift_balance, 0) + $2, updated_at = NOW()
+		 WHERE id = $3 AND deleted_at IS NULL AND ($4 OR balance + $1 >= 0)
+		 RETURNING balance`,
+		func(rows *sql.Rows) error { return rows.Scan(&after) },
+		cmd.Delta, cmd.GiftDelta, cmd.UserID, cmd.AllowNegative,
+	)
+	if err != nil {
+		return nil, fmt.Errorf("conditional balance update: %w", err)
+	}
+	if !updated {
+		// No row updated: distinguish "user missing" from "insufficient balance".
+		var exists bool
+		if _, err := queryOneBalanceRow(ctx, exec,
+			`SELECT true FROM users WHERE id = $1 AND deleted_at IS NULL`,
+			func(rows *sql.Rows) error { return rows.Scan(&exists) },
+			cmd.UserID,
+		); err != nil {
+			return nil, fmt.Errorf("resolve balance update failure: %w", err)
+		}
+		if !exists {
+			return nil, ErrLedgerUserNotFound
+		}
+		return nil, ErrInsufficientBalance
+	}
+
+	before := after - cmd.Delta
+
+	metadata := cmd.MetadataJSON
+	if len(metadata) == 0 {
+		metadata = json.RawMessage("{}")
+	}
+	var ledgerID int64
+	if _, err := queryOneBalanceRow(ctx, exec,
+		`INSERT INTO user_balance_ledger (
+			user_id, entry_type, amount,
+			balance_before, balance_after,
+			source_type, source_id,
+			description, metadata_json, created_at
+		) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id`,
+		func(rows *sql.Rows) error { return rows.Scan(&ledgerID) },
+		cmd.UserID, cmd.EntryType, cmd.Delta, before, after,
+		cmd.SourceType, cmd.SourceID, cmd.Description, []byte(metadata), time.Now().UTC(),
+	); err != nil {
+		return nil, fmt.Errorf("insert balance ledger (tx): %w", err)
+	}
+
+	return &BalanceChangeResult{
+		Applied:       true,
+		BalanceBefore: before,
+		BalanceAfter:  after,
+		LedgerID:      ledgerID,
+	}, nil
+}
+
+// queryOneBalanceRow runs a query via the (tx) executor and scans at most one row.
+// Returns found=false when the query yields no rows.
+func queryOneBalanceRow(ctx context.Context, exec BalanceTxExecutor, query string, scan func(*sql.Rows) error, args ...any) (bool, error) {
+	rows, err := exec.QueryContext(ctx, query, args...)
+	if err != nil {
+		return false, err
+	}
+	defer func() { _ = rows.Close() }()
+	if !rows.Next() {
+		return false, rows.Err()
+	}
+	if err := scan(rows); err != nil {
+		return false, err
+	}
+	return true, rows.Err()
+}
+
+// ApplyBalanceChangeCtx dispatches to the tx-aware or self-tx variant based on
+// whether an ent transaction is present in ctx. Paths that already run inside an
+// ent tx (e.g. OAuth first-bind grant) get their balance change + ledger row
+// committed atomically with the surrounding work; paths with no ambient tx get a
+// self-contained transaction.
+func (r *userBalanceLedgerRepository) ApplyBalanceChangeCtx(ctx context.Context, cmd BalanceChangeCommand) (*BalanceChangeResult, error) {
+	if tx := ent.TxFromContext(ctx); tx != nil {
+		exec := sqlExecutorFromEntClient(tx.Client())
+		if exec == nil {
+			return nil, errors.New("cannot derive sql executor from ent transaction")
+		}
+		return r.ApplyBalanceChangeTx(ctx, exec, cmd)
+	}
+	return r.ApplyBalanceChange(ctx, cmd)
 }

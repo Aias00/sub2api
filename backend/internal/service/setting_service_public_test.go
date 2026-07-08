@@ -423,7 +423,9 @@ func TestSettingService_GetPublicSettings_DefaultsHomeBusinessShellConfig(t *tes
 	}
 	require.NoError(t, json.Unmarshal([]byte(settings.HomeBusinessShellConfig), &payload))
 	require.Equal(t, "面向业务场景的 AI 能力工作台", payload["zh"].Labels["heroTitle"])
+	require.Equal(t, "可直接上手的业务能力，包括微信内容导出、热点内容采集、图片提示词管理和生图工作台，让用户快速找到并使用核心功能。", payload["zh"].Labels["heroDescription"])
 	require.Equal(t, "An AI workspace organized around business capabilities", payload["en"].Labels["heroTitle"])
+	require.Equal(t, "Ready-to-use business capabilities, including WeChat content export, hot content collection, image prompt management, and an image generation workspace, so users can quickly find and use the core features.", payload["en"].Labels["heroDescription"])
 	require.Equal(t, "提示词", payload["zh"].Labels["navModels"])
 	require.Equal(t, "Prompts", payload["en"].Labels["navModels"])
 	require.Len(t, payload["zh"].BusinessCards, 4)

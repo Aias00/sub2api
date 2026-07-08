@@ -5,6 +5,7 @@ import (
 
 	"github.com/Aias00/cloudbase/ent/schema/mixins"
 	"github.com/Aias00/cloudbase/internal/domain"
+	"github.com/Aias00/cloudbase/internal/identity"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
@@ -37,6 +38,11 @@ func (User) Fields() []ent.Field {
 	return []ent.Field{
 		// 唯一约束通过部分索引实现（WHERE deleted_at IS NULL），支持软删除后重用
 		// 见迁移文件 016_soft_delete_partial_unique_indexes.sql
+		field.String("public_id").
+			MaxLen(32).
+			NotEmpty().
+			Unique().
+			DefaultFunc(identity.NewPublicUserID),
 		field.String("email").
 			MaxLen(255).
 			NotEmpty(),

@@ -59,10 +59,10 @@ func (s *WeChatExportRepoIntegrationSuite) TestClaimNextTask_Concurrent() {
 	// Create test user
 	var userID int64
 	err := s.repo.db.QueryRowContext(s.ctx, `
-		INSERT INTO users (email, password_hash, role, balance, paid_balance, gift_balance, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $4, 0, NOW(), NOW())
+		INSERT INTO users (public_id, email, password_hash, role, balance, paid_balance, gift_balance, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $5, 0, NOW(), NOW())
 		RETURNING id
-	`, uniqueWeChatExportEmail("wechat-claim"), "hash", "user", 10.0).Scan(&userID)
+	`, fmt.Sprintf("pub-%d", time.Now().UnixNano()), uniqueWeChatExportEmail("wechat-claim"), "hash", "user", 10.0).Scan(&userID)
 	require.NoError(s.T(), err)
 
 	// Create multiple queued tasks
@@ -123,10 +123,10 @@ func (s *WeChatExportRepoIntegrationSuite) TestCreateTask_ConcurrentBalanceDeduc
 	// Create test user with limited balance
 	var userID int64
 	err := s.repo.db.QueryRowContext(s.ctx, `
-		INSERT INTO users (email, password_hash, role, balance, paid_balance, gift_balance, created_at, updated_at)
-		VALUES ($1, $2, $3, $4, $4, 0, NOW(), NOW())
+		INSERT INTO users (public_id, email, password_hash, role, balance, paid_balance, gift_balance, created_at, updated_at)
+		VALUES ($1, $2, $3, $4, $5, $5, 0, NOW(), NOW())
 		RETURNING id
-	`, uniqueWeChatExportEmail("wechat-balance"), "hash", "user", 5.0).Scan(&userID)
+	`, fmt.Sprintf("pub-%d", time.Now().UnixNano()), uniqueWeChatExportEmail("wechat-balance"), "hash", "user", 5.0).Scan(&userID)
 	require.NoError(s.T(), err)
 
 	// Concurrent task creation: 10 tasks trying to consume 1.0 each

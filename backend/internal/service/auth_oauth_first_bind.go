@@ -2,10 +2,12 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
 	dbent "github.com/Aias00/cloudbase/ent"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
 
 	entsql "entgo.io/ent/dialect/sql"
 )
@@ -78,22 +80,42 @@ ON CONFLICT (user_id, provider_type, grant_reason) DO NOTHING`,
 	}
 
 	if providerDefaults.Balance != 0 {
-		var balanceResult entsql.Result
-		if err := client.Driver().Exec(ctx, `
+		if s.ledgerService != nil {
+			// Participates in the surrounding ent tx (present in ctx here) so the
+			// balance + gift grant and its ledger row commit atomically with the
+			// provider-grant record above.
+			if _, err := s.ledgerService.ApplyBalanceChangeCtx(ctx, billingctx.BalanceChangeCommand{
+				UserID:        userID,
+				Delta:         providerDefaults.Balance,
+				GiftDelta:     providerDefaults.Balance,
+				EntryType:     billingctx.EntryTypeOAuthBindBonus,
+				SourceType:    billingctx.SourceTypeOAuthBinding,
+				Description:   fmt.Sprintf("first bind grant (%s)", strings.TrimSpace(providerType)),
+				AllowNegative: true,
+			}); err != nil {
+				if errors.Is(err, billingctx.ErrLedgerUserNotFound) {
+					return ErrUserNotFound
+				}
+				return fmt.Errorf("apply first bind balance default: %w", err)
+			}
+		} else {
+			var balanceResult entsql.Result
+			if err := client.Driver().Exec(ctx, `
 			UPDATE users
 			SET balance = balance + $1,
 				gift_balance = gift_balance + $1,
 				updated_at = CURRENT_TIMESTAMP
 			WHERE id = $2 AND deleted_at IS NULL
 		`, []any{providerDefaults.Balance, userID}, &balanceResult); err != nil {
-			return fmt.Errorf("apply first bind balance default: %w", err)
-		}
-		affected, err := balanceResult.RowsAffected()
-		if err != nil {
-			return fmt.Errorf("read first bind balance default result: %w", err)
-		}
-		if affected == 0 {
-			return ErrUserNotFound
+				return fmt.Errorf("apply first bind balance default: %w", err)
+			}
+			affected, err := balanceResult.RowsAffected()
+			if err != nil {
+				return fmt.Errorf("read first bind balance default result: %w", err)
+			}
+			if affected == 0 {
+				return ErrUserNotFound
+			}
 		}
 	}
 	if providerDefaults.Concurrency != 0 {

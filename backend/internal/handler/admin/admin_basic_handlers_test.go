@@ -7,6 +7,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/Aias00/cloudbase/internal/service"
+
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
@@ -172,6 +174,28 @@ func TestUserHandlerBindAuthIdentityMapsRequest(t *testing.T) {
 	require.Equal(t, "subject-123", adminSvc.boundAuthIdentity.ProviderSubject)
 	require.Nil(t, adminSvc.boundAuthIdentity.Channel)
 	require.Equal(t, float64(12), adminSvc.boundAuthIdentity.Metadata["report_id"])
+}
+
+func TestUserHandlerResolvesPublicIDResource(t *testing.T) {
+	router, adminSvc := setupAdminRouter()
+	adminSvc.users = []service.User{
+		{ID: 42, PublicID: "u_public_42", Email: "public@example.com", Status: service.StatusActive},
+	}
+
+	body, err := json.Marshal(map[string]any{
+		"provider_type":    "oidc",
+		"provider_key":     "issuer",
+		"provider_subject": "subject-42",
+	})
+	require.NoError(t, err)
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/admin/users/u_public_42/auth-identities", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+	require.Equal(t, int64(42), adminSvc.boundAuthIdentityFor)
 }
 
 func TestGroupHandlerEndpoints(t *testing.T) {

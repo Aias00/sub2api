@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from '../client'
+import type { AdminUserResourceID } from './users'
 import type {
   DashboardStats,
   TrendDataPoint,
@@ -48,7 +49,7 @@ export interface TrendParams {
   start_date?: string
   end_date?: string
   granularity?: 'day' | 'hour'
-  user_id?: number
+  user_id?: AdminUserResourceID
   api_key_id?: number
   model?: string
   account_id?: number
@@ -78,7 +79,7 @@ export async function getUsageTrend(params?: TrendParams): Promise<TrendResponse
 export interface ModelStatsParams {
   start_date?: string
   end_date?: string
-  user_id?: number
+  user_id?: AdminUserResourceID
   api_key_id?: number
   model?: string
   model_source?: 'requested' | 'upstream' | 'mapping'
@@ -108,7 +109,7 @@ export async function getModelStats(params?: ModelStatsParams): Promise<ModelSta
 export interface GroupStatsParams {
   start_date?: string
   end_date?: string
-  user_id?: number
+  user_id?: AdminUserResourceID
   api_key_id?: number
   account_id?: number
   group_id?: number
@@ -168,7 +169,7 @@ export interface UserBreakdownParams {
   endpoint_type?: 'inbound' | 'upstream' | 'path'
   limit?: number
   // Additional filter conditions
-  user_id?: number
+  user_id?: AdminUserResourceID
   api_key_id?: number
   account_id?: number
   request_type?: number
@@ -273,7 +274,7 @@ export interface PlatformUsage {
 }
 
 export interface BatchUserUsageStats {
-  user_id: number
+  user_id?: number
   today_actual_cost: number
   total_actual_cost: number
   by_platform?: PlatformUsage[]
@@ -285,12 +286,12 @@ export interface BatchUsersUsageResponse {
 
 /**
  * Get batch usage stats for multiple users
- * @param userIds - Array of user IDs
- * @returns Usage stats map keyed by user ID
+ * @param userIds - Array of public user IDs or legacy numeric user IDs
+ * @returns Usage stats map keyed by the requested user resource ID
  */
-export async function getBatchUsersUsage(userIds: number[]): Promise<BatchUsersUsageResponse> {
+export async function getBatchUsersUsage(userIds: AdminUserResourceID[]): Promise<BatchUsersUsageResponse> {
   const { data } = await apiClient.post<BatchUsersUsageResponse>('/admin/dashboard/users-usage', {
-    user_ids: userIds
+    user_public_ids: userIds.map(String)
   })
   return data
 }

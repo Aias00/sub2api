@@ -6,6 +6,7 @@
 import { apiClient } from '../client'
 import type { AdminUsageLog, UsageQueryParams, PaginatedResponse, UsageRequestType } from '@/types'
 import type { EndpointStat } from '@/types'
+import type { AdminUserResourceID } from './users'
 
 // ==================== Types ====================
 
@@ -28,6 +29,7 @@ export interface AdminUsageStatsResponse {
 
 export interface SimpleUser {
   id: number
+  public_id: string
   email: string
   deleted: boolean
 }
@@ -70,6 +72,7 @@ export interface CreateUsageCleanupTaskRequest {
   start_date: string
   end_date: string
   user_id?: number
+  user_public_id?: string
   api_key_id?: number
   account_id?: number
   group_id?: number
@@ -81,7 +84,7 @@ export interface CreateUsageCleanupTaskRequest {
 }
 
 export interface AdminUsageQueryParams extends UsageQueryParams {
-  user_id?: number
+  user_id?: AdminUserResourceID
   exact_total?: boolean
   billing_mode?: string
   sort_by?: string
@@ -116,7 +119,7 @@ export async function list(
  * @returns Usage statistics
  */
 export async function getStats(params: {
-  user_id?: number
+  user_id?: AdminUserResourceID
   api_key_id?: number
   account_id?: number
   group_id?: number
@@ -153,7 +156,7 @@ export async function searchUsers(keyword: string): Promise<SimpleUser[]> {
  * @param keyword - Optional keyword to search in key name
  * @returns List of matching API keys (max 30)
  */
-export async function searchApiKeys(userId?: number, keyword?: string): Promise<SimpleApiKey[]> {
+export async function searchApiKeys(userId?: AdminUserResourceID, keyword?: string): Promise<SimpleApiKey[]> {
   const params: Record<string, unknown> = {}
   if (userId !== undefined) {
     params.user_id = userId

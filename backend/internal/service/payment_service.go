@@ -13,6 +13,7 @@ import (
 
 	dbent "github.com/Aias00/cloudbase/ent"
 	"github.com/Aias00/cloudbase/ent/paymentproviderinstance"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
 	"github.com/Aias00/cloudbase/internal/payment"
 	"github.com/Aias00/cloudbase/internal/payment/provider"
 )
@@ -193,6 +194,14 @@ type PaymentService struct {
 	resumeService            *PaymentResumeService
 	affiliateService         *AffiliateService
 	notificationEmailService *NotificationEmailService
+	ledgerService            *billingctx.UserBalanceLedgerService
+}
+
+// SetLedgerService injects the balance-ledger service so refund balance
+// deductions are recorded atomically in user_balance_ledger. Optional: when nil,
+// refund deduction falls back to a raw balance update (legacy behavior).
+func (s *PaymentService) SetLedgerService(l *billingctx.UserBalanceLedgerService) {
+	s.ledgerService = l
 }
 
 func NewPaymentService(entClient *dbent.Client, registry *payment.Registry, loadBalancer payment.LoadBalancer, redeemService *RedeemService, subscriptionSvc *SubscriptionService, configService *PaymentConfigService, userRepo UserRepository, groupRepo GroupRepository, affiliateService *AffiliateService) *PaymentService {

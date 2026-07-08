@@ -44,17 +44,18 @@ func NewUsageHandler(
 
 // CreateUsageCleanupTaskRequest represents cleanup task creation request
 type CreateUsageCleanupTaskRequest struct {
-	StartDate   string  `json:"start_date"`
-	EndDate     string  `json:"end_date"`
-	UserID      *int64  `json:"user_id"`
-	APIKeyID    *int64  `json:"api_key_id"`
-	AccountID   *int64  `json:"account_id"`
-	GroupID     *int64  `json:"group_id"`
-	Model       *string `json:"model"`
-	RequestType *string `json:"request_type"`
-	Stream      *bool   `json:"stream"`
-	BillingType *int8   `json:"billing_type"`
-	Timezone    string  `json:"timezone"`
+	StartDate    string  `json:"start_date"`
+	EndDate      string  `json:"end_date"`
+	UserID       *int64  `json:"user_id"`
+	UserPublicID *string `json:"user_public_id"`
+	APIKeyID     *int64  `json:"api_key_id"`
+	AccountID    *int64  `json:"account_id"`
+	GroupID      *int64  `json:"group_id"`
+	Model        *string `json:"model"`
+	RequestType  *string `json:"request_type"`
+	Stream       *bool   `json:"stream"`
+	BillingType  *int8   `json:"billing_type"`
+	Timezone     string  `json:"timezone"`
 }
 
 // List handles listing all usage records with filters
@@ -74,12 +75,11 @@ func (h *UsageHandler) List(c *gin.Context) {
 	// Parse filters
 	var userID, apiKeyID, accountID, groupID int64
 	if userIDStr := c.Query("user_id"); userIDStr != "" {
-		id, err := strconv.ParseInt(userIDStr, 10, 64)
-		if err != nil {
-			response.BadRequest(c, "Invalid user_id")
+		resolvedID, ok := resolveAdminUserIDParam(c, h.adminService, userIDStr, "user_id")
+		if !ok {
 			return
 		}
-		userID = id
+		userID = resolvedID
 	}
 
 	if apiKeyIDStr := c.Query("api_key_id"); apiKeyIDStr != "" {
@@ -205,12 +205,11 @@ func (h *UsageHandler) Stats(c *gin.Context) {
 	// Parse filters - same as List endpoint
 	var userID, apiKeyID, accountID, groupID int64
 	if userIDStr := c.Query("user_id"); userIDStr != "" {
-		id, err := strconv.ParseInt(userIDStr, 10, 64)
-		if err != nil {
-			response.BadRequest(c, "Invalid user_id")
+		resolvedID, ok := resolveAdminUserIDParam(c, h.adminService, userIDStr, "user_id")
+		if !ok {
 			return
 		}
-		userID = id
+		userID = resolvedID
 	}
 
 	if apiKeyIDStr := c.Query("api_key_id"); apiKeyIDStr != "" {
@@ -366,17 +365,19 @@ func (h *UsageHandler) SearchUsers(c *gin.Context) {
 
 	// Return simplified user list (only id, email and deleted flag)
 	type SimpleUser struct {
-		ID      int64  `json:"id"`
-		Email   string `json:"email"`
-		Deleted bool   `json:"deleted"`
+		ID       int64  `json:"id"`
+		PublicID string `json:"public_id"`
+		Email    string `json:"email"`
+		Deleted  bool   `json:"deleted"`
 	}
 
 	result := make([]SimpleUser, len(users))
 	for i, u := range users {
 		result[i] = SimpleUser{
-			ID:      u.ID,
-			Email:   u.Email,
-			Deleted: u.DeletedAt != nil,
+			ID:       u.ID,
+			PublicID: u.PublicID,
+			Email:    u.Email,
+			Deleted:  u.DeletedAt != nil,
 		}
 	}
 
@@ -391,12 +392,11 @@ func (h *UsageHandler) SearchAPIKeys(c *gin.Context) {
 
 	var userID int64
 	if userIDStr != "" {
-		id, err := strconv.ParseInt(userIDStr, 10, 64)
-		if err != nil {
-			response.BadRequest(c, "Invalid user_id")
+		resolvedID, ok := resolveAdminUserIDParam(c, h.adminService, userIDStr, "user_id")
+		if !ok {
 			return
 		}
-		userID = id
+		userID = resolvedID
 	}
 
 	keys, err := h.apiKeyService.SearchAPIKeys(c.Request.Context(), userID, keyword, 30)
@@ -488,6 +488,16 @@ func (h *UsageHandler) CreateCleanupTask(c *gin.Context) {
 		return
 	}
 	endTime = endTime.Add(24*time.Hour - time.Nanosecond)
+	if req.UserPublicID != nil {
+		raw := strings.TrimSpace(*req.UserPublicID)
+		if raw != "" {
+			userID, ok := resolveAdminUserIDParam(c, h.adminService, raw, "user_public_id")
+			if !ok {
+				return
+			}
+			req.UserID = &userID
+		}
+	}
 
 	var requestType *int16
 	stream := req.Stream

@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from '../client'
+import { userResourcePath, type AdminUserResourceID } from './users'
 import type {
   UserAttributeDefinition,
   UserAttributeValue,
@@ -75,9 +76,9 @@ export async function reorderDefinitions(ids: number[]): Promise<{ message: stri
 /**
  * Get user's attribute values
  */
-export async function getUserAttributeValues(userId: number): Promise<UserAttributeValue[]> {
+export async function getUserAttributeValues(userId: AdminUserResourceID): Promise<UserAttributeValue[]> {
   const { data } = await apiClient.get<UserAttributeValue[]>(
-    `/admin/users/${userId}/attributes`
+    `${userResourcePath(userId)}/attributes`
   )
   return data
 }
@@ -86,11 +87,11 @@ export async function getUserAttributeValues(userId: number): Promise<UserAttrib
  * Update user's attribute values (batch)
  */
 export async function updateUserAttributeValues(
-  userId: number,
+  userId: AdminUserResourceID,
   values: UserAttributeValuesMap
 ): Promise<{ message: string }> {
   const { data } = await apiClient.put<{ message: string }>(
-    `/admin/users/${userId}/attributes`,
+    `${userResourcePath(userId)}/attributes`,
     { values }
   )
   return data
@@ -100,18 +101,18 @@ export async function updateUserAttributeValues(
  * Batch response type
  */
 export interface BatchUserAttributesResponse {
-  attributes: Record<number, Record<number, string>>
+  attributes: Record<string, Record<number, string>>
 }
 
 /**
  * Get attribute values for multiple users
  */
 export async function getBatchUserAttributes(
-  userIds: number[]
+  userIds: AdminUserResourceID[]
 ): Promise<BatchUserAttributesResponse> {
   const { data } = await apiClient.post<BatchUserAttributesResponse>(
     '/admin/user-attributes/batch',
-    { user_ids: userIds }
+    { user_public_ids: userIds.map(String) }
   )
   return data
 }

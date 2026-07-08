@@ -149,6 +149,7 @@ import ModelDistributionChart from '@/components/charts/ModelDistributionChart.v
 import EndpointDistributionChart from '@/components/charts/EndpointDistributionChart.vue'
 import Icon from '@/components/icons/Icon.vue'
 import type { AdminUsageLog, TrendDataPoint, ModelStat, GroupStat, EndpointStat, AdminUser } from '@/types'; import type { AdminUsageStatsResponse, AdminUsageQueryParams } from '@/api/admin/usage'
+import type { AdminUserResourceID } from '@/api/admin/users'
 
 const { t } = useI18n()
 const appStore = useAppStore()
@@ -197,7 +198,7 @@ const modelNameOptions = computed(() =>
   Array.from(new Set(requestedModelStats.value.map((m) => m.model).filter(Boolean))).sort()
 )
 
-const handleUserClick = async (userId: number) => {
+const handleUserClick = async (userId: AdminUserResourceID) => {
   try {
     const user = await adminAPI.users.getById(userId, true)
     balanceHistoryUser.value = user
@@ -243,17 +244,10 @@ const getSingleQueryValue = (value: string | null | Array<string | null> | undef
   return typeof value === 'string' && value.length > 0 ? value : undefined
 }
 
-const getNumericQueryValue = (value: string | null | Array<string | null> | undefined): number | undefined => {
-  const raw = getSingleQueryValue(value)
-  if (!raw) return undefined
-  const parsed = Number(raw)
-  return Number.isFinite(parsed) ? parsed : undefined
-}
-
 const applyRouteQueryFilters = () => {
   const queryStartDate = getSingleQueryValue(route.query.start_date)
   const queryEndDate = getSingleQueryValue(route.query.end_date)
-  const queryUserId = getNumericQueryValue(route.query.user_id)
+  const queryUserId = getSingleQueryValue(route.query.user_id)
 
   if (queryStartDate) {
     startDate.value = queryStartDate

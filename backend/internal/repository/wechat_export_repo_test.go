@@ -480,6 +480,8 @@ func TestWeChatExportRepositoryCreateTaskWithBalanceReservation(t *testing.T) {
 	mock.ExpectQuery("UPDATE users\\s+SET balance = balance -").
 		WithArgs(0.45, int64(42)).
 		WillReturnRows(sqlmock.NewRows([]string{"balance", "paid_reserved", "gift_reserved"}).AddRow(9.55, 0.45, 0.0)) // 余额从10扣到9.55
+	mock.ExpectExec("INSERT INTO user_balance_ledger").
+		WillReturnResult(sqlmock.NewResult(1, 1))
 	// 插入任务记录
 	mock.ExpectQuery("INSERT INTO wechat_export_tasks").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(int64(11), now, now))

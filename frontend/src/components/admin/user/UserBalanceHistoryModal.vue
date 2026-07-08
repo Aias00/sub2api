@@ -234,7 +234,7 @@ const loadHistory = async (page: number) => {
   currentPage.value = page
   try {
     const res = await adminAPI.users.getUserBalanceHistory(
-      props.user.id,
+      props.user.public_id || props.user.id,
       page,
       pageSize,
       typeFilter.value || undefined

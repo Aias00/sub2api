@@ -6,6 +6,12 @@
 import { apiClient } from '../client'
 import type { AdminUser, UpdateUserRequest, PaginatedResponse, ApiKey } from '@/types'
 
+export type AdminUserResourceID = string | number
+
+export function userResourcePath(id: AdminUserResourceID): string {
+  return `/admin/users/${encodeURIComponent(String(id))}`
+}
+
 export interface AdminBindAuthIdentityChannelRequest {
   channel: string
   channel_app_id: string
@@ -47,6 +53,7 @@ export interface AdminBoundAuthIdentity {
 export interface SignupGrantRiskClaimRecord {
   id: number
   user_id?: number | null
+  user_public_id?: string
   email: string
   email_domain: string
   ip_address: string
@@ -127,6 +134,7 @@ export interface SignupGrantAdminAuditLog {
   id: number
   operation: string
   target_user_id?: number | null
+  target_user_public_id?: string
   subject_type: string
   subject_value: string
   subject_hash: string
@@ -377,14 +385,15 @@ export async function list(
  * @param includeDeleted - Whether to include soft-deleted users
  * @returns User details
  */
-export async function getById(id: number, includeDeleted = false): Promise<AdminUser> {
-  const url = includeDeleted ? `/admin/users/${id}?include_deleted=true` : `/admin/users/${id}`
-  const { data } = await apiClient.get<AdminUser>(url)
+export async function getById(id: AdminUserResourceID, includeDeleted = false): Promise<AdminUser> {
+  const { data } = await apiClient.get<AdminUser>(userResourcePath(id), {
+    params: includeDeleted ? { include_deleted: true } : undefined
+  })
   return data
 }
 
-export async function getUserProfileSummary(id: number): Promise<UserProfileSummary> {
-  const { data } = await apiClient.get<UserProfileSummary>(`/admin/users/${id}/profile-summary`)
+export async function getUserProfileSummary(id: AdminUserResourceID): Promise<UserProfileSummary> {
+  const { data } = await apiClient.get<UserProfileSummary>(`${userResourcePath(id)}/profile-summary`)
   return data
 }
 
@@ -420,8 +429,8 @@ export async function create(userData: {
  * @param updates - Fields to update
  * @returns Updated user
  */
-export async function update(id: number, updates: UpdateUserRequest): Promise<AdminUser> {
-  const { data } = await apiClient.put<AdminUser>(`/admin/users/${id}`, updates)
+export async function update(id: AdminUserResourceID, updates: UpdateUserRequest): Promise<AdminUser> {
+  const { data } = await apiClient.put<AdminUser>(userResourcePath(id), updates)
   return data
 }
 
@@ -430,8 +439,8 @@ export async function update(id: number, updates: UpdateUserRequest): Promise<Ad
  * @param id - User ID
  * @returns Success confirmation
  */
-export async function deleteUser(id: number): Promise<{ message: string }> {
-  const { data } = await apiClient.delete<{ message: string }>(`/admin/users/${id}`)
+export async function deleteUser(id: AdminUserResourceID): Promise<{ message: string }> {
+  const { data } = await apiClient.delete<{ message: string }>(userResourcePath(id))
   return data
 }
 
@@ -444,12 +453,12 @@ export async function deleteUser(id: number): Promise<{ message: string }> {
  * @returns Updated user
  */
 export async function updateBalance(
-  id: number,
+  id: AdminUserResourceID,
   balance: number,
   operation: 'set' | 'add' | 'subtract' = 'set',
   notes?: string
 ): Promise<AdminUser> {
-  const { data } = await apiClient.post<AdminUser>(`/admin/users/${id}/balance`, {
+  const { data } = await apiClient.post<AdminUser>(`${userResourcePath(id)}/balance`, {
     balance,
     operation,
     notes: notes || ''
@@ -469,20 +478,20 @@ export async function listSignupGrantRiskClaims(
   return data
 }
 
-export async function getSignupGrantRiskSummary(id: number): Promise<SignupGrantRiskUserSummary> {
+export async function getSignupGrantRiskSummary(id: AdminUserResourceID): Promise<SignupGrantRiskUserSummary> {
   const { data } = await apiClient.get<SignupGrantRiskUserSummary>(
-    `/admin/users/${id}/signup-grant/summary`
+    `${userResourcePath(id)}/signup-grant/summary`
   )
   return data
 }
 
 export async function manualGrantSignupGiftBalance(
-  id: number,
+  id: AdminUserResourceID,
   amount: number,
   reason?: string
 ): Promise<AdminUser> {
   const { data } = await apiClient.post<AdminUser>(
-    `/admin/users/${id}/signup-grant/manual-grant`,
+    `${userResourcePath(id)}/signup-grant/manual-grant`,
     { amount, reason: reason || '' }
   )
   return data
@@ -539,7 +548,7 @@ export async function listSignupGrantAdminAuditLogs(
  * @param concurrency - New concurrency limit
  * @returns Updated user
  */
-export async function updateConcurrency(id: number, concurrency: number): Promise<AdminUser> {
+export async function updateConcurrency(id: AdminUserResourceID, concurrency: number): Promise<AdminUser> {
   return update(id, { concurrency })
 }
 
@@ -549,7 +558,7 @@ export async function updateConcurrency(id: number, concurrency: number): Promis
  * @param status - New status
  * @returns Updated user
  */
-export async function toggleStatus(id: number, status: 'active' | 'disabled'): Promise<AdminUser> {
+export async function toggleStatus(id: AdminUserResourceID, status: 'active' | 'disabled'): Promise<AdminUser> {
   return update(id, { status })
 }
 
@@ -558,8 +567,8 @@ export async function toggleStatus(id: number, status: 'active' | 'disabled'): P
  * @param id - User ID
  * @returns List of user's API keys
  */
-export async function getUserApiKeys(id: number): Promise<PaginatedResponse<ApiKey>> {
-  const { data } = await apiClient.get<PaginatedResponse<ApiKey>>(`/admin/users/${id}/api-keys`)
+export async function getUserApiKeys(id: AdminUserResourceID): Promise<PaginatedResponse<ApiKey>> {
+  const { data } = await apiClient.get<PaginatedResponse<ApiKey>>(`${userResourcePath(id)}/api-keys`)
   return data
 }
 
@@ -570,7 +579,7 @@ export async function getUserApiKeys(id: number): Promise<PaginatedResponse<ApiK
  * @returns User usage statistics
  */
 export async function getUserUsageStats(
-  id: number,
+  id: AdminUserResourceID,
   period: string = 'month'
 ): Promise<{
   total_requests: number
@@ -581,7 +590,7 @@ export async function getUserUsageStats(
     total_requests: number
     total_cost: number
     total_tokens: number
-  }>(`/admin/users/${id}/usage`, {
+  }>(`${userResourcePath(id)}/usage`, {
     params: { period }
   })
   return data
@@ -620,7 +629,7 @@ export interface BalanceHistoryResponse extends PaginatedResponse<BalanceHistory
  * @returns Paginated balance history with total_recharged
  */
 export async function getUserBalanceHistory(
-  id: number,
+  id: AdminUserResourceID,
   page: number = 1,
   pageSize: number = 20,
   type?: string
@@ -628,7 +637,7 @@ export async function getUserBalanceHistory(
   const params: Record<string, any> = { page, page_size: pageSize }
   if (type) params.type = type
   const { data } = await apiClient.get<BalanceHistoryResponse>(
-    `/admin/users/${id}/balance-history`,
+    `${userResourcePath(id)}/balance-history`,
     { params }
   )
   return data
@@ -642,23 +651,23 @@ export async function getUserBalanceHistory(
  * @returns Number of migrated keys
  */
 export async function replaceGroup(
-  userId: number,
+  userId: AdminUserResourceID,
   oldGroupId: number,
   newGroupId: number
 ): Promise<{ migrated_keys: number }> {
   const { data } = await apiClient.post<{ migrated_keys: number }>(
-    `/admin/users/${userId}/replace-group`,
+    `${userResourcePath(userId)}/replace-group`,
     { old_group_id: oldGroupId, new_group_id: newGroupId }
   )
   return data
 }
 
 export async function bindUserAuthIdentity(
-  userId: number,
+  userId: AdminUserResourceID,
   input: AdminBindAuthIdentityRequest
 ): Promise<AdminBoundAuthIdentity> {
   const { data } = await apiClient.post<AdminBoundAuthIdentity>(
-    `/admin/users/${userId}/auth-identities`,
+    `${userResourcePath(userId)}/auth-identities`,
     input
   )
   return data
@@ -700,9 +709,9 @@ export interface PlatformQuotasResponse {
 /**
  * Get user's platform quotas
  */
-export async function getPlatformQuotas(id: number): Promise<PlatformQuotasResponse> {
+export async function getPlatformQuotas(id: AdminUserResourceID): Promise<PlatformQuotasResponse> {
   const { data } = await apiClient.get<PlatformQuotasResponse>(
-    `/admin/users/${id}/platform-quotas`
+    `${userResourcePath(id)}/platform-quotas`
   )
   return data
 }
@@ -711,11 +720,11 @@ export async function getPlatformQuotas(id: number): Promise<PlatformQuotasRespo
  * Replace user's platform quotas (全量替换)
  */
 export async function updatePlatformQuotas(
-  id: number,
+  id: AdminUserResourceID,
   quotas: PlatformQuotaUpdateItem[]
 ): Promise<PlatformQuotasResponse> {
   const { data } = await apiClient.put<PlatformQuotasResponse>(
-    `/admin/users/${id}/platform-quotas`,
+    `${userResourcePath(id)}/platform-quotas`,
     { quotas }
   )
   return data
@@ -725,12 +734,12 @@ export async function updatePlatformQuotas(
  * Reset a single (platform, window) usage immediately
  */
 export async function resetPlatformQuotaWindow(
-  id: number,
+  id: AdminUserResourceID,
   platform: PlatformQuotaPlatform,
   window: PlatformQuotaWindow
 ): Promise<PlatformQuotasResponse> {
   const { data } = await apiClient.post<PlatformQuotasResponse>(
-    `/admin/users/${id}/platform-quotas/reset`,
+    `${userResourcePath(id)}/platform-quotas/reset`,
     { platform, window }
   )
   return data

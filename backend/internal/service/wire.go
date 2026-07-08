@@ -6,6 +6,7 @@ import (
 	"time"
 
 	dbent "github.com/Aias00/cloudbase/ent"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
 	"github.com/Aias00/cloudbase/internal/config"
 	"github.com/Aias00/cloudbase/internal/payment"
 	"github.com/Aias00/cloudbase/internal/pkg/antigravity"
@@ -688,9 +689,10 @@ func ProvideBalanceNotifyService(emailService *EmailService, settingRepo Setting
 }
 
 // ProvidePaymentService creates PaymentService and attaches notification email delivery.
-func ProvidePaymentService(entClient *dbent.Client, registry *payment.Registry, loadBalancer payment.LoadBalancer, redeemService *RedeemService, subscriptionSvc *SubscriptionService, configService *PaymentConfigService, userRepo UserRepository, groupRepo GroupRepository, affiliateService *AffiliateService, notificationEmailService *NotificationEmailService) *PaymentService {
+func ProvidePaymentService(entClient *dbent.Client, registry *payment.Registry, loadBalancer payment.LoadBalancer, redeemService *RedeemService, subscriptionSvc *SubscriptionService, configService *PaymentConfigService, userRepo UserRepository, groupRepo GroupRepository, affiliateService *AffiliateService, notificationEmailService *NotificationEmailService, ledgerService *billingctx.UserBalanceLedgerService) *PaymentService {
 	svc := NewPaymentService(entClient, registry, loadBalancer, redeemService, subscriptionSvc, configService, userRepo, groupRepo, affiliateService)
 	svc.SetNotificationEmailService(notificationEmailService)
+	svc.SetLedgerService(ledgerService)
 	return svc
 }
 

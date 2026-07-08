@@ -4,6 +4,7 @@
  */
 
 import { apiClient } from '../client'
+import { userResourcePath, type AdminUserResourceID } from './users'
 import type {
   UserSubscription,
   SubscriptionProgress,
@@ -177,12 +178,12 @@ export async function listByGroup(
  * @returns Paginated list of user's subscriptions
  */
 export async function listByUser(
-  userId: number,
+  userId: AdminUserResourceID,
   page: number = 1,
   pageSize: number = 20
 ): Promise<PaginatedResponse<UserSubscription>> {
   const { data } = await apiClient.get<PaginatedResponse<UserSubscription>>(
-    `/admin/users/${userId}/subscriptions`,
+    `${userResourcePath(userId)}/subscriptions`,
     {
       params: { page, page_size: pageSize }
     }

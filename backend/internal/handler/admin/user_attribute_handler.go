@@ -3,6 +3,7 @@ package admin
 import (
 	"encoding/json"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/Aias00/cloudbase/internal/pkg/response"
@@ -13,12 +14,16 @@ import (
 
 // UserAttributeHandler handles user attribute management
 type UserAttributeHandler struct {
-	attrService *service.UserAttributeService
+	attrService  *service.UserAttributeService
+	adminService service.AdminService
 }
 
 // NewUserAttributeHandler creates a new handler
-func NewUserAttributeHandler(attrService *service.UserAttributeService) *UserAttributeHandler {
-	return &UserAttributeHandler{attrService: attrService}
+func NewUserAttributeHandler(attrService *service.UserAttributeService, adminService service.AdminService) *UserAttributeHandler {
+	return &UserAttributeHandler{
+		attrService:  attrService,
+		adminService: adminService,
+	}
 }
 
 // --- Request/Response DTOs ---
@@ -60,7 +65,8 @@ type UpdateUserAttributesRequest struct {
 
 // BatchGetUserAttributesRequest represents batch get user attributes request
 type BatchGetUserAttributesRequest struct {
-	UserIDs []int64 `json:"user_ids" binding:"required"`
+	UserIDs       []int64  `json:"user_ids"`
+	UserPublicIDs []string `json:"user_public_ids"`
 }
 
 // BatchUserAttributesResponse represents batch user attributes response
@@ -259,9 +265,8 @@ func (h *UserAttributeHandler) ReorderDefinitions(c *gin.Context) {
 // GetUserAttributes gets a user's attribute values
 // GET /admin/users/:id/attributes
 func (h *UserAttributeHandler) GetUserAttributes(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := resolveAdminUserResource(c, h.adminService, false)
+	if !ok {
 		return
 	}
 
@@ -282,9 +287,8 @@ func (h *UserAttributeHandler) GetUserAttributes(c *gin.Context) {
 // UpdateUserAttributes updates a user's attribute values
 // PUT /admin/users/:id/attributes
 func (h *UserAttributeHandler) UpdateUserAttributes(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := resolveAdminUserResource(c, h.adminService, false)
+	if !ok {
 		return
 	}
 
@@ -332,15 +336,32 @@ func (h *UserAttributeHandler) GetBatchUserAttributes(c *gin.Context) {
 	}
 
 	userIDs := normalizeInt64IDList(req.UserIDs)
+	publicIDByUserID := map[int64]string{}
+	if len(req.UserPublicIDs) > 0 {
+		userIDs = make([]int64, 0, len(req.UserPublicIDs))
+		for _, publicID := range req.UserPublicIDs {
+			userID, ok := resolveAdminUserIDParam(c, h.adminService, publicID, "user_public_ids")
+			if !ok {
+				return
+			}
+			if userID > 0 {
+				userIDs = append(userIDs, userID)
+				publicIDByUserID[userID] = strings.TrimSpace(publicID)
+			}
+		}
+		userIDs = normalizeInt64IDList(userIDs)
+	}
 	if len(userIDs) == 0 {
 		response.Success(c, BatchUserAttributesResponse{Attributes: map[int64]map[int64]string{}})
 		return
 	}
 
 	keyRaw, _ := json.Marshal(struct {
-		UserIDs []int64 `json:"user_ids"`
+		UserIDs       []int64  `json:"user_ids,omitempty"`
+		UserPublicIDs []string `json:"user_public_ids,omitempty"`
 	}{
-		UserIDs: userIDs,
+		UserIDs:       userIDs,
+		UserPublicIDs: req.UserPublicIDs,
 	})
 	cacheKey := string(keyRaw)
 	if cached, ok := userAttributesBatchCache.Get(cacheKey); ok {
@@ -352,6 +373,22 @@ func (h *UserAttributeHandler) GetBatchUserAttributes(c *gin.Context) {
 	attrs, err := h.attrService.GetBatchUserAttributes(c.Request.Context(), userIDs)
 	if err != nil {
 		response.ErrorFrom(c, err)
+		return
+	}
+
+	if len(publicIDByUserID) > 0 {
+		attrsByPublicID := make(map[string]map[int64]string, len(attrs))
+		for userID, values := range attrs {
+			publicID := publicIDByUserID[userID]
+			if publicID == "" {
+				continue
+			}
+			attrsByPublicID[publicID] = values
+		}
+		payload := gin.H{"attributes": attrsByPublicID}
+		userAttributesBatchCache.Set(cacheKey, payload)
+		c.Header("X-Snapshot-Cache", "miss")
+		response.Success(c, payload)
 		return
 	}
 

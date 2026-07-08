@@ -118,7 +118,7 @@ const handleReplace = async () => {
   submitting.value = true
 
   try {
-    const result = await adminAPI.users.replaceGroup(props.user.id, props.oldGroup.id, selectedGroupId.value)
+    const result = await adminAPI.users.replaceGroup(props.user.public_id || props.user.id, props.oldGroup.id, selectedGroupId.value)
     appStore.showSuccess(t('admin.users.replaceGroupSuccess', { count: result.migrated_keys }))
     emit('success')
     emit('close')

@@ -366,3 +366,126 @@ func TestUsageBillingRepositoryApply_DeduplicatesAgainstArchivedKey(t *testing.T
 	require.NoError(t, integrationDB.QueryRowContext(ctx, "SELECT balance FROM users WHERE id = $1", user.ID).Scan(&balance))
 	require.InDelta(t, 98.75, balance, 0.000001)
 }
+
+func TestUsageBillingRepositoryApply_WritesBalanceLedger(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	user := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("usage-ledger-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Balance:      100,
+	})
+	apiKey := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: user.ID,
+		Key:    "sk-usage-ledger-" + uuid.NewString(),
+		Name:   "ledger",
+	})
+
+	requestID := uuid.NewString()
+	cmd := &billingctx.UsageBillingCommand{
+		RequestID:   requestID,
+		APIKeyID:    apiKey.ID,
+		UserID:      user.ID,
+		AccountType: service.AccountTypeAPIKey,
+		Model:       "claude-sonnet-4-5",
+		BalanceCost: 2.5,
+	}
+
+	res, err := repo.Apply(ctx, cmd)
+	require.NoError(t, err)
+	require.True(t, res.Applied)
+	require.NotNil(t, res.NewBalance)
+	require.InDelta(t, 97.5, *res.NewBalance, 0.0001)
+
+	// Exactly one api_usage ledger row, with a continuous before/after snapshot.
+	var count int
+	var amount, before, after float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx,
+		`SELECT COUNT(*), COALESCE(SUM(amount),0), COALESCE(MAX(balance_before),0), COALESCE(MAX(balance_after),0)
+		 FROM user_balance_ledger WHERE user_id = $1 AND entry_type = 'api_usage'`, user.ID).
+		Scan(&count, &amount, &before, &after))
+	require.Equal(t, 1, count)
+	require.InDelta(t, -2.5, amount, 0.0001)
+	require.InDelta(t, 100, before, 0.0001)
+	require.InDelta(t, 97.5, after, 0.0001)
+
+	// Duplicate request is deduplicated → no second ledger row, balance unchanged.
+	res2, err := repo.Apply(ctx, cmd)
+	require.NoError(t, err)
+	require.False(t, res2.Applied)
+	require.NoError(t, integrationDB.QueryRowContext(ctx,
+		`SELECT COUNT(*) FROM user_balance_ledger WHERE user_id = $1 AND entry_type = 'api_usage'`, user.ID).Scan(&count))
+	require.Equal(t, 1, count, "duplicate apply must not write a second ledger row")
+}
+
+func TestBatchImageBalance_HoldCaptureRelease_WriteLedger(t *testing.T) {
+	ctx := context.Background()
+	client := testEntClient(t)
+	repo := NewUsageBillingRepository(client, integrationDB)
+
+	// --- User A: hold then capture (actual < hold) ---
+	userA := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("batchimg-cap-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Balance:      100,
+	})
+	apiKeyA := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: userA.ID, Key: "sk-batchimg-cap-" + uuid.NewString(), Name: "cap",
+	})
+
+	holdRes, err := repo.ReserveBatchImageBalance(ctx, &billingctx.BatchImageBalanceHoldCommand{
+		RequestID: "batchimg-hold-" + uuid.NewString(), APIKeyID: apiKeyA.ID,
+		UserID: userA.ID, BatchID: "batch-A", HoldAmount: 10,
+	})
+	require.NoError(t, err)
+	require.True(t, holdRes.Applied)
+	require.NotNil(t, holdRes.NewBalance)
+	require.InDelta(t, 90, *holdRes.NewBalance, 0.0001)
+
+	capRes, err := repo.CaptureBatchImageBalance(ctx, &billingctx.BatchImageBalanceHoldCommand{
+		RequestID: "batchimg-capture-" + uuid.NewString(), APIKeyID: apiKeyA.ID,
+		UserID: userA.ID, BatchID: "batch-A", HoldAmount: 10, ActualAmount: 6,
+	})
+	require.NoError(t, err)
+	require.True(t, capRes.Applied)
+	require.InDelta(t, 94, *capRes.NewBalance, 0.0001) // 4 refunded
+
+	// Two ledger rows (-10 hold, +4 refund) that net to the actual cost (-6).
+	var count int
+	var net float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx,
+		`SELECT COUNT(*), COALESCE(SUM(amount),0) FROM user_balance_ledger
+		 WHERE user_id = $1 AND entry_type = 'image_workspace'`, userA.ID).Scan(&count, &net))
+	require.Equal(t, 2, count)
+	require.InDelta(t, -6, net, 0.0001, "hold + capture must net to -actual")
+
+	// --- User B: hold then release (full cancel) ---
+	userB := mustCreateUser(t, client, &service.User{
+		Email:        fmt.Sprintf("batchimg-rel-%d@example.com", time.Now().UnixNano()),
+		PasswordHash: "hash",
+		Balance:      100,
+	})
+	apiKeyB := mustCreateApiKey(t, client, &service.APIKey{
+		UserID: userB.ID, Key: "sk-batchimg-rel-" + uuid.NewString(), Name: "rel",
+	})
+
+	_, err = repo.ReserveBatchImageBalance(ctx, &billingctx.BatchImageBalanceHoldCommand{
+		RequestID: "batchimg-hold2-" + uuid.NewString(), APIKeyID: apiKeyB.ID,
+		UserID: userB.ID, BatchID: "batch-B", HoldAmount: 10,
+	})
+	require.NoError(t, err)
+	relRes, err := repo.ReleaseBatchImageBalance(ctx, &billingctx.BatchImageBalanceHoldCommand{
+		RequestID: "batchimg-release-" + uuid.NewString(), APIKeyID: apiKeyB.ID,
+		UserID: userB.ID, BatchID: "batch-B", HoldAmount: 10,
+	})
+	require.NoError(t, err)
+	require.InDelta(t, 100, *relRes.NewBalance, 0.0001) // fully restored
+
+	require.NoError(t, integrationDB.QueryRowContext(ctx,
+		`SELECT COUNT(*), COALESCE(SUM(amount),0) FROM user_balance_ledger
+		 WHERE user_id = $1 AND entry_type = 'image_workspace'`, userB.ID).Scan(&count, &net))
+	require.Equal(t, 2, count)
+	require.InDelta(t, 0, net, 0.0001, "hold + release must net to zero")
+}

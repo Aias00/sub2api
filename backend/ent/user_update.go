@@ -66,6 +66,20 @@ func (_u *UserUpdate) ClearDeletedAt() *UserUpdate {
 	return _u
 }
 
+// SetPublicID sets the "public_id" field.
+func (_u *UserUpdate) SetPublicID(v string) *UserUpdate {
+	_u.mutation.SetPublicID(v)
+	return _u
+}
+
+// SetNillablePublicID sets the "public_id" field if the given value is not nil.
+func (_u *UserUpdate) SetNillablePublicID(v *string) *UserUpdate {
+	if v != nil {
+		_u.SetPublicID(*v)
+	}
+	return _u
+}
+
 // SetEmail sets the "email" field.
 func (_u *UserUpdate) SetEmail(v string) *UserUpdate {
 	_u.mutation.SetEmail(v)
@@ -1023,6 +1037,11 @@ func (_u *UserUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *UserUpdate) check() error {
+	if v, ok := _u.mutation.PublicID(); ok {
+		if err := user.PublicIDValidator(v); err != nil {
+			return &ValidationError{Name: "public_id", err: fmt.Errorf(`ent: validator failed for field "User.public_id": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Email(); ok {
 		if err := user.EmailValidator(v); err != nil {
 			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
@@ -1076,6 +1095,9 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(user.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.PublicID(); ok {
+		_spec.SetField(user.FieldPublicID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)
@@ -1834,6 +1856,20 @@ func (_u *UserUpdateOne) SetNillableDeletedAt(v *time.Time) *UserUpdateOne {
 // ClearDeletedAt clears the value of the "deleted_at" field.
 func (_u *UserUpdateOne) ClearDeletedAt() *UserUpdateOne {
 	_u.mutation.ClearDeletedAt()
+	return _u
+}
+
+// SetPublicID sets the "public_id" field.
+func (_u *UserUpdateOne) SetPublicID(v string) *UserUpdateOne {
+	_u.mutation.SetPublicID(v)
+	return _u
+}
+
+// SetNillablePublicID sets the "public_id" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillablePublicID(v *string) *UserUpdateOne {
+	if v != nil {
+		_u.SetPublicID(*v)
+	}
 	return _u
 }
 
@@ -2807,6 +2843,11 @@ func (_u *UserUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *UserUpdateOne) check() error {
+	if v, ok := _u.mutation.PublicID(); ok {
+		if err := user.PublicIDValidator(v); err != nil {
+			return &ValidationError{Name: "public_id", err: fmt.Errorf(`ent: validator failed for field "User.public_id": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Email(); ok {
 		if err := user.EmailValidator(v); err != nil {
 			return &ValidationError{Name: "email", err: fmt.Errorf(`ent: validator failed for field "User.email": %w`, err)}
@@ -2877,6 +2918,9 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(user.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.PublicID(); ok {
+		_spec.SetField(user.FieldPublicID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Email(); ok {
 		_spec.SetField(user.FieldEmail, field.TypeString, value)

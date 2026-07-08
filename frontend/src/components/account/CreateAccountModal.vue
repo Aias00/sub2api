@@ -1113,6 +1113,19 @@
 
       <!-- API Key input (only for apikey type, excluding Antigravity which has its own fields) -->
       <div v-if="form.type === 'apikey' && form.platform !== 'antigravity'" class="space-y-4">
+        <div v-if="availableUpstreamPresets.length > 0">
+          <label class="input-label">{{ t('admin.accounts.upstream.presetLabel') }}</label>
+          <select
+            v-model="selectedUpstreamPresetId"
+            class="input"
+            @change="handleSelectUpstreamPreset"
+          >
+            <option value="">{{ t('admin.accounts.upstream.presetPlaceholder') }}</option>
+            <option v-for="preset in availableUpstreamPresets" :key="preset.id" :value="preset.id">
+              {{ preset.display_name }}
+            </option>
+          </select>
+        </div>
         <div>
           <label class="input-label">{{ t('admin.accounts.baseUrl') }}</label>
           <input
@@ -3432,6 +3445,7 @@ import {
 import { useAuthStore } from '@/stores/auth'
 import { adminAPI } from '@/api/admin'
 import { useQuotaNotifyState } from '@/composables/useQuotaNotifyState'
+import { useUpstreamPresets } from '@/composables/useUpstreamPresets'
 import {
   useAccountOAuth,
   type AddMethod,
@@ -3587,6 +3601,25 @@ const accountCategory = ref<'oauth-based' | 'apikey' | 'bedrock' | 'gemini-web' 
 const addMethod = ref<AddMethod>('oauth') // For oauth-based: 'oauth' or 'setup-token'
 const apiKeyBaseUrl = ref('https://api.anthropic.com')
 const apiKeyValue = ref('')
+
+// 上游厂商预设：选厂商自动填充 Base URL / 默认模型（仅 apikey 表单使用）
+const { presets: upstreamPresets, load: loadUpstreamPresets, findById: findUpstreamPreset, resolveApply: resolveUpstreamPresetApply } =
+  useUpstreamPresets()
+const selectedUpstreamPresetId = ref('')
+const availableUpstreamPresets = computed(() =>
+  upstreamPresets.value.filter((p) => p.platform === form.platform)
+)
+void loadUpstreamPresets()
+
+function handleSelectUpstreamPreset() {
+  const preset = findUpstreamPreset(selectedUpstreamPresetId.value)
+  if (!preset) return
+  const applied = resolveUpstreamPresetApply(preset)
+  apiKeyBaseUrl.value = applied.baseUrl
+  if (applied.models.length > 0) {
+    allowedModels.value = [...applied.models]
+  }
+}
 
 const syncPreviewCredentials = computed(() => {
   if (!apiKeyValue.value) return undefined

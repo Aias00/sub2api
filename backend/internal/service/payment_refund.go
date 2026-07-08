@@ -16,6 +16,7 @@ import (
 	"github.com/Aias00/cloudbase/ent/paymentauditlog"
 	"github.com/Aias00/cloudbase/ent/paymentorder"
 	"github.com/Aias00/cloudbase/ent/paymentproviderinstance"
+	billingctx "github.com/Aias00/cloudbase/internal/billing"
 	"github.com/Aias00/cloudbase/internal/payment"
 	"github.com/Aias00/cloudbase/internal/payment/provider"
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
@@ -263,6 +264,45 @@ func (s *PaymentService) prepDeduct(ctx context.Context, o *dbent.PaymentOrder, 
 	return nil
 }
 
+// deductRefundBalance deducts the user's balance for a refund and records a
+// user_balance_ledger row atomically. Falls back to the legacy raw deduction
+// when the ledger service is not wired. AllowNegative mirrors DeductBalance's
+// overdraft policy; SourceID is left nil to preserve the existing (audit-log
+// guarded) idempotency semantics rather than introduce per-order ledger dedup.
+func (s *PaymentService) deductRefundBalance(ctx context.Context, p *RefundPlan) error {
+	if s.ledgerService == nil {
+		return s.userRepo.DeductBalance(ctx, p.Order.UserID, p.BalanceToDeduct)
+	}
+	_, err := s.ledgerService.ApplyBalanceChange(ctx, billingctx.BalanceChangeCommand{
+		UserID:        p.Order.UserID,
+		Delta:         -p.BalanceToDeduct,
+		EntryType:     billingctx.EntryTypeRefund,
+		SourceType:    billingctx.SourceTypeRefund,
+		Description:   fmt.Sprintf("refund balance clawback (order %d)", p.OrderID),
+		AllowNegative: true,
+	})
+	return err
+}
+
+// restoreRefundBalance credits the previously-deducted refund amount back to the
+// user (used when the upstream gateway refund fails after we already deducted).
+// It mirrors deductRefundBalance so the ledger stays consistent: the reversal is
+// recorded as an EntryTypeCorrection row rather than silently updating balance.
+func (s *PaymentService) restoreRefundBalance(ctx context.Context, p *RefundPlan) error {
+	if s.ledgerService == nil {
+		return s.userRepo.UpdateBalance(ctx, p.Order.UserID, p.BalanceToDeduct)
+	}
+	_, err := s.ledgerService.ApplyBalanceChange(ctx, billingctx.BalanceChangeCommand{
+		UserID:        p.Order.UserID,
+		Delta:         p.BalanceToDeduct, // positive: give the deducted balance back
+		EntryType:     billingctx.EntryTypeCorrection,
+		SourceType:    billingctx.SourceTypeRefund,
+		Description:   fmt.Sprintf("refund deduction rollback (order %d)", p.OrderID),
+		AllowNegative: true,
+	})
+	return err
+}
+
 func (s *PaymentService) ExecuteRefund(ctx context.Context, p *RefundPlan) (*RefundResult, error) {
 	c, err := s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(p.OrderID), paymentorder.StatusIn(OrderStatusCompleted, OrderStatusRefundRequested, OrderStatusRefundPending, OrderStatusRefundFailed)).SetStatus(OrderStatusRefunding).Save(ctx)
 	if err != nil {
@@ -275,7 +315,7 @@ func (s *PaymentService) ExecuteRefund(ctx context.Context, p *RefundPlan) (*Ref
 		// Skip balance deduction on retry if previous attempt already deducted
 		// but failed to roll back (REFUND_ROLLBACK_FAILED in audit log).
 		if !s.hasAuditLog(ctx, p.OrderID, "REFUND_ROLLBACK_FAILED") {
-			if err := s.userRepo.DeductBalance(ctx, p.Order.UserID, p.BalanceToDeduct); err != nil {
+			if err := s.deductRefundBalance(ctx, p); err != nil {
 				s.restoreStatus(ctx, p)
 				return nil, fmt.Errorf("deduction: %w", err)
 			}
@@ -457,7 +497,7 @@ func (s *PaymentService) applyRefundFinalDeduction(ctx context.Context, p *Refun
 		return nil
 	}
 	if p.DeductionType == payment.DeductionTypeBalance && p.BalanceToDeduct > 0 {
-		if err := s.userRepo.DeductBalance(ctx, p.Order.UserID, p.BalanceToDeduct); err != nil {
+		if err := s.deductRefundBalance(ctx, p); err != nil {
 			return fmt.Errorf("deduction: %w", err)
 		}
 	}
@@ -588,7 +628,7 @@ func refundResponseID(resp *payment.RefundResponse) string {
 
 func (s *PaymentService) RollbackRefund(ctx context.Context, p *RefundPlan, gErr error) bool {
 	if p.DeductionType == payment.DeductionTypeBalance && p.BalanceToDeduct > 0 {
-		if err := s.userRepo.UpdateBalance(ctx, p.Order.UserID, p.BalanceToDeduct); err != nil {
+		if err := s.restoreRefundBalance(ctx, p); err != nil {
 			slog.Error("[CRITICAL] rollback failed", "orderID", p.OrderID, "amount", p.BalanceToDeduct, "error", err)
 			s.writeAuditLog(ctx, p.OrderID, "REFUND_ROLLBACK_FAILED", "admin", map[string]any{"gatewayError": psErrMsg(gErr), "rollbackError": psErrMsg(err), "balanceDeducted": p.BalanceToDeduct})
 			return false

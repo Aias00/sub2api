@@ -819,6 +819,30 @@ export async function createSparkShadow(parentId: number, payload: SparkShadowCr
   return data
 }
 
+/**
+ * Upstream vendor preset (curated catalog entry) used to auto-fill the
+ * create-account form when onboarding a paid OpenAI-compatible vendor.
+ */
+export interface UpstreamPreset {
+  id: string
+  display_name: string
+  platform: string
+  account_type: string
+  api_style: string
+  base_url: string
+  default_models: string[]
+  docs_url?: string
+}
+
+/**
+ * List the curated upstream vendor catalog (DeepSeek, Moonshot, Qwen, ...).
+ * Used by the create-account UI to offer a "pick a vendor -> auto-fill" dropdown.
+ */
+export async function listUpstreamPresets(): Promise<UpstreamPreset[]> {
+  const { data } = await apiClient.get<{ presets: UpstreamPreset[] }>('/admin/upstream/presets')
+  return data.presets ?? []
+}
+
 export const accountsAPI = {
   list,
   listWithEtag,
@@ -867,7 +891,8 @@ export const accountsAPI = {
   revertProxyFallback,
   queryOpenAIQuota,
   resetOpenAIQuota,
-  createSparkShadow
+  createSparkShadow,
+  listUpstreamPresets
 }
 
 export default accountsAPI

@@ -10,6 +10,7 @@ import (
 
 type User struct {
 	ID            int64      `json:"id"`
+	PublicID      string     `json:"public_id"`
 	Email         string     `json:"email"`
 	Username      string     `json:"username"`
 	Role          string     `json:"role"`

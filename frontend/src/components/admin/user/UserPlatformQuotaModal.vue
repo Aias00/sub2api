@@ -188,7 +188,7 @@ async function load() {
   if (!props.user) return
   loading.value = true
   try {
-    const data = await adminAPI.users.getPlatformQuotas(props.user.id)
+    const data = await adminAPI.users.getPlatformQuotas(props.user.public_id || props.user.id)
     quotas.value = normalize(data.platform_quotas || [])
   } catch {
     appStore.showError(t('admin.users.platformQuota.loadFailed'))
@@ -242,7 +242,7 @@ async function onSave() {
       weekly_limit_usd: normalizeLimit(r.weekly_limit_usd),
       monthly_limit_usd: normalizeLimit(r.monthly_limit_usd),
     }))
-    await adminAPI.users.updatePlatformQuotas(props.user.id, payload)
+    await adminAPI.users.updatePlatformQuotas(props.user.public_id || props.user.id, payload)
     appStore.showSuccess(t('admin.users.platformQuota.updateSuccess'))
     emit('success')
     emit('close')
@@ -271,7 +271,7 @@ async function onReset(platform: PlatformQuotaPlatform, quotaWindow: PlatformQuo
   const key = `${platform}.${quotaWindow}`
   resetting[key] = true
   try {
-    const data = await adminAPI.users.resetPlatformQuotaWindow(props.user.id, platform, quotaWindow)
+    const data = await adminAPI.users.resetPlatformQuotaWindow(props.user.public_id || props.user.id, platform, quotaWindow)
     quotas.value = normalize(data.platform_quotas || [])
     appStore.showSuccess(t('admin.users.platformQuota.reset.success', { platform, window: windowLabel }))
   } catch (e: any) {

@@ -37,6 +37,8 @@ func TestImageWorkspaceRepositoryCreateTaskReservesBalance(t *testing.T) {
 	mock.ExpectQuery("UPDATE users\\s+SET balance = balance -").
 		WithArgs(0.5, int64(42)).
 		WillReturnRows(sqlmock.NewRows([]string{"balance", "paid_reserved", "gift_reserved"}).AddRow(9.5, 0.5, 0.0))
+	mock.ExpectExec("INSERT INTO user_balance_ledger").
+		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectQuery("INSERT INTO image_workspace_tasks").
 		WillReturnRows(sqlmock.NewRows([]string{"id", "created_at", "updated_at"}).AddRow(int64(101), now, now))
 	mock.ExpectCommit()
@@ -74,6 +76,8 @@ func TestImageWorkspaceRepositoryCompleteTaskSettlesArtifactsAndUsage(t *testing
 	mock.ExpectQuery("UPDATE users\\s+SET balance = balance -").
 		WithArgs(0.25, int64(42)).
 		WillReturnRows(sqlmock.NewRows([]string{"balance", "paid_reserved", "gift_reserved"}).AddRow(9.25, 0.25, 0.0))
+	mock.ExpectExec("INSERT INTO user_balance_ledger").
+		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectQuery("UPDATE image_workspace_tasks\\s+SET status = \\$1").
 		WithArgs(service.ImageWorkspaceTaskStatusSucceeded, 0.75, `{"artifact_count":1}`, int64(101)).
 		WillReturnRows(imageWorkspaceTaskRows(now).
@@ -167,6 +171,8 @@ func TestImageWorkspaceRepositoryFailTaskRefundsReservedBalance(t *testing.T) {
 	mock.ExpectQuery("UPDATE users\\s+SET balance = balance \\+").
 		WithArgs(0.5, 0.0, int64(42)).
 		WillReturnRows(sqlmock.NewRows([]string{"balance"}).AddRow(10.0))
+	mock.ExpectExec("INSERT INTO user_balance_ledger").
+		WillReturnResult(sqlmock.NewResult(1, 1))
 	mock.ExpectExec("UPDATE image_workspace_tasks\\s+SET balance_snapshot = \\$1").
 		WithArgs(10.0, int64(101)).
 		WillReturnResult(sqlmock.NewResult(0, 1))

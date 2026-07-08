@@ -16,7 +16,63 @@ type userBalanceReservation struct {
 	Gift            float64
 }
 
-func reserveUserBalanceWithComponents(ctx context.Context, q sqlExecutor, userID int64, amount float64, insufficientErr error) (userBalanceReservation, error) {
+// balanceLedgerMeta labels a reserve/refund balance movement so it can be
+// recorded in user_balance_ledger. A nil *balanceLedgerMeta disables ledger
+// writing (used by callers that do not need an audit entry).
+type balanceLedgerMeta struct {
+	EntryType  billing.BalanceLedgerEntryType
+	SourceType billing.BalanceLedgerSourceType
+	Label      string
+}
+
+func (m *balanceLedgerMeta) describe(ledgerAmount float64) string {
+	if ledgerAmount < 0 {
+		return m.Label + "扣费"
+	}
+	return m.Label + "退款"
+}
+
+var (
+	imageWorkspaceBalanceLedger = balanceLedgerMeta{
+		EntryType:  billing.EntryTypeImageWorkspace,
+		SourceType: billing.SourceTypeImageWorkspaceRecord,
+		Label:      "图片生成",
+	}
+	wechatExportBalanceLedger = balanceLedgerMeta{
+		EntryType:  billing.EntryTypeWechatExport,
+		SourceType: billing.SourceTypeWechatExportTask,
+		Label:      "微信导出",
+	}
+)
+
+// writeBalanceComponentLedger records a signed balance movement in
+// user_balance_ledger within the caller's transaction (q). ledgerAmount is
+// signed (negative = deduction, positive = refund); balanceBefore is derived
+// from balanceAfter so the ledger stays a continuous, reconcilable trail.
+func writeBalanceComponentLedger(ctx context.Context, q sqlExecutor, userID int64, ledgerAmount, balanceAfter float64, meta *balanceLedgerMeta) error {
+	if meta == nil || ledgerAmount == 0 {
+		return nil
+	}
+	balanceBefore := balanceAfter - ledgerAmount
+	_, err := q.ExecContext(ctx, `
+		INSERT INTO user_balance_ledger (
+			user_id, entry_type, amount, balance_before, balance_after,
+			source_type, source_id, description, metadata_json, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8, NOW())
+	`,
+		userID,
+		string(meta.EntryType),
+		ledgerAmount,
+		balanceBefore,
+		balanceAfter,
+		string(meta.SourceType),
+		meta.describe(ledgerAmount),
+		[]byte("{}"),
+	)
+	return err
+}
+
+func reserveUserBalanceWithComponents(ctx context.Context, q sqlExecutor, userID int64, amount float64, insufficientErr error, meta *balanceLedgerMeta) (userBalanceReservation, error) {
 	if amount <= 0 {
 		return userBalanceReservation{}, nil
 	}
@@ -43,6 +99,10 @@ func reserveUserBalanceWithComponents(ctx context.Context, q sqlExecutor, userID
 			GREATEST(current_balance.gift_balance - updated_balance.gift_balance, 0)
 		FROM current_balance, updated_balance
 	`, []any{amount, userID}, &reservation.BalanceSnapshot, &reservation.Paid, &reservation.Gift); err == nil {
+		// Record the deduction so user_balance_ledger stays a complete audit trail.
+		if ledgerErr := writeBalanceComponentLedger(ctx, q, userID, -amount, reservation.BalanceSnapshot, meta); ledgerErr != nil {
+			return userBalanceReservation{}, ledgerErr
+		}
 		return reservation, nil
 	} else if !errors.Is(err, sql.ErrNoRows) {
 		return userBalanceReservation{}, err
@@ -63,7 +123,7 @@ func reserveUserBalanceWithComponents(ctx context.Context, q sqlExecutor, userID
 	return userBalanceReservation{}, billing.ErrInsufficientBalance
 }
 
-func creditBalanceComponents(ctx context.Context, q sqlExecutor, userID int64, paidAmount, giftAmount float64) (float64, error) {
+func creditBalanceComponents(ctx context.Context, q sqlExecutor, userID int64, paidAmount, giftAmount float64, meta *balanceLedgerMeta) (float64, error) {
 	paidAmount = math.Max(paidAmount, 0)
 	giftAmount = math.Max(giftAmount, 0)
 	if paidAmount == 0 && giftAmount == 0 {
@@ -82,16 +142,20 @@ func creditBalanceComponents(ctx context.Context, q sqlExecutor, userID int64, p
 	`, []any{paidAmount, giftAmount, userID}, &balanceSnapshot); err != nil {
 		return 0, err
 	}
+	// Record the refund so user_balance_ledger stays a complete audit trail.
+	if ledgerErr := writeBalanceComponentLedger(ctx, q, userID, paidAmount+giftAmount, balanceSnapshot, meta); ledgerErr != nil {
+		return 0, ledgerErr
+	}
 	return balanceSnapshot, nil
 }
 
-func refundBalanceReservation(ctx context.Context, q sqlExecutor, userID int64, amount float64, reservedPaid float64, reservedGift float64) (userBalanceReservation, error) {
+func refundBalanceReservation(ctx context.Context, q sqlExecutor, userID int64, amount float64, reservedPaid float64, reservedGift float64, meta *balanceLedgerMeta) (userBalanceReservation, error) {
 	if amount <= 0 {
 		return userBalanceReservation{}, nil
 	}
 	giftRefund := math.Min(amount, math.Max(reservedGift, 0))
 	paidRefund := math.Min(math.Max(amount-giftRefund, 0), math.Max(reservedPaid, 0))
-	balanceSnapshot, err := creditBalanceComponents(ctx, q, userID, paidRefund, giftRefund)
+	balanceSnapshot, err := creditBalanceComponents(ctx, q, userID, paidRefund, giftRefund, meta)
 	if err != nil {
 		return userBalanceReservation{}, err
 	}
@@ -102,11 +166,11 @@ func refundBalanceReservation(ctx context.Context, q sqlExecutor, userID int64, 
 	}, nil
 }
 
-func refundFullBalanceReservation(ctx context.Context, q sqlExecutor, userID int64, reservedPaid float64, reservedGift float64) (userBalanceReservation, error) {
+func refundFullBalanceReservation(ctx context.Context, q sqlExecutor, userID int64, reservedPaid float64, reservedGift float64, meta *balanceLedgerMeta) (userBalanceReservation, error) {
 	if reservedPaid <= 0 && reservedGift <= 0 {
 		return userBalanceReservation{}, nil
 	}
-	balanceSnapshot, err := creditBalanceComponents(ctx, q, userID, reservedPaid, reservedGift)
+	balanceSnapshot, err := creditBalanceComponents(ctx, q, userID, reservedPaid, reservedGift, meta)
 	if err != nil {
 		return userBalanceReservation{}, err
 	}

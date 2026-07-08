@@ -30,13 +30,13 @@
           >
             <button
               v-for="u in userResults"
-              :key="u.id"
+              :key="u.public_id || u.id"
               type="button"
               @click="selectUser(u)"
               class="w-full px-4 py-2 text-left hover:bg-gray-100 dark:hover:bg-gray-700"
             >
               <span>{{ u.email }}<span v-if="u.deleted" class="ml-1 text-xs text-gray-400">（{{ t('admin.usage.userDeletedBadge') }}）</span></span>
-              <span class="ml-2 text-xs text-gray-400">#{{ u.id }}</span>
+              <span class="ml-2 text-xs text-gray-400">{{ u.public_id || `#${u.id}` }}</span>
             </button>
           </div>
         </div>
@@ -285,12 +285,12 @@ const debounceApiKeySearch = () => {
 const selectUser = async (u: SimpleUser) => {
   userKeyword.value = u.email
   showUserDropdown.value = false
-  filters.value.user_id = u.id
+  filters.value.user_id = u.public_id || u.id
   clearApiKey()
 
   // Auto-load API keys for this user
   try {
-    apiKeyResults.value = await adminAPI.usage.searchApiKeys(u.id, '')
+    apiKeyResults.value = await adminAPI.usage.searchApiKeys(filters.value.user_id, '')
   } catch {
     apiKeyResults.value = []
   }

@@ -65,6 +65,7 @@ export interface UserProfileSourceContext {
 
 export interface User {
   id: number
+  public_id: string
   username: string
   email: string
   avatar_url?: string | null
@@ -1876,7 +1877,7 @@ export interface UsageQueryParams {
   page?: number
   page_size?: number
   api_key_id?: number
-  user_id?: number
+  user_id?: string | number
   account_id?: number
   group_id?: number
   model?: string

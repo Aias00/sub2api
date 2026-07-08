@@ -19,14 +19,16 @@ import (
 type DashboardHandler struct {
 	dashboardService   *service.DashboardService
 	aggregationService *service.DashboardAggregationService
+	adminService       service.AdminService
 	startTime          time.Time // Server start time for uptime calculation
 }
 
 // NewDashboardHandler creates a new admin dashboard handler
-func NewDashboardHandler(dashboardService *service.DashboardService, aggregationService *service.DashboardAggregationService) *DashboardHandler {
+func NewDashboardHandler(dashboardService *service.DashboardService, aggregationService *service.DashboardAggregationService, adminService service.AdminService) *DashboardHandler {
 	return &DashboardHandler{
 		dashboardService:   dashboardService,
 		aggregationService: aggregationService,
+		adminService:       adminService,
 		startTime:          time.Now(),
 	}
 }
@@ -202,9 +204,11 @@ func (h *DashboardHandler) GetUsageTrend(c *gin.Context) {
 	var billingType *int8
 
 	if userIDStr := c.Query("user_id"); userIDStr != "" {
-		if id, err := strconv.ParseInt(userIDStr, 10, 64); err == nil {
-			userID = id
+		resolvedID, ok := resolveAdminUserIDParam(c, h.adminService, userIDStr, "user_id")
+		if !ok {
+			return
 		}
+		userID = resolvedID
 	}
 	if apiKeyIDStr := c.Query("api_key_id"); apiKeyIDStr != "" {
 		if id, err := strconv.ParseInt(apiKeyIDStr, 10, 64); err == nil {
@@ -279,9 +283,11 @@ func (h *DashboardHandler) GetModelStats(c *gin.Context) {
 	var billingType *int8
 
 	if userIDStr := c.Query("user_id"); userIDStr != "" {
-		if id, err := strconv.ParseInt(userIDStr, 10, 64); err == nil {
-			userID = id
+		resolvedID, ok := resolveAdminUserIDParam(c, h.adminService, userIDStr, "user_id")
+		if !ok {
+			return
 		}
+		userID = resolvedID
 	}
 	if apiKeyIDStr := c.Query("api_key_id"); apiKeyIDStr != "" {
 		if id, err := strconv.ParseInt(apiKeyIDStr, 10, 64); err == nil {
@@ -357,9 +363,11 @@ func (h *DashboardHandler) GetGroupStats(c *gin.Context) {
 	var billingType *int8
 
 	if userIDStr := c.Query("user_id"); userIDStr != "" {
-		if id, err := strconv.ParseInt(userIDStr, 10, 64); err == nil {
-			userID = id
+		resolvedID, ok := resolveAdminUserIDParam(c, h.adminService, userIDStr, "user_id")
+		if !ok {
+			return
 		}
+		userID = resolvedID
 	}
 	if apiKeyIDStr := c.Query("api_key_id"); apiKeyIDStr != "" {
 		if id, err := strconv.ParseInt(apiKeyIDStr, 10, 64); err == nil {
@@ -472,7 +480,8 @@ func (h *DashboardHandler) GetUserUsageTrend(c *gin.Context) {
 
 // BatchUsersUsageRequest represents the request body for batch user usage stats
 type BatchUsersUsageRequest struct {
-	UserIDs []int64 `json:"user_ids" binding:"required"`
+	UserIDs       []int64  `json:"user_ids"`
+	UserPublicIDs []string `json:"user_public_ids"`
 }
 
 var dashboardUsersRankingCache = newSnapshotCache(5 * time.Minute)
@@ -541,6 +550,21 @@ func (h *DashboardHandler) GetBatchUsersUsage(c *gin.Context) {
 	}
 
 	userIDs := normalizeInt64IDList(req.UserIDs)
+	publicIDByUserID := map[int64]string{}
+	if len(req.UserPublicIDs) > 0 {
+		userIDs = make([]int64, 0, len(req.UserPublicIDs))
+		for _, publicID := range req.UserPublicIDs {
+			userID, ok := resolveAdminUserIDParam(c, h.adminService, publicID, "user_public_ids")
+			if !ok {
+				return
+			}
+			if userID > 0 {
+				userIDs = append(userIDs, userID)
+				publicIDByUserID[userID] = strings.TrimSpace(publicID)
+			}
+		}
+		userIDs = normalizeInt64IDList(userIDs)
+	}
 	if len(userIDs) == 0 {
 		response.Success(c, gin.H{"stats": map[string]any{}})
 		return
@@ -548,13 +572,15 @@ func (h *DashboardHandler) GetBatchUsersUsage(c *gin.Context) {
 
 	// cacheKey 必须包含当日日期，否则跨午夜后 30s 内会复用昨天的 "today_*" 结果。
 	keyRaw, _ := json.Marshal(struct {
-		V       int     `json:"v"`
-		Day     string  `json:"day"`
-		UserIDs []int64 `json:"user_ids"`
+		V             int      `json:"v"`
+		Day           string   `json:"day"`
+		UserIDs       []int64  `json:"user_ids,omitempty"`
+		UserPublicIDs []string `json:"user_public_ids,omitempty"`
 	}{
-		V:       2, // bump 当响应结构变化（如加入 by_platform 时）
-		Day:     timezone.Today().Format("2006-01-02"),
-		UserIDs: userIDs,
+		V:             3, // bump 当响应结构变化（如加入 by_platform 时）
+		Day:           timezone.Today().Format("2006-01-02"),
+		UserIDs:       userIDs,
+		UserPublicIDs: req.UserPublicIDs,
 	})
 	cacheKey := string(keyRaw)
 	if cached, ok := dashboardBatchUsersUsageCache.Get(cacheKey); ok {
@@ -569,7 +595,22 @@ func (h *DashboardHandler) GetBatchUsersUsage(c *gin.Context) {
 		return
 	}
 
-	payload := gin.H{"stats": stats}
+	var payload gin.H
+	if len(publicIDByUserID) > 0 {
+		byPublicID := make(map[string]any, len(stats))
+		for userID, stat := range stats {
+			publicID := publicIDByUserID[userID]
+			if publicID == "" || stat == nil {
+				continue
+			}
+			clone := *stat
+			clone.UserID = 0
+			byPublicID[publicID] = &clone
+		}
+		payload = gin.H{"stats": byPublicID}
+	} else {
+		payload = gin.H{"stats": stats}
+	}
 	dashboardBatchUsersUsageCache.Set(cacheKey, payload)
 	c.Header("X-Snapshot-Cache", "miss")
 	response.Success(c, payload)
@@ -643,9 +684,11 @@ func (h *DashboardHandler) GetUserBreakdown(c *gin.Context) {
 
 	// Additional filter conditions
 	if v := c.Query("user_id"); v != "" {
-		if id, err := strconv.ParseInt(v, 10, 64); err == nil {
-			dim.UserID = id
+		userID, ok := resolveAdminUserIDParam(c, h.adminService, v, "user_id")
+		if !ok {
+			return
 		}
+		dim.UserID = userID
 	}
 	if v := c.Query("api_key_id"); v != "" {
 		if id, err := strconv.ParseInt(v, 10, 64); err == nil {

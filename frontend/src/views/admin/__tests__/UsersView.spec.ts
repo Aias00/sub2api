@@ -66,6 +66,7 @@ vi.mock('vue-i18n', async () => {
 
 const createAdminUser = (overrides: Partial<AdminUser> = {}): AdminUser => ({
   id: 42,
+  public_id: 'u_735000000000000042',
   username: 'scoped-user',
   email: 'scoped@example.com',
   role: 'user',
@@ -292,8 +293,8 @@ describe('admin UsersView', () => {
 
     listUsers.mockResolvedValue({
       items: [
-        createAdminUser({ id: 1, email: 'last-used-first@example.com' }),
-        createAdminUser({ id: 2, email: 'usage-first@example.com' })
+        createAdminUser({ id: 1, public_id: 'u_735000000000000001', email: 'last-used-first@example.com' }),
+        createAdminUser({ id: 2, public_id: 'u_735000000000000002', email: 'usage-first@example.com' })
       ],
       total: 2,
       page: 1,
@@ -302,8 +303,8 @@ describe('admin UsersView', () => {
     })
     getBatchUsersUsage.mockResolvedValue({
       stats: {
-        1: { user_id: 1, today_actual_cost: 1, total_actual_cost: 1, by_platform: [] },
-        2: { user_id: 2, today_actual_cost: 9, total_actual_cost: 9, by_platform: [] }
+        u_735000000000000001: { today_actual_cost: 1, total_actual_cost: 1, by_platform: [] },
+        u_735000000000000002: { today_actual_cost: 9, total_actual_cost: 9, by_platform: [] }
       }
     })
 

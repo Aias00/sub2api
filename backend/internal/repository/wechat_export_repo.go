@@ -661,7 +661,7 @@ func (r *wechatExportRepository) CancelTask(ctx context.Context, userID int64, t
 	}
 	// Refund reserved credits if any
 	if task.CostEstimate > 0 {
-		refunded, refundErr := refundFullBalanceReservation(ctx, tx, task.UserID, weChatExportTaskReservation(task).Paid, weChatExportTaskReservation(task).Gift)
+		refunded, refundErr := refundFullBalanceReservation(ctx, tx, task.UserID, weChatExportTaskReservation(task).Paid, weChatExportTaskReservation(task).Gift, &wechatExportBalanceLedger)
 		if refundErr != nil {
 			return nil, refundErr
 		}
@@ -959,7 +959,7 @@ func (r *wechatExportRepository) CompleteTask(ctx context.Context, taskID int64,
 		}
 		reservation = mergeBalanceReservation(reservation, delta)
 	} else if adjustment < 0 {
-		refunded, refundErr := refundBalanceReservation(ctx, tx, task.UserID, -adjustment, reservation.Paid, reservation.Gift)
+		refunded, refundErr := refundBalanceReservation(ctx, tx, task.UserID, -adjustment, reservation.Paid, reservation.Gift, &wechatExportBalanceLedger)
 		if refundErr != nil {
 			return nil, refundErr
 		}
@@ -1052,7 +1052,7 @@ func (r *wechatExportRepository) FailTask(ctx context.Context, taskID int64, lea
 	// Refund reserved credits if any (before the status update, within the same
 	// transaction and row lock, so it's safe from concurrent FailTask calls).
 	if task.CostEstimate > 0 {
-		refunded, refundErr := refundFullBalanceReservation(ctx, tx, task.UserID, weChatExportTaskReservation(task).Paid, weChatExportTaskReservation(task).Gift)
+		refunded, refundErr := refundFullBalanceReservation(ctx, tx, task.UserID, weChatExportTaskReservation(task).Paid, weChatExportTaskReservation(task).Gift, &wechatExportBalanceLedger)
 		if refundErr != nil {
 			return nil, refundErr
 		}
@@ -1245,7 +1245,7 @@ func scanWeChatTask(ctx context.Context, q sqlQueryer, query string, args ...any
 }
 
 func reserveWeChatExportBalance(ctx context.Context, q sqlExecutor, userID int64, amount float64) (userBalanceReservation, error) {
-	return reserveUserBalanceWithComponents(ctx, q, userID, amount, wechat.ErrInsufficientBalance)
+	return reserveUserBalanceWithComponents(ctx, q, userID, amount, wechat.ErrInsufficientBalance, &wechatExportBalanceLedger)
 }
 
 func weChatExportTaskReservation(task *wechat.ExportTask) userBalanceReservation {

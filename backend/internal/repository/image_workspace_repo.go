@@ -384,7 +384,7 @@ func (r *imageWorkspaceRepository) CompleteTask(ctx context.Context, taskID int6
 		}
 		reservation = mergeBalanceReservation(reservation, delta)
 	} else if adjustment < 0 {
-		refunded, err := refundBalanceReservation(ctx, tx, current.UserID, -adjustment, reservation.Paid, reservation.Gift)
+		refunded, err := refundBalanceReservation(ctx, tx, current.UserID, -adjustment, reservation.Paid, reservation.Gift, &imageWorkspaceBalanceLedger)
 		if err != nil {
 			return nil, err
 		}
@@ -487,7 +487,7 @@ func (r *imageWorkspaceRepository) FailTask(ctx context.Context, taskID int64, m
 		return nil, err
 	}
 	if task.CostEstimate > 0 {
-		refunded, err := refundFullBalanceReservation(ctx, tx, task.UserID, imageWorkspaceTaskReservation(task).Paid, imageWorkspaceTaskReservation(task).Gift)
+		refunded, err := refundFullBalanceReservation(ctx, tx, task.UserID, imageWorkspaceTaskReservation(task).Paid, imageWorkspaceTaskReservation(task).Gift, &imageWorkspaceBalanceLedger)
 		if err != nil {
 			return nil, err
 		}
@@ -567,7 +567,7 @@ func (r *imageWorkspaceRepository) CancelTask(ctx context.Context, taskID int64,
 		return nil, err
 	}
 	if task.CostEstimate > 0 {
-		refunded, err := refundFullBalanceReservation(ctx, tx, task.UserID, imageWorkspaceTaskReservation(task).Paid, imageWorkspaceTaskReservation(task).Gift)
+		refunded, err := refundFullBalanceReservation(ctx, tx, task.UserID, imageWorkspaceTaskReservation(task).Paid, imageWorkspaceTaskReservation(task).Gift, &imageWorkspaceBalanceLedger)
 		if err != nil {
 			return nil, err
 		}
@@ -672,7 +672,7 @@ func (r *imageWorkspaceRepository) GetWorkerStatus(ctx context.Context) (*conten
 }
 
 func reserveImageWorkspaceBalance(ctx context.Context, q sqlExecutor, userID int64, amount float64) (userBalanceReservation, error) {
-	return reserveUserBalanceWithComponents(ctx, q, userID, amount, billing.ErrInsufficientBalance)
+	return reserveUserBalanceWithComponents(ctx, q, userID, amount, billing.ErrInsufficientBalance, &imageWorkspaceBalanceLedger)
 }
 
 func imageWorkspaceTaskReservation(task *contentimage.ImageWorkspaceTask) userBalanceReservation {

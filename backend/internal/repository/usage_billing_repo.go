@@ -191,6 +191,12 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 		}
 		result.NewBalance = &newBalance
 		result.BalanceOverdrafted = !sufficient
+		// Record the balance deduction in user_balance_ledger within the same tx
+		// so the ledger stays a reconcilable audit trail. Idempotency is inherited
+		// from the usage_billing_dedup claim (this runs only on first application).
+		if err := insertUsageBillingBalanceLedger(ctx, tx, cmd, newBalance); err != nil {
+			return err
+		}
 	}
 
 	if cmd.APIKeyQuotaCost > 0 {
@@ -364,6 +370,34 @@ func isOneTimeDailyQuota(startsAt, expiresAt time.Time) bool {
 	return !expiresAt.After(startsAt.AddDate(0, 0, 1))
 }
 
+// insertBatchImageBalanceLedger records a signed spendable-balance movement for
+// batch image hold/capture/release into user_balance_ledger within the caller's
+// tx. ledgerAmount is signed (negative = hold deduction, positive = refund);
+// balanceBefore is derived from balanceAfter so the ledger reconciles. A zero
+// amount writes nothing (e.g. capture where actual == hold).
+func insertBatchImageBalanceLedger(ctx context.Context, tx *sql.Tx, userID int64, ledgerAmount, balanceAfter float64, description string) error {
+	if ledgerAmount == 0 {
+		return nil
+	}
+	balanceBefore := balanceAfter - ledgerAmount
+	_, err := tx.ExecContext(ctx, `
+		INSERT INTO user_balance_ledger (
+			user_id, entry_type, amount, balance_before, balance_after,
+			source_type, source_id, description, metadata_json, created_at
+		) VALUES ($1, $2, $3, $4, $5, $6, NULL, $7, $8, NOW())
+	`,
+		userID,
+		string(billingctx.EntryTypeImageWorkspace),
+		ledgerAmount,
+		balanceBefore,
+		balanceAfter,
+		string(billingctx.SourceTypeImageWorkspaceRecord),
+		description,
+		[]byte("{}"),
+	)
+	return err
+}
+
 func reserveUsageBillingBatchImageBalance(ctx context.Context, tx *sql.Tx, cmd *billingctx.BatchImageBalanceHoldCommand) (*billingctx.BatchImageBalanceHoldResult, error) {
 	if cmd.HoldAmount <= 0 {
 		return &billingctx.BatchImageBalanceHoldResult{}, nil
@@ -378,6 +412,9 @@ func reserveUsageBillingBatchImageBalance(ctx context.Context, tx *sql.Tx, cmd *
 		RETURNING balance, frozen_balance
 	`, cmd.HoldAmount, cmd.UserID).Scan(&balance, &frozen)
 	if err == nil {
+		if ledgerErr := insertBatchImageBalanceLedger(ctx, tx, cmd.UserID, -cmd.HoldAmount, balance, "批量图像生成预扣"); ledgerErr != nil {
+			return nil, ledgerErr
+		}
 		return &billingctx.BatchImageBalanceHoldResult{NewBalance: &balance, FrozenBalance: &frozen}, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
@@ -410,6 +447,11 @@ func captureUsageBillingBatchImageBalance(ctx context.Context, tx *sql.Tx, cmd *
 		RETURNING balance, frozen_balance
 	`, cmd.HoldAmount, cmd.ActualAmount, cmd.UserID).Scan(&balance, &frozen)
 	if err == nil {
+		// Settlement refunds the unused hold (hold - actual). The original hold was
+		// recorded as a deduction, so the net across hold+capture equals -actual.
+		if ledgerErr := insertBatchImageBalanceLedger(ctx, tx, cmd.UserID, cmd.HoldAmount-cmd.ActualAmount, balance, "批量图像结算退回"); ledgerErr != nil {
+			return nil, ledgerErr
+		}
 		return &billingctx.BatchImageBalanceHoldResult{NewBalance: &balance, FrozenBalance: &frozen}, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
@@ -437,6 +479,9 @@ func releaseUsageBillingBatchImageBalance(ctx context.Context, tx *sql.Tx, cmd *
 		RETURNING balance, frozen_balance
 	`, cmd.HoldAmount, cmd.UserID).Scan(&balance, &frozen)
 	if err == nil {
+		if ledgerErr := insertBatchImageBalanceLedger(ctx, tx, cmd.UserID, cmd.HoldAmount, balance, "批量图像取消退回"); ledgerErr != nil {
+			return nil, ledgerErr
+		}
 		return &billingctx.BatchImageBalanceHoldResult{NewBalance: &balance, FrozenBalance: &frozen}, nil
 	}
 	if !errors.Is(err, sql.ErrNoRows) {
@@ -464,6 +509,36 @@ func userExistsForBilling(ctx context.Context, tx *sql.Tx, userID int64) (bool, 
 		return false, err
 	}
 	return true, nil
+}
+
+// insertUsageBillingBalanceLedger records an API-usage balance deduction into
+// user_balance_ledger inside the caller's tx. balanceAfter is the post-deduction
+// balance returned by deductUsageBillingBalance; balanceBefore is derived by
+// adding the cost back. metadata is a minimal valid JSON object.
+func insertUsageBillingBalanceLedger(ctx context.Context, tx *sql.Tx, cmd *billingctx.UsageBillingCommand, balanceAfter float64) error {
+	balanceBefore := balanceAfter + cmd.BalanceCost
+	description := "API 用量扣费"
+	if cmd.Model != "" {
+		description = description + " " + cmd.Model
+	}
+	_, err := tx.ExecContext(ctx, `
+		INSERT INTO user_balance_ledger (
+			user_id, entry_type, amount,
+			balance_before, balance_after,
+			source_type, source_id,
+			description, metadata_json, created_at
+		) VALUES ($1,$2,$3,$4,$5,$6,NULL,$7,$8,NOW())
+	`,
+		cmd.UserID,
+		string(billingctx.EntryTypeAPIUsage),
+		-cmd.BalanceCost,
+		balanceBefore,
+		balanceAfter,
+		string(billingctx.SourceTypeUsageLog),
+		description,
+		[]byte("{}"),
+	)
+	return err
 }
 
 func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64, giftEligible bool) (float64, bool, error) {

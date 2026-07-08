@@ -17,7 +17,7 @@
               <div class="min-w-0">
                 <div class="truncate text-sm font-semibold text-gray-900 dark:text-white">{{ user.email }}</div>
                 <div class="mt-0.5 text-xs text-gray-500 dark:text-dark-400">
-                  ID {{ user.id }} · {{ user.username || t('admin.users.profileSummary.noUsername') }}
+                  ID {{ user.public_id || user.id }} · {{ user.username || t('admin.users.profileSummary.noUsername') }}
                 </div>
               </div>
             </div>
@@ -234,7 +234,7 @@ const SummaryRow = defineComponent({
 })
 
 watch(
-  () => [props.show, props.user?.id] as const,
+  () => [props.show, props.user?.public_id || props.user?.id] as const,
   ([show, userID]) => {
     if (show && userID) {
       loadSummary(userID)
@@ -246,7 +246,7 @@ watch(
   { immediate: true }
 )
 
-async function loadSummary(userID: number) {
+async function loadSummary(userID: string | number) {
   loading.value = true
   error.value = ''
   try {

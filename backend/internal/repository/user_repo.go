@@ -50,6 +50,33 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	if userIn == nil {
 		return nil
 	}
+
+	const maxPublicIDCreateAttempts = 5
+	requestedPublicID := normalizePublicUserID(userIn.PublicID)
+	if requestedPublicID != "" {
+		userIn.PublicID = requestedPublicID
+		return r.create(ctx, userIn)
+	}
+
+	var lastErr error
+	for attempt := 0; attempt < maxPublicIDCreateAttempts; attempt++ {
+		userIn.PublicID = identity.NewPublicUserID()
+		err := r.create(ctx, userIn)
+		if err == nil {
+			return nil
+		}
+		if !isPublicIDUniqueConstraintViolation(err) {
+			return err
+		}
+		lastErr = err
+	}
+	return fmt.Errorf("public user id collision after %d attempts: %w", maxPublicIDCreateAttempts, lastErr)
+}
+
+func (r *userRepository) create(ctx context.Context, userIn *service.User) error {
+	if userIn == nil {
+		return nil
+	}
 	rawSignupSource := strings.TrimSpace(userIn.SignupSource)
 
 	// 统一使用 ent 的事务：保证用户与允许分组的更新原子化，
@@ -75,6 +102,10 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	}
 
 	signupSource := userSignupSourceOrDefault(userIn.SignupSource)
+	publicID := normalizePublicUserID(userIn.PublicID)
+	if publicID == "" {
+		publicID = identity.NewPublicUserID()
+	}
 
 	releaseEmailLock, err := lockRepositoryScopedKeys(
 		txCtx,
@@ -92,6 +123,7 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	}
 
 	created, err := txClient.User.Create().
+		SetPublicID(publicID).
 		SetEmail(userIn.Email).
 		SetUsername(userIn.Username).
 		SetNotes(userIn.Notes).
@@ -108,6 +140,9 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 		SetRpmLimit(userIn.RPMLimit).
 		Save(txCtx)
 	if err != nil {
+		if isPublicIDUniqueConstraintViolation(err) {
+			return err
+		}
 		return translatePersistenceError(err, nil, identity.ErrEmailExists)
 	}
 
@@ -150,6 +185,25 @@ func (r *userRepository) Create(ctx context.Context, userIn *service.User) error
 	return nil
 }
 
+func normalizePublicUserID(publicID string) string {
+	publicID = strings.TrimSpace(publicID)
+	if publicID == "" || strings.HasPrefix(publicID, identity.PublicUserIDPrefix) {
+		return publicID
+	}
+	return identity.PublicUserIDPrefix + publicID
+}
+
+func isPublicIDUniqueConstraintViolation(err error) bool {
+	if err == nil || !isUniqueConstraintViolation(err) {
+		return false
+	}
+	var pgErr *pq.Error
+	if errors.As(err, &pgErr) {
+		return pgErr.Constraint == "users_public_id_key"
+	}
+	return strings.Contains(strings.ToLower(err.Error()), "public_id")
+}
+
 func (r *userRepository) GetByID(ctx context.Context, id int64) (*service.User, error) {
 	m, err := r.client.User.Query().Where(dbuser.IDEQ(id)).Only(ctx)
 	if err != nil {
@@ -185,6 +239,32 @@ func (r *userRepository) GetByIDIncludeDeleted(ctx context.Context, id int64) (*
 		return nil, err
 	}
 	if v, ok := groups[id]; ok {
+		out.AllowedGroups = v
+	}
+	return out, nil
+}
+
+func (r *userRepository) GetByPublicID(ctx context.Context, publicID string, includeDeleted bool) (*service.User, error) {
+	publicID = strings.TrimSpace(publicID)
+	if publicID == "" {
+		return nil, identity.ErrUserNotFound
+	}
+	if includeDeleted {
+		ctx = mixins.SkipSoftDelete(ctx)
+	}
+	m, err := r.client.User.Query().Where(dbuser.PublicIDEQ(publicID)).Only(ctx)
+	if err != nil {
+		return nil, translatePersistenceError(err, identity.ErrUserNotFound, nil)
+	}
+	out := userEntityToService(m)
+	if err := r.hydrateUserBalanceBuckets(ctx, out); err != nil {
+		return nil, err
+	}
+	groups, err := r.loadAllowedGroups(ctx, []int64{m.ID})
+	if err != nil {
+		return nil, err
+	}
+	if v, ok := groups[m.ID]; ok {
 		out.AllowedGroups = v
 	}
 	return out, nil
@@ -674,6 +754,9 @@ func userListOrder(params pagination.PaginationParams) []func(*entsql.Selector) 
 	defaultField := true
 	nullsLastField := false
 	switch sortBy {
+	case "public_id":
+		field = dbuser.FieldPublicID
+		defaultField = false
 	case "email":
 		field = dbuser.FieldEmail
 		defaultField = false
@@ -981,11 +1064,11 @@ func (r *userRepository) ListSignupGrantRiskClaims(ctx context.Context, limit, o
 	args := make([]any, 0, 5)
 	if strings.TrimSpace(filter.Decision) != "" {
 		args = append(args, strings.TrimSpace(filter.Decision))
-		clauses = append(clauses, "decision = $"+strconv.Itoa(len(args)))
+		clauses = append(clauses, "c.decision = $"+strconv.Itoa(len(args)))
 	}
 	if filter.UserID > 0 {
 		args = append(args, filter.UserID)
-		clauses = append(clauses, "user_id = $"+strconv.Itoa(len(args)))
+		clauses = append(clauses, "c.user_id = $"+strconv.Itoa(len(args)))
 	}
 	if strings.TrimSpace(filter.SubjectQuery) != "" {
 		if rawColumn, hashColumn := signupGrantRiskClaimSubjectColumns(filter.SubjectType); rawColumn != "" && hashColumn != "" {
@@ -993,30 +1076,31 @@ func (r *userRepository) ListSignupGrantRiskClaims(ctx context.Context, limit, o
 			args = append(args, query, "%"+query+"%")
 			exactIndex := strconv.Itoa(len(args) - 1)
 			likeIndex := strconv.Itoa(len(args))
-			clauses = append(clauses, "("+hashColumn+" = $"+exactIndex+" OR "+rawColumn+" ILIKE $"+likeIndex+")")
+			clauses = append(clauses, "(c."+hashColumn+" = $"+exactIndex+" OR c."+rawColumn+" ILIKE $"+likeIndex+")")
 		}
 	}
 	if strings.TrimSpace(filter.Reason) != "" {
 		args = append(args, "%"+strings.TrimSpace(filter.Reason)+"%")
-		clauses = append(clauses, "reason ILIKE $"+strconv.Itoa(len(args)))
+		clauses = append(clauses, "c.reason ILIKE $"+strconv.Itoa(len(args)))
 	}
 	where := ""
 	if len(clauses) > 0 {
 		where = "WHERE " + strings.Join(clauses, " AND ")
 	}
 	var total int64
-	if err := scanSingleRow(ctx, r.sql, "SELECT COUNT(*) FROM signup_grant_claims "+where, args, &total); err != nil {
+	if err := scanSingleRow(ctx, r.sql, "SELECT COUNT(*) FROM signup_grant_claims c "+where, args, &total); err != nil {
 		return nil, 0, err
 	}
 	queryArgs := append(args, limit, offset)
 	rows, err := r.sql.QueryContext(ctx, `
-		SELECT id, user_id, email, email_domain, ip_address,
-		       email_hash, email_domain_hash, ip_hash, user_agent_hash,
-		       signup_source, provider_type, provider_subject, provider_subject_hash, decision, reason,
-		       grant_balance, created_at, updated_at
-		FROM signup_grant_claims
+		SELECT c.id, c.user_id, COALESCE(u.public_id, ''), c.email, c.email_domain, c.ip_address,
+		       c.email_hash, c.email_domain_hash, c.ip_hash, c.user_agent_hash,
+		       c.signup_source, c.provider_type, c.provider_subject, c.provider_subject_hash, c.decision, c.reason,
+		       c.grant_balance, c.created_at, c.updated_at
+		FROM signup_grant_claims c
+		LEFT JOIN users u ON u.id = c.user_id
 		`+where+`
-		ORDER BY created_at DESC
+		ORDER BY c.created_at DESC
 		LIMIT $`+strconv.Itoa(len(args)+1)+` OFFSET $`+strconv.Itoa(len(args)+2),
 		queryArgs...,
 	)
@@ -1028,8 +1112,9 @@ func (r *userRepository) ListSignupGrantRiskClaims(ctx context.Context, limit, o
 	for rows.Next() {
 		var rec service.SignupGrantRiskClaimRecord
 		var userID sql.NullInt64
+		var userPublicID string
 		if err := rows.Scan(
-			&rec.ID, &userID, &rec.Email, &rec.EmailDomain, &rec.IPAddress,
+			&rec.ID, &userID, &userPublicID, &rec.Email, &rec.EmailDomain, &rec.IPAddress,
 			&rec.EmailHash, &rec.EmailDomainHash, &rec.IPHash, &rec.UserAgentHash,
 			&rec.SignupSource, &rec.ProviderType, &rec.ProviderSubject, &rec.ProviderSubjectHash, &rec.Decision, &rec.Reason,
 			&rec.GrantBalance, &rec.CreatedAt, &rec.UpdatedAt,
@@ -1039,6 +1124,7 @@ func (r *userRepository) ListSignupGrantRiskClaims(ctx context.Context, limit, o
 		if userID.Valid {
 			rec.UserID = &userID.Int64
 		}
+		rec.UserPublicID = userPublicID
 		records = append(records, rec)
 	}
 	return records, total, rows.Err()
@@ -1277,30 +1363,31 @@ func (r *userRepository) ListSignupGrantAdminAuditLogs(ctx context.Context, limi
 	args := make([]any, 0, 3)
 	if strings.TrimSpace(filter.Operation) != "" {
 		args = append(args, strings.TrimSpace(filter.Operation))
-		clauses = append(clauses, "operation = $"+strconv.Itoa(len(args)))
+		clauses = append(clauses, "a.operation = $"+strconv.Itoa(len(args)))
 	}
 	if filter.AdminID > 0 {
 		args = append(args, filter.AdminID)
-		clauses = append(clauses, "admin_id = $"+strconv.Itoa(len(args)))
+		clauses = append(clauses, "a.admin_id = $"+strconv.Itoa(len(args)))
 	}
 	if filter.TargetUserID > 0 {
 		args = append(args, filter.TargetUserID)
-		clauses = append(clauses, "target_user_id = $"+strconv.Itoa(len(args)))
+		clauses = append(clauses, "a.target_user_id = $"+strconv.Itoa(len(args)))
 	}
 	where := ""
 	if len(clauses) > 0 {
 		where = "WHERE " + strings.Join(clauses, " AND ")
 	}
 	var total int64
-	if err := scanSingleRow(ctx, r.sql, "SELECT COUNT(*) FROM signup_grant_admin_audit_logs "+where, args, &total); err != nil {
+	if err := scanSingleRow(ctx, r.sql, "SELECT COUNT(*) FROM signup_grant_admin_audit_logs a "+where, args, &total); err != nil {
 		return nil, 0, err
 	}
 	queryArgs := append(args, limit, offset)
 	rows, err := r.sql.QueryContext(ctx, `
-		SELECT id, operation, target_user_id, subject_type, subject_value, subject_hash, action, amount, reason, admin_id, metadata, created_at
-		FROM signup_grant_admin_audit_logs
+		SELECT a.id, a.operation, a.target_user_id, COALESCE(u.public_id, ''), a.subject_type, a.subject_value, a.subject_hash, a.action, a.amount, a.reason, a.admin_id, a.metadata, a.created_at
+		FROM signup_grant_admin_audit_logs a
+		LEFT JOIN users u ON u.id = a.target_user_id
 		`+where+`
-		ORDER BY created_at DESC
+		ORDER BY a.created_at DESC
 		LIMIT $`+strconv.Itoa(len(args)+1)+` OFFSET $`+strconv.Itoa(len(args)+2),
 		queryArgs...,
 	)
@@ -1312,10 +1399,11 @@ func (r *userRepository) ListSignupGrantAdminAuditLogs(ctx context.Context, limi
 	for rows.Next() {
 		var rec service.SignupGrantAdminAuditLog
 		var targetUserID sql.NullInt64
+		var targetUserPublicID string
 		var adminID sql.NullInt64
 		var metadataRaw []byte
 		if err := rows.Scan(
-			&rec.ID, &rec.Operation, &targetUserID, &rec.SubjectType, &rec.SubjectValue, &rec.SubjectHash,
+			&rec.ID, &rec.Operation, &targetUserID, &targetUserPublicID, &rec.SubjectType, &rec.SubjectValue, &rec.SubjectHash,
 			&rec.Action, &rec.Amount, &rec.Reason, &adminID, &metadataRaw, &rec.CreatedAt,
 		); err != nil {
 			return nil, 0, err
@@ -1323,6 +1411,7 @@ func (r *userRepository) ListSignupGrantAdminAuditLogs(ctx context.Context, limi
 		if targetUserID.Valid {
 			rec.TargetUserID = &targetUserID.Int64
 		}
+		rec.TargetUserPublicID = targetUserPublicID
 		if adminID.Valid {
 			rec.AdminID = &adminID.Int64
 		}
@@ -1628,6 +1717,7 @@ func applyUserEntityToService(dst *service.User, src *dbent.User) {
 		return
 	}
 	dst.ID = src.ID
+	dst.PublicID = src.PublicID
 	dst.SignupSource = src.SignupSource
 	dst.LastLoginAt = src.LastLoginAt
 	dst.LastActiveAt = src.LastActiveAt

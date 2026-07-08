@@ -104,9 +104,9 @@ describe('admin users api auth identity binding', () => {
     }
     post.mockResolvedValue({ data: response })
 
-    const result = await bindUserAuthIdentity(9, payload)
+    const result = await bindUserAuthIdentity('u_9w8x7y6z', payload)
 
-    expect(post).toHaveBeenCalledWith('/admin/users/9/auth-identities', payload)
+    expect(post).toHaveBeenCalledWith('/admin/users/u_9w8x7y6z/auth-identities', payload)
     expect(result).toEqual(response)
   })
 

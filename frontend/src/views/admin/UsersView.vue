@@ -318,7 +318,7 @@
                   <span :class="claim.decision === 'allowed' ? 'text-emerald-600' : 'text-red-600'">
                     {{ claim.decision === 'allowed' ? t('admin.users.signupRisk.allowed') : t('admin.users.signupRisk.blocked') }}
                   </span>
-                  <span class="text-gray-600 dark:text-dark-300">{{ claim.user_id || '-' }}</span>
+                  <span class="text-gray-600 dark:text-dark-300">{{ claim.user_public_id || claim.user_id || '-' }}</span>
                   <span class="min-w-0">
                     <span class="block truncate text-gray-700 dark:text-dark-200" :title="claim.reason">
                       {{ claim.reason || '-' }}
@@ -403,7 +403,7 @@
                   </div>
                   <div class="mt-1 flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500 dark:text-dark-400">
                     <span>{{ t('admin.users.signupRisk.createdBy') }}: {{ item.admin_id || '-' }}</span>
-                    <span>{{ t('admin.users.signupRisk.userId') }}: {{ item.target_user_id || '-' }}</span>
+                    <span>{{ t('admin.users.signupRisk.userId') }}: {{ item.target_user_public_id || item.target_user_id || '-' }}</span>
                     <span v-if="item.amount">${{ Number(item.amount || 0).toFixed(2) }}</span>
                   </div>
                   <div class="mt-1 truncate text-xs text-gray-600 dark:text-dark-300" :title="item.subject_value">
@@ -470,9 +470,9 @@
             <div class="max-w-xs">
               <span
                 class="block truncate text-sm text-gray-700 dark:text-gray-300"
-                :title="getAttributeValue(row.id, def.id)"
+                :title="getAttributeValue(userResourceId(row), def.id)"
               >
-                {{ getAttributeValue(row.id, def.id) }}
+                {{ getAttributeValue(userResourceId(row), def.id) }}
               </span>
             </div>
           </template>
@@ -613,7 +613,7 @@
               :title="t('admin.users.platformQuota.cellColumnTooltip')"
               @click="handlePlatformQuota(row)"
             >
-              <UserPlatformQuotaCell :quotas="platformQuotaStats[row.id]" />
+              <UserPlatformQuotaCell :quotas="platformQuotaStats[userResourceId(row)]" />
             </button>
           </template>
 
@@ -700,26 +700,26 @@
 
           <template #cell-usage="{ row }">
             <PlatformUsageBreakdown
-              :today="usageStats[row.id]?.today_actual_cost ?? 0"
-              :total="usageStats[row.id]?.total_actual_cost ?? 0"
-              :by-platform="usageStats[row.id]?.by_platform"
+              :today="usageStats[userResourceId(row)]?.today_actual_cost ?? 0"
+              :total="usageStats[userResourceId(row)]?.total_actual_cost ?? 0"
+              :by-platform="usageStats[userResourceId(row)]?.by_platform"
             />
           </template>
 
           <template #cell-usage_anthropic="{ row }">
-            <PlatformCostCell :usage="getPlatformUsage(row.id, 'anthropic')" />
+            <PlatformCostCell :usage="getPlatformUsage(userResourceId(row), 'anthropic')" />
           </template>
 
           <template #cell-usage_openai="{ row }">
-            <PlatformCostCell :usage="getPlatformUsage(row.id, 'openai')" />
+            <PlatformCostCell :usage="getPlatformUsage(userResourceId(row), 'openai')" />
           </template>
 
           <template #cell-usage_gemini="{ row }">
-            <PlatformCostCell :usage="getPlatformUsage(row.id, 'gemini')" />
+            <PlatformCostCell :usage="getPlatformUsage(userResourceId(row), 'gemini')" />
           </template>
 
           <template #cell-usage_antigravity="{ row }">
-            <PlatformCostCell :usage="getPlatformUsage(row.id, 'antigravity')" />
+            <PlatformCostCell :usage="getPlatformUsage(userResourceId(row), 'antigravity')" />
           </template>
 
           <template #cell-concurrency="{ row }">
@@ -1071,7 +1071,7 @@ const attributeColumns = computed<Column[]>(() =>
 )
 
 // Get formatted attribute value for display in table
-const getAttributeValue = (userId: number, attrId: number): string => {
+const getAttributeValue = (userId: string | number, attrId: number): string => {
   const userAttrs = userAttributeValues.value[userId]
   if (!userAttrs) return '-'
   const value = userAttrs[attrId]
@@ -1108,7 +1108,7 @@ const getAttributeValue = (userId: number, attrId: number): string => {
 // All possible columns (for column settings)
 const allColumns = computed<Column[]>(() => [
   { key: 'email', label: t('admin.users.columns.user'), sortable: true },
-  { key: 'id', label: t('admin.users.columns.id'), sortable: true },
+  { key: 'public_id', label: t('admin.users.columns.id'), sortable: true },
   { key: 'username', label: t('admin.users.columns.username'), sortable: true },
   { key: 'notes', label: t('admin.users.columns.notes'), sortable: false },
   // Dynamic attribute columns
@@ -1136,6 +1136,8 @@ const allColumns = computed<Column[]>(() => [
 const toggleableColumns = computed(() =>
   allColumns.value.filter(col => col.key !== 'email' && col.key !== 'actions')
 )
+
+const userResourceId = (user: AdminUser) => user.public_id || user.id
 
 // Hidden columns (stored in Set - columns NOT in this set are visible)
 // This way, new columns are visible by default
@@ -1272,7 +1274,7 @@ const searchQuery = ref('')
 const USER_SORT_STORAGE_KEY = 'admin-users-table-sort'
 const loadInitialSortState = (): { sort_by: string; sort_order: 'asc' | 'desc' } => {
   const fallback = { sort_by: 'created_at', sort_order: 'desc' as 'asc' | 'desc' }
-  const sortable = new Set(['email', 'id', 'username', 'role', 'balance', 'concurrency', 'status', 'last_used_at', 'last_active_at', 'created_at'])
+  const sortable = new Set(['public_id', 'email', 'username', 'role', 'balance', 'concurrency', 'status', 'last_used_at', 'last_active_at', 'created_at'])
   try {
     const raw = localStorage.getItem(USER_SORT_STORAGE_KEY)
     if (!raw) return fallback
@@ -1440,9 +1442,9 @@ const getAttributeDefinition = (attrId: number): UserAttributeDefinition | undef
   return attributeDefinitions.value.find(d => d.id === attrId)
 }
 const usageStats = ref<Record<string, BatchUserUsageStats>>({})
-const platformQuotaStats = ref<Record<number, PlatformQuotaItem[]>>({})
+const platformQuotaStats = ref<Record<string, PlatformQuotaItem[]>>({})
 
-const getPlatformUsage = (userId: number, platform: string) =>
+const getPlatformUsage = (userId: string | number, platform: string) =>
   usageStats.value[userId]?.by_platform?.find((p) => p.platform === platform)
 
 // 用量列前端排序：DataTable 工作在 server-side-sort 模式，所有 sortable
@@ -1510,7 +1512,7 @@ const toggleUsageSortMenu = (key: string) => {
   openUsageSortMenu.value = openUsageSortMenu.value === key ? null : key
 }
 
-const getUsageValue = (userId: number, key: string, metric: UsageMetric): number => {
+const getUsageValue = (userId: string | number, key: string, metric: UsageMetric): number => {
   const stats = usageStats.value[userId]
   if (!stats) return 0
   const platform = USAGE_COLUMN_PLATFORMS[key]
@@ -1530,8 +1532,8 @@ const sortedUsers = computed(() => {
   return [...users.value]
     .map((row, index) => ({ row, index }))
     .sort((a, b) => {
-      const av = getUsageValue(a.row.id, s.key, s.metric)
-      const bv = getUsageValue(b.row.id, s.key, s.metric)
+      const av = getUsageValue(userResourceId(a.row), s.key, s.metric)
+      const bv = getUsageValue(userResourceId(b.row), s.key, s.metric)
       if (av !== bv) return s.order === 'asc' ? av - bv : bv - av
       return a.index - b.index
     })
@@ -1540,7 +1542,7 @@ const sortedUsers = computed(() => {
 
 // User attribute definitions and values
 const attributeDefinitions = ref<UserAttributeDefinition[]>([])
-const userAttributeValues = ref<Record<number, Record<number, string>>>({})
+const userAttributeValues = ref<Record<string, Record<number, string>>>({})
 const pagination = reactive({
   page: 1,
   page_size: getPersistedPageSize(),
@@ -1741,7 +1743,7 @@ const openSignupGrantDialog = async (user: AdminUser) => {
   showSignupGrantDialog.value = true
   signupGrantSummaryLoading.value = true
   try {
-    signupGrantSummary.value = await adminAPI.users.getSignupGrantRiskSummary(user.id)
+    signupGrantSummary.value = await adminAPI.users.getSignupGrantRiskSummary(userResourceId(user))
   } catch (error: any) {
     appStore.showError(error.response?.data?.detail || t('admin.users.signupRisk.summaryLoadFailed'))
   } finally {
@@ -1763,7 +1765,7 @@ const submitManualSignupGrant = async () => {
   manualSignupGrantSaving.value = true
   try {
     const updated = await adminAPI.users.manualGrantSignupGiftBalance(
-      signupGrantUser.value.id,
+      userResourceId(signupGrantUser.value),
       manualSignupGrant.amount,
       manualSignupGrant.reason
     )
@@ -1781,7 +1783,7 @@ let abortController: AbortController | null = null
 let secondaryDataSeq = 0
 
 const loadUsersSecondaryData = async (
-  userIds: number[],
+  userIds: Array<string | number>,
   signal?: AbortSignal,
   expectedSeq?: number
 ) => {
@@ -1858,7 +1860,7 @@ const loadUsersSecondaryData = async (
 }
 
 const refreshCurrentPageSecondaryData = () => {
-  const userIds = users.value.map((u) => u.id)
+  const userIds = users.value.map(userResourceId)
   if (userIds.length === 0) return
   const seq = ++secondaryDataSeq
   void loadUsersSecondaryData(userIds, undefined, seq)
@@ -2041,7 +2043,7 @@ const loadUsers = async () => {
 
     // Defer heavy secondary data so table can render first.
     if (response.items.length > 0) {
-      const userIds = response.items.map((u) => u.id)
+      const userIds = response.items.map(userResourceId)
       const seq = ++secondaryDataSeq
       window.setTimeout(() => {
         if (signal.aborted || seq !== secondaryDataSeq) return
@@ -2155,7 +2157,7 @@ const closeEditModal = () => {
 const handleToggleStatus = async (user: AdminUser) => {
   const newStatus = user.status === 'active' ? 'disabled' : 'active'
   try {
-    await adminAPI.users.toggleStatus(user.id, newStatus)
+    await adminAPI.users.toggleStatus(userResourceId(user), newStatus)
     appStore.showSuccess(
       newStatus === 'active' ? t('admin.users.userEnabled') : t('admin.users.userDisabled')
     )
@@ -2217,7 +2219,7 @@ const handleDelete = (user: AdminUser) => {
 const confirmDelete = async () => {
   if (!deletingUser.value) return
   try {
-    await adminAPI.users.delete(deletingUser.value.id)
+    await adminAPI.users.delete(userResourceId(deletingUser.value))
     appStore.showSuccess(t('common.success'))
     showDeleteDialog.value = false
     deletingUser.value = null

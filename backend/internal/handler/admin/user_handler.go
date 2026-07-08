@@ -12,6 +12,7 @@ import (
 
 	"github.com/Aias00/cloudbase/internal/handler/dto"
 	"github.com/Aias00/cloudbase/internal/handler/quotaview"
+	"github.com/Aias00/cloudbase/internal/identity"
 	"github.com/Aias00/cloudbase/internal/pkg/response"
 	"github.com/Aias00/cloudbase/internal/server/middleware"
 	"github.com/Aias00/cloudbase/internal/service"
@@ -109,6 +110,10 @@ type signupGrantRiskAdminService interface {
 type userProfileSummaryAdminService interface {
 	GetUserProfileSummary(ctx context.Context, userID int64) (*service.UserProfileSummary, error)
 	GetUserProfileInsights(ctx context.Context, limit int) (*service.UserProfileInsights, error)
+}
+
+type userPublicIDAdminService interface {
+	GetUserByPublicID(ctx context.Context, publicID string, includeDeleted bool) (*service.User, error)
 }
 
 type BindUserAuthIdentityRequest struct {
@@ -221,23 +226,85 @@ func parseAttributeFilters(c *gin.Context) map[int64]string {
 	return result
 }
 
-// GetByID handles getting a user by ID
-// GET /api/v1/admin/users/:id
-func (h *UserHandler) GetByID(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
+func resolveAdminUserResource(c *gin.Context, adminService service.AdminService, includeDeleted bool) (int64, *service.User, bool) {
+	raw := strings.TrimSpace(c.Param("id"))
+	if raw == "" {
 		response.BadRequest(c, "Invalid user ID")
-		return
+		return 0, nil, false
 	}
 
+	if strings.HasPrefix(raw, identity.PublicUserIDPrefix) {
+		svc, ok := adminService.(userPublicIDAdminService)
+		if !ok {
+			response.NotFound(c, "User not found")
+			return 0, nil, false
+		}
+		user, err := svc.GetUserByPublicID(c.Request.Context(), raw, includeDeleted)
+		if err == nil && user != nil {
+			return user.ID, user, true
+		}
+		if err != nil && !errors.Is(err, service.ErrUserNotFound) {
+			response.ErrorFrom(c, err)
+			return 0, nil, false
+		}
+		response.ErrorFrom(c, service.ErrUserNotFound)
+		return 0, nil, false
+	}
+
+	userID, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || userID <= 0 {
+		response.BadRequest(c, "Invalid user ID")
+		return 0, nil, false
+	}
 	var user *service.User
-	if c.Query("include_deleted") == "true" {
-		user, err = h.adminService.GetUserIncludeDeleted(c.Request.Context(), userID)
+	if includeDeleted {
+		user, err = adminService.GetUserIncludeDeleted(c.Request.Context(), userID)
 	} else {
-		user, err = h.adminService.GetUser(c.Request.Context(), userID)
+		user, err = adminService.GetUser(c.Request.Context(), userID)
 	}
 	if err != nil {
 		response.ErrorFrom(c, err)
+		return 0, nil, false
+	}
+	return userID, user, true
+}
+
+func (h *UserHandler) resolveUserResource(c *gin.Context, includeDeleted bool) (int64, *service.User, bool) {
+	return resolveAdminUserResource(c, h.adminService, includeDeleted)
+}
+
+func resolveAdminUserIDParam(c *gin.Context, adminService service.AdminService, raw string, fieldName string) (int64, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0, true
+	}
+	if strings.HasPrefix(raw, identity.PublicUserIDPrefix) {
+		svc, ok := adminService.(userPublicIDAdminService)
+		if !ok {
+			response.BadRequest(c, "Invalid "+fieldName)
+			return 0, false
+		}
+		user, err := svc.GetUserByPublicID(c.Request.Context(), raw, false)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return 0, false
+		}
+		return user.ID, true
+	}
+	parsed, parseErr := strconv.ParseInt(raw, 10, 64)
+	if parseErr != nil || parsed < 0 {
+		response.BadRequest(c, "Invalid "+fieldName)
+		return 0, false
+	}
+	return parsed, true
+}
+
+// GetByID handles getting a user by public ID.
+// GET /api/v1/admin/users/:id
+func (h *UserHandler) GetByID(c *gin.Context) {
+	includeDeleted := c.Query("include_deleted") == "true"
+	_, user, ok := h.resolveUserResource(c, includeDeleted)
+	if !ok {
 		return
 	}
 
@@ -247,9 +314,8 @@ func (h *UserHandler) GetByID(c *gin.Context) {
 // GetUserProfileSummary handles getting a read-only aggregate profile for admin diagnostics.
 // GET /api/v1/admin/users/:id/profile-summary
 func (h *UserHandler) GetUserProfileSummary(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 	svc, ok := h.adminService.(userProfileSummaryAdminService)
@@ -288,9 +354,8 @@ func (h *UserHandler) GetUserProfileInsights(c *gin.Context) {
 // BindAuthIdentity manually binds a canonical auth identity to a user.
 // POST /api/v1/admin/users/:id/auth-identities
 func (h *UserHandler) BindAuthIdentity(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 
@@ -354,9 +419,8 @@ func (h *UserHandler) Create(c *gin.Context) {
 // Update handles updating a user
 // PUT /api/v1/admin/users/:id
 func (h *UserHandler) Update(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 
@@ -390,13 +454,12 @@ func (h *UserHandler) Update(c *gin.Context) {
 // Delete handles deleting a user
 // DELETE /api/v1/admin/users/:id
 func (h *UserHandler) Delete(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 
-	err = h.adminService.DeleteUser(c.Request.Context(), userID)
+	err := h.adminService.DeleteUser(c.Request.Context(), userID)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
@@ -408,9 +471,8 @@ func (h *UserHandler) Delete(c *gin.Context) {
 // UpdateBalance handles updating user balance
 // POST /api/v1/admin/users/:id/balance
 func (h *UserHandler) UpdateBalance(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 
@@ -444,13 +506,9 @@ func (h *UserHandler) ListSignupGrantRiskClaims(c *gin.Context) {
 	}
 	page, pageSize := response.ParsePagination(c)
 	var userID int64
-	if raw := strings.TrimSpace(c.Query("user_id")); raw != "" {
-		parsed, parseErr := strconv.ParseInt(raw, 10, 64)
-		if parseErr != nil || parsed < 0 {
-			response.BadRequest(c, "Invalid user_id")
-			return
-		}
-		userID = parsed
+	var userIDOK bool
+	if userID, userIDOK = resolveAdminUserIDParam(c, h.adminService, c.Query("user_id"), "user_id"); !userIDOK {
+		return
 	}
 	records, total, err := svc.ListSignupGrantRiskClaims(c.Request.Context(), page, pageSize, service.SignupGrantRiskClaimFilter{
 		Decision:     c.Query("decision"),
@@ -512,13 +570,9 @@ func (h *UserHandler) ListSignupGrantAdminAuditLogs(c *gin.Context) {
 		adminID = parsed
 	}
 	var targetUserID int64
-	if raw := strings.TrimSpace(c.Query("target_user_id")); raw != "" {
-		parsed, parseErr := strconv.ParseInt(raw, 10, 64)
-		if parseErr != nil || parsed < 0 {
-			response.BadRequest(c, "Invalid target_user_id")
-			return
-		}
-		targetUserID = parsed
+	var targetUserIDOK bool
+	if targetUserID, targetUserIDOK = resolveAdminUserIDParam(c, h.adminService, c.Query("target_user_id"), "target_user_id"); !targetUserIDOK {
+		return
 	}
 	records, total, err := svc.ListSignupGrantAdminAuditLogs(c.Request.Context(), page, pageSize, service.SignupGrantAdminAuditLogFilter{
 		Operation:    c.Query("operation"),
@@ -543,9 +597,8 @@ func (h *UserHandler) GetSignupGrantRiskUserSummary(c *gin.Context) {
 		response.Error(c, 503, "signup grant risk admin service unavailable")
 		return
 	}
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 	summary, err := svc.GetSignupGrantRiskUserSummary(c.Request.Context(), userID)
@@ -605,9 +658,8 @@ func (h *UserHandler) ManualGrantSignupGiftBalance(c *gin.Context) {
 		response.Error(c, 503, "signup grant risk admin service unavailable")
 		return
 	}
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 	var req ManualSignupGrantRequest
@@ -633,9 +685,8 @@ func currentAdminUserID(c *gin.Context) int64 {
 // GetUserAPIKeys handles getting user's API keys
 // GET /api/v1/admin/users/:id/api-keys
 func (h *UserHandler) GetUserAPIKeys(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 
@@ -659,9 +710,8 @@ func (h *UserHandler) GetUserAPIKeys(c *gin.Context) {
 // GetUserUsage handles getting user's usage statistics
 // GET /api/v1/admin/users/:id/usage
 func (h *UserHandler) GetUserUsage(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 
@@ -681,9 +731,8 @@ func (h *UserHandler) GetUserUsage(c *gin.Context) {
 // Query params:
 //   - type: filter by record type (balance, affiliate_balance, admin_balance, concurrency, admin_concurrency, subscription)
 func (h *UserHandler) GetBalanceHistory(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 
@@ -726,9 +775,8 @@ type ReplaceGroupRequest struct {
 // ReplaceGroup handles replacing a user's exclusive group
 // POST /api/v1/admin/users/:id/replace-group
 func (h *UserHandler) ReplaceGroup(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 
@@ -752,9 +800,8 @@ func (h *UserHandler) ReplaceGroup(c *gin.Context) {
 // GetUserRPMStatus 返回指定用户当前分钟的 RPM 用量
 // GET /api/v1/admin/users/:id/rpm-status
 func (h *UserHandler) GetUserRPMStatus(c *gin.Context) {
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 
@@ -830,10 +877,8 @@ func (h *UserHandler) BatchUpdateConcurrency(c *gin.Context) {
 // GetUserPlatformQuotas GET /admin/users/:id/platform-quotas
 // admin 视角：D14 lazy 归零 + 暴露 *_window_start 调试字段
 func (h *UserHandler) GetUserPlatformQuotas(c *gin.Context) {
-	idStr := c.Param("id")
-	userID, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
-		response.BadRequest(c, "invalid user id")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 	if h.userPlatformQuotaRepo == nil {
@@ -881,9 +926,8 @@ func (h *UserHandler) UpdateUserPlatformQuotas(c *gin.Context) {
 		return
 	}
 
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 
@@ -1057,9 +1101,8 @@ func (h *UserHandler) ResetUserPlatformQuotaWindow(c *gin.Context) {
 		return
 	}
 
-	userID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid user ID")
+	userID, _, ok := h.resolveUserResource(c, false)
+	if !ok {
 		return
 	}
 

@@ -164,6 +164,18 @@ func (s *stubAdminService) GetUser(ctx context.Context, id int64) (*service.User
 	return &user, nil
 }
 
+func (s *stubAdminService) GetUserByPublicID(ctx context.Context, publicID string, includeDeleted bool) (*service.User, error) {
+	for i := range s.users {
+		if s.users[i].PublicID == publicID {
+			if includeDeleted {
+				return s.GetUserIncludeDeleted(ctx, s.users[i].ID)
+			}
+			return s.GetUser(ctx, s.users[i].ID)
+		}
+	}
+	return nil, service.ErrUserNotFound
+}
+
 func (s *stubAdminService) GetUserIncludeDeleted(ctx context.Context, id int64) (*service.User, error) {
 	return s.GetUser(ctx, id)
 }

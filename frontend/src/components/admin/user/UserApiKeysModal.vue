@@ -158,7 +158,7 @@ const load = async () => {
   loading.value = true
   groupButtonRefs.value.clear()
   try {
-    const res = await adminAPI.users.getUserApiKeys(props.user.id)
+    const res = await adminAPI.users.getUserApiKeys(props.user.public_id || props.user.id)
     apiKeys.value = res.items || []
   } catch (error) {
     console.error('Failed to load API keys:', error)
