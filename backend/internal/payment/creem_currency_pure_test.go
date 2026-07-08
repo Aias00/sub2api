@@ -38,7 +38,7 @@ func TestCurrencyMinorUnitAndConversion(t *testing.T) {
 	}
 }
 
-func TestProviderConfigCurrency(t *testing.T) {
+func TestProviderConfigCurrency_Pure(t *testing.T) {
 	// Non-stripe/airwallex providers always use the default currency.
 	if got := ProviderConfigCurrency(TypeCreem, map[string]string{"currency": "USD"}); got != DefaultPaymentCurrency {
 		t.Fatalf("non-stripe provider must use default currency, got %q", got)
@@ -57,7 +57,7 @@ func TestProviderConfigCurrency(t *testing.T) {
 // Creem product resolution
 // ---------------------------------------------------------------------------
 
-func TestResolveCreemRechargeProduct(t *testing.T) {
+func TestResolveCreemRechargeProduct_Pure(t *testing.T) {
 	products := []RechargeProduct{
 		{ID: "p1", CreemProductID: "creem_p1"},
 		{ID: "p2", CreemProductID: ""}, // not configured for creem
@@ -95,7 +95,7 @@ func TestResolveCreemRechargeProduct(t *testing.T) {
 	}
 }
 
-func TestResolveCreemProviderProductID(t *testing.T) {
+func TestResolveCreemProviderProductID_Pure(t *testing.T) {
 	// Non-creem → no-op.
 	if id, err := ResolveCreemProviderProductID("alipay", "sub1", true, nil); id != "" || err != nil {
 		t.Fatalf("non-creem must be no-op, got id=%q err=%v", id, err)

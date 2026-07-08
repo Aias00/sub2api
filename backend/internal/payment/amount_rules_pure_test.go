@@ -9,7 +9,7 @@ import (
 // Amount conversion (CNY: 1 yuan = 100 fen). Fund-safety critical.
 // ---------------------------------------------------------------------------
 
-func TestYuanToFen(t *testing.T) {
+func TestYuanToFen_Pure(t *testing.T) {
 	cases := []struct {
 		in      string
 		want    int64
@@ -40,7 +40,7 @@ func TestYuanToFen(t *testing.T) {
 	}
 }
 
-func TestFenToYuan(t *testing.T) {
+func TestFenToYuan_Pure(t *testing.T) {
 	if got := FenToYuan(100); got != 1.0 {
 		t.Errorf("FenToYuan(100) = %v, want 1.0", got)
 	}
@@ -68,7 +68,7 @@ func TestYuanFenRoundTrip(t *testing.T) {
 // Balance recharge multiplier / credited balance
 // ---------------------------------------------------------------------------
 
-func TestNormalizeBalanceRechargeMultiplier(t *testing.T) {
+func TestNormalizeBalanceRechargeMultiplier_Pure(t *testing.T) {
 	cases := []struct {
 		in   float64
 		want float64
@@ -87,7 +87,7 @@ func TestNormalizeBalanceRechargeMultiplier(t *testing.T) {
 	}
 }
 
-func TestCalculateCreditedBalance(t *testing.T) {
+func TestCalculateCreditedBalance_Pure(t *testing.T) {
 	if got := CalculateCreditedBalance(100, 1.5); got != 150 {
 		t.Errorf("100 * 1.5 = %v, want 150", got)
 	}
@@ -108,7 +108,7 @@ func TestCalculateCreditedBalance(t *testing.T) {
 // IsValidProviderAmount
 // ---------------------------------------------------------------------------
 
-func TestIsValidProviderAmount(t *testing.T) {
+func TestIsValidProviderAmount_PureRules(t *testing.T) {
 	valid := []float64{0.01, 1, 999999}
 	for _, v := range valid {
 		if !IsValidProviderAmount(v) {
@@ -127,7 +127,7 @@ func TestIsValidProviderAmount(t *testing.T) {
 // Refund amount (gateway) — full vs proportional partial refund
 // ---------------------------------------------------------------------------
 
-func TestCalculateGatewayRefundAmount(t *testing.T) {
+func TestCalculateGatewayRefundAmount_PureRules(t *testing.T) {
 	const tol = 0.01
 
 	// Guard: non-positive inputs yield 0 (never refund garbage).
@@ -156,7 +156,7 @@ func TestCalculateGatewayRefundAmount(t *testing.T) {
 // Currency tolerance
 // ---------------------------------------------------------------------------
 
-func TestPaymentAmountToleranceForCurrency(t *testing.T) {
+func TestPaymentAmountToleranceForCurrency_Pure(t *testing.T) {
 	// CNY has minor unit 2 → uses default tolerance.
 	if got := PaymentAmountToleranceForCurrency("CNY", 0.01); got != 0.01 {
 		t.Errorf("CNY tolerance should be default 0.01, got %v", got)

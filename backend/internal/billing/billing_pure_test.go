@@ -146,7 +146,7 @@ func TestHashUsageRequestPayload(t *testing.T) {
 		t.Fatalf("unexpected payload hash: %q", got)
 	}
 	// deterministic
-	if HashUsageRequestPayload(payload) != HashUsageRequestPayload(payload) {
+	if first, second := HashUsageRequestPayload(payload), HashUsageRequestPayload(payload); first != second {
 		t.Fatal("payload hash must be deterministic")
 	}
 }
