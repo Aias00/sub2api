@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"hash/fnv"
 	"strconv"
 	"strings"
 	"time"
@@ -33,6 +34,9 @@ type SignupGrantRiskInput struct {
 	ProviderType      string
 	ProviderSubject   string
 	HeaderSnapshot    map[string]string
+	// EmailVerified 指示本次注册/绑定的邮箱是否已验证。用指针以区分"未设置"与"false"，
+	// 便于 mergeSignupGrantRiskInput 不丢失 false。nil/false 在 RequireVerifiedEmail 规则下视为未验证。
+	EmailVerified *bool
 }
 
 type signupGrantRiskClaim struct {
@@ -55,6 +59,7 @@ type signupGrantRiskConfig struct {
 	BlockedDomains       map[string]struct{}
 	FreeDomains          map[string]struct{}
 	TrustedDomains       map[string]struct{}
+	RequireVerifiedEmail bool
 }
 
 type SignupGrantRiskClaimRecord struct {
@@ -190,14 +195,40 @@ func mergeSignupGrantRiskInput(base SignupGrantRiskInput, patch SignupGrantRiskI
 			}
 		}
 	}
+	if patch.EmailVerified != nil {
+		base.EmailVerified = patch.EmailVerified
+	}
 	return base
 }
 
+// signupGrantEmailVerified 把 bool 包成 *bool，便于在调用点设置 SignupGrantRiskInput.EmailVerified。
+func signupGrantEmailVerified(v bool) *bool { return &v }
+
 func (s *AuthService) applySignupGrantRiskControl(ctx context.Context, email, signupSource string, plan signupGrantPlan) (signupGrantPlan, *signupGrantRiskClaim) {
-	if s == nil || s.settingService == nil || !signupGrantRiskAppliesToSource(signupSource) || !signupGrantPlanHasBonus(plan) {
+	return s.applySignupGrantRiskControlEx(ctx, email, signupSource, plan, false)
+}
+
+// applySignupGrantRiskControlEx 执行注册赠金风控。force=true 时绕过来源白名单
+// （signupGrantRiskAppliesToSource），用于首绑奖励等非白名单来源但仍需复用全部限额逻辑的场景。
+func (s *AuthService) applySignupGrantRiskControlEx(ctx context.Context, email, signupSource string, plan signupGrantPlan, force bool) (signupGrantPlan, *signupGrantRiskClaim) {
+	if s == nil || s.settingService == nil || !signupGrantPlanHasBonus(plan) {
+		return plan, nil
+	}
+	if !force && !signupGrantRiskAppliesToSource(signupSource) {
 		return plan, nil
 	}
 	cfg := s.settingService.signupGrantRiskConfig(ctx)
+	input := signupGrantRiskInputFromContext(ctx)
+
+	// RequireVerifiedEmail 规则独立于风控总开关：即便 cfg.Enabled=false（默认部署）也强制评估，
+	// 使运营关闭邮箱验证后本地邮箱赠金无法被刷。位置在 override 查询之上，故无法被管理员 allow 覆盖。
+	if cfg.RequireVerifiedEmail && (input.EmailVerified == nil || !*input.EmailVerified) {
+		return stripSignupGrantBonus(plan), &signupGrantRiskClaim{
+			Blocked:  true,
+			Reason:   "email_not_verified",
+			Decision: signupGrantRiskDecisionBlocked,
+		}
+	}
 	if !cfg.Enabled {
 		return plan, nil
 	}
@@ -212,7 +243,6 @@ func (s *AuthService) applySignupGrantRiskControl(ctx context.Context, email, si
 		}
 	}
 
-	input := signupGrantRiskInputFromContext(ctx)
 	normalizedEmail, domain := normalizeSignupGrantRiskEmail(email)
 	remoteIP := normalizeSignupGrantRiskIP(input.RemoteIP)
 	now := time.Now().UTC()
@@ -223,8 +253,28 @@ func (s *AuthService) applySignupGrantRiskControl(ctx context.Context, email, si
 	userAgentHash := signupGrantRiskHash(hashSalt, signupGrantDeviceSignal(input))
 	providerSubjectHash := signupGrantRiskHash(hashSalt, strings.TrimSpace(input.ProviderSubject))
 
+	// 用事务级 advisory lock 串行化"同一 IP/设备/邮箱/域名"的并发注册评估，消除 count→insert 的 TOCTOU 竞态。
+	// 失败一律 fail-closed：剥夺赠金并返回 nil claim（与既有 COUNT/INSERT 错误形态一致，不返回合成 blocked claim，
+	// 否则 attachSignupGrantClaim 会去 UPDATE 不存在的行）。
+	tx, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] begin tx failed: %v", err)
+		return stripSignupGrantBonus(plan), nil
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	// pg_advisory_xact_lock 仅 PostgreSQL 支持；SQLite（单测内存库）等非 PG 方言下跳过加锁，
+	// count+insert 仍在同一事务内执行。生产环境恒为 Postgres。
+	lockKey := firstNonEmpty(ipHash, userAgentHash, emailHash, domainHash)
+	if lockKey != "" && s.signupGrantRiskIsPostgres() {
+		if _, err := tx.ExecContext(ctx, "SELECT pg_advisory_xact_lock($1)", signupGrantRiskLockHash(lockKey)); err != nil {
+			logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] advisory lock failed: %v", err)
+			return stripSignupGrantBonus(plan), nil
+		}
+	}
+
 	reason := ""
-	overrideAction, overrideReason := signupGrantRiskOverrideAction(ctx, db, emailHash, domainHash, ipHash, providerSubjectHash, userAgentHash)
+	overrideAction, overrideReason := signupGrantRiskOverrideAction(ctx, tx, emailHash, domainHash, ipHash, providerSubjectHash, userAgentHash)
 	if overrideAction == "block" {
 		reason = "override_block"
 		if overrideReason != "" {
@@ -237,7 +287,7 @@ func (s *AuthService) applySignupGrantRiskControl(ctx context.Context, email, si
 		}
 	}
 	if reason == "" && overrideAction != "allow" && cfg.OAuthIdentityEnabled && providerSubjectHash != "" && normalizeSignupGrantRiskLabel(input.ProviderType) != "" {
-		count, err := countSignupGrantClaims(ctx, db, "provider_type = $1 AND provider_subject_hash = $2", []any{normalizeSignupGrantRiskLabel(input.ProviderType), providerSubjectHash})
+		count, err := countSignupGrantClaims(ctx, tx, "provider_type = $1 AND provider_subject_hash = $2", []any{normalizeSignupGrantRiskLabel(input.ProviderType), providerSubjectHash})
 		if err != nil {
 			logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] oauth identity count failed: %v", err)
 			return stripSignupGrantBonus(plan), nil
@@ -247,7 +297,7 @@ func (s *AuthService) applySignupGrantRiskControl(ctx context.Context, email, si
 		}
 	}
 	if reason == "" && overrideAction != "allow" && cfg.EmailLimit > 0 && emailHash != "" {
-		count, err := countSignupGrantClaims(ctx, db, "email_hash = $1", []any{emailHash})
+		count, err := countSignupGrantClaims(ctx, tx, "email_hash = $1", []any{emailHash})
 		if err != nil {
 			logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] email count failed: %v", err)
 			return stripSignupGrantBonus(plan), nil
@@ -257,7 +307,7 @@ func (s *AuthService) applySignupGrantRiskControl(ctx context.Context, email, si
 		}
 	}
 	if reason == "" && overrideAction != "allow" && cfg.IPLimit > 0 && ipHash != "" {
-		count, err := countSignupGrantClaims(ctx, db, "ip_hash = $1 AND created_at >= $2", []any{ipHash, now.Add(-signupGrantRiskWindow)})
+		count, err := countSignupGrantClaims(ctx, tx, "ip_hash = $1 AND created_at >= $2", []any{ipHash, now.Add(-signupGrantRiskWindow)})
 		if err != nil {
 			logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] ip count failed: %v", err)
 			return stripSignupGrantBonus(plan), nil
@@ -267,7 +317,7 @@ func (s *AuthService) applySignupGrantRiskControl(ctx context.Context, email, si
 		}
 	}
 	if reason == "" && overrideAction != "allow" && cfg.DeviceEnabled && cfg.DeviceLimit > 0 && userAgentHash != "" {
-		count, err := countSignupGrantClaims(ctx, db, "user_agent_hash = $1 AND created_at >= $2", []any{userAgentHash, now.Add(-signupGrantRiskWindow)})
+		count, err := countSignupGrantClaims(ctx, tx, "user_agent_hash = $1 AND created_at >= $2", []any{userAgentHash, now.Add(-signupGrantRiskWindow)})
 		if err != nil {
 			logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] device count failed: %v", err)
 			return stripSignupGrantBonus(plan), nil
@@ -278,7 +328,7 @@ func (s *AuthService) applySignupGrantRiskControl(ctx context.Context, email, si
 	}
 	domainLimit := cfg.domainLimitFor(domain)
 	if reason == "" && overrideAction != "allow" && domainLimit > 0 && domainHash != "" {
-		count, err := countSignupGrantClaims(ctx, db, "email_domain_hash = $1 AND created_at >= $2", []any{domainHash, now.Add(-signupGrantRiskWindow)})
+		count, err := countSignupGrantClaims(ctx, tx, "email_domain_hash = $1 AND created_at >= $2", []any{domainHash, now.Add(-signupGrantRiskWindow)})
 		if err != nil {
 			logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] domain count failed: %v", err)
 			return stripSignupGrantBonus(plan), nil
@@ -294,7 +344,7 @@ func (s *AuthService) applySignupGrantRiskControl(ctx context.Context, email, si
 		decision = signupGrantRiskDecisionBlocked
 		filteredPlan = stripSignupGrantBonus(plan)
 	}
-	claimID, err := insertSignupGrantClaim(ctx, db, signupGrantClaimInsert{
+	claimID, err := insertSignupGrantClaim(ctx, tx, signupGrantClaimInsert{
 		Email:               normalizedEmail,
 		EmailDomain:         domain,
 		IPAddress:           remoteIP,
@@ -315,6 +365,10 @@ func (s *AuthService) applySignupGrantRiskControl(ctx context.Context, email, si
 		logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] insert claim failed: %v", err)
 		return stripSignupGrantBonus(plan), nil
 	}
+	if err := tx.Commit(); err != nil {
+		logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] commit tx failed: %v", err)
+		return stripSignupGrantBonus(plan), nil
+	}
 	if reason != "" {
 		logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] stripped signup grant email=%s source=%s reason=%s", anonymizeEmailForLog(email), signupSource, reason)
 	}
@@ -327,11 +381,16 @@ func (s *AuthService) applySignupGrantRiskControl(ctx context.Context, email, si
 	}
 }
 
-func (s *AuthService) attachSignupGrantClaim(ctx context.Context, claim *signupGrantRiskClaim, userID int64) {
+// attachSignupGrantClaim 把风控 claim 行关联到用户（写 user_id 审计列）。
+// markGift=true 时同步标记 gift 余额组件（SET 语义），用于注册路径——那里 balance 由 userRepo.Create
+// 一次性写入，本调用只是把"其中多少是 gift"做幂等标记。
+// markGift=false 时仅做审计关联，不碰 gift——用于首绑路径，那里 balance 通过 ApplyBalanceChangeCtx
+// （ADD + GiftDelta）追加，已自行处理 gift 组件；若再叠加 SET 标记会导致 gift_balance 双记。
+func (s *AuthService) attachSignupGrantClaim(ctx context.Context, claim *signupGrantRiskClaim, userID int64, markGift bool) {
 	if s == nil || claim == nil || claim.ID <= 0 || userID <= 0 {
 		return
 	}
-	if claim.Decision == signupGrantRiskDecisionAllowed && claim.GrantBalance > 0 {
+	if markGift && claim.Decision == signupGrantRiskDecisionAllowed && claim.GrantBalance > 0 {
 		s.markSignupGrantGiftBalance(ctx, userID, claim.GrantBalance)
 	}
 	if tx := dbent.TxFromContext(ctx); tx != nil {
@@ -377,6 +436,17 @@ func (s *AuthService) resolveSignupGrantPlanForFinalizedUser(ctx context.Context
 		return plan, nil
 	}
 	cfg := s.settingService.signupGrantRiskConfig(ctx)
+	// 与 applySignupGrantRiskControlEx 一致：RequireVerifiedEmail 独立于风控总开关，finalize 路径同样强制。
+	if cfg.RequireVerifiedEmail {
+		input := signupGrantRiskInputFromContext(ctx)
+		if input.EmailVerified == nil || !*input.EmailVerified {
+			return stripSignupGrantBonus(plan), &signupGrantRiskClaim{
+				Blocked:  true,
+				Reason:   "email_not_verified",
+				Decision: signupGrantRiskDecisionBlocked,
+			}
+		}
+	}
 	if !cfg.Enabled {
 		return plan, nil
 	}
@@ -403,6 +473,28 @@ func (s *AuthService) signupGrantRiskDB() *sql.DB {
 		return nil
 	}
 	return driver.DB()
+}
+
+// signupGrantRiskIsPostgres 报告底层驱动方言是否为 PostgreSQL。pg_advisory_xact_lock 仅 PG 支持。
+func (s *AuthService) signupGrantRiskIsPostgres() bool {
+	if s == nil || s.entClient == nil {
+		return false
+	}
+	return s.entClient.Driver().Dialect() == dialect.Postgres
+}
+
+// signupGrantRiskQueryRunner 是 count/insert/override 共需的最小查询接口，*sql.DB 与 *sql.Tx 均满足，
+// 使限额评估可在事务（含 advisory lock）内执行以消除 TOCTOU。
+type signupGrantRiskQueryRunner interface {
+	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
+}
+
+// signupGrantRiskLockHash 把锁键哈希成 int64，匹配代码库既有的 advisory lock 约定
+// （Go 侧 FNV-64a + pg_advisory_xact_lock($1)，见 auth_pending_identity_service.go）。
+func signupGrantRiskLockHash(key string) int64 {
+	hasher := fnv.New64a()
+	_, _ = hasher.Write([]byte(key))
+	return int64(hasher.Sum64())
 }
 
 func latestSignupGrantClaimForUser(ctx context.Context, db *sql.DB, userID int64) (*signupGrantRiskClaim, bool) {
@@ -497,7 +589,7 @@ func defaultIfEmpty(value, fallback string) string {
 	return value
 }
 
-func signupGrantRiskOverrideAction(ctx context.Context, db *sql.DB, emailHash, domainHash, ipHash, providerSubjectHash, deviceHash string) (string, string) {
+func signupGrantRiskOverrideAction(ctx context.Context, db signupGrantRiskQueryRunner, emailHash, domainHash, ipHash, providerSubjectHash, deviceHash string) (string, string) {
 	if db == nil {
 		return "", ""
 	}
@@ -556,7 +648,7 @@ type signupGrantClaimInsert struct {
 	GrantMetadataJSON   string
 }
 
-func countSignupGrantClaims(ctx context.Context, db *sql.DB, predicate string, args []any) (int, error) {
+func countSignupGrantClaims(ctx context.Context, db signupGrantRiskQueryRunner, predicate string, args []any) (int, error) {
 	query := fmt.Sprintf(`SELECT COUNT(*) FROM signup_grant_claims WHERE decision = 'allowed' AND %s`, predicate)
 	var count int
 	if err := db.QueryRowContext(ctx, query, args...).Scan(&count); err != nil {
@@ -565,7 +657,7 @@ func countSignupGrantClaims(ctx context.Context, db *sql.DB, predicate string, a
 	return count, nil
 }
 
-func insertSignupGrantClaim(ctx context.Context, db *sql.DB, input signupGrantClaimInsert) (int64, error) {
+func insertSignupGrantClaim(ctx context.Context, db signupGrantRiskQueryRunner, input signupGrantClaimInsert) (int64, error) {
 	var id int64
 	err := db.QueryRowContext(ctx, `
 INSERT INTO signup_grant_claims (
@@ -627,6 +719,7 @@ func (s *SettingService) signupGrantRiskConfig(ctx context.Context) signupGrantR
 		SettingKeySignupGrantRiskControlBlockedDomains,
 		SettingKeySignupGrantRiskControlFreeDomains,
 		SettingKeySignupGrantRiskControlTrustedDomains,
+		SettingKeySignupGrantRiskControlRequireVerifiedEmail,
 	})
 	if err != nil {
 		logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] load config failed: %v", err)
@@ -644,6 +737,7 @@ func (s *SettingService) signupGrantRiskConfig(ctx context.Context) signupGrantR
 		BlockedDomains:       parseSignupGrantRiskDomainSet(values[SettingKeySignupGrantRiskControlBlockedDomains]),
 		FreeDomains:          parseSignupGrantRiskDomainSet(defaultIfEmpty(values[SettingKeySignupGrantRiskControlFreeDomains], defaultSignupGrantRiskFreeDomains)),
 		TrustedDomains:       parseSignupGrantRiskDomainSet(values[SettingKeySignupGrantRiskControlTrustedDomains]),
+		RequireVerifiedEmail: values[SettingKeySignupGrantRiskControlRequireVerifiedEmail] != "false",
 	}
 }
 

@@ -154,7 +154,7 @@ func (s *AuthService) loginOrRegisterVerifiedEmailOAuth(
 		}
 	}
 	if !created {
-		if err := s.ApplyProviderDefaultSettingsOnFirstBind(ctx, user.ID, providerType); err != nil {
+		if err := s.ApplyProviderDefaultSettingsOnFirstBind(ctx, user.ID, providerType, email, true); err != nil {
 			logger.LegacyPrintf("service.auth", "[Auth] Failed to apply %s first bind defaults: %v", providerType, err)
 		}
 	} else {
@@ -197,6 +197,8 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 	riskCtx := WithSignupGrantRiskInput(ctx, mergeSignupGrantRiskInput(signupGrantRiskInputFromContext(ctx), SignupGrantRiskInput{
 		ProviderType:    options.ProviderType,
 		ProviderSubject: options.ProviderSubject,
+		// OAuth 邮箱注册入口（loginOrRegisterVerifiedEmailOAuth）已硬拒未验证邮箱，此处恒为已验证。
+		EmailVerified: signupGrantEmailVerified(true),
 	}))
 	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(riskCtx, email, providerType, grantPlan)
 	var defaultRPMLimit int
@@ -227,7 +229,7 @@ func (s *AuthService) createEmailOAuthUser(ctx context.Context, email, username,
 		return nil, ErrServiceUnavailable
 	}
 	s.recordUserRegistrationEvent(ctx, user, providerType)
-	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
+	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID, true)
 	s.postAuthUserBootstrap(ctx, user, providerType, false)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)

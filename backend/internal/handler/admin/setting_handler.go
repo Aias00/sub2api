@@ -554,6 +554,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		SignupGrantRiskControlBlockedDomains:                settings.SignupGrantRiskControlBlockedDomains,
 		SignupGrantRiskControlFreeDomains:                   settings.SignupGrantRiskControlFreeDomains,
 		SignupGrantRiskControlTrustedDomains:                settings.SignupGrantRiskControlTrustedDomains,
+		SignupGrantRiskControlRequireVerifiedEmail:          settings.SignupGrantRiskControlRequireVerifiedEmail,
 		CyberSessionBlockEnabled:                            settings.CyberSessionBlockEnabled,
 		CyberSessionBlockTTLSeconds:                         settings.CyberSessionBlockTTLSeconds,
 		AffiliateRebateRate:                                 settings.AffiliateRebateRate,
@@ -1041,6 +1042,7 @@ type UpdateSettingsRequest struct {
 	SignupGrantRiskControlBlockedDomains       *string `json:"signup_grant_risk_control_blocked_email_domains"`
 	SignupGrantRiskControlFreeDomains          *string `json:"signup_grant_risk_control_free_email_domains"`
 	SignupGrantRiskControlTrustedDomains       *string `json:"signup_grant_risk_control_trusted_email_domains"`
+	SignupGrantRiskControlRequireVerifiedEmail *bool   `json:"signup_grant_require_verified_email"`
 
 	// cyber 会话屏蔽开关 + TTL
 	CyberSessionBlockEnabled    *bool `json:"cyber_session_block_enabled"`
@@ -2205,6 +2207,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		SignupGrantRiskControlBlockedDomains:       optionalTrimmedString(req.SignupGrantRiskControlBlockedDomains, previousSettings.SignupGrantRiskControlBlockedDomains),
 		SignupGrantRiskControlFreeDomains:          optionalTrimmedString(req.SignupGrantRiskControlFreeDomains, previousSettings.SignupGrantRiskControlFreeDomains),
 		SignupGrantRiskControlTrustedDomains:       optionalTrimmedString(req.SignupGrantRiskControlTrustedDomains, previousSettings.SignupGrantRiskControlTrustedDomains),
+		SignupGrantRiskControlRequireVerifiedEmail: optionalBool(req.SignupGrantRiskControlRequireVerifiedEmail, previousSettings.SignupGrantRiskControlRequireVerifiedEmail),
 		CyberSessionBlockEnabled: func() bool {
 			if req.CyberSessionBlockEnabled != nil {
 				return *req.CyberSessionBlockEnabled
@@ -2604,6 +2607,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		SignupGrantRiskControlBlockedDomains:       updatedSettings.SignupGrantRiskControlBlockedDomains,
 		SignupGrantRiskControlFreeDomains:          updatedSettings.SignupGrantRiskControlFreeDomains,
 		SignupGrantRiskControlTrustedDomains:       updatedSettings.SignupGrantRiskControlTrustedDomains,
+		SignupGrantRiskControlRequireVerifiedEmail: updatedSettings.SignupGrantRiskControlRequireVerifiedEmail,
 		CyberSessionBlockEnabled:                   updatedSettings.CyberSessionBlockEnabled,
 		CyberSessionBlockTTLSeconds:                updatedSettings.CyberSessionBlockTTLSeconds,
 		AllowUserViewErrorRequests:                 updatedSettings.AllowUserViewErrorRequests,

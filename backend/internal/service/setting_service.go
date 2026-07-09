@@ -1266,6 +1266,7 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeySignupGrantRiskControlBlockedDomains] = normalizeDomainListSetting(settings.SignupGrantRiskControlBlockedDomains)
 	updates[SettingKeySignupGrantRiskControlFreeDomains] = normalizeDomainListSetting(settings.SignupGrantRiskControlFreeDomains)
 	updates[SettingKeySignupGrantRiskControlTrustedDomains] = normalizeDomainListSetting(settings.SignupGrantRiskControlTrustedDomains)
+	updates[SettingKeySignupGrantRiskControlRequireVerifiedEmail] = strconv.FormatBool(settings.SignupGrantRiskControlRequireVerifiedEmail)
 
 	// cyber 会话屏蔽开关 + TTL
 	updates[SettingKeyCyberSessionBlockEnabled] = strconv.FormatBool(settings.CyberSessionBlockEnabled)
@@ -1664,6 +1665,7 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeySignupGrantRiskControlBlockedDomains:       "",
 		SettingKeySignupGrantRiskControlFreeDomains:          defaultSignupGrantRiskFreeDomains,
 		SettingKeySignupGrantRiskControlTrustedDomains:       "",
+		SettingKeySignupGrantRiskControlRequireVerifiedEmail: "true",
 
 		// cyber 会话屏蔽（默认关闭，TTL 默认 3600s）
 		SettingKeyCyberSessionBlockEnabled:    "false",
@@ -2005,6 +2007,7 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	result.SignupGrantRiskControlBlockedDomains = normalizeDomainListSetting(settings[SettingKeySignupGrantRiskControlBlockedDomains])
 	result.SignupGrantRiskControlFreeDomains = normalizeDomainListSetting(settings[SettingKeySignupGrantRiskControlFreeDomains])
 	result.SignupGrantRiskControlTrustedDomains = normalizeDomainListSetting(settings[SettingKeySignupGrantRiskControlTrustedDomains])
+	result.SignupGrantRiskControlRequireVerifiedEmail = settings[SettingKeySignupGrantRiskControlRequireVerifiedEmail] != "false"
 
 	// cyber 会话屏蔽（默认关闭，TTL 默认 3600s）
 	result.CyberSessionBlockEnabled = settings[SettingKeyCyberSessionBlockEnabled] == "true"

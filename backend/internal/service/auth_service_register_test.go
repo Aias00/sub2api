@@ -379,8 +379,9 @@ func TestAuthService_Register_SnapshotsPlatformQuotaDefaults(t *testing.T) {
 	quotaRepo := &userPlatformQuotaRepoStub{}
 
 	service := newAuthService(repo, map[string]string{
-		SettingKeyRegistrationEnabled:   "true",
-		SettingKeyDefaultPlatformQuotas: `{"openai": {"weekly": 12.34}}`,
+		SettingKeyRegistrationEnabled:                        "true",
+		SettingKeyDefaultPlatformQuotas:                      `{"openai": {"weekly": 12.34}}`,
+		SettingKeySignupGrantRiskControlRequireVerifiedEmail: "false", // 本用例验证平台配额快照，非邮箱验证强制
 	}, nil, quotaRepo)
 
 	_, user, err := service.Register(context.Background(), "newuser@test.com", "password")
@@ -569,8 +570,9 @@ func TestAuthService_Register_CreateEmailExistsRace(t *testing.T) {
 func TestAuthService_Register_Success(t *testing.T) {
 	repo := &userRepoStub{nextID: 5}
 	service := newAuthService(repo, map[string]string{
-		SettingKeyRegistrationEnabled:                 "true",
-		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "false",
+		SettingKeyRegistrationEnabled:                        "true",
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup:        "false",
+		SettingKeySignupGrantRiskControlRequireVerifiedEmail: "false", // 本用例验证默认赠金，非邮箱验证强制
 	}, nil, nil)
 
 	token, user, err := service.Register(context.Background(), "user@test.com", "password")
@@ -590,9 +592,10 @@ func TestAuthService_Register_Success(t *testing.T) {
 func TestAuthService_Register_SignupGrantRiskDisabledKeepsDefaultGrant(t *testing.T) {
 	repo := &userRepoStub{nextID: 6}
 	service := newAuthService(repo, map[string]string{
-		SettingKeyRegistrationEnabled:                 "true",
-		SettingKeySignupGrantRiskControlEnabled:       "false",
-		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "false",
+		SettingKeyRegistrationEnabled:                        "true",
+		SettingKeySignupGrantRiskControlEnabled:              "false",
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup:        "false",
+		SettingKeySignupGrantRiskControlRequireVerifiedEmail: "false", // 本用例验证风控关闭时默认赠金保留，非邮箱验证强制
 	}, nil, nil)
 
 	_, user, err := service.Register(context.Background(), "risk-disabled@test.com", "password")
@@ -912,9 +915,10 @@ func TestAuthService_Register_AssignsDefaultSubscriptions(t *testing.T) {
 	repo := &userRepoStub{nextID: 42}
 	assigner := &defaultSubscriptionAssignerStub{}
 	service := newAuthService(repo, map[string]string{
-		SettingKeyRegistrationEnabled:                 "true",
-		SettingKeyDefaultSubscriptions:                `[{"group_id":11,"validity_days":30},{"group_id":12,"validity_days":7}]`,
-		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "false",
+		SettingKeyRegistrationEnabled:                        "true",
+		SettingKeyDefaultSubscriptions:                       `[{"group_id":11,"validity_days":30},{"group_id":12,"validity_days":7}]`,
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup:        "false",
+		SettingKeySignupGrantRiskControlRequireVerifiedEmail: "false", // 本用例验证默认订阅分配，非邮箱验证强制
 	}, nil, nil)
 	service.defaultSubAssigner = assigner
 
@@ -933,12 +937,13 @@ func TestAuthService_Register_UsesEmailAuthSourceDefaultsWhenGrantEnabled(t *tes
 	repo := &userRepoStub{nextID: 52}
 	assigner := &defaultSubscriptionAssignerStub{}
 	service := newAuthService(repo, map[string]string{
-		SettingKeyRegistrationEnabled:                 "true",
-		SettingKeyDefaultSubscriptions:                `[{"group_id":91,"validity_days":3}]`,
-		SettingKeyAuthSourceDefaultEmailBalance:       "12.5",
-		SettingKeyAuthSourceDefaultEmailConcurrency:   "7",
-		SettingKeyAuthSourceDefaultEmailSubscriptions: `[{"group_id":11,"validity_days":30}]`,
-		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "true",
+		SettingKeyRegistrationEnabled:                        "true",
+		SettingKeyDefaultSubscriptions:                       `[{"group_id":91,"validity_days":3}]`,
+		SettingKeyAuthSourceDefaultEmailBalance:              "12.5",
+		SettingKeyAuthSourceDefaultEmailConcurrency:          "7",
+		SettingKeyAuthSourceDefaultEmailSubscriptions:        `[{"group_id":11,"validity_days":30}]`,
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup:        "true",
+		SettingKeySignupGrantRiskControlRequireVerifiedEmail: "false", // 本用例验证 email 源默认赠金，非邮箱验证强制
 	}, nil, nil)
 	service.defaultSubAssigner = assigner
 
@@ -956,12 +961,13 @@ func TestAuthService_Register_GrantOnSignupFalseFallsBackToGlobalDefaults(t *tes
 	repo := &userRepoStub{nextID: 53}
 	assigner := &defaultSubscriptionAssignerStub{}
 	service := newAuthService(repo, map[string]string{
-		SettingKeyRegistrationEnabled:                 "true",
-		SettingKeyDefaultSubscriptions:                `[{"group_id":31,"validity_days":5}]`,
-		SettingKeyAuthSourceDefaultEmailBalance:       "99",
-		SettingKeyAuthSourceDefaultEmailConcurrency:   "88",
-		SettingKeyAuthSourceDefaultEmailSubscriptions: `[{"group_id":32,"validity_days":9}]`,
-		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "false",
+		SettingKeyRegistrationEnabled:                        "true",
+		SettingKeyDefaultSubscriptions:                       `[{"group_id":31,"validity_days":5}]`,
+		SettingKeyAuthSourceDefaultEmailBalance:              "99",
+		SettingKeyAuthSourceDefaultEmailConcurrency:          "88",
+		SettingKeyAuthSourceDefaultEmailSubscriptions:        `[{"group_id":32,"validity_days":9}]`,
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup:        "false",
+		SettingKeySignupGrantRiskControlRequireVerifiedEmail: "false", // 本用例验证全局默认回退，非邮箱验证强制
 	}, nil, nil)
 	service.defaultSubAssigner = assigner
 
@@ -979,12 +985,13 @@ func TestAuthService_Register_GrantOnSignupMergesSourceOverridesWithGlobalDefaul
 	repo := &userRepoStub{nextID: 54}
 	assigner := &defaultSubscriptionAssignerStub{}
 	service := newAuthService(repo, map[string]string{
-		SettingKeyRegistrationEnabled:                 "true",
-		SettingKeyDefaultSubscriptions:                `[{"group_id":31,"validity_days":5}]`,
-		SettingKeyAuthSourceDefaultEmailBalance:       "9.5",
-		SettingKeyAuthSourceDefaultEmailConcurrency:   "5",
-		SettingKeyAuthSourceDefaultEmailSubscriptions: `[]`,
-		SettingKeyAuthSourceDefaultEmailGrantOnSignup: "true",
+		SettingKeyRegistrationEnabled:                        "true",
+		SettingKeyDefaultSubscriptions:                       `[{"group_id":31,"validity_days":5}]`,
+		SettingKeyAuthSourceDefaultEmailBalance:              "9.5",
+		SettingKeyAuthSourceDefaultEmailConcurrency:          "5",
+		SettingKeyAuthSourceDefaultEmailSubscriptions:        `[]`,
+		SettingKeyAuthSourceDefaultEmailGrantOnSignup:        "true",
+		SettingKeySignupGrantRiskControlRequireVerifiedEmail: "false", // 本用例验证源覆盖与全局默认合并，非邮箱验证强制
 	}, nil, nil)
 	service.defaultSubAssigner = assigner
 

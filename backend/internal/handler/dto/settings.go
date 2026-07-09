@@ -361,6 +361,7 @@ type SystemSettings struct {
 	SignupGrantRiskControlBlockedDomains       string `json:"signup_grant_risk_control_blocked_email_domains"`
 	SignupGrantRiskControlFreeDomains          string `json:"signup_grant_risk_control_free_email_domains"`
 	SignupGrantRiskControlTrustedDomains       string `json:"signup_grant_risk_control_trusted_email_domains"`
+	SignupGrantRiskControlRequireVerifiedEmail bool   `json:"signup_grant_require_verified_email"`
 
 	// cyber 会话屏蔽开关 + TTL
 	CyberSessionBlockEnabled    bool `json:"cyber_session_block_enabled"`

@@ -283,7 +283,11 @@ func (s *AuthService) RegisterWithVerificationSourceAndUsername(ctx context.Cont
 	}
 
 	grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
-	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(ctx, email, signupSource, grantPlan)
+	// 赠金强制邮箱验证（独立于风控总开关）：本地邮箱注册仅在 IsEmailVerifyEnabled 开启且 VerifyCode 通过时视为已验证。
+	riskCtx := WithSignupGrantRiskInput(ctx, mergeSignupGrantRiskInput(signupGrantRiskInputFromContext(ctx), SignupGrantRiskInput{
+		EmailVerified: signupGrantEmailVerified(s.IsEmailVerifyEnabled(ctx)),
+	}))
+	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(riskCtx, email, signupSource, grantPlan)
 
 	// 新用户默认 RPM（0 = 不限制）。注册时写入，后续作为用户级兜底。
 	var defaultRPMLimit int
@@ -313,7 +317,7 @@ func (s *AuthService) RegisterWithVerificationSourceAndUsername(ctx context.Cont
 		return "", nil, ErrServiceUnavailable
 	}
 	s.recordUserRegistrationEvent(ctx, user, signupSource)
-	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
+	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID, true)
 	s.postAuthUserBootstrap(ctx, user, signupSource, signupSource == authSignupSourceEmail)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	// snapshot user × platform quota（fail-open）
@@ -1026,7 +1030,7 @@ func (s *AuthService) backfillEmailIdentityOnSuccessfulLogin(ctx context.Context
 	}
 	identity, created := s.ensureEmailAuthIdentity(ctx, user, "auth_service_login_backfill")
 	if s.shouldApplyEmailFirstBindDefaults(ctx, user.ID, identity, created) {
-		if err := s.ApplyProviderDefaultSettingsOnFirstBind(ctx, user.ID, "email"); err != nil {
+		if err := s.ApplyProviderDefaultSettingsOnFirstBind(ctx, user.ID, "email", user.Email, true); err != nil {
 			logger.LegacyPrintf("service.auth", "[Auth] Failed to apply email first bind defaults: user_id=%d err=%v", user.ID, err)
 		}
 	}

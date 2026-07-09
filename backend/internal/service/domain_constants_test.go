@@ -21,3 +21,14 @@ func TestSettingKeyAuthSourcePlatformQuotas(t *testing.T) {
 		t.Fatalf("got %q, want %q", got, "auth_source_default_github_platform_quotas")
 	}
 }
+
+// TestAffiliateRebateFreezeHoursDefault 验证返利冻结默认值为 72h。
+// 默认部署下返利默认冻结 72h，给退款回扣留出冻结窗口，避免"B 充值→A 秒领返利→B 退款"净套现。
+func TestAffiliateRebateFreezeHoursDefault(t *testing.T) {
+	if AffiliateRebateFreezeHoursDefault != 72 {
+		t.Fatalf("AffiliateRebateFreezeHoursDefault = %d, want 72", AffiliateRebateFreezeHoursDefault)
+	}
+	if AffiliateRebateFreezeHoursDefault > AffiliateRebateFreezeHoursMax {
+		t.Fatalf("default %d exceeds max %d", AffiliateRebateFreezeHoursDefault, AffiliateRebateFreezeHoursMax)
+	}
+}

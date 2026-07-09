@@ -93,7 +93,7 @@ func (s *AuthService) BindEmailIdentity(
 	}
 
 	if firstRealEmailBind {
-		if err := s.ApplyProviderDefaultSettingsOnFirstBind(ctx, userID, "email"); err != nil {
+		if err := s.ApplyProviderDefaultSettingsOnFirstBind(ctx, userID, "email", normalizedEmail, true); err != nil {
 			return nil, fmt.Errorf("apply email first bind defaults: %w", err)
 		}
 	}
@@ -220,7 +220,7 @@ func (s *AuthService) updateBoundEmailIdentityWithClient(
 	}
 
 	if applyFirstBindDefaults {
-		if err := s.ApplyProviderDefaultSettingsOnFirstBind(ctx, currentUser.ID, "email"); err != nil {
+		if err := s.ApplyProviderDefaultSettingsOnFirstBind(ctx, currentUser.ID, "email", email, true); err != nil {
 			return fmt.Errorf("apply email first bind defaults: %w", err)
 		}
 	}

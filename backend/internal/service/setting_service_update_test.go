@@ -181,6 +181,7 @@ func TestSettingService_UpdateSettings_SignupGrantRiskControl(t *testing.T) {
 		SignupGrantRiskControlBlockedDomains:       " @TempMail.COM\n*.Trash.test ",
 		SignupGrantRiskControlFreeDomains:          "gmail.com, QQ.com",
 		SignupGrantRiskControlTrustedDomains:       "example.com; corp.test",
+		SignupGrantRiskControlRequireVerifiedEmail: true,
 	})
 	require.NoError(t, err)
 	require.Equal(t, "true", repo.updates[SettingKeySignupGrantRiskControlEnabled])
@@ -194,6 +195,7 @@ func TestSettingService_UpdateSettings_SignupGrantRiskControl(t *testing.T) {
 	require.Equal(t, "tempmail.com,trash.test", repo.updates[SettingKeySignupGrantRiskControlBlockedDomains])
 	require.Equal(t, "gmail.com,qq.com", repo.updates[SettingKeySignupGrantRiskControlFreeDomains])
 	require.Equal(t, "example.com,corp.test", repo.updates[SettingKeySignupGrantRiskControlTrustedDomains])
+	require.Equal(t, "true", repo.updates[SettingKeySignupGrantRiskControlRequireVerifiedEmail])
 }
 
 func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsNonSubscriptionGroup(t *testing.T) {

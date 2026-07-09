@@ -175,7 +175,11 @@ func (s *AuthService) RegisterOAuthEmailAccount(
 		return nil, nil, err
 	}
 	grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
-	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(ctx, email, signupSource, grantPlan)
+	// OAuth 邮箱注册路径邮箱已验证（本地验证码或 provider 已验证），赠金强制验证规则放行。
+	riskCtx := WithSignupGrantRiskInput(ctx, mergeSignupGrantRiskInput(signupGrantRiskInputFromContext(ctx), SignupGrantRiskInput{
+		EmailVerified: signupGrantEmailVerified(true),
+	}))
+	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(riskCtx, email, signupSource, grantPlan)
 
 	user := &User{
 		Email:        email,
@@ -194,7 +198,7 @@ func (s *AuthService) RegisterOAuthEmailAccount(
 		slog.Error("oauth email register: userRepo.Create failed", "email", email, "signup_source", signupSource, "error", err.Error())
 		return nil, nil, ErrServiceUnavailable
 	}
-	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
+	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID, true)
 
 	tokenPair, err := s.GenerateTokenPair(ctx, user, "")
 	if err != nil {
@@ -264,7 +268,11 @@ func (s *AuthService) RegisterVerifiedOAuthEmailAccount(
 	}
 
 	grantPlan := s.resolveSignupGrantPlan(ctx, signupSource)
-	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(ctx, email, signupSource, grantPlan)
+	// OAuth 邮箱注册路径邮箱已验证（本地验证码或 provider 已验证），赠金强制验证规则放行。
+	riskCtx := WithSignupGrantRiskInput(ctx, mergeSignupGrantRiskInput(signupGrantRiskInputFromContext(ctx), SignupGrantRiskInput{
+		EmailVerified: signupGrantEmailVerified(true),
+	}))
+	grantPlan, signupGrantClaim := s.applySignupGrantRiskControl(riskCtx, email, signupSource, grantPlan)
 	var defaultRPMLimit int
 	if s.settingService != nil {
 		defaultRPMLimit = s.settingService.GetDefaultUserRPMLimit(ctx)
@@ -286,7 +294,7 @@ func (s *AuthService) RegisterVerifiedOAuthEmailAccount(
 		}
 		return nil, nil, ErrServiceUnavailable
 	}
-	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
+	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID, true)
 
 	tokenPair, err := s.GenerateTokenPair(ctx, user, "")
 	if err != nil {
@@ -324,10 +332,14 @@ func (s *AuthService) FinalizeOAuthEmailAccount(
 	}
 
 	s.updateOAuthSignupSource(ctx, user.ID, signupSource)
-	grantPlan, signupGrantClaim := s.resolveSignupGrantPlanForFinalizedUser(ctx, user.ID, user.Email, signupSource)
+	// finalize 路径邮箱已验证（pending 流程已校验），赠金强制验证规则放行。
+	finalizeRiskCtx := WithSignupGrantRiskInput(ctx, mergeSignupGrantRiskInput(signupGrantRiskInputFromContext(ctx), SignupGrantRiskInput{
+		EmailVerified: signupGrantEmailVerified(true),
+	}))
+	grantPlan, signupGrantClaim := s.resolveSignupGrantPlanForFinalizedUser(finalizeRiskCtx, user.ID, user.Email, signupSource)
 	s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 	_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
-	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID)
+	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID, true)
 	s.bindOAuthAffiliate(ctx, user.ID, effectiveAffiliateCode)
 	s.notifyUserRegistered(ctx, user, signupSource)
 	s.sendWelcomeEmailForNewUser(ctx, user, signupSource)

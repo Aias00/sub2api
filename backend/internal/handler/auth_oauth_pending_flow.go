@@ -1050,7 +1050,10 @@ func applyPendingOAuthBindingTx(
 	}
 
 	if applyFirstBindDefaults && authService != nil {
-		if err := authService.ApplyProviderDefaultSettingsOnFirstBind(ctx, targetUserID, session.ProviderType); err != nil {
+		// BindPendingOAuthLogin 是唯一以 applyFirstBindDefaults=true 进入此处的入口，
+		// 它要求用户用密码登录既有账号来绑定 OAuth 身份——邮箱已由密码所有权认证，
+		// 故 RequireVerifiedEmail 规则放行（与注册路径口径一致）。
+		if err := authService.ApplyProviderDefaultSettingsOnFirstBind(ctx, targetUserID, session.ProviderType, strings.TrimSpace(session.ResolvedEmail), true); err != nil {
 			return err
 		}
 	}
