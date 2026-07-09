@@ -2524,7 +2524,7 @@ CREATE TABLE IF NOT EXISTS signup_grant_risk_overrides (
 	redeemRepo := &oauthPendingFlowRedeemCodeRepo{client: client}
 	var promoService *service.PromoService
 	if options.promoRepo != nil {
-		promoService = service.NewPromoService(options.promoRepo, userRepo, nil, client, nil)
+		promoService = service.NewPromoService(options.promoRepo, userRepo, nil, nil, client, nil)
 	}
 	var emailService *service.EmailService
 	if options.emailCache != nil {

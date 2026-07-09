@@ -386,6 +386,51 @@ func TestApplyBalanceChange_GiftDelta(t *testing.T) {
 	require.Equal(t, startGift+50, gift, "gift_balance credited atomically")
 }
 
+// TestApplyBalanceChange_RedeemStyleInvariant locks in the dc7fe1d97 regression fix:
+// a redeem-code-style change (Delta>0, GiftDelta=0, UpdateRecharged=true) must credit
+// paid_balance (not gift_balance), preserve the balance = paid + gift invariant, and
+// bump total_recharged. Previously the primitive touched only balance + gift_balance,
+// leaving paid_balance frozen and total_recharged lost — breaking the invariant and
+// under-reporting lifetime recharges.
+func TestApplyBalanceChange_RedeemStyleInvariant(t *testing.T) {
+	ctx := context.Background()
+	repo := newLedgerRepoForTest()
+	userID := createLedgerTestUser(t)
+
+	var startBal, startPaid, startGift, startRecharged float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx,
+		`SELECT balance, COALESCE(paid_balance,0), COALESCE(gift_balance,0), COALESCE(total_recharged,0) FROM users WHERE id = $1`, userID).
+		Scan(&startBal, &startPaid, &startGift, &startRecharged))
+
+	const amount = 30.0
+	res, err := repo.ApplyBalanceChange(ctx, billing.BalanceChangeCommand{
+		UserID:          userID,
+		Delta:           amount,
+		GiftDelta:       0, // redeem codes go to paid_balance, not gift_balance
+		EntryType:       billing.EntryTypeRedeem,
+		SourceType:      billing.SourceTypeRedeemCode,
+		SourceID:        ptrInt64(time.Now().UnixNano()%1_000_000_000 + 91),
+		Description:     "redeem code",
+		UpdateRecharged: true,
+	})
+	require.NoError(t, err)
+	require.True(t, res.Applied)
+	require.Equal(t, startBal+amount, res.BalanceAfter)
+
+	var bal, paid, gift, recharged float64
+	require.NoError(t, integrationDB.QueryRowContext(ctx,
+		`SELECT balance, COALESCE(paid_balance,0), COALESCE(gift_balance,0), COALESCE(total_recharged,0) FROM users WHERE id = $1`, userID).
+		Scan(&bal, &paid, &gift, &recharged))
+
+	// paid_balance absorbs the full delta; gift_balance untouched.
+	require.Equal(t, startPaid+amount, paid, "paid_balance must be credited for GiftDelta=0")
+	require.Equal(t, startGift, gift, "gift_balance must be untouched for GiftDelta=0")
+	// Invariant: balance == paid_balance + gift_balance.
+	require.Equal(t, paid+gift, bal, "balance invariant balance = paid_balance + gift_balance must hold")
+	// total_recharged bumps for positive redeem amounts.
+	require.Equal(t, startRecharged+amount, recharged, "total_recharged must bump for UpdateRecharged positive delta")
+}
+
 func TestApplyBalanceChangeCtx_ParticipatesInEntTx(t *testing.T) {
 	repo := newLedgerRepoForTest()
 	userID := createLedgerTestUser(t)
