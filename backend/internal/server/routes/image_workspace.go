@@ -1,17 +1,23 @@
 package routes
 
 import (
+	"time"
+
 	"github.com/Aias00/cloudbase/internal/handler"
-	"github.com/Aias00/cloudbase/internal/server/middleware"
+	"github.com/Aias00/cloudbase/internal/middleware"
+	servermiddleware "github.com/Aias00/cloudbase/internal/server/middleware"
 	"github.com/Aias00/cloudbase/internal/service"
+
 	"github.com/gin-gonic/gin"
+	"github.com/redis/go-redis/v9"
 )
 
 func RegisterImageWorkspaceRoutes(
 	v1 *gin.RouterGroup,
 	h *handler.Handlers,
-	jwtAuth middleware.JWTAuthMiddleware,
+	jwtAuth servermiddleware.JWTAuthMiddleware,
 	settingService *service.SettingService,
+	redisClient *redis.Client,
 ) {
 	if h == nil || h.ImageWorkspace == nil {
 		return
@@ -19,9 +25,24 @@ func RegisterImageWorkspaceRoutes(
 
 	authenticated := v1.Group("/image-workspace")
 	authenticated.Use(gin.HandlerFunc(jwtAuth))
-	authenticated.Use(middleware.BackendModeUserGuard(settingService))
+	authenticated.Use(servermiddleware.BackendModeUserGuard(settingService))
 	{
-		authenticated.POST("/tasks", h.ImageWorkspace.CreateTask)
+		// Per-user rate limit on task creation to stop scripted queue flooding.
+		// Keyed by authenticated user id (set by jwtAuth) so users behind a
+		// shared NAT/CDN don't share a bucket. FailOpen: a Redis blip must not
+		// lock paying users out. Limit value is intentionally hardcoded for
+		// now; promote to a setting if tuning becomes needed.
+		createTaskLimit := middleware.NewRateLimiter(redisClient).LimitByUserID(
+			"image-workspace-create",
+			30,
+			time.Minute,
+			middleware.RateLimitOptions{FailureMode: middleware.RateLimitFailOpen},
+			func(c *gin.Context) (int64, bool) {
+				subject, ok := servermiddleware.GetAuthSubjectFromContext(c)
+				return subject.UserID, ok && subject.UserID > 0
+			},
+		)
+		authenticated.POST("/tasks", createTaskLimit, h.ImageWorkspace.CreateTask)
 		authenticated.GET("/tasks", h.ImageWorkspace.ListTasks)
 		authenticated.GET("/models", h.ImageWorkspace.ListModels)
 		authenticated.GET("/tasks/:taskID", h.ImageWorkspace.GetTask)

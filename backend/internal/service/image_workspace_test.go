@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/Aias00/cloudbase/internal/billing"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 	"github.com/stretchr/testify/require"
 )
@@ -738,4 +739,205 @@ func TestImageWorkspaceRetrySucceededTaskFails(t *testing.T) {
 
 	_, err = svc.RetryTask(context.Background(), 42, task.ID)
 	require.ErrorIs(t, err, ErrImageWorkspaceInvalidInput)
+}
+
+// imageWorkspaceBalanceReaderStub is a minimal UserBalanceReader for tests.
+type imageWorkspaceBalanceReaderStub struct {
+	balance float64
+	err     error
+	calls   int
+}
+
+func (s *imageWorkspaceBalanceReaderStub) GetUserBalance(_ context.Context, _ int64) (float64, error) {
+	s.calls++
+	return s.balance, s.err
+}
+
+func newImageWorkspaceServiceWithPromptFilter(t *testing.T, repo ImageWorkspaceRepository, filterJSON string) *ImageWorkspaceService {
+	t.Helper()
+	settingRepo := imageWorkspaceSettingRepo{values: map[string]string{
+		SettingKeyImageWorkspaceModelConfig: `{"models":[{"id":"gpt-image-2","label":"GPT Image 2","provider":"openai","default_size":"1024x1024","default_quality":"standard","sizes":["1024x1024"],"qualities":["standard"],"cost_per_image":0.04,"enabled":true}]}`,
+	}}
+	if filterJSON != "" {
+		settingRepo.values[SettingKeyImagePromptFilterConfig] = filterJSON
+	}
+	svc := NewImageWorkspaceService(repo, settingRepo)
+	svc.settingService = NewSettingService(settingRepo, nil)
+	return svc
+}
+
+func TestCreateTask_PromptSafetyFilterBlocksAndAllows(t *testing.T) {
+	filterJSON := `{"enabled":true,"explicit_keywords":["lingerie","nude"],"youth_context_keywords":["school uniform","teen"],"warning_message":"explicit blocked","youth_warning_message":"youth blocked"}`
+
+	cases := []struct {
+		name      string
+		prompt    string
+		wantBlock bool
+		wantMsg   string
+	}{
+		{"explicit_plus_youth_context", "a lingerie school uniform outfit", true, "explicit blocked"},
+		{"explicit_plus_young_word", "lingerie on a young model", true, "youth blocked"},
+		{"clean_prompt", "a calm mountain landscape at dusk", false, ""},
+		{"explicit_without_youth_context", "a lingerie catalog photo", false, ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			repo := newImageWorkspaceRepoFake()
+			svc := newImageWorkspaceServiceWithPromptFilter(t, repo, filterJSON)
+
+			task, err := svc.CreateTask(context.Background(), 42, CreateImageWorkspaceTaskInput{
+				Prompt: tc.prompt,
+				Model:  "gpt-image-2",
+			})
+			if tc.wantBlock {
+				require.ErrorIs(t, err, ErrImageWorkspacePromptBlocked, "prompt=%q", tc.prompt)
+				require.Nil(t, task)
+				if tc.wantMsg != "" {
+					require.Contains(t, err.Error(), tc.wantMsg)
+				}
+				require.Empty(t, repo.tasks, "blocked task must not be persisted")
+				return
+			}
+			require.NoError(t, err, "prompt=%q", tc.prompt)
+			require.NotNil(t, task)
+			require.Len(t, repo.tasks, 1, "clean task must be persisted")
+		})
+	}
+}
+
+func TestCreateTask_PromptSafetyFilterDisabledAllowsAll(t *testing.T) {
+	// Filter present but disabled → no blocking.
+	filterJSON := `{"enabled":false,"explicit_keywords":["lingerie"],"youth_context_keywords":["teen"],"warning_message":"x"}`
+	repo := newImageWorkspaceRepoFake()
+	svc := newImageWorkspaceServiceWithPromptFilter(t, repo, filterJSON)
+
+	task, err := svc.CreateTask(context.Background(), 42, CreateImageWorkspaceTaskInput{
+		Prompt: "lingerie teen outfit",
+		Model:  "gpt-image-2",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, task)
+}
+
+func TestCreateTask_BalancePreCheckRejectsInsufficient(t *testing.T) {
+	repo := newImageWorkspaceRepoFake()
+	svc := NewImageWorkspaceService(repo, imageWorkspaceSettingRepo{values: map[string]string{
+		SettingKeyImageWorkspaceModelConfig: `{"models":[{"id":"gpt-image-2","label":"GPT Image 2","provider":"openai","default_size":"1024x1024","default_quality":"standard","sizes":["1024x1024"],"qualities":["standard"],"cost_per_image":0.04,"enabled":true}]}`,
+	}})
+	// settingService stays nil → prompt filter is a no-op.
+	reader := &imageWorkspaceBalanceReaderStub{balance: 0.01} // < 0.04 estimate
+	svc.balanceReader = reader
+
+	task, err := svc.CreateTask(context.Background(), 42, CreateImageWorkspaceTaskInput{
+		Prompt: "a calm mountain landscape",
+		Model:  "gpt-image-2",
+	})
+	require.ErrorIs(t, err, billing.ErrInsufficientBalance)
+	require.Nil(t, task)
+	require.Equal(t, 1, reader.calls, "balance pre-check must consult the reader")
+	require.Empty(t, repo.tasks, "insufficient task must not reach the repo / open a tx")
+}
+
+func TestCreateTask_BalancePreCheckPassesWhenSufficient(t *testing.T) {
+	repo := newImageWorkspaceRepoFake()
+	svc := NewImageWorkspaceService(repo, imageWorkspaceSettingRepo{values: map[string]string{
+		SettingKeyImageWorkspaceModelConfig: `{"models":[{"id":"gpt-image-2","label":"GPT Image 2","provider":"openai","default_size":"1024x1024","default_quality":"standard","sizes":["1024x1024"],"qualities":["standard"],"cost_per_image":0.04,"enabled":true}]}`,
+	}})
+	reader := &imageWorkspaceBalanceReaderStub{balance: 1.00} // >= 0.04
+	svc.balanceReader = reader
+
+	task, err := svc.CreateTask(context.Background(), 42, CreateImageWorkspaceTaskInput{
+		Prompt: "a calm mountain landscape",
+		Model:  "gpt-image-2",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, task)
+	require.Len(t, repo.tasks, 1, "sufficient task must be persisted")
+}
+
+func TestCreateTask_BalancePreCheckSkippedOnReaderError(t *testing.T) {
+	// When the balance reader errors (e.g. cache/DB hiccup) the pre-check must
+	// degrade to letting the repo's authoritative gate decide, not reject.
+	repo := newImageWorkspaceRepoFake()
+	svc := NewImageWorkspaceService(repo, imageWorkspaceSettingRepo{values: map[string]string{
+		SettingKeyImageWorkspaceModelConfig: `{"models":[{"id":"gpt-image-2","label":"GPT Image 2","provider":"openai","default_size":"1024x1024","default_quality":"standard","sizes":["1024x1024"],"qualities":["standard"],"cost_per_image":0.04,"enabled":true}]}`,
+	}})
+	reader := &imageWorkspaceBalanceReaderStub{balance: 0, err: context.Canceled}
+	svc.balanceReader = reader
+
+	task, err := svc.CreateTask(context.Background(), 42, CreateImageWorkspaceTaskInput{
+		Prompt: "a calm mountain landscape",
+		Model:  "gpt-image-2",
+	})
+	require.NoError(t, err, "reader error must fall through to repo, not reject")
+	require.NotNil(t, task)
+	require.Len(t, repo.tasks, 1)
+}
+
+func TestImageWordMatch(t *testing.T) {
+	cases := []struct {
+		text string
+		term string
+		want bool
+	}{
+		{"a lingerie dress", "lingerie", true},
+		{"LINGERIE dress", "lingerie", true},       // case-insensitive
+		{"a lingeire dress", "lingerie", false},    // typo, no match
+		{"pre-lingerie-post", "lingerie", true},    // hyphens are non-word → boundary
+		{"school uniform", "school uniform", true}, // multi-word literal
+		{"schooluniform", "school uniform", false}, // missing space
+		{"a young girl", "young", true},
+		{"younger girl", "young", false}, // word boundary prevents substring
+		{"", "lingerie", false},
+		{"dress", "", false}, // empty term never matches
+	}
+	for _, tc := range cases {
+		require.Equal(t, tc.want, imageWordMatch(tc.text, tc.term), "text=%q term=%q", tc.text, tc.term)
+	}
+}
+
+func TestCreateTask_PromptSafetyRuntimeToggleDisablesFilter(t *testing.T) {
+	// When image_workspace_prompt_safety_enabled is "false", the server-side
+	// filter must skip even though image_prompt_filter_config.enabled is true —
+	// matching the worker, which also stops checking under that toggle.
+	filterJSON := `{"enabled":true,"explicit_keywords":["lingerie"],"youth_context_keywords":["teen"],"warning_message":"blocked"}`
+	repo := newImageWorkspaceRepoFake()
+	settingRepo := imageWorkspaceSettingRepo{values: map[string]string{
+		SettingKeyImageWorkspaceModelConfig:         `{"models":[{"id":"gpt-image-2","label":"G","provider":"openai","default_size":"1024x1024","default_quality":"standard","sizes":["1024x1024"],"qualities":["standard"],"cost_per_image":0.04,"enabled":true}]}`,
+		SettingKeyImagePromptFilterConfig:           filterJSON,
+		SettingKeyImageWorkspacePromptSafetyEnabled: "false",
+	}}
+	svc := NewImageWorkspaceService(repo, settingRepo)
+	svc.settingService = NewSettingService(settingRepo, nil)
+
+	task, err := svc.CreateTask(context.Background(), 42, CreateImageWorkspaceTaskInput{
+		Prompt: "lingerie teen outfit",
+		Model:  "gpt-image-2",
+	})
+	require.NoError(t, err, "runtime toggle off must skip the filter")
+	require.NotNil(t, task)
+	require.Len(t, repo.tasks, 1, "task must be persisted when filter is toggled off")
+}
+
+func TestCreateTask_PromptSafetyFilterNormalizesMalformedKeywords(t *testing.T) {
+	// Malformed keyword entries (leading/trailing spaces, blanks) must be
+	// trimmed and dropped, so a spacey keyword still matches server-side.
+	filterJSON := `{"enabled":true,"explicit_keywords":["  lingerie  ","", "   "],"youth_context_keywords":["teen"],"warning_message":"blocked"}`
+	repo := newImageWorkspaceRepoFake()
+	svc := newImageWorkspaceServiceWithPromptFilter(t, repo, filterJSON)
+
+	task, err := svc.CreateTask(context.Background(), 42, CreateImageWorkspaceTaskInput{
+		Prompt: "a lingerie teen outfit",
+		Model:  "gpt-image-2",
+	})
+	require.ErrorIs(t, err, ErrImageWorkspacePromptBlocked, "trimmed 'lingerie' must still match")
+	require.Nil(t, task)
+	require.Empty(t, repo.tasks)
+}
+
+func TestNormalizeImageKeywords(t *testing.T) {
+	require.Equal(t, []string{"lingerie", "nude"}, normalizeImageKeywords([]string{"  lingerie  ", "nude", "", "   "}))
+	require.Equal(t, []string{"school uniform"}, normalizeImageKeywords([]string{" school uniform "}))
+	require.Empty(t, normalizeImageKeywords([]string{"", "  ", "\t"}))
+	require.Empty(t, normalizeImageKeywords(nil))
 }

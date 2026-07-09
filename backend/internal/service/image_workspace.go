@@ -3,10 +3,13 @@ package service
 import (
 	"context"
 	"encoding/json"
+	"regexp"
 	"strings"
 	"time"
 
+	"github.com/Aias00/cloudbase/internal/billing"
 	contentimage "github.com/Aias00/cloudbase/internal/image"
+	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 )
 
@@ -65,6 +68,11 @@ var (
 	ErrImageWorkspaceModelNotFound = contentimage.ErrImageWorkspaceModelNotFound
 	ErrImageWorkspaceInvalidCost   = contentimage.ErrImageWorkspaceInvalidCost
 	ErrImageWorkspaceNonRetryable  = contentimage.ErrImageWorkspaceNonRetryable
+	// ErrImageWorkspacePromptBlocked marks a task creation rejected by the
+	// server-side prompt safety filter. The concrete message returned to the
+	// caller carries the configured warning text; errors.Is matches on
+	// code+reason so callers can branch without string matching.
+	ErrImageWorkspacePromptBlocked = infraerrors.BadRequest("IMAGE_WORKSPACE_PROMPT_BLOCKED", "image workspace prompt blocked by safety filter")
 )
 
 type ImageWorkspaceTask = contentimage.ImageWorkspaceTask
@@ -82,13 +90,37 @@ type ImageWorkspaceArtifactInput = contentimage.ImageWorkspaceArtifactInput
 type ImageWorkspaceTaskFilters = contentimage.ImageWorkspaceTaskFilters
 type ImageWorkspaceRepository = contentimage.ImageWorkspaceRepository
 
-type ImageWorkspaceService struct {
-	repo        ImageWorkspaceRepository
-	settingRepo SettingRepository
+// UserBalanceReader reads a user's current balance. It is backed in production
+// by *BillingCacheService (cached balance, DB fallback). Used only for a
+// fast-fail pre-check in CreateTask; the authoritative balance gate remains
+// the repo-layer reservation (pg_advisory_xact_lock + FOR UPDATE).
+type UserBalanceReader interface {
+	GetUserBalance(ctx context.Context, userID int64) (float64, error)
 }
 
+type ImageWorkspaceService struct {
+	repo           ImageWorkspaceRepository
+	settingRepo    SettingRepository
+	settingService *SettingService
+	balanceReader  UserBalanceReader
+}
+
+// NewImageWorkspaceService is the base constructor used by tests. It leaves the
+// optional runtime deps (settingService / balanceReader) nil; the prompt-safety
+// filter and balance pre-check degrade to no-ops in that case. Production wiring
+// goes through ProvideImageWorkspaceService, which sets both.
 func NewImageWorkspaceService(repo ImageWorkspaceRepository, settingRepo SettingRepository) *ImageWorkspaceService {
 	return &ImageWorkspaceService{repo: repo, settingRepo: settingRepo}
+}
+
+// ProvideImageWorkspaceService is the wire provider that injects the optional
+// runtime deps on top of the base constructor: the prompt-safety SettingService
+// and the cached balance reader used for the CreateTask fast-fail pre-check.
+func ProvideImageWorkspaceService(repo ImageWorkspaceRepository, settingRepo SettingRepository, settingService *SettingService, balanceReader UserBalanceReader) *ImageWorkspaceService {
+	svc := NewImageWorkspaceService(repo, settingRepo)
+	svc.settingService = settingService
+	svc.balanceReader = balanceReader
+	return svc
 }
 
 func (s *ImageWorkspaceService) Health() error {
@@ -149,6 +181,13 @@ func (s *ImageWorkspaceService) CreateTask(ctx context.Context, userID int64, in
 	if matched == nil {
 		return nil, ErrImageWorkspaceModelNotFound
 	}
+	// Server-side prompt safety filter. Mirrors the frontend rules in
+	// ImageGeneratorView.vue so that direct API calls (which bypass the UI)
+	// cannot skip content moderation. Returns nil when the filter is off or
+	// the prompt is clean.
+	if err := s.evaluatePromptSafety(ctx, input); err != nil {
+		return nil, err
+	}
 	task := &ImageWorkspaceTask{
 		UserID:         userID,
 		Status:         ImageWorkspaceTaskStatusQueued,
@@ -165,10 +204,148 @@ func (s *ImageWorkspaceService) CreateTask(ctx context.Context, userID int64, in
 		CostEstimate:   maxImageWorkspaceFloat(matched.CostPerImage, 0) * float64(batchSize),
 		ResultJSON:     "{}",
 	}
+	// Fast-fail balance pre-check. This is purely an optimization/UX gate so
+	// that obviously-insufficient users don't spin up a transaction + advisory
+	// lock just to be rejected. The authoritative invariant is still enforced
+	// in the repo: pg_advisory_xact_lock serializes concurrent creates per user
+	// and reserveUserBalanceWithComponents re-checks balance >= amount under
+	// FOR UPDATE. A stale cache read here therefore cannot drive the balance
+	// negative — at worst it lets a request through that the repo then rejects
+	// with billing.ErrInsufficientBalance, or rejects one that would have
+	// succeeded (user retries).
+	if task.CostEstimate > 0 && s.balanceReader != nil {
+		if balance, rerr := s.balanceReader.GetUserBalance(ctx, userID); rerr == nil && balance < task.CostEstimate {
+			return nil, billing.ErrInsufficientBalance
+		}
+	}
 	if err := s.repo.CreateTask(ctx, task); err != nil {
 		return nil, err
 	}
 	return task, nil
+}
+
+// evaluatePromptSafety applies the admin-configured image prompt filter
+// (image_prompt_filter_config) server-side. The matching semantics are kept
+// in lockstep with the frontend implementation in ImageGeneratorView.vue:
+//
+//   - text = prompt + "\n" + negative_prompt + "\n" + style, lower-cased
+//   - a keyword matches via ASCII word boundary (\bkw\b), case-insensitive
+//   - block when (explicit && youth_context) OR (explicit && "young")
+//
+// Two gates must both be on for the filter to apply:
+//   - the runtime toggle image_workspace_prompt_safety_enabled (the same key the
+//     worker runtime config下发为 prompt_safety_enabled; admin "Prompt 安全检查"
+//     switch). When the admin disables it, the worker stops checking — this
+//     server-side gate must skip too, otherwise direct API calls would still be
+//     filtered while the worker path is not.
+//   - filter.Enabled inside image_prompt_filter_config.
+//
+// On block it returns an ErrImageWorkspacePromptBlocked carrying the configured
+// warning message; nil when either gate is off or the prompt is clean.
+func (s *ImageWorkspaceService) evaluatePromptSafety(ctx context.Context, input CreateImageWorkspaceTaskInput) error {
+	if s == nil || s.settingService == nil {
+		return nil
+	}
+	if !s.promptSafetyEnabled(ctx) {
+		return nil
+	}
+	filter, err := s.settingService.GetImagePromptFilterConfig(ctx)
+	if err != nil || filter == nil || !filter.Enabled {
+		return nil
+	}
+	text := strings.ToLower(input.Prompt + "\n" + input.NegativePrompt + "\n" + input.Style)
+	// Normalize keywords: trim and drop empty so malformed config entries
+	// (leading/trailing spaces, blanks) cannot create dead or over-broad
+	// patterns. This diverges from the literal frontend wordMatch (which does
+	// no trimming), but only in the safe direction for a moderation gate — a
+	// spacey keyword that the frontend would silently never match becomes a
+	// clean match server-side.
+	explicitKeywords := normalizeImageKeywords(filter.ExplicitKeywords)
+	youthContextKeywords := normalizeImageKeywords(filter.YouthContextKeywords)
+
+	hasExplicit := anyImageKeywordMatch(text, explicitKeywords)
+	if !hasExplicit {
+		return nil
+	}
+	hasYouthContext := anyImageKeywordMatch(text, youthContextKeywords)
+	if hasYouthContext {
+		return imagePromptBlockedError(filter.WarningMessage)
+	}
+	if imageWordMatch(text, "young") {
+		return imagePromptBlockedError(filter.YouthWarningMessage)
+	}
+	return nil
+}
+
+// imagePromptBlockedError builds a per-request error sharing the
+// IMAGE_WORKSPACE_PROMPT_BLOCKED reason so errors.Is matches the sentinel
+// while the message reflects the configured warning text. An empty configured
+// message degrades to a generic explanation so the rejection is still useful
+// to the caller.
+func imagePromptBlockedError(message string) error {
+	msg := strings.TrimSpace(message)
+	if msg == "" {
+		msg = "prompt blocked by safety filter"
+	}
+	return infraerrors.BadRequest("IMAGE_WORKSPACE_PROMPT_BLOCKED", msg)
+}
+
+// imageWordMatch reports whether term appears in text on an ASCII word
+// boundary, case-insensitively. Both text and term are lower-cased, mirroring
+// the JS `text.toLowerCase()` + `new RegExp("\\b"+escaped+"\\b")` behavior used
+// by the frontend filter. term is treated as a literal (regex metacharacters
+// are escaped).
+func imageWordMatch(text, term string) bool {
+	term = strings.TrimSpace(term)
+	if term == "" {
+		return false
+	}
+	pattern := "\\b" + regexp.QuoteMeta(strings.ToLower(term)) + "\\b"
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return false
+	}
+	return re.MatchString(strings.ToLower(text))
+}
+
+func anyImageKeywordMatch(text string, keywords []string) bool {
+	for _, kw := range keywords {
+		if imageWordMatch(text, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+// normalizeImageKeywords trims each keyword and drops empty/whitespace-only
+// entries. Keeping malformed entries (e.g. "  ", "") would either produce a
+// dead pattern or, for imageWordMatch's empty guard, be skipped anyway — so
+// normalizing here keeps the keyword list semantically clean and stable
+// regardless of how the admin saved the config.
+func normalizeImageKeywords(keywords []string) []string {
+	out := make([]string, 0, len(keywords))
+	for _, kw := range keywords {
+		if trimmed := strings.TrimSpace(kw); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return out
+}
+
+// promptSafetyEnabled reads the image_workspace_prompt_safety_enabled runtime
+// toggle (the admin "Prompt 安全检查" switch, also下发 to the worker as
+// prompt_safety_enabled). Defaults to true when the setting is unset/unreadable,
+// matching the worker runtime config and setting service defaults, so a config
+// or DB hiccup does not silently disable the server-side filter.
+func (s *ImageWorkspaceService) promptSafetyEnabled(ctx context.Context) bool {
+	if s == nil || s.settingRepo == nil {
+		return true
+	}
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeyImageWorkspacePromptSafetyEnabled)
+	if err != nil {
+		return true
+	}
+	return parseBoolSettingWithDefault(raw, true)
 }
 
 func (s *ImageWorkspaceService) EstimateTaskCost(ctx context.Context, modelID string, batchSize int) float64 {

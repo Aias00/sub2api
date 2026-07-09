@@ -19,7 +19,7 @@ func TestImageWorkspaceRoutesRegisterExpectedPaths(t *testing.T) {
 	}, func(c *gin.Context) {
 		c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{UserID: 7})
 		c.Next()
-	}, nil)
+	}, nil, nil)
 
 	routes := map[string]bool{}
 	for _, route := range router.Routes() {

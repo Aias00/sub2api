@@ -281,7 +281,7 @@ func initializeApplication(buildInfo handler.BuildInfo) (*Application, error) {
 	weChatExportService := service.NewWeChatExportService(weChatExportRepository, settingService)
 	weChatExportHandler := handler.NewWeChatExportHandler(weChatExportService)
 	imageWorkspaceRepository := repository.NewImageWorkspaceRepository(db)
-	imageWorkspaceService := service.NewImageWorkspaceService(imageWorkspaceRepository, settingRepository)
+	imageWorkspaceService := service.ProvideImageWorkspaceService(imageWorkspaceRepository, settingRepository, settingService, billingCacheService)
 	imageWorkspaceHandler := handler.NewImageWorkspaceHandler(imageWorkspaceService)
 	hotContentRepository := hot.NewRepository(db)
 	hotContentService := hot.NewService(hotContentRepository)

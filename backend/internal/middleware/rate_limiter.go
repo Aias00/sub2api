@@ -121,6 +121,57 @@ func (r *RateLimiter) LimitWithOptions(key string, limit int, window time.Durati
 	}
 }
 
+// LimitByUserID returns a rate limit middleware keyed by authenticated user id
+// instead of client IP. This is the variant to use on authenticated endpoints
+// where callers behind a shared NAT/CDN must not share a single bucket.
+//
+// userID extracts the caller's user id from the gin context; it is expected to
+// be populated by an upstream auth middleware (e.g. jwtAuth) that runs before
+// this handler. When userID reports a missing/invalid identity (ok=false or
+// uid<=0) the middleware falls back to the legacy IP-derived key so that an
+// auth gap degrades to existing behavior instead of bypassing the limit. The
+// Lua script, failure modes, and abort behavior are identical to LimitWithOptions.
+func (r *RateLimiter) LimitByUserID(key string, limit int, window time.Duration, opts RateLimitOptions, userID func(*gin.Context) (int64, bool)) gin.HandlerFunc {
+	failureMode := opts.FailureMode
+	if failureMode != RateLimitFailClose {
+		failureMode = RateLimitFailOpen
+	}
+
+	return func(c *gin.Context) {
+		redisKey := r.prefix + key + ":"
+		if uid, ok := userID(c); ok && uid > 0 {
+			redisKey += "user:" + strconv.FormatInt(uid, 10)
+		} else {
+			redisKey += c.ClientIP()
+		}
+
+		ctx := c.Request.Context()
+
+		windowMillis := windowTTLMillis(window)
+
+		count, repaired, err := rateLimitRun(ctx, r.redis, redisKey, windowMillis)
+		if err != nil {
+			log.Printf("[RateLimit] redis error: key=%s mode=%s err=%v", redisKey, failureModeLabel(failureMode), err)
+			if failureMode == RateLimitFailClose {
+				abortRateLimit(c)
+				return
+			}
+			c.Next()
+			return
+		}
+		if repaired {
+			log.Printf("[RateLimit] ttl repaired: key=%s window_ms=%d", redisKey, windowMillis)
+		}
+
+		if count > int64(limit) {
+			abortRateLimit(c)
+			return
+		}
+
+		c.Next()
+	}
+}
+
 func windowTTLMillis(window time.Duration) int64 {
 	ttl := window.Milliseconds()
 	if ttl < 1 {
