@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -446,40 +447,48 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 	switch redeemCode.Type {
 	case RedeemTypeBalance:
 		amount := redeemCode.Value
-		balanceBefore := user.Balance
 		// 负数为退款扣减，余额最低为 0
+		allowNegative := false
 		if amount < 0 && user.Balance+amount < 0 {
 			amount = -user.Balance
+			allowNegative = true // Allow going to zero
 		}
-		if err := s.userRepo.UpdateBalance(txCtx, userID, amount); err != nil {
-			return nil, fmt.Errorf("update user balance: %w", err)
-		}
-		balanceAfter := balanceBefore + amount
 
-		// 写入余额流水
+		// 使用统一的账本原语（原子更新balance + ledger）
 		if s.ledgerService != nil {
 			entryType := billingctx.EntryTypeRedeem
 			if redeemCode.Notes != "" && strings.HasPrefix(redeemCode.Notes, "admin:") {
 				entryType = billingctx.EntryTypeAdminAdjustment
 			}
-			if err := s.ledgerService.WriteLedgerTx(
-				txCtx,
-				tx.Client(),
-				userID,
-				entryType,
-				amount,
-				balanceBefore,
-				balanceAfter,
-				billingctx.SourceTypeRedeemCode,
-				&redeemCode.ID,
-				fmt.Sprintf("兑换码 %s", substringCode(redeemCode.Code, 8)),
-				map[string]any{
-					"code":  redeemCode.Code,
-					"type":  redeemCode.Type,
-					"notes": redeemCode.Notes,
-				},
-			); err != nil {
-				slog.Warn("write balance ledger failed", "user_id", userID, "code_id", redeemCode.ID, "error", err)
+
+			metadataJSON, _ := json.Marshal(map[string]any{
+				"code":  redeemCode.Code,
+				"type":  redeemCode.Type,
+				"notes": redeemCode.Notes,
+			})
+
+			result, err := s.ledgerService.ApplyBalanceChangeCtx(txCtx, billingctx.BalanceChangeCommand{
+				UserID:        userID,
+				Delta:         amount,
+				GiftDelta:     0, // Redeem codes go to paid_balance, not gift_balance
+				EntryType:     entryType,
+				SourceType:    billingctx.SourceTypeRedeemCode,
+				SourceID:      &redeemCode.ID,
+				Description:   fmt.Sprintf("兑换码 %s", substringCode(redeemCode.Code, 8)),
+				MetadataJSON:  metadataJSON,
+				AllowNegative: allowNegative,
+			})
+			if err != nil {
+				return nil, fmt.Errorf("apply redeem bonus via ledger: %w", err)
+			}
+			// Log if idempotency check detected duplicate
+			if !result.Applied {
+				slog.Info("redeem balance change skipped (idempotency)", "user_id", userID, "code_id", redeemCode.ID)
+			}
+		} else {
+			// Fallback: direct balance update without ledger (legacy path)
+			if err := s.userRepo.UpdateBalance(txCtx, userID, amount); err != nil {
+				return nil, fmt.Errorf("update user balance: %w", err)
 			}
 		}
 

@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/rand"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
 
 	dbent "github.com/Aias00/cloudbase/ent"
+	"github.com/Aias00/cloudbase/internal/billing"
 	infraerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 	"github.com/Aias00/cloudbase/internal/pkg/pagination"
 )
@@ -27,6 +29,7 @@ type PromoService struct {
 	promoRepo            PromoCodeRepository
 	userRepo             UserRepository
 	billingCacheService  *BillingCacheService
+	ledgerService        *billing.UserBalanceLedgerService
 	entClient            *dbent.Client
 	authCacheInvalidator APIKeyAuthCacheInvalidator
 }
@@ -36,6 +39,7 @@ func NewPromoService(
 	promoRepo PromoCodeRepository,
 	userRepo UserRepository,
 	billingCacheService *BillingCacheService,
+	ledgerService *billing.UserBalanceLedgerService,
 	entClient *dbent.Client,
 	authCacheInvalidator APIKeyAuthCacheInvalidator,
 ) *PromoService {
@@ -43,6 +47,7 @@ func NewPromoService(
 		promoRepo:            promoRepo,
 		userRepo:             userRepo,
 		billingCacheService:  billingCacheService,
+		ledgerService:        ledgerService,
 		entClient:            entClient,
 		authCacheInvalidator: authCacheInvalidator,
 	}
@@ -123,9 +128,28 @@ func (s *PromoService) ApplyPromoCode(ctx context.Context, userID int64, code st
 		return ErrPromoCodeAlreadyUsed
 	}
 
-	// 增加用户余额
-	if err := s.userRepo.UpdateBalance(txCtx, userID, promoCode.BonusAmount); err != nil {
-		return fmt.Errorf("update user balance: %w", err)
+	// 增加用户余额（使用统一的账本原语）
+	// Promo credits should be gift credits (restricted to low-cost usage)
+	if s.ledgerService != nil {
+		_, err := s.ledgerService.ApplyBalanceChangeCtx(txCtx, billing.BalanceChangeCommand{
+			UserID:        userID,
+			Delta:         promoCode.BonusAmount,
+			GiftDelta:     promoCode.BonusAmount, // Track as gift_balance
+			EntryType:     billing.EntryTypePromoBonus,
+			SourceType:    billing.SourceTypePromoCodeUsage,
+			SourceID:      &promoCode.ID,
+			Description:   fmt.Sprintf("优惠码 %s", code),
+			MetadataJSON:  json.RawMessage(fmt.Sprintf(`{"code":"%s","bonus_amount":%.2f}`, code, promoCode.BonusAmount)),
+			AllowNegative: false,
+		})
+		if err != nil {
+			return fmt.Errorf("apply promo bonus via ledger: %w", err)
+		}
+	} else {
+		// Fallback: direct balance update without ledger (legacy path)
+		if err := s.userRepo.UpdateBalance(txCtx, userID, promoCode.BonusAmount); err != nil {
+			return fmt.Errorf("update user balance: %w", err)
+		}
 	}
 
 	// 创建使用记录
