@@ -60,6 +60,10 @@ type signupGrantRiskConfig struct {
 	FreeDomains          map[string]struct{}
 	TrustedDomains       map[string]struct{}
 	RequireVerifiedEmail bool
+	// IPv6PrefixBits 控制注册赠金风控的 IPv6 聚合前缀长度。
+	// IPv6 隐私扩展（RFC 4941）下接口标识符会轮换，全量匹配会被绕过；
+	// 按 /64 等前缀聚合后同网段注册仍可计数。0 表示禁用截断、保留全量。
+	IPv6PrefixBits int
 }
 
 type SignupGrantRiskClaimRecord struct {
@@ -244,7 +248,9 @@ func (s *AuthService) applySignupGrantRiskControlEx(ctx context.Context, email, 
 	}
 
 	normalizedEmail, domain := normalizeSignupGrantRiskEmail(email)
-	remoteIP := normalizeSignupGrantRiskIP(input.RemoteIP)
+	// ipHash / 锁键 / override 均基于此前缀截断后的 IP，使 IPv6 隐私扩展轮换（RFC 4941）
+	// 无法绕过 ip_daily_limit 限额与 advisory lock 串行化。审计落库仍保留全量 IP。
+	remoteIP := normalizeSignupGrantRiskIPForHash(input.RemoteIP, cfg.IPv6PrefixBits)
 	now := time.Now().UTC()
 	hashSalt := s.signupGrantRiskSalt()
 	emailHash := signupGrantRiskHash(hashSalt, normalizedEmail)
@@ -544,6 +550,14 @@ func normalizeSignupGrantRiskIP(raw string) string {
 	return identity.NormalizeSignupGrantRiskIP(raw)
 }
 
+// normalizeSignupGrantRiskIPForHash 按 cfg 的 IPv6 前缀长度截断后归一化，
+// 供注册赠金风控的 IP 哈希（限额 / advisory lock 锁键 / override）使用。
+// 与 normalizeSignupGrantRiskIP 的区别：本函数对 IPv6 做前缀截断以抵抗隐私扩展轮换，
+// 而前者保留全量供审计落库。
+func normalizeSignupGrantRiskIPForHash(raw string, ipv6PrefixBits int) string {
+	return identity.NormalizeSignupGrantRiskIPForHash(raw, ipv6PrefixBits)
+}
+
 func normalizeSignupGrantRiskLabel(raw string) string {
 	return identity.NormalizeSignupGrantRiskLabel(raw)
 }
@@ -720,6 +734,7 @@ func (s *SettingService) signupGrantRiskConfig(ctx context.Context) signupGrantR
 		SettingKeySignupGrantRiskControlFreeDomains,
 		SettingKeySignupGrantRiskControlTrustedDomains,
 		SettingKeySignupGrantRiskControlRequireVerifiedEmail,
+		SettingKeySignupGrantRiskControlIPv6PrefixBits,
 	})
 	if err != nil {
 		logger.LegacyPrintf("service.auth.risk", "[SignupGrantRisk] load config failed: %v", err)
@@ -738,7 +753,21 @@ func (s *SettingService) signupGrantRiskConfig(ctx context.Context) signupGrantR
 		FreeDomains:          parseSignupGrantRiskDomainSet(defaultIfEmpty(values[SettingKeySignupGrantRiskControlFreeDomains], defaultSignupGrantRiskFreeDomains)),
 		TrustedDomains:       parseSignupGrantRiskDomainSet(values[SettingKeySignupGrantRiskControlTrustedDomains]),
 		RequireVerifiedEmail: values[SettingKeySignupGrantRiskControlRequireVerifiedEmail] != "false",
+		IPv6PrefixBits:       parseIPv6PrefixBitsSetting(values[SettingKeySignupGrantRiskControlIPv6PrefixBits]),
 	}
+}
+
+// defaultSignupGrantRiskIPv6PrefixBits 与 identity.defaultSignupGrantRiskIPv6PrefixBits 保持一致（/64）。
+const defaultSignupGrantRiskIPv6PrefixBits = 64
+
+// parseIPv6PrefixBitsSetting 解析 IPv6 聚合前缀长度配置。
+// 合法范围 [0,128]：0 表示禁用截断、保留全量 IP；空值或非法值回退默认 /64。
+func parseIPv6PrefixBitsSetting(raw string) int {
+	value, err := strconv.Atoi(strings.TrimSpace(raw))
+	if err != nil || value < 0 || value > 128 {
+		return defaultSignupGrantRiskIPv6PrefixBits
+	}
+	return value
 }
 
 func parseNonNegativeIntSetting(raw string, fallback int) int {

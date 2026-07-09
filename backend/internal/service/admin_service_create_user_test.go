@@ -5,9 +5,14 @@ package service
 import (
 	"context"
 	"errors"
+	"regexp"
 	"testing"
 
+	"entgo.io/ent/dialect"
+	entsql "entgo.io/ent/dialect/sql"
+	dbent "github.com/Aias00/cloudbase/ent"
 	"github.com/Aias00/cloudbase/internal/config"
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
 )
 
@@ -145,4 +150,62 @@ func TestAdminService_CreateUser_AssignsDefaultSubscriptions(t *testing.T) {
 	require.Equal(t, int64(21), assigner.calls[0].UserID)
 	require.Equal(t, int64(5), assigner.calls[0].GroupID)
 	require.Equal(t, 30, assigner.calls[0].ValidityDays)
+}
+
+// TestAdminService_CreateUser_RecordsAdminRegistrationEvent 断言后台建号会写一条
+// user_registration_events 事件行：source 为哨兵 "admin"、ip_address 与 ip_prefix 为空。
+// 空 IP 保证这些账号不进 /admin/user-insights 的 Top IPs 聚合（WHERE ip_address <> ''），
+// 也不污染 SameIPSignupCount24h 风控信号。
+func TestAdminService_CreateUser_RecordsAdminRegistrationEvent(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	require.NoError(t, err)
+	defer func() { _ = db.Close() }()
+
+	client := dbent.NewClient(dbent.Driver(entsql.OpenDB(dialect.Postgres, db)))
+	defer func() { _ = client.Close() }()
+
+	repo := &userRepoStub{nextID: 99}
+	svc := &adminServiceImpl{userRepo: repo, entClient: client}
+
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO user_registration_events")).
+		WithArgs(
+			int64(99),
+			"admin-created@test.com",
+			"admin",
+			"",
+			"",
+			"", // ip_address 空
+			"", // ip_prefix 空
+			"",
+			"",
+			"",
+			sqlmock.AnyArg(),
+		).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	user, err := svc.CreateUser(context.Background(), &CreateUserInput{
+		Email:    "admin-created@test.com",
+		Password: "strong-pass",
+		Username: "admin-created",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.Equal(t, int64(99), user.ID)
+
+	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+// TestAdminService_CreateUser_NoRegistrationEventWithoutEntClient 断言 entClient 为 nil 时
+// CreateUser 仍正常工作且不写注册事件（admin 侧多数单测构造无 entClient 的 service）。
+func TestAdminService_CreateUser_NoRegistrationEventWithoutEntClient(t *testing.T) {
+	repo := &userRepoStub{nextID: 100}
+	svc := &adminServiceImpl{userRepo: repo} // 无 entClient
+
+	user, err := svc.CreateUser(context.Background(), &CreateUserInput{
+		Email:    "no-entclient@test.com",
+		Password: "strong-pass",
+	})
+	require.NoError(t, err)
+	require.NotNil(t, user)
+	require.Equal(t, int64(100), user.ID)
 }

@@ -54,6 +54,82 @@ func GetTrustedClientIP(c *gin.Context) string {
 	return normalizeIP(c.ClientIP())
 }
 
+// cloudflareNets 是 Cloudflare 公开的回源 CIDR 段（https://www.cloudflare.com/ips/）。
+// 仅当解析出的直连跳板落在这些段内时，才认为 CF-Connecting-IP 由 Cloudflare 注入、可信。
+var cloudflareNets []*net.IPNet
+
+func init() {
+	// Cloudflare IPv4 + IPv6 段（官方公开，变动极少；如有更新需同步此处）。
+	for _, cidr := range []string{
+		"173.245.48.0/20",
+		"103.21.244.0/22",
+		"103.22.200.0/22",
+		"103.31.4.0/22",
+		"141.101.64.0/18",
+		"108.162.192.0/18",
+		"190.93.240.0/20",
+		"188.114.96.0/20",
+		"197.234.240.0/22",
+		"198.41.128.0/17",
+		"162.158.0.0/15",
+		"104.16.0.0/13",
+		"104.24.0.0/14",
+		"172.64.0.0/13",
+		"131.0.72.0/22",
+		"2400:cb00::/32",
+		"2606:4700::/32",
+		"2803:f800::/32",
+		"2405:b500::/32",
+		"2405:8100::/32",
+		"2a06:98c0::/29",
+		"2c0f:f248::/32",
+	} {
+		_, block, err := net.ParseCIDR(cidr)
+		if err != nil {
+			panic("invalid Cloudflare CIDR: " + cidr)
+		}
+		cloudflareNets = append(cloudflareNets, block)
+	}
+}
+
+// isCloudflareIP 报告 ip 是否落在 Cloudflare 回源段内。
+func isCloudflareIP(ipStr string) bool {
+	parsed := net.ParseIP(ipStr)
+	if parsed == nil {
+		return false
+	}
+	for _, block := range cloudflareNets {
+		if block.Contains(parsed) {
+			return true
+		}
+	}
+	return false
+}
+
+// GetClientIPForRisk 提取用于风控的客户端 IP，抵抗 CF-Connecting-IP 伪造。
+//
+// 生产部署恒在 Cloudflare 之后（用户 → CF → Caddy → 后端）。Caddy 透传 CF-Connecting-IP
+// 但将其 X-Real-IP/X-Forwarded-For 设为 CF 节点 IP，故：
+//   - 若解析出的直连跳板（c.ClientIP()，跳过可信反代后）落在 Cloudflare 段 → 请求确经 CF，
+//     信任 CF-Connecting-IP 取真实用户 IP。
+//   - 否则（直连 Caddy、或攻击者直连后端伪造 CF 头）→ 不信任 CF-Connecting-IP，
+//     回退到 c.ClientIP() 的可信链解析值。
+//
+// 这使得攻击者无法通过伪造 CF-Connecting-IP 绕过 IP 维度限额：非 CF 来源的伪造头被忽略，
+// 返回的是其真实直连 IP。依赖 server.trusted_proxies 配置反代段以正确解析 c.ClientIP()。
+func GetClientIPForRisk(c *gin.Context) string {
+	if c == nil {
+		return ""
+	}
+	resolved := normalizeIP(c.ClientIP())
+	if isCloudflareIP(resolved) {
+		if cf := normalizeIP(c.GetHeader("CF-Connecting-IP")); cf != "" {
+			return cf
+		}
+	}
+	return resolved
+}
+
 // normalizeIP 规范化 IP 地址，去除端口号和空格。
 func normalizeIP(ip string) string {
 	ip = strings.TrimSpace(ip)

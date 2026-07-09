@@ -86,11 +86,11 @@ review_flags AS (
       SELECT 1
       FROM user_registration_events e
       WHERE e.user_id = u.id
-        AND e.ip_address <> ''
+        AND e.ip_prefix <> ''
         AND (
           SELECT COUNT(*)
           FROM user_registration_events e2
-          WHERE e2.ip_address = e.ip_address
+          WHERE e2.ip_prefix = e.ip_prefix
             AND e2.created_at BETWEEN e.created_at - INTERVAL '24 hours' AND e.created_at + INTERVAL '24 hours'
         ) >= 3
     ) AS same_ip_burst
@@ -155,10 +155,10 @@ ORDER BY COUNT(*) DESC, source ASC`)
 
 func (s *adminServiceImpl) loadUserInsightDimensions(ctx context.Context, out *UserProfileInsights) {
 	out.RegistrationIPs = s.queryUserInsightDimensions(ctx, `
-SELECT ip_address, COUNT(*)::bigint, MAX(created_at)
+SELECT ip_prefix, COUNT(*)::bigint, MAX(created_at)
 FROM user_registration_events
-WHERE ip_address <> ''
-GROUP BY ip_address
+WHERE ip_prefix <> ''
+GROUP BY ip_prefix
 ORDER BY COUNT(*) DESC, MAX(created_at) DESC
 LIMIT 10`)
 	out.UserAgents = s.queryUserInsightDimensions(ctx, `
@@ -232,17 +232,17 @@ WITH sample_rows AS (
     '同 IP 注册偏多' AS label,
     '24 小时内同 IP 注册账号数偏高' AS reason,
     'warning' AS severity,
-    COALESCE(e.ip_address, '') AS registration_ip,
+    COALESCE(e.ip_prefix, '') AS registration_ip,
     u.created_at,
     u.last_active_at
   FROM users u
   JOIN user_registration_events e ON e.user_id = u.id
   WHERE u.deleted_at IS NULL
-    AND e.ip_address <> ''
+    AND e.ip_prefix <> ''
     AND (
       SELECT COUNT(*)
       FROM user_registration_events e2
-      WHERE e2.ip_address = e.ip_address
+      WHERE e2.ip_prefix = e.ip_prefix
         AND e2.created_at BETWEEN e.created_at - INTERVAL '24 hours' AND e.created_at + INTERVAL '24 hours'
     ) >= 3
 
@@ -253,7 +253,7 @@ WITH sample_rows AS (
     '缺少身份绑定' AS label,
     '未找到 auth_identities 记录，可能是历史数据或人工创建' AS reason,
     'warning' AS severity,
-    COALESCE(e.ip_address, '') AS registration_ip,
+    COALESCE(e.ip_prefix, '') AS registration_ip,
     u.created_at,
     u.last_active_at
   FROM users u
@@ -269,7 +269,7 @@ WITH sample_rows AS (
     'Key 未产生调用' AS label,
     '存在活跃 API Key，但暂无调用记录' AS reason,
     'info' AS severity,
-    COALESCE(e.ip_address, '') AS registration_ip,
+    COALESCE(e.ip_prefix, '') AS registration_ip,
     u.created_at,
     u.last_active_at
   FROM users u
@@ -285,7 +285,7 @@ WITH sample_rows AS (
     '测试账号' AS label,
     '邮箱或用户名符合 smoke/test 模式' AS reason,
     'info' AS severity,
-    COALESCE(e.ip_address, '') AS registration_ip,
+    COALESCE(e.ip_prefix, '') AS registration_ip,
     u.created_at,
     u.last_active_at
   FROM users u

@@ -43,6 +43,7 @@ func TestRecordUserRegistrationEventPersistsRequestContext(t *testing.T) {
 			"google",
 			"sub-123",
 			"203.0.113.10",
+			"203.0.113.10",
 			"Mozilla/5.0 Test",
 			"zh-CN,zh;q=0.9",
 			"device-123",
@@ -55,4 +56,61 @@ func TestRecordUserRegistrationEventPersistsRequestContext(t *testing.T) {
 	if err := mock.ExpectationsWereMet(); err != nil {
 		t.Fatalf("expectations: %v", err)
 	}
+}
+
+// TestInsertUserRegistrationEventAdminCreateWritesEmptyIP 覆盖后台建号路径：
+// 传入空 SignupGrantRiskInput 与哨兵 source "admin"，断言落库的 ip_address / ip_prefix
+// 均为空串——空 IP 不进洞察页 Top IPs 聚合（WHERE ip_address <> ”），避免后台账号
+// 共享管理员 IP 污染 SameIPSignupCount24h 风控信号。
+func TestInsertUserRegistrationEventAdminCreateWritesEmptyIP(t *testing.T) {
+	db, mock, err := sqlmock.New()
+	if err != nil {
+		t.Fatalf("sqlmock: %v", err)
+	}
+	defer func() { _ = db.Close() }()
+
+	client := dbent.NewClient(dbent.Driver(entsql.OpenDB(dialect.Postgres, db)))
+	defer func() { _ = client.Close() }()
+
+	mock.ExpectExec(regexp.QuoteMeta("INSERT INTO user_registration_events")).
+		WithArgs(
+			int64(77),
+			"admin-created@example.com",
+			"admin",
+			"",
+			"",
+			"", // ip_address 空
+			"", // ip_prefix 空
+			"",
+			"",
+			"",
+			sqlmock.AnyArg(),
+		).
+		WillReturnResult(sqlmock.NewResult(1, 1))
+
+	insertUserRegistrationEvent(
+		context.Background(),
+		client,
+		&User{ID: 77, Email: "admin-created@example.com"},
+		"admin",
+		SignupGrantRiskInput{},
+		defaultSignupGrantRiskIPv6PrefixBits,
+	)
+
+	if err := mock.ExpectationsWereMet(); err != nil {
+		t.Fatalf("expectations: %v", err)
+	}
+}
+
+// TestInsertUserRegistrationEventNilClientNoop 断言 entClient 为 nil 时静默跳过（不 panic、不写库），
+// 这是 admin 侧测试构造 adminServiceImpl{userRepo: repo}（无 entClient）时的关键语义。
+func TestInsertUserRegistrationEventNilClientNoop(t *testing.T) {
+	insertUserRegistrationEvent(
+		context.Background(),
+		nil,
+		&User{ID: 1, Email: "x@example.com"},
+		"admin",
+		SignupGrantRiskInput{},
+		defaultSignupGrantRiskIPv6PrefixBits,
+	)
 }

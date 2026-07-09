@@ -98,6 +98,71 @@ func TestNormalizeSignupGrantRiskIP(t *testing.T) {
 	}
 }
 
+func TestNormalizeSignupGrantRiskIPForHash(t *testing.T) {
+	// 用户报告的真实地址：隐私扩展 IPv6，后 64 位会轮换。
+	const rotatingV6 = "2408:8215:5413:4700:cd91:7fd7:23c8:c71"
+	tests := []struct {
+		name   string
+		raw    string
+		prefix int
+		want   string
+	}{
+		// IPv4 透传，不截断（无论 prefix 设多少）。
+		{name: "ipv4 passthrough", raw: "203.0.113.7", prefix: 64, want: "203.0.113.7"},
+		{name: "ipv4 with port passthrough", raw: "203.0.113.7:8080", prefix: 64, want: "203.0.113.7"},
+		{name: "ipv4 prefix ignored", raw: "203.0.113.7", prefix: 32, want: "203.0.113.7"},
+
+		// IPv6 /64 截断（默认值）。
+		{name: "ipv6 /64 truncates interface id", raw: rotatingV6, prefix: 64, want: "2408:8215:5413:4700::"},
+		{name: "ipv6 /64 with port", raw: "[2408:8215:5413:4700:cd91:7fd7:23c8:c71]:443", prefix: 64, want: "2408:8215:5413:4700::"},
+		{name: "ipv6 /64 loopback", raw: "::1", prefix: 64, want: "::"},
+
+		// 更紧前缀。
+		{name: "ipv6 /56", raw: "2408:8215:5413:4700:cd91:7fd7:23c8:c71", prefix: 56, want: "2408:8215:5413:4700::"},
+		{name: "ipv6 /48", raw: "2408:8215:5413:4700:cd91:7fd7:23c8:c71", prefix: 48, want: "2408:8215:5413::"},
+		{name: "ipv6 /32", raw: "2408:8215:5413:4700:cd91:7fd7:23c8:c71", prefix: 32, want: "2408:8215::"},
+
+		// /0 禁用截断，保留全量（等价于 NormalizeSignupGrantRiskIP）。
+		{name: "ipv6 prefix 0 keeps full", raw: rotatingV6, prefix: 0, want: "2408:8215:5413:4700:cd91:7fd7:23c8:c71"},
+		{name: "ipv4 prefix 0 keeps full", raw: "203.0.113.7", prefix: 0, want: "203.0.113.7"},
+
+		// 非法 prefixBits 回退默认 /64。
+		{name: "ipv6 illegal negative prefix falls back /64", raw: rotatingV6, prefix: -1, want: "2408:8215:5413:4700::"},
+		{name: "ipv6 illegal over-128 prefix falls back /64", raw: rotatingV6, prefix: 200, want: "2408:8215:5413:4700::"},
+		{name: "ipv6 exactly 128 keeps full", raw: rotatingV6, prefix: 128, want: "2408:8215:5413:4700:cd91:7fd7:23c8:c71"},
+
+		// IPv4-mapped IPv6 视作 IPv4 透传。
+		{name: "ipv4-mapped ipv6 treated as ipv4", raw: "::ffff:203.0.113.7", prefix: 64, want: "203.0.113.7"},
+
+		// 非法 / 空输入。
+		{name: "empty returns empty", raw: "", prefix: 64, want: ""},
+		{name: "whitespace only returns empty", raw: "   ", prefix: 64, want: ""},
+		{name: "invalid ip returns empty", raw: "not-an-ip", prefix: 64, want: ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := NormalizeSignupGrantRiskIPForHash(tt.raw, tt.prefix)
+			if got != tt.want {
+				t.Fatalf("NormalizeSignupGrantRiskIPForHash(%q, %d) = %q, want %q", tt.raw, tt.prefix, got, tt.want)
+			}
+		})
+	}
+
+	// 同一 /64 内的不同接口标识符应归一化到同一哈希键——这是 IPv6 轮换绕过的核心防御。
+	const otherIfaceV6 = "2408:8215:5413:4700:1:2:3:4"
+	a := NormalizeSignupGrantRiskIPForHash(rotatingV6, 64)
+	b := NormalizeSignupGrantRiskIPForHash(otherIfaceV6, 64)
+	if a != b {
+		t.Fatalf("same /64 different iface id should collide: %q vs %q", a, b)
+	}
+	// 但全量（prefix=0）下应不同，证明截断确实是聚合的原因。
+	fullA := NormalizeSignupGrantRiskIPForHash(rotatingV6, 0)
+	fullB := NormalizeSignupGrantRiskIPForHash(otherIfaceV6, 0)
+	if fullA == fullB {
+		t.Fatalf("different iface ids should differ under full IP: %q == %q", fullA, fullB)
+	}
+}
+
 func TestSignupGrantRiskHash(t *testing.T) {
 	a := SignupGrantRiskHash("salt", " User@Example.COM ")
 	b := SignupGrantRiskHash("salt", "user@example.com")

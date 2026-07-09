@@ -583,6 +583,9 @@ WHERE component = 'http.access'
 ORDER BY ABS(EXTRACT(EPOCH FROM (created_at - $1::timestamptz))) ASC
 LIMIT 1`, []any{createdAt}, &ip, &event, &status, &eventAt)
 		if err == nil {
+			// ops_system_logs 兜底路径存全量 client_ip（无 /64 截断）。
+			// 走此路径的老用户展示全量 IP，与 user_registration_events.ip_prefix 的前缀口径不一致；
+			// 仅影响没有注册事件记录的极老用户，且主路径（ip_prefix 列）几乎不会失败到此处。
 			summary.Registration.RegistrationIP = ip.String
 			summary.Registration.NearbyAuthEvent = event.String
 			summary.Registration.NearbyAuthStatus = status.String
@@ -608,12 +611,15 @@ WHERE deleted_at IS NULL
 	if err := scanAdminProfileRow(ctx, s.entClient, `
 SELECT COUNT(*)::int
 FROM user_registration_events
-WHERE ip_address = $1
+WHERE ip_prefix = $1
   AND created_at BETWEEN $2::timestamptz - INTERVAL '24 hours' AND $2::timestamptz + INTERVAL '24 hours'`, []any{summary.Registration.RegistrationIP, createdAt}, &sameIP); err == nil {
 		summary.Registration.SameIPSignupCount24h = sameIP
 		return
 	}
 	if err := scanAdminProfileRow(ctx, s.entClient, `
+-- Fallback：主路径（user_registration_events.ip_prefix）失败时，从 ops_system_logs 的全量
+-- client_ip 兜底。注意：此处用全量等值，与主路径的前缀口径不同——走 user_registration_events
+-- 路径的用户 RegistrationIP 已是 /64 前缀，在此会失配返回 0；该分支仅对主路径 SQL 异常生效，极罕见。
 WITH recent_user_ips AS (
   SELECT u.id,
     (
@@ -639,7 +645,7 @@ func (s *adminServiceImpl) loadPersistedUserRegistrationEvent(ctx context.Contex
 	var eventAt sql.NullTime
 	err := scanAdminProfileRow(ctx, s.entClient, `
 SELECT
-  COALESCE(ip_address, ''),
+  COALESCE(ip_prefix, ''),
   COALESCE(user_agent, ''),
   COALESCE(accept_language, ''),
   COALESCE(device_fingerprint, ''),
@@ -653,6 +659,7 @@ LIMIT 1`, []any{summary.User.ID}, &ip, &userAgent, &acceptLanguage, &deviceFinge
 		return
 	}
 	if ip.String != "" {
+		// ip_prefix 已按 /64 截断（IPv6）或保留全量（IPv4），展示口径与风控聚合一致。
 		summary.Registration.RegistrationIP = ip.String
 	}
 	summary.Registration.UserAgent = userAgent.String

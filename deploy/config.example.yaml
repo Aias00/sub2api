@@ -33,6 +33,11 @@ server:
   frontend_url: ""
   # Trusted proxies for X-Forwarded-For parsing (CIDR/IP). Empty disables trusted proxies.
   # 信任的代理地址（CIDR/IP 格式），用于解析 X-Forwarded-For 头。留空则禁用代理信任。
+  # 重要：注册赠金风控的 IP 维度限额（ip_daily_limit）依赖此配置。风控 IP 经来源段校验
+  # 提取（仅当解析出的直连跳板属于 Cloudflare 段时才信任 CF-Connecting-IP），而直连跳板
+  # 的解析依赖 trusted_proxies 配置反代段。未配置时 c.ClientIP() 返回直连源，CF-Connecting-IP
+  # 不会被信任，风控将拿到反代 IP 而非用户 IP。
+  # 生产恒在 Cloudflare + Caddy 后：填 Caddy 段，如 ["127.0.0.1/32"]（Caddy 与后端同机时）。
   trusted_proxies: []
   # Global max request body size in bytes (default: 256MB)
   # 全局最大请求体大小（字节，默认 256MB）

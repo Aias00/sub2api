@@ -109,15 +109,16 @@ var ErrLedgerUserNotFound = errors.New("user not found")
 // Delta > 0 入账，< 0 扣费。当 SourceID != nil 时按 (SourceType, SourceID) 幂等：
 // 重复调用返回已有流水且不重复扣加。
 type BalanceChangeCommand struct {
-	UserID        int64
-	Delta         float64
-	GiftDelta     float64 // 同事务内对 gift_balance 的增量（默认 0 表示不变）
-	EntryType     BalanceLedgerEntryType
-	SourceType    BalanceLedgerSourceType
-	SourceID      *int64
-	Description   string
-	MetadataJSON  json.RawMessage
-	AllowNegative bool // 为 false 时，导致余额为负的扣费被拒绝
+	UserID          int64
+	Delta           float64
+	GiftDelta       float64 // 同事务内对 gift_balance 的增量（默认 0 表示不变）
+	EntryType       BalanceLedgerEntryType
+	SourceType      BalanceLedgerSourceType
+	SourceID        *int64
+	Description     string
+	MetadataJSON    json.RawMessage
+	AllowNegative   bool // 为 false 时，导致余额为负的扣费被拒绝
+	UpdateRecharged bool // 为 true 时，正数 Delta 会同时累加 total_recharged
 }
 
 // BalanceChangeResult 是一次原子余额变动的结果。

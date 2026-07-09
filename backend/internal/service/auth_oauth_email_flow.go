@@ -199,6 +199,7 @@ func (s *AuthService) RegisterOAuthEmailAccount(
 		return nil, nil, ErrServiceUnavailable
 	}
 	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID, true)
+	s.recordUserRegistrationEvent(ctx, user, signupSource)
 
 	tokenPair, err := s.GenerateTokenPair(ctx, user, "")
 	if err != nil {
@@ -295,6 +296,7 @@ func (s *AuthService) RegisterVerifiedOAuthEmailAccount(
 		return nil, nil, ErrServiceUnavailable
 	}
 	s.attachSignupGrantClaim(ctx, signupGrantClaim, user.ID, true)
+	s.recordUserRegistrationEvent(ctx, user, signupSource)
 
 	tokenPair, err := s.GenerateTokenPair(ctx, user, "")
 	if err != nil {

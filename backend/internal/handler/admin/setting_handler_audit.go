@@ -465,6 +465,9 @@ func diffSettings(before *service.SystemSettings, after *service.SystemSettings,
 	if before.SignupGrantRiskControlRequireVerifiedEmail != after.SignupGrantRiskControlRequireVerifiedEmail {
 		changed = append(changed, service.SettingKeySignupGrantRiskControlRequireVerifiedEmail)
 	}
+	if before.SignupGrantRiskControlIPv6PrefixBits != after.SignupGrantRiskControlIPv6PrefixBits {
+		changed = append(changed, service.SettingKeySignupGrantRiskControlIPv6PrefixBits)
+	}
 	if before.CyberSessionBlockEnabled != after.CyberSessionBlockEnabled {
 		changed = append(changed, "cyber_session_block_enabled")
 	}

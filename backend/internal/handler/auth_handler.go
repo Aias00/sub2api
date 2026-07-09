@@ -75,7 +75,12 @@ func (h *AuthHandler) signupGrantRiskContext(c *gin.Context, providerType, provi
 		ProviderSubject: providerSubject,
 	}
 	if c != nil {
-		input.RemoteIP = ip.GetClientIP(c)
+		// 赠金风控的 IP 来源走来源段校验（GetClientIPForRisk），而非无条件信任
+		// CF-Connecting-IP / X-Forwarded-For 原值（GetClientIP）。后者在实例被直连或反代
+		// 未覆写转发头时，攻击者可每请求伪造随机 CF-Connecting-IP 绕过所有 IP 维度限额。
+		// GetClientIPForRisk 仅在直连源属于 Cloudflare 段时才信任 CF-Connecting-IP，
+		// 否则回退到 Gin 可信代理链解析的 X-Real-IP / X-Forwarded-For。
+		input.RemoteIP = ip.GetClientIPForRisk(c)
 		if c.Request != nil {
 			input.UserAgent = c.Request.UserAgent()
 			input.AcceptLanguage = c.GetHeader("Accept-Language")

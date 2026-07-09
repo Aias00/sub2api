@@ -198,6 +198,14 @@ func (s *adminServiceImpl) CreateUser(ctx context.Context, input *CreateUserInpu
 		return nil, err
 	}
 	s.assignDefaultSubscriptions(ctx, user.ID)
+	// 后台建号非自助注册：写一条事件行供 /admin/user-insights 展示该用户存在及其来源，
+	// 但 IP 留空——避免大量后台账号共享同一管理员 IP 而污染 SameIPSignupCount24h 等
+	// 按 IP 聚合的风控信号（洞察查询 WHERE ip_address <> '' 会天然排除空 IP 行）。
+	prefixBits := defaultSignupGrantRiskIPv6PrefixBits
+	if s.settingService != nil {
+		prefixBits = s.settingService.signupGrantRiskConfig(ctx).IPv6PrefixBits
+	}
+	insertUserRegistrationEvent(ctx, s.entClient, user, "admin", SignupGrantRiskInput{}, prefixBits)
 	return user, nil
 }
 
@@ -596,7 +604,13 @@ func (s *adminServiceImpl) UpsertSignupGrantRiskOverride(ctx context.Context, in
 		return ErrServiceUnavailable
 	}
 	subjectType := strings.TrimSpace(strings.ToLower(input.SubjectType))
-	subject := normalizeSignupGrantOverrideSubject(subjectType, input.Subject)
+	// IP override 归一化口径与风控评估一致（按 /64 等前缀截断），确保管理员填写的 IP
+	// 经哈希后能命中同一前缀下的注册请求。其他 subject 类型不受 ipv6PrefixBits 影响。
+	ipv6PrefixBits := 0
+	if s.settingService != nil {
+		ipv6PrefixBits = s.settingService.signupGrantRiskConfig(ctx).IPv6PrefixBits
+	}
+	subject := normalizeSignupGrantOverrideSubject(subjectType, input.Subject, ipv6PrefixBits)
 	if subjectType == "" || subject == "" {
 		return infraerrors.BadRequest("SIGNUP_GRANT_RISK_OVERRIDE_INVALID", "subject_type and subject are required")
 	}
@@ -787,7 +801,7 @@ func (s *adminServiceImpl) ManualGrantSignupGiftBalance(ctx context.Context, use
 	return updatedUser, nil
 }
 
-func normalizeSignupGrantOverrideSubject(subjectType, subject string) string {
+func normalizeSignupGrantOverrideSubject(subjectType, subject string, ipv6PrefixBits int) string {
 	trimmed := strings.TrimSpace(subject)
 	if isSignupGrantRiskHash(trimmed) {
 		return strings.ToLower(trimmed)
@@ -799,7 +813,7 @@ func normalizeSignupGrantOverrideSubject(subjectType, subject string) string {
 	case "email_domain":
 		return normalizeSignupGrantRiskDomain(subject)
 	case "ip":
-		return normalizeSignupGrantRiskIP(subject)
+		return normalizeSignupGrantRiskIPForHash(subject, ipv6PrefixBits)
 	case "oauth_identity", "device":
 		return strings.TrimSpace(subject)
 	default:

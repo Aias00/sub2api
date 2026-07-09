@@ -655,6 +655,7 @@ func (s *AuthService) LoginOrRegisterOAuth(ctx context.Context, email, username 
 				s.assignSubscriptions(ctx, user.ID, grantPlan.Subscriptions, "auto assigned by signup defaults")
 				// snapshot user × platform quota（fail-open）
 				_ = s.snapshotPlatformQuotaDefaults(ctx, user.ID, &grantPlan)
+				s.recordUserRegistrationEvent(ctx, user, signupSource)
 			}
 		} else {
 			logger.LegacyPrintf("service.auth", "[Auth] Database error during oauth login: %v", err)
@@ -857,6 +858,7 @@ func (s *AuthService) loginOrRegisterOAuthWithTokenPair(ctx context.Context, ema
 	if created {
 		s.notifyUserRegistered(ctx, user, createdSignupSource)
 		s.sendWelcomeEmailForNewUser(ctx, user, createdSignupSource)
+		s.recordUserRegistrationEvent(ctx, user, createdSignupSource)
 	}
 	return tokenPair, user, nil
 }

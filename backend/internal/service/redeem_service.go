@@ -468,15 +468,16 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 			})
 
 			result, err := s.ledgerService.ApplyBalanceChangeCtx(txCtx, billingctx.BalanceChangeCommand{
-				UserID:        userID,
-				Delta:         amount,
-				GiftDelta:     0, // Redeem codes go to paid_balance, not gift_balance
-				EntryType:     entryType,
-				SourceType:    billingctx.SourceTypeRedeemCode,
-				SourceID:      &redeemCode.ID,
-				Description:   fmt.Sprintf("兑换码 %s", substringCode(redeemCode.Code, 8)),
-				MetadataJSON:  metadataJSON,
-				AllowNegative: allowNegative,
+				UserID:          userID,
+				Delta:           amount,
+				GiftDelta:       0, // Redeem codes go to paid_balance, not gift_balance
+				EntryType:       entryType,
+				SourceType:      billingctx.SourceTypeRedeemCode,
+				SourceID:        &redeemCode.ID,
+				Description:     fmt.Sprintf("兑换码 %s", substringCode(redeemCode.Code, 8)),
+				MetadataJSON:    metadataJSON,
+				AllowNegative:   allowNegative,
+				UpdateRecharged: amount > 0, // Count as recharged for positive amounts
 			})
 			if err != nil {
 				return nil, fmt.Errorf("apply redeem bonus via ledger: %w", err)

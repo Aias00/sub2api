@@ -364,9 +364,17 @@ func (r *userBalanceLedgerRepository) ApplyBalanceChange(ctx context.Context, cm
 	}
 
 	// 3. Update the balance to the computed value (and gift_balance delta if any).
+	// Maintains balance invariant: balance = paid_balance + gift_balance
+	// paid_balance derives from (Delta - GiftDelta) to preserve the invariant.
 	if _, err = tx.ExecContext(ctx,
-		`UPDATE users SET balance = $1, gift_balance = COALESCE(gift_balance, 0) + $2, updated_at = NOW() WHERE id = $3`,
-		after, cmd.GiftDelta, cmd.UserID,
+		`UPDATE users
+		 SET balance = $1,
+		     gift_balance = COALESCE(gift_balance, 0) + $2,
+		     paid_balance = COALESCE(paid_balance, 0) + ($4 - $2),
+		     total_recharged = CASE WHEN $5 AND $4 > 0 THEN total_recharged + $4 ELSE total_recharged END,
+		     updated_at = NOW()
+		 WHERE id = $3`,
+		after, cmd.GiftDelta, cmd.UserID, cmd.Delta, cmd.UpdateRecharged,
 	); err != nil {
 		return nil, fmt.Errorf("update balance: %w", err)
 	}
@@ -455,13 +463,20 @@ func (r *userBalanceLedgerRepository) ApplyBalanceChangeTx(ctx context.Context, 
 	}
 
 	// Conditional atomic update: guards overdraft and row-locks the user in one shot.
+	// Maintains balance invariant: balance = paid_balance + gift_balance
+	// paid_balance derives from (Delta - GiftDelta) to preserve the invariant.
 	var after float64
 	updated, err := queryOneBalanceRow(ctx, exec,
-		`UPDATE users SET balance = balance + $1, gift_balance = COALESCE(gift_balance, 0) + $2, updated_at = NOW()
+		`UPDATE users
+		 SET balance = balance + $1,
+		     gift_balance = COALESCE(gift_balance, 0) + $2,
+		     paid_balance = COALESCE(paid_balance, 0) + ($1 - $2),
+		     total_recharged = CASE WHEN $5 AND $1 > 0 THEN total_recharged + $1 ELSE total_recharged END,
+		     updated_at = NOW()
 		 WHERE id = $3 AND deleted_at IS NULL AND ($4 OR balance + $1 >= 0)
 		 RETURNING balance`,
 		func(rows *sql.Rows) error { return rows.Scan(&after) },
-		cmd.Delta, cmd.GiftDelta, cmd.UserID, cmd.AllowNegative,
+		cmd.Delta, cmd.GiftDelta, cmd.UserID, cmd.AllowNegative, cmd.UpdateRecharged,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("conditional balance update: %w", err)

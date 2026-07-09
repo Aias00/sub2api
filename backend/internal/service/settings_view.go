@@ -199,6 +199,7 @@ type SystemSettings struct {
 	SignupGrantRiskControlFreeDomains          string
 	SignupGrantRiskControlTrustedDomains       string
 	SignupGrantRiskControlRequireVerifiedEmail bool
+	SignupGrantRiskControlIPv6PrefixBits       int
 	CyberSessionBlockEnabled                   bool
 	CyberSessionBlockTTLSeconds                int
 	AffiliateEnabled                           bool

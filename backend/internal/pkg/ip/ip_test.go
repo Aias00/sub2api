@@ -74,6 +74,70 @@ func TestGetTrustedClientIPUsesGinClientIP(t *testing.T) {
 	require.Equal(t, "9.9.9.9", w.Body.String())
 }
 
+func TestGetClientIPForRisk(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+
+	// 真实 Cloudflare 段内 IP（104.16.0.0/13）与段外 IP。
+	const cfNodeIP = "104.16.0.1"
+	const attackerIP = "203.0.113.99"
+	const realUserIP = "2408:8215:5413:4700:cd91:7fd7:23c8:c71"
+
+	t.Run("cloudflare source trusts CF-Connecting-IP", func(t *testing.T) {
+		// 模拟 用户 → CF → Caddy → 后端：后端 RemoteAddr=Caddy(127.0.0.1)，
+		// trusted_proxies 含 127.0.0.1/32，XFF 写 CF 节点 IP。c.ClientIP() 跳过 Caddy → CF 节点 IP → 落在 CF 段 → 信任 CF-Connecting-IP。
+		r := gin.New()
+		require.NoError(t, r.SetTrustedProxies([]string{"127.0.0.1/32"}))
+		r.GET("/t", func(c *gin.Context) { c.String(200, GetClientIPForRisk(c)) })
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/t", nil)
+		req.RemoteAddr = "127.0.0.1:12345"
+		req.Header.Set("X-Forwarded-For", cfNodeIP)
+		req.Header.Set("CF-Connecting-IP", realUserIP)
+		r.ServeHTTP(w, req)
+
+		require.Equal(t, 200, w.Code)
+		require.Equal(t, realUserIP, w.Body.String(), "should trust CF-Connecting-IP when source is Cloudflare")
+	})
+
+	t.Run("non-cloudflare source ignores forged CF-Connecting-IP", func(t *testing.T) {
+		// 攻击者直连后端，伪造 CF-Connecting-IP。trusted_proxies 禁用 → c.ClientIP() = 攻击者直连 IP，
+		// 不在 CF 段 → 忽略 CF-Connecting-IP，返回攻击者真实 IP。
+		r := gin.New()
+		require.NoError(t, r.SetTrustedProxies(nil))
+		r.GET("/t", func(c *gin.Context) { c.String(200, GetClientIPForRisk(c)) })
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/t", nil)
+		req.RemoteAddr = attackerIP + ":12345"
+		req.Header.Set("CF-Connecting-IP", "1.1.1.1") // 伪造
+		r.ServeHTTP(w, req)
+
+		require.Equal(t, 200, w.Code)
+		require.Equal(t, attackerIP, w.Body.String(), "forged CF-Connecting-IP must be ignored for non-CF source")
+	})
+
+	t.Run("cloudflare source without CF-Connecting-IP falls back to resolved", func(t *testing.T) {
+		r := gin.New()
+		require.NoError(t, r.SetTrustedProxies([]string{"127.0.0.1/32"}))
+		r.GET("/t", func(c *gin.Context) { c.String(200, GetClientIPForRisk(c)) })
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest("GET", "/t", nil)
+		req.RemoteAddr = "127.0.0.1:12345"
+		req.Header.Set("X-Forwarded-For", cfNodeIP)
+		// 不设 CF-Connecting-IP
+		r.ServeHTTP(w, req)
+
+		require.Equal(t, 200, w.Code)
+		require.Equal(t, cfNodeIP, w.Body.String(), "should fall back to resolved CF node IP")
+	})
+
+	t.Run("nil context returns empty", func(t *testing.T) {
+		require.Equal(t, "", GetClientIPForRisk(nil))
+	})
+}
+
 func TestCheckIPRestrictionWithCompiledRules(t *testing.T) {
 	whitelist := CompileIPRules([]string{"10.0.0.0/8", "192.168.1.2"})
 	blacklist := CompileIPRules([]string{"10.1.1.1"})
