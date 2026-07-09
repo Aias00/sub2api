@@ -95,6 +95,7 @@ import { Icon } from '@/components/icons'
 import { useAuthRouteDefaults } from '@/composables/useAuthRouteDefaults'
 import { usePublicTheme } from '@/composables/usePublicTheme'
 import { useAppStore, useAuthStore } from '@/stores'
+import { sanitizeUrl } from '@/utils/url'
 
 const props = defineProps<{
   accountLabel?: string
@@ -112,7 +113,7 @@ const avatarMenuRef = ref<HTMLElement | null>(null)
 
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName || 'cloudbase')
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
-const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
+const docUrl = computed(() => sanitizeUrl(appStore.cachedPublicSettings?.doc_url || appStore.docUrl || ''))
 const isAuthenticated = computed(() => authStore.isAuthenticated)
 const dashboardPath = computed(() => resolveHomePath(authStore.isAdmin))
 const loginPath = computed(() => authRouteDefaults.value.loginPath)

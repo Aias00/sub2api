@@ -58,12 +58,10 @@ describe('runtime settings route', () => {
     expect(primary?.aliasOf).toBeUndefined()
 
     const workers = router.getRoutes().find((record) => record.path === '/admin/workers')
-    expect(typeof workers?.redirect).toBe('function')
-    expect(typeof workers?.redirect === 'function' ? workers.redirect({} as never) : workers?.redirect).toEqual({
-      path: '/admin/settings',
-      query: { tab: 'runtime' },
-    })
+    expect(workers?.redirect).toBeUndefined()
+    expect(workers?.name).toBe('AdminWorkers')
     expect(workers?.meta.title).toBe('Worker Management')
+    expect(workers?.meta.titleKey).toBe('nav.workers')
     expect(workers?.aliasOf).toBeUndefined()
 
     const legacyAlias = router.getRoutes().find((record) => record.path === '/admin/touch/settings')
@@ -89,9 +87,7 @@ describe('runtime settings route', () => {
     })
 
     const workers = router.getRoutes().find((record) => record.path === '/admin/workers')
-    expect(typeof workers?.redirect === 'function' ? workers.redirect({} as never) : workers?.redirect).toEqual({
-      path: '/configured-admin/settings',
-      query: { tab: 'runtime' },
-    })
+    expect(workers?.redirect).toBeUndefined()
+    expect(workers?.name).toBe('AdminWorkers')
   })
 })

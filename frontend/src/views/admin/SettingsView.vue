@@ -5048,7 +5048,7 @@
           />
         </div>
 
-        <div v-show="activeTab === 'general'" class="space-y-6">
+        <div v-show="activeTab === 'email'" class="space-y-6">
           <!-- Email disabled hint - show when email_verify_enabled is off -->
           <div v-if="!form.email_verify_enabled" class="card">
             <div class="p-6">
@@ -5908,10 +5908,9 @@
         </div>
         </form>
 
-        <!-- Tab: Worker / Runtime -->
+        <!-- Tab: Runtime -->
         <div v-if="activeTab === 'runtime'" class="space-y-6">
           <RuntimeSettingsView embedded :show-worker-status="false" />
-          <WorkersView embedded />
         </div>
 
         <!-- Tab: Ops -->
@@ -6008,7 +6007,6 @@ import ProxySelector from "@/components/common/ProxySelector.vue";
 import ImageUpload from "@/components/common/ImageUpload.vue";
 import BackupSettings from "@/views/admin/BackupView.vue";
 import RuntimeSettingsView from "@/views/admin/RuntimeSettingsView.vue";
-import WorkersView from "@/views/admin/WorkersView.vue";
 import OpsRuntimeSettingsCard from "@/views/admin/ops/components/OpsRuntimeSettingsCard.vue";
 import OpsSystemLogTable from "@/views/admin/ops/components/OpsSystemLogTable.vue";
 import { useClipboard } from "@/composables/useClipboard";
@@ -6057,6 +6055,7 @@ type SettingsTab =
   | "general"
   | "security"
   | "payment"
+  | "email"
   | "gateway"
   | "runtime"
   | "ops";
@@ -6064,6 +6063,7 @@ const settingsTabs = [
   { key: "general" as SettingsTab, icon: "home" as const },
   { key: "security" as SettingsTab, icon: "shield" as const },
   { key: "payment" as SettingsTab, icon: "creditCard" as const },
+  { key: "email" as SettingsTab, icon: "mail" as const },
   { key: "gateway" as SettingsTab, icon: "server" as const },
   { key: "runtime" as SettingsTab, icon: "terminal" as const },
   { key: "ops" as SettingsTab, icon: "bell" as const },
@@ -6108,6 +6108,8 @@ function resolveSettingsTab(raw: unknown): SettingsTab {
       return "security";
     case "payment":
       return "payment";
+    case "email":
+      return "email";
     case "gateway":
       return "gateway";
     case "runtime":

@@ -739,7 +739,8 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/admin/workers',
-    redirect: redirectToRuntimeSettingsTab,
+    name: 'AdminWorkers',
+    component: () => import('@/views/admin/WorkersView.vue'),
     meta: {
       requiresAuth: true,
       requiresAdmin: true,
@@ -1058,6 +1059,14 @@ router.beforeEach(async (to, _from, next) => {
 
 
   // Check payment requirement (internal payment system only)
+  if ((to.meta.requiresPayment || to.meta.requiresRiskControl) && !appStore.publicSettingsLoaded) {
+    try {
+      await appStore.fetchPublicSettings()
+    } catch (error) {
+      console.warn('Failed to load public settings in route guard', error)
+    }
+  }
+
   if (to.meta.requiresPayment) {
     const paymentEnabled = appStore.cachedPublicSettings?.payment_enabled
     if (!paymentEnabled) {

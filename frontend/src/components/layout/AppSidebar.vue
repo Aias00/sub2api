@@ -37,6 +37,16 @@
           :key="section.id"
           class="sidebar-section"
         >
+          <div
+            v-if="section.showTitle"
+            class="sidebar-section-title"
+            :class="{ 'sidebar-section-title-collapsed': sidebarCollapsed }"
+            :aria-hidden="sidebarCollapsed ? 'true' : 'false'"
+          >
+            <span class="sidebar-section-title-text" :class="{ 'sidebar-section-title-text-collapsed': sidebarCollapsed }">
+              {{ section.title }}
+            </span>
+          </div>
           <template v-for="item in section.items" :key="item.path">
             <!-- Collapsible group (has children) -->
             <template v-if="item.children?.length">
@@ -838,7 +848,7 @@ const personalNavSections = computed((): TitledNavSection[] => {
 })
 
 // Admin navigation sections
-const adminNavSections = computed((): NavSection[] => {
+const adminNavSections = computed((): TitledNavSection[] => {
   const navPaths = authRouteDefaults.value
   const adminPaths = adminSidebarPaths.value
   const builtInItemMap: Record<AdminSidebarItemKey, NavItem> = {
@@ -896,7 +906,7 @@ const adminNavSections = computed((): NavSection[] => {
     },
     usage: { path: adminPaths.adminUsagePath, label: t('nav.usage'), icon: ChartIcon },
     apiKeys: { path: authRouteDefaults.value.apiKeysPath, label: t('nav.apiKeys'), icon: KeyIcon },
-    workers: { path: `${navPaths.adminSettingsPath}?tab=runtime`, label: t('nav.workers'), icon: ServerIcon },
+    workers: { path: '/admin/workers', label: t('nav.workers'), icon: ServerIcon },
     runtimeSettings: { path: `${navPaths.adminSettingsPath}?tab=runtime`, label: t('nav.runtimeSettings'), icon: CogIcon },
     settings: { path: navPaths.adminSettingsPath, label: t('nav.settings'), icon: CogIcon },
   }
@@ -924,29 +934,28 @@ const adminNavSections = computed((): NavSection[] => {
       ]
     : [
         {
-          id: 'admin-main',
-          items: [
-            'dashboard',
-            'ops',
-            'users',
-            'userInsights',
-            'groups',
-            'channels',
-            'subscriptions',
-            'accounts',
-            'announcements',
-            'proxies',
-            'riskControl',
-            'redeem',
-            'promoCodes',
-            'affiliates',
-            'orders',
-            'usage',
-          ],
+          id: 'admin-monitoring',
+          items: ['dashboard', 'ops', 'usage'],
         },
         {
-          id: 'admin-settings',
-          items: ['settings'],
+          id: 'admin-users',
+          items: ['users', 'userInsights', 'groups'],
+        },
+        {
+          id: 'admin-channels',
+          items: ['accounts', 'channels'],
+        },
+        {
+          id: 'admin-monetization',
+          items: ['subscriptions', 'redeem', 'promoCodes', 'affiliates', 'orders'],
+        },
+        {
+          id: 'admin-comms',
+          items: ['announcements', 'riskControl', 'proxies'],
+        },
+        {
+          id: 'admin-system',
+          items: ['settings', 'runtimeSettings', 'workers'],
         },
       ]
 
@@ -961,7 +970,7 @@ const adminNavSections = computed((): NavSection[] => {
     icon: null,
     iconSvg: cm.icon_svg,
   }))
-  return buildSidebarSections(
+  const sections = buildSidebarSections(
     configuredSections,
     defaultSections,
     visibleMap,
@@ -969,6 +978,23 @@ const adminNavSections = computed((): NavSection[] => {
     'admin-more',
     'admin-custom',
   ) as NavSection[]
+
+  // Default sections get visible group titles; configured/custom/fallback
+  // sections render without a title (preserving prior behavior for admins who
+  // supply their own auth_shell_config sidebar layout).
+  const sectionTitles: Record<string, string> = {
+    'admin-monitoring': t('nav.groupOpsMonitoring'),
+    'admin-users': t('nav.groupUsers'),
+    'admin-channels': t('nav.groupChannels'),
+    'admin-monetization': t('nav.groupMonetization'),
+    'admin-comms': t('nav.groupComms'),
+    'admin-system': t('nav.groupSystem'),
+  }
+  return sections.map((section) => ({
+    ...section,
+    title: sectionTitles[section.id],
+    showTitle: Boolean(sectionTitles[section.id]),
+  }))
 })
 
 function toggleSidebar() {

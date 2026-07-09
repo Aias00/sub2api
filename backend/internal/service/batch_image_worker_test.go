@@ -56,7 +56,7 @@ func TestBatchImageWorker_RequeuesOnProcessorError(t *testing.T) {
 	require.Empty(t, queue.acked)
 }
 
-func TestBatchImageWorker_SkipsWhenJobLockNotAcquired(t *testing.T) {
+func TestBatchImageWorker_RequeuesWhenJobLockNotAcquired(t *testing.T) {
 	queue := newFakeBatchImageQueue("imgbatch_worker_locked")
 	queue.lockAcquired = false
 	processor := &fakeBatchImageProcessor{}
@@ -64,7 +64,9 @@ func TestBatchImageWorker_SkipsWhenJobLockNotAcquired(t *testing.T) {
 
 	require.NoError(t, worker.RunOnce(context.Background()))
 	require.Empty(t, processor.processed)
-	require.Empty(t, queue.requeued)
+	require.Len(t, queue.requeued, 1)
+	require.Equal(t, "imgbatch_worker_locked", queue.requeued[0].batchID)
+	require.Equal(t, defaultBatchImageWorkerLockConflictDelay, queue.requeued[0].delay)
 	require.Empty(t, queue.acked)
 }
 

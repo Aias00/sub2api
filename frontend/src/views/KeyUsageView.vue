@@ -424,6 +424,7 @@ import {
   resolveKeyUsageStatusInfo,
   type KeyUsageDateRangeKey,
 } from './keyUsageRuntime'
+import { sanitizeUrl } from '@/utils/url'
 
 const { locale } = useI18n()
 const appStore = useAppStore()
@@ -433,7 +434,7 @@ const { authRouteDefaults } = useAuthRouteDefaults()
 
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName)
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
-const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
+const docUrl = computed(() => sanitizeUrl(appStore.cachedPublicSettings?.doc_url || appStore.docUrl || ''))
 const githubUrl = 'https://github.com/Aias00/cloudbase'
 
 const currentYear = computed(() => new Date().getFullYear())

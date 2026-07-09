@@ -295,6 +295,7 @@ import {
   type HomeShellCopy,
 } from '@/utils/homeShell'
 import { resolveRuntimeLanguage } from '@/utils/runtimeLocale'
+import { sanitizeUrl } from '@/utils/url'
 import { buildHomeModelFamilies } from '@/views/home/homeCatalog'
 
 const { locale } = useI18n()
@@ -311,7 +312,7 @@ const emptyCatalog: HomeCatalogResponse = {
 
 const siteName = computed(() => appStore.cachedPublicSettings?.site_name || appStore.siteName)
 const siteLogo = computed(() => appStore.cachedPublicSettings?.site_logo || appStore.siteLogo || '')
-const docUrl = computed(() => appStore.cachedPublicSettings?.doc_url || appStore.docUrl || '')
+const docUrl = computed(() => sanitizeUrl(appStore.cachedPublicSettings?.doc_url || appStore.docUrl || ''))
 const isSubHome = computed(() => route.path === '/sub' || route.name === 'SubHome')
 const isBusinessHome = computed(() => !isSubHome.value)
 const homeContent = computed(() => (isSubHome.value ? appStore.cachedPublicSettings?.home_content || '' : ''))

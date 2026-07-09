@@ -490,6 +490,12 @@ export default {
     channelMonitor: '渠道监控',
     channelStatus: '渠道状态',
     riskControl: '风控中心',
+    groupOpsMonitoring: '运维与监控',
+    groupUsers: '用户与分组',
+    groupChannels: '渠道与账号',
+    groupMonetization: '变现',
+    groupComms: '通讯与安全',
+    groupSystem: '系统',
   },
   auth: {
     welcomeBack: '欢迎回来',

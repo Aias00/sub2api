@@ -20,7 +20,6 @@ import (
 	"github.com/Aias00/cloudbase/internal/pkg/ctxkey"
 	pkgerrors "github.com/Aias00/cloudbase/internal/pkg/errors"
 	"github.com/Aias00/cloudbase/internal/pkg/geminicli"
-	pkghttputil "github.com/Aias00/cloudbase/internal/pkg/httputil"
 	"github.com/Aias00/cloudbase/internal/pkg/ip"
 	"github.com/Aias00/cloudbase/internal/pkg/logger"
 	"github.com/Aias00/cloudbase/internal/pkg/openai"
@@ -138,7 +137,7 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 	defer h.maybeLogCompatibilityFallbackMetrics(reqLog)
 
 	// 读取请求体
-	body, err := pkghttputil.ReadRequestBodyWithPrealloc(c.Request)
+	body, err := readLenientJSONRequestBodyWithPrealloc(c.Request, h.cfg)
 	if err != nil {
 		if maxErr, ok := extractMaxBytesError(err); ok {
 			h.errorResponse(c, http.StatusRequestEntityTooLarge, "invalid_request_error", buildBodyTooLargeMessage(maxErr.Limit))
@@ -1777,7 +1776,7 @@ func (h *GatewayHandler) CountTokens(c *gin.Context) {
 	defer h.maybeLogCompatibilityFallbackMetrics(reqLog)
 
 	// 读取请求体
-	body, err := pkghttputil.ReadRequestBodyWithPrealloc(c.Request)
+	body, err := readLenientJSONRequestBodyWithPrealloc(c.Request, h.cfg)
 	if err != nil {
 		if maxErr, ok := extractMaxBytesError(err); ok {
 			h.errorResponse(c, http.StatusRequestEntityTooLarge, "invalid_request_error", buildBodyTooLargeMessage(maxErr.Limit))

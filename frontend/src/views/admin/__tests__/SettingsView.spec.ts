@@ -786,7 +786,7 @@ describe("admin SettingsView payment visible method controls", () => {
     await flushPromises();
 
     expect(mounted.runtime).toHaveBeenCalledTimes(1);
-    expect(mounted.workers).toHaveBeenCalledTimes(1);
+    expect(mounted.workers).not.toHaveBeenCalled();
     expect(wrapper.find("form").exists()).toBe(false);
   });
 

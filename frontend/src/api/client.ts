@@ -229,7 +229,7 @@ apiClient.interceptors.response.use(
             const refreshResponse = await axios.post(
               `${resolveApiBaseUrl()}/auth/refresh`,
               { refresh_token: refreshToken },
-              { headers: { 'Content-Type': 'application/json' } }
+              { headers: { 'Content-Type': 'application/json' }, timeout: 30000 }
             )
 
             const refreshData = refreshResponse.data as ApiResponse<{

@@ -156,6 +156,7 @@ import {
   resolveHeaderPageTitle,
   resolveHeaderUserInitials,
 } from './appHeaderRuntime'
+import { sanitizeUrl } from '@/utils/url'
 
 withDefaults(defineProps<{
   containerClass?: string
@@ -174,7 +175,7 @@ const { authRouteDefaults } = useAuthRouteDefaults()
 const user = computed(() => authStore.user)
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
-const docUrl = computed(() => appStore.docUrl)
+const docUrl = computed(() => sanitizeUrl(appStore.docUrl))
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
 const showDropdownTaskLink = computed(() => true)
 const showDropdownAccountLinks = computed(() => false)

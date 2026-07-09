@@ -729,3 +729,51 @@ func TestApplyTokenOverrides_IntervalSetsImageOutputPriceExplicit(t *testing.T) 
 	require.True(t, pricing.ImageOutputPriceExplicit)
 	require.Equal(t, 0.0, pricing.ImageOutputPricePerToken)
 }
+
+func TestApplyTokenOverrides_FlatDoesNotPolluteFallbackPrices(t *testing.T) {
+	r := newResolverWithChannel(t, []ChannelModelPricing{{
+		Platform:    "anthropic",
+		Models:      []string{"claude-sonnet-4"},
+		BillingMode: BillingModeToken,
+		InputPrice:  testPtrFloat64(10e-6),
+		OutputPrice: testPtrFloat64(50e-6),
+	}})
+
+	resolved := r.Resolve(context.Background(), PricingInput{
+		Model:   "claude-sonnet-4",
+		GroupID: groupIDPtr(),
+	})
+
+	require.NotNil(t, resolved)
+	require.InDelta(t, 10e-6, resolved.BasePricing.InputPricePerToken, 1e-12)
+	require.InDelta(t, 50e-6, resolved.BasePricing.OutputPricePerToken, 1e-12)
+
+	fp := r.billingService.fallbackPrices["claude-sonnet-4"]
+	require.InDelta(t, 3e-6, fp.InputPricePerToken, 1e-12)
+	require.InDelta(t, 15e-6, fp.OutputPricePerToken, 1e-12)
+	require.False(t, fp.ImageOutputPriceExplicit)
+}
+
+func TestApplyTokenOverrides_IntervalDoesNotPolluteFallbackPrices(t *testing.T) {
+	r := newResolverWithChannel(t, []ChannelModelPricing{{
+		Platform:    "anthropic",
+		Models:      []string{"claude-sonnet-4"},
+		BillingMode: BillingModeToken,
+		Intervals: []PricingInterval{
+			{MinTokens: 0, MaxTokens: testPtrInt(100000), InputPrice: testPtrFloat64(2e-6), OutputPrice: testPtrFloat64(8e-6)},
+		},
+	}})
+
+	resolved := r.Resolve(context.Background(), PricingInput{
+		Model:   "claude-sonnet-4",
+		GroupID: groupIDPtr(),
+	})
+
+	require.NotNil(t, resolved)
+	require.True(t, resolved.BasePricing.ImageOutputPriceExplicit)
+
+	fp := r.billingService.fallbackPrices["claude-sonnet-4"]
+	require.InDelta(t, 3e-6, fp.InputPricePerToken, 1e-12)
+	require.InDelta(t, 15e-6, fp.OutputPricePerToken, 1e-12)
+	require.False(t, fp.ImageOutputPriceExplicit)
+}

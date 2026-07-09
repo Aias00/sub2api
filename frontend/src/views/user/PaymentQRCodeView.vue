@@ -162,16 +162,24 @@ async function renderQR() {
   }
 }
 
+let pollInFlight = false
+
 async function pollStatus() {
   if (!orderId.value) return
-  const order = await paymentStore.pollOrderStatus(orderId.value)
-  if (!order) return
-  if (isPaymentQrCompleted(order.status)) {
-    cleanup()
-    router.push({ path: authRouteDefaults.value.paymentResultPath, query: { order_id: String(orderId.value), status: 'success' } })
-  } else if (isPaymentQrTerminal(order.status)) {
-    cleanup()
-    expired.value = true
+  if (pollInFlight) return
+  pollInFlight = true
+  try {
+    const order = await paymentStore.pollOrderStatus(orderId.value)
+    if (!order || !pollTimer) return
+    if (isPaymentQrCompleted(order.status)) {
+      cleanup()
+      router.push({ path: authRouteDefaults.value.paymentResultPath, query: { order_id: String(orderId.value), status: 'success' } })
+    } else if (isPaymentQrTerminal(order.status)) {
+      cleanup()
+      expired.value = true
+    }
+  } finally {
+    pollInFlight = false
   }
 }
 

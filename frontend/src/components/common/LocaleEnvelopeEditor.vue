@@ -63,8 +63,6 @@
         @validation-error="onValidationError(activeTab, $event)"
       />
     </template>
-
-    <p v-if="hint && isEnvelope" class="input-hint mt-1">{{ hint }}</p>
   </div>
 </template>
 

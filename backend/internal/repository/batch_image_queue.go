@@ -20,6 +20,7 @@ const (
 	defaultBatchImageLockPrefix     = "batch_image:queue:lock:"
 	defaultBatchImageInflightTTL    = 7 * 24 * time.Hour
 	defaultBatchImageJobLockTTL     = 5 * time.Minute
+	batchImageReservePollInterval   = time.Second
 )
 
 var batchImageMoveDueDelayedScript = redis.NewScript(`
@@ -43,6 +44,30 @@ return #jobs
 var batchImageReleaseLockScript = redis.NewScript(`
 if redis.call("GET", KEYS[1]) == ARGV[1] then
   return redis.call("DEL", KEYS[1])
+end
+return 0
+`)
+
+var batchImageRefreshLockScript = redis.NewScript(`
+if redis.call("GET", KEYS[1]) == ARGV[1] then
+  return redis.call("PEXPIRE", KEYS[1], ARGV[2])
+end
+return 0
+`)
+
+var batchImageReserveScript = redis.NewScript(`
+local job = redis.call("RPOP", KEYS[1])
+if not job then
+  return nil
+end
+redis.call("ZADD", KEYS[2], ARGV[1], job)
+return job
+`)
+
+var batchImageEnqueueScript = redis.NewScript(`
+if redis.call("SET", KEYS[1], ARGV[1], "NX", "PX", ARGV[2]) then
+  redis.call("LPUSH", KEYS[2], ARGV[1])
+  return 1
 end
 return 0
 `)
@@ -131,40 +156,63 @@ func (q *batchImageQueue) Enqueue(ctx context.Context, batchID string) error {
 		return service.ErrInvalidBatchImageQueuePayload
 	}
 
-	ok, err := q.rdb.SetNX(ctx, q.inflightKey(batchID), batchID, q.inflightTTL).Result()
+	applied, err := batchImageEnqueueScript.Run(ctx, q.rdb,
+		[]string{q.inflightKey(batchID), q.readyKey},
+		batchID, q.inflightTTL.Milliseconds(),
+	).Int()
 	if err != nil {
 		return err
 	}
-	if !ok {
+	if applied == 0 {
 		return service.ErrBatchImageAlreadyQueued
-	}
-	if err := q.rdb.LPush(ctx, q.readyKey, batchID).Err(); err != nil {
-		_ = q.rdb.Del(ctx, q.inflightKey(batchID)).Err()
-		return err
 	}
 	return nil
 }
 
 func (q *batchImageQueue) Reserve(ctx context.Context, blockTimeout time.Duration) (service.ReservedBatchImageJob, error) {
-	result, err := q.rdb.BRPop(ctx, blockTimeout, q.readyKey).Result()
+	deadline := time.Now().Add(blockTimeout)
+	for {
+		batchID, err := q.reserveOnce(ctx)
+		if err == nil {
+			return service.ReservedBatchImageJob{BatchID: batchID}, nil
+		}
+		if !errors.Is(err, service.ErrBatchImageQueueEmpty) {
+			return service.ReservedBatchImageJob{}, err
+		}
+		remaining := time.Until(deadline)
+		if remaining <= 0 {
+			return service.ReservedBatchImageJob{}, service.ErrBatchImageQueueEmpty
+		}
+		wait := batchImageReservePollInterval
+		if remaining < wait {
+			wait = remaining
+		}
+		timer := time.NewTimer(wait)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return service.ReservedBatchImageJob{}, ctx.Err()
+		case <-timer.C:
+		}
+	}
+}
+
+func (q *batchImageQueue) reserveOnce(ctx context.Context) (string, error) {
+	raw, err := batchImageReserveScript.Run(ctx, q.rdb, []string{q.readyKey, q.activeKey}, time.Now().UnixMilli()).Result()
 	if errors.Is(err, redis.Nil) {
-		return service.ReservedBatchImageJob{}, service.ErrBatchImageQueueEmpty
+		return "", service.ErrBatchImageQueueEmpty
 	}
 	if err != nil {
-		return service.ReservedBatchImageJob{}, err
+		return "", err
 	}
-	if len(result) != 2 || !service.IsValidBatchImageID(result[1]) {
-		return service.ReservedBatchImageJob{}, service.ErrInvalidBatchImageQueuePayload
+	batchID, ok := raw.(string)
+	if !ok || !service.IsValidBatchImageID(batchID) {
+		if ok && batchID != "" {
+			_ = q.rdb.ZRem(ctx, q.activeKey, batchID).Err()
+		}
+		return "", service.ErrInvalidBatchImageQueuePayload
 	}
-
-	batchID := result[1]
-	if err := q.rdb.ZAdd(ctx, q.activeKey, redis.Z{
-		Score:  float64(time.Now().UnixMilli()),
-		Member: batchID,
-	}).Err(); err != nil {
-		return service.ReservedBatchImageJob{}, err
-	}
-	return service.ReservedBatchImageJob{BatchID: batchID}, nil
+	return batchID, nil
 }
 
 func (q *batchImageQueue) RequeueAfter(ctx context.Context, batchID string, delay time.Duration) error {
@@ -202,7 +250,7 @@ func (q *batchImageQueue) Heartbeat(ctx context.Context, batchID string) error {
 	if !service.IsValidBatchImageID(batchID) {
 		return service.ErrInvalidBatchImageQueuePayload
 	}
-	return q.rdb.ZAdd(ctx, q.activeKey, redis.Z{
+	return q.rdb.ZAddXX(ctx, q.activeKey, redis.Z{
 		Score:  float64(time.Now().UnixMilli()),
 		Member: batchID,
 	}).Err()
@@ -268,6 +316,18 @@ func (l *batchImageRedisJobLock) Release(ctx context.Context) error {
 	}
 	return batchImageReleaseLockScript.Run(ctx, l.rdb, []string{l.key}, l.token).Err()
 }
+
+func (l *batchImageRedisJobLock) Refresh(ctx context.Context, ttl time.Duration) error {
+	if l == nil || l.rdb == nil || l.key == "" || l.token == "" {
+		return nil
+	}
+	if ttl <= 0 {
+		ttl = defaultBatchImageJobLockTTL
+	}
+	return batchImageRefreshLockScript.Run(ctx, l.rdb, []string{l.key}, l.token, ttl.Milliseconds()).Err()
+}
+
+var _ service.BatchImageJobLockRefresher = (*batchImageRedisJobLock)(nil)
 
 func newBatchImageLockToken() (string, error) {
 	var b [16]byte

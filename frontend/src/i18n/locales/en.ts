@@ -490,6 +490,12 @@ export default {
     channelMonitor: 'Channel Monitor',
     channelStatus: 'Channel Status',
     riskControl: 'Risk Control',
+    groupOpsMonitoring: 'Operations',
+    groupUsers: 'Users & Groups',
+    groupChannels: 'Channels & Accounts',
+    groupMonetization: 'Monetization',
+    groupComms: 'Communication & Security',
+    groupSystem: 'System',
   },
   auth: {
     welcomeBack: 'Welcome Back',
