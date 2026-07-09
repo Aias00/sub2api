@@ -574,7 +574,7 @@ cloudbase/
 
 本プロジェクトは [GNU Lesser General Public License v3.0](LICENSE)（またはそれ以降のバージョン）の下でライセンスされています。
 
-Copyright (c) 2026 Wesley Liddick
+Copyright (c) 2026 Cloudbase
 
 ---
 
