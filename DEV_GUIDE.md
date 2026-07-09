@@ -52,7 +52,7 @@ npm install -g pnpm
 
 ### CI 要求
 
-- Go 版本以 `backend/go.mod` 为准，CI 当前校验 **1.26.4**
+- Go 版本以 `backend/go.mod` 为准，CI 当前校验 **1.26.5**
 - 前端使用 `pnpm install --frozen-lockfile`，必须提交 `pnpm-lock.yaml`
 - pnpm 版本只在根目录 `package.json` 的 `packageManager` 中声明；GitHub Actions 不要再给 `pnpm/action-setup` 单独配置 `version`
 - Go 格式校验使用 `golangci-lint fmt`，不是只跑标准 `gofmt`

@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Go](https://img.shields.io/badge/Go-1.26.4-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.26.5-00ADD8.svg)](https://golang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.4+-4FC08D.svg)](https://vuejs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18+-336791.svg)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-8+-DC382D.svg)](https://redis.io/)
@@ -45,7 +45,7 @@ Cloudbase is a self-hosted AI gateway and business operations platform for teams
 
 | Component | Technology |
 |-----------|------------|
-| Backend | Go 1.26.4, Gin, Ent, go-redis, Zap |
+| Backend | Go 1.26.5, Gin, Ent, go-redis, Zap |
 | Frontend | Vue 3.4+, Vite 5, TypeScript 5.6, Pinia, TailwindCSS |
 | Database | PostgreSQL 18+ |
 | Cache/Queue | Redis 8+ |
@@ -307,7 +307,7 @@ Build and run from source code for development or customization.
 
 #### Prerequisites
 
-- Go 1.26.4+
+- Go 1.26.5+
 - Node.js 18+
 - PostgreSQL 18+
 - Redis 8+

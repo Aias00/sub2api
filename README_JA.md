@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![Go](https://img.shields.io/badge/Go-1.26.4-00ADD8.svg)](https://golang.org/)
+[![Go](https://img.shields.io/badge/Go-1.26.5-00ADD8.svg)](https://golang.org/)
 [![Vue](https://img.shields.io/badge/Vue-3.4+-4FC08D.svg)](https://vuejs.org/)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-18+-336791.svg)](https://www.postgresql.org/)
 [![Redis](https://img.shields.io/badge/Redis-8+-DC382D.svg)](https://redis.io/)
@@ -45,7 +45,7 @@ Cloudbase は、複数の上流 AI アカウント、API キー、サブスク�
 
 | コンポーネント | 技術 |
 |-----------|------------|
-| バックエンド | Go 1.26.4, Gin, Ent, go-redis, Zap |
+| バックエンド | Go 1.26.5, Gin, Ent, go-redis, Zap |
 | フロントエンド | Vue 3.4+, Vite 5, TypeScript 5.6, Pinia, TailwindCSS |
 | データベース | PostgreSQL 18+ |
 | キャッシュ/キュー | Redis 8+ |
@@ -307,7 +307,7 @@ rm -rf data/ postgres_data/ redis_data/
 
 #### 前提条件
 
-- Go 1.26.4+
+- Go 1.26.5+
 - Node.js 18+
 - PostgreSQL 18+
 - Redis 8+
