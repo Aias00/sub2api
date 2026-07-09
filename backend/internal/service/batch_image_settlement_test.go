@@ -152,6 +152,87 @@ func TestBatchImageSettlementService_CostExceedingHoldDoesNotCharge(t *testing.T
 	require.Equal(t, "SETTLEMENT_COST_EXCEEDS_HOLD", batchImageDerefString(repo.jobs[job.BatchID].LastErrorCode))
 }
 
+func TestBatchImageSettlementService_NonBillingErrorsExhaustAndReleaseHold(t *testing.T) {
+	// Non-billing SETTLEMENT_* failures (invalid counts, manifest conflict,
+	// pricing missing, cost exceeds hold) record a failure and, once the
+	// retry limit is reached, transition the job to a terminal failed state
+	// and release the balance hold using the job's RequestHash as the
+	// payload fingerprint. Billing capture must never run on these paths.
+	requestHash := "fingerprint-payload"
+	tests := []struct {
+		name    string
+		mutate  func(*BatchImageJob)
+		pricing BatchImagePricingResolver
+	}{
+		{
+			name: "invalid_counts",
+			mutate: func(j *BatchImageJob) {
+				j.SuccessCount = 2
+				j.FailCount = 2
+				j.ItemCount = 3
+			},
+		},
+		{
+			name: "manifest_conflict",
+			mutate: func(j *BatchImageJob) {
+				conflict := "different-manifest-hash"
+				j.ManifestHash = &conflict
+			},
+		},
+		{
+			name:    "pricing_missing",
+			pricing: &fakeBatchImagePricingResolver{err: ErrBatchImageSettlementPricingMissing},
+		},
+		{
+			name: "cost_exceeds_hold",
+			mutate: func(j *BatchImageJob) {
+				j.SuccessCount = 2
+				j.FailCount = 0
+				j.ItemCount = 2
+				holdAmount := 0.5
+				j.HoldAmount = &holdAmount
+				j.EstimatedCost = holdAmount
+			},
+			pricing: &fakeBatchImagePricingResolver{unitPrice: 1.0},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			repo := newFakeBatchImageRepository()
+			job := testSettlingBatchImageJob("imgbatch_exhaust_" + tt.name)
+			job.RetryCount = batchImageSettlementMaxRetries - 1
+			job.RequestHash = &requestHash
+			if tt.mutate != nil {
+				tt.mutate(job)
+			}
+			repo.jobs[job.BatchID] = job
+			billing := &fakeBatchImageBillingRepo{}
+			pricing := tt.pricing
+			if pricing == nil {
+				pricing = &fakeBatchImagePricingResolver{unitPrice: 0.25}
+			}
+			svc := &BatchImageSettlementService{Repo: repo, BillingRepo: billing, Pricing: pricing}
+
+			_, err := svc.Settle(context.Background(), job.BatchID)
+			require.ErrorIs(t, err, ErrBatchImageSettlementBillingFailed)
+
+			// Terminal failed state carries the exhaustion code, not the
+			// originating non-billing code; the retry counter is capped.
+			require.Equal(t, BatchImageJobStatusFailed, repo.jobs[job.BatchID].Status)
+			require.Equal(t, "SETTLEMENT_BILLING_RETRY_EXHAUSTED", batchImageDerefString(repo.jobs[job.BatchID].LastErrorCode))
+			require.Equal(t, batchImageSettlementMaxRetries, repo.jobs[job.BatchID].RetryCount)
+
+			// Hold released with the job's RequestHash as the payload
+			// fingerprint; no capture ever ran on a non-billing path.
+			require.Empty(t, billing.captures)
+			require.Len(t, billing.releases, 1)
+			require.Equal(t, BatchImageReleaseRequestID(job.BatchID), billing.releases[0].RequestID)
+			require.Equal(t, requestHash, billing.releases[0].RequestPayloadHash)
+		})
+	}
+}
+
 func TestBatchImageSettlementService_UsesSubmittedPricingSnapshot(t *testing.T) {
 	repo := newFakeBatchImageRepository()
 	job := testSettlingBatchImageJob("imgbatch_snapshot")

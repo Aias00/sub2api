@@ -1012,10 +1012,27 @@ function isActive(path: string): boolean {
   const pathMatches = route.path === target.pathname || route.path.startsWith(target.pathname + '/')
   if (!pathMatches) return false
 
-  return Object.entries(target.query).every(([key, value]) => {
+  const queryMatches = Object.entries(target.query).every(([key, value]) => {
     const current = route.query[key]
     return Array.isArray(current) ? current[0] === value : current === value
   })
+  if (!queryMatches) return false
+
+  // The unified settings center is the only place that uses ?tab=... to
+  // switch between sibling sidebar items (plain "settings" vs "runtime").
+  // For that path only, a query-less target should not highlight when a tab
+  // is present, so the two items don't compete. Other query-less admin pages
+  // may use ?tab=... for their own UI and must stay active regardless.
+  if (
+    Object.keys(target.query).length === 0 &&
+    target.pathname === authRouteDefaults.value.adminSettingsPath
+  ) {
+    const currentTab = route.query.tab
+    const currentTabValue = Array.isArray(currentTab) ? currentTab[0] : currentTab
+    return !currentTabValue
+  }
+
+  return true
 }
 
 function isGroupActive(item: NavItem): boolean {
